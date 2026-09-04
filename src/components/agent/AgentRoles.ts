@@ -84,7 +84,6 @@ export const AGENT_TOOL_GROUPS: {
       { name: "list_sent_emails", label: "Read sent inbox history" },
       { name: "get_email_thread", label: "Read a full email thread" },
       { name: "delete_inbox_threads", label: "Delete inbox threads" },
-      { name: "resolve_approvals", label: "Resolve approvals" },
     ],
   },
   {

@@ -93,8 +93,6 @@ export const TOOL_LABELS: Record<string, string> = {
   send_outreach: "Sending",
   list_scheduled_emails: "Checking what is queued",
   cancel_scheduled_email: "Cancelling the scheduled send",
-  list_pending_approvals: "Checking what is waiting on you",
-  resolve_approvals: "Acting on your approvals",
   list_recent_replies: "Reading recent replies",
   list_sequences: "Looking up your sequences",
   enroll_lead_in_sequence: "Enrolling the lead",

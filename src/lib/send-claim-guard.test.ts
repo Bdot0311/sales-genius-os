@@ -95,7 +95,7 @@ describe("an unbacked claim of sending is corrected", () => {
 
   it("counts only the tools that can actually send", () => {
     expect(sendRule.tools).toEqual(
-      expect.arrayContaining(["send_drafts", "send_outreach", "resolve_approvals", "schedule_drafts"]),
+      expect.arrayContaining(["send_drafts", "send_outreach", "schedule_drafts"]),
     );
   });
 
@@ -104,10 +104,12 @@ describe("an unbacked claim of sending is corrected", () => {
     expect(unbackedClaims("I've sent them.", [queued]).map((c) => c.id)).toEqual(["sent"]);
   });
 
-  it("tells the user how many are stuck in the queue", () => {
-    // 37 had piled up while the agent reported them as sent.
-    expect(SRC).toContain("sitting in the approval queue");
-    expect(SRC).toContain('.eq("status", "pending")');
+  it("tells the user how much work is still waiting", () => {
+    // 37 had piled up in the approval queue while the agent reported them as
+    // sent. The queue is retired; drafts are the pending state, so that is
+    // what the correction now counts.
+    expect(SRC).toContain("draft(s) saved");
+    expect(SRC).toMatch(/from\("email_drafts"\)\s*\n?\s*\.select\("id", \{ count: "exact", head: true \}\)/);
   });
 
   it("keeps what the model said, word for word", () => {
@@ -173,8 +175,10 @@ describe("a refused send tells the user why", () => {
   });
 
   it("deduplicates the reason rather than repeating it per recipient", () => {
-    // Twenty-one identical "daily limit reached" lines bury the one fact.
-    expect(SRC).toMatch(/\[\.\.\.new Set\(outcomes/);
+    // Twenty-one identical "daily limit reached" lines bury the one fact. The
+    // capacity check now says it once, before any of them are attempted.
+    expect(SRC).toMatch(/sendFailures\.push\(capacityNote\)/);
+    expect(SRC).toMatch(/const capacityNote = shortfallWarning\(/);
   });
 
   it("puts the reason above the summary that claimed success", () => {
@@ -182,9 +186,19 @@ describe("a refused send tells the user why", () => {
     expect(SRC).toMatch(/still queued, so they can go out once that is fixed/);
   });
 
-  it("does not discard the failed approvals", () => {
-    // A failed send leaves the approval pending so it can be retried once the
-    // cause is fixed — that is what makes the queue recoverable.
-    expect(SRC).toMatch(/o\.status === "pending"/);
+  it("does not discard work that could not be sent", () => {
+    // A draft is only deleted once its email has actually gone. A refused send
+    // leaves it in place, which is what makes the batch retryable once the
+    // cause is fixed.
+    // Scoped to the send branch: delete_drafts legitimately deletes without a
+    // send, and searching the whole file would find that one first.
+    const branch = SRC.slice(
+      SRC.indexOf('case "send_drafts": {'),
+      SRC.indexOf('case "schedule_drafts": {'),
+    );
+    const gate = branch.indexOf("if (outcome.sent)");
+    const del = branch.indexOf('.from("email_drafts").delete()');
+    expect(gate).toBeGreaterThan(-1);
+    expect(del).toBeGreaterThan(gate);
   });
 });

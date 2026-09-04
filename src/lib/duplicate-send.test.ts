@@ -14,10 +14,16 @@ const SEND = readFileSync("supabase/functions/send-email/index.ts", "utf8");
  * sends every pending draft, so the same person was mailed again on the next
  * run, and again after that.
  */
-describe("an approved send clears its draft", () => {
+/**
+ * The guarantee moved when the approval queue was retired: a sent draft is
+ * cleared by send_drafts itself, because there is no approval row to clear it
+ * from any more. The rule is the same one — an email that went out must not
+ * still be sitting in the drafts the next send reads.
+ */
+describe("a sent draft is cleared", () => {
   const branch = AGENT.slice(
-    AGENT.indexOf('} else if (approval.kind === "outreach") {'),
-    AGENT.indexOf('} else if (approval.kind === "enrollment")'),
+    AGENT.indexOf('case "send_drafts": {'),
+    AGENT.indexOf('case "schedule_drafts": {'),
   );
 
   it("deletes the draft once the email has gone", () => {
@@ -25,20 +31,24 @@ describe("an approved send clears its draft", () => {
     expect(branch).toContain(".delete()");
   });
 
-  it("scopes the delete to the lead and the user", () => {
-    const del = branch.slice(branch.indexOf('.from("email_drafts")'));
+  it("scopes the delete to the draft and the user", () => {
+    const del = branch.slice(branch.indexOf('.from("email_drafts").delete()'));
+    expect(del).toMatch(/eq\("id",\s*d\.id\)/);
     expect(del).toMatch(/eq\("user_id",\s*userId\)/);
-    expect(del).toMatch(/eq\("lead_id",\s*approval\.lead_id\)/);
   });
 
   it("only runs after a successful send, not on a failure", () => {
-    // The failure path leaves the approval pending so it can be retried, and
-    // the draft has to survive with it.
-    const failIdx = branch.indexOf("failed = Boolean(r?.error)");
-    const okIdx = branch.indexOf("if (!failed) {");
-    const delIdx = branch.indexOf('.from("email_drafts")');
-    expect(failIdx).toBeGreaterThan(-1);
-    expect(delIdx).toBeGreaterThan(okIdx);
+    // A draft cleared on a failed send is an email nobody will ever get.
+    const gate = branch.indexOf("if (outcome.sent)");
+    const del = branch.indexOf('.from("email_drafts").delete()');
+    expect(gate).toBeGreaterThan(-1);
+    expect(del).toBeGreaterThan(gate);
+  });
+
+  it("leaves the draft alone when the send is only awaiting confirmation", () => {
+    // Approval mode returns sent: false, so the draft survives for the
+    // confirming turn to send.
+    expect(AGENT).toMatch(/awaiting_confirmation: true/);
   });
 });
 

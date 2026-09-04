@@ -50,7 +50,7 @@ export const CLAIM_RULES: ClaimRule[] = [
     id: "sent",
     pattern:
       /\b(?:i(?:'ve| have)?\s+(?:just\s+)?sent|sent it|sent them|sent the (?:emails?|second|first|follow[- ]?ups?)|email (?:has been|was) sent|emails? (?:have|has) been sent|they(?:'ve| have) gone out|all sent)\b/i,
-    tools: ["send_drafts", "send_outreach", "resolve_approvals", "schedule_drafts"],
+    tools: ["send_drafts", "send_outreach", "schedule_drafts"],
     backs: isRealSend,
     correction: "nothing was actually sent in this step.",
   },
@@ -89,10 +89,6 @@ export const CLAIM_RULES: ClaimRule[] = [
       /\b(?:i(?:'ve| have)?\s+(?:deleted|removed|cleared|rejected)|deleted (?:them|the|those)|(?:has|have|been) (?:been )?(?:deleted|rejected|cleared)|(?:approvals?|drafts?|emails?|leads?|threads?) (?:were |was |all )?(?:rejected|deleted|cleared)|queue (?:is )?clear)\b/i,
     tools: [
       "delete_drafts", "delete_leads", "delete_inbox_threads", "cancel_scheduled_email",
-      // Rejecting approvals is how a user clears the approval queue. Omitting
-      // it made the guard report a real clearance as an unbacked claim — a
-      // false alarm, which costs the guard its credibility faster than a miss.
-      "resolve_approvals",
     ],
     correction: "nothing was actually deleted in this step.",
   },
@@ -153,7 +149,7 @@ export function correctionFor(claims: UnbackedClaim[]): string {
 /** Tools that change something. Reading is not doing. */
 export const MUTATION_TOOLS = new Set([
   "send_drafts", "send_outreach", "schedule_drafts", "cancel_scheduled_email",
-  "draft_outreach", "draft_sequence", "resolve_approvals",
+  "draft_outreach", "draft_sequence",
   "enrich_leads", "score_leads", "research_leads", "find_leads",
   "delete_drafts", "delete_leads", "delete_inbox_threads",
   "enroll_lead_in_sequence", "update_lead", "run_agent",

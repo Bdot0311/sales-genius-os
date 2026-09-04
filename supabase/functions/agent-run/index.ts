@@ -470,19 +470,6 @@ const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
     const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-    async function queueApproval(row: Record<string, unknown>) {
-      const { error } = await adminClient.from("agent_approvals").insert({
-        user_id: user!.id,
-        status: "pending",
-        ...row,
-      });
-      if (error) {
-        console.error("queueApproval error:", error.message);
-        return false;
-      }
-      pendingApprovals++;
-      return true;
-    }
 
     // ────────────────────────────────────────────────────────────────────────
     // PHASE 1 — Lead generation
@@ -872,33 +859,30 @@ ${playbookSystemRules()}`;
               }
 
               if (approvalMode || qualityHold) {
-                const queued = await queueApproval({
-                  kind: "outreach",
+                // Save a draft, not an approval.
+                //
+                // agent-run has no conversation to confirm in, so its pending
+                // work has to live somewhere the user can find it. That place
+                // is the Drafts tab — the same place chat drafts land, and the
+                // same records "send my drafts" already reads. The approvals
+                // table was a second inbox that only the agent could see, and
+                // it filled with rows nothing could drain.
+                const { error: draftErr } = await adminClient.from("email_drafts").upsert({
+                  user_id: user.id,
                   lead_id: lead.id,
-                  integration_row_id: leadIntegrationId,
-                  prospect_email: to,
-                  prospect_name: lead.contact_name ?? null,
-                  company_name: lead.company_name ?? null,
                   subject,
                   body,
-                  reasoning: `${qualityHold ? `Held for review — the quality rubric scored this ${rubric?.overall}/100${rubric?.weakest ? `, weakest on ${rubric.weakest}` : ""}, below the bar for sending automatically. ` : ""}Touch 1 of 4 (Cold Email Engine playbook) for ${lead.job_title ?? "contact"} at ${lead.company_name ?? "their company"}. Touches 2-4 (day 3, 7, 14) are scheduled automatically once this is approved.`,
-                  metadata: {
-                    phase: "outreach",
-                    job_title: lead.job_title ?? null,
-                    sender_email: leadSenderEmail,
-                    playbook: "cold_email_engine_4_touch",
-                    follow_up_touches: touches.slice(1, 4),
-                  },
-
-                });
-                if (!queued) {
+                }, { onConflict: "user_id,lead_id" });
+                const queued = !draftErr;
+                if (draftErr) console.error("[agent-run] could not save draft:", draftErr.message);
+                                if (!queued) {
                   await logAction({
                     user_id: user.id,
                     action_type: "error",
                     status: "failed",
                     prospect_email: to,
                     subject,
-                    description: `Could not queue approval draft for ${lead.contact_name ?? to}`,
+                    description: `Could not save the draft for ${lead.contact_name ?? to}`,
                     metadata: { phase: "outreach", lead_id: lead.id },
                   });
                   continue;
@@ -910,7 +894,7 @@ ${playbookSystemRules()}`;
                   prospect_email: to,
                   subject,
                   reply_content: body,
-                  description: `Drafted a first-touch email to ${lead.contact_name ?? to} at ${lead.company_name ?? "their company"} — waiting for your approval${leadSenderEmail ? ` from ${leadSenderEmail}` : ""}`,
+                  description: `Drafted a first-touch email to ${lead.contact_name ?? to} at ${lead.company_name ?? "their company"} — saved to your drafts${leadSenderEmail ? `, to send from ${leadSenderEmail}` : ""}`,
                   metadata: { phase: "outreach", lead_id: lead.id, sender_email: leadSenderEmail },
                 });
                 outreachDrafted++;
@@ -1222,16 +1206,23 @@ Output ONLY the reply body. No subject line. No greeting like "Hi [name]". No si
           }
 
           if (approvalMode) {
-            await queueApproval({
-              kind: "reply",
+            // No queue, and no draft either: a reply draft would overwrite the
+            // lead's outreach draft, and email_drafts holds one per lead.
+            //
+            // The reply is already visible in the unified inbox, so the honest
+            // move is to say it needs an answer and stop. Asking the agent to
+            // reply in chat gets a reply written against the live thread rather
+            // than against a snapshot taken days earlier — which is what the
+            // queued copies were, on the rare occasions anyone drained them.
+            await logAction({
+              user_id: user.id,
               sent_email_id: reply.sentEmailId,
-              integration_row_id: googleIntegrationId,
+              action_type: "awaiting_reply",
+              status: "pending",
               prospect_email: reply.fromEmail,
               subject: `Re: ${reply.subject}`,
-              body: generatedReply,
-              classification: "interested",
-              reasoning,
-              metadata: { phase: "reply", gmail_message_id: reply.gmailMessageId, confidence },
+              description: `${reply.fromEmail} replied and is waiting on an answer. Ask the agent to reply and it will draft against the live thread.`,
+              metadata: { phase: "reply", gmail_message_id: reply.gmailMessageId },
             });
             await logAction({
               user_id: user.id,
@@ -1367,16 +1358,23 @@ Output ONLY the reply body. No subject line or signature.`;
           }
 
           if (approvalMode) {
-            await queueApproval({
-              kind: "reply",
+            // No queue, and no draft either: a reply draft would overwrite the
+            // lead's outreach draft, and email_drafts holds one per lead.
+            //
+            // The reply is already visible in the unified inbox, so the honest
+            // move is to say it needs an answer and stop. Asking the agent to
+            // reply in chat gets a reply written against the live thread rather
+            // than against a snapshot taken days earlier — which is what the
+            // queued copies were, on the rare occasions anyone drained them.
+            await logAction({
+              user_id: user.id,
               sent_email_id: reply.sentEmailId,
-              integration_row_id: googleIntegrationId,
+              action_type: "awaiting_reply",
+              status: "pending",
               prospect_email: reply.fromEmail,
               subject: `Re: ${reply.subject}`,
-              body: generatedReply,
-              classification: "objection",
-              reasoning,
-              metadata: { phase: "reply", gmail_message_id: reply.gmailMessageId, confidence, objection_entry_ids: usedEntryIds },
+              description: `${reply.fromEmail} replied and is waiting on an answer. Ask the agent to reply and it will draft against the live thread.`,
+              metadata: { phase: "reply", gmail_message_id: reply.gmailMessageId },
             });
             await logAction({
               user_id: user.id,
@@ -1452,16 +1450,23 @@ Output ONLY the reply body. No subject line or signature.`;
           }
 
           if (approvalMode) {
-            await queueApproval({
-              kind: "reply",
+            // No queue, and no draft either: a reply draft would overwrite the
+            // lead's outreach draft, and email_drafts holds one per lead.
+            //
+            // The reply is already visible in the unified inbox, so the honest
+            // move is to say it needs an answer and stop. Asking the agent to
+            // reply in chat gets a reply written against the live thread rather
+            // than against a snapshot taken days earlier — which is what the
+            // queued copies were, on the rare occasions anyone drained them.
+            await logAction({
+              user_id: user.id,
               sent_email_id: reply.sentEmailId,
-              integration_row_id: googleIntegrationId,
+              action_type: "awaiting_reply",
+              status: "pending",
               prospect_email: reply.fromEmail,
               subject: `Re: ${reply.subject}`,
-              body: meetingReply,
-              classification: "meeting_request",
-              reasoning,
-              metadata: { phase: "reply", gmail_message_id: reply.gmailMessageId, confidence },
+              description: `${reply.fromEmail} replied and is waiting on an answer. Ask the agent to reply and it will draft against the live thread.`,
+              metadata: { phase: "reply", gmail_message_id: reply.gmailMessageId },
             });
             await logAction({
               user_id: user.id,

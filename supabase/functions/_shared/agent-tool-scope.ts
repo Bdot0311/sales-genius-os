@@ -12,7 +12,6 @@ export const CORE_TOOLS = [
   "list_leads",
   "get_lead",
   "get_agent_status",
-  "list_pending_approvals",
 ];
 
 export const LEAD_GEN_TOOLS = [
@@ -42,7 +41,6 @@ export const OUTREACH_TOOLS = [
   "delete_drafts",
   "list_sequences",
   "enroll_lead_in_sequence",
-  "resolve_approvals",
 ];
 
 export const REPLY_TOOLS = [
@@ -63,7 +61,6 @@ export const REPLY_TOOLS = [
   // Reading the lead behind the thread, and moving its stage after a reply.
   "update_lead",
   "delete_inbox_threads",
-  "resolve_approvals",
 ];
 
 export const FULL_CYCLE_EXTRA_TOOLS = ["run_full_agent"];
@@ -172,7 +169,6 @@ export const TOOL_CATALOG: Record<string, string> = {
   list_leads: "List leads already in the account, with filters.",
   get_lead: "Read one lead's full record.",
   get_agent_status: "Report this agent's own configuration and recent activity.",
-  list_pending_approvals: "List actions waiting for the user's approval.",
   find_leads: "Source brand-new leads (people) from the lead network.",
   search_companies: "Search companies matching an ICP.",
   enrich_leads: "Fill missing contact/company data on existing leads.",
@@ -193,7 +189,6 @@ export const TOOL_CATALOG: Record<string, string> = {
   delete_drafts: "Permanently delete drafts (destructive).",
   list_sequences: "List the account's sequences.",
   enroll_lead_in_sequence: "Enroll leads into a sequence.",
-  resolve_approvals: "Approve or reject pending actions.",
   list_recent_replies: "Read inbound replies from connected inboxes.",
   list_sent_emails:
     "Read the inbox history of email already SENT: recipient, subject, body, send time, opens and whether they replied. Required for any agent that writes follow-ups or needs to know who was already contacted.",
@@ -218,7 +213,6 @@ const TOOL_PREREQUISITES: Record<string, string[]> = {
   send_outreach: ["list_mailboxes", "list_sent_emails", "get_email_thread"],
   list_recent_replies: ["list_sent_emails", "get_email_thread"],
   get_email_thread: ["list_sent_emails"],
-  resolve_approvals: ["list_pending_approvals"],
   enrich_leads: ["list_leads"],
   score_leads: ["list_leads"],
   research_leads: ["list_leads"],

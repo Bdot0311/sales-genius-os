@@ -160,12 +160,13 @@ describe("the phrasings that got through", () => {
       .toContain("scheduled");
   });
 
-  it("counts rejecting approvals as a real way to clear the queue", () => {
-    // Omitting it made the guard call a genuine clearance a lie, and a false
-    // alarm costs the guard its credibility faster than a miss does.
-    const rejected = { name: "resolve_approvals", label: "Cancelled what you declined", status: "ok" };
-    expect(unbackedClaims("I've cleared the entire approval queue.", [rejected])).toEqual([]);
-    expect(unbackedClaims("103 approvals rejected.", []).map((c) => c.id)).toContain("deleted");
+  it("counts deleting drafts as a real way to clear what is pending", () => {
+    // The approval queue is retired; drafts are the pending state, so clearing
+    // them is what "clear the queue" now means. A false alarm on a genuine
+    // clearance costs the guard its credibility faster than a miss does.
+    const cleared = { name: "delete_drafts", label: "Deleted drafts", status: "ok" };
+    expect(unbackedClaims("I've cleared all the pending drafts.", [cleared])).toEqual([]);
+    expect(unbackedClaims("103 drafts deleted.", []).map((c) => c.id)).toContain("deleted");
   });
 });
 
