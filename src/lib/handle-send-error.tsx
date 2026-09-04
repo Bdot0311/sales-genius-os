@@ -40,3 +40,59 @@ export function showSendError(status: number, payload: SendErrorPayload) {
   }
   toast.error(payload.error || "Failed to send email");
 }
+
+/**
+ * The reason a function call failed, out of the response body.
+ *
+ * supabase-js reports every non-2xx as "Edge Function returned a non-2xx
+ * status code" and puts the real response on `error.context`. A user pressing
+ * Send Now got that sentence and nothing else, while the body underneath said
+ * which mailbox had hit its limit or which credential had expired — the same
+ * shape as every other failure in this product, where the explanation exists
+ * and nobody shows it.
+ *
+ * Only 429 was ever unpacked. Every other status fell through to the generic
+ * string, which is exactly the case where a user has no idea what to do next.
+ */
+export async function readFunctionError(
+  error: unknown,
+): Promise<{ status: number; payload: SendErrorPayload }> {
+  const context = (error as { context?: { status?: number; json?: () => Promise<unknown> } })?.context;
+  const status = typeof context?.status === "number" ? context.status : 0;
+
+  let payload: SendErrorPayload = {};
+  try {
+    const parsed = await context?.json?.();
+    if (parsed && typeof parsed === "object") payload = parsed as SendErrorPayload;
+  } catch {
+    // A body that is not JSON (an HTML gateway page, an empty 502) tells us
+    // nothing more than the status already did.
+    payload = {};
+  }
+
+  if (!payload.error) {
+    // supabase-js's own message is the sentence this function exists to
+    // replace, so it never becomes the reason — not even as a fallback.
+    const own = (error as { message?: string })?.message ?? "";
+    const usable = own && !/non-2xx status code/i.test(own) ? own : "";
+
+    payload = {
+      ...payload,
+      error:
+        status >= 500
+          ? `The send service returned an error (${status}). Nothing was sent — try again in a moment.`
+          : status
+            ? `The send was refused (${status}) and no reason was given.`
+            : usable || "The send failed and no reason came back. Nothing was sent.",
+    };
+  }
+
+  return { status, payload };
+}
+
+/** Read the failure and show it, in one step. */
+export async function reportSendFailure(error: unknown): Promise<SendErrorPayload> {
+  const { status, payload } = await readFunctionError(error);
+  showSendError(status, payload);
+  return payload;
+}

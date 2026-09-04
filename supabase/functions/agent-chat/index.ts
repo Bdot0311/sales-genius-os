@@ -9,6 +9,7 @@ import { UNTRUSTED_CONTENT_RULE, fence, fenceRecords } from "../_shared/untruste
 import { correctionFor, emptyTurnWarning, unbackedClaims } from "../_shared/claim-check.ts";
 import { capacityFor, shortfallWarning } from "../_shared/send-capacity.ts";
 import { decideSend, previewText } from "../_shared/send-confirmation.ts";
+import { userConfirmedSend } from "../_shared/user-confirmation.ts";
 import {
   accountFor,
   batchFetchLimit,
@@ -1051,6 +1052,22 @@ serve(async (req) => {
     }
     history.reverse();
 
+    /**
+     * The user's own agreement to the send that was proposed last turn.
+     *
+     * Sending is otherwise gated on a flag the model sets, which is a two-step
+     * protocol run by the least reliable component here: when it does not set
+     * the flag, nothing ever sends and the loop repeats — preview, "yes",
+     * preview — while the model invents reasons for the non-send out of
+     * whatever else the tool mentioned.
+     *
+     * The permission comes from a person, so it is read from what the person
+     * wrote. Both halves are required: a bare "yes" only counts when the
+     * previous turn actually asked.
+     */
+    const confirmedByUser = userConfirmedSend(userMessage, history as any[]);
+    if (confirmedByUser) console.log("[agent-chat] user confirmed the pending send in chat");
+
     // --- context ---------------------------------------------------------
     const [{ data: config }, { data: profile }, { data: savedIcp }] = await Promise.all([
       requestedAgentId
@@ -2023,7 +2040,7 @@ serve(async (req) => {
               toolName: name,
               // Stored drafts come from generate-email, which scored them.
               modelAuthored: false,
-              confirmed: args.confirmed === true,
+              confirmed: args.confirmed === true || confirmedByUser,
             });
             results.push({ draft_id: d.id, lead: label, to, from: mailbox.email, ...outcome.summary });
             if (outcome.sent) {
@@ -2183,7 +2200,7 @@ serve(async (req) => {
             // Unconfirmed: describe what would be queued and write nothing.
             // The draft stays a draft, so a confirmation on the next turn has
             // the same records to work from.
-            if (!autonomous && args.confirmed !== true) {
+            if (!autonomous && args.confirmed !== true && !confirmedByUser) {
               results.push({
                 draft_id: d.id,
                 lead: label,
@@ -2411,7 +2428,7 @@ serve(async (req) => {
         case "enroll_lead_in_sequence": {
           const lead = await loadLead(String(args.lead_id ?? ""));
           if (!lead) return { error: "Lead not found" };
-          if (!autonomous && args.confirmed !== true) {
+          if (!autonomous && args.confirmed !== true && !confirmedByUser) {
             // No queue. Say what would happen and write nothing; the user's
             // next message decides.
             toolEvents.push({
@@ -2847,7 +2864,7 @@ serve(async (req) => {
         }
 
         case "run_full_agent": {
-          if (!autonomous && args.confirmed !== true) {
+          if (!autonomous && args.confirmed !== true && !confirmedByUser) {
             // No queue. Say what would happen and write nothing; the user's
             // next message decides.
             toolEvents.push({

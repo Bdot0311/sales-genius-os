@@ -389,7 +389,13 @@ export const BulkSendDialog = ({
           },
         });
 
-        if (error) throw error;
+        if (error) {
+          // A bulk run that reports "non-2xx" for every lead tells the user
+          // nothing about which limit or credential stopped it.
+          const { readFunctionError } = await import("@/lib/handle-send-error");
+          const { payload } = await readFunctionError(error);
+          throw new Error(payload.error ?? "Failed to send");
+        }
         sent++;
         consecutiveFailures = 0;
       } catch (err: any) {
