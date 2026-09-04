@@ -5,6 +5,12 @@ import { logSystemAlert } from "../_shared/alerts.ts";
 import { getSignatureHtml, appendSignatureToBody } from "../_shared/signature.ts";
 import { injectClickTracking } from "../_shared/click-tracking.ts";
 import { signOffStartIndex } from "../_shared/email-rules.ts";
+import {
+  DELIVERED_STATUSES,
+  duplicateRefusal,
+  duplicateWindowStart,
+  normalizeRecipient,
+} from "../_shared/duplicate-send.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -325,26 +331,26 @@ serve(async (req) => {
     // second and every later reply in a legitimate back-and-forth.
     if (!payload.allowDuplicate && !threadId) {
 
-      const dupWindow = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+      const dupWindow = duplicateWindowStart();
       const { data: dup } = await supabase
         .from('sent_emails')
         .select('id, sent_at')
         .eq('user_id', user.id)
-        .eq('to_email', to.toLowerCase().trim())
+        .eq('to_email', normalizeRecipient(to))
         .eq('subject', subject)
-        .in('status', ['sent', 'delivered', 'opened', 'clicked', 'replied'])
+        .in('status', DELIVERED_STATUSES)
         .gte('sent_at', dupWindow)
         .limit(1)
         .maybeSingle();
 
       if (dup) {
         console.warn(`[send-email] duplicate blocked: ${to} already got "${subject}"`);
+        // The refusal names the two remedies that work and rules out the one
+        // the agent kept choosing. See _shared/duplicate-send.ts for why.
         return new Response(
-          JSON.stringify({
-            error: `This exact email was already sent to ${to}. Sending it again would hurt your deliverability, so it was blocked.`,
-            code: 'duplicate_send',
-            previously_sent_at: dup.sent_at,
-          }),
+          JSON.stringify(
+            duplicateRefusal({ to, subject, previouslySentAt: dup.sent_at as string | null }),
+          ),
           { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -592,7 +598,8 @@ ${unsubscribeFooterHtml}
           user_id: user.id,
           lead_id: leadId || null,
           template_id: templateId || null,
-          to_email: to,
+          // Stored in the one spelling the duplicate guard searches for.
+          to_email: normalizeRecipient(to),
           subject: subject,
           body_html: trackedHtmlBody,
           body_text: body,
@@ -620,7 +627,8 @@ ${unsubscribeFooterHtml}
         user_id: user.id,
         lead_id: leadId || null,
         template_id: templateId || null,
-        to_email: to,
+        // Stored in the one spelling the duplicate guard searches for.
+        to_email: normalizeRecipient(to),
         subject: subject,
         body_html: trackedHtmlBody,
         body_text: body,

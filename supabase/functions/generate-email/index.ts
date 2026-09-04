@@ -674,6 +674,14 @@ serve(async (req) => {
     const use4SentenceFramework = requestData.use4SentenceFramework === true;
     const templateValue        = typeof requestData.templateValue        === 'string' ? requestData.templateValue.trim()                   : '';
     const customInstruction   = typeof requestData.customInstruction   === 'string' ? requestData.customInstruction.slice(0, 8000)         : '';
+    // Subjects this recipient has already been sent. Supplied by the caller,
+    // which is the only place that knows the send history.
+    const avoidSubjects: string[] = Array.isArray(requestData.avoidSubjects)
+      ? requestData.avoidSubjects
+          .filter((v: unknown): v is string => typeof v === 'string' && v.trim().length > 0)
+          .map((v: string) => sanitizeString(v, 200))
+          .slice(0, 10)
+      : [];
     const senderName          = typeof requestData.senderName          === 'string' ? requestData.senderName.trim().slice(0, 100)           : '';
     const senderCompany       = typeof requestData.senderCompany       === 'string' ? requestData.senderCompany.trim().slice(0, 100)        : '';
     // The address the mail will be sent FROM. Used only to recover a name when
@@ -1183,6 +1191,46 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
     }
     if (!isPrecisionEdit) {
       userPrompt = `${userPrompt}${researchBlock}${NO_HALLUCINATION_RULE}`;
+    }
+
+    // A redraft instruction on any goal other than 'custom' used to be thrown
+    // away.
+    //
+    // customInstruction was read in exactly one branch — goal === 'custom' —
+    // and every other goal parsed it off the request and then never referenced
+    // it again. The agent's redraft path sends goal 'introduction' plus a
+    // customInstruction carrying the user's own words about what was wrong with
+    // the last draft, so "yes, delete those and write them again differently"
+    // reached the model as nothing at all. The regeneration then came back
+    // near-identical, with the same subject line, and was refused by the
+    // duplicate guard — which is the loop the user kept landing in.
+    //
+    // Placed last, after the research and the no-hallucination rule, because it
+    // is the most specific thing said about THIS draft and recency is emphasis.
+    if (!isPrecisionEdit && customInstruction) {
+      userPrompt = `${userPrompt}
+
+REDRAFT DIRECTIVE — this overrides the default shape above:
+The previous draft for this prospect was rejected. What must change: ${customInstruction}
+
+This is a rewrite, not a regeneration. The new email must differ from the last one in
+structure, not only in wording — a different opening beat, a different framework, a
+different subject line. Returning the same email with synonyms swapped in is the
+failure this directive exists to prevent.`;
+    }
+
+    // Subject lines the recipient has already received.
+    //
+    // Reusing one is not a style problem, it is a hard block downstream: the
+    // send path refuses the same subject to the same person inside a fortnight.
+    // A generator that does not know what already went out will reproduce it,
+    // and the refusal arrives after the draft has been written and shown.
+    if (!isPrecisionEdit && avoidSubjects.length) {
+      userPrompt = `${userPrompt}
+
+SUBJECT LINES ALREADY SENT to this person — you may not reuse any of them, or any
+near-variant of them. A repeat is refused before it can be delivered:
+${avoidSubjects.map((s: string) => `- ${s}`).join('\n')}`;
     }
 
     const isFrameworkGoal = FRAMEWORK_GOALS.has(goal);

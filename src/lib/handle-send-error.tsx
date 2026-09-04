@@ -12,6 +12,8 @@ interface SendErrorPayload {
   resetAt?: string;
   dailyLimit?: number;
   dailySent?: number;
+  remedy?: string[];
+  previously_sent_at?: string | null;
 }
 
 /**
@@ -35,6 +37,21 @@ export function showSendError(status: number, payload: SendErrorPayload) {
   if (status === 429) {
     toast.error("Daily send limit reached", {
       description: payload.error || `${payload.dailySent ?? "?"}/${payload.dailyLimit ?? "?"} sent today. Try again tomorrow or raise the limit in Outreach settings.`,
+    });
+    return;
+  }
+  if (status === 409 && payload.code === "duplicate_send") {
+    // Named separately because it is not a failure — the email was already
+    // delivered — and because the obvious next move (rewrite the draft) is the
+    // one that does not work. The toast says what does.
+    const when = payload.previously_sent_at
+      ? new Date(payload.previously_sent_at).toLocaleDateString()
+      : null;
+    toast.error("They already got this email", {
+      duration: 10_000,
+      description:
+        `${when ? `Sent ${when}. ` : ""}Nothing is wrong with the draft — rewriting it will not change this. ` +
+        `Send a follow-up on a new angle with a different subject line instead.`,
     });
     return;
   }

@@ -10,6 +10,7 @@ import { correctionFor, emptyTurnWarning, unbackedClaims } from "../_shared/clai
 import { capacityFor, shortfallWarning } from "../_shared/send-capacity.ts";
 import { decideSend, previewText } from "../_shared/send-confirmation.ts";
 import { userConfirmedSend } from "../_shared/user-confirmation.ts";
+import { duplicateGuidanceFor } from "../_shared/duplicate-send.ts";
 import {
   accountFor,
   batchFetchLimit,
@@ -449,6 +450,11 @@ const TOOLS = [
             description:
               "Set true ONLY when the user's newest message agreed to this exact send (\"yes\", \"send them\", \"go ahead\"). Never set it on the first call, never carry it over from an earlier batch, and never set it because you asked and assumed.",
           },
+          allow_duplicate: {
+            type: "boolean",
+            description:
+              "Set true ONLY when the user has been told these people already received this exact email and has explicitly asked to send it again anyway. Never set it to work around a duplicate_send refusal on your own initiative — that refusal is protecting the user's sending domain.",
+          },
         },
       },
     },
@@ -580,6 +586,16 @@ const TOOLS = [
           subject: { type: "string" },
           body: { type: "string" },
           from_email: { type: "string", description: "Mailbox address to send from" },
+          confirmed: {
+            type: "boolean",
+            description:
+              "Set true ONLY when the user's newest message agreed to this exact send (\"yes\", \"send it\", \"go ahead\"). Never set it on the first call.",
+          },
+          allow_duplicate: {
+            type: "boolean",
+            description:
+              "Set true ONLY when the user has been told these people already received this exact email and has explicitly asked to send it again anyway. Never set it to work around a duplicate_send refusal on your own initiative — that refusal is protecting the user's sending domain.",
+          },
         },
         required: ["lead_id", "subject", "body"],
       },
@@ -1134,6 +1150,16 @@ serve(async (req) => {
      */
     const batchShortfalls: string[] = [];
     /**
+     * Sends refused because the recipient already got that exact subject.
+     *
+     * Kept apart from sendFailures because the remedy is different and the
+     * agent kept choosing the wrong one: it read "duplicate" as a problem with
+     * the drafts and offered to delete and regenerate them, which cannot clear
+     * a block that lives in the sent history. The guidance appended at the end
+     * of the turn names that wrong move explicitly.
+     */
+    const duplicateRefusals: { to: string; subject: string; previouslySentAt: string | null }[] = [];
+    /**
      * Sends that were refused, and why.
      *
      * The send path already returns each failure with its reason and tells
@@ -1303,6 +1329,13 @@ serve(async (req) => {
        * failure the approval queue had.
        */
       confirmed?: boolean;
+      /**
+       * Deliberate resend of something this person already received.
+       *
+       * Set only when the user asked for it in their own words. The guard it
+       * disables is what keeps a domain out of the spam folder.
+       */
+      allowDuplicate?: boolean;
     }): Promise<{ sent: boolean; summary: Record<string, unknown>; result?: any }> => {
       const { leadId, to, subject, body, mailbox, toolName, modelAuthored } = opts;
       if (!subject || !body) return { sent: false, summary: { error: "Subject and body are required" } };
@@ -1390,8 +1423,19 @@ serve(async (req) => {
         leadId: leadId ?? undefined,
         integrationRowId: mailbox.integrationRowId,
         appendSignature: true,
+        // Only ever true when the user asked for a deliberate resend. Passing
+        // it by default would disable the one guard that stops a prospect
+        // getting the same email twice.
+        ...(opts.allowDuplicate === true ? { allowDuplicate: true } : {}),
       });
       const sent = !r?.error;
+
+      // A repeat is not a send failure, it is a fact about what already went
+      // out — and the remedy is different from every other refusal, so it is
+      // carried separately rather than folded into sendFailures.
+      if (!sent && r?.code === "duplicate_send") {
+        duplicateRefusals.push({ to, subject, previouslySentAt: (r.previously_sent_at as string) ?? null });
+      }
       if (sent) {
         if (leadId) {
           await admin
@@ -1418,7 +1462,18 @@ serve(async (req) => {
       });
       return {
         sent,
-        summary: sent ? { sent: true, to } : { sent: false, error: String(r?.error ?? "send failed") },
+        summary: sent
+          ? { sent: true, to }
+          : {
+              sent: false,
+              error: String(r?.error ?? "send failed"),
+              // Carried onto the per-record result so a batch can tell a repeat
+              // apart from a real failure, and answer it differently.
+              ...(r?.code ? { code: String(r.code) } : {}),
+              ...(r?.code === "duplicate_send"
+                ? { subject, previously_sent_at: r.previously_sent_at ?? null, redraft_will_not_help: true }
+                : {}),
+            },
         result: r,
       };
     };
@@ -1590,16 +1645,42 @@ serve(async (req) => {
               : {}),
           };
 
+          // What this person has already been sent.
+          //
+          // A regenerated draft that lands on the same subject line is refused
+          // at the send step, after it has been written, saved and shown — and
+          // the generator had no way of knowing, so it reproduced the same
+          // subject every time it was asked to try again. Fetched once for the
+          // whole batch rather than per lead.
+          const { data: alreadySent } = await admin
+            .from("sent_emails")
+            .select("lead_id, subject")
+            .eq("user_id", userId)
+            .in("lead_id", ids)
+            .in("status", ["sent", "delivered", "opened", "clicked", "replied"])
+            .order("sent_at", { ascending: false })
+            .limit(200);
+          const sentSubjects = new Map<string, string[]>();
+          for (const row of (alreadySent ?? []) as Record<string, unknown>[]) {
+            const key = String(row.lead_id ?? "");
+            const subj = String(row.subject ?? "").trim();
+            if (!key || !subj) continue;
+            const list = sentSubjects.get(key) ?? [];
+            if (!list.includes(subj) && list.length < 10) list.push(subj);
+            sentSubjects.set(key, list);
+          }
+
           const genOne = async (id: string) => {
             const lead = await loadLead(id);
             if (!lead) return { lead_id: id, error: "Lead not found" };
             // generate-email runs (or reuses) the per-lead website research brief
             // internally, so drafts are grounded in real findings.
-            let r = await invokeFn("generate-email", { lead, ...basePayload });
+            const avoidSubjects = sentSubjects.get(id) ?? [];
+            let r = await invokeFn("generate-email", { lead, ...basePayload, avoidSubjects });
             // one retry on upstream rate limiting
             if (!r?.email && /rate limit/i.test(JSON.stringify(r?.error ?? ""))) {
               await new Promise((res) => setTimeout(res, 2500));
-              r = await invokeFn("generate-email", { lead, ...basePayload });
+              r = await invokeFn("generate-email", { lead, ...basePayload, avoidSubjects });
             }
             const raw: string = typeof r?.email === "string" ? r.email : "";
             let subject = "";
@@ -1614,8 +1695,25 @@ serve(async (req) => {
               // leaving it null, and the fallback took it literally: real
               // prospects were queued under the subject "Quick question —
               // Unknown". A bare "Quick question" is the honest version.
+              //
+              // It also has to be a subject this person has not already had.
+              // The fallback is deterministic per lead, so a redraft produced
+              // the identical subject, which the send path refuses as a repeat
+              // — a draft that could never be sent, generated over and over.
               const usable = realValue(lead.company_name) ?? "";
-              subject = `Quick question${usable ? ` — ${usable}` : ""}`;
+              const base = `Quick question${usable ? ` — ${usable}` : ""}`;
+              const taken = new Set(avoidSubjects.map((x: string) => x.trim().toLowerCase()));
+              if (!taken.has(base.toLowerCase())) {
+                subject = base;
+              } else {
+                const alts = [
+                  `following up${usable ? ` — ${usable}` : ""}`,
+                  `one more thought${usable ? ` for ${usable}` : ""}`,
+                  `different angle${usable ? ` — ${usable}` : ""}`,
+                ];
+                subject = alts.find((a) => !taken.has(a.toLowerCase())) ??
+                  `${base} (${new Date().toISOString().slice(0, 10)})`;
+              }
             }
 
             let draftId: string | null = null;
@@ -2041,6 +2139,7 @@ serve(async (req) => {
               // Stored drafts come from generate-email, which scored them.
               modelAuthored: false,
               confirmed: args.confirmed === true || confirmedByUser,
+              allowDuplicate: args.allow_duplicate === true,
             });
             results.push({ draft_id: d.id, lead: label, to, from: mailbox.email, ...outcome.summary });
             if (outcome.sent) {
@@ -2052,6 +2151,14 @@ serve(async (req) => {
           const queuedCount = results.filter((r) => r.queued_for_approval).length;
           const failedCount = results.filter((r) => !r.sent && !r.queued_for_approval).length;
           const usedFrom = [...new Set(results.map((r) => r.from).filter(Boolean))];
+
+          // Repeats get their own sentence in the tool result, not just the
+          // per-record error, because the model reading "duplicate" reliably
+          // reached for the one remedy that cannot work.
+          const dupes = results.filter((r) => r.code === "duplicate_send");
+          const duplicateNote = dupes.length
+            ? duplicateGuidanceFor(dupes.length, dupes.map((d) => String(d.subject ?? "")))
+            : "";
 
           // Account for the whole request, not just the rows this call saw.
           const accounting = accountFor(requestedCount, fetchedCount, drafts.length);
@@ -2088,6 +2195,7 @@ serve(async (req) => {
               failedCount > 0
                 ? `${failedCount} did NOT go out — the per-record errors are in results. Report the failures, do not round them off.`
                 : "",
+              duplicateNote,
               shortfall,
             ].filter(Boolean).join(" "),
           };
@@ -2406,6 +2514,12 @@ serve(async (req) => {
             toolName: name,
             // The model wrote this subject and body in the chat turn.
             modelAuthored: true,
+            // send_outreach was the one send path that never passed this, so in
+            // approval mode it could only ever return "awaiting confirmation" —
+            // the user saying "yes, send it" changed nothing and the email was
+            // never delivered by this tool at all.
+            confirmed: args.confirmed === true || confirmedByUser,
+            allowDuplicate: args.allow_duplicate === true,
           });
           return { from: mailbox.email, ...outcome.summary, ...(outcome.result ?? {}) };
         }
@@ -2914,6 +3028,7 @@ HOW TO WORK
 - Drafts are auto-saved and rendered in the chat as read-only preview cards. There are no buttons anywhere in this chat — everything happens through messages. After drafting, tell the user the drafts are below for review and ask them to reply when they want them sent or scheduled.
 - QUALITY: send_outreach scores anything you wrote yourself before it goes out. If it answers needs_rewrite, the email was NOT sent: rewrite it against the feedback it returned and call send_outreach again with the new subject and body. Do not re-send the same text, do not tell the user it went out, and do not work around the check by saving it as a draft and sending that instead. If it answers with unfilled placeholders, fill in the real values and call again.
 - SENDING: when the user approves the drafts ("send them", "all good, send"), YOU send them — call send_drafts. You never need the subject or body to send a saved draft, only draft ids: use the draft_ids from your draft_outreach results, or call list_drafts (optionally with lead_ids or a name) to look them up again. Pass from_email when the user names one inbox, or from_emails to rotate across several. When they do not name one, leave both off: sends automatically rotate across every healthy connected mailbox (least-used domain first), which is what you want for outbound volume. Use list_mailboxes if you need to know which addresses are connected, and never claim you can only send from one domain. Never tell the user to click "Send now" themselves or to open another page, and never claim you lack the lead ids or draft contents — look them up with list_drafts instead.
+- REPEATS: a send refused with code duplicate_send means that person already received that exact subject line within the last two weeks. This is NOT a problem with the draft and it is NOT something drafting can fix. Deleting the drafts and generating new ones does not clear it — the block is on the sent history, not on the drafts — so never offer that. Say who already got what and when, then offer exactly two things: write a follow-up on a genuinely new angle with a new subject (call draft_outreach again with feedback describing the new angle), or resend the same email deliberately (call the send tool again with allow_duplicate: true, but only after the user has said in their own words to send it again anyway).
 - SCHEDULING: you CAN send later. When the user asks for a future send ("tomorrow at 9", "Monday morning", "next week"), call schedule_drafts with the draft_ids and send_at_local set to their local wall-clock time with no offset (e.g. "9am today" -> send_at_local: "YYYY-MM-DDT09:00" for today's local date). Never convert to UTC yourself and never pass a bare UTC timestamp for a local time — the tool does the conversion. Use stagger_minutes when queuing several so they don't all fire at once. Confirm the exact date/time you queued, and mention it sends automatically. Use list_scheduled_emails to show what is queued and cancel_scheduled_email to call one back. Never say you cannot schedule and never tell the user to use the Schedule button themselves.
 - DELETING: you CAN delete emails AND lead records. Use delete_drafts to remove saved drafts (by draft_ids, lead_ids, or all_pending), delete_inbox_threads to remove inbox conversations (by thread_ids or match_email), and delete_leads to permanently remove saved lead records (by lead_ids, match_company or match_name — it also clears any drafts attached to them). Deletion is permanent, so only do it when the user asks, confirm briefly what you are about to delete if the request is broad ("delete all my drafts", "delete all my leads"), then do it and report the count. Never say you lack a way to delete leads and never tell the user to delete things manually in the UI.
 - Treat the newest real user message as the current job. Never resume or repeat an older run merely because it appears in conversation history. Only continue an older job when the newest user message explicitly says to continue it.
@@ -2956,6 +3071,7 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
       { marker: "- INBOX HISTORY:", tools: ["list_sent_emails", "get_email_thread"] },
       { marker: "- QUALITY:", tools: ["send_outreach"] },
       { marker: "- SENDING:", tools: ["send_drafts", "send_outreach"] },
+      { marker: "- REPEATS:", tools: ["send_drafts", "send_outreach"] },
       { marker: "- SCHEDULING:", tools: ["schedule_drafts"] },
       { marker: "- DELETING:", tools: ["delete_drafts", "delete_leads", "delete_inbox_threads"] },
       { marker: "- Use send_outreach only", tools: ["send_outreach"] },
@@ -3390,6 +3506,26 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
     if (emptyTurn) {
       finalText = `⚠️ ${emptyTurn}\n\n${finalText}`;
       console.warn("[agent-chat] flagged a completion claim on a turn that changed nothing");
+    }
+
+    // Repeats are surfaced before anything else, because the reply above them
+    // is the one the user has been reading for days: "these are duplicates,
+    // shall I delete and redraft?" — a question whose only answer leads back
+    // here. The facts go in code so they cannot be summarised into that offer
+    // again.
+    if (duplicateRefusals.length > 0) {
+      const lines = duplicateRefusals.map((d) =>
+        `- ${d.to} already received "${d.subject}"${
+          d.previouslySentAt ? ` on ${d.previouslySentAt.slice(0, 10)}` : ""
+        }`
+      );
+      finalText =
+        `⚠️ ${duplicateRefusals.length} email(s) were not sent because that person already got that exact email.\n` +
+        lines.join("\n") +
+        `\n\nThe drafts are fine — deleting and redrafting them will not change this, because the block is on ` +
+        `what already went out. Either write a follow-up on a new angle with a new subject, or tell me to ` +
+        `resend it anyway and I will.\n\n${finalText}`;
+      console.warn(`[agent-chat] ${duplicateRefusals.length} send(s) refused as duplicates`);
     }
 
     if (sendFailures.length > 0) {
