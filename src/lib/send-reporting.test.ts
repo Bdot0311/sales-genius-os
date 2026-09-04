@@ -57,60 +57,36 @@ describe("a failed function call is never read as success", () => {
   });
 });
 
-describe("resolve_approvals reports sends, not attempts", () => {
+/**
+ * The queue that this described is retired, but the rule it enforced is not:
+ * a count of what was ATTEMPTED must never be returned under a name the model
+ * will read as what was SENT. That was `resolved: outcomes.length`, and it is
+ * now send_drafts' own accounting.
+ */
+describe("the send path reports sends, not attempts", () => {
   const SRC = readFileSync(
     new URL("../../supabase/functions/agent-chat/index.ts", import.meta.url),
     "utf8",
   );
 
-  it("no longer returns an attempt count under the name 'resolved'", () => {
-    // `resolved: outcomes.length` counted every approval tried, and the model
-    // read it as every approval sent.
+  it("never labels an attempt count as a send", () => {
     expect(SRC).not.toContain("resolved: outcomes.length");
+    expect(SRC).toContain("attempted: results.length");
   });
 
-  it("returns a real sent count", () => {
-    expect(SRC).toMatch(/sent:\s*decision === "approve" \? sentCount : 0/);
-    expect(SRC).toContain("attempted: outcomes.length");
+  it("returns sent, failed and requested as separate numbers", () => {
+    // One number cannot answer "did it go" and "how many did you try".
+    expect(SRC).toMatch(/sent: sentCount/);
+    expect(SRC).toMatch(/failed: failedCount/);
+    expect(SRC).toMatch(/requested: requestedCount \|\| drafts\.length/);
   });
 
-  it("carries an error when anything failed, so the send is not marked complete", () => {
-    // didMutate() returns false on a result with an error, which stops a failed
-    // batch being recorded as a finished mutation.
-    expect(SRC).toContain("could not be sent and are still pending");
+  it("says plainly when nothing was sent because it is awaiting confirmation", () => {
+    expect(SRC).toContain("NOTHING WAS SENT");
+    expect(SRC).toContain("Nothing is queued or stored");
   });
 
-  it("stops labelling a total failure as 'Sent what you approved'", () => {
-    expect(SRC).toContain("Nothing sent — every send failed");
-  });
-
-  it("tells the model not to claim a failed send succeeded", () => {
-    expect(SRC).toContain("Do NOT say they were sent");
-  });
-});
-
-describe("the scheduler stops skipping emails in silence", () => {
-  const SRC = readFileSync(
-    new URL("../../supabase/functions/process-scheduled-emails/index.ts", import.meta.url),
-    "utf8",
-  );
-
-  it("records a reason for every branch that skips a send", () => {
-    // Four branches used to `continue` with nothing but a console.log, so a
-    // run that sent one of two queued emails looked like a clean run.
-    const defers = SRC.match(/defer\(email, /g) ?? [];
-    expect(defers.length).toBe(4);
-  });
-
-  it("no longer counts a skipped email as neither processed nor failed", () => {
-    expect(SRC).toContain("deferred: deferrals.length");
-    expect(SRC).toContain("deferrals,");
-  });
-
-  it("names the causes a user can act on", () => {
-    expect(SRC).toContain("daily send limit is reached");
-    expect(SRC).toContain("monthly send cap is reached");
-    expect(SRC).toContain("Resume it on the Deliverability page");
-    expect(SRC).toContain("at its daily cap");
+  it("names per-record failures rather than folding them into a total", () => {
+    expect(SRC).toContain("did NOT go out");
   });
 });

@@ -53,7 +53,7 @@ describe("the card prefers real steps", () => {
 
 describe("tool labels", () => {
   it("names the tools a user is most likely to see", () => {
-    for (const tool of ["research_leads", "draft_outreach", "send_drafts", "resolve_approvals"]) {
+    for (const tool of ["research_leads", "draft_outreach", "send_drafts", "schedule_drafts"]) {
       expect(TOOL_LABELS[tool], tool).toBeTruthy();
     }
   });

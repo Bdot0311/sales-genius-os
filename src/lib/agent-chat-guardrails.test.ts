@@ -36,7 +36,7 @@ describe("agent-chat quality gate", () => {
   it("blocks unfilled placeholders in both approval and autonomous mode", () => {
     // The check sits above the autonomous branch, so neither path can skip it.
     const gateAt = AGENT_CHAT.indexOf("hasPlaceholder(subject)");
-    const branchAt = AGENT_CHAT.indexOf("if (!autonomous || forceApproval)");
+    const branchAt = AGENT_CHAT.indexOf("if (!gate.send || forceApproval)");
     expect(gateAt).toBeGreaterThan(-1);
     expect(branchAt).toBeGreaterThan(gateAt);
   });
@@ -49,7 +49,7 @@ describe("agent-chat quality gate", () => {
   });
 
   it("holds a twice-failed draft for a human rather than sending it", () => {
-    expect(AGENT_CHAT).toMatch(/if \(!autonomous \|\| forceApproval\)/);
+    expect(AGENT_CHAT).toMatch(/if \(!gate\.send \|\| forceApproval\)/);
   });
 
   it("tells the operator why a held draft is waiting", () => {
