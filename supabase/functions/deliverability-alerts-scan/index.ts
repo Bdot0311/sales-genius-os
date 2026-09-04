@@ -23,6 +23,7 @@ serve(async (req) => {
     );
 
     let raised = 0;
+    let failed = 0;
 
     // Helper: insert an alert only if an active one for the same subject and
     // type is not already open. The subject is a domain for DNS-level problems
