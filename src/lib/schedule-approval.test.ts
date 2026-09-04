@@ -23,7 +23,9 @@ const scheduleCase = SRC.slice(
  */
 describe("scheduling honours approval mode without a queue", () => {
   it("sends nothing on an unconfirmed call", () => {
-    expect(scheduleCase).toMatch(/if \(!autonomous && args\.confirmed !== true\)/);
+    // Either route confirms: the model's flag, or the user's own "yes" read
+    // from their message.
+    expect(scheduleCase).toMatch(/if \(!autonomous && args\.confirmed !== true && !confirmedByUser\)/);
     expect(scheduleCase).toContain("awaiting_confirmation: true");
   });
 
