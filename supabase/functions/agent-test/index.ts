@@ -156,7 +156,7 @@ async function runScenarios(
   supabaseUrl: string,
   authHeader: string,
   anonKey: string,
-  admin: ReturnType<typeof createClient>,
+  admin: any,
   userId: string,
   // A full agent turn is slow, and eight of them do not fit inside one
   // function invocation. The caller may ask for a subset and stitch the

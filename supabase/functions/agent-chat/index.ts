@@ -1273,7 +1273,7 @@ serve(async (req) => {
     const scopedTools = TOOLS.filter((t: any) => allowedTools.includes(t.function?.name));
     const scopeNote = scopeNoteFor(config as any) + tierScopeNote(agentTier, tierRemoved);
 
-    const invokeFn = async (name: string, body: unknown) => {
+    const invokeFn = async (name: string, body: unknown): Promise<any> => {
       const res = await fetch(`${supabaseUrl}/functions/v1/${name}`, {
         method: "POST",
         headers: {

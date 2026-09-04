@@ -169,7 +169,7 @@ const REPLIES = [
   { classification: "out_of_office", body: "I'm out of the office until the 14th with limited access to email." },
 ];
 
-async function seed(admin: ReturnType<typeof createClient>, userId: string) {
+async function seed(admin: any, userId: string) {
   await clear(admin, userId);
 
   // Companies
@@ -473,7 +473,7 @@ async function seed(admin: ReturnType<typeof createClient>, userId: string) {
   return await status(admin, userId);
 }
 
-async function clear(admin: ReturnType<typeof createClient>, userId: string) {
+async function clear(admin: any, userId: string) {
   for (const table of DEMO_TABLES) {
     const { error } = await admin.from(table).delete().eq("user_id", userId).eq("demo_seed", true);
     if (error) console.error(`clear ${table}:`, error.message);
@@ -481,7 +481,7 @@ async function clear(admin: ReturnType<typeof createClient>, userId: string) {
   return { cleared: true };
 }
 
-async function status(admin: ReturnType<typeof createClient>, userId: string) {
+async function status(admin: any, userId: string) {
   const counts: Record<string, number> = {};
   for (const table of DEMO_TABLES) {
     const { count } = await admin

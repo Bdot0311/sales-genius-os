@@ -117,7 +117,7 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error('Error sending signup notification:', error);
-    return new Response(JSON.stringify({ success: false, error: error.message }), {
+    return new Response(JSON.stringify({ success: false, error: error instanceof Error ? error.message : String(error) }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
