@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { stepTypeFor } from "../../../supabase/functions/_shared/sequence-steps.ts";
 import {
   Card,
   CardContent,
@@ -102,7 +103,9 @@ export function SequenceBuilder() {
             delay_hours: s.delay_hours,
             subject_template: s.subject_template,
             body_template: s.body_template,
-            step_type: 'email',
+            // 'email' was rejected by sequence_steps_step_type_check on every
+            // insert: the column records the step's role, not its channel.
+            step_type: stepTypeFor(i + 1),
             trigger_condition: s.trigger_condition,
             is_active: true,
           });
@@ -162,7 +165,7 @@ export function SequenceBuilder() {
       delay_hours: stepForm.delay_hours,
       subject_template: stepForm.subject_template,
       body_template: stepForm.body_template,
-      step_type: 'email',
+      step_type: stepTypeFor(steps.length + 1),
       trigger_condition: stepForm.trigger_condition,
       is_active: true,
     });
