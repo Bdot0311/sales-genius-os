@@ -163,19 +163,26 @@ describe("a turn that claims completion without doing anything gets one retry", 
 });
 
 describe("the eval is runnable in one command", () => {
+  const RUNNER = readFileSync("scripts/eval-agent.mjs", "utf8");
+
   it("ships a runner and an npm script", () => {
     const pkg = JSON.parse(readFileSync("package.json", "utf8"));
-    expect(pkg.scripts["eval:agent"]).toBe("node scripts/run-agent-eval.mjs");
-    const runner = readFileSync("scripts/run-agent-eval.mjs", "utf8");
-    expect(runner).toMatch(/mode: "behaviour"/);
+    expect(pkg.scripts["eval:agent"]).toBe("node scripts/eval-agent.mjs");
+    expect(RUNNER).toMatch(/mode: "behaviour"/);
   });
 
-  it("explains what a failure was protecting against", () => {
-    // "failed" on its own does not tell anyone what to go and look at.
-    expect(readFileSync("scripts/run-agent-eval.mjs", "utf8")).toMatch(/guards:/);
+  it("runs one scenario per call", () => {
+    // Eight full agent turns in a single invocation exceeded the edge
+    // function's wall clock, so every scenario timed out rather than failing
+    // on its own merits.
+    expect(RUNNER).toMatch(/scenarioIds: \[id\]/);
+  });
+
+  it("says what a failure was, not just that there was one", () => {
+    expect(RUNNER).toMatch(/r\.explanation/);
   });
 
   it("exits non-zero on failure so it can gate a deploy", () => {
-    expect(readFileSync("scripts/run-agent-eval.mjs", "utf8")).toMatch(/process\.exit\(failed > 0 \? 1 : 0\)/);
+    expect(RUNNER).toMatch(/process\.exit\(data\.failed > 0 \? 1 : 0\)/);
   });
 });

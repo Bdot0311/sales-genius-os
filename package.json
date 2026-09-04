@@ -12,7 +12,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "skills:build": "node scripts/build-skills.mjs",
-    "eval:agent": "node scripts/run-agent-eval.mjs"
+    "eval:agent": "node scripts/eval-agent.mjs"
   },
   "dependencies": {
     "@heycatch/sdk": "^0.7.0",

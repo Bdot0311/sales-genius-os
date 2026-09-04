@@ -108,7 +108,10 @@ serve(async (req) => {
       }
     }
 
-    for (const link of [...new Set(emailBody.match(/https?:\/\/[^\s<>"')\]]+/gi) ?? [])].slice(0, 3)) {
+    const uniqueLinks: string[] = [
+      ...new Set<string>(emailBody.match(/https?:\/\/[^\s<>"')\]]+/gi) ?? []),
+    ].slice(0, 3);
+    for (const link of uniqueLinks) {
       const hops = await traceRedirects(link.replace(/[.,;:!?]+$/, ""));
       const finding = redirectFinding(link, hops);
       if (finding) linkFindings.push(finding);
