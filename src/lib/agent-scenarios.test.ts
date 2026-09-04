@@ -123,3 +123,66 @@ describe("the harness is reachable", () => {
     expect(SRC).toMatch(/scoreScenario/);
   });
 });
+
+/**
+ * A user asked for 21 emails to be scheduled and got back a confident schedule
+ * with times and a stagger. schedule_drafts was never called, and the drafts
+ * were still in the drafts folder — which scheduling deletes on success.
+ *
+ * Reporting that afterwards is worth doing and is not enough.
+ */
+describe("a turn that claims completion without doing anything gets one retry", () => {
+  const SRC = readFileSync("supabase/functions/agent-chat/index.ts", "utf8");
+
+  it("asks the model to do the work rather than only reporting the gap", () => {
+    expect(SRC).toMatch(/retriedEmptyTurn/);
+    expect(SRC).toMatch(/you called no tool that changes anything/);
+  });
+
+  it("retries exactly once", () => {
+    // A model that will not act on the second ask will not act on the fifth,
+    // and looping burns the user's budget to arrive at the same place.
+    expect(SRC).toMatch(/!retriedEmptyTurn &&/);
+    expect(SRC).toMatch(/retriedEmptyTurn = true/);
+  });
+
+  it("leaves room to act — no retry on the last step or out of time", () => {
+    expect(SRC).toMatch(/step < 7 &&/);
+    expect(SRC).toMatch(/!outOfTime\(\)/);
+  });
+
+  it("accepts 'I cannot' as a valid answer to the retry", () => {
+    // Forcing a tool call would make a scoped build invent work it cannot do.
+    expect(SRC).toMatch(/say that plainly/);
+    expect(SRC).toMatch(/not scoped for it/);
+  });
+
+  it("does not let the model simply repeat its summary", () => {
+    expect(SRC).toMatch(/Do not restate the summary/);
+  });
+});
+
+describe("the eval is runnable in one command", () => {
+  const RUNNER = readFileSync("scripts/eval-agent.mjs", "utf8");
+
+  it("ships a runner and an npm script", () => {
+    const pkg = JSON.parse(readFileSync("package.json", "utf8"));
+    expect(pkg.scripts["eval:agent"]).toBe("node scripts/eval-agent.mjs");
+    expect(RUNNER).toMatch(/mode: "behaviour"/);
+  });
+
+  it("runs one scenario per call", () => {
+    // Eight full agent turns in a single invocation exceeded the edge
+    // function's wall clock, so every scenario timed out rather than failing
+    // on its own merits.
+    expect(RUNNER).toMatch(/scenarioIds: \[id\]/);
+  });
+
+  it("says what a failure was, not just that there was one", () => {
+    expect(RUNNER).toMatch(/r\.explanation/);
+  });
+
+  it("exits non-zero on failure so it can gate a deploy", () => {
+    expect(RUNNER).toMatch(/process\.exit\(data\.failed > 0 \? 1 : 0\)/);
+  });
+});
