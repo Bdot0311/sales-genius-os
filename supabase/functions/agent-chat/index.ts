@@ -1760,6 +1760,7 @@ serve(async (req) => {
               body: raw ? body : null,
               email: r?.email ?? null,
               research: r?.research ?? null,
+              skills_used: Array.isArray(r?.skills_used) ? r.skills_used : [],
               error: r?.email ? undefined : (r?.error ?? "Draft failed"),
             };
           };
@@ -1787,6 +1788,26 @@ serve(async (req) => {
               label: "Researched leads",
               status: "ok",
               detail: `${researchedCount}/${ids.length} grounded in findings from the prospect's own website`,
+            });
+          }
+
+          // Which playbooks wrote these.
+          //
+          // The skills are compiled into the prompt and the routing is logged
+          // server-side, which answers nothing for someone watching the chat
+          // and wondering whether any of it is switched on. Naming them makes
+          // it checkable instead of a matter of faith.
+          const skillsUsed: string[] = [
+            ...new Set(
+              drafts.flatMap((d) => Array.isArray(d.skills_used) ? d.skills_used as string[] : []),
+            ),
+          ];
+          if (skillsUsed.length) {
+            toolEvents.push({
+              name,
+              label: "Playbooks applied",
+              status: "ok",
+              detail: skillsUsed.join(", "),
             });
           }
           toolEvents.push({
