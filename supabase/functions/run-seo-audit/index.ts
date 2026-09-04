@@ -223,7 +223,7 @@ async function fetchGscErrors(): Promise<Issue[]> {
   return issues;
 }
 
-async function notifyAdmins(supabase: ReturnType<typeof createClient>, newIssues: Issue[]) {
+async function notifyAdmins(supabase: any, newIssues: Issue[]) {
   if (newIssues.length === 0) return;
   const VAPID_PRIVATE = Deno.env.get("VAPID_PRIVATE_KEY");
   const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") || "mailto:support@bdotindustries.com";
@@ -231,7 +231,7 @@ async function notifyAdmins(supabase: ReturnType<typeof createClient>, newIssues
   webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
 
   const { data: admins } = await supabase.from("user_roles").select("user_id").eq("role", "admin");
-  const adminIds = (admins || []).map((a: { user_id: string }) => a.user_id);
+  const adminIds = (admins || []).map((a: any) => a.user_id);
   if (adminIds.length === 0) return;
 
   const { data: subs } = await supabase
@@ -248,7 +248,7 @@ async function notifyAdmins(supabase: ReturnType<typeof createClient>, newIssues
   });
 
   await Promise.all(
-    (subs || []).map(async (s: { endpoint: string; p256dh: string; auth: string }) => {
+    (subs || []).map(async (s: any) => {
       try {
         await webpush.sendNotification(
           { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },

@@ -169,7 +169,7 @@ const REPLIES = [
   { classification: "out_of_office", body: "I'm out of the office until the 14th with limited access to email." },
 ];
 
-async function seed(admin: ReturnType<typeof createClient>, userId: string) {
+async function seed(admin: any, userId: string) {
   await clear(admin, userId);
 
   // Companies
@@ -243,7 +243,7 @@ async function seed(admin: ReturnType<typeof createClient>, userId: string) {
   const seqRows = seqs ?? [];
 
   const stepRows: Record<string, unknown>[] = [];
-  seqRows.forEach((seq, si) => {
+  seqRows.forEach((seq: any, si: number) => {
     SEQUENCES[si].steps.forEach((st, i) => {
       stepRows.push({
         user_id: userId,
@@ -261,7 +261,7 @@ async function seed(admin: ReturnType<typeof createClient>, userId: string) {
   await admin.from("sequence_steps").insert(stepRows);
 
   // Enrollments
-  const enrollRows = leadRows.slice(0, 24).map((lead, i) => {
+  const enrollRows = leadRows.slice(0, 24).map((lead: any, i: number) => {
     const seq = seqRows[i % Math.max(seqRows.length, 1)];
     const done = i % 6 === 0;
     return {
@@ -385,7 +385,7 @@ async function seed(admin: ReturnType<typeof createClient>, userId: string) {
 
   // Deals
   const dealStages = ["new", "qualified", "proposal", "negotiation", "won", "lost"];
-  const dealRows = leadRows.slice(0, 12).map((lead, i) => ({
+  const dealRows = leadRows.slice(0, 12).map((lead: any, i: number) => ({
     user_id: userId,
     demo_seed: true,
     lead_id: lead.id,
@@ -403,7 +403,7 @@ async function seed(admin: ReturnType<typeof createClient>, userId: string) {
 
   // Activities
   const activityTypes = ["call", "email", "meeting", "task"];
-  const activityRows = (deals ?? []).slice(0, 10).map((deal, i) => ({
+  const activityRows = (deals ?? []).slice(0, 10).map((deal: any, i: number) => ({
     user_id: userId,
     demo_seed: true,
     deal_id: deal.id,
@@ -473,7 +473,7 @@ async function seed(admin: ReturnType<typeof createClient>, userId: string) {
   return await status(admin, userId);
 }
 
-async function clear(admin: ReturnType<typeof createClient>, userId: string) {
+async function clear(admin: any, userId: string) {
   for (const table of DEMO_TABLES) {
     const { error } = await admin.from(table).delete().eq("user_id", userId).eq("demo_seed", true);
     if (error) console.error(`clear ${table}:`, error.message);
@@ -481,7 +481,7 @@ async function clear(admin: ReturnType<typeof createClient>, userId: string) {
   return { cleared: true };
 }
 
-async function status(admin: ReturnType<typeof createClient>, userId: string) {
+async function status(admin: any, userId: string) {
   const counts: Record<string, number> = {};
   for (const table of DEMO_TABLES) {
     const { count } = await admin
