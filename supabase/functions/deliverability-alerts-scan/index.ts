@@ -51,7 +51,7 @@ serve(async (req) => {
 
       const { data: existing } = await q.maybeSingle();
       if (existing) return;
-      await supabase.from("deliverability_alerts").insert({
+      const { error: insErr } = await supabase.from("deliverability_alerts").insert({
         user_id: params.user_id,
         domain,
         sending_account_id: accountId,
@@ -59,8 +59,19 @@ serve(async (req) => {
         severity: params.severity,
         message: params.message,
       });
+      if (insErr) {
+        // A swallowed insert here is invisible by design: the alert never
+        // appears and the run still reports success. Count and log it so a
+        // rejected type surfaces instead of quietly muting the whole feature.
+        failed++;
+        console.error(
+          `[deliverability-alerts-scan] failed to raise ${params.alert_type}: ${insErr.message}`,
+        );
+        return;
+      }
       raised++;
     }
+
 
     // ---- Auth failures ----
     const { data: domains } = await supabase
