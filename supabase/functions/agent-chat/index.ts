@@ -679,11 +679,6 @@ const TOOLS = [
       parameters: { type: "object", properties: {} },
     },
   },
-  },
-        required: ["decision"],
-      },
-    },
-  },
 
   {
     type: "function",
