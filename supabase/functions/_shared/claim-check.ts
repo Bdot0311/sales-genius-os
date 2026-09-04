@@ -56,8 +56,10 @@ export const CLAIM_RULES: ClaimRule[] = [
   },
   {
     id: "scheduled",
+    // "21 Follow-Ups Scheduled for Friday" is the shape that got through: the
+    // pattern wanted "is/are scheduled for", and a headline does not say that.
     pattern:
-      /\b(?:i(?:'ve| have)?\s+scheduled|scheduled (?:it|them|the)|queued (?:it|them|the)|(?:is|are) scheduled for)\b/i,
+      /\b(?:i(?:'ve| have)?\s+scheduled|scheduled (?:it|them|the|for|\d)|queued (?:it|them|the|\d)|(?:is|are|were|been) scheduled|will send (?:automatically|tomorrow|on ))\b/i,
     tools: ["schedule_drafts"],
     correction: "nothing was actually scheduled in this step.",
   },
@@ -84,8 +86,14 @@ export const CLAIM_RULES: ClaimRule[] = [
   {
     id: "deleted",
     pattern:
-      /\b(?:i(?:'ve| have)?\s+(?:deleted|removed|cleared)|deleted (?:them|the|those)|(?:has|have) been deleted)\b/i,
-    tools: ["delete_drafts", "delete_leads", "delete_inbox_threads", "cancel_scheduled_email"],
+      /\b(?:i(?:'ve| have)?\s+(?:deleted|removed|cleared|rejected)|deleted (?:them|the|those)|(?:has|have|been) (?:been )?(?:deleted|rejected|cleared)|(?:approvals?|drafts?|emails?|leads?|threads?) (?:were |was |all )?(?:rejected|deleted|cleared)|queue (?:is )?clear)\b/i,
+    tools: [
+      "delete_drafts", "delete_leads", "delete_inbox_threads", "cancel_scheduled_email",
+      // Rejecting approvals is how a user clears the approval queue. Omitting
+      // it made the guard report a real clearance as an unbacked claim — a
+      // false alarm, which costs the guard its credibility faster than a miss.
+      "resolve_approvals",
+    ],
     correction: "nothing was actually deleted in this step.",
   },
   {
@@ -126,4 +134,63 @@ export function correctionFor(claims: UnbackedClaim[]): string {
   if (claims.length === 0) return "";
   const body = claims.map((c) => c.correction).join(" And ");
   return `Correction: ${body}`;
+}
+
+// ---------------------------------------------------------------------------
+// The backstop.
+//
+// Patterns are precise and they will always have holes. "21 Follow-Ups
+// Scheduled for Friday" walked through one: the scheduled pattern wanted
+// "is/are scheduled for", and a headline does not say that. Widening the regex
+// fixes that phrasing and not the next one.
+//
+// So the last line of defence does not read the words at all. It asks one
+// question: did this turn change anything? A reply that reads as a completed
+// job when nothing succeeded is wrong however it is phrased, and no amount of
+// rewording gets around it.
+// ---------------------------------------------------------------------------
+
+/** Tools that change something. Reading is not doing. */
+export const MUTATION_TOOLS = new Set([
+  "send_drafts", "send_outreach", "schedule_drafts", "cancel_scheduled_email",
+  "draft_outreach", "draft_sequence", "resolve_approvals",
+  "enrich_leads", "score_leads", "research_leads", "find_leads",
+  "delete_drafts", "delete_leads", "delete_inbox_threads",
+  "enroll_lead_in_sequence", "update_lead", "run_agent",
+]);
+
+/** True when at least one mutating tool actually succeeded this turn. */
+export function anyMutationSucceeded(events: ToolEventLike[]): boolean {
+  return events.some(
+    (e) => MUTATION_TOOLS.has(e.name ?? "") && (e.status === "ok" || e.status === "queued"),
+  );
+}
+
+/**
+ * Language that reads as "the job is done".
+ *
+ * Kept broad on purpose — it only matters when nothing ran, and in that case a
+ * reply announcing completion is wrong whatever words it chose.
+ */
+const COMPLETION_MARKERS =
+  /✅|\ball (?:set|clear|done|sent|scheduled)\b|\bsuccessfully\b|\bcomplete(?:d|ly)?\b|\bfinished\b|\bready to send\b|\bno further action\b|\bautomatically\b/i;
+
+/**
+ * A reply that announces completion on a turn where nothing succeeded.
+ *
+ * Returns the record of what did run, so the user gets the truth rather than a
+ * denial. Empty string when the turn genuinely changed something, or when the
+ * reply makes no claim to have finished anything.
+ */
+export function emptyTurnWarning(text: string, events: ToolEventLike[]): string {
+  if (!text || anyMutationSucceeded(events)) return "";
+  if (!COMPLETION_MARKERS.test(text)) return "";
+
+  const ran = events
+    .map((e) => `${e.name ?? "tool"} (${e.status ?? "?"})${e.detail ? `: ${e.detail}` : ""}`)
+    .slice(-10);
+
+  return ran.length === 0
+    ? "Nothing ran on this turn — no tool was called at all, so nothing above happened."
+    : `Nothing on this turn changed anything. What actually ran: ${ran.join("; ")}.`;
 }

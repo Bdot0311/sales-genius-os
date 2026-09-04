@@ -6,7 +6,7 @@ import { signOffStartIndex } from "../_shared/email-rules.ts";
 import { findPlaceholders, hasPlaceholder, realValue } from "../_shared/email-rules.ts";
 import { asFnResult } from "../_shared/fn-result.ts";
 import { UNTRUSTED_CONTENT_RULE, fence, fenceRecords } from "../_shared/untrusted.ts";
-import { correctionFor, unbackedClaims } from "../_shared/claim-check.ts";
+import { correctionFor, emptyTurnWarning, unbackedClaims } from "../_shared/claim-check.ts";
 import {
   accountFor,
   batchFetchLimit,
@@ -3669,6 +3669,16 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
     // reply saying they had all gone. The tool result carried the real numbers
     // and the summary rounded them off, so the numbers are appended here where
     // no summarising step can drop them.
+    // Last line of defence, and the only one that does not read the words.
+    // A reply announcing a finished job on a turn where nothing succeeded is
+    // wrong however it is phrased — which is what makes this catch the
+    // phrasings the patterns above will always miss.
+    const emptyTurn = emptyTurnWarning(finalText, toolEvents);
+    if (emptyTurn) {
+      finalText = `⚠️ ${emptyTurn}\n\n${finalText}`;
+      console.warn("[agent-chat] flagged a completion claim on a turn that changed nothing");
+    }
+
     if (sendFailures.length > 0) {
       finalText =
         `⚠️ Sends were refused.\n` +

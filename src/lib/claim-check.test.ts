@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import {
   CLAIM_RULES,
+  anyMutationSucceeded,
   correctionFor,
+  emptyTurnWarning,
   unbackedClaims,
   type ToolEventLike,
 } from "../../supabase/functions/_shared/claim-check.ts";
@@ -134,5 +136,84 @@ describe("the autonomous path reports counters, not model prose", () => {
 
   it("distinguishes approval mode from autonomous in what it claims", () => {
     expect(RUN).toMatch(/waiting for your approval/i);
+  });
+});
+
+/**
+ * From a real transcript, two turns apart:
+ *
+ *   "✅ All Clear: 103 Approvals Rejected & 21 Fresh Follow-Ups Ready"
+ *   "✅ 21 Follow-Ups Scheduled for Friday, September 5th at 9:00 AM EST"
+ *
+ * The first drew a correction that was arguably wrong. The second drew none at
+ * all — and the drafts were still sitting in the Drafts tab, which scheduling
+ * deletes on success, so nothing had happened.
+ */
+describe("the phrasings that got through", () => {
+  it("catches a headline that says scheduled without saying 'is scheduled'", () => {
+    const claims = unbackedClaims("21 Follow-Ups Scheduled for Friday at 9:00 AM EST", []);
+    expect(claims.map((c) => c.id)).toContain("scheduled");
+  });
+
+  it("catches 'will send automatically tomorrow'", () => {
+    expect(unbackedClaims("They will send automatically tomorrow morning.", []).map((c) => c.id))
+      .toContain("scheduled");
+  });
+
+  it("counts rejecting approvals as a real way to clear the queue", () => {
+    // Omitting it made the guard call a genuine clearance a lie, and a false
+    // alarm costs the guard its credibility faster than a miss does.
+    const rejected = { name: "resolve_approvals", label: "Cancelled what you declined", status: "ok" };
+    expect(unbackedClaims("I've cleared the entire approval queue.", [rejected])).toEqual([]);
+    expect(unbackedClaims("103 approvals rejected.", []).map((c) => c.id)).toContain("deleted");
+  });
+});
+
+/**
+ * Patterns are precise and will always have holes. The backstop reads no words
+ * at all — it asks whether the turn changed anything.
+ */
+describe("a completion claim on a turn that changed nothing", () => {
+  const readOnly = [
+    { name: "list_pending_approvals", label: "Listed approvals", status: "ok", detail: "103 waiting" },
+    { name: "list_drafts", label: "Listed drafts", status: "ok", detail: "21 drafts" },
+  ];
+
+  it("flags it however the reply is worded", () => {
+    const warning = emptyTurnWarning("✅ All set — everything is handled.", readOnly);
+    expect(warning).toContain("Nothing on this turn changed anything");
+    expect(warning).toContain("list_pending_approvals");
+    expect(warning).toContain("103 waiting");
+  });
+
+  it("says so plainly when no tool ran at all", () => {
+    expect(emptyTurnWarning("✅ Successfully completed.", []))
+      .toContain("no tool was called at all");
+  });
+
+  it("stays quiet when the turn actually did something", () => {
+    const sent = [{ name: "send_drafts", label: "Sent email", status: "ok" }];
+    expect(emptyTurnWarning("✅ All sent successfully.", sent)).toBe("");
+  });
+
+  it("counts queued work as having changed something", () => {
+    // In approval mode, parking an approval IS the outcome of the turn.
+    const queued = [{ name: "send_drafts", label: "Waiting for your approval", status: "queued" }];
+    expect(emptyTurnWarning("✅ All set — 12 are waiting on you.", queued)).toBe("");
+  });
+
+  it("stays quiet on a reply that claims nothing", () => {
+    expect(emptyTurnWarning("Here are the 21 drafts. Want them sent?", readOnly)).toBe("");
+  });
+
+  it("knows reading is not doing", () => {
+    expect(anyMutationSucceeded(readOnly)).toBe(false);
+    expect(anyMutationSucceeded([{ name: "draft_outreach", status: "ok" }])).toBe(true);
+  });
+
+  it("does not count a failed mutation as a change", () => {
+    const failed = [{ name: "send_drafts", label: "Send failed", status: "error" }];
+    expect(anyMutationSucceeded(failed)).toBe(false);
+    expect(emptyTurnWarning("✅ Done.", failed)).toContain("changed anything");
   });
 });
