@@ -156,17 +156,88 @@ async function runScenarios(
   supabaseUrl: string,
   authHeader: string,
   anonKey: string,
+  admin: ReturnType<typeof createClient>,
+  userId: string,
+  // A full agent turn is slow, and eight of them do not fit inside one
+  // function invocation. The caller may ask for a subset and stitch the
+  // results together.
+  onlyIds?: string[],
 ): Promise<{ passed: number; failed: number; results: unknown[] }> {
   const results: unknown[] = [];
   let passed = 0;
   let failed = 0;
 
-  for (const scenario of AGENT_SCENARIOS) {
+  const selected = onlyIds && onlyIds.length > 0
+    ? AGENT_SCENARIOS.filter((s) => onlyIds.includes(s.id))
+    : AGENT_SCENARIOS;
+
+  // Two scenarios name "Acme Corp". Without a record by that name the agent
+  // correctly does nothing, and the eval would score a right answer as a miss.
+  // The fixture is seeded per run and removed afterwards.
+  const needsFixture = selected.some((s) => /Acme Corp/i.test(s.message));
+  let fixtureLeadId: string | null = null;
+  if (needsFixture) {
+    const { data: lead } = await admin
+      .from("leads")
+      .insert({
+        user_id: userId,
+        company_name: "Acme Corp",
+        contact_name: "Dana Reeves",
+        job_title: "VP Operations",
+        contact_email: "dana.reeves@acme-eval.example",
+        company_website: "https://acme-eval.example",
+        industry: "Logistics",
+        lead_status: "new",
+        pipeline_stage: "new",
+        demo_seed: true,
+      })
+      .select("id")
+      .maybeSingle();
+    fixtureLeadId = (lead as { id: string } | null)?.id ?? null;
+  }
+
+  for (const scenario of selected) {
+
     let calledTools: string[] = [];
     let reply = "";
     let error: string | null = null;
+    let configId: string | null = null;
+    let threadId: string | null = null;
 
     try {
+      // A scenario needs a real agent build and a real thread: agent-chat is
+      // the thing under test, so it runs against live records, not a stub.
+      const { data: cfg, error: cfgErr } = await admin
+        .from("agent_configs")
+        .insert({
+          user_id: userId,
+          agent_name: `Eval — ${scenario.id}`,
+          role: scenario.role,
+          allowed_tools: scenario.allowedTools ?? null,
+          is_primary: false,
+          enabled: false,
+          approval_mode: scenario.mode === "approval",
+        })
+        .select("id")
+        .single();
+      if (cfgErr) throw new Error(`could not create eval agent: ${cfgErr.message}`);
+      configId = (cfg as { id: string }).id;
+
+      const { data: thread, error: threadErr } = await admin
+        .from("agent_chat_threads")
+        .insert({
+          user_id: userId,
+          title: `Behaviour eval — ${scenario.id}`,
+          autonomy: scenario.mode === "autonomous" ? "autonomous" : "approval",
+          agent_config_id: configId,
+        })
+        .select("id")
+        .single();
+      if (threadErr) throw new Error(`could not create eval thread: ${threadErr.message}`);
+      // A fresh thread per scenario: shared history would let one scenario's
+      // work satisfy the next one's expectations.
+      threadId = (thread as { id: string }).id;
+
       const res = await fetch(`${supabaseUrl}/functions/v1/agent-chat`, {
         method: "POST",
         headers: {
@@ -176,10 +247,8 @@ async function runScenarios(
         },
         body: JSON.stringify({
           message: scenario.message,
-          mode: scenario.mode,
-          // A fresh thread per scenario: shared history would let one
-          // scenario's work satisfy the next one's expectations.
-          threadId: null,
+          threadId,
+          agentId: configId,
           evalScenario: scenario.id,
         }),
       });
@@ -187,10 +256,21 @@ async function runScenarios(
       calledTools = Array.isArray(data?.toolEvents)
         ? data.toolEvents.map((e: { name?: string }) => e?.name ?? "").filter(Boolean)
         : [];
-      reply = String(data?.reply ?? data?.content ?? "");
-      if (!res.ok) error = `agent-chat returned ${res.status}`;
+      reply = String(data?.message?.content ?? data?.reply ?? data?.content ?? "");
+      if (!res.ok || data?.error) {
+        error = data?.error
+          ? `agent-chat: ${String(data.error)}`
+          : `agent-chat returned ${res.status}`;
+      }
     } catch (e) {
       error = e instanceof Error ? e.message : "agent-chat did not respond";
+    } finally {
+      // Eval records are scaffolding, not user data — they do not survive the run.
+      if (threadId) {
+        await admin.from("agent_chat_messages").delete().eq("thread_id", threadId);
+        await admin.from("agent_chat_threads").delete().eq("id", threadId);
+      }
+      if (configId) await admin.from("agent_configs").delete().eq("id", configId);
     }
 
     if (error) {
@@ -206,8 +286,13 @@ async function runScenarios(
     results.push({ ...result, guards: scenario.guards, explanation: explainResult(scenario, result) });
   }
 
+  if (fixtureLeadId) {
+    await admin.from("leads").delete().eq("id", fixtureLeadId).eq("user_id", userId);
+  }
+
   return { passed, failed, results };
 }
+
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -240,6 +325,7 @@ serve(async (req) => {
 
     let payload: {
       mode?: "dry_run" | "live_send" | "live_check" | "list_mailboxes" | "behaviour";
+      scenarioIds?: string[];
       testEmail?: string;
       integrationRowId?: string;
       includeRealReplies?: boolean;
@@ -285,7 +371,11 @@ serve(async (req) => {
         Deno.env.get("SUPABASE_URL")!,
         authHeader,
         Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+        adminClient,
+        user.id,
+        Array.isArray(payload.scenarioIds) ? payload.scenarioIds.map(String) : undefined,
       );
+
       return new Response(
         JSON.stringify({
           success: true,
