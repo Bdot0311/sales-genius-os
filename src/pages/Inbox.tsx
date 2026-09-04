@@ -313,7 +313,12 @@ const Inbox = () => {
           threadId: conv.gmailThreadId,
         },
       });
-      if (error) throw error;
+      if (error) {
+        // The body carries the reason; supabase-js only carries the status.
+        const { readFunctionError } = await import("@/lib/handle-send-error");
+        const { payload } = await readFunctionError(error);
+        throw new Error(payload.error ?? "Failed to send reply");
+      }
       if ((data as any)?.error) throw new Error((data as any).error);
       return data;
     },

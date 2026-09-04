@@ -1641,7 +1641,14 @@ Return ONLY the corrected email body. No subject line. No explanation. No "Here 
         }
       });
 
-      // 429 monthly/daily cap responses come back as FunctionsHttpError
+      // Every non-2xx carries its reason in the body; supabase-js only exposes
+      // "returned a non-2xx status code". Unpack it whatever the status.
+      if (error) {
+        const { reportSendFailure } = await import("@/lib/handle-send-error");
+        await reportSendFailure(error);
+        setIsSending(false);
+        return;
+      }
       const errCtx: any = (error as any)?.context;
       if (errCtx?.status === 429) {
         try {
