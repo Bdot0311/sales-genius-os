@@ -2486,13 +2486,28 @@ serve(async (req) => {
               .eq("status", "scheduled");
             if (delErr) continue;
             if (r.lead_id && r.body_text) {
-              await admin.from("email_drafts").insert({
-                user_id: userId,
-                lead_id: r.lead_id,
-                subject: r.subject,
-                body: r.body_text,
-              });
+              // One draft per lead is enforced by a unique index, so a plain
+              // insert loses the cancelled wording whenever the lead already
+              // has a draft. Upsert on that key so the cancelled copy always
+              // survives as the editable draft.
+              const { error: draftErr } = await admin
+                .from("email_drafts")
+                .upsert(
+                  {
+                    user_id: userId,
+                    lead_id: r.lead_id,
+                    subject: r.subject,
+                    body: r.body_text,
+                    updated_at: new Date().toISOString(),
+                  },
+                  { onConflict: "user_id,lead_id" },
+                );
+              if (draftErr) {
+                results?.push?.({ scheduled_id: r.id, error: draftErr.message });
+                console.error(`[agent-chat] cancel restore-draft failed: ${draftErr.message}`);
+              }
             }
+
             cancelled.push({ scheduled_id: r.id, to: r.to_email, was_scheduled_for: r.scheduled_at });
           }
           toolEvents.push({
