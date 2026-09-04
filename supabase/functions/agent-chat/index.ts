@@ -3385,6 +3385,8 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
     // Never lose completed tool work: when the model call fails we stop the loop
     // and still persist an assistant message describing what happened.
     let failureNote = "";
+    /** One self-correction per turn. See the empty-turn check in the loop. */
+    let retriedEmptyTurn = false;
 
     /**
      * How many steps get a reasoning budget.
@@ -3476,6 +3478,38 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
       const calls = choice.tool_calls ?? [];
       if (!calls.length) {
         finalText = choice.content ?? "";
+
+        // The turn ended with a summary and no work.
+        //
+        // A user asked for 21 emails to be scheduled and got back a confident
+        // schedule with times and a stagger. schedule_drafts was never called,
+        // and the drafts were still sitting in the drafts folder — which
+        // scheduling deletes on success, so nothing had happened at all.
+        //
+        // Reporting that afterwards is worth doing and is not enough. Given a
+        // turn that changed nothing while claiming otherwise, the model gets
+        // exactly one chance to actually do the thing, or to say plainly that
+        // it cannot. Once, because a model that will not act on the second ask
+        // will not act on the fifth, and looping burns the user's budget to
+        // arrive at the same place.
+        if (
+          !retriedEmptyTurn &&
+          emptyTurnWarning(finalText, toolEvents) &&
+          step < 7 &&
+          !outOfTime()
+        ) {
+          retriedEmptyTurn = true;
+          console.warn("[agent-chat] empty turn claimed completion — asking once for the work");
+          messages.push({
+            role: "user",
+            content:
+              "[system check, not from the user] Your reply says the work is done, but you called no tool that changes anything, so nothing happened. " +
+              "If the user asked you to do something, call the tool that does it now. " +
+              "If you cannot — the build is not scoped for it, a record is missing, a limit is in the way — say that plainly in one or two sentences. " +
+              "Do not restate the summary you just wrote, and do not describe the work as complete.",
+          });
+          continue;
+        }
         break;
       }
 
