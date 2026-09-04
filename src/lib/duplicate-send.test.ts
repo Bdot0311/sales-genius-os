@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 
 const AGENT = readFileSync("supabase/functions/agent-chat/index.ts", "utf8");
 const SEND = readFileSync("supabase/functions/send-email/index.ts", "utf8");
+const DUP = readFileSync("supabase/functions/_shared/duplicate-send.ts", "utf8");
 
 /**
  * The agent re-mailed prospects it had already contacted.
@@ -56,17 +57,21 @@ describe("send-email refuses to repeat itself", () => {
   it("checks the same recipient and subject before sending", () => {
     // Matched as patterns, not literals: the schema checker reads a literal
     // query chain in a test file as a real column reference and fails on it.
-    expect(SEND).toContain("duplicate_send");
-    expect(SEND).toMatch(/eq\('to_email',\s*to\./);
+    expect(SEND).toContain("duplicateRefusal");
+    expect(SEND).toMatch(/eq\('to_email',\s*normalizeRecipient\(to\)\)/);
     expect(SEND).toMatch(/eq\('subject',\s*subject\)/);
   });
 
   it("counts only mail that actually went out", () => {
-    expect(SEND).toContain("['sent', 'delivered', 'opened', 'clicked', 'replied']");
+    // The list itself moved into _shared/duplicate-send.ts so the guard and
+    // everything else that asks "did this actually go out" agree.
+    expect(SEND).toContain("DELIVERED_STATUSES");
+    expect(DUP).toContain("['sent', 'delivered', 'opened', 'clicked', 'replied']".replace(/'/g, '"'));
   });
 
   it("looks back a bounded window rather than forever", () => {
-    expect(SEND).toContain("14 * 24 * 60 * 60 * 1000");
+    expect(SEND).toContain("duplicateWindowStart()");
+    expect(DUP).toContain("DUPLICATE_WINDOW_DAYS = 14");
   });
 
   it("guards every path, being the one function they all call", () => {
@@ -82,7 +87,7 @@ describe("send-email refuses to repeat itself", () => {
   });
 
   it("tells the caller why, in terms that explain the cost", () => {
-    expect(SEND).toContain("would hurt your deliverability");
+    expect(DUP).toContain("what gets a domain filtered");
   });
 });
 

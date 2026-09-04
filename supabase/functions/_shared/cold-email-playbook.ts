@@ -1,5 +1,6 @@
 import { composeSkillContext } from "./email-skills.ts";
 import { bannedPhrasesLine } from "./email-rules.ts";
+import type { StepType, TriggerCondition } from "./sequence-steps.ts";
 
 // Cold Email Engine playbook — shared by the AI SDR agent.
 // Produces the same 4-touch sequence rules used by generate-sequence.
@@ -148,12 +149,29 @@ export async function scheduleFollowUps(
     delay_hours: 0,
     subject_template: t.subject,
     body_template: t.body,
-    step_type: "email",
-    trigger_condition: "on_no_response",
+    // Every step here is a follow-up by construction: touch 1 was already sent
+    // directly and `followUps` starts at touches[1]. Not stepTypeFor(i + 1) —
+    // that answers "first in this sequence", which is not the same question.
+    //
+    // It used to say "email", which named the channel rather than the role and
+    // failed sequence_steps_step_type_check on every insert, so this function
+    // has never persisted a single step.
+    step_type: "follow_up" satisfies StepType,
+    trigger_condition: "on_no_response" satisfies TriggerCondition,
     is_active: true,
   }));
   const { error: stepErr } = await admin.from("sequence_steps").insert(steps);
-  if (stepErr) return false;
+  if (stepErr) {
+    // The sequence row is already written. Leaving it there is how a user
+    // ended up with a list of empty "AI SDR follow-ups — ..." sequences that
+    // enrol nobody and send nothing — one for every attempt, for as long as
+    // the step insert was failing. It is this function's own row, created a
+    // moment ago and provably empty, so removing it is cleanup rather than
+    // touching anything the user made.
+    console.error("[cold-email-playbook] step insert failed:", stepErr.message ?? stepErr);
+    await admin.from("email_sequences").delete().eq("id", sequence.id);
+    return false;
+  }
 
   const firstFollowUp = new Date();
   firstFollowUp.setDate(firstFollowUp.getDate() + 3);

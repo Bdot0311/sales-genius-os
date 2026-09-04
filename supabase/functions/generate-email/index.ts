@@ -674,6 +674,14 @@ serve(async (req) => {
     const use4SentenceFramework = requestData.use4SentenceFramework === true;
     const templateValue        = typeof requestData.templateValue        === 'string' ? requestData.templateValue.trim()                   : '';
     const customInstruction   = typeof requestData.customInstruction   === 'string' ? requestData.customInstruction.slice(0, 8000)         : '';
+    // Subjects this recipient has already been sent. Supplied by the caller,
+    // which is the only place that knows the send history.
+    const avoidSubjects: string[] = Array.isArray(requestData.avoidSubjects)
+      ? requestData.avoidSubjects
+          .filter((v: unknown): v is string => typeof v === 'string' && v.trim().length > 0)
+          .map((v: string) => sanitizeString(v, 200))
+          .slice(0, 10)
+      : [];
     const senderName          = typeof requestData.senderName          === 'string' ? requestData.senderName.trim().slice(0, 100)           : '';
     const senderCompany       = typeof requestData.senderCompany       === 'string' ? requestData.senderCompany.trim().slice(0, 100)        : '';
     // The address the mail will be sent FROM. Used only to recover a name when
@@ -766,7 +774,24 @@ serve(async (req) => {
           }
         }
 
-        // 2. Live grounded research via Gemini google_search tool
+        // 2. Second-pass research, and an honest label on what it is.
+        //
+        // This used to declare an OpenAI-style *function* tool named
+        // "google_search" with an empty parameter object and call itself
+        // "web-grounded". Declaring a function does not give a model web
+        // search — nothing here answers that call — so one of two things
+        // happened, and both were bad. Either the model emitted a tool_call
+        // and `message.content` came back null, so the whole path silently
+        // produced nothing for every lead whose site could not be read; or the
+        // model ignored the tool and wrote prose from memory, which was then
+        // injected under the heading "VERIFIED RESEARCH ... treat as the ONLY
+        // source of external facts about this prospect". Unsourced recall,
+        // presented to the copywriter as verified fact, on the exact path
+        // taken when there was no real research to be had.
+        //
+        // The tool declaration is gone. What comes back is model recall, it is
+        // labelled as model recall, and the writer is told it may steer an
+        // angle but may never be stated as fact.
         const researchPrompt = `Research the company "${companyName}"${jobTitle ? ` specifically for someone in the ${jobTitle} role` : ''}${contactName ? ` (target contact: ${contactName})` : ''}${industry ? ` in the ${industry} industry` : ''}${website ? ` (website: ${website})` : ''}.
 
 Return 3–5 SPECIFIC, RECENT, VERIFIABLE facts useful for a cold email opener that is unique to THIS company and THIS role. Prioritize:
@@ -798,7 +823,6 @@ STRICT RULES:
               { role: "user", content: researchPrompt },
             ],
             temperature: 0.1,
-            tools: [{ type: "function", function: { name: "google_search", description: "Web search", parameters: { type: "object", properties: {} } } }],
           }),
         });
 
@@ -807,7 +831,13 @@ STRICT RULES:
           return '';
         }
         const rj = await resp.json();
-        let text = (rj.choices?.[0]?.message?.content || '').trim();
+        const message = rj.choices?.[0]?.message;
+        let text = (message?.content || '').trim();
+        if (Array.isArray(message?.tool_calls) && message.tool_calls.length && !text) {
+          // The only way this path ever returned nothing. Logged rather than
+          // swallowed so a provider change that reintroduces it is visible.
+          console.warn('[generate-email] background research returned a tool call and no content');
+        }
         if (!text || text === 'NO_VERIFIED_SIGNALS') text = '';
         // Strip any inline URLs the model still emits
         text = text.replace(/https?:\/\/\S+/g, '').replace(/[ \t]+\n/g, '\n').trim();
@@ -1004,7 +1034,12 @@ STRICT RULES:
 
     const combinedResearch = [
       websiteResearchBlock ? `From ${sanitizedCompanyName}'s own website:\n${websiteResearchBlock}` : '',
-      verifiedResearch,
+      // Labelled for what it is. It is not read from a page and nothing
+      // verified it, so it may shape which angle is chosen and may never be
+      // stated in the email as something about this company.
+      verifiedResearch
+        ? `BACKGROUND, RECALLED BY A MODEL — NOT READ FROM ANY PAGE AND NOT VERIFIED.\nUse it only to decide which angle is worth taking. You may NOT state any of it in the email, cite it, or imply you saw it anywhere:\n${verifiedResearch}`
+        : '',
     ].filter(Boolean).join('\n\n');
 
     const researchBlock = combinedResearch
@@ -1183,6 +1218,46 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
     }
     if (!isPrecisionEdit) {
       userPrompt = `${userPrompt}${researchBlock}${NO_HALLUCINATION_RULE}`;
+    }
+
+    // A redraft instruction on any goal other than 'custom' used to be thrown
+    // away.
+    //
+    // customInstruction was read in exactly one branch — goal === 'custom' —
+    // and every other goal parsed it off the request and then never referenced
+    // it again. The agent's redraft path sends goal 'introduction' plus a
+    // customInstruction carrying the user's own words about what was wrong with
+    // the last draft, so "yes, delete those and write them again differently"
+    // reached the model as nothing at all. The regeneration then came back
+    // near-identical, with the same subject line, and was refused by the
+    // duplicate guard — which is the loop the user kept landing in.
+    //
+    // Placed last, after the research and the no-hallucination rule, because it
+    // is the most specific thing said about THIS draft and recency is emphasis.
+    if (!isPrecisionEdit && customInstruction) {
+      userPrompt = `${userPrompt}
+
+REDRAFT DIRECTIVE — this overrides the default shape above:
+The previous draft for this prospect was rejected. What must change: ${customInstruction}
+
+This is a rewrite, not a regeneration. The new email must differ from the last one in
+structure, not only in wording — a different opening beat, a different framework, a
+different subject line. Returning the same email with synonyms swapped in is the
+failure this directive exists to prevent.`;
+    }
+
+    // Subject lines the recipient has already received.
+    //
+    // Reusing one is not a style problem, it is a hard block downstream: the
+    // send path refuses the same subject to the same person inside a fortnight.
+    // A generator that does not know what already went out will reproduce it,
+    // and the refusal arrives after the draft has been written and shown.
+    if (!isPrecisionEdit && avoidSubjects.length) {
+      userPrompt = `${userPrompt}
+
+SUBJECT LINES ALREADY SENT to this person — you may not reuse any of them, or any
+near-variant of them. A repeat is refused before it can be delivered:
+${avoidSubjects.map((s: string) => `- ${s}`).join('\n')}`;
     }
 
     const isFrameworkGoal = FRAMEWORK_GOALS.has(goal);
@@ -1594,6 +1669,15 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
           }
         : null,
       research_quality: researchQuality,
+      // Reported, not only logged. "I don't think it's using the skills we
+      // installed" is not answerable from a server log the user cannot read.
+      // Recomputed from the same inputs rather than stashed in a module
+      // variable, which two concurrent requests would race over.
+      skills_used: skillNamesUsed({
+        goal,
+        usesTemplate: Boolean(templateValue || templateDescription),
+        variantNum,
+      }),
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

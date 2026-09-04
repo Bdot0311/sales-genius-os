@@ -14,6 +14,17 @@ import {
   type LeadResearchBrief,
 } from "../_shared/lead-research.ts";
 import { aiFetch } from "../_shared/ai-provider.ts";
+import { diffBriefs } from "../_shared/brief-diff.ts";
+import {
+  FALLBACK_PATHS,
+  isSitemapIndex,
+  lastmodNote,
+  parseSitemap,
+  rankPages,
+  sitemapsFromRobots,
+  type DiscoveredPage,
+  type SitemapEntry,
+} from "../_shared/site-discovery.ts";
 
 
 const corsHeaders = {
@@ -21,18 +32,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const CANDIDATE_PATHS = [
-  "/about",
-  "/pricing",
-  "/product",
-  "/products",
-  "/customers",
-  "/case-studies",
-  "/careers",
-  "/blog",
-  "/news",
-];
-const MAX_PAGES = 6; // homepage + up to 5 extra
+// The guessed paths are now the floor, not the plan — see _shared/site-discovery.ts.
+const CANDIDATE_PATHS = FALLBACK_PATHS;
+const MAX_PAGES = 8; // homepage + up to 7 discovered
 const FETCH_TIMEOUT_MS = 9_000;
 const MAX_TEXT_CHARS = 14_000;
 const BROWSER_UA =
@@ -67,6 +69,46 @@ function extractText(html: string): { text: string; meta: string } {
   return { text: body, meta: metaBits.join("\n") };
 }
 
+/** How many sitemap documents one research run will pull. */
+const MAX_SITEMAPS = 3;
+/** Timeout for robots.txt and sitemaps, which are small static files. */
+const META_TIMEOUT_MS = 4_000;
+/** Entries taken from any one sitemap; large sites list tens of thousands. */
+const MAX_SITEMAP_ENTRIES = 2_000;
+
+/**
+ * Fetch a non-HTML document — robots.txt, a sitemap.
+ *
+ * fetchPage refuses anything whose content-type is not HTML, which is correct
+ * for pages and wrong for these: sitemaps are served as application/xml and
+ * robots.txt as text/plain, so routing them through fetchPage returned null
+ * every time.
+ */
+async function fetchText(url: string): Promise<string | null> {
+  const controller = new AbortController();
+  // Shorter than a page fetch on purpose: robots.txt and a sitemap are small
+  // static files, so one that is slow is one that is not coming, and every
+  // second spent here comes out of the caller's 60-second budget.
+  const timer = setTimeout(() => controller.abort(), META_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      headers: { "User-Agent": BROWSER_UA, Accept: "text/plain, application/xml, text/xml, */*" },
+      signal: controller.signal,
+      redirect: "follow",
+    });
+    if (!res.ok) return null;
+    const text = await res.text();
+    // A site that answers 200 with its SPA shell for every unknown path would
+    // otherwise have its index.html parsed as a sitemap.
+    if (/^\s*<!doctype html/i.test(text) || /^\s*<html/i.test(text)) return null;
+    return text.slice(0, 4_000_000);
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function fetchPage(url: string): Promise<string | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
@@ -95,7 +137,9 @@ ABSOLUTE RULES:
 - If the site text is too thin to support concrete observations, return an empty observations array and confidence "low". An empty brief is correct; a plausible-sounding invented brief is a failure.
 - Observations must be specific enough that they could not plausibly apply to a different company.
 - DATE EVERY OBSERVATION YOU CAN. "occurred" is the date the PAGE states for that fact — a press-release date, "November 2025", a changelog entry, a copyright year on a dated announcement. Use "YYYY-MM-DD", "YYYY-MM" or "YYYY".
-- If the page gives no date for a fact, "occurred" MUST be "". Never estimate one, never use today's date, never infer a date from context. A website is a standing document: an acquisition announced last November still sits on the About page today, and a rep who reads it as news writes an email the prospect knows is wrong.
+- If the page gives no date for a fact, fall back to that page's own last-changed date when one is supplied in a PAGE CHANGE DATES block, and only for a fact you read on that exact page. Otherwise "occurred" MUST be "". Never estimate one, never use today's date, never infer a date from context. A website is a standing document: an acquisition announced last November still sits on the About page today, and a rep who reads it as news writes an email the prospect knows is wrong.
+- A page's last-changed date bounds how recent the fact can be, it does not prove the fact is that new. Use it as the date; never write "they announced this last week" on the strength of it alone.
+- OPEN ROLES ARE THE STRONGEST MATERIAL ON A COMPANY'S OWN SITE. If a careers or jobs page was read, name the actual roles they are hiring for. What a company is staffing for says what it is building before any marketing page does, it is specific enough that no other company shares it, and job listings are dated. Treat a list of open roles as an observation, not as background.
 
 Return ONLY a valid JSON object (no prose, no code fences) with exactly these fields:
 {
@@ -306,11 +350,86 @@ serve(async (req) => {
     }
 
     const pages: { url: string; html: string }[] = [{ url: origin, html: homepage }];
-    for (const path of CANDIDATE_PATHS) {
-      if (pages.length >= MAX_PAGES) break;
-      const url = `${origin}${path}`;
-      const html = await fetchPage(url);
-      if (html) pages.push({ url, html });
+
+    // ─── Which other pages to read ───────────────────────────────────────────
+    //
+    // Ask the site rather than guessing at it. robots.txt names the sitemap,
+    // the sitemap names every page and — the part that matters — when each one
+    // last changed. That lastmod is the only machine-readable date most
+    // marketing sites publish, and without it nearly every observation came
+    // back undated, which the writer is required to treat as "do not imply
+    // this is recent". Accurate research the copy was forbidden to use.
+    let discovered: DiscoveredPage[] = [];
+    try {
+      const robots = await fetchText(`${origin}/robots.txt`);
+      const sitemapUrls = robots ? sitemapsFromRobots(robots, origin) : [];
+      // The two conventional locations, for a site whose robots.txt says nothing.
+      for (const guess of [`${origin}/sitemap.xml`, `${origin}/sitemap_index.xml`]) {
+        if (!sitemapUrls.includes(guess)) sitemapUrls.push(guess);
+      }
+
+      const entries: SitemapEntry[] = [];
+      let fetched = 0;
+      for (const sitemapUrl of sitemapUrls) {
+        if (fetched >= MAX_SITEMAPS || entries.length >= MAX_SITEMAP_ENTRIES) break;
+        const xml = await fetchText(sitemapUrl);
+        if (!xml) continue;
+        fetched++;
+        const parsed = parseSitemap(xml);
+        if (isSitemapIndex(xml)) {
+          // An index lists further sitemaps. Take the few most recently
+          // changed — a large site has dozens and the old ones are archives.
+          const children = parsed
+            .slice()
+            .sort((a, b) => (Date.parse(b.lastmod) || 0) - (Date.parse(a.lastmod) || 0))
+            .slice(0, 2);
+          for (const child of children) {
+            if (fetched >= MAX_SITEMAPS) break;
+            const childXml = await fetchText(child.url);
+            if (!childXml) continue;
+            fetched++;
+            entries.push(...parseSitemap(childXml).slice(0, MAX_SITEMAP_ENTRIES));
+          }
+        } else {
+          entries.push(...parsed.slice(0, MAX_SITEMAP_ENTRIES));
+        }
+      }
+      discovered = rankPages(entries, origin, MAX_PAGES - 1);
+      if (discovered.length) {
+        console.log(
+          `[research-lead] ${host}: sitemap gave ${entries.length} urls -> reading ${
+            discovered.map((p) => p.reason).join(", ")
+          }`,
+        );
+      }
+    } catch (err) {
+      console.warn("[research-lead] sitemap discovery failed:", err instanceof Error ? err.message : err);
+    }
+
+    // Read them together rather than one after another.
+    //
+    // Serially, seven pages at a nine-second timeout is over a minute on a
+    // slow host, and generate-email gives this whole function sixty seconds.
+    // The old code had the same shape with fewer pages and was already close
+    // to the edge. Rank order is preserved because the results come back in
+    // the order they were requested.
+    const readWithDates: DiscoveredPage[] = [];
+    const wanted = discovered.slice(0, MAX_PAGES - 1);
+    const fetchedPages = await Promise.all(wanted.map((p) => fetchPage(p.url)));
+    for (let i = 0; i < wanted.length; i++) {
+      const html = fetchedPages[i];
+      if (!html) continue;
+      pages.push({ url: wanted[i].url, html });
+      readWithDates.push(wanted[i]);
+    }
+
+    // No sitemap, or one that yielded nothing readable: fall back to guessing.
+    if (pages.length === 1) {
+      const guesses = CANDIDATE_PATHS.slice(0, MAX_PAGES - 1);
+      const guessed = await Promise.all(guesses.map((path) => fetchPage(`${origin}${path}`)));
+      for (let i = 0; i < guesses.length; i++) {
+        if (guessed[i]) pages.push({ url: `${origin}${guesses[i]}`, html: guessed[i] as string });
+      }
     }
 
     let bodyText = "";
@@ -347,7 +466,11 @@ serve(async (req) => {
       }
     }
 
-    let siteText = `${metaParts.join("\n\n")}\n\n${chunks.join("\n\n")}`.trim();
+    // The sitemap's own change dates, handed over as a labelled block. This is
+    // what lets an observation carry an `occurred` when the page copy states no
+    // date — which is most pages.
+    const dateBlock = lastmodNote(readWithDates);
+    let siteText = `${dateBlock ? `${dateBlock}\n\n` : ""}${metaParts.join("\n\n")}\n\n${chunks.join("\n\n")}`.trim();
     if (siteText.length > MAX_TEXT_CHARS) siteText = siteText.slice(0, MAX_TEXT_CHARS);
     if (!siteText) {
       return new Response(
@@ -475,9 +598,33 @@ serve(async (req) => {
         ? (signalFacts.length ? "high" : "medium")
         : result.brief.confidence,
     };
+    // ─── What moved since the last look ──────────────────────────────────────
+    //
+    // The previous brief is already in hand — it is the row we are about to
+    // overwrite — and comparing the two was never done. A difference is the
+    // only material in the whole brief whose timing is certain: a standing
+    // marketing page was equally true last year, but "this was not on their
+    // site three weeks ago" dates itself by construction.
+    //
+    // The previous brief carries its own `changes` from the run before. Diffing
+    // against a brief that already describes a diff would compound, so only the
+    // observations are compared, which is all diffBriefs reads.
+    const changes = diffBriefs(
+      (lead.research_brief ?? null) as LeadResearchBrief | null,
+      baseBrief,
+      { previousAt: (lead.researched_at as string | null) ?? null },
+    );
+    if (changes) {
+      console.log(
+        `[research-lead] ${host}: ${changes.added.length} new, ${changes.removed.length} gone since ${
+          changes.days === null ? "the last look" : `${changes.days}d ago`
+        }`,
+      );
+    }
+
     // Deterministic completeness score so every surface gates the same way.
     const quality = scoreResearchQuality(baseBrief, sources);
-    const brief: LeadResearchBrief = { ...baseBrief, quality };
+    const brief: LeadResearchBrief = { ...baseBrief, quality, changes };
     const researchedAt = new Date().toISOString();
 
     const { error: writeError } = await supabase
