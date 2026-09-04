@@ -1305,6 +1305,17 @@ serve(async (req) => {
      * so the true numbers reach the user whatever the model chose to say.
      */
     const batchShortfalls: string[] = [];
+    /**
+     * Sends that were refused, and why.
+     *
+     * resolve_approvals already returns each failure with its reason and tells
+     * the model to report them in plain language. It reported twenty-one sends
+     * instead. The reasons are the actionable half — "every mailbox hit its
+     * daily limit" is something a user can fix, where "no send ran" leaves them
+     * guessing — so they are surfaced in code rather than entrusted to the
+     * summary.
+     */
+    const sendFailures: string[] = [];
     // Step timing telemetry (Agent > Performance tab reads this).
     const turnId = crypto.randomUUID();
     const turnStartedAt = Date.now();
@@ -2913,6 +2924,16 @@ serve(async (req) => {
           const failures = outcomes
             .filter((o) => o.status === "pending")
             .map((o) => `${o.to}: ${o.outcome}`);
+          if (failures.length > 0) {
+            // Distinct reasons, not one line per recipient: twenty-one
+            // identical "daily limit reached" lines bury the one fact.
+            const reasons = [...new Set(outcomes
+              .filter((o) => o.status === "pending")
+              .map((o) => String(o.outcome ?? "unknown error")))];
+            sendFailures.push(
+              `${failures.length} of ${outcomes.length} could not be sent and are still waiting: ${reasons.join(" · ").slice(0, 300)}`,
+            );
+          }
           return {
             decision,
             attempted: outcomes.length,
@@ -3648,6 +3669,14 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
     // reply saying they had all gone. The tool result carried the real numbers
     // and the summary rounded them off, so the numbers are appended here where
     // no summarising step can drop them.
+    if (sendFailures.length > 0) {
+      finalText =
+        `⚠️ Sends were refused.\n` +
+        sendFailures.map((line) => `- ${line}`).join("\n") +
+        `\n\nThey are still queued, so they can go out once that is fixed.\n\n${finalText}`;
+      console.warn(`[agent-chat] surfaced ${sendFailures.length} send failure reason(s)`);
+    }
+
     if (batchShortfalls.length > 0) {
       // Also first, and for the same reason: a shortfall reported under a
       // summary that reads as success is a shortfall nobody reads.
