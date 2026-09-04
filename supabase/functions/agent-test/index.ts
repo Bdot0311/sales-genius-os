@@ -250,6 +250,26 @@ async function runScenarios(
       // work satisfy the next one's expectations.
       threadId = (thread as { id: string }).id;
 
+      // Priming turns run on the same thread and are not scored. They put the
+      // agent in the state the real failures happened in: reasoning from its
+      // own earlier account of what it did.
+      for (const priming of scenario.priorTurns ?? []) {
+        await fetch(`${supabaseUrl}/functions/v1/agent-chat`, {
+          method: "POST",
+          headers: {
+            Authorization: authHeader,
+            "Content-Type": "application/json",
+            apikey: anonKey,
+          },
+          body: JSON.stringify({
+            message: priming,
+            threadId,
+            agentId: configId,
+            evalScenario: `${scenario.id}:priming`,
+          }),
+        }).catch(() => undefined);
+      }
+
       const res = await fetch(`${supabaseUrl}/functions/v1/agent-chat`, {
         method: "POST",
         headers: {

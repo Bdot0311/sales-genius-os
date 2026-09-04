@@ -7,6 +7,7 @@ import { findPlaceholders, hasPlaceholder, realValue } from "../_shared/email-ru
 import { asFnResult } from "../_shared/fn-result.ts";
 import { UNTRUSTED_CONTENT_RULE, fence, fenceRecords } from "../_shared/untrusted.ts";
 import { correctionFor, emptyTurnWarning, unbackedClaims } from "../_shared/claim-check.ts";
+import { capacityFor, shortfallWarning } from "../_shared/send-capacity.ts";
 import {
   accountFor,
   batchFetchLimit,
@@ -1337,10 +1338,42 @@ serve(async (req) => {
     const loadMailboxes = async () => {
       const { data } = await admin
         .from("sending_accounts")
-        .select("id, integration_id, email, status")
+        .select("id, integration_id, email, status, daily_limit, sent_today, sent_today_date")
         .eq("user_id", userId)
         .order("created_at", { ascending: true });
       return (data ?? []).filter((a: any) => a.integration_id && a.email);
+    };
+
+    /**
+     * Room to send today, across mailboxes and under the plan cap.
+     *
+     * Asked before a batch is queued rather than discovered one failed send at
+     * a time — which is how 103 approvals nobody could clear accumulated.
+     */
+    const sendCapacity = async () => {
+      const [accounts, { data: sub }] = await Promise.all([
+        loadMailboxes(),
+        admin
+          .from("subscriptions")
+          .select("daily_email_limit, daily_emails_sent")
+          .eq("user_id", userId)
+          .maybeSingle(),
+      ]);
+      const today = new Date().toISOString().slice(0, 10);
+      return capacityFor(
+        (accounts as any[]).map((a) => ({
+          id: a.id,
+          email: a.email,
+          dailyLimit: Number(a.daily_limit ?? 0),
+          // A counter from an earlier day has already reset in practice; the
+          // send path rolls it over. Reading it as today's usage would report
+          // a mailbox as full the morning after a busy day.
+          sentToday: a.sent_today_date === today ? Number(a.sent_today ?? 0) : 0,
+          status: a.status,
+        })),
+        Number(sub?.daily_email_limit ?? 0),
+        Number(sub?.daily_emails_sent ?? 0),
+      );
     };
 
     const toMailbox = (a: any): Mailbox => ({
@@ -2137,6 +2170,32 @@ serve(async (req) => {
             return { error: poolRes.error };
           }
           const pool = poolRes.pool;
+
+          // Ask whether there is room before doing the work. A batch bigger
+          // than today's ceiling used to be discovered one refused send at a
+          // time, and every refusal left an approval nobody could clear.
+          const capacity = await sendCapacity();
+          const capacityNote = shortfallWarning(drafts.length, capacity);
+          if (capacityNote) {
+            toolEvents.push({
+              name,
+              label: "Not enough send capacity today",
+              status: capacity.available === 0 ? "error" : "queued",
+              detail: capacityNote,
+            });
+            sendFailures.push(capacityNote);
+            if (capacity.available === 0) {
+              // Nothing can go out. Queuing the batch anyway would add another
+              // day's worth of approvals to a queue that already cannot drain.
+              return {
+                sent: 0,
+                attempted: 0,
+                capacity,
+                error: capacityNote,
+                note: "Nothing was queued or sent. Tell the user this figure plainly and stop.",
+              };
+            }
+          }
 
           const results: any[] = [];
           let rotation = 0;
