@@ -23,6 +23,7 @@ serve(async (req) => {
     );
 
     let raised = 0;
+    let failed = 0;
 
     // Helper: insert an alert only if an active one for the same subject and
     // type is not already open. The subject is a domain for DNS-level problems
@@ -51,7 +52,7 @@ serve(async (req) => {
 
       const { data: existing } = await q.maybeSingle();
       if (existing) return;
-      await supabase.from("deliverability_alerts").insert({
+      const { error: insErr } = await supabase.from("deliverability_alerts").insert({
         user_id: params.user_id,
         domain,
         sending_account_id: accountId,
@@ -59,8 +60,19 @@ serve(async (req) => {
         severity: params.severity,
         message: params.message,
       });
+      if (insErr) {
+        // A swallowed insert here is invisible by design: the alert never
+        // appears and the run still reports success. Count and log it so a
+        // rejected type surfaces instead of quietly muting the whole feature.
+        failed++;
+        console.error(
+          `[deliverability-alerts-scan] failed to raise ${params.alert_type}: ${insErr.message}`,
+        );
+        return;
+      }
       raised++;
     }
+
 
     // ---- Auth failures ----
     const { data: domains } = await supabase
@@ -247,8 +259,9 @@ serve(async (req) => {
     // about everything teaches people to filter the one message that mattered.
     const notified = await notifyCritical(supabase);
 
-    console.log(`[deliverability-alerts-scan] raised=${raised} notified=${notified}`);
-    return json({ ok: true, raised, notified });
+    console.log(`[deliverability-alerts-scan] raised=${raised} failed=${failed} notified=${notified}`);
+    return json({ ok: true, raised, failed, notified });
+
   } catch (err) {
     console.error("[deliverability-alerts-scan] error:", err);
     return json({ error: "alerts scan failed" }, 500);
