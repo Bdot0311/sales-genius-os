@@ -259,8 +259,9 @@ serve(async (req) => {
     // about everything teaches people to filter the one message that mattered.
     const notified = await notifyCritical(supabase);
 
-    console.log(`[deliverability-alerts-scan] raised=${raised} notified=${notified}`);
-    return json({ ok: true, raised, notified });
+    console.log(`[deliverability-alerts-scan] raised=${raised} failed=${failed} notified=${notified}`);
+    return json({ ok: true, raised, failed, notified });
+
   } catch (err) {
     console.error("[deliverability-alerts-scan] error:", err);
     return json({ error: "alerts scan failed" }, 500);
