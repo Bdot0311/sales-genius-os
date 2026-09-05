@@ -558,9 +558,39 @@ ${unsubscribeFooterHtml}
       const trackingPixelUrl = `${supabaseUrl}/functions/v1/track-email-open?id=${trackingPixelId}`;
       const trackingPixel = `<img src="${trackingPixelUrl}" width="1" height="1" style="display:none" alt="" />`;
 
-      // Rewrite outbound links so clicks are recorded, then inject the open pixel
+      // Does this account want an open pixel at all?
+      //
+      // deliverability_preferences.open_tracking_enabled was created with a
+      // comment promising the UI would make the cost visible, and then nothing
+      // read it and nothing wrote it — so every account carried a pixel it had
+      // never been offered a way to decline. A remote image in a cold email is
+      // a spam signal, and the number it buys is not reliable enough to be
+      // worth the placement: proxies and privacy features load it whether or
+      // not anyone read the message.
+      //
+      // Failure to read the preference leaves tracking ON, which is the
+      // existing behaviour — a database hiccup must not silently change what
+      // an account is sending.
+      let openTrackingEnabled = true;
+      try {
+        const { data: prefs } = await supabase
+          .from('deliverability_preferences')
+          .select('open_tracking_enabled')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (prefs && prefs.open_tracking_enabled === false) openTrackingEnabled = false;
+      } catch (e) {
+        console.warn('[send-email] could not read tracking preference, defaulting to on:', e);
+      }
+
+      // Click tracking is unaffected. It rewrites links the reader chose to
+      // follow rather than loading a remote image on open, so it costs nothing
+      // in placement and its numbers mean something.
       const clickTrackedHtml = injectClickTracking(htmlBody, trackingPixelId, supabaseUrl);
-      const trackedHtmlBody = clickTrackedHtml.replace('</body>', `${trackingPixel}\n</body>`);
+      const trackedHtmlBody = openTrackingEnabled
+        ? clickTrackedHtml.replace('</body>', `${trackingPixel}\n</body>`)
+        : clickTrackedHtml;
+      if (!openTrackingEnabled) console.log('[send-email] open tracking off for this account — no pixel');
 
       // Send via Gmail API - use MIME encoding for subject to handle special characters
       const emailContent = [

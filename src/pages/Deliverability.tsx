@@ -10,6 +10,7 @@ import { AlertsPanel } from "@/components/deliverability/AlertsPanel";
 import { AccountHealthGrid } from "@/components/deliverability/AccountHealthGrid";
 import { WarmupPanel } from "@/components/deliverability/WarmupPanel";
 import { AccountSendLimit } from "@/components/deliverability/AccountSendLimit";
+import { OpenTrackingToggle } from "@/components/deliverability/OpenTrackingToggle";
 import { DomainAuthPanel } from "@/components/deliverability/DomainAuthPanel";
 import { PlacementPanel } from "@/components/deliverability/PlacementPanel";
 import { SpamCheckerPanel } from "@/components/deliverability/SpamCheckerPanel";
@@ -165,6 +166,14 @@ const Deliverability = () => {
                 sub="The account-wide ceiling, above the per-mailbox limits below."
               />
               <AccountSendLimit />
+            </section>
+
+            <section>
+              <SectionHeading
+                title="Tracking"
+                sub="What every outbound email carries, and what it costs to carry it."
+              />
+              <OpenTrackingToggle />
             </section>
 
             <section id="accounts">
