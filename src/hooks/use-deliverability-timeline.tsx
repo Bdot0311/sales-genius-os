@@ -28,12 +28,17 @@ export function useDeliverabilityEvents(days = 30) {
     staleTime: 30_000,
     retry: 1,
     queryFn: async (): Promise<DeliverabilityEvent[]> => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("deliverability_events")
         .select("id, occurred_at, event_type, title, detail, sending_account_id, domain")
         .gte("occurred_at", since)
         .order("occurred_at", { ascending: false })
         .limit(200);
+      // Thrown rather than swallowed. A discarded error rendered the empty
+      // state, so a failing query and a genuinely quiet month were the same
+      // screen — and the screen said "nothing has changed", which is a claim
+      // we had not established.
+      if (error) throw error;
       return (data as DeliverabilityEvent[]) ?? [];
     },
   });
@@ -46,12 +51,13 @@ export function useQuarantineLog(days = 30) {
     staleTime: 30_000,
     retry: 1,
     queryFn: async (): Promise<QuarantineLogEntry[]> => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("mailbox_quarantine_log")
         .select("id, created_at, mailbox_email, action, reason, volume_redistributed, automatic")
         .gte("created_at", since)
         .order("created_at", { ascending: false })
         .limit(100);
+      if (error) throw error;
       return (data as QuarantineLogEntry[]) ?? [];
     },
   });
