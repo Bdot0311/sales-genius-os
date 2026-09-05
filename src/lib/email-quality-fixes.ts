@@ -112,6 +112,14 @@ function simplify(body: string) {
     .replace(/;\s+/g, ". ");
 }
 
+/**
+ * Checks that no edit to the email body can resolve.
+ *
+ * Offering "Fix this" on one of these is a button that cannot succeed: at best
+ * it does nothing, at worst it mangles the draft to look like it did something.
+ */
+export const CANNOT_AUTOFIX = new Set(["Signature"]);
+
 export function applyEmailQualityFix(body: string, label: string): string {
   let fixed = body.trim();
   switch (label) {
@@ -134,9 +142,16 @@ export function applyEmailQualityFix(body: string, label: string): string {
     case "Images":
       fixed = fixed.replace(/<img\b[^>]*>/gi, "");
       break;
-    case "Signature":
-      fixed = fixed.replace(/<img\b[^>]*>/gi, "").replace(/<[^>]+>/g, "");
-      break;
+    // "Signature" deliberately has no local fix.
+    //
+    // It used to strip every HTML tag from the whole email — .replace(/<[^>]+>/g, "")
+    // — which changed not one word and flattened the formatting of the entire
+    // draft. That is the "some just edit the format of the email, not the
+    // words" complaint, exactly.
+    //
+    // The check is that the signature is long relative to the body. No edit to
+    // the body can fix that; the signature lives in Settings. So there is
+    // nothing to do here and the button is not offered — see CANNOT_AUTOFIX.
     case "Credibility":
       fixed = fixed
         .replace(/\b\d+(?:\.\d+)?%\b/g, "measurably")

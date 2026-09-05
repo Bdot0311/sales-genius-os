@@ -1,11 +1,16 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Loader2, Lock, CheckCircle2, AlertCircle, XCircle, X, Check } from "lucide-react";
+import { Loader2, Lock, CheckCircle2, AlertCircle, XCircle, X } from "lucide-react";
 import { computeMechanicalChecks, Severity } from "@/lib/email-rubric";
+import {
+  allStrong,
+  barColorFor,
+  suggestionKey,
+  weakestDimension,
+} from "@/lib/rubric-display";
 
 interface EmailRubricPanelProps {
   subject: string;
@@ -29,13 +34,6 @@ const sevIcon = (s: Severity) =>
   s === "ok" ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
   : s === "warn" ? <AlertCircle className="w-3.5 h-3.5 text-yellow-500 shrink-0" />
   : <XCircle className="w-3.5 h-3.5 text-destructive shrink-0" />;
-
-function barColor(score: number, weakest: boolean): string {
-  if (weakest) return "bg-destructive";
-  if (score >= 4) return "bg-green-500";
-  if (score >= 3) return "bg-yellow-500";
-  return "bg-orange-500";
-}
 
 // Locate a rubric snippet inside the draft tolerantly. The rubric returns lightly
 // normalized quotes (different case, collapsed whitespace, wrapping quotes, or a
@@ -73,18 +71,21 @@ export const EmailRubricPanel = ({ subject, body, onApplyBody, onApplySubject }:
   const mech = useMemo(() => computeMechanicalChecks(subject, body), [subject, body]);
 
   const [dims, setDims] = useState<Record<string, Dim> | null>(null);
-  const [weakest, setWeakest] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [dismissed, setDismissed] = useState<Set<number>>(new Set());
-  const [applied, setApplied] = useState<Set<number>>(new Set());
-  const [applyingIdx, setApplyingIdx] = useState<number | null>(null);
+  // Keyed by the suggestion's own content, not its position. The array is
+  // replaced on every re-score, and applying a suggestion causes a re-score,
+  // so index-keyed state was wiped a second after every apply.
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  const [applied, setApplied] = useState<Set<string>>(new Set());
+  const [applyingKey, setApplyingKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [gated, setGated] = useState(false);
   const reqId = useRef(0);
 
   const canApply = Boolean(onApplyBody || onApplySubject);
 
-  const applySuggestion = async (s: Suggestion, i: number) => {
+  const applySuggestion = async (s: Suggestion) => {
+    const key = suggestionKey(s);
     if (!s.snippet) { toast.error("this suggestion has no snippet to rewrite"); return; }
     // Locate the snippet tolerantly in the body first, then the subject.
     const bodySpan = onApplyBody ? locateSpan(body, s.snippet) : null;
@@ -98,7 +99,7 @@ export const EmailRubricPanel = ({ subject, body, onApplyBody, onApplySubject }:
     // replacement fits the draft, and splice by index so we change the exact span.
     const matched = target.text.slice(target.span.start, target.span.end);
 
-    setApplyingIdx(i);
+    setApplyingKey(key);
     try {
       const { data, error } = await supabase.functions.invoke("apply-rubric-suggestion", {
         body: { subject, body, snippet: matched, suggestion: s.suggestion, dimension: s.dimension },
@@ -112,10 +113,10 @@ export const EmailRubricPanel = ({ subject, body, onApplyBody, onApplySubject }:
       if (next.trim() === target.text.trim()) { toast.error("that suggestion didn't change the draft"); return; }
       target.apply(next);
 
-      setApplied((prev) => new Set(prev).add(i));
+      setApplied((prev) => new Set(prev).add(key));
       toast.success("suggestion applied");
     } finally {
-      setApplyingIdx(null);
+      setApplyingKey(null);
     }
   };
 
@@ -134,11 +135,11 @@ export const EmailRubricPanel = ({ subject, body, onApplyBody, onApplySubject }:
         if (data?.dimensions) {
           setGated(false);
           setDims(data.dimensions);
-          setWeakest(data.weakest || null);
           setSuggestions(Array.isArray(data.suggestions) ? data.suggestions : []);
-          setDismissed(new Set());
-          setApplied(new Set());
-
+          // applied and dismissed deliberately survive a re-score. A suggestion
+          // that comes back after being applied is telling us the rewrite did
+          // not move what it was aimed at, which is worth showing rather than
+          // resetting into a fresh-looking button.
         }
       } finally {
         if (id === reqId.current) setLoading(false);
@@ -164,10 +165,17 @@ export const EmailRubricPanel = ({ subject, body, onApplyBody, onApplySubject }:
           </div>
         ) : dims ? (
           <div className="space-y-2">
+            {allStrong(dims) && (
+              <p className="text-[11px] text-green-600 dark:text-green-500">
+                Every dimension is at or above the bar. Nothing here is holding this email back.
+              </p>
+            )}
             {DIM_ORDER.map((d) => {
               const dim = dims[d];
               if (!dim) return null;
-              const isWeak = weakest === d;
+              // Derived, not taken from the response: the server always names a
+              // weakest, even when all five are tied or all five are strong.
+              const isWeak = weakestDimension(dims) === d;
               return (
                 <div key={d} className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
@@ -175,7 +183,7 @@ export const EmailRubricPanel = ({ subject, body, onApplyBody, onApplySubject }:
                     <span className="font-mono text-muted-foreground">{dim.score}/5</span>
                   </div>
                   <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div className={`h-full ${barColor(dim.score, isWeak)}`} style={{ width: `${(dim.score / 5) * 100}%` }} />
+                    <div className={`h-full ${barColorFor(dim.score)}`} style={{ width: `${(dim.score / 5) * 100}%` }} />
                   </div>
                   {dim.justification && <p className="text-[11px] text-muted-foreground">{dim.justification}</p>}
                 </div>
@@ -190,34 +198,42 @@ export const EmailRubricPanel = ({ subject, body, onApplyBody, onApplySubject }:
         {suggestions.length > 0 && (
           <div className="space-y-2 pt-1 border-t">
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground">suggestions</p>
-            {suggestions.map((s, i) => dismissed.has(i) ? null : (
-              <div key={i} className="flex items-start gap-2 text-xs">
+            {suggestions.map((s) => {
+              const key = suggestionKey(s);
+              if (dismissed.has(key)) return null;
+              const reoffered = applied.has(key);
+              return (
+              <div key={key} className="flex items-start gap-2 text-xs">
                 <div className="flex-1 min-w-0">
                   <p className="text-foreground/80">{s.suggestion}</p>
                   {s.snippet && <p className="text-[11px] text-muted-foreground truncate">on: "{s.snippet}"</p>}
+                  {reoffered && (
+                    <p className="text-[11px] text-amber-600 dark:text-amber-500">
+                      Applied, and the rubric still wants this changed. The rewrite did not move it.
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   {canApply && (
-                    applied.has(i) ? (
-                      <Badge variant="secondary" className="text-[10px] gap-1"><Check className="w-3 h-3" />applied</Badge>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-6 px-2 text-[10px]"
-                        disabled={applyingIdx !== null}
-                        onClick={() => applySuggestion(s, i)}
-                      >
-                        {applyingIdx === i ? <Loader2 className="w-3 h-3 animate-spin" /> : "apply"}
-                      </Button>
-                    )
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-6 px-2 text-[10px]"
+                      disabled={applyingKey !== null}
+                      onClick={() => applySuggestion(s)}
+                    >
+                      {applyingKey === key
+                        ? <Loader2 className="w-3 h-3 animate-spin" />
+                        : reoffered ? "retry" : "apply"}
+                    </Button>
                   )}
-                  <button onClick={() => setDismissed((prev) => new Set(prev).add(i))} className="text-muted-foreground hover:text-foreground" title="ignore">
+                  <button onClick={() => setDismissed((prev) => new Set(prev).add(key))} className="text-muted-foreground hover:text-foreground" title="ignore">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
