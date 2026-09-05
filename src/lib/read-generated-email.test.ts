@@ -124,14 +124,13 @@ describe("the typecheck in CI checks something", () => {
     expect(CI).toMatch(/compiles zero files/i);
   });
 
-  it("installs exactly what the lockfile pins", () => {
-    // npm ci used to refuse outright: package.json declared
-    // @lovable.dev/email-js and the lockfile did not carry it, so a clean
-    // install of this repo was impossible for anyone. Now that the lockfile
-    // is whole, ci is the right command — it fails loudly if the two drift
-    // apart again, which install would quietly paper over.
+  it("installs in a way CI can actually reach", () => {
+    // 294 of the lockfile's 1216 resolved URLs point at Lovable's private
+    // sandbox registry. npm ci honours those exactly and dies on 403s
+    // anywhere that cannot read it; npm install re-resolves from public npm.
     const job = CI.slice(CI.indexOf("typecheck:"), CI.indexOf("skills-bundle:"));
-    expect(job).toContain("npm ci");
-    expect(job).not.toMatch(/run: npm install/);
+    expect(job).toContain("npm install");
+    expect(job).not.toMatch(/run: npm ci/);
+    expect(job).toMatch(/europe-west1-npm\.pkg\.dev/);
   });
 });
