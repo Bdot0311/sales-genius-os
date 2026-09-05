@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { AlertTriangle, CheckCircle2, XCircle, AlertCircle, Loader2 } from "lucide-react";
 import { OUTBOUND_KB } from "@/lib/outbound-kb";
+import { CANNOT_AUTOFIX } from "@/lib/email-quality-fixes";
 
 interface EmailQualityCheckerProps {
   subject: string;
@@ -376,7 +377,7 @@ export const EmailQualityChecker = ({ subject, body, isFirstTouch = true, onFix,
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium">{check.label}</span>
-                {onFix && check.status !== 'green' && (
+                {onFix && check.status !== 'green' && !CANNOT_AUTOFIX.has(check.label) && (
                   <button
                     onClick={() => onFix(check.label)}
                     disabled={fixingCheck !== null && fixingCheck !== undefined}
