@@ -35,6 +35,7 @@ import { BarChart3, ListOrdered, Layout, Users } from "lucide-react";
 import { BulkSendDialog } from "@/components/outreach/BulkSendDialog";
 import { EmailQualityChecker, scoreEmailQuality } from "@/components/outreach/EmailQualityChecker";
 import { EmailRubricPanel } from "@/components/outreach/EmailRubricPanel";
+import { EmailAuditPanel } from "@/components/outreach/EmailAuditPanel";
 import { applyEmailQualityFix } from "@/lib/email-quality-fixes";
 import { LeadResearchPanel, type LeadResearch } from "@/components/outreach/LeadResearchPanel";
 import { SequencesList, MessageBlocksList } from "@/components/sequences";
@@ -3020,6 +3021,11 @@ For logos, use HTML:
                         body={generatedEmail}
                         onApplyBody={(next) => { setGeneratedEmail(next); void saveDraft({ body: next }); }}
                         onApplySubject={(next) => { setSubjectLine(next); void saveDraft({ subject: next }); }}
+                      />
+                      <EmailAuditPanel
+                        subject={subjectLine}
+                        body={generatedEmail}
+                        position={isFirstTouch ? 1 : undefined}
                       />
 
                       <div className="flex gap-2">
