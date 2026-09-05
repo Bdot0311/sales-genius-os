@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, RefreshCw, ShieldCheck, ShieldOff, ExternalLink, Send, MailPlus } from "lucide-react";
+import { Loader2, RefreshCw, ShieldCheck, ShieldOff, ExternalLink, Send, MailPlus, ChevronDown, ChevronRight } from "lucide-react";
+import { SupportAccessWorkspace } from "@/components/admin/SupportAccessWorkspace";
 
 interface SetupRequest {
   id: string;
@@ -49,6 +50,8 @@ const AdminCampaignSetup = () => {
   const [grants, setGrants] = useState<Grant[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
+  /** Which granted account is expanded for setup work. */
+  const [openGrantId, setOpenGrantId] = useState<string | null>(null);
   const [outEmail, setOutEmail] = useState("");
   const [outNote, setOutNote] = useState("");
   const [sending, setSending] = useState(false);
@@ -226,7 +229,7 @@ const AdminCampaignSetup = () => {
             Active access ({activeGrants.length})
           </CardTitle>
           <CardDescription>
-            You can work in these accounts now. End access as soon as the setup is done.
+            Open an account to build their sequences. End access as soon as the setup is done.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -246,7 +249,8 @@ const AdminCampaignSetup = () => {
                 </TableHeader>
                 <TableBody>
                   {activeGrants.map((g) => (
-                    <TableRow key={g.id}>
+                  <Fragment key={g.id}>
+                    <TableRow>
                       <TableCell className="font-medium">
                         {who({ user_id: g.user_id, contact_email: null, contact_name: null })}
                       </TableCell>
@@ -263,7 +267,20 @@ const AdminCampaignSetup = () => {
                       <TableCell className="text-sm text-muted-foreground">
                         {format(new Date(g.expires_at), "MMM d, p")}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right space-x-1">
+                        <Button
+                          size="sm"
+                          variant="default"
+                          className="gap-1.5"
+                          onClick={() => setOpenGrantId((cur) => (cur === g.id ? null : g.id))}
+                        >
+                          {openGrantId === g.id ? (
+                            <ChevronDown className="h-3.5 w-3.5" />
+                          ) : (
+                            <ChevronRight className="h-3.5 w-3.5" />
+                          )}
+                          {openGrantId === g.id ? "Close" : "Open account"}
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"
@@ -280,6 +297,21 @@ const AdminCampaignSetup = () => {
                         </Button>
                       </TableCell>
                     </TableRow>
+                    {openGrantId === g.id && (
+                      <TableRow>
+                        <TableCell colSpan={5} className="bg-muted/30">
+                          <SupportAccessWorkspace
+                            grant={g}
+                            customerLabel={
+                              profiles[g.user_id]?.full_name ??
+                              profiles[g.user_id]?.email ??
+                              "this customer"
+                            }
+                          />
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </Fragment>
                   ))}
                 </TableBody>
               </Table>
