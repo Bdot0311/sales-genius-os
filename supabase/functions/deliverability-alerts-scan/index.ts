@@ -7,6 +7,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 import { sendAppEmail } from "../_shared/transactional-email-templates/send-app-email.ts";
+import { bounceSeverity, complaintSeverity } from "../_shared/deliverability-thresholds.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -163,7 +164,15 @@ serve(async (req) => {
           user_id: userId,
           sending_account_id: accountId,
           alert_type: "bounce_rate",
-          severity: bounceRate >= 5 ? "critical" : "warning",
+          // Critical at 3%, not 5%.
+          //
+          // Only critical alerts are emailed, and 5% is the point at which
+          // providers are already throttling the sender: by then the recovery
+          // takes weeks. The dashboard tile called 3.4% "at risk" and said so
+          // in red for thirty days while this rule filed it as a warning and
+          // sent nothing. Both cannot be right about the same figure, and the
+          // tile was.
+          severity: bounceSeverity(bounceRate / 100),
           message: `Bounce rate is ${bounceRate.toFixed(1)}% over the last 30 days, above the 2% line where reputation starts to erode. Unverified addresses in the list are the usual cause.`,
         });
       }
@@ -176,7 +185,7 @@ serve(async (req) => {
           user_id: userId,
           sending_account_id: accountId,
           alert_type: "complaint_rate",
-          severity: complaintRate >= 0.3 ? "critical" : "warning",
+          severity: complaintSeverity(complaintRate / 100),
           message: `Spam complaints are at ${complaintRate.toFixed(2)}%, at or above the 0.1% target. Providers stop delivering a sender at 0.3%.`,
         });
       }

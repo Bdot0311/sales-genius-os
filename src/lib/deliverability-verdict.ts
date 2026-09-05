@@ -16,6 +16,12 @@
  * M365 tenants only" does. A tile that cannot say which, says so.
  */
 
+import {
+  BOUNCE_AT_RISK,
+  BOUNCE_FAILING,
+  MIN_SENDS_FOR_RATE as MIN_SENDS,
+} from "../../supabase/functions/_shared/deliverability-thresholds";
+
 export type VerdictState = "healthy" | "degrading" | "at_risk" | "failing" | "unknown";
 
 export interface VerdictAction {
@@ -232,16 +238,23 @@ export interface VolumeInput {
   complaints: number;
 }
 
-/** Below this, a bounce rate is noise: one bad address out of twelve is 8%. */
-export const MIN_SENDS_FOR_RATE = 50;
+/**
+ * Below this, a bounce rate is noise: one bad address out of twelve is 8%.
+ *
+ * Re-exported rather than redeclared. The thresholds live in
+ * _shared/deliverability-thresholds.ts because the alert scan needs them too,
+ * and the two copies had already drifted into disagreeing about when a bounce
+ * rate is worth an email.
+ */
+export { MIN_SENDS_FOR_RATE } from "../../supabase/functions/_shared/deliverability-thresholds";
 
 export function bounceVerdict(v: VolumeInput): Verdict {
-  if (v.sent < MIN_SENDS_FOR_RATE) {
+  if (v.sent < MIN_SENDS) {
     return {
       state: "unknown",
       value: null,
       cause: null,
-      unknownReason: `Only ${v.sent} sends so far. A bounce rate needs at least ${MIN_SENDS_FOR_RATE} to mean anything — one bad address in a small batch reads as a crisis.`,
+      unknownReason: `Only ${v.sent} sends so far. A bounce rate needs at least ${MIN_SENDS} to mean anything — one bad address in a small batch reads as a crisis.`,
       action: null,
     };
   }
@@ -249,20 +262,20 @@ export function bounceVerdict(v: VolumeInput): Verdict {
   const rate = v.bounced / v.sent;
   const value = pct(rate);
 
-  if (rate >= 0.05) {
+  if (rate >= BOUNCE_FAILING) {
     return {
       state: "failing",
       value,
       cause: `${v.bounced} of ${v.sent} sends bounced. Above 5% providers start throttling the sender outright, and the list is the cause — these addresses were never deliverable.`,
-      action: { label: "Verify your list", kind: "navigate", target: "/leads" },
+      action: { label: "Verify your list", kind: "navigate", target: "/dashboard/leads" },
     };
   }
-  if (rate >= 0.02) {
+  if (rate >= BOUNCE_AT_RISK) {
     return {
       state: "at_risk",
       value,
       cause: `${v.bounced} of ${v.sent} sends bounced, over the 2% line where reputation starts to erode. Unverified addresses in the list are the usual cause.`,
-      action: { label: "Verify your list", kind: "navigate", target: "/leads" },
+      action: { label: "Verify your list", kind: "navigate", target: "/dashboard/leads" },
     };
   }
   return {
@@ -274,7 +287,7 @@ export function bounceVerdict(v: VolumeInput): Verdict {
 }
 
 export function complaintVerdict(v: VolumeInput): Verdict {
-  if (v.sent < MIN_SENDS_FOR_RATE) {
+  if (v.sent < MIN_SENDS) {
     return {
       state: "unknown",
       value: null,
@@ -301,7 +314,7 @@ export function complaintVerdict(v: VolumeInput): Verdict {
       state: "at_risk",
       value,
       cause: `${v.complaints} spam complaints in ${v.sent} sends, above the 0.1% target. People are marking this as spam rather than ignoring it, which points at relevance, not deliverability.`,
-      action: { label: "Review targeting", kind: "navigate", target: "/leads" },
+      action: { label: "Review targeting", kind: "navigate", target: "/dashboard/leads" },
     };
   }
   return {
