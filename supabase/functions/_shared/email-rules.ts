@@ -197,7 +197,15 @@ const VAGUE_PROOF_PATTERNS: RegExp[] = [
   // attributed the invented result to a person instead of a business.
   /\b(?:one|a|an|another)\s+(?:\w+[\s-]+){0,3}(?:firm|company|client|customer|team|agency|startup|business|brand|founder|co-?founder|ceo|cto|cmo|coo|exec|executive|leader|manager|director|owner|operator|marketer|rep)\b[^.?!]{0,60}?\b(?:saw|achieved|reported|generated|booked|increased|reduced|cut|doubled|grew|switched)\b/gi,
   // Magnitude word with no magnitude, as a noun phrase: "a significant increase".
-  /\b(?:significant|substantial|meaningful|noticeable|dramatic|marked|considerable|sizeable)\s+(?:increase|lift|improvement|boost|jump|gain|growth|reduction|drop|decrease)\b/gi,
+  //
+  // The magnitude word and the outcome noun do not have to be adjacent, and
+  // requiring that they were is how "significant audience growth" shipped —
+  // one modifier between them was enough to defeat the pattern. The same hole
+  // passed "substantial pipeline improvement" and "dramatic reply-rate lift".
+  // Up to two intervening words, which is what a real noun phrase carries;
+  // punctuation ends the run, so "significant, and growth followed" is not a
+  // match.
+  /\b(?:significant|substantial|meaningful|noticeable|dramatic|marked|considerable|sizeable)\s+(?:\w+[\s-]+){0,2}(?:increase|lift|improvement|boost|jump|gain|growth|reduction|drop|decrease|results?|roi|uplift|traction|savings)\b/gi,
   // The same claim as a comparative: "significantly more relevant replies",
   // "substantially fewer bounces". No noun follows the magnitude word, so the
   // pattern above missed it — and this phrasing shipped.

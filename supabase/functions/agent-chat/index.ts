@@ -11,6 +11,8 @@ import { capacityFor, shortfallWarning } from "../_shared/send-capacity.ts";
 import { decideSend, previewText } from "../_shared/send-confirmation.ts";
 import { userConfirmedSend } from "../_shared/user-confirmation.ts";
 import { duplicateGuidanceFor } from "../_shared/duplicate-send.ts";
+import { auditEmail, auditSummary } from "../_shared/email-audit.ts";
+import { auditSequence, sequenceSummary } from "../_shared/sequence-audit.ts";
 import {
   accountFor,
   batchFetchLimit,
@@ -598,6 +600,45 @@ const TOOLS = [
           },
         },
         required: ["lead_id", "subject", "body"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "audit_email",
+      description:
+        "Run every mechanical cold-email rule this product knows over a subject and body, and get back the specific violations with fixes. Use it whenever the user pastes an email and asks what is wrong with it, asks you to review or improve copy, or before sending anything you did not generate yourself. It checks unfilled merge fields, unbacked result claims, banned openers, length, the one-call-to-action rule, and whether a named trigger is actually bridged to a problem. Pass position (1-6) when the email is a numbered touch in a sequence — several rules only apply at a position.",
+      parameters: {
+        type: "object",
+        properties: {
+          subject: { type: "string" },
+          body: { type: "string" },
+          position: {
+            type: "number",
+            description: "Which touch in a sequence this is, 1-6. Omit for a standalone email.",
+          },
+          verified_proof: {
+            type: "string",
+            description: "A result the sender can actually back, so a figure inside it is not reported as invented.",
+          },
+        },
+        required: ["body"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "audit_sequence",
+      description:
+        "Audit a whole saved sequence, not one email at a time. Catches the two failures that kill sequences and that no single-email check can see: touches that repeat what an earlier one already said, and spacing that is bunched or scattered. Also runs the per-email rules with each step's position. Use it when the user asks why a sequence is not getting replies, or after building one.",
+      parameters: {
+        type: "object",
+        properties: {
+          sequence_id: { type: "string", description: "The sequence to audit." },
+        },
+        required: ["sequence_id"],
       },
     },
   },
@@ -2562,6 +2603,93 @@ serve(async (req) => {
           return { from: mailbox.email, ...outcome.summary, ...(outcome.result ?? {}) };
         }
 
+        case "audit_email": {
+          // Deterministic only. The rubric already buys a model's opinion; what
+          // belongs here is the set of things that are simply true or false
+          // about the text, so the same email always audits the same way and
+          // the agent cannot talk itself out of a finding.
+          const findings = auditEmail({
+            subject: args.subject ? String(args.subject) : "",
+            body: String(args.body ?? ""),
+            position: typeof args.position === "number" ? args.position : undefined,
+            verifiedProof: args.verified_proof ? String(args.verified_proof) : "",
+          });
+          const blockers = findings.filter((f) => f.severity === "blocker").length;
+          toolEvents.push({
+            name,
+            label: findings.length === 0 ? "Audited — clean" : `Audited — ${findings.length} finding(s)`,
+            status: blockers > 0 ? "error" : findings.length ? "queued" : "ok",
+            detail: findings.length
+              ? findings.map((f) => f.rule).join(", ")
+              : "no rule violations",
+          });
+          return {
+            findings,
+            blockers,
+            summary: auditSummary(findings),
+            note:
+              "Report every finding to the user in your own words, quoting the evidence. " +
+              "Do not soften a blocker into a suggestion, and do not claim the email is fine when findings exist.",
+          };
+        }
+
+        case "audit_sequence": {
+          const sequenceId = String(args.sequence_id ?? "");
+          if (!sequenceId) return { error: "sequence_id is required. Use list_sequences to find it." };
+          const { data: seq } = await admin
+            .from("email_sequences")
+            .select("id, name")
+            .eq("id", sequenceId)
+            .eq("user_id", userId)
+            .maybeSingle();
+          if (!seq) return { error: "That sequence does not exist on this account." };
+
+          const { data: steps, error: stepErr } = await admin
+            .from("sequence_steps")
+            .select("step_number, subject_template, body_template, delay_days")
+            .eq("sequence_id", sequenceId)
+            .order("step_number", { ascending: true });
+          if (stepErr) return { error: stepErr.message };
+          const rows = steps ?? [];
+          if (rows.length === 0) {
+            return { error: `"${seq.name}" has no steps yet, so there is nothing to audit.` };
+          }
+
+          // delay_days on a step is the wait BEFORE the next one, so the day a
+          // step lands is the running total of everything before it.
+          let cursor = 1;
+          const withDays = rows.map((r) => {
+            const row = r as Record<string, unknown>;
+            const day = cursor;
+            cursor += Number(row.delay_days ?? 0) || 0;
+            return {
+              step_number: Number(row.step_number ?? 0),
+              subject_template: (row.subject_template as string) ?? "",
+              body_template: (row.body_template as string) ?? "",
+              day,
+            };
+          });
+
+          const findings = auditSequence(withDays);
+          const blockers = findings.filter((f) => f.severity === "blocker").length;
+          toolEvents.push({
+            name,
+            label: findings.length === 0 ? `Audited "${seq.name}" — clean` : `Audited "${seq.name}" — ${findings.length} finding(s)`,
+            status: blockers > 0 ? "error" : findings.length ? "queued" : "ok",
+            detail: findings.length
+              ? [...new Set(findings.map((f) => f.rule))].join(", ")
+              : `${rows.length} step(s), no rule violations`,
+          });
+          return {
+            sequence: seq.name,
+            steps: rows.length,
+            findings,
+            blockers,
+            summary: sequenceSummary(findings, rows.length),
+            note: "Name the step number for every finding. Do not report a clean audit when findings exist.",
+          };
+        }
+
         case "list_sequences": {
           const { data } = await admin
             .from("email_sequences")
@@ -3066,6 +3194,7 @@ HOW TO WORK
 - Drafts are auto-saved and rendered in the chat as read-only preview cards. There are no buttons anywhere in this chat — everything happens through messages. After drafting, tell the user the drafts are below for review and ask them to reply when they want them sent or scheduled.
 - QUALITY: send_outreach scores anything you wrote yourself before it goes out. If it answers needs_rewrite, the email was NOT sent: rewrite it against the feedback it returned and call send_outreach again with the new subject and body. Do not re-send the same text, do not tell the user it went out, and do not work around the check by saving it as a draft and sending that instead. If it answers with unfilled placeholders, fill in the real values and call again.
 - SENDING: when the user approves the drafts ("send them", "all good, send"), YOU send them — call send_drafts. You never need the subject or body to send a saved draft, only draft ids: use the draft_ids from your draft_outreach results, or call list_drafts (optionally with lead_ids or a name) to look them up again. Pass from_email when the user names one inbox, or from_emails to rotate across several. When they do not name one, leave both off: sends automatically rotate across every healthy connected mailbox (least-used domain first), which is what you want for outbound volume. Use list_mailboxes if you need to know which addresses are connected, and never claim you can only send from one domain. Never tell the user to click "Send now" themselves or to open another page, and never claim you lack the lead ids or draft contents — look them up with list_drafts instead.
+- REVIEWING COPY: when the user pastes an email and asks what is wrong with it, asks you to review or improve copy, or asks why a sequence gets no replies, call audit_email (or audit_sequence for a whole sequence) FIRST and answer from what it returns. Do not give copywriting opinions in place of it — the audit checks unfilled merge fields, unbacked result claims, banned openers, length, the one-call-to-action rule and whether a named trigger is bridged to a real problem, and it is the same check the generator is held to. Report every finding with its evidence, never soften a blocker into a suggestion, and never call an email fine when the audit returned findings. You may add judgement on top of the findings; you may not replace them with it.
 - REPEATS: a send refused with code duplicate_send means that person already received that exact subject line within the last two weeks. This is NOT a problem with the draft and it is NOT something drafting can fix. Deleting the drafts and generating new ones does not clear it — the block is on the sent history, not on the drafts — so never offer that. Say who already got what and when, then offer exactly two things: write a follow-up on a genuinely new angle with a new subject (call draft_outreach again with feedback describing the new angle), or resend the same email deliberately (call the send tool again with allow_duplicate: true, but only after the user has said in their own words to send it again anyway).
 - SCHEDULING: you CAN send later. When the user asks for a future send ("tomorrow at 9", "Monday morning", "next week"), call schedule_drafts with the draft_ids and send_at_local set to their local wall-clock time with no offset (e.g. "9am today" -> send_at_local: "YYYY-MM-DDT09:00" for today's local date). Never convert to UTC yourself and never pass a bare UTC timestamp for a local time — the tool does the conversion. Use stagger_minutes when queuing several so they don't all fire at once. Confirm the exact date/time you queued, and mention it sends automatically. Use list_scheduled_emails to show what is queued and cancel_scheduled_email to call one back. Never say you cannot schedule and never tell the user to use the Schedule button themselves.
 - DELETING: you CAN delete emails AND lead records. Use delete_drafts to remove saved drafts (by draft_ids, lead_ids, or all_pending), delete_inbox_threads to remove inbox conversations (by thread_ids or match_email), and delete_leads to permanently remove saved lead records (by lead_ids, match_company or match_name — it also clears any drafts attached to them). Deletion is permanent, so only do it when the user asks, confirm briefly what you are about to delete if the request is broad ("delete all my drafts", "delete all my leads"), then do it and report the count. Never say you lack a way to delete leads and never tell the user to delete things manually in the UI.
@@ -3109,6 +3238,7 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
       { marker: "- INBOX HISTORY:", tools: ["list_sent_emails", "get_email_thread"] },
       { marker: "- QUALITY:", tools: ["send_outreach"] },
       { marker: "- SENDING:", tools: ["send_drafts", "send_outreach"] },
+      { marker: "- REVIEWING COPY:", tools: ["audit_email"] },
       { marker: "- REPEATS:", tools: ["send_drafts", "send_outreach"] },
       { marker: "- SCHEDULING:", tools: ["schedule_drafts"] },
       { marker: "- DELETING:", tools: ["delete_drafts", "delete_leads", "delete_inbox_threads"] },
