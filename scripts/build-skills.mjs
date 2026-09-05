@@ -38,6 +38,10 @@ const EMAIL_SKILLS = [
   // unattended and had no craft guidance behind it at all.
   "objection-replies",
   "cold-email-4-sequence",
+  // The six-touch shape, with each email's job, the day it goes out, and the
+  // anti-patterns. It is the only skill that describes a sequence as a set
+  // rather than as a run of emails, which is the half sequences fail on.
+  "six-email-sequence",
   "cold-email-strategist",
   "cold-email-templates-34",
   "email-writing-frameworks",

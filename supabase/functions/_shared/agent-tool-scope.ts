@@ -41,6 +41,12 @@ export const OUTREACH_TOOLS = [
   "delete_drafts",
   "list_sequences",
   "enroll_lead_in_sequence",
+  // Reviewing copy is part of writing it. Both audits are read-only and
+  // deterministic, so every email-facing agent gets them: an agent that can
+  // send but cannot check what it is about to send is the arrangement that
+  // produced the copy complaints in the first place.
+  "audit_email",
+  "audit_sequence",
 ];
 
 export const REPLY_TOOLS = [
@@ -58,6 +64,7 @@ export const REPLY_TOOLS = [
   "schedule_drafts",
   "list_scheduled_emails",
   "cancel_scheduled_email",
+  "audit_email",
   // Reading the lead behind the thread, and moving its stage after a reply.
   "update_lead",
   "delete_inbox_threads",
@@ -188,6 +195,8 @@ export const TOOL_CATALOG: Record<string, string> = {
   cancel_scheduled_email: "Cancel a scheduled send.",
   delete_drafts: "Permanently delete drafts (destructive).",
   list_sequences: "List the account's sequences.",
+  audit_email: "Check a subject and body against every mechanical cold-email rule and return the violations with fixes.",
+  audit_sequence: "Check a whole sequence for repeated touches, bad spacing, and per-step rule violations.",
   enroll_lead_in_sequence: "Enroll leads into a sequence.",
   list_recent_replies: "Read inbound replies from connected inboxes.",
   list_sent_emails:

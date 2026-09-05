@@ -89,7 +89,11 @@ describe("skillsForGoal", () => {
     // would be the last thing dropped if a budget ever did bite.
     expect(skillsForGoal({ goal: "4ts" })[0]).toBe("email-writing-frameworks");
     expect(skillsForGoal({ goal: "meeting" })[0]).toBe("outreach-messaging");
-    expect(skillsForGoal({ goal: "follow-up" })[0]).toBe("cold-email-4-sequence");
+    // six-email-sequence leads the follow-up goals on purpose: it is the only
+    // skill that states the JOB of each touch, which is the thing a follow-up
+    // has to differ on. cold-email-4-sequence follows it, not the reverse.
+    expect(skillsForGoal({ goal: "follow-up" })[0]).toBe("six-email-sequence");
+    expect(skillsForGoal({ goal: "follow-up" })[1]).toBe("cold-email-4-sequence");
   });
 
   it("is case-insensitive about the goal", () => {

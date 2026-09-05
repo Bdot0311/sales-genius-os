@@ -58,9 +58,11 @@ const BY_GOAL: Record<string, EmailSkillName[]> = {
 
   // Anything later in a sequence needs the position, not just the shape:
   // what email 3 does that email 1 did not, and how a break-up is written.
-  "follow-up": ["cold-email-4-sequence"],
-  "4ps_followup": ["cold-email-4-sequence"],
-  "4ps_elusive_followup": ["cold-email-4-sequence"],
+  // six-email-sequence leads because it is the only one that states the JOB of
+  // each touch — the thing a follow-up has to differ on.
+  "follow-up": ["six-email-sequence", "cold-email-4-sequence"],
+  "4ps_followup": ["six-email-sequence", "cold-email-4-sequence"],
+  "4ps_elusive_followup": ["six-email-sequence", "cold-email-4-sequence"],
 
   // Conversation-advancing goals. R.E.P.L.Y. and the value-first framing in
   // outreach-messaging are about earning the next step.
@@ -71,7 +73,7 @@ const BY_GOAL: Record<string, EmailSkillName[]> = {
   // The autonomous agent's multi-touch sequences. It needs both the position
   // logic (what touch 3 does that touch 1 did not) and the shapes to draw each
   // individual touch from.
-  sequence: ["cold-email-4-sequence", "email-writing-frameworks"],
+  sequence: ["six-email-sequence", "cold-email-4-sequence", "email-writing-frameworks"],
 };
 
 /** Rough token estimate — enough to keep a prompt from silently ballooning. */
