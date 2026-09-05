@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Send, Sparkles, Users, Search, Settings2, Mail, ChevronLeft, ChevronRight, AlertTriangle, Shield, CheckCircle2, XCircle, HelpCircle } from "lucide-react";
 import { EmailQualityChecker, scoreEmailQuality } from "./EmailQualityChecker";
+import { readGeneratedEmail, readGeneratedSubject } from "@/lib/read-generated-email";
 import { generateComplianceFooter, parseSpintax, validateSenderDomain } from "@/lib/compliance";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
@@ -334,8 +335,10 @@ export const BulkSendDialog = ({
               businessDescription,
             },
           });
-          if (subErr) throw subErr;
-          subject = subData.email.replace(/^Subject:\s*/i, "").trim();
+          // A 200 carrying { error } is a refusal with a reason. Reading .email
+          // off it threw a type error, and in a bulk run that error is what the
+          // whole batch reported — hiding a reason that applied to every lead.
+          subject = readGeneratedSubject(subData, subErr);
 
           // Generate unique body
           const { data: bodyData, error: bodyErr } = await supabase.functions.invoke("generate-email", {
@@ -350,8 +353,7 @@ export const BulkSendDialog = ({
               businessDescription,
             },
           });
-          if (bodyErr) throw bodyErr;
-          body = sanitizeGeneratedEmailBody(bodyData.email);
+          body = sanitizeGeneratedEmailBody(readGeneratedEmail(bodyData, bodyErr));
         } else {
           // Personalize same template with lead name/company
           subject = subject

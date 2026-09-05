@@ -699,7 +699,19 @@ serve(async (req) => {
     // missing profile field, reported as an unexplained generator fault.
     const resolvedSenderName = senderName || nameFromEmail(senderEmail);
 
-    if (!resolvedSenderName) {
+    // Goals that return a fragment rather than an email.
+    //
+    // A subject line and a trigger opener carry no sign-off, so demanding a
+    // sender name before writing six words refuses work that never needed one.
+    // Outreach Studio's standalone "generate subject" and "generate trigger"
+    // buttons send neither senderName nor senderEmail — they have no signature
+    // to fill — so every press hit this gate, returned 200 with an error body,
+    // and the browser then read .email off it and threw. Both buttons were
+    // unusable for everyone, not just for accounts with no profile name.
+    const SIGNATURE_FREE_GOALS = new Set(['subject_only', 'trigger_context']);
+    const needsSignature = !SIGNATURE_FREE_GOALS.has(goal);
+
+    if (needsSignature && !resolvedSenderName) {
       return new Response(JSON.stringify({
         error: 'No sender name is set, so the email cannot be signed. Add your name in Settings, or connect a mailbox whose address contains it.',
         error_code: 'no_sender_name',

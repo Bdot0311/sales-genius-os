@@ -36,6 +36,7 @@ import { BulkSendDialog } from "@/components/outreach/BulkSendDialog";
 import { EmailQualityChecker, scoreEmailQuality } from "@/components/outreach/EmailQualityChecker";
 import { EmailRubricPanel } from "@/components/outreach/EmailRubricPanel";
 import { EmailAuditPanel } from "@/components/outreach/EmailAuditPanel";
+import { readGeneratedEmail, readGeneratedSubject } from "@/lib/read-generated-email";
 import { applyEmailQualityFix } from "@/lib/email-quality-fixes";
 import { LeadResearchPanel, type LeadResearch } from "@/components/outreach/LeadResearchPanel";
 import { SequencesList, MessageBlocksList } from "@/components/sequences";
@@ -1038,8 +1039,10 @@ const Outreach = () => {
         },
       });
 
-      if (error) throw error;
-      setSubjectLine(data.email.replace(/^Subject:\s*/i, '').trim());
+      // A 200 carrying { error } is a refusal with a reason, not a success.
+      // Reading .email off it threw a type error that was then shown to the
+      // user in place of the explanation sitting next to it.
+      setSubjectLine(readGeneratedSubject(data, error));
       toast({
         title: "Subject line generated",
         description: "AI has created a subject line for you",
@@ -1078,8 +1081,7 @@ const Outreach = () => {
         },
       });
 
-      if (error) throw error;
-      setTriggerContext(data.email.trim());
+      setTriggerContext(readGeneratedEmail(data, error).trim());
       toast({
         title: "Trigger context generated",
         description: "AI created a personalized opener for you",
@@ -1145,7 +1147,7 @@ const Outreach = () => {
           },
         });
         if (subjectError) throw subjectError;
-        finalSubjectLine = subjectData.email.replace(/^Subject:\s*/i, '').trim();
+        finalSubjectLine = readGeneratedSubject(subjectData, subjectError);
         setSubjectLine(finalSubjectLine);
       }
 
@@ -1185,7 +1187,7 @@ const Outreach = () => {
         });
         return;
       }
-      const emailBody = appendSenderLine(sanitizeGeneratedEmailBody(data.email), resolvedSender);
+      const emailBody = appendSenderLine(sanitizeGeneratedEmailBody(readGeneratedEmail(data, error)), resolvedSender);
       setGeneratedEmail(emailBody);
       if (data?.research) {
         setLeadResearch({
