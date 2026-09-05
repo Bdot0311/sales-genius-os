@@ -44,7 +44,22 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm ci
+      # npm install, not npm ci, and deliberately.
+      #
+      # The committed lockfile is missing @lovable.dev/email-js, which
+      # package.json declares, so `npm ci` refuses outright:
+      #   npm error Missing: @lovable.dev/email-js@0.1.0 from lock file
+      # That is a pre-existing drift in the repo, not something this job
+      # introduced — it is simply the first CI job that installs anything. The
+      # package is a Deno `npm:` import used only by edge functions, which Deno
+      # resolves at deploy time, and tsconfig.app.json includes only `src`, so
+      # the typecheck never needs it either way. npm install tolerates the
+      # drift and resolves both missing entries.
+      #
+      # Regenerating the lockfile would fix `npm ci` for everyone, but it
+      # rewrites ~680 packages across the tree, which is a dependency decision
+      # for a human rather than a side effect of adding a typecheck.
+      - run: npm install --no-audit --no-fund
       - name: Typecheck (project references, not the no-op --noEmit)
         run: npx tsc -b --pretty false
 

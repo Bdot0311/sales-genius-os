@@ -123,4 +123,14 @@ describe("the typecheck in CI checks something", () => {
   it("records why, so nobody swaps it back for the shorter command", () => {
     expect(CI).toMatch(/compiles zero files/i);
   });
+
+  it("installs in a way that survives the repo's stale lockfile", () => {
+    // package.json declares @lovable.dev/email-js and the committed lockfile
+    // does not carry it, so `npm ci` refuses outright. That drift predates
+    // this job — it is just the first CI job that installs anything.
+    const job = CI.slice(CI.indexOf("typecheck:"), CI.indexOf("skills-bundle:"));
+    expect(job).toContain("npm install");
+    expect(job).not.toMatch(/run: npm ci\s*$/m);
+    expect(job).toMatch(/Missing: @lovable\.dev\/email-js/);
+  });
 });
