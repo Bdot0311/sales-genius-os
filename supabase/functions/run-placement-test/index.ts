@@ -27,6 +27,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+import { READ_FAILURE_ENDS_TEST, seedFailureMessage } from "../_shared/placement-seed.ts";
+
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GMAIL_API = "https://gmail.googleapis.com/gmail/v1/users/me";
 
@@ -34,16 +36,39 @@ function toBase64Url(str: string): string {
   return btoa(unescape(encodeURIComponent(str))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
+/**
+ * The last reason a token exchange failed.
+ *
+ * Google says exactly what is wrong — invalid_grant for a revoked or expired
+ * refresh token, unauthorized_client for a mismatched app — and that answer
+ * went to a console log the user cannot read, while they were shown a generic
+ * sentence telling them to reconnect a mailbox they may not even own.
+ */
+let lastTokenError: string | null = null;
+
 async function accessTokenFromRefresh(refreshToken: string): Promise<string | null> {
   const clientId = Deno.env.get("GOOGLE_CLIENT_ID");
   const clientSecret = Deno.env.get("GOOGLE_CLIENT_SECRET");
-  if (!clientId || !clientSecret) return null;
+  if (!clientId || !clientSecret) {
+    lastTokenError = "Google OAuth credentials are not configured on the server";
+    return null;
+  }
   const res = await fetch(GOOGLE_TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({ client_id: clientId, client_secret: clientSecret, refresh_token: refreshToken, grant_type: "refresh_token" }).toString(),
   });
-  if (!res.ok) { console.error("seed token refresh failed:", res.status, await res.text()); return null; }
+  if (!res.ok) {
+    const body = await res.text();
+    console.error("seed token refresh failed:", res.status, body.slice(0, 300));
+    let code = "";
+    try { code = String(JSON.parse(body)?.error ?? ""); } catch { code = ""; }
+    lastTokenError = code
+      ? `Google refused the token: ${code}`
+      : `Google refused the token (HTTP ${res.status})`;
+    return null;
+  }
+  lastTokenError = null;
   const j = await res.json();
   return j.access_token ?? null;
 }
@@ -222,12 +247,23 @@ serve(async (req) => {
       const seedEmail = (test.seed_email as string) || Deno.env.get("DELIVERABILITY_SEED_GMAIL_ADDRESS") || "";
       const seedToken = seedEmail ? await seedReadToken(admin, user.id, seedEmail) : null;
       if (!seedToken) {
-        // A read we cannot perform is not a placement verdict. Say so plainly
-        // instead of leaving the UI spinning on "checking" forever.
-        await admin.from("placement_tests").update({ status: "failed", completed_at: new Date().toISOString() }).eq("id", test.id);
+        // A read we cannot perform is not a placement verdict, and it is not a
+        // dead test either. The email is sitting in the seed inbox either way,
+        // so the result is still there to be collected — which is the reasoning
+        // the "missing" branch below already applies and this one did not.
+        // Marking the row failed threw away a recoverable test and made "Check
+        // again" look broken, because the thing it re-checked had been declared
+        // dead one transient error earlier.
+        if (READ_FAILURE_ENDS_TEST) {
+          await admin.from("placement_tests").update({ status: "failed", completed_at: new Date().toISOString() }).eq("id", test.id);
+        }
         return json({
           error: "seed_unavailable",
-          message: `The test email was sent, but ${seedEmail || "the seed inbox"} could not be read to see where it landed. Reconnect that mailbox and run the test again.`,
+          message: seedFailureMessage({
+            seedEmail,
+            platformAddress: Deno.env.get("DELIVERABILITY_SEED_GMAIL_ADDRESS"),
+            reason: lastTokenError,
+          }),
         }, 409);
       }
 
