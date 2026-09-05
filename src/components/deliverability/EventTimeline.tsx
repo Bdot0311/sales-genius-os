@@ -25,17 +25,19 @@ const EVENT_STYLE: Record<string, { icon: JSX.Element; tone: string; label: stri
   warmup_started:       { icon: <Thermometer className="h-3.5 w-3.5" />,   tone: "text-muted-foreground", label: "Warmup" },
   warmup_completed:     { icon: <Thermometer className="h-3.5 w-3.5" />,   tone: "text-muted-foreground", label: "Warmup" },
   auth_record_changed:  { icon: <ShieldAlert className="h-3.5 w-3.5" />,   tone: "text-yellow-500",       label: "DNS" },
-  dns_changed:          { icon: <ShieldCheck className="h-3.5 w-3.5" />,   tone: "text-yellow-500",       label: "DNS" },
   limit_changed:        { icon: <Gauge className="h-3.5 w-3.5" />,         tone: "text-yellow-500",       label: "Volume" },
   quarantined:          { icon: <Siren className="h-3.5 w-3.5" />,         tone: "text-destructive",      label: "Contained" },
-  quarantine_released:  { icon: <PlayCircle className="h-3.5 w-3.5" />,    tone: "text-green-500",        label: "Released" },
   placement_test:       { icon: <TestTube className="h-3.5 w-3.5" />,      tone: "text-muted-foreground", label: "Test" },
   blacklist_listed:     { icon: <ShieldAlert className="h-3.5 w-3.5" />,   tone: "text-destructive",      label: "Blacklist" },
   blacklist_cleared:    { icon: <ShieldCheck className="h-3.5 w-3.5" />,   tone: "text-green-500",        label: "Blacklist" },
-  copy_edited:          { icon: <Mail className="h-3.5 w-3.5" />,          tone: "text-muted-foreground", label: "Copy" },
-  campaign_launched:    { icon: <Mail className="h-3.5 w-3.5" />,          tone: "text-muted-foreground", label: "Campaign" },
 };
 
+// Only event types something actually writes are styled. Four more were
+// listed here — dns_changed, quarantine_released, copy_edited and
+// campaign_launched — with icons and tones, and nothing in the codebase ever
+// produced one. A map of events that cannot happen reads as a feature list.
+// FALLBACK covers anything added later, so a new type renders rather than
+// crashing while it waits for a style.
 const FALLBACK = { icon: <Mail className="h-3.5 w-3.5" />, tone: "text-muted-foreground", label: "Change" };
 
 const dayLabel = (iso: string) =>
@@ -45,9 +47,22 @@ const timeLabel = (iso: string) =>
   new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 
 export const EventTimeline = ({ days = 30 }: { days?: number }) => {
-  const { data, isLoading } = useDeliverabilityEvents(days);
+  const { data, isLoading, isError } = useDeliverabilityEvents(days);
 
   if (isLoading) return <Skeleton className="h-40 w-full" />;
+
+  // Distinguished from an empty timeline on purpose: "nothing has changed" is
+  // a claim about the account, and a failed query has not established it.
+  if (isError) {
+    return (
+      <Card className="border-border/50">
+        <CardContent className="p-6 text-center text-sm text-muted-foreground">
+          Could not load the change history, so this is not a statement that nothing changed.
+          Reload the page to try again.
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (!data || data.length === 0) {
     return (
