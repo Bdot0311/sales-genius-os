@@ -67,9 +67,19 @@ serve(async (req) => {
     .limit(BATCH_SIZE);
 
   if (error) {
+    // A failed queue read means no Stripe event gets retried this run, which
+    // silently leaves subscriptions out of sync. Surface it instead of only
+    // logging it.
     log("query error", { error: error.message });
+    await logSystemAlert({
+      category: "stripe_webhook_failure",
+      severity: "error",
+      message: `retry-stripe-webhooks could not read its retry queue: ${error.message}`,
+      details: { error: error.message, batch_size: BATCH_SIZE },
+    });
     return new Response(JSON.stringify({ error: error.message }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
+
 
   log(`processing ${due?.length ?? 0} due events`);
   const results: Array<{ id: string; status: string }> = [];
