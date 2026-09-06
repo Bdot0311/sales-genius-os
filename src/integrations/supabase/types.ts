@@ -5569,6 +5569,7 @@ export type Database = {
     }
     Functions: {
       _system_health_checks: { Args: never; Returns: Json }
+      activation_stage_rank: { Args: { _stage: string }; Returns: number }
       admin_delete_user: { Args: { _user_id: string }; Returns: undefined }
       admin_get_activation_dropoff_alerts: {
         Args: never
@@ -5582,7 +5583,10 @@ export type Database = {
           user_id: string
         }[]
       }
-      admin_get_activation_funnel: { Args: { _days?: number }; Returns: Json }
+      admin_get_activation_funnel: {
+        Args: { _days?: number; _include_internal?: boolean }
+        Returns: Json
+      }
       admin_get_all_subscriptions: {
         Args: never
         Returns: {
@@ -5695,7 +5699,12 @@ export type Database = {
         }[]
       }
       admin_list_activation_users: {
-        Args: { _cohort?: string; _days?: number; _limit?: number }
+        Args: {
+          _cohort?: string
+          _days?: number
+          _include_internal?: boolean
+          _limit?: number
+        }
         Returns: {
           cohort: string
           completed_onboarding_at: string
