@@ -2,6 +2,7 @@ import outReignLogo from "@/assets/outreign-logo.webp";
 import { Link } from "react-router-dom";
 import { helpCategories, helpArticles } from "@/components/help/helpArticles";
 import { blogPostsMeta } from "@/data/blog-index";
+import { ALL_BADGES } from "@/lib/directory-badges";
 
 // Guides and support links are generated from the same content data the pages
 // render. Help articles and categories previously had no link path from the
@@ -220,27 +221,12 @@ export const FooterSection = () => {
               style={{ ["--chip-bg" as any]: "hsl(240 30% 10%)", ["--chip-border" as any]: "hsl(261 75% 50% / 0.18)" }}
             >
               {(
-                [
-                  { href: "https://sellwithboost.com", src: "https://sellwithboost.com/badge/listing-dark.svg", alt: "Listed on Sell With Boost", w: 160, h: 40 },
-                  { href: "https://landingboost.app/badges/top-1", src: "https://landingboost.app/badges/top1-dark.svg", alt: "Top 1% Landing Page — Verified by LandingBoost", w: 200, h: 40 },
-                  { href: "https://nicklaunches.com/products/salesos/?utm_source=outreign.io&utm_medium=badge&utm_campaign=featured", src: "https://nicklaunches.com/badges/featured-dark.svg", alt: "OutReign on Nick Launches", w: 244, h: 56 },
-                  
-                  { href: "https://rankinpublic.xyz/products/outreign.io", src: "https://rankinpublic.xyz/api/badges/badge-featured.png?site=outreign.io", alt: "Featured on RankInPublic", w: 125, h: 40 },
-                  { href: "https://www.producthunt.com/products/outreign-io?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-outreign-io", src: "https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1174023&theme=dark&t=1781681273997", alt: "OutReign.io - Find who to sell to then close them. | Product Hunt", w: 250, h: 54 },
-                  { href: "https://launchllama.co?utm_source=badge&utm_medium=referral", src: "https://speaktechenglish.com/wp-content/uploads/2026/04/Screenshot_2026-04-09_at_17.40.44-removebg-preview.png", alt: "Featured on Launch Llama", w: 200, h: 50 },
-                  { href: "https://launchigniter.com/product/outreign-io?ref=badge-outreign-io", src: "https://launchigniter.com/api/badge/outreign-io?theme=dark", alt: "Featured on LaunchIgniter", w: 212, h: 55 },
-                  { href: "https://smollaunchpad.com/projects/outreign", src: "/badges/smol-launchpad-top1-dark.svg", alt: "Smol LaunchPad Top 1 Daily Winner", w: 210, h: 54 },
-                  { href: "https://microlaunch.net/p/outreign?utm_source=badge-winner-microlaunch&utm_medium=badge", src: "https://wild-dust-0517.microlaunch.workers.dev/badges/potd/ml_potd_badge_v4.svg", alt: "Microlaunch - Launch, get feedback, exposure and first customers over a month", w: 306, h: 96 },
-                  { href: "https://microlaunch.net/p/outreign?utm_source=badge-challenger-microlaunch&utm_medium=badge", src: "https://wild-dust-0517.microlaunch.workers.dev/microlaunch-challenger-badges/ml_challenger_v5.svg", alt: "Microlaunch - Launch, get feedback, exposure and first customers over a month", w: 306, h: 96 },
-                  { href: "https://launchnest.io/p/outreign", src: "https://launchnest.io/badge/outreign.svg?variant=featured", alt: "OutReign on LaunchNest", w: 220, h: 56 },
-                  { href: "https://spacerrapps.com/apps/outreign?ref=badge", src: "https://spacerrapps.com/badge/outreign.svg?theme=light", alt: "OutReign is featured on Spacerr", w: 192, h: 54 },
-                  { href: "https://boostdomainrating.com/item/outreign.io?utm_source=badge", src: "https://boostdomainrating.com/api/badge/outreign.io?color=dark", alt: "OutReign - Domain Rating", w: 212, h: 54 },
-                  { href: "https://orynth.dev/projects/outreign", src: "https://orynth.dev/api/badge/outreign?theme=dark&style=minimal", alt: "Featured on Orynth", w: 152, h: 48 },
-                  { href: "https://peerpush.com/p/outreign", src: "https://peerpush.com/p/outreign/badge.png", alt: "OutReign on PeerPush", w: 230, h: 54 },
-                  { href: "https://www.uneed.best/tool/outreign", src: "https://www.uneed.best/EMBED1B.png", alt: "Featured on Uneed", w: 200, h: 54 },
-                  { href: "https://scoutforge.net/apps/outreign?ref=badge", src: "https://scoutforge.net/badge/outreign/image?theme=dark&size=default", alt: "OutReign on Scout Forge", w: 300, h: 72 },
-                  { href: "https://dang.ai", src: "https://assets.dang.ai/badges/dang-verified-dark.png", alt: "Verified on DANG!", w: 260, h: 94 },
-                ] as Array<{ href: string; src: string; alt: string; w: number; h: number } | { href: string; html: string; alt: string }>
+                // The list lives in lib/directory-badges.ts so the hero's three
+                // and the footer's nineteen cannot drift into disagreeing
+                // about a URL. All of them stay here: each is a reciprocal
+                // backlink, which is the job they are actually doing.
+                ALL_BADGES as Array<{ href: string; src: string; alt: string; w: number; h: number } | { href: string; html: string; alt: string }>
+
               ).concat({ href: "https://everlist.dev/tools/outreign", html: `<a href="https://everlist.dev/tools/outreign" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:10px;padding:8px 14px;background:#0B0B0F;color:#FFFFFF;border:1px solid #23232B;border-radius:9999px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:13px;line-height:1;text-decoration:none;"><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:#D4AF37;color:#0B0B0F;font-weight:700;font-size:12px;">E</span><span style="display:inline-flex;flex-direction:column;gap:2px;"><span style="font-size:9px;letter-spacing:1.4px;text-transform:uppercase;color:#9A9AA8;">Listed on</span><span style="font-weight:600;letter-spacing:-0.01em;"><span style="color:#FFFFFF">Ever</span><span style="color:#D4AF37">List</span></span></span></a>`, alt: "Listed on EverList" }).map((b) => {
                 const sharedProps = {
                   href: b.href,

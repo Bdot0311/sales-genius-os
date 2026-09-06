@@ -3,6 +3,7 @@ import { ArrowRight } from "lucide-react";
 import { CAMPAIGN_SETUP_BOOKING_URL, openCampaignSetupBooking } from "@/lib/campaign-setup";
 import { useIsSignedIn } from "@/hooks/use-signed-in";
 import { Analytics } from "@/lib/analytics-events";
+import { FeaturedBadges } from "@/components/landing/FeaturedBadges";
 
 export const HeroSection = () => {
   const signedIn = useIsSignedIn();
@@ -103,6 +104,10 @@ export const HeroSection = () => {
         >
           Built by operators who run real outbound every day
         </p>
+
+        {/* Three directory badges, not the footer's nineteen. See
+            lib/directory-badges.ts for why the rest stay below. */}
+        <FeaturedBadges className="mt-5" />
       </div>
 
     </section>
