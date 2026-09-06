@@ -129,7 +129,7 @@ const AdminActivation = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {(["tire_kicker", "explorer", "active", "power"] as const).map((k) => {
           const meta = COHORT_META[k];
-          const count = funnel?.cohorts[k] ?? 0;
+          const count = funnel?.cohorts?.[k] ?? 0;
           const p = pct(count);
           return (
             <Card key={k} className={cohort === k ? "border-primary" : ""}>
