@@ -44,21 +44,21 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      # npm install, not npm ci, and for a reason that outlives the lockfile.
+      # npm ci, now that the lockfile is whole.
       #
-      # 294 of the 1216 entries in package-lock.json pin `resolved` to
-      # europe-west1-npm.pkg.dev — Lovable's private sandbox cache. npm ci
-      # honours those URLs exactly, so it can only install this lockfile from
-      # inside a network that can read that registry; everywhere else it dies
-      # on a wall of 403s. npm install re-resolves from the public registry
-      # instead, which is why the install step here takes ~30s and works.
+      # It refused before because package.json declared @lovable.dev/email-js
+      # and the lockfile carried no entry for it:
+      #   npm error Missing: @lovable.dev/email-js@0.1.0 from lock file
+      # That was the whole failure. A previous revision of this comment blamed
+      # the private registry the lockfile pins for 294 of its 1216 packages,
+      # on the strength of 403s seen while developing — but those came from a
+      # sandbox egress proxy that blocks europe-west1-npm.pkg.dev, not from
+      # the registry, and a GitHub runner reaches it fine.
       #
-      # The lockfile is nonetheless whole now — it used to be missing
-      # @lovable.dev/email-js entirely, which package.json declares — and the
-      # lockfile-integrity test keeps it that way. That fixes `npm ci` for
-      # anyone who CAN reach the private registry, which is the case it was
-      # broken for too.
-      - run: npm install --no-audit --no-fund
+      # ci rather than install on purpose: it installs exactly what the
+      # lockfile pins and fails loudly if the two drift apart again, which is
+      # the failure that made this job necessary in the first place.
+      - run: npm ci --no-audit --no-fund
       - name: Typecheck (project references, not the no-op --noEmit)
         run: npx tsc -b --pretty false
 
