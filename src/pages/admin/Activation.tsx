@@ -11,25 +11,13 @@ import { Users, TrendingDown, Zap, Snowflake, Flame } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { UserTimelineDrawer } from "@/components/admin/UserTimelineDrawer";
-
-interface FunnelData {
-  range_days: number;
-  funnel: {
-    signed_up: number;
-    verified_email: number;
-    completed_onboarding: number;
-    first_search: number;
-    first_lead_saved: number;
-    mailbox_connected: number;
-    first_email_sent: number;
-  };
-  cohorts: {
-    tire_kicker: number;
-    explorer: number;
-    active: number;
-    power: number;
-  };
-}
+import {
+  funnelRows,
+  isMonotonic,
+  freshnessLabel,
+  percentOf,
+  type ActivationFunnelResponse,
+} from "@/lib/activation-funnel";
 
 interface ActivationUser {
   user_id: string;
@@ -49,16 +37,6 @@ interface ActivationUser {
   days_since_signup: number;
 }
 
-const FUNNEL_STEPS = [
-  { key: "signed_up", label: "Signed up" },
-  { key: "verified_email", label: "Verified email" },
-  { key: "completed_onboarding", label: "Onboarded" },
-  { key: "first_search", label: "First search" },
-  { key: "first_lead_saved", label: "First lead saved" },
-  { key: "mailbox_connected", label: "Mailbox connected" },
-  { key: "first_email_sent", label: "First email sent" },
-] as const;
-
 const COHORT_META: Record<string, { label: string; cls: string; Icon: any }> = {
   tire_kicker: { label: "Tire-kicker", cls: "bg-muted text-muted-foreground border-border", Icon: Snowflake },
   explorer: { label: "Explorer", cls: "bg-blue-500/15 text-blue-400 border-blue-500/30", Icon: Users },
@@ -70,7 +48,7 @@ const STAGE_LABELS: Record<string, string> = {
   signed_up: "Signed up",
   verified_email: "Verified email",
   completed_onboarding: "Onboarded",
-  first_search: "First search",
+  first_search: "First lead search",
   first_lead_saved: "First lead saved",
   mailbox_connected: "Mailbox connected",
   first_email_sent: "First email sent",
@@ -79,7 +57,7 @@ const STAGE_LABELS: Record<string, string> = {
 const AdminActivation = () => {
   const [days, setDays] = useState<number>(30);
   const [cohort, setCohort] = useState<string>("all");
-  const [funnel, setFunnel] = useState<FunnelData | null>(null);
+  const [funnel, setFunnel] = useState<ActivationFunnelResponse | null>(null);
   const [users, setUsers] = useState<ActivationUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -112,8 +90,11 @@ const AdminActivation = () => {
     return (u.email || "").toLowerCase().includes(q) || (u.full_name || "").toLowerCase().includes(q);
   });
 
-  const total = funnel?.funnel.signed_up || 0;
-  const pct = (n: number) => (total > 0 ? Math.round((n / total) * 1000) / 10 : 0);
+  const total = funnel?.funnel?.signed_up || 0;
+  const pct = (n: number) => percentOf(n, total);
+  const rows = funnelRows(funnel);
+  const monotonic = isMonotonic(rows);
+  const freshness = freshnessLabel(funnel?.generated_at);
 
   return (
     <div className="space-y-6">
@@ -122,6 +103,15 @@ const AdminActivation = () => {
           <h2 className="text-2xl font-bold">Signup Activation</h2>
           <p className="text-sm text-muted-foreground">
             Track where new signups drop off and who's likely to convert.
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {freshness && <>Updated {freshness}. </>}
+            Counts real activity only — demo-seeded leads and emails, and AI
+            usage that is not a lead search, are excluded.
+            {!!funnel?.excluded_internal && (
+              <> {funnel.excluded_internal} internal account
+                {funnel.excluded_internal === 1 ? "" : "s"} not counted.</>
+            )}
           </p>
         </div>
         <Select value={String(days)} onValueChange={(v) => setDays(Number(v))}>
@@ -168,35 +158,71 @@ const AdminActivation = () => {
             <TrendingDown className="h-5 w-5" />
             Activation funnel
           </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Each step counts users who reached it or went further, so the steps
+            can only go down. Where a raw count differs, someone skipped the
+            step and it is shown alongside.
+          </p>
         </CardHeader>
         <CardContent>
+          {!monotonic && (
+            <div className="mb-4 rounded border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+              A step gained users, which a cumulative funnel cannot do. The
+              numbers below are not trustworthy — this is a data bug, not a
+              product result.
+            </div>
+          )}
           <div className="space-y-3">
-            {FUNNEL_STEPS.map((step, i) => {
-              const value = funnel?.funnel[step.key] ?? 0;
-              const p = pct(value);
-              const prev = i === 0 ? value : (funnel?.funnel[FUNNEL_STEPS[i - 1].key] ?? 0);
-              const dropoff = prev > 0 ? Math.round(((prev - value) / prev) * 100) : 0;
-              return (
-                <div key={step.key} className="space-y-1">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium">{step.label}</span>
-                    <span className="text-muted-foreground">
-                      {value} <span className="text-xs">({p}%)</span>
-                      {i > 0 && dropoff > 0 && (
-                        <span className="ml-2 text-red-400 text-xs">−{dropoff}%</span>
-                      )}
-                    </span>
-                  </div>
-                  <div className="h-3 rounded bg-muted overflow-hidden">
-                    <div
-                      className="h-full bg-primary transition-all"
-                      style={{ width: `${p}%` }}
-                    />
-                  </div>
+            {rows.map((row) => (
+              <div key={row.key} className="space-y-1">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium">{row.label}</span>
+                  <span className="text-muted-foreground">
+                    {row.value} <span className="text-xs">({row.pct}%)</span>
+                    {row.everValue !== null && (
+                      <span className="ml-2 text-xs text-amber-400">
+                        {row.everValue} actually did this
+                      </span>
+                    )}
+                    {row.changePct !== null && row.changePct < 0 && (
+                      <span className="ml-2 text-red-400 text-xs">{row.changePct}%</span>
+                    )}
+                    {row.changePct !== null && row.changePct > 0 && (
+                      <span className="ml-2 text-red-400 text-xs font-semibold">
+                        +{row.changePct}% impossible
+                      </span>
+                    )}
+                  </span>
                 </div>
-              );
-            })}
+                <div className="h-3 rounded bg-muted overflow-hidden">
+                  <div className="h-full bg-primary transition-all" style={{ width: `${row.pct}%` }} />
+                </div>
+              </div>
+            ))}
           </div>
+
+          {/* Deliberately outside the chain: users routinely search and send
+              without ever finishing the profile, so it is not a gate anyone
+              drops off at. It used to sit between Verified and First search,
+              which is what made the funnel read as broken. */}
+          {funnel?.onboarding && (
+            <div className="mt-6 border-t pt-4">
+              <div className="flex items-center justify-between text-sm">
+                <div>
+                  <span className="font-medium">Profile completed</span>
+                  <p className="text-xs text-muted-foreground">
+                    Side milestone, not a funnel step.
+                  </p>
+                </div>
+                <span className="text-muted-foreground">
+                  {funnel.onboarding.completed_profile}{" "}
+                  <span className="text-xs">
+                    ({pct(funnel.onboarding.completed_profile)}%)
+                  </span>
+                </span>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
