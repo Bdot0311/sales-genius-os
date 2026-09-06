@@ -45,14 +45,20 @@ serve(async (req) => {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
   // Service role only. This advances other people's sequences by design, so a
-  // user token must never reach it.
-  const bearer = (req.headers.get("Authorization") ?? "").replace("Bearer ", "");
-  if (bearer !== serviceKey) {
+  // user token must never reach it. The cron job authenticates with the vault
+  // trigger secret rather than the raw service-role key, so accept both —
+  // comparing against SUPABASE_SERVICE_ROLE_KEY alone made every scheduled run
+  // 401 and no enrollment ever advanced.
+  const bearer = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
+  const internalSecret = Deno.env.get("INTERNAL_TRIGGER_SECRET") ?? "";
+  const authorized = !!bearer && (bearer === serviceKey || (!!internalSecret && bearer === internalSecret));
+  if (!authorized) {
     return new Response(JSON.stringify({ error: "Service role required" }), {
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
+
 
   const supabase = createClient(supabaseUrl, serviceKey);
 
