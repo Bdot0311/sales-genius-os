@@ -7,9 +7,9 @@ const FOOTER = readFileSync("src/components/landing/FooterSection.tsx", "utf8");
 const FEATURED = readFileSync("src/components/landing/FeaturedBadges.tsx", "utf8");
 
 /**
- * There are nineteen directory badges in the footer. Moving them up beside
+ * There are eighteen directory badges in the footer. Moving them up beside
  * the CTA would have made the problem worse: trust converts on the authority
- * of the source, not the count, and nineteen badges of mixed provenance
+ * of the source, not the count, and eighteen badges of mixed provenance
  * reads as marketing effort rather than credibility.
  *
  * So three are promoted and the rest stay where they were, doing the job they
@@ -21,8 +21,8 @@ describe("only a few badges are promoted", () => {
     expect(ALL_BADGES.length).toBeGreaterThan(15);
   });
 
-  it("leads with the one this audience actually recognises", () => {
-    expect(FEATURED_BADGES[0].href).toContain("producthunt.com");
+  it("leads with the chosen featured badge", () => {
+    expect(FEATURED_BADGES[0].href).toContain("microlaunch.net");
   });
 
   it("keeps every promoted badge in the footer too", () => {
