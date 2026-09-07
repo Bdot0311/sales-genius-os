@@ -126,9 +126,10 @@ export const SentEmailsTable = ({ onDeleted }: { onDeleted?: () => void }) => {
       aVal = a.status;
       bVal = b.status;
     } else {
-      aVal = a.sent_at;
-      bVal = b.sent_at;
+      aVal = effectiveDate(a) || "";
+      bVal = effectiveDate(b) || "";
     }
+
 
     const cmp = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
     return sortDir === "asc" ? cmp : -cmp;
