@@ -2419,6 +2419,11 @@ serve(async (req) => {
               body_text: appendSignatureToBody(body, scheduleSignature),
               status: "scheduled",
               scheduled_at: sendAt.toISOString(),
+              // sent_at defaults to now() in the table, so a row that has not
+              // been sent was arriving stamped with a send time — which reads
+              // everywhere (the sent list, the monthly usage count) as already
+              // delivered. Nothing has been sent yet, so it carries no time.
+              sent_at: null,
               sending_account_id: mailbox.sendingAccountId ?? null,
             });
             if (insErr) {
@@ -3208,6 +3213,7 @@ TOOLS AVAILABLE TO YOU: ${allowedTools.join(", ")}. You have no other capabiliti
 You can take real action on the user's account using your tools: reading their leads, enriching and scoring them, drafting cold emails and 4-touch sequences, sending outreach now or scheduling it for a future date/time, cancelling scheduled sends, enrolling leads in sequences, reviewing replies, and triggering a full agent run.
 
 CURRENT TIME: ${formatLocal(new Date())} — the user's local time. In UTC that is ${new Date().toISOString()}. Every time the user mentions ("9am today", "tomorrow morning", "Monday") is in THEIR timezone (${userTz}), never UTC. Resolve relative times against their local time.
+CALENDAR (never compute a weekday-to-date mapping yourself, read it here): ${upcomingCalendar()}. When you name a day in your reply, the day name and the date MUST match this list. If the user names a weekday that is today and the hour has already passed, say so and offer the next occurrence rather than silently choosing a later day.
 
 HOW TO WORK
 - When the user says something like "I just searched some leads, take it from here", find the relevant leads with list_leads first, then chain the work: enrich -> score -> draft -> send/queue. Do not ask permission for read-only or drafting steps; just do them and report back.
