@@ -52,7 +52,11 @@ export const EmailDetailSheet = ({ email, open, onOpenChange }: EmailDetailSheet
             Email Details
           </SheetTitle>
           <SheetDescription>
-            Sent {format(new Date(email.sent_at), 'PPP p')}
+            {email.sent_at
+              ? `Sent ${format(new Date(email.sent_at), 'PPP p')}`
+              : email.scheduled_at
+                ? `Scheduled for ${format(new Date(email.scheduled_at), 'PPP p')}`
+                : 'Not sent yet'}
           </SheetDescription>
         </SheetHeader>
 
@@ -60,11 +64,14 @@ export const EmailDetailSheet = ({ email, open, onOpenChange }: EmailDetailSheet
           {/* Status and meta info */}
           <div className="flex items-center gap-4">
             {getStatusBadge(email.status)}
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-              <Clock className="h-4 w-4" />
-              {format(new Date(email.sent_at), 'h:mm a')}
-            </div>
+            {(email.sent_at || email.scheduled_at) && (
+              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                <Clock className="h-4 w-4" />
+                {format(new Date((email.sent_at || email.scheduled_at)!), 'h:mm a')}
+              </div>
+            )}
           </div>
+
 
           <Separator />
 
