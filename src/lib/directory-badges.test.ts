@@ -21,8 +21,8 @@ describe("only a few badges are promoted", () => {
     expect(ALL_BADGES.length).toBeGreaterThan(15);
   });
 
-  it("leads with the one this audience actually recognises", () => {
-    expect(FEATURED_BADGES[0].href).toContain("producthunt.com");
+  it("leads with the chosen featured badge", () => {
+    expect(FEATURED_BADGES[0].href).toContain("microlaunch.net");
   });
 
   it("keeps every promoted badge in the footer too", () => {
