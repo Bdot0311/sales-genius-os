@@ -325,8 +325,13 @@ export const SentEmailsTable = ({ onDeleted }: { onDeleted?: () => void }) => {
                 </TableCell>
                 <TableCell>{getStatusBadge(email.status)}</TableCell>
                 <TableCell className="text-muted-foreground whitespace-nowrap">
-                  {formatDistanceToNow(new Date(email.sent_at), { addSuffix: true })}
+                  {email.sent_at
+                    ? formatDistanceToNow(new Date(email.sent_at), { addSuffix: true })
+                    : email.scheduled_at
+                      ? `in ${formatDistanceToNow(new Date(email.scheduled_at))}`
+                      : "—"}
                 </TableCell>
+
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center gap-1">
                     {email.status === "scheduled" && (
