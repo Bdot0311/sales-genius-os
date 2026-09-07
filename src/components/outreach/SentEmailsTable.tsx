@@ -28,7 +28,7 @@ interface SentEmail {
   body_html: string | null;
   body_text: string | null;
   status: string;
-  sent_at: string;
+  sent_at: string | null;
   scheduled_at: string | null;
   lead_id: string | null;
   gmail_message_id: string | null;
@@ -37,6 +37,11 @@ interface SentEmail {
 
 type SortField = "recipient" | "subject" | "status" | "sent_at";
 type SortDir = "asc" | "desc";
+
+// A queued email has no send time yet. Fall back to when it is due so the row
+// neither renders as 1970 nor floats to the top of the list.
+const effectiveDate = (email: SentEmail) => email.sent_at || email.scheduled_at || null;
+
 
 
 export const SentEmailsTable = ({ onDeleted }: { onDeleted?: () => void }) => {
@@ -82,8 +87,9 @@ export const SentEmailsTable = ({ onDeleted }: { onDeleted?: () => void }) => {
           scheduled_at, lead_id, gmail_message_id,
           leads ( contact_name, company_name )
         `)
-        .order("sent_at", { ascending: false })
+        .order("sent_at", { ascending: false, nullsFirst: false })
         .limit(200);
+
 
       if (error) throw error;
       setEmails(data || []);
@@ -121,9 +127,10 @@ export const SentEmailsTable = ({ onDeleted }: { onDeleted?: () => void }) => {
       aVal = a.status;
       bVal = b.status;
     } else {
-      aVal = a.sent_at;
-      bVal = b.sent_at;
+      aVal = effectiveDate(a) || "";
+      bVal = effectiveDate(b) || "";
     }
+
 
     const cmp = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
     return sortDir === "asc" ? cmp : -cmp;
@@ -319,8 +326,13 @@ export const SentEmailsTable = ({ onDeleted }: { onDeleted?: () => void }) => {
                 </TableCell>
                 <TableCell>{getStatusBadge(email.status)}</TableCell>
                 <TableCell className="text-muted-foreground whitespace-nowrap">
-                  {formatDistanceToNow(new Date(email.sent_at), { addSuffix: true })}
+                  {email.sent_at
+                    ? formatDistanceToNow(new Date(email.sent_at), { addSuffix: true })
+                    : email.scheduled_at
+                      ? `in ${formatDistanceToNow(new Date(email.scheduled_at))}`
+                      : "—"}
                 </TableCell>
+
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center gap-1">
                     {email.status === "scheduled" && (
