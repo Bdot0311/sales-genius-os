@@ -862,8 +862,34 @@ serve(async (req) => {
     };
     const formatLocal = (d: Date) =>
       `${new Intl.DateTimeFormat("en-US", {
-        timeZone: userTz, dateStyle: "medium", timeStyle: "short", hour12: true,
-      }).format(d)} (${userTz})`;
+        timeZone: userTz, weekday: "short", dateStyle: undefined as never, month: "short",
+        day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true,
+      } as Intl.DateTimeFormatOptions).format(d)} (${userTz})`;
+
+    /**
+     * The named calendar, spelled out.
+     *
+     * A batch was scheduled for "Monday, September 8" and September 8 was a
+     * Tuesday: the model was given a bare timestamp with no weekday and did the
+     * day-name arithmetic itself, one day out. The emails then sat correctly
+     * queued for a day the user had not asked for, which reads in the product
+     * as "scheduling is broken". Weekday-to-date mapping is a fact, not
+     * something to infer, so it is stated.
+     */
+    const localDateKey = (d: Date) =>
+      new Intl.DateTimeFormat("en-CA", { timeZone: userTz, dateStyle: "short" }).format(d);
+    const localWeekday = (d: Date) =>
+      new Intl.DateTimeFormat("en-US", { timeZone: userTz, weekday: "long" }).format(d);
+    const upcomingCalendar = () => {
+      const out: string[] = [];
+      for (let i = 0; i <= 7; i++) {
+        const d = new Date(Date.now() + i * 86_400_000);
+        const label = i === 0 ? "today" : i === 1 ? "tomorrow" : localWeekday(d);
+        out.push(`${label} = ${localDateKey(d)} (${localWeekday(d)})`);
+      }
+      return out.join("; ");
+    };
+
 
     // Wall-clock budget: edge functions get killed around ~150s, which the client
     // surfaces as "Failed to send a request to the Edge Function". Stop early and
