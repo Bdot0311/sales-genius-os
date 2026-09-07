@@ -13,11 +13,13 @@ interface SentEmail {
   body_html: string | null;
   body_text: string | null;
   status: string;
-  sent_at: string;
+  sent_at: string | null;
+  scheduled_at?: string | null;
   lead_id: string | null;
   gmail_message_id: string | null;
   leads?: { contact_name: string; company_name: string } | null;
 }
+
 
 interface EmailDetailSheetProps {
   email: SentEmail | null;

@@ -87,8 +87,9 @@ export const SentEmailsTable = ({ onDeleted }: { onDeleted?: () => void }) => {
           scheduled_at, lead_id, gmail_message_id,
           leads ( contact_name, company_name )
         `)
-        .order("sent_at", { ascending: false })
+        .order("sent_at", { ascending: false, nullsFirst: false })
         .limit(200);
+
 
       if (error) throw error;
       setEmails(data || []);
