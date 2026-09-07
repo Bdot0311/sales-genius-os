@@ -30,7 +30,7 @@ export function FeaturedBadges({ className = "" }: { className?: string }) {
 
   return (
     <ul
-      className={`flex h-8 list-none items-center justify-center gap-4 p-0 opacity-70 transition-opacity duration-200 hover:opacity-100 ${className}`}
+      className={`flex h-10 list-none items-center justify-center gap-5 p-0 opacity-70 transition-opacity duration-200 hover:opacity-100 ${className}`}
       aria-label="Directory listings"
     >
       {shown.map((b) => (
