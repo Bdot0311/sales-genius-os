@@ -28,7 +28,7 @@ interface SentEmail {
   body_html: string | null;
   body_text: string | null;
   status: string;
-  sent_at: string;
+  sent_at: string | null;
   scheduled_at: string | null;
   lead_id: string | null;
   gmail_message_id: string | null;
@@ -37,6 +37,11 @@ interface SentEmail {
 
 type SortField = "recipient" | "subject" | "status" | "sent_at";
 type SortDir = "asc" | "desc";
+
+// A queued email has no send time yet. Fall back to when it is due so the row
+// neither renders as 1970 nor floats to the top of the list.
+const effectiveDate = (email: SentEmail) => email.sent_at || email.scheduled_at || null;
+
 
 
 export const SentEmailsTable = ({ onDeleted }: { onDeleted?: () => void }) => {
