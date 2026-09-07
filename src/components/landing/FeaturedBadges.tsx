@@ -47,7 +47,7 @@ export function FeaturedBadges({ className = "" }: { className?: string }) {
               loading="eager"
               fetchPriority="low"
               decoding="async"
-              className="h-7 w-auto object-contain"
+              className="h-9 w-auto object-contain"
               onError={() => setBroken((prev) => new Set(prev).add(b.href))}
             />
           </a>
