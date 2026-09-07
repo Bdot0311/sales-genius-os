@@ -862,9 +862,9 @@ serve(async (req) => {
     };
     const formatLocal = (d: Date) =>
       `${new Intl.DateTimeFormat("en-US", {
-        timeZone: userTz, weekday: "short", dateStyle: undefined as never, month: "short",
-        day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true,
-      } as Intl.DateTimeFormatOptions).format(d)} (${userTz})`;
+        timeZone: userTz, weekday: "short", month: "short", day: "numeric",
+        year: "numeric", hour: "numeric", minute: "2-digit", hour12: true,
+      }).format(d)} (${userTz})`;
 
     /**
      * The named calendar, spelled out.
