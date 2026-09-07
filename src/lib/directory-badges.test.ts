@@ -89,6 +89,6 @@ describe("a badge that fails does not damage the hero", () => {
   });
 
   it("reserves its height so a slow badge leaves a gap rather than a jump", () => {
-    expect(FEATURED).toMatch(/className={`flex h-8/);
+    expect(FEATURED).toMatch(/className={`flex h-10/);
   });
 });
