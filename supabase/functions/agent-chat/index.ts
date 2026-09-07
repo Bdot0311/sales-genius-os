@@ -862,8 +862,34 @@ serve(async (req) => {
     };
     const formatLocal = (d: Date) =>
       `${new Intl.DateTimeFormat("en-US", {
-        timeZone: userTz, dateStyle: "medium", timeStyle: "short", hour12: true,
+        timeZone: userTz, weekday: "short", month: "short", day: "numeric",
+        year: "numeric", hour: "numeric", minute: "2-digit", hour12: true,
       }).format(d)} (${userTz})`;
+
+    /**
+     * The named calendar, spelled out.
+     *
+     * A batch was scheduled for "Monday, September 8" and September 8 was a
+     * Tuesday: the model was given a bare timestamp with no weekday and did the
+     * day-name arithmetic itself, one day out. The emails then sat correctly
+     * queued for a day the user had not asked for, which reads in the product
+     * as "scheduling is broken". Weekday-to-date mapping is a fact, not
+     * something to infer, so it is stated.
+     */
+    const localDateKey = (d: Date) =>
+      new Intl.DateTimeFormat("en-CA", { timeZone: userTz, dateStyle: "short" }).format(d);
+    const localWeekday = (d: Date) =>
+      new Intl.DateTimeFormat("en-US", { timeZone: userTz, weekday: "long" }).format(d);
+    const upcomingCalendar = () => {
+      const out: string[] = [];
+      for (let i = 0; i <= 7; i++) {
+        const d = new Date(Date.now() + i * 86_400_000);
+        const label = i === 0 ? "today" : i === 1 ? "tomorrow" : localWeekday(d);
+        out.push(`${label} = ${localDateKey(d)} (${localWeekday(d)})`);
+      }
+      return out.join("; ");
+    };
+
 
     // Wall-clock budget: edge functions get killed around ~150s, which the client
     // surfaces as "Failed to send a request to the Edge Function". Stop early and
@@ -2393,6 +2419,11 @@ serve(async (req) => {
               body_text: appendSignatureToBody(body, scheduleSignature),
               status: "scheduled",
               scheduled_at: sendAt.toISOString(),
+              // sent_at defaults to now() in the table, so a row that has not
+              // been sent was arriving stamped with a send time — which reads
+              // everywhere (the sent list, the monthly usage count) as already
+              // delivered. Nothing has been sent yet, so it carries no time.
+              sent_at: null,
               sending_account_id: mailbox.sendingAccountId ?? null,
             });
             if (insErr) {
@@ -3182,6 +3213,7 @@ TOOLS AVAILABLE TO YOU: ${allowedTools.join(", ")}. You have no other capabiliti
 You can take real action on the user's account using your tools: reading their leads, enriching and scoring them, drafting cold emails and 4-touch sequences, sending outreach now or scheduling it for a future date/time, cancelling scheduled sends, enrolling leads in sequences, reviewing replies, and triggering a full agent run.
 
 CURRENT TIME: ${formatLocal(new Date())} — the user's local time. In UTC that is ${new Date().toISOString()}. Every time the user mentions ("9am today", "tomorrow morning", "Monday") is in THEIR timezone (${userTz}), never UTC. Resolve relative times against their local time.
+CALENDAR (never compute a weekday-to-date mapping yourself, read it here): ${upcomingCalendar()}. When you name a day in your reply, the day name and the date MUST match this list. If the user names a weekday that is today and the hour has already passed, say so and offer the next occurrence rather than silently choosing a later day.
 
 HOW TO WORK
 - When the user says something like "I just searched some leads, take it from here", find the relevant leads with list_leads first, then chain the work: enrich -> score -> draft -> send/queue. Do not ask permission for read-only or drafting steps; just do them and report back.

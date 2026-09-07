@@ -201,6 +201,8 @@ serve(async (req) => {
         // pick this row up. 'pending' would leave it stranded forever.
         status: 'scheduled',
         scheduled_at: new Date().toISOString(),
+        // The column defaults to now(); an unsent row must not claim a send time.
+        sent_at: null,
       })
       .select()
       .single();

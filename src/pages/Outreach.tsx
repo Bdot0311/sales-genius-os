@@ -1850,6 +1850,8 @@ ${formattedBody}
         template_id: currentTemplateId || null,
         status: "scheduled",
         scheduled_at: scheduledAt.toISOString(),
+        // The column defaults to now(); an unsent email must not carry a send time.
+        sent_at: null,
       });
 
       if (error) throw error;
