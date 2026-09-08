@@ -15,6 +15,7 @@ import {
   bannedPhrasesBlock,
   fillSenderStandIns,
   findMirrorAnalogies,
+  findNameMismatches,
   groundingRetry,
   groundingTerms,
   isGroundedIn,
@@ -1689,6 +1690,20 @@ ${avoidSubjects.map((s: string) => `- ${s}`).join('\n')}`;
         goal,
         usesTemplate: Boolean(templateValue || templateDescription),
         variantNum,
+      }),
+      // House-style filler that survived the retry.
+      //
+      // The retry keeps whichever draft carries fewer banned phrases, which is
+      // the right trade — this list is style, not correctness, and refusing to
+      // return a draft over it would cost the user more than it saves. But the
+      // survivors were then dropped on the floor: an email went out carrying
+      // "without adding headcount" and "worth comparing", both on the list,
+      // both detected, and nobody was told. Soft enforcement is defensible;
+      // silent soft enforcement is how the list stops meaning anything.
+      style_warnings: bannedHits,
+      name_warnings: findNameMismatches(email, {
+        company: lead?.company_name ?? "",
+        contactName: lead?.contact_name ?? "",
       }),
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -138,9 +138,21 @@ describe("the playbooks behind a draft are visible", () => {
     expect(GEN).not.toContain("lastSkillsUsed");
   });
 
-  it("the chat reports them to the user", () => {
+  it("the chat reports them to staff only", () => {
+    // They were surfaced so the routing could be checked rather than believed.
+    // That is an operator's need: the names are internal module names, and to
+    // a customer they read as the machinery showing through.
     expect(AGENT).toContain("Playbooks applied");
     expect(AGENT).toContain("skills_used");
+    expect(AGENT).toMatch(/skillsUsed\.length && showsInternals/);
+    expect(AGENT).toMatch(/has_role", \{ _user_id: userId, _role: "admin" \}/);
+  });
+
+  it("still tells everyone how many drafts came out", () => {
+    // The count is the part that means something to a customer, and it must
+    // not be caught by the staff gate.
+    const drafted = AGENT.slice(AGENT.indexOf('label: "Drafted emails"'));
+    expect(drafted.slice(0, 400)).not.toContain("showsInternals");
   });
 });
 

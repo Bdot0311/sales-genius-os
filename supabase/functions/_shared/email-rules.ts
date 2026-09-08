@@ -655,6 +655,88 @@ export function findBannedPhrases(text: string): string[] {
 }
 
 /**
+ * The same openers with the subject pronoun dropped.
+ *
+ * BANNED_PHRASES is matched as a literal substring, so "I noticed" is caught
+ * and "Noticed KOgenie is marking multi-platform launch as coming soon" is not.
+ * The clipped form is the *more* obviously templated of the two — it is the
+ * register every sequencing tool writes in — so the list was catching the
+ * politer variant and waving the worse one through.
+ *
+ * Anchored to the start of a sentence, because the tell is opening on it. "We
+ * noticed a spike in your usage" mid-paragraph is ordinary writing and must not
+ * fire.
+ */
+export const CLIPPED_OPENERS: RegExp[] = [
+  /(?:^|[.!?]\s+|\n\s*)(noticed\s+(?:that\s+)?[^.!?\n]*)/i,
+  /(?:^|[.!?]\s+|\n\s*)(came across\s+[^.!?\n]*)/i,
+  /(?:^|[.!?]\s+|\n\s*)(saw\s+(?:that\s+|on\s+linkedin|your\s+)[^.!?\n]*)/i,
+  /(?:^|[.!?]\s+|\n\s*)(was\s+(?:just\s+)?looking\s+at\s+[^.!?\n]*)/i,
+  /(?:^|[.!?]\s+|\n\s*)(been\s+following\s+[^.!?\n]*)/i,
+  /(?:^|[.!?]\s+|\n\s*)(was\s+impressed\s+[^.!?\n]*)/i,
+  /(?:^|[.!?]\s+|\n\s*)(hope\s+(?:this|you)\s+[^.!?\n]*)/i,
+  /(?:^|[.!?]\s+|\n\s*)(wanted\s+to\s+(?:reach|check|follow)\s+[^.!?\n]*)/i,
+  /(?:^|[.!?]\s+|\n\s*)(quick\s+question[^.!?\n]*)/i,
+];
+
+/**
+ * Clipped openers present in the text, as the matched fragment.
+ *
+ * Returns what was actually written rather than the pattern, so a finding can
+ * quote the sentence back instead of naming a rule the reader cannot see.
+ */
+export function findClippedOpeners(text: string): string[] {
+  const t = String(text ?? "");
+  const out: string[] = [];
+  for (const re of CLIPPED_OPENERS) {
+    const m = t.match(re);
+    if (m?.[1]) out.push(m[1].trim().replace(/\s+/g, " "));
+  }
+  return [...new Set(out)];
+}
+
+/**
+ * Names in the copy that do not match the lead they were written for.
+ *
+ * A draft went out reading "Noticed KOgenie is marking..." for a lead whose
+ * company is Kogenie. One character, in the first proper noun, and it reads as
+ * unchecked automation more loudly than anything else in the email — but no
+ * check compared the copy against the row it was drafted from, so nothing saw
+ * it.
+ *
+ * Deliberately narrow, because a false positive here is expensive: it only
+ * fires when the body contains the name case-insensitively but never spells it
+ * exactly, which is a typo rather than a stylistic choice. A body that does not
+ * mention the company at all is fine and says nothing.
+ */
+export function findNameMismatches(
+  body: string,
+  lead: { company?: string | null; contactName?: string | null } = {},
+): string[] {
+  const text = String(body ?? "");
+  const out: string[] = [];
+
+  const company = String(lead.company ?? "").trim();
+  if (company) {
+    const escaped = company.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const loose = text.match(new RegExp(escaped, "gi")) ?? [];
+    if (loose.length && !loose.some((hit) => hit === company)) {
+      out.push(`"${loose[0]}" should be "${company}"`);
+    }
+  }
+
+  // The greeting is the one place a wrong name is unrecoverable.
+  const contact = String(lead.contactName ?? "").trim();
+  const expected = contact.split(/\s+/)[0] ?? "";
+  const greeted = text.match(/^\s*(?:hi|hello|hey|dear)\s+([A-Za-z][\w'-]*)/i)?.[1];
+  if (expected && greeted && greeted.toLowerCase() !== expected.toLowerCase()) {
+    out.push(`greets "${greeted}" but the lead is "${contact}"`);
+  }
+
+  return out;
+}
+
+/**
  * Retry instruction naming the phrases to remove.
  *
  * Names them explicitly rather than re-sending the whole banned list: a model
