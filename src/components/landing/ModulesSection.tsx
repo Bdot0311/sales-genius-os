@@ -174,7 +174,56 @@ const PipelinePreview = () => {
   );
 };
 
-const previews = [LeadDiscoveryPreview, OutreachPreview, ReplyPreview, PipelinePreview];
+const CoachPreview = () => (
+  <div className="w-full h-full flex flex-col gap-3 p-6">
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <div className="w-1.5 h-1.5 rounded-full" style={{ background: "hsl(261 75% 60%)" }} />
+        <span className="text-xs font-medium" style={{ color: "hsl(261 75% 65%)" }}>AI Sales Coach</span>
+      </div>
+      <span
+        className="text-[10px] px-2 py-0.5 rounded-full"
+        style={{ background: "hsl(261 75% 50% / 0.1)", color: "hsl(261 75% 65%)", border: "1px solid hsl(261 75% 50% / 0.2)" }}
+      >
+        Reading your pipeline
+      </span>
+    </div>
+
+    <div
+      className="self-end max-w-[80%] px-4 py-3 rounded-2xl"
+      style={{ background: "hsl(261 75% 50% / 0.12)", border: "1px solid hsl(261 75% 50% / 0.22)" }}
+    >
+      <p className="text-sm" style={{ color: "hsl(0 0% 88%)" }}>Which deals should I push this week?</p>
+    </div>
+
+    <div
+      className="px-4 py-3 rounded-2xl space-y-2"
+      style={{ background: "hsl(0 0% 100% / 0.03)", border: "1px solid hsl(0 0% 100% / 0.07)" }}
+    >
+      <p className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
+        Northline ($24K, proposal) has gone quiet for 9 days — send the pricing recap today.
+      </p>
+      <p className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
+        Rina Shah scores 88 and asked for a demo link. Book her before Thursday.
+      </p>
+    </div>
+
+    <div className="flex gap-2 mt-auto">
+      {[["9%", "Reply rate"], ["3", "Stalled deals"], ["2", "Actions today"]].map(([val, lbl]) => (
+        <div
+          key={lbl}
+          className="flex-1 rounded-xl p-3"
+          style={{ background: "hsl(261 75% 50% / 0.08)", border: "1px solid hsl(261 75% 50% / 0.18)" }}
+        >
+          <p className="text-base font-bold" style={{ color: "hsl(261 75% 68%)" }}>{val}</p>
+          <p className="text-[10px] mt-0.5" style={{ color: "hsl(0 0% 100% / 0.6)" }}>{lbl}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const previews = [LeadDiscoveryPreview, OutreachPreview, ReplyPreview, PipelinePreview, CoachPreview];
 
 // ─── Module rows ──────────────────────────────────────────────────────────────
 
@@ -203,12 +252,18 @@ const modules = [
     tagline: "What is moving, what stalled, what earns answers.",
     description: "Where threads are progressing, where outreach stalls, and which copy gets replied to. One dashboard.",
   },
+  {
+    number: "05",
+    title: "AI Sales Coach",
+    tagline: "A coach that already read your pipeline.",
+    description: "Ask what to do next and get answers from your own deals, lead scores and stalled threads. Included on every plan — 5 messages a month on Explore, unlimited on Agency.",
+  },
 ];
 
 const alsoIncluded = [
   "Multi-step sequences",
   "Deliverability monitoring",
-  "AI Sales Coach (Growth & up)",
+  "Live call coaching & playbooks (Pro & up)",
   "Zapier & API automation",
   "White-label client portal (Agency)",
   "Branded client reports (Agency)",
@@ -251,14 +306,14 @@ export const ModulesSection = () => {
             className={`mb-16 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
           >
             <p className="font-serif italic font-thin text-base text-center text-purple-500 mb-5">
-              Four screens
+              Five screens
             </p>
             <h2
               id="modules-heading"
               className="font-display text-center text-5xl"
               style={{ fontSize: "clamp(2.4rem, 5vw, 4rem)", fontWeight: 800, lineHeight: 1.05, letterSpacing: "-0.02em", color: "hsl(0 0% 96%)" }}
             >
-              Four screens, one job:
+              Five screens, one job:
               <br />
               <span
                 className="italic animate-shiny"
