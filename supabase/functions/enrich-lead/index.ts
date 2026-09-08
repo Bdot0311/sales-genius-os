@@ -400,8 +400,9 @@ serve(async (req) => {
       });
 
       if (findErr) {
+        if (findErr === COLDIQ_CREDITS_ERROR) emailFinderUnavailable = true;
         console.log('[enrich-lead] email finder returned nothing:', findErr);
-      } else if (foundEmail) {
+
         // A FOUND address is a guess until something proves it. Storing one
         // unverified is how the original bounce happened, and it would be
         // worse here: the user has no reason to doubt an address the product
@@ -480,9 +481,15 @@ serve(async (req) => {
         noMatchReason = 'Not enough identifying data. Add a full name, email address, or LinkedIn URL and try again.';
       } else if (nameIsTitle && !hasEmail && !hasLinkedin) {
         noMatchReason = `"${lead.contact_name}" looks like a job title. Add an email or LinkedIn URL to identify this contact.`;
+      } else if (emailFinderUnavailable) {
+        // The waterfall never ran: the data marketplace account is out of
+        // balance. Say so, rather than blaming the lead's data quality.
+        noMatchReason =
+          'The email finder is temporarily unavailable (data provider balance empty). Your credit was not used — please try again later or contact support.';
       } else {
         noMatchReason = 'No matching records found. Try adding more contact details.';
       }
+
     }
 
     const { error: updateError } = await supabase
