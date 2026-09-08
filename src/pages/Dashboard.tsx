@@ -48,21 +48,18 @@ const Dashboard = () => {
     };
   }, []);
 
+  // The tour only runs once the signup questionnaire is behind them, so the two
+  // never overlap.
   const checkFirstVisit = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       const { data } = await supabase
         .from("onboarding_progress")
-        .select("completed_tour")
+        .select("completed_tour, onboarding_completed")
         .eq("user_id", user.id)
-        .single();
-      if (!data || !data.completed_tour) {
-        // Never overlap the tour with the quick-start wizard — the tour waits
-        // until onboarding is finished (or already was).
-        if (quickstartDone()) setShowTour(true);
-        else setTourPending(true);
-      }
+        .maybeSingle();
+      if (data?.onboarding_completed === true && !data.completed_tour) setShowTour(true);
     } catch (error) {
       console.error("Error checking first visit:", error);
     }
