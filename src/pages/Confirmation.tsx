@@ -28,7 +28,9 @@ const Confirmation = () => {
         
         if (session) {
           // User is logged in, check their subscription directly
-          const { data, error } = await supabase.functions.invoke('check-subscription');
+          const { data, error } = await supabase.functions.invoke('check-subscription', {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          });
           
           if (!error && data?.subscribed) {
             setSubscriptionVerified(true);
