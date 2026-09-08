@@ -81,10 +81,10 @@ export const DashboardTour = ({ isOpen, onClose }: DashboardTourProps) => {
       return;
     }
 
-    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    // Instant scroll: smooth scrolling starts a frame or two later, which made the
+    // stability check settle on the element's *old* position.
+    el.scrollIntoView({ behavior: "auto", block: "center" });
 
-    // Keep measuring until the smooth scroll actually stops, so the highlight
-    // never lands on where the element used to be.
     let last: number | null = null;
     let stable = 0;
     let frames = 0;
@@ -95,7 +95,8 @@ export const DashboardTour = ({ isOpen, onClose }: DashboardTourProps) => {
       else stable = 0;
       last = rect.top;
       frames += 1;
-      if (stable < 3 && frames < 90) {
+      // Always watch for at least ~15 frames so late layout shifts are caught.
+      if ((frames < 15 || stable < 3) && frames < 90) {
         requestAnimationFrame(measure);
       } else {
         setAnimating(false);
@@ -103,6 +104,7 @@ export const DashboardTour = ({ isOpen, onClose }: DashboardTourProps) => {
     };
     requestAnimationFrame(measure);
   }, []);
+
 
   useEffect(() => {
     if (isOpen) {
