@@ -170,6 +170,7 @@ export const DashboardTour = ({ isOpen, onClose }: DashboardTourProps) => {
 
     const tooltipWidth = 340;
     const tooltipGap = 16;
+    const tooltipHeight = tooltipRef.current?.offsetHeight || 220;
 
     let top = 0;
     let left = 0;
@@ -178,24 +179,31 @@ export const DashboardTour = ({ isOpen, onClose }: DashboardTourProps) => {
       case "bottom":
         top = targetRect.bottom + pad + tooltipGap;
         left = targetRect.left + targetRect.width / 2 - tooltipWidth / 2;
+        // Not enough room below? flip above the target.
+        if (top + tooltipHeight > window.innerHeight - 16) {
+          top = targetRect.top - pad - tooltipGap - tooltipHeight;
+        }
         break;
       case "top":
-        top = targetRect.top - pad - tooltipGap - 180;
+        top = targetRect.top - pad - tooltipGap - tooltipHeight;
         left = targetRect.left + targetRect.width / 2 - tooltipWidth / 2;
+        // Not enough room above? flip below the target.
+        if (top < 16) top = targetRect.bottom + pad + tooltipGap;
         break;
       case "right":
-        top = targetRect.top + targetRect.height / 2 - 80;
+        top = targetRect.top + targetRect.height / 2 - tooltipHeight / 2;
         left = targetRect.right + pad + tooltipGap;
         break;
       case "left":
-        top = targetRect.top + targetRect.height / 2 - 80;
+        top = targetRect.top + targetRect.height / 2 - tooltipHeight / 2;
         left = targetRect.left - pad - tooltipGap - tooltipWidth;
         break;
     }
 
     // Clamp to viewport
     left = Math.max(16, Math.min(left, window.innerWidth - tooltipWidth - 16));
-    top = Math.max(16, Math.min(top, window.innerHeight - 220));
+    top = Math.max(16, Math.min(top, window.innerHeight - tooltipHeight - 16));
+
 
     return {
       position: "fixed",
