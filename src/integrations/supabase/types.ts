@@ -3002,6 +3002,7 @@ export type Database = {
           created_at: string
           created_first_deal: boolean
           id: string
+          onboarding_completed: boolean
           set_up_integration: boolean
           updated_at: string
           user_id: string
@@ -3013,6 +3014,7 @@ export type Database = {
           created_at?: string
           created_first_deal?: boolean
           id?: string
+          onboarding_completed?: boolean
           set_up_integration?: boolean
           updated_at?: string
           user_id: string
@@ -3024,7 +3026,56 @@ export type Database = {
           created_at?: string
           created_first_deal?: boolean
           id?: string
+          onboarding_completed?: boolean
           set_up_integration?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      onboarding_responses: {
+        Row: {
+          company_type: string | null
+          completed_at: string | null
+          created_at: string
+          current_tooling: string | null
+          discovery_channel: string | null
+          discovery_channel_other: string | null
+          goals: Json
+          id: string
+          monthly_prospect_volume: string | null
+          role: string | null
+          team_size: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_type?: string | null
+          completed_at?: string | null
+          created_at?: string
+          current_tooling?: string | null
+          discovery_channel?: string | null
+          discovery_channel_other?: string | null
+          goals?: Json
+          id?: string
+          monthly_prospect_volume?: string | null
+          role?: string | null
+          team_size?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_type?: string | null
+          completed_at?: string | null
+          created_at?: string
+          current_tooling?: string | null
+          discovery_channel?: string | null
+          discovery_channel_other?: string | null
+          goals?: Json
+          id?: string
+          monthly_prospect_volume?: string | null
+          role?: string | null
+          team_size?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -5689,6 +5740,14 @@ export type Database = {
         }[]
       }
       admin_get_seo_dashboard: { Args: never; Returns: Json }
+      admin_get_signup_channels: {
+        Args: never
+        Returns: {
+          channel: string
+          last_signup: string
+          signups: number
+        }[]
+      }
       admin_get_user_timeline: {
         Args: { _user_id: string }
         Returns: {
