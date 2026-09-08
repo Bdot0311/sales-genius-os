@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
-import { coldiqConfigured, coldiqFindEmail } from "../_shared/coldiq.ts";
+import { COLDIQ_CREDITS_ERROR, coldiqConfigured, coldiqFindEmail } from "../_shared/coldiq.ts";
 import { isPersonLinkedIn, normalizeDomain, realValue } from "../_shared/email-rules.ts";
 import { verifyEmail, type CacheClient, type VerificationStatus } from "../_shared/email-verify.ts";
 
@@ -389,7 +389,9 @@ serve(async (req) => {
     // Per the ColdIQ spec a miss is free — charging happens only on a found,
     // valid email — so this can run on every gap rather than being rationed.
     // The only leads that cost anything are the ones that stop being useless.
+    let emailFinderUnavailable = false;
     if (!lead.contact_email && !enrichmentData.contact_email && coldiqConfigured()) {
+
       const parts = String(lead.contact_name ?? '').trim().split(/\s+/).filter(Boolean);
       const { email: foundEmail, error: findErr } = await coldiqFindEmail({
         first_name: parts[0] ?? '',
@@ -400,8 +402,11 @@ serve(async (req) => {
       });
 
       if (findErr) {
+        if (findErr === COLDIQ_CREDITS_ERROR) emailFinderUnavailable = true;
         console.log('[enrich-lead] email finder returned nothing:', findErr);
       } else if (foundEmail) {
+
+
         // A FOUND address is a guess until something proves it. Storing one
         // unverified is how the original bounce happened, and it would be
         // worse here: the user has no reason to doubt an address the product
@@ -480,9 +485,15 @@ serve(async (req) => {
         noMatchReason = 'Not enough identifying data. Add a full name, email address, or LinkedIn URL and try again.';
       } else if (nameIsTitle && !hasEmail && !hasLinkedin) {
         noMatchReason = `"${lead.contact_name}" looks like a job title. Add an email or LinkedIn URL to identify this contact.`;
+      } else if (emailFinderUnavailable) {
+        // The waterfall never ran: the data marketplace account is out of
+        // balance. Say so, rather than blaming the lead's data quality.
+        noMatchReason =
+          'The email finder is temporarily unavailable (data provider balance empty). Your credit was not used — please try again later or contact support.';
       } else {
         noMatchReason = 'No matching records found. Try adding more contact details.';
       }
+
     }
 
     const { error: updateError } = await supabase

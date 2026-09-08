@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+/** When the signup questionnaire shipped; anyone older is exempt. */
+const QUESTIONNAIRE_LAUNCHED_AT = Date.parse("2026-09-08T00:00:00Z");
+
+
 /**
  * Whether this account still owes us the signup questionnaire.
  *
@@ -29,11 +33,20 @@ export const useOnboardingGate = () => {
 
       if (cancelled) return;
 
-      // A missing row means a brand-new account: gate it.
-      if (error) setNeedsOnboarding(false);
-      else setNeedsOnboarding(!data || data.onboarding_completed !== true);
+      if (error) {
+        setNeedsOnboarding(false);
+      } else if (data) {
+        setNeedsOnboarding(data.onboarding_completed !== true);
+      } else {
+        // No row at all. That is a brand-new account only if it was created
+        // after the questionnaire shipped — accounts older than that predate
+        // it and must never be bounced into a mandatory form.
+        const createdAt = user.created_at ? new Date(user.created_at).getTime() : 0;
+        setNeedsOnboarding(createdAt >= QUESTIONNAIRE_LAUNCHED_AT);
+      }
       setLoading(false);
     };
+
 
     void check();
     return () => {
