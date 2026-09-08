@@ -20,6 +20,7 @@ export interface Sequence {
 export interface SequenceStep {
   id: string;
   sequence_id: string;
+  user_id: string;
   step_number: number;
   delay_days: number;
   delay_hours: number;
