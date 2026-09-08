@@ -160,6 +160,17 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     return null;
   }
 
+  // Don't flash the dashboard while we're still deciding whether this account
+  // owes us the signup questionnaire, or while we're redirecting to it.
+  if (gateLoading || needsOnboarding) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+
+
   // Locked-account block: prevent any dashboard access for non-admin locked users
   if (subscription?.accountStatus === 'locked' && !isAdmin) {
     return (
