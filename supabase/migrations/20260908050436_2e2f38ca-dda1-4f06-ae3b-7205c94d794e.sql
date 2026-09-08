@@ -1,0 +1,20 @@
+-- Reduce pg_cron worker contention ("job startup timeout"): stagger schedules
+SELECT cron.alter_job((SELECT jobid FROM cron.job WHERE jobname='dispatch-webhooks-every-min'), schedule := '1-59/2 * * * *');
+SELECT cron.alter_job((SELECT jobid FROM cron.job WHERE jobname='retry-stripe-webhooks-every-2min'), schedule := '2-58/4 * * * *');
+SELECT cron.alter_job((SELECT jobid FROM cron.job WHERE jobname='process-rescore-queue'), schedule := '3-59/10 * * * *');
+SELECT cron.alter_job((SELECT jobid FROM cron.job WHERE jobname='dispatch-sequence-steps'), schedule := '4-59/5 * * * *');
+SELECT cron.alter_job((SELECT jobid FROM cron.job WHERE jobname='detect-suspicious-activity-15min'), schedule := '8-59/15 * * * *');
+SELECT cron.alter_job((SELECT jobid FROM cron.job WHERE jobname='run-scheduled-imports-hourly'), schedule := '35 * * * *');
+SELECT cron.alter_job((SELECT jobid FROM cron.job WHERE jobname='send-trial-warnings-daily'), schedule := '22 9 * * *');
+SELECT cron.alter_job((SELECT jobid FROM cron.job WHERE jobname='seo-digest-weekly'), schedule := '12 9 * * 1');
+SELECT cron.alter_job((SELECT jobid FROM cron.job WHERE jobname='auto-generate-blog-post'), schedule := '5 9 * * 2,5');
+SELECT cron.alter_job((SELECT jobid FROM cron.job WHERE jobname='generate-blog-post-biweekly'), schedule := '50 9 1,15 * *');
+SELECT cron.alter_job((SELECT jobid FROM cron.job WHERE jobname='lead-stage-no-response-sweep'), schedule := '40 6 * * *');
+SELECT cron.alter_job((SELECT jobid FROM cron.job WHERE jobname='compute-reputation-daily'), schedule := '5 6 * * *');
+SELECT cron.alter_job((SELECT jobid FROM cron.job WHERE jobname='lock-expired-trials-daily'), schedule := '10 2 * * *');
+SELECT cron.alter_job((SELECT jobid FROM cron.job WHERE jobname='reset-daily-email-counters'), schedule := '5 0 * * *');
+SELECT cron.alter_job((SELECT jobid FROM cron.job WHERE jobname='seo-audit-perf-daily'), schedule := '30 3 * * *');
+SELECT cron.alter_job((SELECT jobid FROM cron.job WHERE jobname='system-health-daily'), schedule := '25 13 * * *');
+SELECT cron.alter_job((SELECT jobid FROM cron.job WHERE jobname='send-activation-nudges'), schedule := '20 15 * * *');
+SELECT cron.alter_job((SELECT jobid FROM cron.job WHERE jobname='send-re-engagement-emails-weekly'), schedule := '30 16 * * *');
+SELECT cron.alter_job((SELECT jobid FROM cron.job WHERE jobname='audit-free-tier-emails-daily'), schedule := '25 5 * * *');
