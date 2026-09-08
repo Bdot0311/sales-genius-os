@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { posthog } from '@/lib/posthog';
@@ -17,6 +17,7 @@ import {
   recordCursor,
   resetTrail,
 } from '@/lib/cursor-trail';
+import { coalesce, requestKey } from '@/lib/in-flight';
 
 export interface ExternalLeadFilters {
   /** Original natural-language request for the provider's semantic parser. */
@@ -132,8 +133,30 @@ export function useExternalLeads() {
   // that comes back short is otherwise indistinguishable from a weak search.
   const [removedUndeliverable, setRemovedUndeliverable] = useState(0);
   const { toast } = useToast();
+  // Searches and reveals in flight, so the same one asked twice at once is
+  // asked once. Both are billed per call and both have flows where the button
+  // is still live when the second click lands — see lib/in-flight.
+  const searchesInFlight = useRef(new Map<string, Promise<ExternalLead[]>>());
+  const revealsInFlight = useRef(new Map<string, Promise<boolean>>());
 
-  const fetchLeads = async (filters: ExternalLeadFilters, isPageChange = false) => {
+  /**
+   * Run a search, joining one already running for the same filters.
+   *
+   * The describe tab parses the query with an LLM before it gets here, and
+   * `loading` only goes true once it does — so for the length of that parse the
+   * input and the send button are enabled and a second Enter starts a second
+   * paid search. Rather than teach every caller to hold its own flag, the guard
+   * sits on the request itself and covers all of them.
+   */
+  const fetchLeads = (filters: ExternalLeadFilters, isPageChange = false) =>
+    // isPageChange is part of the key because it decides whether the current
+    // results are cleared first. Two calls that differ only in that are not the
+    // same call, and joining them would let a page change wipe the table.
+    coalesce(searchesInFlight.current, requestKey({ filters, isPageChange }), () =>
+      runSearch(filters, isPageChange),
+    );
+
+  const runSearch = async (filters: ExternalLeadFilters, isPageChange = false) => {
     // Clear previous results immediately when starting a new search (not page change)
     if (!isPageChange) {
       setLeads([]);
@@ -257,8 +280,19 @@ export function useExternalLeads() {
     await fetchLeads({ ...lastFilters, page, cursor }, true);
   };
 
-  const activateLead = async (lead: ExternalLead) => {
+  /**
+   * Save and enrich a lead, joining one already running for the same person.
+   *
+   * `activatingLead` disables the button, but that only takes effect on the
+   * next render — a double click lands before it, and every activation spends a
+   * reveal credit at the provider.
+   */
+  const activateLead = (lead: ExternalLead) => {
     const leadKey = `${lead.company_domain}-${lead.contact_name}`;
+    return coalesce(revealsInFlight.current, leadKey, () => saveAndReveal(lead, leadKey));
+  };
+
+  const saveAndReveal = async (lead: ExternalLead, leadKey: string) => {
     setActivatingLead(leadKey);
 
     try {

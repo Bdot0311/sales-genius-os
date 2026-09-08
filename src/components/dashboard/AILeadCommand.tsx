@@ -5,7 +5,12 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Sparkles, Send, CheckCircle } from "lucide-react";
 
 interface AILeadCommandProps {
-  onSearch: (query: string) => void;
+  /**
+   * Returning the promise matters: the handler parses the query with an LLM
+   * before it starts the search, and the input stays live for as long as that
+   * is only a pending promise nobody is holding.
+   */
+  onSearch: (query: string) => void | Promise<void>;
   isSearching: boolean;
   resultsCount?: number;
   showResults?: boolean;
@@ -43,6 +48,13 @@ export const AILeadCommand = ({
   const [showSteps, setShowSteps] = useState([false, false, false]);
   const [exampleCommands] = useState(() => getRandomExamples());
   const inputRef = useRef<HTMLInputElement>(null);
+  // `isSearching` only goes true once the search request is actually made, and
+  // the handler spends a few seconds parsing the query first. Without this the
+  // box is enabled for that whole window and a second Enter buys a second
+  // search. Set synchronously so a double click cannot land between the two.
+  const dispatching = useRef(false);
+  const [busy, setBusy] = useState(false);
+  const disabled = busy || isSearching;
 
   useEffect(() => {
     if (showResults && resultsCount > 0) {
@@ -57,10 +69,18 @@ export const AILeadCommand = ({
     }
   }, [showResults, resultsCount]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (command.trim() && !isSearching) {
-      onSearch(command.trim());
+    if (!command.trim() || disabled || dispatching.current) return;
+    dispatching.current = true;
+    setBusy(true);
+    try {
+      await onSearch(command.trim());
+    } finally {
+      // The handler dispatches the search and returns without waiting for it,
+      // so `isSearching` has already taken over by the time this runs.
+      dispatching.current = false;
+      setBusy(false);
     }
   };
 
@@ -103,16 +123,16 @@ export const AILeadCommand = ({
               onBlur={() => setIsFocused(false)}
               placeholder="Describe the leads you're looking for..."
               className="flex-1 bg-transparent border-none outline-none font-mono text-sm text-foreground placeholder:text-muted-foreground"
-              disabled={isSearching}
+              disabled={disabled}
             />
             <Button 
               type="submit" 
               size="sm" 
               variant="hero"
-              disabled={!command.trim() || isSearching}
+              disabled={!command.trim() || disabled}
               className="shrink-0"
             >
-              {isSearching ? (
+              {disabled ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <Send className="w-4 h-4" />
@@ -141,16 +161,16 @@ export const AILeadCommand = ({
         </form>
 
         {/* Results Animation */}
-        {(isSearching || showResults) && (
+        {(disabled || showResults) && (
           <div className="mt-4 pt-4 border-t border-border/50 space-y-2 font-mono text-sm">
-            {isSearching && (
+            {disabled && (
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Loader2 className="w-4 h-4 animate-spin text-primary" />
                 <span>Searching B2B data sources...</span>
               </div>
             )}
             
-            {showResults && !isSearching && (
+            {showResults && !disabled && (
               <>
                 <div 
                   className={`flex items-center gap-2 transition-all duration-300 ${showSteps[0] ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}
