@@ -4,6 +4,7 @@ import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { AddLeadDialog } from "@/components/dashboard/AddLeadDialog";
 import { OnboardingChecklist } from "@/components/dashboard/OnboardingChecklist";
 import { DashboardTour } from "@/components/dashboard/DashboardTour";
+import { DiscoveryPrompt } from "@/components/dashboard/DiscoveryPrompt";
 import { ProspectUsageMeter } from "@/components/dashboard/ProspectUsageMeter";
 import { TrendingUp, Users, DollarSign, Calendar, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -105,9 +106,11 @@ const Dashboard = () => {
       />
       <div className="px-6 py-6 space-y-6 max-w-[1400px] mx-auto">
         <DashboardTour isOpen={showTour} onClose={() => setShowTour(false)} />
+        <DiscoveryPrompt />
         {showChecklist && (
           <OnboardingChecklist onClose={() => setShowChecklist(false)} onStartTour={() => setShowTour(true)} />
         )}
+        
         
 
         {/* Header row */}
