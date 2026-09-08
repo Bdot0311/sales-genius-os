@@ -28,6 +28,8 @@
 import {
   BANNED_PHRASES,
   findMirrorAnalogies,
+  findClippedOpeners,
+  findNameMismatches,
   findPlaceholders,
   findSenderStandIns,
   findUnverifiedClaims,
@@ -59,6 +61,13 @@ export interface AuditInput {
    * urgency, and touch four is supposed to ask for nothing at all.
    */
   position?: number;
+  /**
+   * The lead this was written for, so the copy can be checked against the row
+   * rather than only against itself. Without it a misspelled company name is
+   * invisible to every rule here — which is how "KOgenie" reached a prospect
+   * whose company is Kogenie.
+   */
+  lead?: { company?: string | null; contactName?: string | null };
 }
 
 /** Words per email, from the sequence guide: short enough to reply to in one line. */
@@ -180,9 +189,32 @@ export function auditEmail(input: AuditInput): Finding[] {
     });
   }
 
+  // ─── Does it match the lead it was written for? ──────────────────────────
+  const mismatches = findNameMismatches(rawBody, {
+    company: input.lead?.company ?? "",
+    contactName: input.lead?.contactName ?? "",
+  });
+  if (mismatches.length) {
+    add({
+      rule: "name_mismatch",
+      severity: "blocker",
+      evidence: mismatches.join("; "),
+      why:
+        "A misspelled company or a wrong first name is the one error a reader cannot read past. " +
+        "It is also the cheapest to catch, because the correct value is already on the lead row.",
+      fix: "Copy the name from the lead record exactly, including its capitalisation.",
+    });
+  }
+
   // ─── Language that marks it as bulk ──────────────────────────────────────
   const lower = `${subject}\n${rawBody}`.toLowerCase();
-  const banned = BANNED_PHRASES.filter((p) => lower.includes(p.toLowerCase()));
+  // The literal list, plus the same openers with the subject pronoun dropped.
+  // "I noticed" was caught and "Noticed KOgenie is marking..." was not, so the
+  // list waved through the more obviously templated of the two.
+  const banned = [
+    ...BANNED_PHRASES.filter((p) => lower.includes(p.toLowerCase())),
+    ...findClippedOpeners(`${subject}\n${rawBody}`),
+  ];
   if (banned.length) {
     add({
       rule: "banned_phrase",

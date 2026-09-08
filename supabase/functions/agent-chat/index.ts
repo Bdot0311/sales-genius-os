@@ -608,7 +608,7 @@ const TOOLS = [
     function: {
       name: "audit_email",
       description:
-        "Run every mechanical cold-email rule this product knows over a subject and body, and get back the specific violations with fixes. Use it whenever the user pastes an email and asks what is wrong with it, asks you to review or improve copy, or before sending anything you did not generate yourself. It checks unfilled merge fields, unbacked result claims, banned openers, length, the one-call-to-action rule, and whether a named trigger is actually bridged to a problem. Pass position (1-6) when the email is a numbered touch in a sequence — several rules only apply at a position.",
+        "Run every mechanical cold-email rule this product knows over a subject and body, and get back the specific violations with fixes. Use it whenever the user pastes an email and asks what is wrong with it, asks you to review or improve copy, or before sending anything you did not generate yourself. It checks unfilled merge fields, unbacked result claims, banned openers (including the pronoun-dropped variants), length, the one-call-to-action rule, whether a named trigger is actually bridged to a problem, and — when lead_id is given — whether the names in the copy match the lead record. Pass position (1-6) when the email is a numbered touch in a sequence — several rules only apply at a position.",
       parameters: {
         type: "object",
         properties: {
@@ -621,6 +621,11 @@ const TOOLS = [
           verified_proof: {
             type: "string",
             description: "A result the sender can actually back, so a figure inside it is not reported as invented.",
+          },
+          lead_id: {
+            type: "string",
+            description:
+              "The lead this email was written for. Pass it whenever you know it: the company and contact are then read from the record and the copy is checked against them, which catches a misspelled company name or the wrong first name.",
           },
         },
         required: ["body"],
@@ -1833,6 +1838,8 @@ serve(async (req) => {
               email: r?.email ?? null,
               research: r?.research ?? null,
               skills_used: Array.isArray(r?.skills_used) ? r.skills_used : [],
+              style_warnings: Array.isArray(r?.style_warnings) ? r.style_warnings : [],
+              name_warnings: Array.isArray(r?.name_warnings) ? r.name_warnings : [],
               error: r?.email ? undefined : (r?.error ?? "Draft failed"),
             };
           };
@@ -1854,6 +1861,37 @@ serve(async (req) => {
               detail: `${thinResearchCount} draft(s) had too little site research to personalize safely — review before sending, or ask me to re-research those leads.`,
             });
           }
+          // Copy problems the generator found and shipped anyway.
+          //
+          // Unlike the playbook names below, these are the customer's business:
+          // a draft carrying a misspelled company name or filler off the banned
+          // list is one they are about to send. The generator already detects
+          // both and retries once; when the retry does not clear them it keeps
+          // the better draft and says nothing, which is how "KOgenie" and
+          // "without adding headcount" reached a real prospect.
+          const nameFlags = drafts.flatMap((d: any) =>
+            (d.name_warnings ?? []).map((w: string) => `${d.company ?? "lead"}: ${w}`),
+          );
+          if (nameFlags.length) {
+            toolEvents.push({
+              name,
+              label: "Wrong name in draft",
+              status: "error",
+              detail: `${nameFlags.join("; ")} — fix before sending; a misspelled name is the one thing a reader cannot read past.`,
+            });
+          }
+          const styleFlags = [
+            ...new Set(drafts.flatMap((d: any) => d.style_warnings ?? [])),
+          ] as string[];
+          if (styleFlags.length) {
+            toolEvents.push({
+              name,
+              label: "House-style filler survived",
+              status: "queued",
+              detail: `${styleFlags.map((w) => `"${w}"`).join(", ")} — on the banned list, rewrite attempted and did not clear them. Ask me to redraft those lines.`,
+            });
+          }
+
           if (researchedCount > 0) {
             toolEvents.push({
               name,
@@ -2653,11 +2691,27 @@ serve(async (req) => {
           // belongs here is the set of things that are simply true or false
           // about the text, so the same email always audits the same way and
           // the agent cannot talk itself out of a finding.
+          // Read from the row, never from the arguments. If the model supplied
+          // the company name it would be checking the copy against its own
+          // memory of it, which is the thing that was wrong in the first place.
+          let auditLead: { company?: string | null; contactName?: string | null } | undefined;
+          if (args.lead_id) {
+            const { data: leadRow } = await admin
+              .from("leads")
+              .select("company_name, contact_name")
+              .eq("id", String(args.lead_id))
+              .eq("user_id", userId)
+              .maybeSingle();
+            if (leadRow) {
+              auditLead = { company: leadRow.company_name, contactName: leadRow.contact_name };
+            }
+          }
           const findings = auditEmail({
             subject: args.subject ? String(args.subject) : "",
             body: String(args.body ?? ""),
             position: typeof args.position === "number" ? args.position : undefined,
             verifiedProof: args.verified_proof ? String(args.verified_proof) : "",
+            lead: auditLead,
           });
           const blockers = findings.filter((f) => f.severity === "blocker").length;
           toolEvents.push({
