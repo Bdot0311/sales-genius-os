@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
-import { coldiqConfigured, coldiqFindEmail } from "../_shared/coldiq.ts";
+import { COLDIQ_CREDITS_ERROR, coldiqConfigured, coldiqFindEmail } from "../_shared/coldiq.ts";
 import { isPersonLinkedIn, normalizeDomain, realValue } from "../_shared/email-rules.ts";
 import { verifyEmail, type CacheClient, type VerificationStatus } from "../_shared/email-verify.ts";
 
