@@ -129,6 +129,15 @@ export const UserTable = ({
                             via {sub.signup_source}
                           </p>
                         )}
+                        {answers[sub.user_id] && (
+                          <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                            {[
+                              answers[sub.user_id].role,
+                              answers[sub.user_id].team_size,
+                              answers[sub.user_id].current_tooling,
+                            ].filter(Boolean).join(" · ")}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </TableCell>
