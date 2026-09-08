@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+/** When the signup questionnaire shipped; anyone older is exempt. */
+const QUESTIONNAIRE_LAUNCHED_AT = Date.parse("2026-09-08T00:00:00Z");
+
+
 /**
  * Whether this account still owes us the signup questionnaire.
  *
