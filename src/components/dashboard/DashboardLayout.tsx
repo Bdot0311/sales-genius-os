@@ -97,6 +97,13 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const { credits } = useSearchCredits();
   useLiveCrmIndicators();
   const { isDemoMode } = useDemoMode();
+  const { loading: gateLoading, needsOnboarding } = useOnboardingGate();
+
+  // New accounts answer the signup questionnaire before anything else. The flag
+  // lives server-side, so clearing browser storage can't skip it.
+  useEffect(() => {
+    if (!gateLoading && needsOnboarding) navigate("/onboarding", { replace: true });
+  }, [gateLoading, needsOnboarding, navigate]);
 
 
 
