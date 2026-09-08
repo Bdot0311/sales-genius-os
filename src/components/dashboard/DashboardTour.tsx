@@ -21,40 +21,41 @@ const tourSteps: TourStep[] = [
   {
     title: "Your Stats at a Glance",
     description: "Track total leads, active deals, pipeline value, and meetings — all updated in real-time as your data changes.",
-    selector: ".grid.grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-4",
+    selector: "[data-tour='stats']",
     position: "bottom",
   },
   {
     title: "Quick Actions",
     description: "Jump straight into outreach, pipeline management, or scheduling without navigating away.",
-    selector: ".grid.grid-cols-1.md\\:grid-cols-3",
+    selector: "[data-tour='quick-actions']",
     position: "top",
   },
   {
     title: "Leads & Prospecting",
     description: "Find and manage your leads here. Use AI-powered search to describe your ideal customer in plain English.",
-    selector: "a[href='/dashboard/leads'], button:has(> .lucide-users)",
+    selector: "[data-tour-nav='/dashboard/leads']",
     position: "right",
   },
   {
     title: "Pipeline Tracking",
     description: "Visualize deals through stages — from first contact to close. Drag and drop to update deal status.",
-    selector: "a[href='/dashboard/pipeline']",
+    selector: "[data-tour-nav='/dashboard/pipeline']",
     position: "right",
   },
   {
     title: "Outreach Studio",
     description: "Generate personalized emails using AI, manage drafts, and track email performance from one place.",
-    selector: "a[href='/dashboard/outreach']",
+    selector: "[data-tour-nav='/dashboard/outreach']",
     position: "right",
   },
   {
     title: "AI Sales Coach",
     description: "Get personalized insights and recommendations to improve your sales approach and close more deals.",
-    selector: "a[href='/dashboard/coach']",
+    selector: "[data-tour-nav='/dashboard/coach']",
     position: "right",
   },
 ];
+
 
 export const DashboardTour = ({ isOpen, onClose }: DashboardTourProps) => {
   const [currentStep, setCurrentStep] = useState(0);
