@@ -703,13 +703,17 @@ const Settings = () => {
             </TabsContent>
           )}
 
-          <TabsContent value="agency-portal" className="space-y-6">
-            <AgencyPortalTab />
-          </TabsContent>
+          {(isAdmin || subscription?.plan === 'agency') && (
+            <>
+              <TabsContent value="agency-portal" className="space-y-6">
+                <AgencyPortalTab />
+              </TabsContent>
 
-          <TabsContent value="white-label">
-            <WhiteLabelTab />
-          </TabsContent>
+              <TabsContent value="white-label">
+                <WhiteLabelTab />
+              </TabsContent>
+            </>
+          )}
 
           {(isAdmin || subscription?.plan === 'pro' || subscription?.plan === 'agency') && (
             <>
