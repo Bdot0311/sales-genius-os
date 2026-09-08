@@ -153,7 +153,7 @@ export const PLAN_FEATURES = {
     priorityBooking: false,
     
     // Smart Deal Pipeline
-    automatedStageProgression: false,
+    automatedStageProgression: true,
     revenueForecasting: false,
     customPipelines: false,
     advancedAutomationTriggers: false,
@@ -248,7 +248,7 @@ export const PLAN_FEATURES = {
     priorityBooking: false,
     
     // Smart Deal Pipeline
-    automatedStageProgression: false,
+    automatedStageProgression: true,
     revenueForecasting: false,
     customPipelines: false,
     advancedAutomationTriggers: false,
@@ -554,7 +554,7 @@ export const UPGRADE_MESSAGES = {
   automatedStageProgression: {
     title: 'Automated Pipeline Updates',
     description: 'Let deals move through stages automatically based on engagement signals.',
-    availableOn: 'pro',
+    availableOn: 'starter',
   },
   revenueForecasting: {
     title: 'Revenue Forecasting',
