@@ -59,8 +59,28 @@ describe("something advances a due enrollment", () => {
     expect(DISPATCH).toContain("enrollmentId");
   });
 
-  it("is service-role only, since it advances other people's sequences", () => {
-    expect(DISPATCH).toContain("bearer !== serviceKey");
+  it("is privileged-only, since it advances other people's sequences", () => {
+    // This originally compared the bearer against SUPABASE_SERVICE_ROLE_KEY
+    // and nothing else. The cron job authenticates with the vault copy of that
+    // key, and this repo already documents the vault value going stale as a
+    // failure mode that "silently 401s every background job" — so the strict
+    // form could reject every scheduled run and leave enrollments exactly as
+    // stuck as they were before the dispatcher existed. Notably, no other
+    // cron-invoked function here gates on a bearer at all.
+    //
+    // So both privileged credentials are accepted. What must stay true is that
+    // nothing else is: a user token reaching this would let one account
+    // advance another's sequences.
+    expect(DISPATCH).toMatch(/bearer === serviceKey/);
+    expect(DISPATCH).toMatch(/bearer === internalSecret/);
+    expect(DISPATCH).toContain("Service role required");
+    expect(DISPATCH).toContain("status: 401");
+  });
+
+  it("does not fall open when a credential is unset", () => {
+    // An empty INTERNAL_TRIGGER_SECRET must not authorize an empty bearer.
+    expect(DISPATCH).toMatch(/!!bearer &&/);
+    expect(DISPATCH).toMatch(/!!internalSecret && bearer === internalSecret/);
   });
 
   it("bounds a backlog instead of trying to drain it in one pass", () => {
@@ -127,14 +147,30 @@ describe("the answers to what was asked", () => {
     expect(RUN).toContain("can_send_outreach");
   });
 
-  it("no other cron job was advancing sequences", () => {
-    // The claim that the link was missing, asserted rather than remembered.
+  it("nothing but the dispatcher's own schedule drives sequences", () => {
+    // Originally this asserted that exactly one migration mentioned the
+    // dispatch URL. That broke the moment the migration was applied: Lovable
+    // re-commits each applied migration under its own generated filename, so
+    // the fix legitimately appears twice and will again on any replay.
+    //
+    // A second copy is only safe because both name the SAME cron job and
+    // unschedule it first. Two differently-named schedules would install two
+    // dispatchers and every enrollment would send twice — so that, rather than
+    // the file count, is what is worth pinning.
     const migs = readdirSync("supabase/migrations").filter((f) => f.endsWith(".sql"));
-    const others = migs
-      .filter((f) => !f.startsWith("20260906180000"))
-      .map((f) => readFileSync(`supabase/migrations/${f}`, "utf8"))
-      .join("\n");
-    expect(others).not.toContain("functions/v1/process-sequence-step");
-    expect(others).not.toContain("functions/v1/dispatch-sequence-steps");
+    const withDispatch = migs.filter((f) =>
+      readFileSync(`supabase/migrations/${f}`, "utf8").includes("functions/v1/dispatch-sequence-steps"),
+    );
+    expect(withDispatch.length).toBeGreaterThan(0);
+    for (const f of withDispatch) {
+      const sql = readFileSync(`supabase/migrations/${f}`, "utf8");
+      expect(sql).toContain("cron.unschedule('dispatch-sequence-steps')");
+      expect(sql).toContain("'dispatch-sequence-steps',");
+    }
+
+    // process-sequence-step is driven only by the dispatcher, never by a cron
+    // of its own. A schedule on it would double-drive every enrollment.
+    const all = migs.map((f) => readFileSync(`supabase/migrations/${f}`, "utf8")).join("\n");
+    expect(all).not.toContain("functions/v1/process-sequence-step");
   });
 });
