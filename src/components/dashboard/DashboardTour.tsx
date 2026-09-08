@@ -178,7 +178,7 @@ export const DashboardTour = ({ isOpen, onClose }: DashboardTourProps) => {
 
     const tooltipWidth = 340;
     const tooltipGap = 16;
-    const tooltipHeight = tooltipRef.current?.offsetHeight || 220;
+    // measured height comes from state above
 
     let top = 0;
     let left = 0;
