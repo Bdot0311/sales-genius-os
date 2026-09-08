@@ -275,7 +275,9 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <button
+                            data-tour-nav={item.href}
                             onClick={() => { navigate(item.href); setSidebarOpen(false); }}
+
                             className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors mb-0.5 ${
                               sidebarCollapsed ? "justify-center" : ""
                             } ${

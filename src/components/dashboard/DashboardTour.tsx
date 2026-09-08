@@ -21,40 +21,41 @@ const tourSteps: TourStep[] = [
   {
     title: "Your Stats at a Glance",
     description: "Track total leads, active deals, pipeline value, and meetings — all updated in real-time as your data changes.",
-    selector: ".grid.grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-4",
+    selector: "[data-tour='stats']",
     position: "bottom",
   },
   {
     title: "Quick Actions",
     description: "Jump straight into outreach, pipeline management, or scheduling without navigating away.",
-    selector: ".grid.grid-cols-1.md\\:grid-cols-3",
+    selector: "[data-tour='quick-actions']",
     position: "top",
   },
   {
     title: "Leads & Prospecting",
     description: "Find and manage your leads here. Use AI-powered search to describe your ideal customer in plain English.",
-    selector: "a[href='/dashboard/leads'], button:has(> .lucide-users)",
+    selector: "[data-tour-nav='/dashboard/leads']",
     position: "right",
   },
   {
     title: "Pipeline Tracking",
     description: "Visualize deals through stages — from first contact to close. Drag and drop to update deal status.",
-    selector: "a[href='/dashboard/pipeline']",
+    selector: "[data-tour-nav='/dashboard/pipeline']",
     position: "right",
   },
   {
     title: "Outreach Studio",
     description: "Generate personalized emails using AI, manage drafts, and track email performance from one place.",
-    selector: "a[href='/dashboard/outreach']",
+    selector: "[data-tour-nav='/dashboard/outreach']",
     position: "right",
   },
   {
     title: "AI Sales Coach",
     description: "Get personalized insights and recommendations to improve your sales approach and close more deals.",
-    selector: "a[href='/dashboard/coach']",
+    selector: "[data-tour-nav='/dashboard/coach']",
     position: "right",
   },
 ];
+
 
 export const DashboardTour = ({ isOpen, onClose }: DashboardTourProps) => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -62,21 +63,45 @@ export const DashboardTour = ({ isOpen, onClose }: DashboardTourProps) => {
   const [animating, setAnimating] = useState(false);
   const [visible, setVisible] = useState(false);
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const [tooltipHeight, setTooltipHeight] = useState(220);
+
+  // Measure the card so "above the target" placements use its real height.
+  useEffect(() => {
+    const h = tooltipRef.current?.offsetHeight;
+    if (h && Math.abs(h - tooltipHeight) > 1) setTooltipHeight(h);
+  }, [currentStep, isOpen, tooltipHeight]);
+
 
   const findTarget = useCallback((step: number) => {
     const el = document.querySelector(tourSteps[step].selector);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
-      // Wait for scroll to settle then measure
-      setTimeout(() => {
-        setTargetRect(el.getBoundingClientRect());
-        setAnimating(false);
-      }, 350);
-    } else {
+    if (!el) {
       // Fallback — show center-screen
       setTargetRect(new DOMRect(window.innerWidth / 2 - 150, window.innerHeight / 2 - 30, 300, 60));
       setAnimating(false);
+      return;
     }
+
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    // Keep measuring until the smooth scroll actually stops, so the highlight
+    // never lands on where the element used to be.
+    let last: number | null = null;
+    let stable = 0;
+    let frames = 0;
+    const measure = () => {
+      const rect = el.getBoundingClientRect();
+      setTargetRect(rect);
+      if (last !== null && Math.abs(rect.top - last) < 0.5) stable += 1;
+      else stable = 0;
+      last = rect.top;
+      frames += 1;
+      if (stable < 3 && frames < 90) {
+        requestAnimationFrame(measure);
+      } else {
+        setAnimating(false);
+      }
+    };
+    requestAnimationFrame(measure);
   }, []);
 
   useEffect(() => {
@@ -93,13 +118,21 @@ export const DashboardTour = ({ isOpen, onClose }: DashboardTourProps) => {
     }
   }, [isOpen, findTarget]);
 
-  // Re-measure on resize
+  // Re-measure on resize and scroll
   useEffect(() => {
     if (!isOpen) return;
-    const onResize = () => findTarget(currentStep);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, [isOpen, currentStep, findTarget]);
+    const remeasure = () => {
+      const el = document.querySelector(tourSteps[currentStep].selector);
+      if (el) setTargetRect(el.getBoundingClientRect());
+    };
+    window.addEventListener("resize", remeasure);
+    window.addEventListener("scroll", remeasure, true);
+    return () => {
+      window.removeEventListener("resize", remeasure);
+      window.removeEventListener("scroll", remeasure, true);
+    };
+  }, [isOpen, currentStep]);
+
 
   const goToStep = (step: number) => {
     setAnimating(true);
@@ -145,6 +178,7 @@ export const DashboardTour = ({ isOpen, onClose }: DashboardTourProps) => {
 
     const tooltipWidth = 340;
     const tooltipGap = 16;
+    // measured height comes from state above
 
     let top = 0;
     let left = 0;
@@ -153,24 +187,31 @@ export const DashboardTour = ({ isOpen, onClose }: DashboardTourProps) => {
       case "bottom":
         top = targetRect.bottom + pad + tooltipGap;
         left = targetRect.left + targetRect.width / 2 - tooltipWidth / 2;
+        // Not enough room below? flip above the target.
+        if (top + tooltipHeight > window.innerHeight - 16) {
+          top = targetRect.top - pad - tooltipGap - tooltipHeight;
+        }
         break;
       case "top":
-        top = targetRect.top - pad - tooltipGap - 180;
+        top = targetRect.top - pad - tooltipGap - tooltipHeight;
         left = targetRect.left + targetRect.width / 2 - tooltipWidth / 2;
+        // Not enough room above? flip below the target.
+        if (top < 16) top = targetRect.bottom + pad + tooltipGap;
         break;
       case "right":
-        top = targetRect.top + targetRect.height / 2 - 80;
+        top = targetRect.top + targetRect.height / 2 - tooltipHeight / 2;
         left = targetRect.right + pad + tooltipGap;
         break;
       case "left":
-        top = targetRect.top + targetRect.height / 2 - 80;
+        top = targetRect.top + targetRect.height / 2 - tooltipHeight / 2;
         left = targetRect.left - pad - tooltipGap - tooltipWidth;
         break;
     }
 
     // Clamp to viewport
     left = Math.max(16, Math.min(left, window.innerWidth - tooltipWidth - 16));
-    top = Math.max(16, Math.min(top, window.innerHeight - 220));
+    top = Math.max(16, Math.min(top, window.innerHeight - tooltipHeight - 16));
+
 
     return {
       position: "fixed",

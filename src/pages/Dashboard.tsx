@@ -127,7 +127,7 @@ const Dashboard = () => {
         {!isFreeTier && <ProspectUsageMeter />}
 
         {/* Metrics strip */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-border/60 rounded-lg overflow-hidden border border-border/60">
+        <div data-tour="stats" className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-border/60 rounded-lg overflow-hidden border border-border/60">
           {statCards.map((stat) => (
             <div key={stat.title} className="bg-card px-5 py-4 flex flex-col gap-1">
               <div className="flex items-center justify-between">
@@ -143,7 +143,7 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2 space-y-2">
             <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-widest">Quick Actions</p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div data-tour="quick-actions" className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {[
                 { label: "Outreach Studio", desc: "Generate AI-powered emails", icon: Mail, href: '/dashboard/outreach' },
                 { label: "View Pipeline", desc: "Manage your deals", icon: TrendingUp, href: '/dashboard/pipeline' },
