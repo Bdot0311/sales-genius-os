@@ -63,6 +63,14 @@ export const DashboardTour = ({ isOpen, onClose }: DashboardTourProps) => {
   const [animating, setAnimating] = useState(false);
   const [visible, setVisible] = useState(false);
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const [tooltipHeight, setTooltipHeight] = useState(220);
+
+  // Measure the card so "above the target" placements use its real height.
+  useEffect(() => {
+    const h = tooltipRef.current?.offsetHeight;
+    if (h && Math.abs(h - tooltipHeight) > 1) setTooltipHeight(h);
+  }, [currentStep, isOpen, tooltipHeight]);
+
 
   const findTarget = useCallback((step: number) => {
     const el = document.querySelector(tourSteps[step].selector);
