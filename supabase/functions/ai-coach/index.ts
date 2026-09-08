@@ -65,6 +65,45 @@ serve(async (req) => {
       .maybeSingle();
     subscriptionInfo = subscription;
 
+    // ── Monthly AI Coach message limit per plan ──────────────────────────────
+    const COACH_MESSAGE_LIMITS: Record<string, number> = {
+      free: 5,
+      starter: 50,
+      growth: 200,
+      pro: 750,
+      agency: -1,
+    };
+    const activePlan =
+      subscription?.status === 'active' || subscription?.status === 'trialing'
+        ? (subscription?.plan as string) || 'free'
+        : 'free';
+    const coachLimit = COACH_MESSAGE_LIMITS[activePlan] ?? COACH_MESSAGE_LIMITS.free;
+
+    if (coachLimit !== -1) {
+      const periodStart = new Date();
+      periodStart.setUTCDate(1);
+      periodStart.setUTCHours(0, 0, 0, 0);
+
+      const { count: usedThisMonth } = await supabase
+        .from('coaching_messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('role', 'user')
+        .gte('created_at', periodStart.toISOString());
+
+      if ((usedThisMonth ?? 0) > coachLimit) {
+        return new Response(
+          JSON.stringify({
+            error: `You have used all ${coachLimit} AI Sales Coach messages included in your ${activePlan} plan this month. Upgrade your plan for a higher coaching limit.`,
+            code: 'coach_limit_reached',
+            limit: coachLimit,
+            used: usedThisMonth ?? 0,
+          }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     // Fetch recent deals with stages
     const { data: deals } = await supabase
       .from('deals')

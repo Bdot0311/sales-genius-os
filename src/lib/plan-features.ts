@@ -65,6 +65,7 @@ export const PLAN_FEATURES = {
     
     // AI Sales Coach
     coachingLevel: 'view-only',
+    coachMessagesPerMonth: 5,
     realTimeAnalysis: 'none',
     liveCoaching: false,
     customPlaybooks: false,
@@ -160,6 +161,7 @@ export const PLAN_FEATURES = {
     
     // AI Sales Coach
     coachingLevel: 'basic',
+    coachMessagesPerMonth: 50,
     realTimeAnalysis: 'limited',
     liveCoaching: false,
     customPlaybooks: false,
@@ -255,6 +257,7 @@ export const PLAN_FEATURES = {
     
     // AI Sales Coach
     coachingLevel: 'basic',
+    coachMessagesPerMonth: 200,
     realTimeAnalysis: 'limited',
     liveCoaching: false,
     customPlaybooks: false,
@@ -352,6 +355,7 @@ export const PLAN_FEATURES = {
 
     // AI Sales Coach
     coachingLevel: 'premium',
+    coachMessagesPerMonth: 750,
     realTimeAnalysis: 'full',
     liveCoaching: true,
     customPlaybooks: true,
@@ -456,6 +460,7 @@ export const PLAN_FEATURES = {
     
     // AI Sales Coach
     coachingLevel: 'premium',
+    coachMessagesPerMonth: -1,
     realTimeAnalysis: 'full',
     liveCoaching: true,
     customPlaybooks: true,

@@ -52,9 +52,31 @@ const Coach = () => {
     closeRate: 0,
     upcomingMeetings: 0,
   });
+  const [messagesUsed, setMessagesUsed] = useState(0);
   const { toast } = useToast();
   const navigate = useNavigate();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const coachLimit = (features as { coachMessagesPerMonth?: number }).coachMessagesPerMonth ?? 5;
+
+  const loadCoachUsage = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const periodStart = new Date();
+      periodStart.setUTCDate(1);
+      periodStart.setUTCHours(0, 0, 0, 0);
+      const { count } = await supabase
+        .from("coaching_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("role", "user")
+        .gte("created_at", periodStart.toISOString());
+      setMessagesUsed(count ?? 0);
+    } catch (error) {
+      console.error("Error loading coach usage:", error);
+    }
+  };
 
   const scrollToBottom = () => {
     requestAnimationFrame(() => {
@@ -203,6 +225,7 @@ const Coach = () => {
 
   useEffect(() => {
     loadStats();
+    loadCoachUsage();
     loadConversations(true); // auto-load latest conversation
   }, []);
 
@@ -222,9 +245,19 @@ const Coach = () => {
   const handleSubmit = async () => {
     if (!input.trim()) return;
 
+    if (coachLimit !== -1 && messagesUsed >= coachLimit) {
+      toast({
+        title: "Monthly coaching limit reached",
+        description: `Your ${currentPlan} plan includes ${coachLimit} AI Sales Coach messages per month. Upgrade for a higher limit.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     const userMessage = input.trim();
     setInput("");
     setLoading(true);
+    setMessagesUsed(prev => prev + 1);
 
     // Add user message to UI immediately
     const newUserMessage: Message = { role: 'user', content: userMessage };
@@ -382,6 +415,11 @@ const Coach = () => {
             <p className="text-muted-foreground text-sm sm:text-base">
               Get personalized coaching and insights to improve your sales performance
             </p>
+            <Badge variant="secondary" className="mt-2">
+              {coachLimit === -1
+                ? "Unlimited coaching messages"
+                : `${Math.min(messagesUsed, coachLimit)} / ${coachLimit} coaching messages this month`}
+            </Badge>
           </div>
           <div className="flex gap-2 flex-wrap">
             <Button variant="outline" size="sm" onClick={() => setShowHistory(!showHistory)}>
