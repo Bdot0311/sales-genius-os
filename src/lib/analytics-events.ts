@@ -64,6 +64,15 @@ export const Analytics = {
   signupCompleted: (method: "email" | "google" = "email") =>
     captureOnce("signup_completed", { method }),
 
+  /** Signup questionnaire funnel — lets us see which question loses people. */
+  onboardingStarted: () => captureOnce("onboarding_started"),
+
+  onboardingStepCompleted: (step: number) => captureEvent("onboarding_step_completed", { step }),
+
+  onboardingCompleted: (discoveryChannel?: string) =>
+    captureOnce("onboarding_completed", { discovery_channel: discoveryChannel }),
+
+
   /** Someone clicked a "get your free leads / book campaign setup" CTA. */
   freeLeadsCtaClicked: (source: string, plan?: string | null) =>
     captureEvent("free_leads_cta_click", {
