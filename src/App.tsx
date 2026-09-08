@@ -26,6 +26,7 @@ const isPublicLandingPath = (pathname: string) => {
 // Lazy load non-critical pages
 const Auth = lazy(() => import("./pages/Auth"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
 const Leads = lazy(() => import("./pages/Leads"));
 const Accounts = lazy(() => import("./pages/Accounts"));
 const SavedLeads = lazy(() => import("./pages/SavedLeads"));
@@ -504,8 +505,9 @@ const App = () => {
               <Route path="/help/category/:category" element={<HelpCenter />} />
               <Route path="/help/article/:slug" element={<HelpCenter />} />
               <Route path="/install" element={<Install />} />
-              <Route path="/checkout" element={<Checkout />} />
-              <Route path="/dashboard" element={<MaintenanceGuard><Dashboard /></MaintenanceGuard>} />
+               <Route path="/checkout" element={<Checkout />} />
+               <Route path="/onboarding" element={<Onboarding />} />
+               <Route path="/dashboard" element={<MaintenanceGuard><Dashboard /></MaintenanceGuard>} />
               <Route path="/dashboard/leads" element={<MaintenanceGuard><Leads /></MaintenanceGuard>} />
               <Route path="/dashboard/leads/saved" element={<MaintenanceGuard><SavedLeads /></MaintenanceGuard>} />
               <Route path="/dashboard/accounts" element={<MaintenanceGuard><Accounts /></MaintenanceGuard>} />
