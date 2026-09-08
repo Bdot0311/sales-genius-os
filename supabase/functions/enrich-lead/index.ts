@@ -389,7 +389,9 @@ serve(async (req) => {
     // Per the ColdIQ spec a miss is free — charging happens only on a found,
     // valid email — so this can run on every gap rather than being rationed.
     // The only leads that cost anything are the ones that stop being useless.
+    let emailFinderUnavailable = false;
     if (!lead.contact_email && !enrichmentData.contact_email && coldiqConfigured()) {
+
       const parts = String(lead.contact_name ?? '').trim().split(/\s+/).filter(Boolean);
       const { email: foundEmail, error: findErr } = await coldiqFindEmail({
         first_name: parts[0] ?? '',

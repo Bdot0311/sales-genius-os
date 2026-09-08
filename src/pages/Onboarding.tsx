@@ -168,11 +168,21 @@ const Onboarding = () => {
       );
       if (respErr) throw respErr;
 
-      // Business description powers email drafting — fill it from their own words.
-      await supabase
+      // Business description powers email drafting — fill it from their own
+      // words, but never clobber a description they already wrote.
+      const { data: existingProfile } = await supabase
         .from("profiles")
-        .update({ business_description: answers.what_you_sell.trim() })
-        .eq("id", user.id);
+        .select("business_description")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (!existingProfile?.business_description?.trim()) {
+        await supabase
+          .from("profiles")
+          .update({ business_description: answers.what_you_sell.trim() })
+          .eq("id", user.id);
+      }
+
 
       // Give them a targeting profile so lead search isn't an empty form.
       const { data: existingIcp } = await supabase
