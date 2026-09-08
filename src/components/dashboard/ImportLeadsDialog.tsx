@@ -509,7 +509,7 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
   };
 
   const downloadTemplate = () => {
-    const csv = "Company Name,Contact Name,Email,Phone,Industry,Company Size,Source\nExample Corp,John Doe,john@example.com,555-0100,Technology,50-200,Website";
+    const csv = "Company Name,Contact Name,Job Title,Email,Phone,LinkedIn URL,Company Website,Industry,Company Size,Source\nExample Corp,John Doe,Head of Sales,john@example.com,555-0100,https://linkedin.com/in/johndoe,https://example.com,Technology,50-200,Website";
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -575,7 +575,7 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
                 <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
                 <p className="text-sm font-medium">Click to upload CSV file</p>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Supports: Company Name, Contact Name, Email, Phone, Industry, Company Size, Source
+                  Reads Company Name, Contact Name (or First/Last), Job Title, Email, Phone, LinkedIn URL, Website, Industry, Company Size, Source. New leads are added to your saved leads — nothing existing is replaced.
                 </p>
               </Label>
             </div>
