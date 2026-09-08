@@ -106,16 +106,24 @@ const SavedLeads = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      // Hard cap at 1000 to avoid Supabase's implicit limit silently truncating large lists.
-      const { data, error } = await supabase
-        .from("leads")
-        .select("*")
-        .eq("user_id", session.user.id)
-        .order("created_at", { ascending: false })
-        .range(0, 999);
+      // Page through everything: a single request is capped, which used to hide
+      // older leads once a big import pushed the list past 1000 rows.
+      const pageSize = 1000;
+      let all: any[] = [];
+      for (let page = 0; ; page++) {
+        const { data, error } = await supabase
+          .from("leads")
+          .select("*")
+          .eq("user_id", session.user.id)
+          .order("created_at", { ascending: false })
+          .range(page * pageSize, page * pageSize + pageSize - 1);
 
-      if (error) throw error;
-      setLeads(data || []);
+        if (error) throw error;
+        all = all.concat(data || []);
+        if (!data || data.length < pageSize || page >= 19) break;
+      }
+      setLeads(all);
+
     } catch (error: any) {
       toast({
         title: "Error loading leads",

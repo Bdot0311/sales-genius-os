@@ -160,7 +160,7 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
       const titleCol = findCol(["job title", "title", "position", "role", "headline"]);
       const linkedinCol = findCol(["linkedin url", "linkedin", "linkedin profile", "profile url"]);
       const websiteCol = findCol(["company website", "website", "domain", "company domain", "url"]);
-      const locationCol = findCol(["location", "city", "country", "region"]);
+      
 
       if (companyCol === -1 && contactCol === -1 && firstNameCol === -1 && nameCol === -1 && emailCol === -1 && linkedinCol === -1) {
         throw new Error(
@@ -204,7 +204,7 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
         if (titleCol >= 0) lead.job_title = getVal(titleCol) || null;
         if (linkedin) lead.linkedin_url = linkedin;
         if (websiteCol >= 0) lead.company_website = getVal(websiteCol) || null;
-        if (locationCol >= 0) lead.location = getVal(locationCol) || null;
+        
         if (sourceCol >= 0 && !source) lead.source = getVal(sourceCol) || null;
         if (source) lead.source = source;
         return lead;
