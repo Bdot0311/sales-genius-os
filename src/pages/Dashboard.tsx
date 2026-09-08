@@ -5,7 +5,6 @@ import { AddLeadDialog } from "@/components/dashboard/AddLeadDialog";
 import { OnboardingChecklist } from "@/components/dashboard/OnboardingChecklist";
 import { DashboardTour } from "@/components/dashboard/DashboardTour";
 import { ProspectUsageMeter } from "@/components/dashboard/ProspectUsageMeter";
-import QuickStartWizard from "@/components/onboarding/QuickStartWizard";
 import { TrendingUp, Users, DollarSign, Calendar, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
@@ -17,7 +16,6 @@ const Dashboard = () => {
   const isFreeTier = currentPlan === 'free';
   const [showChecklist, setShowChecklist] = useState(true);
   const [showTour, setShowTour] = useState(false);
-  const [showWizard, setShowWizard] = useState(false);
   const [stats, setStats] = useState({
     totalLeads: 0,
     totalDeals: 0,
@@ -25,12 +23,6 @@ const Dashboard = () => {
     meetingsThisWeek: 0,
   });
 
-  const [tourPending, setTourPending] = useState(false);
-  const quickstartDone = () => !!localStorage.getItem('outreign_quickstart_done');
-
-  useEffect(() => {
-    if (!quickstartDone()) setShowWizard(true);
-  }, []);
 
   useEffect(() => {
     loadStats();
