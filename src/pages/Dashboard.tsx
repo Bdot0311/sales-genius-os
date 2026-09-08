@@ -186,20 +186,6 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
-
-      <QuickStartWizard
-        open={showWizard}
-        onOpenChange={(open) => {
-          if (!open) {
-            localStorage.setItem('outreign_quickstart_done', '1');
-            if (tourPending) {
-              setTourPending(false);
-              setShowTour(true);
-            }
-          }
-          setShowWizard(open);
-        }}
-      />
     </DashboardLayout>
   );
 };
