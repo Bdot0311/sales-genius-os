@@ -4353,7 +4353,7 @@ export type Database = {
           subject_template: string
           trigger_condition: string
           updated_at: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           body_template: string
@@ -4370,7 +4370,7 @@ export type Database = {
           subject_template: string
           trigger_condition?: string
           updated_at?: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           body_template?: string
@@ -4387,7 +4387,7 @@ export type Database = {
           subject_template?: string
           trigger_condition?: string
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
