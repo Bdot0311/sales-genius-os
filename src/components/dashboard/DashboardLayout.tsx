@@ -42,6 +42,7 @@ import { useWhiteLabel } from "@/hooks/use-white-label";
 import { useSearchCredits } from "@/hooks/use-search-credits";
 import { useLiveCrmIndicators } from "@/hooks/use-live-crm-indicators";
 import { useDemoMode } from "@/hooks/use-demo-mode";
+import { useOnboardingGate } from "@/hooks/use-onboarding-gate";
 import { ensureSession, startSessionKeeper } from "@/lib/session-keeper";
 
 
@@ -96,6 +97,13 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const { credits } = useSearchCredits();
   useLiveCrmIndicators();
   const { isDemoMode } = useDemoMode();
+  const { loading: gateLoading, needsOnboarding } = useOnboardingGate();
+
+  // New accounts answer the signup questionnaire before anything else. The flag
+  // lives server-side, so clearing browser storage can't skip it.
+  useEffect(() => {
+    if (!gateLoading && needsOnboarding) navigate("/onboarding", { replace: true });
+  }, [gateLoading, needsOnboarding, navigate]);
 
 
 

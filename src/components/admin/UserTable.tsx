@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -46,11 +48,38 @@ const getAccountBadge = (userId: string, accountStatus: string, trialEndDate: st
   return <Badge className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30">Active</Badge>;
 };
 
+type AnswerSummary = { role: string | null; team_size: string | null; current_tooling: string | null };
+
 export const UserTable = ({
   subscriptions, loading, isUserAdmin,
   onUpdateSubscription, onLockUser, onUnlockUser, onToggleAdmin, onSetTrial, onDeleteUser, onResetPassword, onEditUser
 }: UserTableProps) => {
   const { isDemoMode } = useDemoMode();
+  const [answers, setAnswers] = useState<Record<string, AnswerSummary>>({});
+
+  // Signup questionnaire answers, so who someone is is visible right in the list.
+  useEffect(() => {
+    let cancelled = false;
+    void supabase
+      .from("onboarding_responses")
+      .select("user_id, role, team_size, current_tooling")
+      .then(({ data }) => {
+        if (cancelled || !data) return;
+        const map: Record<string, AnswerSummary> = {};
+        for (const row of data) {
+          map[row.user_id] = {
+            role: row.role,
+            team_size: row.team_size,
+            current_tooling: row.current_tooling,
+          };
+        }
+        setAnswers(map);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
 
   return (
     <div className="overflow-x-auto">
@@ -98,6 +127,15 @@ export const UserTable = ({
                         {sub.signup_source && (
                           <p className="text-[10px] text-muted-foreground truncate mt-0.5" title={sub.signup_source}>
                             via {sub.signup_source}
+                          </p>
+                        )}
+                        {answers[sub.user_id] && (
+                          <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                            {[
+                              answers[sub.user_id].role,
+                              answers[sub.user_id].team_size,
+                              answers[sub.user_id].current_tooling,
+                            ].filter(Boolean).join(" · ")}
                           </p>
                         )}
                       </div>

@@ -4,8 +4,8 @@ import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { AddLeadDialog } from "@/components/dashboard/AddLeadDialog";
 import { OnboardingChecklist } from "@/components/dashboard/OnboardingChecklist";
 import { DashboardTour } from "@/components/dashboard/DashboardTour";
+import { DiscoveryPrompt } from "@/components/dashboard/DiscoveryPrompt";
 import { ProspectUsageMeter } from "@/components/dashboard/ProspectUsageMeter";
-import QuickStartWizard from "@/components/onboarding/QuickStartWizard";
 import { TrendingUp, Users, DollarSign, Calendar, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
@@ -17,7 +17,6 @@ const Dashboard = () => {
   const isFreeTier = currentPlan === 'free';
   const [showChecklist, setShowChecklist] = useState(true);
   const [showTour, setShowTour] = useState(false);
-  const [showWizard, setShowWizard] = useState(false);
   const [stats, setStats] = useState({
     totalLeads: 0,
     totalDeals: 0,
@@ -25,12 +24,6 @@ const Dashboard = () => {
     meetingsThisWeek: 0,
   });
 
-  const [tourPending, setTourPending] = useState(false);
-  const quickstartDone = () => !!localStorage.getItem('outreign_quickstart_done');
-
-  useEffect(() => {
-    if (!quickstartDone()) setShowWizard(true);
-  }, []);
 
   useEffect(() => {
     loadStats();
@@ -56,21 +49,18 @@ const Dashboard = () => {
     };
   }, []);
 
+  // The tour only runs once the signup questionnaire is behind them, so the two
+  // never overlap.
   const checkFirstVisit = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       const { data } = await supabase
         .from("onboarding_progress")
-        .select("completed_tour")
+        .select("completed_tour, onboarding_completed")
         .eq("user_id", user.id)
-        .single();
-      if (!data || !data.completed_tour) {
-        // Never overlap the tour with the quick-start wizard — the tour waits
-        // until onboarding is finished (or already was).
-        if (quickstartDone()) setShowTour(true);
-        else setTourPending(true);
-      }
+        .maybeSingle();
+      if (data?.onboarding_completed === true && !data.completed_tour) setShowTour(true);
     } catch (error) {
       console.error("Error checking first visit:", error);
     }
@@ -116,9 +106,11 @@ const Dashboard = () => {
       />
       <div className="px-6 py-6 space-y-6 max-w-[1400px] mx-auto">
         <DashboardTour isOpen={showTour} onClose={() => setShowTour(false)} />
+        <DiscoveryPrompt />
         {showChecklist && (
           <OnboardingChecklist onClose={() => setShowChecklist(false)} onStartTour={() => setShowTour(true)} />
         )}
+        
         
 
         {/* Header row */}
@@ -197,20 +189,6 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
-
-      <QuickStartWizard
-        open={showWizard}
-        onOpenChange={(open) => {
-          if (!open) {
-            localStorage.setItem('outreign_quickstart_done', '1');
-            if (tourPending) {
-              setTourPending(false);
-              setShowTour(true);
-            }
-          }
-          setShowWizard(open);
-        }}
-      />
     </DashboardLayout>
   );
 };

@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Copy, Link2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { CHANNELS, DESTINATIONS, buildAllChannelLinks } from "@/lib/utm";
+import { SignupChannelsCard } from "@/components/admin/SignupChannelsCard";
 
 type SourceRow = {
   utm_source: string;
@@ -80,8 +81,14 @@ const AdminTraffic = () => {
       <Tabs defaultValue="log">
         <TabsList>
           <TabsTrigger value="log">Visitor log</TabsTrigger>
+          <TabsTrigger value="channels">Signup channels</TabsTrigger>
           <TabsTrigger value="builder">UTM link builder</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="channels" className="space-y-4">
+          <SignupChannelsCard />
+        </TabsContent>
+
 
         <TabsContent value="log" className="space-y-4">
           <div className="flex flex-wrap items-center gap-3">
