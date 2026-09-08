@@ -20,6 +20,7 @@ export interface Sequence {
 export interface SequenceStep {
   id: string;
   sequence_id: string;
+  user_id: string;
   step_number: number;
   delay_days: number;
   delay_hours: number;
@@ -188,10 +189,16 @@ export function useSequenceSteps(sequenceId: string | undefined) {
   });
 
   const createStep = useMutation({
-    mutationFn: async (newStep: Omit<SequenceStep, 'id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (
+      newStep: Omit<SequenceStep, 'id' | 'created_at' | 'updated_at' | 'user_id'> & { user_id?: string },
+    ) => {
+      const { data: authData } = await supabase.auth.getUser();
+      const userId = newStep.user_id ?? authData.user?.id;
+      if (!userId) throw new Error('You must be signed in to add a step.');
+
       const { data, error } = await supabase
         .from('sequence_steps')
-        .insert(newStep)
+        .insert({ ...newStep, user_id: userId })
         .select()
         .single();
 
