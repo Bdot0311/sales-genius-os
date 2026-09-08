@@ -52,90 +52,170 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
     setLoading(true);
     try {
       const text = await file.text();
-      
-      // Parse CSV properly handling quoted fields
-      const parseCSVLine = (line: string): string[] => {
-        const values: string[] = [];
+
+      // Full CSV parse: handles quoted fields that contain commas AND newlines,
+      // and auto-detects comma / semicolon / tab delimiters.
+      const detectDelimiter = (sample: string): string => {
+        const candidates = [",", ";", "\t"];
+        let best = ",";
+        let bestCount = -1;
+        for (const d of candidates) {
+          const count = (sample.match(new RegExp(`\\${d === "\t" ? "t" : d}`, "g")) || []).length;
+          if (count > bestCount) {
+            bestCount = count;
+            best = d;
+          }
+        }
+        return best;
+      };
+
+      const firstLine = text.split(/\r?\n/)[0] || "";
+      const delimiter = detectDelimiter(firstLine);
+
+      const parseCSV = (input: string): string[][] => {
+        const rows: string[][] = [];
+        let row: string[] = [];
         let current = "";
         let inQuotes = false;
-        for (let i = 0; i < line.length; i++) {
-          const char = line[i];
+        for (let i = 0; i < input.length; i++) {
+          const char = input[i];
           if (char === '"') {
-            if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
+            if (inQuotes && input[i + 1] === '"') {
               current += '"';
               i++;
             } else {
               inQuotes = !inQuotes;
             }
-          } else if (char === ',' && !inQuotes) {
-            values.push(current.trim());
+          } else if (char === delimiter && !inQuotes) {
+            row.push(current.trim());
             current = "";
+          } else if ((char === "\n" || char === "\r") && !inQuotes) {
+            if (char === "\r" && input[i + 1] === "\n") i++;
+            row.push(current.trim());
+            current = "";
+            if (row.some((c) => c !== "")) rows.push(row);
+            row = [];
           } else {
             current += char;
           }
         }
-        values.push(current.trim());
-        return values;
+        row.push(current.trim());
+        if (row.some((c) => c !== "")) rows.push(row);
+        return rows;
       };
 
-      const lines = text.split(/\r?\n/).filter(line => line.trim());
-      const headers = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase().replace(/['"]/g, ''));
-      
+      const rows = parseCSV(text);
+      if (rows.length < 2) {
+        throw new Error("That file has no rows to import. Add a header row plus at least one lead.");
+      }
+
+      const normalize = (h: string) => h.trim().toLowerCase().replace(/['"]/g, "");
+      const HEADER_HINTS = [
+        "company", "organization", "contact", "name", "email", "e-mail", "mail",
+        "phone", "title", "position", "role", "linkedin", "website", "domain",
+        "industry", "employees",
+      ];
+
+      // Find the real header row: some exports put notes or blank rows on top.
+      let headerIndex = -1;
+      const limit = Math.min(rows.length, 10);
+      for (let i = 0; i < limit; i++) {
+        const cells = rows[i].map(normalize);
+        const hits = cells.filter((c) => c && HEADER_HINTS.some((hint) => c.includes(hint))).length;
+        if (hits >= 2) {
+          headerIndex = i;
+          break;
+        }
+      }
+
+      if (headerIndex === -1) {
+        throw new Error(
+          "This doesn't look like a leads file. It needs a header row with columns such as Name, Email, Company or LinkedIn. Download the template below to see the expected format."
+        );
+      }
+
+      const headers = rows[headerIndex].map(normalize);
+
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
 
-      // Build flexible column mapping
+      // Exact header match wins over a partial one, so "company name" never
+      // gets grabbed by a loose "name" test.
       const findCol = (tests: string[]): number => {
-        return headers.findIndex(h => tests.some(t => h === t || h.includes(t)));
+        const exact = headers.findIndex((h) => tests.some((t) => h === t));
+        if (exact !== -1) return exact;
+        return headers.findIndex((h) => tests.some((t) => h.includes(t)));
       };
 
-      const companyCol = findCol(["company name", "company", "organization", "org"]);
-      const contactCol = findCol(["contact name", "full name", "fullname", "contact"]);
-      const firstNameCol = findCol(["first name", "firstname", "first"]);
-      const lastNameCol = findCol(["last name", "lastname", "last", "surname"]);
-      const nameCol = contactCol === -1 ? findCol(["name"]) : -1; // only if no specific contact col
-      const emailCol = findCol(["email", "e-mail", "mail"]);
-      const phoneCol = findCol(["phone", "telephone", "tel", "mobile"]);
+      const companyCol = findCol(["company name", "company", "organization", "org", "account name", "employer"]);
+      const contactCol = findCol(["contact name", "full name", "fullname", "contact", "person name"]);
+      const firstNameCol = findCol(["first name", "firstname", "given name"]);
+      const lastNameCol = findCol(["last name", "lastname", "surname", "family name"]);
+      const nameCol = contactCol === -1 && firstNameCol === -1 && lastNameCol === -1 ? findCol(["name"]) : -1;
+      const emailCol = findCol(["email", "email address", "work email", "e-mail", "mail"]);
+      const phoneCol = findCol(["phone", "phone number", "telephone", "tel", "mobile"]);
       const industryCol = findCol(["industry", "sector"]);
-      const sizeCol = findCol(["size", "employees", "employee count", "company size"]);
-      const sourceCol = findCol(["source", "lead source"]);
-      const titleCol = findCol(["title", "job title", "position", "role"]);
+      const sizeCol = findCol(["company size", "size", "employees", "employee count", "headcount"]);
+      const sourceCol = findCol(["lead source", "source"]);
+      const titleCol = findCol(["job title", "title", "position", "role", "headline"]);
+      const linkedinCol = findCol(["linkedin url", "linkedin", "linkedin profile", "profile url"]);
+      const websiteCol = findCol(["company website", "website", "domain", "company domain", "url"]);
+      
 
-      const leads = lines.slice(1).filter(line => line.trim()).map(line => {
-        const row = parseCSVLine(line);
+      if (companyCol === -1 && contactCol === -1 && firstNameCol === -1 && nameCol === -1 && emailCol === -1 && linkedinCol === -1) {
+        throw new Error(
+          "No lead columns found. Your file needs at least one of: Contact Name, First Name, Email, Company Name or LinkedIn URL."
+        );
+      }
+
+      let skipped = 0;
+      const leads = rows.slice(headerIndex + 1).map((row) => {
         const lead: any = { user_id: session.user.id, lead_status: 'active' };
-        
-        const getVal = (idx: number) => idx >= 0 && idx < row.length ? row[idx]?.trim().replace(/^["']|["']$/g, '') : "";
 
-        if (companyCol >= 0) lead.company_name = getVal(companyCol);
-        
-        // Try contact name, then full name, then first+last, then just "name"
-        if (contactCol >= 0) {
-          lead.contact_name = getVal(contactCol);
-        } else if (firstNameCol >= 0 || lastNameCol >= 0) {
-          lead.contact_name = `${getVal(firstNameCol)} ${getVal(lastNameCol)}`.trim();
-        } else if (nameCol >= 0) {
-          lead.contact_name = getVal(nameCol);
+        const getVal = (idx: number) =>
+          idx >= 0 && idx < row.length ? (row[idx] || "").trim().replace(/^["']|["']$/g, "") : "";
+
+        const company = getVal(companyCol);
+        let contact = "";
+        if (contactCol >= 0) contact = getVal(contactCol);
+        else if (firstNameCol >= 0 || lastNameCol >= 0) contact = `${getVal(firstNameCol)} ${getVal(lastNameCol)}`.trim();
+        else if (nameCol >= 0) contact = getVal(nameCol);
+
+        const email = getVal(emailCol);
+        const linkedin = getVal(linkedinCol);
+
+        // A row must carry at least one real identifier, otherwise it's noise.
+        if (!company && !contact && !email && !linkedin) {
+          skipped++;
+          return null;
+        }
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          // Keep the row, drop the unusable value.
+          lead.contact_email = null;
+        } else if (email) {
+          lead.contact_email = email;
         }
 
-        if (emailCol >= 0) lead.contact_email = getVal(emailCol) || null;
+        lead.company_name = company || "Unknown Company";
+        lead.contact_name = contact || "Unknown Contact";
         if (phoneCol >= 0) lead.contact_phone = getVal(phoneCol) || null;
         if (industryCol >= 0) lead.industry = getVal(industryCol) || null;
         if (sizeCol >= 0) lead.company_size = getVal(sizeCol) || null;
-        if (sourceCol >= 0 && !source) lead.source = getVal(sourceCol) || null;
         if (titleCol >= 0) lead.job_title = getVal(titleCol) || null;
-
-        if (!lead.company_name) lead.company_name = "Unknown Company";
-        if (!lead.contact_name) lead.contact_name = "Unknown Contact";
+        if (linkedin) lead.linkedin_url = linkedin;
+        if (websiteCol >= 0) lead.company_website = getVal(websiteCol) || null;
+        
+        if (sourceCol >= 0 && !source) lead.source = getVal(sourceCol) || null;
         if (source) lead.source = source;
         return lead;
-      }).filter(lead => lead.company_name && lead.contact_name);
+      }).filter(Boolean) as any[];
 
       if (leads.length === 0) {
-        throw new Error("No valid leads found in CSV. Ensure your file has Company Name and Contact Name columns.");
+        throw new Error("No valid leads found in that file. Ensure it has Name/Email/Company columns with data underneath.");
       }
 
-      // Insert in batches of 50 to avoid timeouts
+      // Insert in batches of 50 to avoid timeouts. Imports only ever ADD leads —
+      // nothing existing is touched.
       let allInserted: any[] = [];
       const batchSize = 50;
       for (let i = 0; i < leads.length; i += batchSize) {
@@ -172,7 +252,7 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
 
       toast({
         title: "Import successful",
-        description: `Imported ${data?.length || 0} leads from CSV`,
+        description: `Added ${data?.length || 0} leads to your saved leads${skipped > 0 ? ` · skipped ${skipped} empty row${skipped === 1 ? "" : "s"}` : ""}`,
       });
       setOpen(false);
       onImportComplete?.();
@@ -186,6 +266,7 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
       setLoading(false);
     }
   };
+
 
   const fetchIntegrations = async () => {
     try {
@@ -428,7 +509,7 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
   };
 
   const downloadTemplate = () => {
-    const csv = "Company Name,Contact Name,Email,Phone,Industry,Company Size,Source\nExample Corp,John Doe,john@example.com,555-0100,Technology,50-200,Website";
+    const csv = "Company Name,Contact Name,Job Title,Email,Phone,LinkedIn URL,Company Website,Industry,Company Size,Source\nExample Corp,John Doe,Head of Sales,john@example.com,555-0100,https://linkedin.com/in/johndoe,https://example.com,Technology,50-200,Website";
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -494,7 +575,7 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
                 <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
                 <p className="text-sm font-medium">Click to upload CSV file</p>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Supports: Company Name, Contact Name, Email, Phone, Industry, Company Size, Source
+                  Reads Company Name, Contact Name (or First/Last), Job Title, Email, Phone, LinkedIn URL, Website, Industry, Company Size, Source. New leads are added to your saved leads — nothing existing is replaced.
                 </p>
               </Label>
             </div>
