@@ -10,6 +10,7 @@
     "build:client": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
+    "test": "vitest run",
     "preview": "vite preview",
     "skills:build": "node scripts/build-skills.mjs",
     "eval:agent": "node scripts/eval-agent.mjs"
