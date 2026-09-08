@@ -402,6 +402,8 @@ serve(async (req) => {
       if (findErr) {
         if (findErr === COLDIQ_CREDITS_ERROR) emailFinderUnavailable = true;
         console.log('[enrich-lead] email finder returned nothing:', findErr);
+      } else if (foundEmail) {
+
 
         // A FOUND address is a guess until something proves it. Storing one
         // unverified is how the original bounce happened, and it would be
