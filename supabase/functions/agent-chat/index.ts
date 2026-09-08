@@ -1152,7 +1152,7 @@ serve(async (req) => {
     if (confirmedByUser) console.log("[agent-chat] user confirmed the pending send in chat");
 
     // --- context ---------------------------------------------------------
-    const [{ data: config }, { data: profile }, { data: savedIcp }] = await Promise.all([
+    const [{ data: config }, { data: profile }, { data: savedIcp }, { data: isStaff }] = await Promise.all([
       requestedAgentId
         ? admin.from("agent_configs").select("*").eq("id", requestedAgentId).eq("user_id", userId).maybeSingle()
         : admin.from("agent_configs").select("*").eq("user_id", userId).order("is_primary", { ascending: false }).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
@@ -1164,7 +1164,12 @@ serve(async (req) => {
         .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle(),
+      // Folded into this batch rather than fetched on its own: it is only read
+      // to decide whether internal detail is safe to show, and that is not
+      // worth a second round trip on every turn.
+      admin.rpc("has_role", { _user_id: userId, _role: "admin" }),
     ]);
+    const showsInternals = isStaff === true;
 
     // The agent's saved ICP snapshot is the source of truth; fall back to the
     // user's most recently updated ICP profile so chat is never ungrounded.
@@ -1869,7 +1874,16 @@ serve(async (req) => {
               drafts.flatMap((d) => Array.isArray(d.skills_used) ? d.skills_used as string[] : []),
             ),
           ];
-          if (skillsUsed.length) {
+          // Staff only. These are internal module names — anti-ai-slop-writing,
+          // cold-email-templates-34 — and they were surfaced so the routing
+          // could be checked rather than taken on faith. That is a reason for
+          // an operator to see them, not a customer: to a customer it reads as
+          // the machinery showing through, and it publishes how the drafting
+          // is assembled to anyone who opens the chat.
+          //
+          // The count still goes to everyone below, which is the part that
+          // means something to them: how many drafts came out.
+          if (skillsUsed.length && showsInternals) {
             toolEvents.push({
               name,
               label: "Playbooks applied",
