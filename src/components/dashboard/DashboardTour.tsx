@@ -66,18 +66,34 @@ export const DashboardTour = ({ isOpen, onClose }: DashboardTourProps) => {
 
   const findTarget = useCallback((step: number) => {
     const el = document.querySelector(tourSteps[step].selector);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
-      // Wait for scroll to settle then measure
-      setTimeout(() => {
-        setTargetRect(el.getBoundingClientRect());
-        setAnimating(false);
-      }, 350);
-    } else {
+    if (!el) {
       // Fallback — show center-screen
       setTargetRect(new DOMRect(window.innerWidth / 2 - 150, window.innerHeight / 2 - 30, 300, 60));
       setAnimating(false);
+      return;
     }
+
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    // Keep measuring until the smooth scroll actually stops, so the highlight
+    // never lands on where the element used to be.
+    let last: number | null = null;
+    let stable = 0;
+    let frames = 0;
+    const measure = () => {
+      const rect = el.getBoundingClientRect();
+      setTargetRect(rect);
+      if (last !== null && Math.abs(rect.top - last) < 0.5) stable += 1;
+      else stable = 0;
+      last = rect.top;
+      frames += 1;
+      if (stable < 3 && frames < 90) {
+        requestAnimationFrame(measure);
+      } else {
+        setAnimating(false);
+      }
+    };
+    requestAnimationFrame(measure);
   }, []);
 
   useEffect(() => {
@@ -94,13 +110,21 @@ export const DashboardTour = ({ isOpen, onClose }: DashboardTourProps) => {
     }
   }, [isOpen, findTarget]);
 
-  // Re-measure on resize
+  // Re-measure on resize and scroll
   useEffect(() => {
     if (!isOpen) return;
-    const onResize = () => findTarget(currentStep);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, [isOpen, currentStep, findTarget]);
+    const remeasure = () => {
+      const el = document.querySelector(tourSteps[currentStep].selector);
+      if (el) setTargetRect(el.getBoundingClientRect());
+    };
+    window.addEventListener("resize", remeasure);
+    window.addEventListener("scroll", remeasure, true);
+    return () => {
+      window.removeEventListener("resize", remeasure);
+      window.removeEventListener("scroll", remeasure, true);
+    };
+  }, [isOpen, currentStep]);
+
 
   const goToStep = (step: number) => {
     setAnimating(true);
