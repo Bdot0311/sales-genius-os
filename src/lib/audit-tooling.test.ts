@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { OUTREACH_TOOLS, REPLY_TOOLS } from "../../supabase/functions/_shared/agent-tool-scope.ts";
+import { OUTREACH_TOOLS, REPLY_TOOLS, CORE_TOOLS, allowedToolsFor } from "../../supabase/functions/_shared/agent-tool-scope.ts";
 import { TIER_BLOCKED_TOOLS } from "../../supabase/functions/_shared/agent-tier-scope.ts";
 
 const AGENT = readFileSync("supabase/functions/agent-chat/index.ts", "utf8");
@@ -31,9 +31,32 @@ describe("the audits are reachable as tools", () => {
   it("every email-facing agent may call them", () => {
     // The hard scope gate refuses any tool not in the role's list, so a tool
     // that is declared and unscoped is a tool that always errors.
+    // Core, not role-specific. They were only in the outreach and reply sets,
+    // so a custom build got them solely if whoever generated it happened to
+    // pick them — and a build without them does not decline an audit, it
+    // answers from the skills in its prompt. Asked to check an email the real
+    // checker returns one finding on, such a build produced six prose bullets
+    // with no rule names, no severities and no evidence.
+    expect(CORE_TOOLS).toContain("audit_email");
+    expect(CORE_TOOLS).toContain("audit_sequence");
     expect(OUTREACH_TOOLS).toContain("audit_email");
     expect(OUTREACH_TOOLS).toContain("audit_sequence");
     expect(REPLY_TOOLS).toContain("audit_email");
+  });
+
+  it("reaches a custom build that never picked them", () => {
+    const build = allowedToolsFor({ role: "custom", allowed_tools: ["research_leads", "draft_emails"] });
+    expect(build).toContain("audit_email");
+    expect(build).toContain("audit_sequence");
+  });
+
+  it("without widening a read-only build into one that acts", () => {
+    // Both are free, read-only and side-effect-free, which is why they are safe
+    // to hand every build. Nothing that sends or deletes rides along.
+    const bare = allowedToolsFor({ role: "custom", allowed_tools: [] });
+    expect(bare).toContain("audit_email");
+    expect(bare).not.toContain("send_outreach");
+    expect(bare.filter((t: string) => t.startsWith("delete_"))).toEqual([]);
   });
 
   it("no plan tier is denied them", () => {

@@ -12,6 +12,22 @@ export const CORE_TOOLS = [
   "list_leads",
   "get_lead",
   "get_agent_status",
+  // Checking copy is core, not a role.
+  //
+  // These were only in OUTREACH_TOOLS and REPLY_TOOLS, so a custom build got
+  // them solely if whoever generated it happened to pick them. A build without
+  // them does not decline an audit — it answers from the skills in its prompt,
+  // which reads exactly like an audit and is not one. Asked to check an email
+  // that the real checker returns one finding on, a build without the tool
+  // returned six prose bullets and no rule names, no severities and no
+  // evidence: an opinion wearing the costume of a check.
+  //
+  // Both are read-only, free, and side-effect-free. There is no coherent build
+  // — deliverability, personalisation, replies — that should be denied the
+  // ability to check text against the rules, so they belong to every build the
+  // way list_leads does.
+  "audit_email",
+  "audit_sequence",
 ];
 
 export const LEAD_GEN_TOOLS = [
