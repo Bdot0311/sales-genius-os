@@ -25,6 +25,7 @@ import { template as campaignSetupWinback } from './campaign-setup-winback.tsx'
 import { template as campaignSetupAccessRequest } from './campaign-setup-access-request.tsx'
 import { template as deliverabilityAlert } from './deliverability-alert.tsx'
 import { template as churnInterview } from './churn-interview.tsx'
+import { template as customerInterview } from './customer-interview.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'welcome-email': welcomeEmail,
@@ -43,4 +44,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'campaign-setup-access-request': campaignSetupAccessRequest,
   'deliverability-alert': deliverabilityAlert,
   'churn-interview': churnInterview,
+  'customer-interview': customerInterview,
 }
