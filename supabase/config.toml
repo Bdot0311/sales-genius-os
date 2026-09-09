@@ -134,6 +134,8 @@ project_id = "ghgfjnepvxvxrncmskys"
     verify_jwt = false
   [functions.send-churn-interview-emails]
     verify_jwt = false
+  [functions.send-customer-interview-emails]
+    verify_jwt = false
   [functions.send-subscription-confirmation]
     verify_jwt = false
   [functions.send-welcome-email]
