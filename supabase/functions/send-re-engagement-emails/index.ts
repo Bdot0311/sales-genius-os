@@ -93,20 +93,21 @@ serve(async (req) => {
       templateData: { name: firstName, daysInactive: daysInactive ?? undefined },
     });
     const sendErr = sendRes.sent ? null : { message: sendRes.error ?? sendRes.reason };
+    const wasSuppressed = !sendRes.sent && sendRes.reason === 'recipient_suppressed';
 
     await recordAttempt({
       user_id: user.id,
       recipient_email: user.email,
       last_sign_in_at: user.last_sign_in_at,
       days_inactive: daysInactive,
-      eligibility_reason: opts.reason,
-      status: sendErr ? 'failed' : 'sent',
-      error_message: sendErr ? sendErr.message : null,
+      eligibility_reason: wasSuppressed ? 'recipient_suppressed' : opts.reason,
+      status: wasSuppressed ? 'skipped' : sendErr ? 'failed' : 'sent',
+      error_message: wasSuppressed ? null : sendErr ? sendErr.message : null,
       triggered_manually: opts.manual,
       triggered_by: opts.manual ? callerId : null,
     });
 
-    return { ok: !sendErr, error: sendErr?.message };
+    return { ok: !sendErr, suppressed: wasSuppressed, error: sendErr?.message };
   };
 
   try {
@@ -157,6 +158,31 @@ serve(async (req) => {
       if (sent >= MAX_PER_RUN) break;
       if (!user.email) { skipped++; continue; }
 
+      const { data: suppressedRecipient } = await supabase
+        .from('suppressed_emails')
+        .select('id')
+        .eq('email', user.email.trim().toLowerCase())
+        .limit(1)
+        .maybeSingle();
+
+      if (suppressedRecipient) {
+        skipped++;
+        await recordAttempt({
+          user_id: user.id,
+          recipient_email: user.email,
+          last_sign_in_at: user.last_sign_in_at,
+          days_inactive: user.last_sign_in_at
+            ? Math.floor((Date.now() - new Date(user.last_sign_in_at).getTime()) / 86400_000)
+            : null,
+          eligibility_reason: 'recipient_suppressed',
+          status: 'skipped',
+          error_message: null,
+          triggered_manually: false,
+          triggered_by: null,
+        });
+        continue;
+      }
+
       const { data: recent } = await supabase
         .from('email_send_log')
         .select('id')
@@ -185,6 +211,7 @@ serve(async (req) => {
 
       const result = await sendOne(user as any, { manual: false, reason: 'no_signin_today' });
       if (result.ok) sent++;
+      else if (result.suppressed) skipped++;
       else errors.push(`${user.email}: ${result.error}`);
     }
 

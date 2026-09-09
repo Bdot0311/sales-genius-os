@@ -33,6 +33,13 @@ const STATUS_META: Record<Status, { label: string; cls: string; Icon: typeof Che
   skipped: { label: "Skipped", cls: "bg-muted text-muted-foreground border-border", Icon: MinusCircle },
 };
 
+const ELIGIBILITY_LABELS: Record<string, string> = {
+  manual_admin_send: "Manual admin send",
+  no_signin_today: "No sign-in today",
+  already_sent_today: "Already attempted today",
+  recipient_suppressed: "Recipient suppressed",
+};
+
 const AdminReEngagement = () => {
   const [rows, setRows] = useState<LogRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,6 +93,9 @@ const AdminReEngagement = () => {
       setSendingId(null);
     }
   };
+
+  const isSuppressed = (row: LogRow) =>
+    row.eligibility_reason === "recipient_suppressed" || row.error_message === "recipient_suppressed";
 
   const runSweep = async () => {
     setRunningSweep(true);
@@ -210,9 +220,15 @@ const AdminReEngagement = () => {
                       </TableCell>
                       <TableCell className="text-xs tabular-nums">{row.days_inactive ?? "—"}</TableCell>
                       <TableCell className="text-xs">
-                        <span className="text-muted-foreground">{row.eligibility_reason}</span>
+                        <span className="text-muted-foreground">
+                          {ELIGIBILITY_LABELS[row.eligibility_reason] ?? row.eligibility_reason.replaceAll("_", " ")}
+                        </span>
                         {row.error_message && (
-                          <div className="text-red-400 mt-1 break-all">{row.error_message}</div>
+                          <div className="text-red-400 mt-1 break-all">
+                            {row.error_message === "recipient_suppressed"
+                              ? "Delivery blocked to protect sender reputation"
+                              : row.error_message}
+                          </div>
                         )}
                       </TableCell>
                       <TableCell>
@@ -232,7 +248,7 @@ const AdminReEngagement = () => {
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        {row.status !== "sent" && row.user_id && (
+                        {row.status !== "sent" && row.user_id && !isSuppressed(row) && (
                           <Button
                             size="sm"
                             variant="outline"
