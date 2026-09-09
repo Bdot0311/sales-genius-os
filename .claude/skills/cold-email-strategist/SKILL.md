@@ -92,7 +92,7 @@ Handle tooling questions directly by reading the resource:
 
 ## Core Principles (Apply to ALL Sub-Skills)
 
-- **60-90 words max** -- Shorter emails get higher reply rates
+- **60-90 words target, 50-100 enforced** -- Shorter emails get higher reply rates
 - **Plain text only** -- No HTML, no images for cold outreach
 - **One CTA per email** -- Soft ask, not a hard sell
 - **3-email sequences** -- Introduce, Add Context, Lower Friction (3-5 day delays)

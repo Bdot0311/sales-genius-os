@@ -26,7 +26,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Check DB column references against generated types
         run: node scripts/check-schema-refs.mjs
 
@@ -44,7 +44,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       # npm ci, now that the lockfile is whole.
       #
       # It refused before because package.json declared @lovable.dev/email-js
@@ -85,18 +85,18 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          # 22, not 20, and only on this job.
+          # 22 everywhere.
           #
-          # Some suites import a module that reaches @/integrations/supabase/client,
-          # which calls createClient() at module scope; realtime-js then wants a
-          # native WebSocket, which Node 20 does not have. The whole file fails to
-          # collect and its tests never run — silently, since a suite that never
-          # loads reports no failures of its own.
+          # This job needed it first: some suites import a module that reaches
+          # @/integrations/supabase/client, which calls createClient() at module
+          # scope, and realtime-js then wants a native WebSocket that Node 20
+          # does not have. The file failed to collect and its tests never ran —
+          # silently, because a suite that never loads reports no failures of
+          # its own.
           #
-          # Node 22 has WebSocket natively, so nothing needs mocking or a `ws`
-          # shim. The other jobs are left on 20 because none of them load that
-          # module; the runner does warn that 20 is deprecated everywhere, which
-          # is worth doing separately rather than inside a test-wiring change.
+          # The rest followed because the runner deprecated Node 20: it forces
+          # actions/checkout and setup-node onto Node 24 regardless and warns on
+          # every run, so pinning 20 bought nothing and was heading for a break.
           node-version: 22
       - run: npm ci --no-audit --no-fund
       - name: Unit tests
@@ -113,6 +113,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Check the skills bundle matches .claude/skills
         run: node scripts/build-skills.mjs --check
