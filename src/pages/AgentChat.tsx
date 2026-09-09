@@ -458,10 +458,12 @@ const AgentChat = () => {
         {/* Threads */}
         <Card
           className={cn(
-            "w-full lg:w-64 flex-shrink-0 p-3 flex flex-col gap-3 overflow-hidden lg:max-h-none",
-            // Collapsed it is just the button row, so the conversation gets the
-            // rest of the screen. Open, it is capped so it can never take over.
-            historyOpen ? "max-h-[45vh]" : "max-h-none",
+            "w-full lg:w-64 flex-shrink-0 p-3 flex-col gap-3 overflow-hidden lg:max-h-none lg:flex",
+            // Gone entirely when collapsed, not merely short: a Card wrapping
+            // one button still costs a border, p-3 and the parent gap-4, which
+            // is most of a message. Its controls live in the chat header on
+            // mobile instead. Open, it is capped so it cannot take over.
+            historyOpen ? "flex max-h-[45vh]" : "hidden max-h-none",
           )}
         >
 
@@ -477,16 +479,6 @@ const AgentChat = () => {
             <Button className="flex-1 gap-2" size="sm" onClick={handleNewThread}>
               <Plus className="w-4 h-4" />
               New chat
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden flex-shrink-0"
-              onClick={() => setHistoryOpen((v) => !v)}
-              aria-expanded={historyOpen}
-              aria-label={historyOpen ? "Hide conversations" : `Show conversations (${threads.length})`}
-            >
-              <ChevronDown className={cn("w-4 h-4 transition-transform", historyOpen && "rotate-180")} />
             </Button>
           </div>
           <ScrollArea className={cn("flex-1 -mx-1", !historyOpen && "hidden lg:block")}>
@@ -525,8 +517,28 @@ const AgentChat = () => {
 
         {/* Chat */}
         <Card className="flex-1 min-h-0 min-w-0 flex flex-col overflow-hidden">
-          <div className="flex flex-col gap-2 border-b border-border/60 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4 sm:py-3">
-            <div className="flex items-center gap-2 min-w-0">
+          <div className="border-b border-border/60 px-3 py-2 sm:px-4 sm:py-3">
+            {/* Thread controls, mobile only. On lg these live in the sidebar,
+                which is always on screen; below it the sidebar is collapsed so
+                they have to be reachable from here. */}
+            <div className="mb-2 flex items-center gap-2 lg:hidden">
+              <Button variant="ghost" size="icon" className="flex-shrink-0"
+                onClick={() => navigate("/dashboard/agent")} aria-label="Back to agent">
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+              <Button className="flex-1 gap-2" size="sm" onClick={handleNewThread}>
+                <Plus className="w-4 h-4" />
+                New chat
+              </Button>
+              <Button variant="ghost" size="icon" className="flex-shrink-0"
+                onClick={() => setHistoryOpen((v) => !v)} aria-expanded={historyOpen}
+                aria-label={historyOpen ? "Hide conversations" : `Show conversations (${threads.length})`}>
+                <ChevronDown className={cn("w-4 h-4 transition-transform", historyOpen && "rotate-180")} />
+              </Button>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+            {/* The row above already identifies this pane on a phone. */}
+            <div className="hidden items-center gap-2 min-w-0 sm:flex">
               <div className="p-1.5 rounded-lg bg-primary/15 flex-shrink-0">
                 <Bot className="w-4 h-4 text-primary" />
               </div>
@@ -562,6 +574,7 @@ const AgentChat = () => {
                 <SelectItem value="autonomous">Full autonomy</SelectItem>
               </SelectContent>
             </Select>
+            </div>
             </div>
           </div>
 

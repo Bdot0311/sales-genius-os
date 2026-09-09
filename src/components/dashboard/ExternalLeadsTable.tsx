@@ -110,7 +110,10 @@ export function ExternalLeadsTable({ leads, activatingLead, onActivateLead }: Ex
 
   return (
     <ScanResultsGate resultCount={leads.length} scanContext={{ result_count: leads.length }}>
-    <div className="border rounded-lg overflow-hidden">
+    {/* overflow-x-auto, not overflow-hidden: the rounding needs a clip, but
+        eight columns on a phone need somewhere to go. Hidden made the ones
+        past the viewport edge unreachable rather than scrollable. */}
+    <div className="border rounded-lg overflow-x-auto">
       <Table>
 
         <TableHeader>

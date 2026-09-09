@@ -21,10 +21,21 @@ describe("the thread list does not take the screen on mobile", () => {
     expect(PAGE).toContain('!historyOpen && "hidden lg:block"');
   });
 
-  it("has no height of its own while collapsed", () => {
-    // The old max-h-[34vh] applied whether or not anything was showing.
+  it("is not rendered at all while collapsed", () => {
+    // Short was not enough. A Card wrapping one button still costs a border,
+    // p-3 and the parent's gap-4 — most of a message on a phone — so when
+    // collapsed it leaves the layout entirely rather than shrinking.
     expect(PAGE).not.toContain("max-h-[34vh]");
-    expect(PAGE).toContain('historyOpen ? "max-h-[45vh]" : "max-h-none"');
+    expect(PAGE).toContain('historyOpen ? "flex max-h-[45vh]" : "hidden max-h-none"');
+  });
+
+  it("keeps its controls reachable once the card is gone", () => {
+    // Back, New chat and the toggle live in the sidebar on lg; below it the
+    // sidebar is collapsed, so the header carries them.
+    const header = PAGE.slice(PAGE.indexOf("Thread controls, mobile only"));
+    expect(header.slice(0, 900)).toContain("lg:hidden");
+    expect(header.slice(0, 900)).toContain("New chat");
+    expect(header.slice(0, 900)).toContain("Back to agent");
   });
 
   it("is capped when open, so it can never take over either", () => {
@@ -43,6 +54,10 @@ describe("the thread list does not take the screen on mobile", () => {
 });
 
 describe("the chat header earns its height on mobile", () => {
+  it("drops the title block below sm, since the New chat row identifies the pane", () => {
+    expect(PAGE).toContain('className="hidden items-center gap-2 min-w-0 sm:flex"');
+  });
+
   it("drops the strapline on a phone", () => {
     // Onboarding copy, and it cost a line of the conversation on every turn.
     expect(PAGE).toContain('className="hidden text-xs text-muted-foreground truncate sm:block"');

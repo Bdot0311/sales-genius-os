@@ -235,6 +235,7 @@ export const SEOMonitorTab = () => {
             </Card>
           ) : (
             <Card>
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -288,12 +289,14 @@ export const SEOMonitorTab = () => {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </Card>
           )}
         </TabsContent>
 
         <TabsContent value="runs">
           <Card>
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -332,6 +335,7 @@ export const SEOMonitorTab = () => {
                 ))}
               </TableBody>
             </Table>
+            </div>
           </Card>
         </TabsContent>
       </Tabs>
