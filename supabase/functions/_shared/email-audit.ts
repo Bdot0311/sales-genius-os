@@ -30,6 +30,7 @@ import {
   findMirrorAnalogies,
   findClippedOpeners,
   findNameMismatches,
+  findTouchOnePitch,
   findPlaceholders,
   findSenderStandIns,
   findUnverifiedClaims,
@@ -295,6 +296,28 @@ export function auditEmail(input: AuditInput): Finding[] {
         "is the step automated tools consistently miss, which is exactly why it reads as human when it is there.",
       fix: "Add the bridge: the observation, then the problem it usually produces, then why.",
     });
+  }
+
+  // ─── The pitch the playbook forbids on a first touch ─────────────────────
+  //
+  // Fires when this is touch 1, and when no position was given at all: a cold
+  // email pasted on its own is a first touch unless the caller says otherwise,
+  // and that is exactly the case where nothing was checking.
+  if (position === 1 || position === undefined) {
+    const pitch = findTouchOnePitch(body);
+    if (pitch.length) {
+      add({
+        rule: "touch_one_pitch",
+        severity: "warning",
+        evidence: pitch.join(" | "),
+        why:
+          "Touch 1 earns a reply, it does not sell. Explaining what you do gives the reader " +
+          "something to decline before they have any reason to care, and the playbook forbids it outright.",
+        fix:
+          "Cut the sentence, or imply a better path exists without naming the how — that belongs on touch 2. " +
+          "If this is a later touch, pass its position so this rule does not apply.",
+      });
+    }
   }
 
   // ─── Position-specific rules ─────────────────────────────────────────────

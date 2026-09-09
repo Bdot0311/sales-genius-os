@@ -737,6 +737,42 @@ export function findNameMismatches(
 }
 
 /**
+ * Pitch language the playbook forbids on a first touch.
+ *
+ * PLAYBOOK_SYSTEM_RULES calls this non-negotiable: "Touch 1 earns a reply, it
+ * does not sell... Do not explain the product, list features, or write 'we
+ * built' / 'we help' / 'our platform' on touch 1." Nothing checked it. An
+ * email went out reading "Most founders we work with solve it by automating
+ * the repetitive parts", the agent flagged it as its own opinion, and the
+ * audit said nothing — so a rule the product declares in capitals depended on
+ * the model choosing to remember it.
+ *
+ * Matched against the body with the signature already stripped, because the
+ * playbook allows the signature to carry the company and only forbids the
+ * pitch in the body.
+ *
+ * Kept to the constructions the playbook actually enumerates. "We" is not
+ * banned outright — the separate you-outnumbers-we rule covers tone; this is
+ * specifically the sentence shape that explains what the sender sells.
+ */
+const TOUCH_ONE_PITCH: RegExp[] = [
+  /\bwe(?:'ve| have)?\s+(?:work with|worked with|help|helped|built|build|serve)\b/i,
+  /\bour\s+(?:platform|product|software|tool|system|solution)\b/i,
+  /\bclients\s+we\s+work\s+with\b/i,
+];
+
+export function findTouchOnePitch(text: string): string[] {
+  const t = String(text ?? "");
+  const out: string[] = [];
+  for (const re of TOUCH_ONE_PITCH) {
+    // Quote the clause, not the pattern, so a finding can show the sentence.
+    const m = t.match(new RegExp(`[^.!?\\n]*${re.source}[^.!?\\n]*`, "i"));
+    if (m?.[0]) out.push(m[0].trim().replace(/\s+/g, " "));
+  }
+  return [...new Set(out)];
+}
+
+/**
  * Correct a company name the draft spelled with the wrong capitalisation.
  *
  * The checker was catching these and stopping there: "import2" should be
