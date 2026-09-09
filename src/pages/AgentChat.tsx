@@ -27,6 +27,7 @@ import {
   Clock,
   ArrowLeft,
   Square,
+  ChevronDown,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -83,6 +84,10 @@ const AgentChat = () => {
   const navigate = useNavigate();
   const { threadId } = useParams<{ threadId: string }>();
   const [threads, setThreads] = useState<Thread[]>([]);
+  // Mobile only: the thread list is collapsed by default. It used to take a
+  // fixed 34vh above the conversation, which — stacked on top of the chat
+  // card's own header — left the messages a sliver on a phone.
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -451,7 +456,14 @@ const AgentChat = () => {
     <DashboardLayout>
       <div className="flex flex-col lg:flex-row gap-4 h-[calc(100dvh-8.5rem)] min-h-0">
         {/* Threads */}
-        <Card className="w-full lg:w-64 flex-shrink-0 max-h-[34vh] lg:max-h-none p-3 flex flex-col gap-3 overflow-hidden">
+        <Card
+          className={cn(
+            "w-full lg:w-64 flex-shrink-0 p-3 flex flex-col gap-3 overflow-hidden lg:max-h-none",
+            // Collapsed it is just the button row, so the conversation gets the
+            // rest of the screen. Open, it is capped so it can never take over.
+            historyOpen ? "max-h-[45vh]" : "max-h-none",
+          )}
+        >
 
           <div className="flex items-center gap-2">
             <Button
@@ -466,8 +478,18 @@ const AgentChat = () => {
               <Plus className="w-4 h-4" />
               New chat
             </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden flex-shrink-0"
+              onClick={() => setHistoryOpen((v) => !v)}
+              aria-expanded={historyOpen}
+              aria-label={historyOpen ? "Hide conversations" : `Show conversations (${threads.length})`}
+            >
+              <ChevronDown className={cn("w-4 h-4 transition-transform", historyOpen && "rotate-180")} />
+            </Button>
           </div>
-          <ScrollArea className="flex-1 -mx-1">
+          <ScrollArea className={cn("flex-1 -mx-1", !historyOpen && "hidden lg:block")}>
             <div className="px-1 space-y-1">
               {threads.map((t) => (
                 <div
@@ -503,22 +525,22 @@ const AgentChat = () => {
 
         {/* Chat */}
         <Card className="flex-1 min-h-0 min-w-0 flex flex-col overflow-hidden">
-          <div className="flex flex-col gap-2 border-b border-border/60 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4">
+          <div className="flex flex-col gap-2 border-b border-border/60 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4 sm:py-3">
             <div className="flex items-center gap-2 min-w-0">
               <div className="p-1.5 rounded-lg bg-primary/15 flex-shrink-0">
                 <Bot className="w-4 h-4 text-primary" />
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-semibold truncate">Chat with your AI SDR</p>
-                <p className="text-xs text-muted-foreground truncate">
+                <p className="hidden text-xs text-muted-foreground truncate sm:block">
                   It can enrich, score, draft, send and run full cycles on your leads
                 </p>
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap sm:flex-shrink-0">
+            <div className="flex items-center gap-2 sm:flex-shrink-0">
             {agents.length > 1 && (
               <Select value={agentId ?? "primary"} onValueChange={handleAgentChange}>
-                <SelectTrigger className="w-full min-w-0 sm:w-[190px]" aria-label="Agent build">
+                <SelectTrigger className="flex-1 min-w-0 sm:flex-none sm:w-[190px]" aria-label="Agent build">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -532,7 +554,7 @@ const AgentChat = () => {
               </Select>
             )}
             <Select value={autonomy} onValueChange={(v) => handleAutonomyChange(v as any)}>
-              <SelectTrigger className="w-full min-w-0 sm:w-[168px]" aria-label="Autonomy">
+              <SelectTrigger className="flex-1 min-w-0 sm:flex-none sm:w-[168px]" aria-label="Autonomy">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
