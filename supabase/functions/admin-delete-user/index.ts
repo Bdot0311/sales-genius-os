@@ -53,7 +53,7 @@ serve(async (req) => {
 
     // Best-effort cleanup of dependent rows that may not have ON DELETE CASCADE
     const tablesToClean = [
-      'user_roles', 'subscriptions', 'profiles', 'leads', 'deals',
+      'user_roles', 'subscriptions', 'leads', 'deals',
       'activities', 'contacts', 'companies', 'integrations',
       'email_drafts', 'email_sequences', 'icp_profiles',
       'onboarding_progress', 'api_keys', 'message_blocks',
@@ -67,9 +67,14 @@ serve(async (req) => {
       if (error) log(`Cleanup warn (${table})`, { error: error.message });
     }
 
+    // profiles is keyed by id (= auth user id)
+    const { error: profileError } = await supabase.from('profiles').delete().eq('id', user_id);
+    if (profileError) log('Cleanup warn (profiles)', { error: profileError.message });
+
     // Delete the auth user (this is the only call that requires service role)
     const { error: deleteError } = await supabase.auth.admin.deleteUser(user_id);
-    if (deleteError) throw deleteError;
+    if (deleteError && !/not found/i.test(deleteError.message)) throw deleteError;
+
 
     // Audit log
     await supabase.from('audit_logs').insert({
