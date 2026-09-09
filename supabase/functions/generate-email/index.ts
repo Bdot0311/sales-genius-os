@@ -17,6 +17,7 @@ import {
   findMirrorAnalogies,
   findNameMismatches,
   groundingRetry,
+  repairCompanyCasing,
   groundingTerms,
   isGroundedIn,
   nameFromEmail,
@@ -1629,6 +1630,25 @@ ${avoidSubjects.map((s: string) => `- ${s}`).join('\n')}`;
       }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
+    // Correct a company name the draft capitalised wrongly, before anything
+    // downstream sees it.
+    //
+    // The checker was reporting these and stopping: one batch produced
+    // "import2" for Import2, "profile sketch" for Profile Sketch and "spekit"
+    // for Spekit, three drafts each waiting on someone to retype a value
+    // already on the lead row. A finding a machine can resolve from data it
+    // already holds is a repair, not a question.
+    //
+    // Before the rubric, so it scores the copy that will actually be sent, and
+    // before the response, so the saved draft is the corrected one rather than
+    // the flagged one. What it changed is reported rather than done quietly —
+    // silent rewriting of a prospect's name is its own kind of wrong.
+    const casing = repairCompanyCasing(email, String(lead?.company_name ?? ''));
+    email = casing.text;
+    if (casing.repaired.length) {
+      console.log(`[generate-email] fixed company casing: ${casing.repaired.join(', ')}`);
+    }
+
     // On introduction emails the subject is preserved inside the body, so pull
     // it from there; every other goal carries it on the request. The rubric
     // scores subject and body together and reads worse without it.
@@ -1701,6 +1721,11 @@ ${avoidSubjects.map((s: string) => `- ${s}`).join('\n')}`;
       // both detected, and nobody was told. Soft enforcement is defensible;
       // silent soft enforcement is how the list stops meaning anything.
       style_warnings: bannedHits,
+      // Only what could NOT be fixed automatically: the casing repair above
+      // runs first, so a warning here is a name the machine could not resolve
+      // from the lead row — a genuinely different company, or a wrong first
+      // name — which is the kind that needs a person.
+      name_repairs: casing.repaired,
       name_warnings: findNameMismatches(email, {
         company: lead?.company_name ?? "",
         contactName: lead?.contact_name ?? "",

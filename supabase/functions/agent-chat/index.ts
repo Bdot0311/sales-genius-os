@@ -1840,6 +1840,7 @@ serve(async (req) => {
               skills_used: Array.isArray(r?.skills_used) ? r.skills_used : [],
               style_warnings: Array.isArray(r?.style_warnings) ? r.style_warnings : [],
               name_warnings: Array.isArray(r?.name_warnings) ? r.name_warnings : [],
+              name_repairs: Array.isArray(r?.name_repairs) ? r.name_repairs : [],
               error: r?.email ? undefined : (r?.error ?? "Draft failed"),
             };
           };
@@ -1869,6 +1870,22 @@ serve(async (req) => {
           // both and retries once; when the retry does not clear them it keeps
           // the better draft and says nothing, which is how "KOgenie" and
           // "without adding headcount" reached a real prospect.
+          // Corrected automatically, and said out loud. The value came from the
+          // lead row, so it is a repair rather than a judgement call — but a
+          // prospect's name being rewritten is exactly the sort of thing that
+          // should never happen invisibly.
+          const nameFixes = [
+            ...new Set(drafts.flatMap((d: any) => d.name_repairs ?? [])),
+          ] as string[];
+          if (nameFixes.length) {
+            toolEvents.push({
+              name,
+              label: "Fixed name capitalisation",
+              status: "ok",
+              detail: `${nameFixes.join(", ")} — corrected from the lead record before drafting finished.`,
+            });
+          }
+
           const nameFlags = drafts.flatMap((d: any) =>
             (d.name_warnings ?? []).map((w: string) => `${d.company ?? "lead"}: ${w}`),
           );
@@ -1877,7 +1894,7 @@ serve(async (req) => {
               name,
               label: "Wrong name in draft",
               status: "error",
-              detail: `${nameFlags.join("; ")} — fix before sending; a misspelled name is the one thing a reader cannot read past.`,
+              detail: `${nameFlags.join("; ")} — could not be corrected from the lead record, so it needs you; a wrong name is the one thing a reader cannot read past.`,
             });
           }
           const styleFlags = [
