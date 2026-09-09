@@ -5,6 +5,7 @@ import {
   findNameMismatches,
   findBannedPhrases,
   repairCompanyCasing,
+  findTouchOnePitch,
 } from "../../supabase/functions/_shared/email-rules.ts";
 import { auditEmail } from "../../supabase/functions/_shared/email-audit.ts";
 
@@ -180,4 +181,52 @@ describe("capitalisation is repaired, not just reported", () => {
     expect(AGENT).toContain("Fixed name capitalisation");
     expect(AGENT).toContain("could not be corrected from the lead record");
   });
+});
+
+/**
+ * PLAYBOOK_SYSTEM_RULES calls this non-negotiable: "Touch 1 earns a reply, it
+ * does not sell... Do not explain the product, list features, or write 'we
+ * built' / 'we help' / 'our platform' on touch 1."
+ *
+ * Nothing checked it. An email went out reading "Most founders we work with
+ * solve it by automating the repetitive parts", the agent listed it under
+ * "issues the audit doesn't catch", and it was right — a rule the product
+ * declares in capitals depended on the model choosing to remember it.
+ */
+describe("the pitch the playbook forbids on touch 1", () => {
+  const EMAIL = `Hi Aryan,
+Noticed you're building toward multi-platform ad deployment on Kogenie. Teams at that stage usually hit the same wall.
+Most founders we work with solve it by automating the repetitive parts so their early customers don't need to hire ops people.
+Worth a quick look at how one similar founder handled this?
+Brandon
+Founder, BDOT Industries LLC`;
+
+  it("is a finding on the email that shipped", () => {
+    expect(auditEmail({ body: EMAIL }).map((f) => f.rule)).toContain("touch_one_pitch");
+  });
+
+  it("applies when no position is given, since a lone cold email is a first touch", () => {
+    expect(auditEmail({ body: EMAIL, position: 1 }).some((f) => f.rule === "touch_one_pitch")).toBe(true);
+    expect(auditEmail({ body: EMAIL }).some((f) => f.rule === "touch_one_pitch")).toBe(true);
+  });
+
+  it("lets a later touch pitch, which is where the playbook puts it", () => {
+    expect(auditEmail({ body: EMAIL, position: 3 }).some((f) => f.rule === "touch_one_pitch")).toBe(false);
+  });
+
+  it("ignores the signature, which the playbook allows to carry the company", () => {
+    expect(findTouchOnePitch("Brandon\nFounder, BDOT Industries LLC")).toEqual([]);
+  });
+
+  it.each([
+    ["we work with", "Most founders we work with solve it differently."],
+    ["we help", "We help teams ship faster."],
+    ["our platform", "Our platform handles the routing."],
+  ])("fires on %s", (_l, t) => expect(findTouchOnePitch(t).length).toBeGreaterThan(0));
+
+  it.each([
+    ["a you-focused question", "What do you work with today?"],
+    ["'we' with no pitch shape", "We should talk when it suits you."],
+    ["their platform, not ours", "Your platform handles multi-region well."],
+  ])("stays quiet on %s", (_l, t) => expect(findTouchOnePitch(t)).toEqual([]));
 });
