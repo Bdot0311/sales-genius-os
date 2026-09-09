@@ -8,7 +8,21 @@ const ScrollArea = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root>
 >(({ className, children, ...props }, ref) => (
   <ScrollAreaPrimitive.Root ref={ref} className={cn("relative overflow-hidden", className)} {...props}>
-    <ScrollAreaPrimitive.Viewport className="h-full w-full rounded-[inherit]">{children}</ScrollAreaPrimitive.Viewport>
+    {/* The !block override is load-bearing. Radix renders the viewport's
+        inner wrapper as display:table so it can measure content for
+        horizontal scrolling, and a table box shrink-wraps to its content
+        rather than filling its parent. Long prose therefore overflowed the
+        container and was clipped by the Root's overflow-hidden instead of
+        wrapping — on a phone that cut a word or two off the end of every
+        line of an agent reply, with no scrollbar to reach them.
+
+        Safe to force because nothing in this app scrolls a ScrollArea
+        horizontally: no caller asks for the horizontal orientation, and the
+        few genuinely wide things (tables, code blocks) carry their own
+        overflow-x-auto. */}
+    <ScrollAreaPrimitive.Viewport className="h-full w-full rounded-[inherit] [&>div]:!block [&>div]:!w-full">
+      {children}
+    </ScrollAreaPrimitive.Viewport>
     <ScrollBar />
     <ScrollAreaPrimitive.Corner />
   </ScrollAreaPrimitive.Root>

@@ -225,6 +225,7 @@ const ClientPortal = () => {
           {data.activity.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-6">No activity yet.</p>
           ) : (
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -247,6 +248,7 @@ const ClientPortal = () => {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </Card>
       </main>

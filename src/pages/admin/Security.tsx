@@ -390,20 +390,25 @@ const AdminSecurity = () => {
 
       {/* Main Tabs */}
       <Tabs defaultValue="security-events" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
-          <TabsTrigger value="security-events" className="gap-2">
+        {/* Scrolls on a phone rather than cramming four full labels into
+            ~90px each. Settings.tsx solves the same problem by hiding its
+            labels below sm, but "Security Events" and "Login Attempts" are
+            not guessable from their icons, so the words are worth keeping
+            and the strip is worth scrolling. */}
+        <TabsList className="flex w-full overflow-x-auto lg:grid lg:w-auto lg:inline-grid lg:grid-cols-4">
+          <TabsTrigger value="security-events" className="gap-2 flex-shrink-0">
             <ShieldAlert className="h-4 w-4" />
             Security Events
           </TabsTrigger>
-          <TabsTrigger value="login-attempts" className="gap-2">
+          <TabsTrigger value="login-attempts" className="gap-2 flex-shrink-0">
             <LogIn className="h-4 w-4" />
             Login Attempts
           </TabsTrigger>
-          <TabsTrigger value="rate-limits" className="gap-2">
+          <TabsTrigger value="rate-limits" className="gap-2 flex-shrink-0">
             <Activity className="h-4 w-4" />
             Rate Limits
           </TabsTrigger>
-          <TabsTrigger value="ip-blocking" className="gap-2">
+          <TabsTrigger value="ip-blocking" className="gap-2 flex-shrink-0">
             <Ban className="h-4 w-4" />
             IP Blocking ({blockedIPs.length})
           </TabsTrigger>
