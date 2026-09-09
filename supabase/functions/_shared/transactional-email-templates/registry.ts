@@ -44,4 +44,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'campaign-setup-access-request': campaignSetupAccessRequest,
   'deliverability-alert': deliverabilityAlert,
   'churn-interview': churnInterview,
+  'customer-interview': customerInterview,
 }
