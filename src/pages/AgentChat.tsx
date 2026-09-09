@@ -454,7 +454,11 @@ const AgentChat = () => {
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col lg:flex-row gap-4 h-[calc(100dvh-8.5rem)] min-h-0">
+      {/* 8.5rem was reserving space nothing occupied. The topbar is h-12 and
+          main is py-4, so 5rem is the real cost on a phone and 6rem once
+          sm:py-6 applies — the extra 2.5-3.5rem was coming straight out of
+          the conversation. */}
+      <div className="flex flex-col lg:flex-row gap-4 h-[calc(100dvh-5rem)] sm:h-[calc(100dvh-6rem)] min-h-0">
         {/* Threads */}
         <Card
           className={cn(

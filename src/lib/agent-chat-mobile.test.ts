@@ -75,3 +75,40 @@ describe("the chat header earns its height on mobile", () => {
     expect(PAGE).toContain('<ScrollArea className="flex-1 min-h-0 px-3 sm:px-4">');
   });
 });
+
+/**
+ * The height arithmetic, which is what actually kept it small.
+ *
+ * Two independent errors compounded:
+ *
+ * The topbar is h-12 (3rem) and <main> is py-4 (2rem), so the chrome above the
+ * chat costs 5rem on a phone and 6rem once sm:py-6 applies. The page subtracted
+ * 8.5rem, reserving two and a half to three and a half rem that nothing
+ * occupied — taken straight out of the conversation.
+ *
+ * And the layout was min-h-screen (100vh) while the chat measured itself in
+ * dvh. In an in-app browser 100vh is the LARGE viewport — the height the page
+ * would have if the URL bar and bottom toolbar were hidden — so every dashboard
+ * page was taller than the visible area, giving a phantom scroll and a band of
+ * dead space beneath the content.
+ */
+describe("the chat is measured against the viewport that exists", () => {
+  const LAYOUT = readFileSync("src/components/dashboard/DashboardLayout.tsx", "utf8");
+
+  it("reserves only the chrome that is actually there", () => {
+    expect(PAGE).not.toContain("100dvh-8.5rem");
+    expect(PAGE).toContain("h-[calc(100dvh-5rem)]");     // h-12 topbar + py-4
+    expect(PAGE).toContain("sm:h-[calc(100dvh-6rem)]");  // h-12 topbar + sm:py-6
+  });
+
+  it("the layout stops claiming a viewport the browser is not showing", () => {
+    // A JSX className, not the word inside a comment.
+    expect(LAYOUT).not.toMatch(/className="[^"]*\bmin-h-screen\b/);
+    expect(LAYOUT).toContain('className="min-h-[100dvh] bg-background"');
+  });
+
+  it("uses the same unit in both places, which was the whole bug", () => {
+    expect(LAYOUT).toContain("100dvh");
+    expect(PAGE).toContain("100dvh");
+  });
+});

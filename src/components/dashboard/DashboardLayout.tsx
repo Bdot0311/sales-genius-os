@@ -164,7 +164,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   // owes us the signup questionnaire, or while we're redirecting to it.
   if (gateLoading || needsOnboarding) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-[100dvh] bg-background flex items-center justify-center">
         <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
       </div>
     );
@@ -174,7 +174,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   // Locked-account block: prevent any dashboard access for non-admin locked users
   if (subscription?.accountStatus === 'locked' && !isAdmin) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <div className="min-h-[100dvh] bg-background flex items-center justify-center p-6">
         <div className="max-w-md w-full bg-card border border-destructive/30 rounded-lg p-8 text-center space-y-4">
           <div className="w-16 h-16 mx-auto rounded-full bg-destructive/10 flex items-center justify-center">
             <svg className="w-8 h-8 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -205,8 +205,13 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     );
   }
 
+  // dvh, not vh. In an in-app browser 100vh is the LARGE viewport — the
+  // height the page would have if the URL bar and toolbar were hidden — so
+  // min-h-screen made every dashboard page taller than the visible area. The
+  // result was a phantom scroll and a band of dead space under the content,
+  // most obvious on the chat, whose own height is in dvh.
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-[100dvh] bg-background">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
