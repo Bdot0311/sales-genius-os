@@ -6,7 +6,7 @@ import type { StepType, TriggerCondition } from "./sequence-steps.ts";
 // Produces the same 4-touch sequence rules used by generate-sequence.
 
 export const PLAYBOOK_SYSTEM_RULES = `COLD EMAIL ENGINE RULES (non-negotiable, apply to every email):
-- 50-75 words body only. Absolute ceiling 90 words. Under 10 seconds to read.
+- Aim for 60-90 words in the body. The audit enforces 50-100, absolute ceiling 140 — 60-90 is the target inside that, not a separate limit. Never tell a user an email breaches a ceiling the audit does not enforce. Under 10 seconds to read.
 - 3-4 sentences. 8th-grade reading level. No em-dashes, no emojis, no bullets, no markdown.
 - Exactly ONE low-friction CTA in question form. Never ask for a meeting on touch 1. Never propose times.
 - Interest-based CTA ladder, lowest friction first: interest ("worth a look?"), permission ("would you be opposed to a 2-minute example?"), or resource ("want the teardown?"). Never a calendar link or a proposed time on touch 1.
