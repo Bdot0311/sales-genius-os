@@ -42,4 +42,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'campaign-setup-winback': campaignSetupWinback,
   'campaign-setup-access-request': campaignSetupAccessRequest,
   'deliverability-alert': deliverabilityAlert,
+  'churn-interview': churnInterview,
 }
