@@ -5621,6 +5621,10 @@ export type Database = {
     Functions: {
       _system_health_checks: { Args: never; Returns: Json }
       activation_stage_rank: { Args: { _stage: string }; Returns: number }
+      admin_delete_signup_response: {
+        Args: { _id: string }
+        Returns: undefined
+      }
       admin_delete_user: { Args: { _user_id: string }; Returns: undefined }
       admin_get_activation_dropoff_alerts: {
         Args: never
@@ -5782,6 +5786,26 @@ export type Database = {
           verified_email_at: string
         }[]
       }
+      admin_list_signup_responses: {
+        Args: { _limit?: number }
+        Returns: {
+          channel: string
+          company_type: string
+          completed_at: string
+          created_at: string
+          current_tooling: string
+          discovery_channel: string
+          discovery_channel_other: string
+          email: string
+          full_name: string
+          goals: Json
+          id: string
+          monthly_prospect_volume: string
+          role: string
+          team_size: string
+          user_id: string
+        }[]
+      }
       admin_lock_user: {
         Args: { _reason?: string; _user_id: string }
         Returns: undefined
@@ -5808,6 +5832,14 @@ export type Database = {
         }[]
       }
       admin_unlock_user: { Args: { _user_id: string }; Returns: undefined }
+      admin_update_signup_response: {
+        Args: {
+          _discovery_channel?: string
+          _discovery_channel_other?: string
+          _id: string
+        }
+        Returns: undefined
+      }
       admin_update_subscription: {
         Args: {
           _plan: Database["public"]["Enums"]["subscription_plan"]
