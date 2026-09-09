@@ -221,7 +221,7 @@ const AdminReEngagement = () => {
                       <TableCell className="text-xs tabular-nums">{row.days_inactive ?? "—"}</TableCell>
                       <TableCell className="text-xs">
                         <span className="text-muted-foreground">
-                          {ELIGIBILITY_LABELS[row.eligibility_reason] ?? row.eligibility_reason.replaceAll("_", " ")}
+                          {ELIGIBILITY_LABELS[row.eligibility_reason] ?? row.eligibility_reason.replace(/_/g, " ")}
                         </span>
                         {row.error_message && (
                           <div className="text-red-400 mt-1 break-all">
