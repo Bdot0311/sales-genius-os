@@ -11,6 +11,7 @@ import { capacityFor, shortfallWarning } from "../_shared/send-capacity.ts";
 import { decideSend, previewText } from "../_shared/send-confirmation.ts";
 import { userConfirmedSend } from "../_shared/user-confirmation.ts";
 import { duplicateGuidanceFor } from "../_shared/duplicate-send.ts";
+import { wantsCopyAudit } from "../_shared/copy-review-intent.ts";
 import { auditEmail, auditSummary } from "../_shared/email-audit.ts";
 import { auditSequence, sequenceSummary } from "../_shared/sequence-audit.ts";
 import {
@@ -1190,6 +1191,12 @@ serve(async (req) => {
     const roleTools = allowedToolsFor(config as any);
     const allowedTools = capToolsToTier(roleTools, agentTier);
     const tierRemoved = blockedToolsFor(roleTools, agentTier);
+
+    // Whether this turn must run the checker before it may answer. Decided
+    // from the request, because the model demonstrably will not decide it —
+    // see the tool_choice below.
+    const forceAudit = allowedTools.includes("audit_email") && wantsCopyAudit(userMessage);
+    if (forceAudit) console.log("[agent-chat] copy review: requiring audit_email");
     const scopedTools = TOOLS.filter((t: any) => allowedTools.includes(t.function?.name));
     const scopeNote = scopeNoteFor(config as any) + tierScopeNote(agentTier, tierRemoved);
 
@@ -3507,6 +3514,22 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
             reasoning_effort: step >= REASONING_STEPS ? "none" : "low",
             messages,
             tools: scopedTools,
+            // Require the checker when the user asked for copy to be checked.
+            //
+            // The prompt already says "call audit_email FIRST and answer from
+            // what it returns. Do not give copywriting opinions in place of
+            // it." Asked twice to audit the same email, with the tool in scope
+            // and that line in context, it answered from the skills instead —
+            // six bullets, then seven, which a deterministic checker cannot do,
+            // and one of them quoted a 75-word ceiling that exists in a skill
+            // file and nowhere in the rules.
+            //
+            // So the request shape decides, not the model. Only on the first
+            // step, and only when the tool is in scope: afterwards it is back
+            // to auto so the turn can go on to redraft, send or anything else.
+            ...(step === 0 && forceAudit
+              ? { tool_choice: { type: "function", function: { name: "audit_email" } } }
+              : {}),
           }),
         });
       } catch (e) {
