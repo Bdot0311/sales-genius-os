@@ -112,3 +112,46 @@ describe("the chat is measured against the viewport that exists", () => {
     expect(PAGE).toContain("100dvh");
   });
 });
+
+/**
+ * Text was clipped, not wrapped.
+ *
+ * "Why it fails: Touch 1 earns a reply, it does not sell. Explair" — every line
+ * of an agent reply lost a word or two off the right edge, with no scrollbar to
+ * reach them. The wrap classes were all present (break-words on the prose,
+ * min-w-0 on the message), so nothing in the chat was at fault.
+ *
+ * Radix renders the ScrollArea viewport's inner wrapper as display:table, so it
+ * can measure content for horizontal scrolling. A table box shrink-wraps to its
+ * content instead of filling its parent, so long prose grew past the container
+ * and was clipped by the Root's overflow-hidden.
+ */
+describe("ScrollArea lets its content wrap", () => {
+  const SA = readFileSync("src/components/ui/scroll-area.tsx", "utf8");
+
+  it("overrides the display:table wrapper Radix injects", () => {
+    expect(SA).toContain("[&>div]:!block");
+    expect(SA).toContain("[&>div]:!w-full");
+  });
+
+  it("is safe to force, because nothing scrolls one horizontally", () => {
+    // If this ever fails, a horizontal ScrollArea has been added and the
+    // override above will stop it working — reach for overflow-x-auto on the
+    // wide element instead, which is what the tables already do.
+    //
+    // Comment lines are skipped: the first version of this check matched the
+    // phrase inside its own explanation in scroll-area.tsx and reported a
+    // horizontal ScrollArea that does not exist.
+    const users = [
+      "src/pages/AgentChat.tsx",
+      "src/components/ui/scroll-area.tsx",
+    ].flatMap((f) =>
+      readFileSync(f, "utf8")
+        .split("\n")
+        .filter((l) => !/^\s*(?:\/\/|\*|\/\*|\{\/\*)/.test(l))
+        .filter((l) => l.includes('orientation="horizontal"')),
+    );
+    expect(users).toEqual([]);
+    expect(SA).toContain('orientation === "horizontal"'); // the primitive still supports it
+  });
+});
