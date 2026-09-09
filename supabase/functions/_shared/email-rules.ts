@@ -737,6 +737,53 @@ export function findNameMismatches(
 }
 
 /**
+ * Correct a company name the draft spelled with the wrong capitalisation.
+ *
+ * The checker was catching these and stopping there: "import2" should be
+ * "Import2", "profile sketch" should be "Profile Sketch", "spekit" should be
+ * "Spekit" — three drafts in one batch, each waiting on a human to retype a
+ * value already sitting on the lead row. A finding that a machine can resolve
+ * from data it already holds is a repair, not a question.
+ *
+ * Two deliberate limits.
+ *
+ * It only fires when NO occurrence is spelled correctly, the same condition
+ * detection uses, so repair and the warning can never disagree. A draft that
+ * gets it right once and wrong once is a different problem and is left alone.
+ *
+ * And it is casing only. The letters must already match; this rewrites how a
+ * name is capitalised, never which name is there. Silently swapping one proper
+ * noun for another would hide a draft written about the wrong company
+ * altogether, which is the failure worth surfacing rather than papering over.
+ *
+ * URLs and email addresses are skipped — "import2.com" is not a capitalisation
+ * error and rewriting inside a link can break it.
+ */
+export function repairCompanyCasing(
+  text: string,
+  company: string,
+): { text: string; repaired: string[] } {
+  const src = String(text ?? "");
+  const name = String(company ?? "").trim();
+  if (!name) return { text: src, repaired: [] };
+
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const all = src.match(new RegExp(escaped, "gi")) ?? [];
+  if (!all.length || all.some((hit) => hit === name)) return { text: src, repaired: [] };
+
+  const repaired: string[] = [];
+  // Not preceded by a word character, @, / or . and not followed by a dot-TLD:
+  // enough to leave links and addresses alone without trying to parse them.
+  const safe = new RegExp(`(^|[^\\w@/.])(${escaped})(?!\\.[a-z]{2,})(?![\\w@-])`, "gi");
+  const out = src.replace(safe, (_m, pre: string, hit: string) => {
+    if (hit !== name) repaired.push(`"${hit}" → "${name}"`);
+    return `${pre}${name}`;
+  });
+
+  return { text: out, repaired: [...new Set(repaired)] };
+}
+
+/**
  * Retry instruction naming the phrases to remove.
  *
  * Names them explicitly rather than re-sending the whole banned list: a model

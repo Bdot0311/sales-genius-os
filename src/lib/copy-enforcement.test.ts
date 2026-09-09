@@ -4,6 +4,7 @@ import {
   findClippedOpeners,
   findNameMismatches,
   findBannedPhrases,
+  repairCompanyCasing,
 } from "../../supabase/functions/_shared/email-rules.ts";
 import { auditEmail } from "../../supabase/functions/_shared/email-audit.ts";
 
@@ -114,5 +115,69 @@ describe("names checked against the lead record", () => {
     const AGENT = readFileSync("supabase/functions/agent-chat/index.ts", "utf8");
     expect(AGENT).toMatch(/from\("leads"\)\s*\n\s*\.select\("company_name, contact_name"\)/);
     expect(AGENT).toContain("lead: auditLead");
+  });
+});
+
+/**
+ * Reporting a fault a machine can resolve from data it already holds is a
+ * question that did not need asking. One batch produced "import2" for Import2,
+ * "profile sketch" for Profile Sketch and "spekit" for Spekit — three drafts
+ * each waiting on someone to retype a value sitting on the lead row.
+ */
+describe("capitalisation is repaired, not just reported", () => {
+  it.each([
+    ["Noticed import2 is hiring. import2 looks sharp.", "Import2", "Noticed Import2 is hiring. Import2 looks sharp."],
+    ["profile sketch's recruitment playbook", "Profile Sketch", "Profile Sketch's recruitment playbook"],
+    ["spekit's mcp integration", "Spekit", "Spekit's mcp integration"],
+  ])("fixes %s", (body, company, expected) => {
+    expect(repairCompanyCasing(body, company).text).toBe(expected);
+  });
+
+  it("clears the warning it would otherwise have raised", () => {
+    const fixed = repairCompanyCasing("Noticed import2 is hiring.", "Import2");
+    expect(findNameMismatches(fixed.text, { company: "Import2" })).toEqual([]);
+  });
+
+  it("says what it changed rather than editing silently", () => {
+    expect(repairCompanyCasing("noticed import2 shipped", "Import2").repaired)
+      .toEqual(['"import2" → "Import2"']);
+  });
+
+  it("rewrites capitalisation, never which name is there", () => {
+    // A draft about the wrong company is the failure worth surfacing; quietly
+    // substituting the right one would hide it.
+    expect(repairCompanyCasing("Noticed Acme is hiring.", "Import2").text)
+      .toBe("Noticed Acme is hiring.");
+  });
+
+  it.each([
+    ["already correct", "Import2 ships fast.", "Import2"],
+    ["mixed correct and wrong — a different problem", "Import2 and import2", "Import2"],
+    ["inside a URL", "see import2.com for details", "Import2"],
+    ["inside an email address", "mail a@import2.com today", "Import2"],
+    ["company absent from the body", "Hi Aryan, nice work.", "Import2"],
+    ["no company on the lead", "anything", ""],
+  ])("leaves it alone: %s", (_label, body, company) => {
+    expect(repairCompanyCasing(body, company).text).toBe(body);
+    expect(repairCompanyCasing(body, company).repaired).toEqual([]);
+  });
+
+  it("escapes regex metacharacters in the company name", () => {
+    expect(repairCompanyCasing("we use c++ (io) daily", "C++ (IO)").text)
+      .toBe("we use C++ (IO) daily");
+  });
+
+  it("runs before the rubric scores the draft", () => {
+    // Otherwise the score describes copy that is about to change.
+    const GEN = readFileSync("supabase/functions/generate-email/index.ts", "utf8");
+    expect(GEN.indexOf("repairCompanyCasing(email")).toBeLessThan(GEN.indexOf("const rubric = await scoreEmail"));
+  });
+
+  it("reports repairs and surviving warnings separately", () => {
+    const GEN = readFileSync("supabase/functions/generate-email/index.ts", "utf8");
+    expect(GEN).toContain("name_repairs: casing.repaired");
+    const AGENT = readFileSync("supabase/functions/agent-chat/index.ts", "utf8");
+    expect(AGENT).toContain("Fixed name capitalisation");
+    expect(AGENT).toContain("could not be corrected from the lead record");
   });
 });
