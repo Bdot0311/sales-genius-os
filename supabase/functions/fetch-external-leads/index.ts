@@ -1223,7 +1223,7 @@ serve(async (req) => {
       for (const t of titles) {
         for (const ind of industriesForFan) {
           const body: Record<string, any> = { ...requestBody, job_title: t };
-          if (seniorityIsATitlesOwn) delete body.seniority;
+          if (hasSeniority && titleStatesSeniority(t)) delete body.seniority;
           const normInd = normalizeIndustry(ind || '');
           if (normInd) body.industry = normInd; else delete body.industry;
           const key = JSON.stringify([body.job_title, body.industry, body.seniority]);
