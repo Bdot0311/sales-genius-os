@@ -138,7 +138,11 @@ serve(async (req) => {
 
     switch (triggerCondition) {
       case 'on_enroll':
-        shouldExecute = nextStepNumber === 1;
+        // 'on_enroll' means "no engagement condition, just the delay". Limiting
+        // it to step 1 left every later step with this trigger permanently due
+        // and permanently skipped, so follow-ups never sent. The delay is
+        // already enforced by next_action_at, so being here means it is time.
+        shouldExecute = true;
         break;
       case 'on_no_response':
         shouldExecute = ['contacted', 'new'].includes(engagementState);
