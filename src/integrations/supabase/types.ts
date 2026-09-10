@@ -6045,6 +6045,14 @@ export type Database = {
           sequence_name: string
         }[]
       }
+      get_service_status: {
+        Args: never
+        Returns: {
+          category: string
+          severity: string
+          since: string
+        }[]
+      }
       get_user_leads_usage: {
         Args: never
         Returns: {
