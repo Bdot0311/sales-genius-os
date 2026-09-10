@@ -174,6 +174,36 @@ export function normalizeSeniority(raw: string): string {
 }
 
 
+// Titles that state a level all by themselves. Kept in step with the backend's
+// _SENIORITY_RULES, which drops a seniority filter sent beside one of these.
+const TITLE_STATES_LEVEL: RegExp[] = [
+  /\b(founder|co-?founder|owner|proprietor)\b/,
+  /\b(ceo|cto|cfo|cmo|coo|cro|cpo|ciso|cio|chief)\b/,
+  /\b(president|partner)\b/,
+  /\bvp\b|\bvice\s+president\b|\bsvp\b|\bevp\b/,
+  /\bhead\b/,
+  /\bdirector\b/,
+  /\bmanager\b/,
+  /\b(senior|sr\.?|staff|principal|lead)\b/,
+  /\b(junior|jr\.?|intern|entry)\b/,
+];
+
+/**
+ * Whether a job title already says what level it is.
+ *
+ * Used to decide whether an ICP-wide seniority belongs on a per-title search.
+ * An ICP of "Founders, Heads of Sales, or VPs of Sales" parses to three titles
+ * and one seniority — read off the word *Founders* — and the fan-out was
+ * putting that seniority on all three, so it asked for a VP of Sales who is
+ * also an owner. The title is what the user typed; it wins.
+ */
+export function titleStatesSeniority(title: string): boolean {
+  const lower = (title || '').trim().toLowerCase();
+  if (!lower) return false;
+  return TITLE_STATES_LEVEL.some((pattern) => pattern.test(lower));
+}
+
+
 // Normalize company size to PDL range format
 export function normalizeCompanySize(raw: string): string {
   if (!raw) return '';
