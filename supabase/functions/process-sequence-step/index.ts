@@ -138,7 +138,11 @@ serve(async (req) => {
 
     switch (triggerCondition) {
       case 'on_enroll':
-        shouldExecute = nextStepNumber === 1;
+        // 'on_enroll' means "no engagement condition, just the delay". Limiting
+        // it to step 1 left every later step with this trigger permanently due
+        // and permanently skipped, so follow-ups never sent. The delay is
+        // already enforced by next_action_at, so being here means it is time.
+        shouldExecute = true;
         break;
       case 'on_no_response':
         shouldExecute = ['contacted', 'new'].includes(engagementState);
@@ -157,10 +161,20 @@ serve(async (req) => {
     }
 
     if (!shouldExecute) {
+      // A step waiting on the prospect used to leave next_action_at untouched,
+      // so the dispatcher re-asked the same question every few minutes forever.
+      // Back it off an hour: the answer cannot change faster than the prospect.
+      const retryAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+      await supabase
+        .from('sequence_enrollments')
+        .update({ next_action_at: retryAt })
+        .eq('id', enrollmentId);
+
       return new Response(JSON.stringify({
         success: true,
         action: 'skipped',
         reason: `Trigger condition "${triggerCondition}" not met for state "${engagementState}"`,
+        retryAt,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
