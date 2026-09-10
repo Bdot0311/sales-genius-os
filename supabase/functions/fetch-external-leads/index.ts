@@ -1208,8 +1208,11 @@ serve(async (req) => {
       //
       // A seniority no title states ("Directors, in Sales or Marketing") is a
       // real criterion and rides along as before.
-      const seniorityIsATitlesOwn = Boolean(requestBody.seniority)
-        && titles.some((t) => titleStatesSeniority(t));
+      // Decided per title, not across the whole set: "Founder" states its own
+      // level, "Account Executive" does not, and dropping the seniority from
+      // both because one of them stated it left the level-less title with
+      // nothing narrowing it.
+      const hasSeniority = Boolean(requestBody.seniority);
 
       // Two ICP industries that normalise to the same value produce the same
       // search twice. That is not merely a wasted call: each one asks the
