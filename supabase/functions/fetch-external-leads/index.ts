@@ -1211,19 +1211,39 @@ serve(async (req) => {
       const seniorityIsATitlesOwn = Boolean(requestBody.seniority)
         && titles.some((t) => titleStatesSeniority(t));
 
+      // Two ICP industries that normalise to the same value produce the same
+      // search twice. That is not merely a wasted call: each one asks the
+      // backend for fresh people and the backend marks everyone it hands back
+      // as shown, so the duplicate burns a second slice of the pool the user
+      // is then never offered.
+      const seenVariant = new Set<string>();
       for (const t of titles) {
         for (const ind of industriesForFan) {
           const body: Record<string, any> = { ...requestBody, job_title: t };
           if (seniorityIsATitlesOwn) delete body.seniority;
           const normInd = normalizeIndustry(ind || '');
           if (normInd) body.industry = normInd; else delete body.industry;
+          const key = JSON.stringify([body.job_title, body.industry, body.seniority]);
+          if (seenVariant.has(key)) continue;
+          seenVariant.add(key);
           variants.push(body);
         }
       }
 
-      const perVariant = Math.max(5, Math.ceil(limit / Math.max(variants.length, 1)) * 2);
+      // Ask each variant for its share of the page and no more.
+      //
+      // This used to double the ask — ceil(limit / variants) * 2, floor 5 —
+      // and then slice the merged result back down to `limit`. Everything
+      // sliced off had already been marked shown by the backend, so a page of
+      // six could spend twelve people to display six, and the six discarded
+      // could never be offered again. Repeat the search a few times and the
+      // pool is gone: "second search didn't show anything".
+      const perVariant = Math.max(1, Math.ceil(limit / Math.max(variants.length, 1)));
       const collectedIcp: any[] = [];
       for (const body of variants.slice(0, 8)) {
+        // Stop once the page is full. The remaining variants would spend
+        // people this response has no room to show.
+        if (collectedIcp.length >= limit + offset) break;
         try {
           const r = await fetch(railwayUrl, {
             method: 'POST',
