@@ -9,6 +9,7 @@ import {
   normalizeSeniority,
   normalizeCompanySize,
   semanticTermsIn,
+  titleStatesSeniority,
 } from "../_shared/icp-vocab.ts";
 // The same fit engine the saved-lead scorer uses, so a lead's ICP score in
 // search is the number it keeps once saved.
@@ -1199,9 +1200,21 @@ serve(async (req) => {
       const variants: Array<Record<string, any>> = [];
       const titles = fanTitles.length ? fanTitles : [jobTitle].filter(Boolean) as string[];
       const industriesForFan = fanIndustries.length ? fanIndustries : [filters.industry || icpIndustries[0] || ''];
+      // A seniority that one of these titles already states was read off that
+      // title, not stated separately — "Founders, Heads of Sales, or VPs of
+      // Sales" gives three titles and one seniority, from the word *Founders*.
+      // Putting it on all three asks for a VP of Sales who is also an owner,
+      // and the provider answers with whoever it happens to file under both.
+      //
+      // A seniority no title states ("Directors, in Sales or Marketing") is a
+      // real criterion and rides along as before.
+      const seniorityIsATitlesOwn = Boolean(requestBody.seniority)
+        && titles.some((t) => titleStatesSeniority(t));
+
       for (const t of titles) {
         for (const ind of industriesForFan) {
           const body: Record<string, any> = { ...requestBody, job_title: t };
+          if (seniorityIsATitlesOwn) delete body.seniority;
           const normInd = normalizeIndustry(ind || '');
           if (normInd) body.industry = normInd; else delete body.industry;
           variants.push(body);
