@@ -1080,6 +1080,17 @@ serve(async (req) => {
       railwayHeaders['Authorization'] = `Bearer ${railwayApiKey}`;
       railwayHeaders['X-API-Key'] = railwayApiKey;
     }
+    // Who is searching. Without this the backend cannot tell one user from
+    // another: Authorization is a single service key shared by everyone, and
+    // the only other signal is this function's own egress address, which every
+    // user shares and which changes whenever a worker recycles.
+    //
+    // That address is what the backend's "already shown you these people"
+    // ledger was being keyed on, so the ledger collided between users and
+    // emptied itself mid-session — and an empty ledger makes a cached page of
+    // already-shown leads look new. It is the whole reason repeat searches
+    // kept returning the same people.
+    railwayHeaders['X-Customer-ID'] = user.id;
 
     // ─── Account-based mode: contacts scoped to a set of target companies ───────
     // The "Target companies" tab sends companies[]. The data source can't OR

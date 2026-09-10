@@ -276,6 +276,10 @@ serve(async (req) => {
       enrichHeaders['Authorization'] = `Bearer ${railwayApiKey}`;
       enrichHeaders['X-API-Key'] = railwayApiKey;
     }
+    // Who is enriching — same reason as in fetch-external-leads. Authorization
+    // is one service key for everyone, so without this the backend attributes
+    // every reveal to this function's egress address rather than to a person.
+    enrichHeaders['X-Customer-ID'] = user.id;
 
     let railwayData: any = null;
     try {
