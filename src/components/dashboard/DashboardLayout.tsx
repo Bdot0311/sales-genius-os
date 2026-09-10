@@ -44,6 +44,7 @@ import { useLiveCrmIndicators } from "@/hooks/use-live-crm-indicators";
 import { useDemoMode } from "@/hooks/use-demo-mode";
 import { useOnboardingGate } from "@/hooks/use-onboarding-gate";
 import { ensureSession, startSessionKeeper } from "@/lib/session-keeper";
+import { ServiceStatusBanner } from "@/components/dashboard/ServiceStatusBanner";
 
 
 
@@ -483,6 +484,9 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             )}
           </div>
         </header>
+
+        {/* Live service status, only while something is actually wrong */}
+        <ServiceStatusBanner />
 
         {/* Page content */}
         <main className="dashboard-page-gutters min-w-0 overflow-x-hidden px-4 sm:px-6 lg:px-8 py-4 sm:py-6">{children}</main>
