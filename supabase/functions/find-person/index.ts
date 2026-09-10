@@ -189,6 +189,10 @@ serve(async (req) => {
       headers["Authorization"] = `Bearer ${railwayApiKey}`;
       headers["X-API-Key"] = railwayApiKey;
     }
+    // Who is asking. Authorization is one service key shared by every user, so
+    // without this the backend has only this function's egress address to go
+    // on — shared between users and changing when a worker recycles.
+    headers["X-Customer-ID"] = user.id;
 
     let raw: any = null;
     try {

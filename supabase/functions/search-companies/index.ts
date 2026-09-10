@@ -103,6 +103,9 @@ serve(async (req) => {
       headers["Authorization"] = `Bearer ${railwayApiKey}`;
       headers["X-API-Key"] = railwayApiKey;
     }
+    // Who is asking — see find-person. Authorization is one service key shared
+    // by every user, so it cannot identify one.
+    headers["X-Customer-ID"] = user.id;
 
     let res: Response;
     try {
