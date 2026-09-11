@@ -42,6 +42,7 @@ const DashboardIntegrations = lazy(() => import("./pages/DashboardIntegrations")
 const PricingPage = lazy(() => import("./pages/PricingPage"));
 const DemoPage = lazy(() => import("./pages/DemoPage"));
 const SalesOperationsSoftware = lazy(() => import("./pages/SalesOperationsSoftware"));
+const AiSdrAgent = lazy(() => import("./pages/AiSdrAgent"));
 const ApolloAlternative = lazy(() => import("./pages/ApolloAlternative"));
 const VsApollo = lazy(() => import("./pages/VsApollo"));
 const VsInstantly = lazy(() => import("./pages/VsInstantly"));
@@ -481,6 +482,7 @@ const App = () => {
               <Route path="/connect" element={<Connect />} />
               <Route path="/pricing" element={<PricingPage />} />
               <Route path="/sales-operations-software" element={<SalesOperationsSoftware />} />
+              <Route path="/ai-sdr-agent" element={<AiSdrAgent />} />
               <Route path="/apollo-alternative" element={<ApolloAlternative />} />
               <Route path="/vs-apollo" element={<VsApollo />} />
               <Route path="/vs-instantly" element={<VsInstantly />} />
