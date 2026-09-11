@@ -108,6 +108,15 @@ const ROUTES: RouteMeta[] = [
       "OutReign is sales operations software built for outbound B2B teams. Plain-English lead search, SMTP-verified emails, AI drafting, and reply management in one platform.",
   },
   {
+    path: "/ai-sdr-agent",
+    title: "AI SDR Agent — Autonomous Outbound Sales | OutReign",
+    description:
+      "OutReign's AI SDR agent finds your prospects, verifies their emails, writes personalized outreach, and works the replies from your Gmail. Free plan included.",
+    socialTitle: "An AI SDR agent that runs your outbound. Headcount of one.",
+    socialDescription:
+      "Ranked prospects, verified emails, and an AI SDR agent that works the replies from your Gmail. Free plan included.",
+  },
+  {
     path: "/apollo-alternative",
     title: "Why Switch from Apollo | OutReign",
     description:
@@ -333,7 +342,7 @@ function renderSitemap(buildDate: string): string {
   const priorityFor = (path: string): string => {
     if (path === "/") return "1.0";
     if (path === "/pricing" || path.startsWith("/vs-") || path === "/apollo-alternative") return "0.9";
-    if (path === "/blog" || path === "/help" || path === "/sales-operations-software") return "0.8";
+    if (path === "/blog" || path === "/help" || path === "/sales-operations-software" || path === "/ai-sdr-agent") return "0.8";
     if (path.startsWith("/blog/")) return "0.7";
     if (path.startsWith("/help/")) return "0.6";
     return "0.5";
