@@ -42,17 +42,18 @@ export default function NotificationsTab() {
     try {
       if (next) {
         await subscribeToPush();
-        setSubscribed(true);
-        setPermission("granted");
         toast.success("Push notifications enabled on this device");
       } else {
         await unsubscribeFromPush();
-        setSubscribed(false);
         toast.success("Push notifications disabled on this device");
       }
     } catch (e) {
       toast.error((e as Error).message || "Failed to update notifications");
     } finally {
+      // Always re-read the real device state so the switch can never lie.
+      const current = await getCurrentSubscription().catch(() => null);
+      setSubscribed(Boolean(current));
+      if (typeof Notification !== "undefined") setPermission(Notification.permission);
       setLoading(false);
     }
   };
