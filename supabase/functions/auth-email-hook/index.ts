@@ -16,9 +16,9 @@ const corsHeaders = {
 
 // Configuration
 const SITE_NAME = "OutReign"
-const SENDER_DOMAIN = "notify.bdotindustries.com"
-const ROOT_DOMAIN = "bdotindustries.com"
-const FROM_DOMAIN = "notify.bdotindustries.com"
+const SENDER_DOMAIN = "notify.outreign.io"
+const ROOT_DOMAIN = "outreign.io"
+const FROM_DOMAIN = "notify.outreign.io"
 const SITE_URL = `https://${ROOT_DOMAIN}`
 
 // Template mapping for preview mode
