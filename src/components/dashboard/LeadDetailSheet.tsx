@@ -1,3 +1,4 @@
+import { displayEnrichmentSource } from "@/lib/enrichment-source";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -477,7 +478,7 @@ export const LeadDetailSheet = ({
                         </Badge>
                         <span className="text-xs text-muted-foreground">{format(new Date(entry.enriched_at), 'PPp')}</span>
                       </div>
-                      <div className="text-xs text-muted-foreground">Source: {['prospeo', 'Prospeo', 'peopledatalabs', 'People Data Labs', 'Lusha', 'lusha'].includes(entry.source) ? 'OutReign' : entry.source}</div>
+                      <div className="text-xs text-muted-foreground">Source: {displayEnrichmentSource(entry.source)}</div>
                       {entry.error_message && (
                         <p className="text-xs text-muted-foreground bg-muted/50 rounded p-2 italic">{entry.error_message}</p>
                       )}

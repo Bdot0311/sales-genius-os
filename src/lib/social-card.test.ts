@@ -52,6 +52,8 @@ describe("one social card URL, not twelve", () => {
 describe("search title and social title are separate", () => {
   const HEAD = readFileSync("src/components/seo/SEOHead.tsx", "utf8");
   const INDEX = readFileSync("src/pages/Index.tsx", "utf8");
+  const HTML = readFileSync("index.html", "utf8");
+  const PLUGIN = readFileSync("vite-plugin-seo-routes.ts", "utf8");
 
   it("social tags read a title of their own", () => {
     expect(HEAD).toContain("socialTitle");
@@ -62,12 +64,47 @@ describe("search title and social title are separate", () => {
     expect(HEAD).toContain("socialTitle ? formatPageTitle(socialTitle) : fullTitle");
   });
 
-  it("the homepage search title carries the keywords", () => {
-    expect(INDEX).toContain('title="B2B Cold Email Outbound With an AI SDR"');
+  it("the runtime homepage title matches the static one", () => {
+    // Three files carry this: Index.tsx (runtime, via SEOHead), index.html
+    // (the fallback a non-JS crawler reads) and vite-plugin-seo-routes.ts
+    // (build time). An SEO edit updated two of them and missed Index.tsx, so a
+    // crawler saw one title and a JS client saw another after hydration.
+    // Comparing them beats pinning a literal, which only catches the edit that
+    // touches this file.
+    const unescape = (v: string) =>
+      v.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"');
+    const htmlTitle = unescape(HTML.match(/<title>([\s\S]*?)<\/title>/)?.[1]?.trim() ?? "");
+    const indexTitle = INDEX.match(/\btitle="([^"]+)"/)?.[1] ?? "";
+    expect(indexTitle).not.toBe("");
+    // formatPageTitle appends the brand unless the title already carries it.
+    const formatted = indexTitle.toLowerCase().includes("outreign")
+      ? indexTitle
+      : `${indexTitle} | OutReign`;
+    expect(formatted).toBe(htmlTitle);
+
+    // Third copy: the prerender plugin's route table, which is what a crawler
+    // gets on every route other than "/".
+    const pluginTitle = PLUGIN.match(/path: "\/",\s*\n\s*title: "([^"]+)"/)?.[1] ?? "";
+    expect(pluginTitle).not.toBe("");
+    expect(pluginTitle).toBe(indexTitle);
   });
 
-  it("the homepage social title carries the positioning", () => {
-    expect(INDEX).toContain('socialTitle="The output of a sales team. Headcount of one."');
+  it("the homepage social title agrees across all three copies", () => {
+    // This pinned the sentence itself and broke the moment the positioning was
+    // rewritten, which is not a bug — a title disagreeing with itself across
+    // the three files that carry it is. Same three as the search title:
+    // Index.tsx (runtime), index.html (what a non-JS crawler reads) and the
+    // prerender plugin's route table.
+    const indexSocial = INDEX.match(/\bsocialTitle="([^"]+)"/)?.[1] ?? "";
+    expect(indexSocial).not.toBe("");
+    for (const prop of ["og:title", "twitter:title"]) {
+      const attr = prop.startsWith("og:") ? "property" : "name";
+      const htmlSocial =
+        HTML.match(new RegExp(`<meta ${attr}="${prop}" content="([^"]+)"`))?.[1] ?? "";
+      expect(htmlSocial, prop).toBe(indexSocial);
+    }
+    const pluginSocial = PLUGIN.match(/path: "\/",[\s\S]{0,600}?socialTitle: "([^"]+)"/)?.[1] ?? "";
+    expect(pluginSocial).toBe(indexSocial);
   });
 
   it("no page still advertises the old hero", () => {
@@ -130,8 +167,14 @@ describe("what crawlers actually read", () => {
   });
 
   it("gives search and social different titles", () => {
-    expect(HTML).toContain("<title>B2B Cold Email Outbound With an AI SDR | OutReign</title>");
-    expect(HTML).toContain('og:title" content="The output of a sales team. Headcount of one."');
+    // The point is that they differ, not what either one says. Pinning the
+    // strings made this fail on every copy edit while the thing it guards
+    // stayed true.
+    const title = HTML.match(/<title>([\s\S]*?)<\/title>/)?.[1]?.trim() ?? "";
+    const ogTitle = HTML.match(/<meta property="og:title" content="([^"]*)"/)?.[1] ?? "";
+    expect(title).not.toBe("");
+    expect(ogTitle).not.toBe("");
+    expect(ogTitle).not.toBe(title);
   });
 
   it("keeps the social description short enough to survive truncation", () => {
@@ -144,9 +187,27 @@ describe("what crawlers actually read", () => {
   it("the per-route plugin agrees with the HTML it rewrites", () => {
     // The plugin overwrites these at build time, so a stale entry here silently
     // undoes index.html.
-    expect(PLUGIN).toContain('title: "B2B Cold Email Outbound With an AI SDR | OutReign"');
-    expect(PLUGIN).toContain('socialTitle: "The output of a sales team. Headcount of one."');
-    expect(PLUGIN).not.toContain("Your Next 100 B2B Prospects");
+    //
+    // This used to pin the homepage title as a literal, which meant the test
+    // failed the next time the title was edited even though the plugin and the
+    // HTML still agreed with each other — the thing it is actually here to
+    // check. It now compares the two, so renaming the page keeps it passing and
+    // changing only one of them is what fails.
+    const unescape = (v: string) =>
+      v.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"');
+
+    const htmlTitle = unescape(HTML.match(/<title>([\s\S]*?)<\/title>/)?.[1]?.trim() ?? "");
+    // The homepage entry is the first route in the plugin's list.
+    const pluginTitle = PLUGIN.match(/path: "\/",\s*\n\s*title: "([^"]+)"/)?.[1] ?? "";
+    expect(htmlTitle).not.toBe("");
+    expect(pluginTitle).toBe(htmlTitle);
+
+    const htmlOgTitle = unescape(
+      HTML.match(/<meta property="og:title" content="([^"]*)"/)?.[1] ?? "",
+    );
+    const pluginSocialTitle = PLUGIN.match(/socialTitle: "([^"]+)"/)?.[1] ?? "";
+    expect(htmlOgTitle).not.toBe("");
+    expect(pluginSocialTitle).toBe(htmlOgTitle);
   });
 
   it("the plugin writes social values into social tags", () => {

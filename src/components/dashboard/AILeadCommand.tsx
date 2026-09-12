@@ -1,8 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, Send, CheckCircle } from "lucide-react";
+import { ArrowUpRight, Loader2, Search } from "lucide-react";
 
 interface AILeadCommandProps {
   /**
@@ -12,41 +10,103 @@ interface AILeadCommandProps {
    */
   onSearch: (query: string) => void | Promise<void>;
   isSearching: boolean;
-  resultsCount?: number;
-  showResults?: boolean;
 }
 
-const allExampleCommands = [
-  "Founders in financial services in the United States",
-  "VP of Sales at healthcare companies in California",
-  "CTOs at ecommerce companies in New York",
-  "Directors of Marketing at technology companies in London",
-  "C-suite executives at manufacturing companies in Germany",
-  "Engineering managers at software companies in San Francisco",
-  "Heads of Business Development in United Kingdom",
-  "CFOs at retail companies in Canada",
-  "VP of Product at media companies in Australia",
-  "Marketing directors at pharmaceutical companies in Boston",
-  "CEOs at consulting firms in Chicago",
-  "Directors of Engineering at telecommunications companies",
+/**
+ * Examples are stored split, not as sentences.
+ *
+ * As sentences they could only be chips, and four chips of twelve words each
+ * do not fit on any phone: wrapped they became four full-width pills taller
+ * than the search itself, and on one scrolling row they were sliced mid-word at
+ * both edges, which reads as broken rather than as scrollable.
+ *
+ * Split into a role and a qualifier they become a two-column list: the role is
+ * the scannable part and carries the weight, the qualifier trails it in muted
+ * text and truncates cleanly when there is no room. `query` is what actually
+ * lands in the input, so the displayed shorthand never has to double as a
+ * grammatical sentence.
+ */
+const EXAMPLE_SEARCHES: { role: string; qualifier: string; query: string }[] = [
+  {
+    role: "Founders",
+    qualifier: "Financial services · US",
+    query: "Founders in financial services in the United States",
+  },
+  {
+    role: "VP of Sales",
+    qualifier: "Healthcare · California",
+    query: "VP of Sales at healthcare companies in California",
+  },
+  {
+    role: "CTOs",
+    qualifier: "Ecommerce · New York",
+    query: "CTOs at ecommerce companies in New York",
+  },
+  {
+    role: "Marketing directors",
+    qualifier: "Pharmaceuticals · Boston",
+    query: "Marketing directors at pharmaceutical companies in Boston",
+  },
+  {
+    role: "Heads of BD",
+    qualifier: "United Kingdom",
+    query: "Heads of Business Development in the United Kingdom",
+  },
+  {
+    role: "CFOs",
+    qualifier: "Retail · Canada",
+    query: "CFOs at retail companies in Canada",
+  },
+  {
+    role: "C-suite",
+    qualifier: "Manufacturing · Germany",
+    query: "C-suite executives at manufacturing companies in Germany",
+  },
+  {
+    role: "Engineering managers",
+    qualifier: "Software · San Francisco",
+    query: "Engineering managers at software companies in San Francisco",
+  },
 ];
 
-// Show 4 random examples each time
-const getRandomExamples = () => {
-  const shuffled = [...allExampleCommands].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, 4);
+const pickExamples = () => {
+  const shuffled = [...EXAMPLE_SEARCHES].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, 6);
 };
 
-export const AILeadCommand = ({ 
-  onSearch, 
-  isSearching, 
-  resultsCount = 0,
-  showResults = false 
-}: AILeadCommandProps) => {
+/**
+ * The search, which is the page's primary action.
+ *
+ * It used to wear a terminal costume: fake macOS window buttons, a fake
+ * filename, a prompt glyph and a monospace input. None of it was a terminal —
+ * nothing about typing a sentence and pressing a button is terminal-like — so
+ * it was decoration impersonating an affordance, which is the one thing
+ * product UI cannot afford.
+ *
+ * (The removed strings are described rather than quoted here: the test that
+ * guards this asserts they are absent from the file, and a comment repeating
+ * them verbatim fails it.)
+ *
+ * Stripping the costume was not by itself a design. What replaced it was one
+ * hairline input floating in an otherwise empty page, which read as unfinished.
+ * A full-width violet submit under the field was the correction that overshot:
+ * the loudest object on a phone screen, and greyed out most of the time,
+ * because the field starts empty.
+ *
+ * What is here now is a single field with its submit inset, and under it a
+ * two-column list of starting points at a smaller size than the field. The
+ * hierarchy is the point: field, then suggestions, then chrome, with a real
+ * step between each. Flat type at generous spacing is what made the earlier
+ * versions read as a signup form rather than a tool.
+ *
+ * It does not narrate its own progress. It used to report that it was searching
+ * while the results region reported the same thing directly underneath, so one
+ * search produced two spinners. Loading belongs where the results will appear,
+ * as their shape.
+ */
+export const AILeadCommand = ({ onSearch, isSearching }: AILeadCommandProps) => {
   const [command, setCommand] = useState("");
-  const [isFocused, setIsFocused] = useState(false);
-  const [showSteps, setShowSteps] = useState([false, false, false]);
-  const [exampleCommands] = useState(() => getRandomExamples());
+  const [examples] = useState(pickExamples);
   const inputRef = useRef<HTMLInputElement>(null);
   // `isSearching` only goes true once the search request is actually made, and
   // the handler spends a few seconds parsing the query first. Without this the
@@ -56,19 +116,6 @@ export const AILeadCommand = ({
   const [busy, setBusy] = useState(false);
   const disabled = busy || isSearching;
 
-  useEffect(() => {
-    if (showResults && resultsCount > 0) {
-      const timers = [
-        setTimeout(() => setShowSteps([true, false, false]), 300),
-        setTimeout(() => setShowSteps([true, true, false]), 600),
-        setTimeout(() => setShowSteps([true, true, true]), 900),
-      ];
-      return () => timers.forEach(clearTimeout);
-    } else {
-      setShowSteps([false, false, false]);
-    }
-  }, [showResults, resultsCount]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!command.trim() || disabled || dispatching.current) return;
@@ -77,126 +124,79 @@ export const AILeadCommand = ({
     try {
       await onSearch(command.trim());
     } finally {
-      // The handler dispatches the search and returns without waiting for it,
-      // so `isSearching` has already taken over by the time this runs.
       dispatching.current = false;
       setBusy(false);
     }
   };
 
-  const handleExampleClick = (example: string) => {
-    setCommand(example);
-    inputRef.current?.focus();
-  };
-
   return (
-    <Card className="border-primary/20 bg-gradient-to-br from-card via-card to-primary/5 overflow-hidden">
-      <CardContent className="p-6">
-        {/* Terminal Header */}
-        <div className="flex items-center gap-2 mb-4">
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-destructive/80" />
-            <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
-            <div className="w-3 h-3 rounded-full bg-green-500/80" />
-          </div>
-          <span className="ml-2 text-xs text-muted-foreground font-mono">ai-lead-generator</span>
-          <Badge variant="secondary" className="ml-auto text-xs">
-            <Sparkles className="w-3 h-3 mr-1" />
-            AI-Powered
-          </Badge>
-        </div>
-
-        {/* Command Input */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div 
-            className={`relative flex items-center gap-2 p-3 bg-background/50 border rounded-lg transition-all duration-200 ${
-              isFocused ? 'border-primary ring-2 ring-primary/20' : 'border-border/50'
-            }`}
+    <div>
+      <form onSubmit={handleSubmit}>
+        {/* The submit sits inside the field.
+            Below it, full width, it was a violet slab the size of the input —
+            the largest and loudest object on a phone screen, and greyed out
+            most of the time because the field starts empty. Inset and compact,
+            it is a control on the field rather than a banner under it. */}
+        <div className="relative">
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70"
+            aria-hidden
+          />
+          <input
+            ref={inputRef}
+            type="text"
+            value={command}
+            onChange={(e) => setCommand(e.target.value)}
+            placeholder="Founders at fintech companies in the UK"
+            aria-label="Describe the leads you are looking for"
+            // 16px on mobile, or iOS zooms the page on focus.
+            className="h-12 w-full rounded-lg border border-border/40 bg-background/50 pl-9 pr-[5.5rem] text-base text-foreground outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-primary/50 focus:bg-background/80 disabled:opacity-60 sm:text-sm"
+            disabled={disabled}
+          />
+          <Button
+            type="submit"
+            disabled={!command.trim() || disabled}
+            className="absolute right-1.5 top-1/2 h-9 -translate-y-1/2 gap-1.5 px-3 text-xs font-medium"
           >
-            <span className="text-primary font-mono shrink-0">→</span>
-            <input
-              ref={inputRef}
-              type="text"
-              value={command}
-              onChange={(e) => setCommand(e.target.value)}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
-              placeholder="Describe the leads you're looking for..."
-              className="flex-1 bg-transparent border-none outline-none font-mono text-sm text-foreground placeholder:text-muted-foreground"
+            {disabled ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
+            {disabled ? "Searching" : "Search"}
+          </Button>
+        </div>
+        <p className="mt-2 text-[0.6875rem] leading-relaxed text-muted-foreground/70">
+          Plain English: the role, the kind of company, and where they are.
+        </p>
+      </form>
+
+      <div className="mt-4 border-t border-border/30 pt-3">
+        <p className="text-[0.625rem] font-medium uppercase tracking-[0.1em] text-muted-foreground/50">
+          Start from one of these
+        </p>
+        <div className="mt-1 grid gap-x-8 sm:grid-cols-2">
+          {examples.map((example) => (
+            <button
+              key={example.query}
+              type="button"
+              onClick={() => {
+                setCommand(example.query);
+                inputRef.current?.focus();
+              }}
               disabled={disabled}
-            />
-            <Button 
-              type="submit" 
-              size="sm" 
-              variant="hero"
-              disabled={!command.trim() || disabled}
-              className="shrink-0"
+              className="group -mx-2 flex items-baseline gap-2 rounded px-2 py-1 text-left transition-colors hover:bg-primary/5 disabled:pointer-events-none disabled:opacity-50"
             >
-              {disabled ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Send className="w-4 h-4" />
-              )}
-            </Button>
-          </div>
-
-          {/* Example Commands */}
-          {!showResults && (
-            <div className="space-y-2">
-              <p className="text-xs text-muted-foreground">Try these examples:</p>
-              <div className="flex flex-wrap gap-2">
-                {exampleCommands.map((example, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => handleExampleClick(example)}
-                    className="px-2.5 py-1 text-xs bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground rounded-md transition-colors border border-transparent hover:border-border"
-                  >
-                    {example}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </form>
-
-        {/* Results Animation */}
-        {(disabled || showResults) && (
-          <div className="mt-4 pt-4 border-t border-border/50 space-y-2 font-mono text-sm">
-            {disabled && (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                <span>Searching B2B data sources...</span>
-              </div>
-            )}
-            
-            {showResults && !disabled && (
-              <>
-                <div 
-                  className={`flex items-center gap-2 transition-all duration-300 ${showSteps[0] ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}
-                >
-                  <CheckCircle className="w-4 h-4 text-green-400" />
-                  <span className="text-muted-foreground">
-                    Found <span className="text-primary font-semibold">{resultsCount}</span> qualified leads
-                  </span>
-                </div>
-                <div 
-                  className={`flex items-center gap-2 transition-all duration-300 ${showSteps[1] ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}
-                >
-                  <CheckCircle className="w-4 h-4 text-green-400" />
-                  <span className="text-muted-foreground">ICP scores calculated</span>
-                </div>
-                <div 
-                  className={`flex items-center gap-2 transition-all duration-300 ${showSteps[2] ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}
-                >
-                  <CheckCircle className="w-4 h-4 text-green-400" />
-                  <span className="text-muted-foreground">Ready to activate</span>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+              <span className="shrink-0 text-[0.8125rem] font-medium text-foreground/90">
+                {example.role}
+              </span>
+              <span className="truncate text-[0.6875rem] text-muted-foreground/70">
+                {example.qualifier}
+              </span>
+              <ArrowUpRight
+                className="ml-auto h-3 w-3 shrink-0 self-center text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                aria-hidden
+              />
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 };

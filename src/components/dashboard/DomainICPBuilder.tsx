@@ -5,8 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, Globe, Sparkles, X, AlertCircle, ArrowLeft, Search, Info } from "lucide-react";
+import { Loader2, Sparkles, X, AlertCircle, ArrowLeft, Search, Info } from "lucide-react";
 import { ParsedIcpFilters, normalizeDomain } from "@/lib/lead-filters";
 
 interface DomainICPBuilderProps {
@@ -179,16 +178,11 @@ export const DomainICPBuilder = ({ onFindLeads, onSwitchToDescribe, isSearching 
   };
 
   return (
-    <Card className="border-primary/20 bg-gradient-to-br from-card via-card to-primary/5 overflow-hidden">
-      <CardContent className="p-6">
+    <div>
         {/* ─── Input ─────────────────────────────── */}
         {(phase === "idle" || phase === "loading") && (
           <form onSubmit={handleBuild} className="space-y-4">
             <div className="space-y-2">
-              <div className="flex items-center gap-2 mb-1">
-                <Globe className="w-4 h-4 text-primary" />
-                <span className="text-sm font-medium">Analyze your website</span>
-              </div>
               <p className="text-xs text-muted-foreground">
                 Paste your site and we'll build an ICP of who you should sell to. Review it, then find leads.
               </p>
@@ -292,7 +286,6 @@ export const DomainICPBuilder = ({ onFindLeads, onSwitchToDescribe, isSearching 
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+    </div>
   );
 };

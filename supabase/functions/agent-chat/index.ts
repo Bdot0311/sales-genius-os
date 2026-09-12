@@ -1572,6 +1572,28 @@ serve(async (req) => {
             `This agent's role (${config?.role ?? "full_cycle"}) does not allow "${name}". Tell the user this agent is scoped differently and suggest switching agents. Do not attempt another tool to work around it.`,
         };
       }
+      // Which of these ids the account actually owns.
+      //
+      // A batch arrived with three ids the user does not have — carried over
+      // from earlier in the conversation rather than looked up — and each one
+      // cost a full edge-function invocation before failing: three opens,
+      // three enrich calls, three research calls, all reported to the user in
+      // red before the agent gave up and ran list_leads. One indexed query
+      // answers the same question for all of them, so an id the model
+      // imagined costs a round trip instead of a fan-out, and the model is
+      // told plainly to look them up rather than left to infer it from N
+      // identical failures.
+      const ownedLeadIds = async (ids: string[]): Promise<{ owned: string[]; unknown: string[] }> => {
+        if (ids.length === 0) return { owned: [], unknown: [] };
+        const { data } = await admin
+          .from("leads")
+          .select("id")
+          .eq("user_id", userId)
+          .in("id", ids);
+        const owned = new Set((data ?? []).map((r: any) => String(r.id)));
+        return { owned: ids.filter((i) => owned.has(i)), unknown: ids.filter((i) => !owned.has(i)) };
+      };
+
       switch (name) {
         case "list_leads": {
           let q = admin.from("leads").select(LEAD_FIELDS).eq("user_id", userId);
@@ -1612,7 +1634,19 @@ serve(async (req) => {
         }
 
         case "enrich_leads": {
-          const ids: string[] = (args.lead_ids ?? []).slice(0, 10);
+          const requested: string[] = (args.lead_ids ?? []).slice(0, 10).map((x: any) => String(x));
+          const { owned: ids, unknown } = await ownedLeadIds(requested);
+          if (unknown.length) {
+            toolEvents.push({
+              name,
+              label: "Unknown lead ids",
+              status: "error",
+              detail: `${unknown.length} id(s) are not in this account — call list_leads to get real ones.`,
+            });
+          }
+          if (ids.length === 0) {
+            return { error: "None of those lead ids exist in this account. Call list_leads first, then retry with the ids it returns.", unknown_lead_ids: unknown };
+          }
           const { results, skipped } = await mapLimit(ids, 4, async (id: string) => {
             const r = await invokeFn("enrich-lead", { leadId: id });
             return { lead_id: id, ...r };
@@ -1624,7 +1658,7 @@ serve(async (req) => {
             status: failed === results.length && results.length > 0 ? "error" : "ok",
             detail: `${results.length - failed}/${ids.length} enriched${skipped.length ? ` (${skipped.length} skipped — ran out of time)` : ""}`,
           });
-          return { results, skipped_lead_ids: skipped };
+          return { results, skipped_lead_ids: skipped, unknown_lead_ids: unknown };
         }
 
         case "score_leads": {
@@ -1643,8 +1677,20 @@ serve(async (req) => {
         }
 
         case "research_leads": {
-          const ids: string[] = (args.lead_ids ?? []).slice(0, 12).map((x: any) => String(x));
-          if (ids.length === 0) return { error: "lead_ids is required" };
+          const requested: string[] = (args.lead_ids ?? []).slice(0, 12).map((x: any) => String(x));
+          if (requested.length === 0) return { error: "lead_ids is required" };
+          const { owned: ids, unknown } = await ownedLeadIds(requested);
+          if (unknown.length) {
+            toolEvents.push({
+              name,
+              label: "Unknown lead ids",
+              status: "error",
+              detail: `${unknown.length} id(s) are not in this account — call list_leads to get real ones.`,
+            });
+          }
+          if (ids.length === 0) {
+            return { error: "None of those lead ids exist in this account. Call list_leads first, then retry with the ids it returns.", unknown_lead_ids: unknown };
+          }
           const force = args.force === true;
           const { results, skipped } = await mapLimit(ids, 3, async (id: string) => {
             const r = await invokeFn("research-lead", { leadId: id, force });

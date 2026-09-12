@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Building2, Loader2, X, Search, Plus } from "lucide-react";
+import { Loader2, X, Search, Plus } from "lucide-react";
 import { ExternalLeadFilters } from "@/hooks/use-external-leads";
 import { normalizeDomain, isValidDomain } from "@/lib/lead-filters";
 
@@ -86,13 +85,8 @@ export const TargetCompanies = ({ onFindLeads, isSearching }: TargetCompaniesPro
   };
 
   return (
-    <Card className="border-primary/20 bg-gradient-to-br from-card via-card to-primary/5 overflow-hidden">
-      <CardContent className="p-6 space-y-5">
+    <div className="space-y-5">
         <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium">Target companies</span>
-          </div>
           <p className="text-xs text-muted-foreground">
             Search the companies you want to sell into, add them to your list, then find contacts at those accounts.
           </p>
@@ -190,7 +184,6 @@ export const TargetCompanies = ({ onFindLeads, isSearching }: TargetCompaniesPro
           </Button>
           {selected.length === 0 && <p className="text-xs text-muted-foreground">Add at least one company to search.</p>}
         </div>
-      </CardContent>
-    </Card>
+    </div>
   );
 };

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Button, type ButtonProps } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,9 +12,14 @@ import { posthog } from "@/lib/posthog";
 
 interface AddLeadDialogProps {
   onLeadAdded?: () => void;
+  /**
+   * The trigger's weight is the caller's call: on the leads page the primary
+   * action is the search, so adding one lead by hand should not out-shout it.
+   */
+  triggerVariant?: ButtonProps["variant"];
 }
 
-export const AddLeadDialog = ({ onLeadAdded }: AddLeadDialogProps) => {
+export const AddLeadDialog = ({ onLeadAdded, triggerVariant = "hero" }: AddLeadDialogProps) => {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -167,7 +172,7 @@ export const AddLeadDialog = ({ onLeadAdded }: AddLeadDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="hero">
+        <Button variant={triggerVariant} size={triggerVariant === "hero" ? "default" : "sm"}>
           <Sparkles className="w-4 h-4 mr-2" />
           Add Lead
         </Button>
