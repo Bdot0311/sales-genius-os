@@ -144,9 +144,27 @@ describe("what crawlers actually read", () => {
   it("the per-route plugin agrees with the HTML it rewrites", () => {
     // The plugin overwrites these at build time, so a stale entry here silently
     // undoes index.html.
-    expect(PLUGIN).toContain('title: "B2B Cold Email Outbound With an AI SDR | OutReign"');
-    expect(PLUGIN).toContain('socialTitle: "The output of a sales team. Headcount of one."');
-    expect(PLUGIN).not.toContain("Your Next 100 B2B Prospects");
+    //
+    // This used to pin the homepage title as a literal, which meant the test
+    // failed the next time the title was edited even though the plugin and the
+    // HTML still agreed with each other — the thing it is actually here to
+    // check. It now compares the two, so renaming the page keeps it passing and
+    // changing only one of them is what fails.
+    const unescape = (v: string) =>
+      v.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"');
+
+    const htmlTitle = unescape(HTML.match(/<title>([\s\S]*?)<\/title>/)?.[1]?.trim() ?? "");
+    // The homepage entry is the first route in the plugin's list.
+    const pluginTitle = PLUGIN.match(/path: "\/",\s*\n\s*title: "([^"]+)"/)?.[1] ?? "";
+    expect(htmlTitle).not.toBe("");
+    expect(pluginTitle).toBe(htmlTitle);
+
+    const htmlOgTitle = unescape(
+      HTML.match(/<meta property="og:title" content="([^"]*)"/)?.[1] ?? "",
+    );
+    const pluginSocialTitle = PLUGIN.match(/socialTitle: "([^"]+)"/)?.[1] ?? "";
+    expect(htmlOgTitle).not.toBe("");
+    expect(pluginSocialTitle).toBe(htmlOgTitle);
   });
 
   it("the plugin writes social values into social tags", () => {
