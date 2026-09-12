@@ -39,6 +39,12 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         tag: "improved",
+        title: "Easy dashboard return",
+        description:
+          "The What's New page now has a clear Back to dashboard button, so you don't have to reach for the sidebar or refresh.",
+      },
+      {
+        tag: "improved",
         title: "AI SDR overview",
         description:
           "A dedicated page walks through how the AI SDR finds people, writes the first touch and follows up, so you know what to hand over to it.",
