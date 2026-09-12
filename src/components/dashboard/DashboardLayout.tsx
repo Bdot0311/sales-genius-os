@@ -32,6 +32,7 @@ import {
   Bot,
   Plug,
   MonitorPlay,
+  Sparkles,
 
 } from "lucide-react";
 import { User } from "@supabase/supabase-js";
@@ -45,6 +46,7 @@ import { useDemoMode } from "@/hooks/use-demo-mode";
 import { useOnboardingGate } from "@/hooks/use-onboarding-gate";
 import { ensureSession, startSessionKeeper } from "@/lib/session-keeper";
 import { ServiceStatusBanner } from "@/components/dashboard/ServiceStatusBanner";
+import { WhatsNewButton } from "@/components/dashboard/WhatsNewButton";
 
 
 
