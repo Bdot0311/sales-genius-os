@@ -45,6 +45,7 @@ import { useDemoMode } from "@/hooks/use-demo-mode";
 import { useOnboardingGate } from "@/hooks/use-onboarding-gate";
 import { ensureSession, startSessionKeeper } from "@/lib/session-keeper";
 import { ServiceStatusBanner } from "@/components/dashboard/ServiceStatusBanner";
+import { WhatsNewButton } from "@/components/dashboard/WhatsNewButton";
 
 
 
@@ -393,6 +394,9 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <div className="flex-1 min-w-0" />
           
           <div className="flex min-w-0 flex-shrink items-center gap-1 sm:gap-3">
+            {/* What's new — badge only while there's an unread update */}
+            <WhatsNewButton />
+
             {/* Demo Mode Badge */}
             {isDemoMode && (
               <Badge variant="outline" className="flex items-center gap-1 border-primary/40 bg-primary/10 text-primary text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 flex-shrink-0">
