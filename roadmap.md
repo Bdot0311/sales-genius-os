@@ -5,3 +5,5 @@
 - [x] Fix inbound webhook compatibility for providers without custom headers
 
 - [x] Fix edge function type-check build errors (auth-email-hook, check-copy-risk, ingest-dmarc-report)
+- [x] Fix mobile dashboard overflow and overlapping action controls
+- [x] Restore the existing Web Push notification settings flow

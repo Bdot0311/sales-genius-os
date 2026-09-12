@@ -392,7 +392,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </Button>
           <div className="flex-1 min-w-0" />
           
-          <div className="flex min-w-0 flex-shrink items-center gap-1 overflow-x-auto sm:gap-3">
+          <div className="flex min-w-0 flex-shrink items-center gap-1 sm:gap-3">
             {/* Demo Mode Badge */}
             {isDemoMode && (
               <Badge variant="outline" className="flex items-center gap-1 border-primary/40 bg-primary/10 text-primary text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 flex-shrink-0">
@@ -427,11 +427,11 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               </TooltipProvider>
             ) : credits && (
               <TooltipProvider>
-                <div className="flex items-center gap-1 flex-shrink-0">
+                  <div className="flex items-center gap-1 flex-shrink-0">
                   {/* Monthly Credits */}
-                  <Tooltip>
+                    <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md bg-muted/50 border border-border">
+                      <div className="hidden xs:flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md bg-muted/50 border border-border">
                         <Search className="w-3 h-3 text-primary flex-shrink-0" />
                         <span className="text-[10px] sm:text-sm font-semibold leading-tight whitespace-nowrap">
                           {credits.remainingCredits.toLocaleString()}/{credits.totalCredits.toLocaleString()}

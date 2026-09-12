@@ -254,17 +254,17 @@ const Settings = () => {
         noIndex
       />
       <PageHeader title="Settings" description="Account, preferences, and billing" />
-      <div className="px-6 py-6 space-y-6 max-w-[1400px] mx-auto">
+      <div className="w-full min-w-0 px-4 py-4 sm:px-6 sm:py-6 space-y-4 sm:space-y-6 max-w-[1400px] mx-auto">
         <Tabs defaultValue={searchParams.get("tab") ?? "profile"} className="space-y-6">
           {(() => {
             const showPro = isAdmin || subscription?.plan === 'pro' || subscription?.plan === 'agency';
             const isAgency = isAdmin || subscription?.plan === 'agency';
             const showGrowthPlus = isAdmin || ['growth', 'pro', 'agency'].includes(subscription?.plan || '');
-            const tabBase = "min-w-0 min-h-11 w-full whitespace-normal px-2 py-2 text-center leading-tight data-[state=active]:bg-muted data-[state=active]:text-foreground hover:bg-muted/50 gap-1.5 justify-center";
+            const tabBase = "min-w-0 min-h-11 w-full whitespace-normal px-2 py-2 text-center leading-tight data-[state=active]:bg-muted data-[state=active]:text-foreground hover:bg-muted/50 gap-1.5 justify-start sm:justify-center";
             // Fixed tracks prevent variable-width labels from colliding and keep desktop tabs to two rows.
             const listCls = "settings-tab-list grid h-auto min-h-0 w-full grid-cols-2 gap-2 overflow-visible bg-transparent p-0 sm:!h-auto sm:grid-cols-4 md:grid-cols-8";
             return (
-              <div className="bg-card border rounded-lg p-3 mb-6">
+              <div className="bg-card border rounded-lg p-2 sm:p-3 mb-4 sm:mb-6 overflow-hidden">
                 <TabsList className={listCls}>
                   <TabsTrigger value="profile" className={tabBase}><User className="h-4 w-4" />Profile</TabsTrigger>
                   <TabsTrigger value="billing" className={tabBase}><Settings2 className="h-4 w-4" />Billing</TabsTrigger>
