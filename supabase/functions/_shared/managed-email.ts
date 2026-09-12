@@ -7,8 +7,8 @@
 import { EmailAPIError, sendLovableEmail } from 'npm:@lovable.dev/email-js@0.1.0'
 
 export const SITE_NAME = 'OutReign'
-export const SENDER_DOMAIN = 'notify.bdotindustries.com'
-export const FROM_DOMAIN = 'notify.bdotindustries.com'
+export const SENDER_DOMAIN = 'notify.outreign.io'
+export const FROM_DOMAIN = 'notify.outreign.io'
 export const DEFAULT_FROM = `${SITE_NAME} <noreply@${FROM_DOMAIN}>`
 
 // Never send to reserved / synthetic test addresses. Automated smoke tests
