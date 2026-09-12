@@ -32,7 +32,6 @@ import {
   Bot,
   Plug,
   MonitorPlay,
-  Sparkles,
 
 } from "lucide-react";
 import { User } from "@supabase/supabase-js";
