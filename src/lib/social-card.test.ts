@@ -89,8 +89,22 @@ describe("search title and social title are separate", () => {
     expect(pluginTitle).toBe(indexTitle);
   });
 
-  it("the homepage social title carries the positioning", () => {
-    expect(INDEX).toContain('socialTitle="The output of a sales team. Headcount of one."');
+  it("the homepage social title agrees across all three copies", () => {
+    // This pinned the sentence itself and broke the moment the positioning was
+    // rewritten, which is not a bug — a title disagreeing with itself across
+    // the three files that carry it is. Same three as the search title:
+    // Index.tsx (runtime), index.html (what a non-JS crawler reads) and the
+    // prerender plugin's route table.
+    const indexSocial = INDEX.match(/\bsocialTitle="([^"]+)"/)?.[1] ?? "";
+    expect(indexSocial).not.toBe("");
+    for (const prop of ["og:title", "twitter:title"]) {
+      const attr = prop.startsWith("og:") ? "property" : "name";
+      const htmlSocial =
+        HTML.match(new RegExp(`<meta ${attr}="${prop}" content="([^"]+)"`))?.[1] ?? "";
+      expect(htmlSocial, prop).toBe(indexSocial);
+    }
+    const pluginSocial = PLUGIN.match(/path: "\/",[\s\S]{0,600}?socialTitle: "([^"]+)"/)?.[1] ?? "";
+    expect(pluginSocial).toBe(indexSocial);
   });
 
   it("no page still advertises the old hero", () => {
