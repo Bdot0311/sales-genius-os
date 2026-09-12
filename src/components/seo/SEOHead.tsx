@@ -54,8 +54,8 @@ interface SEOHeadProps {
 
 
 export const SEOHead = ({
-  title = "B2B Cold Email Outbound With an AI SDR",
-  description = "Describe your customer in plain English. Get ranked prospects with verified emails, a first draft for each, and an AI SDR that works the replies from your Gmail.",
+  title = "AI SDR & B2B Lead Generation Platform | OutReign",
+  description = "OutReign is an AI SDR and B2B lead generation platform. Find ranked prospects with verified emails, generate personalized outreach, and automate replies from Gmail.",
   canonicalUrl,
   ogImage = DEFAULT_OG_IMAGE,
   socialTitle,
