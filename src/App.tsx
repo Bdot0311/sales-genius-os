@@ -511,6 +511,7 @@ const App = () => {
                <Route path="/checkout" element={<Checkout />} />
                <Route path="/onboarding" element={<Onboarding />} />
                <Route path="/dashboard" element={<MaintenanceGuard><Dashboard /></MaintenanceGuard>} />
+              <Route path="/dashboard/whats-new" element={<MaintenanceGuard><WhatsNew /></MaintenanceGuard>} />
               <Route path="/dashboard/leads" element={<MaintenanceGuard><Leads /></MaintenanceGuard>} />
               <Route path="/dashboard/leads/saved" element={<MaintenanceGuard><SavedLeads /></MaintenanceGuard>} />
               <Route path="/dashboard/accounts" element={<MaintenanceGuard><Accounts /></MaintenanceGuard>} />
