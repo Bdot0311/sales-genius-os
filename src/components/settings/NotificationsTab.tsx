@@ -42,17 +42,18 @@ export default function NotificationsTab() {
     try {
       if (next) {
         await subscribeToPush();
-        setSubscribed(true);
-        setPermission("granted");
         toast.success("Push notifications enabled on this device");
       } else {
         await unsubscribeFromPush();
-        setSubscribed(false);
         toast.success("Push notifications disabled on this device");
       }
     } catch (e) {
       toast.error((e as Error).message || "Failed to update notifications");
     } finally {
+      // Always re-read the real device state so the switch can never lie.
+      const current = await getCurrentSubscription().catch(() => null);
+      setSubscribed(Boolean(current));
+      if (typeof Notification !== "undefined") setPermission(Notification.permission);
       setLoading(false);
     }
   };
@@ -126,11 +127,23 @@ export default function NotificationsTab() {
               />
             </div>
 
-            {subscribed && (
-          <Button onClick={sendTest} disabled={loading} variant="outline" className="w-full sm:w-auto">
-                {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Bell className="h-4 w-4 mr-2" />}
-                Send test notification
-              </Button>
+            <Button
+              onClick={sendTest}
+              disabled={loading || !subscribed}
+              variant="outline"
+              className="w-full sm:w-auto"
+            >
+              {loading ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Bell className="h-4 w-4 mr-2" />
+              )}
+              Send test notification
+            </Button>
+            {!subscribed && (
+              <p className="text-xs text-muted-foreground">
+                Turn the switch on to unlock the test notification.
+              </p>
             )}
           </>
         )}

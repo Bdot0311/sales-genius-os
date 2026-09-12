@@ -16,6 +16,7 @@ import {
 } from "../_shared/cold-email-playbook.ts";
 import { aiFetch } from "../_shared/ai-provider.ts";
 import { capToolsToTier, resolveAgentTier } from "../_shared/agent-tier-scope.ts";
+import { notifyUserPush } from "../_shared/notify-push.ts";
 
 
 
@@ -1643,6 +1644,15 @@ Output ONLY the reply body. No subject line or signature.`;
         errors,
       },
     });
+
+    if (leadsFound || outreachDrafted || outreachSent || repliesSent || pendingApprovals) {
+      await notifyUserPush(user.id, {
+        title: `${config.agent_name || "Your AI SDR"} finished a run`,
+        body: runSummary,
+        url: "/dashboard/agent",
+        tag: "agent-run",
+      });
+    }
 
     await captureServerEvent("agent_run_completed", user.id, {
       mode: approvalMode ? "approval" : "autonomous",
