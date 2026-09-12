@@ -50,6 +50,25 @@ describe("one search, one loading state", () => {
 });
 
 describe("mobile", () => {
+  it("the examples stay on one scrolling row", () => {
+    // They are whole sentences. flex-wrap gave each its own full-width pill at
+    // phone width and wrapped the longest onto two lines, so four suggestions
+    // took more room than the search they suggest for.
+    expect(CMD).toContain("overflow-x-auto");
+    expect(CMD).toContain("whitespace-nowrap");
+    expect(CMD).not.toContain('className="flex flex-wrap gap-1.5"');
+  });
+
+  it("header actions share rows instead of each taking one", () => {
+    // A global rule stacked every page-header action full-width on mobile.
+    // Three of them cost a third of the screen before the page began.
+    const CSS = readFileSync("src/index.css", "utf8");
+    const rule = CSS.slice(CSS.indexOf(".mobile-action-row {"));
+    expect(rule.slice(0, 400)).not.toContain("flex-direction: column");
+    expect(rule.slice(0, 400)).toContain("flex-wrap: wrap");
+    expect(rule.slice(0, 400)).not.toContain("width: 100%");
+  });
+
   it("the input does not trigger iOS zoom on focus", () => {
     // Anything under 16px makes Safari zoom the page when the field is focused.
     expect(CMD).toContain("text-base");

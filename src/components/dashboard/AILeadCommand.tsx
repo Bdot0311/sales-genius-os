@@ -107,7 +107,14 @@ export const AILeadCommand = ({ onSearch, isSearching }: AILeadCommandProps) => 
         </Button>
       </div>
 
-      <div className="flex flex-wrap gap-1.5">
+      {/* One scrolling row, not a wrapped stack.
+          These are whole sentences: at phone width flex-wrap gave each one its
+          own full-width pill, and the longest wrapped onto two lines, so four
+          suggestions read as a list of buttons and took more room than the
+          search they were suggesting for. Kept on a single line that scrolls,
+          they read as suggestions again. -mx-1 px-1 lets the row bleed to the
+          card edge so it is visibly scrollable rather than looking clipped. */}
+      <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
         {exampleCommands.map((example) => (
           <button
             key={example}
@@ -117,7 +124,7 @@ export const AILeadCommand = ({ onSearch, isSearching }: AILeadCommandProps) => 
               inputRef.current?.focus();
             }}
             disabled={disabled}
-            className="rounded-full border border-border/50 px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-border hover:text-foreground disabled:opacity-50"
+            className="shrink-0 whitespace-nowrap rounded-full border border-border/50 px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-border hover:text-foreground disabled:opacity-50"
           >
             {example}
           </button>

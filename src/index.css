@@ -209,15 +209,22 @@ All colors MUST be HSL. Using 8px spacing scale.
       overflow-wrap: anywhere;
     }
 
-    /* Keep action rows usable when labels or localized copy run long. */
+    /* Keep action rows usable when labels or localized copy run long.
+       They share rows rather than each taking one. Stacking every action
+       full-width cost a third of a phone screen on any page with three of
+       them — Leads has Saved Leads, Import and Add — before the page itself
+       began. Wrapping still catches the long-label case this was written for:
+       an action that cannot fit beside its neighbour drops to the next row on
+       its own, instead of all of them doing so unconditionally. */
     .mobile-action-row {
-      align-items: stretch;
-      flex-direction: column;
+      align-items: center;
+      flex-wrap: wrap;
     }
 
     .mobile-action-row > button,
     .mobile-action-row > [role="button"] {
-      width: 100%;
+      flex: 1 1 auto;
+      min-width: 9rem;
     }
 
 

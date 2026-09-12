@@ -210,8 +210,11 @@ const Leads = () => {
             <Tabs value={inputTab} onValueChange={setInputTab} className="w-full">
               {/* Scrolls rather than wrapping: four labels this long stack into a
                   2x2 block on a phone, which reads as two rows of buttons rather
-                  than one row of tabs. */}
-              <TabsList className="mb-4 flex h-auto w-full justify-start overflow-x-auto sm:w-auto">
+                  than one row of tabs.
+                  The negative margin plus padding lets the strip bleed to the
+                  screen edge, so a clipped tab reads as "there is more this way"
+                  instead of as a tab sliced in half by the container. */}
+              <TabsList className="-mx-1 mb-4 flex h-auto w-[calc(100%+0.5rem)] justify-start overflow-x-auto px-1 sm:mx-0 sm:w-auto sm:px-0">
                 <TabsTrigger value="describe" className="shrink-0">Describe your ICP</TabsTrigger>
                 <TabsTrigger value="website" className="shrink-0">Analyze your website</TabsTrigger>
                 <TabsTrigger value="companies" className="shrink-0">Target companies</TabsTrigger>
