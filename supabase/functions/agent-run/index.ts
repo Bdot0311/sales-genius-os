@@ -1644,6 +1644,15 @@ Output ONLY the reply body. No subject line or signature.`;
       },
     });
 
+    if (leadsFound || outreachDrafted || outreachSent || repliesSent || pendingApprovals) {
+      await notifyUserPush(user.id, {
+        title: `${config.agent_name || "Your AI SDR"} finished a run`,
+        body: runSummary,
+        url: "/dashboard/agent",
+        tag: "agent-run",
+      });
+    }
+
     await captureServerEvent("agent_run_completed", user.id, {
       mode: approvalMode ? "approval" : "autonomous",
       threads_checked: threadsChecked,
