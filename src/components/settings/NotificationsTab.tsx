@@ -6,48 +6,47 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  disableFcmPush,
-  enableFcmPush,
-  getExistingFcmToken,
-  isFcmConfigured,
-  isInPreviewFrame,
-} from "@/lib/fcm";
+  getCurrentSubscription,
+  isPushSupported,
+  subscribeToPush,
+  unsubscribeFromPush,
+} from "@/lib/push";
+
+function isPreviewEnvironment(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.self !== window.top ||
+      window.location.hostname.includes("id-preview--") ||
+      window.location.hostname.includes("lovableproject.com");
+  } catch {
+    return true;
+  }
+}
 
 export default function NotificationsTab() {
-  const [configured, setConfigured] = useState(true);
   const [inPreview, setInPreview] = useState(false);
+  const [supported, setSupported] = useState(true);
   const [subscribed, setSubscribed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>("default");
 
   useEffect(() => {
-    setConfigured(isFcmConfigured());
-    setInPreview(isInPreviewFrame());
+    setInPreview(isPreviewEnvironment());
+    setSupported(isPushSupported());
     if (typeof Notification !== "undefined") setPermission(Notification.permission);
-    void getExistingFcmToken().then((t) => setSubscribed(!!t));
+    void getCurrentSubscription().then((subscription) => setSubscribed(Boolean(subscription)));
   }, []);
 
   const toggle = async (next: boolean) => {
     setLoading(true);
     try {
       if (next) {
-        const result = await enableFcmPush();
-        if (result.status === "registered") {
-          setSubscribed(true);
-          setPermission("granted");
-          toast.success("Push notifications enabled on this device");
-        } else if (result.status === "open-in-new-tab") {
-          toast.error("Open the app in its own browser tab (or install it to your home screen) to enable notifications.");
-        } else if (result.status === "denied") {
-          setPermission(typeof Notification !== "undefined" ? Notification.permission : "denied");
-          toast.error("Notifications were blocked. Allow them for this site in your browser settings.");
-        } else if (result.status === "unsupported") {
-          toast.error("This browser does not support push notifications.");
-        } else {
-          toast.error("Push notifications are not configured yet.");
-        }
+        await subscribeToPush();
+        setSubscribed(true);
+        setPermission("granted");
+        toast.success("Push notifications enabled on this device");
       } else {
-        await disableFcmPush();
+        await unsubscribeFromPush();
         setSubscribed(false);
         toast.success("Push notifications disabled on this device");
       }
@@ -61,7 +60,7 @@ export default function NotificationsTab() {
   const sendTest = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("send-fcm-notification", {
+      const { data, error } = await supabase.functions.invoke("send-push-notification", {
         body: {
           title: "OutReign test notification",
           body: "If you can see this, push notifications are working.",
@@ -82,11 +81,11 @@ export default function NotificationsTab() {
     }
   };
 
-  const unavailable = !configured || inPreview;
+  const unavailable = inPreview || !supported;
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="overflow-hidden">
+      <CardHeader className="p-4 sm:p-6">
         <CardTitle className="flex items-center gap-2">
           <Bell className="h-5 w-5" />
           Push notifications
@@ -96,20 +95,20 @@ export default function NotificationsTab() {
           Install the app to your home screen for the best experience on mobile.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 p-4 pt-0 sm:p-6 sm:pt-0">
         {unavailable ? (
           <div className="rounded-lg border border-border bg-muted/30 p-4 text-sm text-muted-foreground flex items-start gap-2">
             <BellOff className="h-4 w-4 mt-0.5 flex-shrink-0" />
             <span>
-              {!configured
-                ? "Push notifications aren't finished setting up yet. The workspace still needs its web push keys (Firebase web API key and Web Push VAPID key) added before devices can register. We'll turn this on shortly."
-                : "Notifications can't be enabled inside this preview frame. Open the app in its own browser tab, or install it to your home screen (iOS 16.4+), then turn them on."}
+              {inPreview
+                ? "Notifications can't be enabled inside this preview. Open the published app in its own browser tab, or install it to your home screen, then turn them on."
+                : "Push notifications aren't supported by this browser. On iPhone or iPad, add OutReign to your home screen and open it there."}
             </span>
           </div>
         ) : (
           <>
-            <div className="flex items-center justify-between rounded-lg border border-border p-4 gap-4">
-              <div className="space-y-0.5">
+            <div className="flex items-start justify-between rounded-lg border border-border p-4 gap-3">
+              <div className="min-w-0 space-y-0.5">
                 <p className="font-medium">Enable on this device</p>
                 <p className="text-sm text-muted-foreground">
                   {permission === "denied"
@@ -120,6 +119,7 @@ export default function NotificationsTab() {
                 </p>
               </div>
               <Switch
+                className="mt-0.5 shrink-0"
                 checked={subscribed}
                 disabled={loading || permission === "denied"}
                 onCheckedChange={toggle}
@@ -127,7 +127,7 @@ export default function NotificationsTab() {
             </div>
 
             {subscribed && (
-              <Button onClick={sendTest} disabled={loading} variant="outline">
+          <Button onClick={sendTest} disabled={loading} variant="outline" className="w-full sm:w-auto">
                 {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Bell className="h-4 w-4 mr-2" />}
                 Send test notification
               </Button>

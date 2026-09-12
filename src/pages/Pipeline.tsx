@@ -111,7 +111,7 @@ const Pipeline = () => {
         actions={
           <>
             <Button variant="outline" size="sm" onClick={handleForecasting}>
-              <TrendingUp className="w-4 h-4 mr-2" />Forecast
+              <TrendingUp className="w-4 h-4 sm:mr-2" /><span className="hidden sm:inline">Forecast</span>
               {!features.revenueForecasting && <Sparkles className="w-3 h-3 ml-2 text-primary" />}
             </Button>
             <Button variant="outline" size="sm" onClick={handleCustomPipelines}>
@@ -121,7 +121,7 @@ const Pipeline = () => {
               {!features.customPipelines && <Sparkles className="w-3 h-3 ml-2 text-primary" />}
             </Button>
             <Button variant="hero" size="sm" onClick={() => setAddDialogOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />New Deal
+              <Plus className="w-4 h-4 sm:mr-2" /><span className="hidden sm:inline">New Deal</span><span className="sm:hidden">Add</span>
             </Button>
           </>
         }
@@ -131,15 +131,15 @@ const Pipeline = () => {
 
         {!features.automatedStageProgression && (
           <Card className="p-4 border-dashed border-primary/30 bg-primary/5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Sparkles className="w-5 h-5 text-primary" />
-                <div>
+            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+              <div className="flex min-w-0 items-start gap-3 sm:items-center">
+                <Sparkles className="w-5 h-5 shrink-0 text-primary" />
+                <div className="min-w-0">
                   <p className="font-medium">Automated Stage Progression</p>
                   <p className="text-sm text-muted-foreground">Let deals move through stages automatically based on engagement signals.</p>
                 </div>
               </div>
-              <Button variant="outline" size="sm" onClick={() => triggerGate('automatedStageProgression')}>Learn about automated stage progression</Button>
+              <Button className="w-full shrink-0 sm:w-auto" variant="outline" size="sm" onClick={() => triggerGate('automatedStageProgression')}>Learn more</Button>
             </div>
           </Card>
         )}

@@ -401,7 +401,7 @@ const Inbox = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="flex gap-4 h-[calc(100vh-220px)]">
+          <div className="flex gap-4 h-[calc(100dvh-220px)]">
             {/* Left: conversation list */}
             <div
               className={`w-full md:w-80 flex-shrink-0 flex-col border rounded-lg overflow-hidden ${
