@@ -62,8 +62,23 @@ describe("search title and social title are separate", () => {
     expect(HEAD).toContain("socialTitle ? formatPageTitle(socialTitle) : fullTitle");
   });
 
-  it("the homepage search title carries the keywords", () => {
-    expect(INDEX).toContain('title="B2B Cold Email Outbound With an AI SDR"');
+  it("the runtime homepage title matches the static one", () => {
+    // Three files carry this: Index.tsx (runtime, via SEOHead), index.html
+    // (the fallback a non-JS crawler reads) and vite-plugin-seo-routes.ts
+    // (build time). An SEO edit updated two of them and missed Index.tsx, so a
+    // crawler saw one title and a JS client saw another after hydration.
+    // Comparing them beats pinning a literal, which only catches the edit that
+    // touches this file.
+    const unescape = (v: string) =>
+      v.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"');
+    const htmlTitle = unescape(HTML.match(/<title>([\s\S]*?)<\/title>/)?.[1]?.trim() ?? "");
+    const indexTitle = INDEX.match(/\btitle="([^"]+)"/)?.[1] ?? "";
+    expect(indexTitle).not.toBe("");
+    // formatPageTitle appends the brand unless the title already carries it.
+    const formatted = indexTitle.toLowerCase().includes("outreign")
+      ? indexTitle
+      : `${indexTitle} | OutReign`;
+    expect(formatted).toBe(htmlTitle);
   });
 
   it("the homepage social title carries the positioning", () => {
@@ -130,8 +145,14 @@ describe("what crawlers actually read", () => {
   });
 
   it("gives search and social different titles", () => {
-    expect(HTML).toContain("<title>B2B Cold Email Outbound With an AI SDR | OutReign</title>");
-    expect(HTML).toContain('og:title" content="The output of a sales team. Headcount of one."');
+    // The point is that they differ, not what either one says. Pinning the
+    // strings made this fail on every copy edit while the thing it guards
+    // stayed true.
+    const title = HTML.match(/<title>([\s\S]*?)<\/title>/)?.[1]?.trim() ?? "";
+    const ogTitle = HTML.match(/<meta property="og:title" content="([^"]*)"/)?.[1] ?? "";
+    expect(title).not.toBe("");
+    expect(ogTitle).not.toBe("");
+    expect(ogTitle).not.toBe(title);
   });
 
   it("keeps the social description short enough to survive truncation", () => {
