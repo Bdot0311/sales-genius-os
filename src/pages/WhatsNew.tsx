@@ -46,6 +46,13 @@ const WhatsNew = () => {
       />
 
       <div className="mx-auto w-full max-w-3xl space-y-6">
+        <Button variant="ghost" size="sm" asChild className="-ml-2 w-fit">
+          <Link to="/dashboard">
+            <ArrowLeft className="mr-1 h-4 w-4" />
+            Back to dashboard
+          </Link>
+        </Button>
+
         <div className="space-y-2">
           <h1 className="text-2xl font-bold sm:text-3xl">What's new</h1>
           <p className="text-sm text-muted-foreground">
