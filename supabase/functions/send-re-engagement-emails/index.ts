@@ -37,11 +37,16 @@ serve(async (req) => {
   const authHeader = req.headers.get("Authorization") ?? "";
   const token = authHeader.replace(/^Bearer\s+/i, "").trim();
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  // Cron carries the rotating internal trigger secret, not the service-role key
+  // (the daily rotation replaced the key the schedule used to send), so accept
+  // both — otherwise every scheduled sweep is refused with a 401.
+  const internalSecret = Deno.env.get("INTERNAL_TRIGGER_SECRET") ?? "";
   let callerId: string | null = null;
   let isAuthed = false;
 
-  if (token && token === serviceKey) {
+  if (token && ((serviceKey && token === serviceKey) || (internalSecret && token === internalSecret))) {
     isAuthed = true;
+
   } else if (token) {
     const { data: userData } = await supabase.auth.getUser(token);
     if (userData?.user) {
