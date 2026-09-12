@@ -46,7 +46,31 @@ export async function getPushPermission(): Promise<NotificationPermission> {
 
 async function registerPushSW(): Promise<ServiceWorkerRegistration> {
   // Use a dedicated scope so it does not collide with the kill-switch /sw.js.
-  return navigator.serviceWorker.register(SW_PATH, { scope: "/push-sw/" });
+  const reg = await navigator.serviceWorker.register(SW_PATH, { scope: "/push-sw/" });
+  await waitForActivation(reg);
+  return reg;
+}
+
+/**
+ * navigator.serviceWorker.ready only resolves for a registration whose scope
+ * controls the current page. Our push worker lives under /push-sw/, so we must
+ * await this specific registration instead or the promise never settles.
+ */
+async function waitForActivation(reg: ServiceWorkerRegistration): Promise<void> {
+  if (reg.active) return;
+  const worker = reg.installing ?? reg.waiting;
+  if (!worker) return;
+  await new Promise<void>((resolve) => {
+    const done = () => {
+      if (worker.state === "activated" || worker.state === "redundant") {
+        worker.removeEventListener("statechange", done);
+        resolve();
+      }
+    };
+    worker.addEventListener("statechange", done);
+    // Safety net: never hang the UI on a worker that stalls.
+    setTimeout(resolve, 8000);
+  });
 }
 
 export async function getCurrentSubscription(): Promise<PushSubscription | null> {
