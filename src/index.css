@@ -221,10 +221,12 @@ All colors MUST be HSL. Using 8px spacing scale.
       flex-wrap: wrap;
     }
 
+    /* Natural width, wrapping left. Growing them meant the one that wrapped
+       became a full-width bar of its own, which is how a secondary action ends
+       up as the loudest element on the screen. */
     .mobile-action-row > button,
     .mobile-action-row > [role="button"] {
-      flex: 1 1 auto;
-      min-width: 9rem;
+      flex: 0 0 auto;
     }
 
 

@@ -216,7 +216,7 @@ const Leads = () => {
           </>
         }
       />
-      <div className="px-6 py-6 space-y-6 max-w-[1400px] mx-auto">
+      <div className="px-6 py-5 space-y-4 max-w-[1400px] mx-auto">
 
         {/* Free-leads exhausted upsell — shown only after the 100 free leads are used */}
         {isOutOfFreeLeads && (
@@ -263,14 +263,14 @@ const Leads = () => {
                     <TabsTrigger
                       key={mode.value}
                       value={mode.value}
-                      className="relative flex-1 rounded-none px-1 py-3 text-xs font-medium text-muted-foreground transition-colors after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:bg-transparent hover:text-foreground data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:after:bg-primary sm:px-5 sm:text-sm"
+                      className="relative flex-1 rounded-none px-1 py-2.5 text-xs font-medium text-muted-foreground transition-colors after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:bg-transparent hover:text-foreground data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:after:bg-primary sm:px-5 sm:text-sm"
                     >
                       {mode.label}
                     </TabsTrigger>
                   ))}
                 </TabsList>
 
-                <div className="p-4 sm:p-6">
+                <div className="p-4 sm:p-5">
 
               <TabsContent value="describe" className="mt-0">
             <AILeadCommand
@@ -449,7 +449,7 @@ const Leads = () => {
                     only on the billing page, so the one screen that consumes
                     credits was the one screen that never mentioned them. */}
                 {credits && (
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-border/50 bg-muted/20 px-4 py-2.5 text-xs text-muted-foreground sm:px-6">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-border/40 bg-muted/15 px-4 py-2 text-[0.6875rem] text-muted-foreground sm:px-5">
                     <span>
                       <span className="font-medium tabular-nums text-foreground">
                         {credits.remainingCredits.toLocaleString()}
@@ -489,17 +489,17 @@ const Leads = () => {
                 loaded rather than one waiting for input. Three hairline-split
                 panes on one surface, not three floating cards. */}
             {!showExternalLeads && (
-              <div className="grid overflow-hidden rounded-xl border border-border/40 sm:grid-cols-3">
+              <div className="grid overflow-hidden rounded-xl border border-border/30 sm:grid-cols-3">
                 {SEARCH_PRIMER.map((pane, i) => (
                   <div
                     key={pane.title}
-                    className={`px-5 py-5 ${i > 0 ? "border-t border-border/40 sm:border-l sm:border-t-0" : ""}`}
+                    className={`px-4 py-3.5 sm:px-5 sm:py-4 ${i > 0 ? "border-t border-border/30 sm:border-l sm:border-t-0" : ""}`}
                   >
-                    <p className="text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-muted-foreground/60">
+                    <p className="text-[0.625rem] font-medium uppercase tracking-[0.1em] text-muted-foreground/40">
                       {pane.step}
                     </p>
-                    <p className="mt-2 text-sm font-medium text-foreground">{pane.title}</p>
-                    <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{pane.body}</p>
+                    <p className="mt-1.5 text-[0.8125rem] font-medium text-foreground/90">{pane.title}</p>
+                    <p className="mt-1 text-[0.6875rem] leading-relaxed text-muted-foreground/70">{pane.body}</p>
                   </div>
                 ))}
               </div>

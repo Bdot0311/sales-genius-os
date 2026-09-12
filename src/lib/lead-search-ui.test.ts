@@ -116,12 +116,26 @@ describe("mobile", () => {
     for (const role of roles) {
       expect(role.length, role).toBeLessThanOrEqual(22);
     }
-    // the qualifier is the part allowed to run out of room, and it truncates
-    expect(CMD).toContain("truncate text-xs text-muted-foreground");
+    // The qualifier is the part allowed to run out of room, and it truncates
+    // rather than wrapping the row onto a second line. Matched on the element
+    // it belongs to, not on an exact class string, so restyling it is free and
+    // dropping the truncation is not.
+    expect(CMD).toMatch(/className="truncate[^"]*">\s*\{example\.qualifier\}/);
   });
 
-  it("the field and its button stack rather than splitting a 390px row", () => {
-    expect(CMD).toContain("flex flex-col gap-2 sm:flex-row");
+  it("the submit is inset in the field, not a full-width slab under it", () => {
+    // Stacked below the field it was a violet block the size of the input:
+    // the largest object on a phone screen, and greyed out most of the time
+    // because the field starts empty.
+    expect(CMD).toContain("absolute right-1.5 top-1/2");
+    expect(CMD).not.toContain("flex flex-col gap-2 sm:flex-row");
+  });
+
+  it("has a real type scale rather than one size for everything", () => {
+    // Flat type at generous spacing is what made this read as a signup form.
+    // The field, the suggestions and the chrome each sit a step apart.
+    const sizes = new Set([...CMD.matchAll(/text-\[([\d.]+)rem\]/g)].map((m) => m[1]));
+    expect(sizes.size).toBeGreaterThanOrEqual(3);
   });
 
   it("header actions share rows instead of each taking one", () => {

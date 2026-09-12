@@ -89,10 +89,15 @@ const pickExamples = () => {
  *
  * Stripping the costume was not by itself a design. What replaced it was one
  * hairline input floating in an otherwise empty page, which read as unfinished.
- * This version puts weight back deliberately: a tall field that looks like the
- * instrument the page is built around, and under it a real two-column list of
- * starting points that gives the panel height it has earned instead of height
- * it is padding out.
+ * A full-width violet submit under the field was the correction that overshot:
+ * the loudest object on a phone screen, and greyed out most of the time,
+ * because the field starts empty.
+ *
+ * What is here now is a single field with its submit inset, and under it a
+ * two-column list of starting points at a smaller size than the field. The
+ * hierarchy is the point: field, then suggestions, then chrome, with a real
+ * step between each. Flat type at generous spacing is what made the earlier
+ * versions read as a signup form rather than a tool.
  *
  * It does not narrate its own progress. It used to report that it was searching
  * while the results region reported the same thing directly underneath, so one
@@ -125,45 +130,45 @@ export const AILeadCommand = ({ onSearch, isSearching }: AILeadCommandProps) => 
   };
 
   return (
-    <div className="space-y-5">
-      <form onSubmit={handleSubmit} className="space-y-2.5">
-        {/* Stacked below sm. Side by side, the button leaves roughly 200px of
-            field on a 390px screen, which is not enough to see the sentence you
-            just typed. */}
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2.5">
-          <div className="relative flex-1">
-            <Search
-              className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-              aria-hidden
-            />
-            <input
-              ref={inputRef}
-              type="text"
-              value={command}
-              onChange={(e) => setCommand(e.target.value)}
-              placeholder="Founders at seed-stage fintech companies in the UK"
-              aria-label="Describe the leads you are looking for"
-              // 16px on mobile, or iOS zooms the page on focus.
-              className="h-12 w-full rounded-lg border border-border/50 bg-background/70 pl-10 pr-3.5 text-base text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-primary/60 focus:ring-2 focus:ring-primary/15 disabled:opacity-60 sm:text-sm"
-              disabled={disabled}
-            />
-          </div>
+    <div>
+      <form onSubmit={handleSubmit}>
+        {/* The submit sits inside the field.
+            Below it, full width, it was a violet slab the size of the input —
+            the largest and loudest object on a phone screen, and greyed out
+            most of the time because the field starts empty. Inset and compact,
+            it is a control on the field rather than a banner under it. */}
+        <div className="relative">
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70"
+            aria-hidden
+          />
+          <input
+            ref={inputRef}
+            type="text"
+            value={command}
+            onChange={(e) => setCommand(e.target.value)}
+            placeholder="Founders at fintech companies in the UK"
+            aria-label="Describe the leads you are looking for"
+            // 16px on mobile, or iOS zooms the page on focus.
+            className="h-12 w-full rounded-lg border border-border/40 bg-background/50 pl-9 pr-[5.5rem] text-base text-foreground outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-primary/50 focus:bg-background/80 disabled:opacity-60 sm:text-sm"
+            disabled={disabled}
+          />
           <Button
             type="submit"
             disabled={!command.trim() || disabled}
-            className="h-12 shrink-0 gap-2 px-6 text-sm sm:h-12"
+            className="absolute right-1.5 top-1/2 h-9 -translate-y-1/2 gap-1.5 px-3 text-xs font-medium"
           >
-            {disabled ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
-            <span>{disabled ? "Searching" : "Search"}</span>
+            {disabled ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
+            {disabled ? "Searching" : "Search"}
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground">
-          Plain English. Name the role, the kind of company, and where they are.
+        <p className="mt-2 text-[0.6875rem] leading-relaxed text-muted-foreground/70">
+          Plain English: the role, the kind of company, and where they are.
         </p>
       </form>
 
-      <div className="border-t border-border/40 pt-4">
-        <p className="text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-muted-foreground/70">
+      <div className="mt-4 border-t border-border/30 pt-3">
+        <p className="text-[0.625rem] font-medium uppercase tracking-[0.1em] text-muted-foreground/50">
           Start from one of these
         </p>
         <div className="mt-1 grid gap-x-8 sm:grid-cols-2">
@@ -176,12 +181,16 @@ export const AILeadCommand = ({ onSearch, isSearching }: AILeadCommandProps) => 
                 inputRef.current?.focus();
               }}
               disabled={disabled}
-              className="group -mx-2 flex items-baseline gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-primary/5 disabled:pointer-events-none disabled:opacity-50"
+              className="group -mx-2 flex items-baseline gap-2 rounded px-2 py-1 text-left transition-colors hover:bg-primary/5 disabled:pointer-events-none disabled:opacity-50"
             >
-              <span className="shrink-0 text-sm text-foreground">{example.role}</span>
-              <span className="truncate text-xs text-muted-foreground">{example.qualifier}</span>
+              <span className="shrink-0 text-[0.8125rem] font-medium text-foreground/90">
+                {example.role}
+              </span>
+              <span className="truncate text-[0.6875rem] text-muted-foreground/70">
+                {example.qualifier}
+              </span>
               <ArrowUpRight
-                className="ml-auto h-3.5 w-3.5 shrink-0 self-center text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                className="ml-auto h-3 w-3 shrink-0 self-center text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
                 aria-hidden
               />
             </button>
