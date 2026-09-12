@@ -1,8 +1,7 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, Send, CheckCircle } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface AILeadCommandProps {
   /**
@@ -12,8 +11,6 @@ interface AILeadCommandProps {
    */
   onSearch: (query: string) => void | Promise<void>;
   isSearching: boolean;
-  resultsCount?: number;
-  showResults?: boolean;
 }
 
 const allExampleCommands = [
@@ -31,21 +28,36 @@ const allExampleCommands = [
   "Directors of Engineering at telecommunications companies",
 ];
 
-// Show 4 random examples each time
 const getRandomExamples = () => {
   const shuffled = [...allExampleCommands].sort(() => 0.5 - Math.random());
   return shuffled.slice(0, 4);
 };
 
-export const AILeadCommand = ({ 
-  onSearch, 
-  isSearching, 
-  resultsCount = 0,
-  showResults = false 
-}: AILeadCommandProps) => {
+/**
+ * The search box, which is the page's primary action.
+ *
+ * It used to wear a terminal costume: fake macOS window buttons, a fake
+ * filename, a prompt glyph and a monospace input. None of it was a terminal —
+ * nothing about typing a sentence and pressing a button is terminal-like — so
+ * it was decoration impersonating an affordance, which is the one thing
+ * product UI cannot afford. It also carried a badge announcing the presence of
+ * AI, which told the user nothing they could act on.
+ *
+ * (The removed strings are described rather than quoted here: the test that
+ * guards this asserts they are absent from the file, and a comment repeating
+ * them verbatim fails it.)
+ *
+ * What replaced it is a single large input and nothing else. The examples sit
+ * under it as quiet chips because a blank box is a worse problem than a plain
+ * one, and violet appears only on the focus ring and the submit.
+ *
+ * It no longer narrates its own progress either. It reported "Searching B2B
+ * data sources..." while the results region reported the same thing directly
+ * underneath, so one search produced two spinners. Loading belongs where the
+ * results will appear, as their shape, not here as a caption.
+ */
+export const AILeadCommand = ({ onSearch, isSearching }: AILeadCommandProps) => {
   const [command, setCommand] = useState("");
-  const [isFocused, setIsFocused] = useState(false);
-  const [showSteps, setShowSteps] = useState([false, false, false]);
   const [exampleCommands] = useState(() => getRandomExamples());
   const inputRef = useRef<HTMLInputElement>(null);
   // `isSearching` only goes true once the search request is actually made, and
@@ -56,19 +68,6 @@ export const AILeadCommand = ({
   const [busy, setBusy] = useState(false);
   const disabled = busy || isSearching;
 
-  useEffect(() => {
-    if (showResults && resultsCount > 0) {
-      const timers = [
-        setTimeout(() => setShowSteps([true, false, false]), 300),
-        setTimeout(() => setShowSteps([true, true, false]), 600),
-        setTimeout(() => setShowSteps([true, true, true]), 900),
-      ];
-      return () => timers.forEach(clearTimeout);
-    } else {
-      setShowSteps([false, false, false]);
-    }
-  }, [showResults, resultsCount]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!command.trim() || disabled || dispatching.current) return;
@@ -77,126 +76,53 @@ export const AILeadCommand = ({
     try {
       await onSearch(command.trim());
     } finally {
-      // The handler dispatches the search and returns without waiting for it,
-      // so `isSearching` has already taken over by the time this runs.
       dispatching.current = false;
       setBusy(false);
     }
   };
 
-  const handleExampleClick = (example: string) => {
-    setCommand(example);
-    inputRef.current?.focus();
-  };
-
   return (
-    <Card className="border-primary/20 bg-gradient-to-br from-card via-card to-primary/5 overflow-hidden">
-      <CardContent className="p-6">
-        {/* Terminal Header */}
-        <div className="flex items-center gap-2 mb-4">
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-destructive/80" />
-            <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
-            <div className="w-3 h-3 rounded-full bg-green-500/80" />
-          </div>
-          <span className="ml-2 text-xs text-muted-foreground font-mono">ai-lead-generator</span>
-          <Badge variant="secondary" className="ml-auto text-xs">
-            <Sparkles className="w-3 h-3 mr-1" />
-            AI-Powered
-          </Badge>
-        </div>
-
-        {/* Command Input */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div 
-            className={`relative flex items-center gap-2 p-3 bg-background/50 border rounded-lg transition-all duration-200 ${
-              isFocused ? 'border-primary ring-2 ring-primary/20' : 'border-border/50'
-            }`}
-          >
-            <span className="text-primary font-mono shrink-0">→</span>
-            <input
-              ref={inputRef}
-              type="text"
-              value={command}
-              onChange={(e) => setCommand(e.target.value)}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
-              placeholder="Describe the leads you're looking for..."
-              className="flex-1 bg-transparent border-none outline-none font-mono text-sm text-foreground placeholder:text-muted-foreground"
-              disabled={disabled}
-            />
-            <Button 
-              type="submit" 
-              size="sm" 
-              variant="hero"
-              disabled={!command.trim() || disabled}
-              className="shrink-0"
-            >
-              {disabled ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Send className="w-4 h-4" />
-              )}
-            </Button>
-          </div>
-
-          {/* Example Commands */}
-          {!showResults && (
-            <div className="space-y-2">
-              <p className="text-xs text-muted-foreground">Try these examples:</p>
-              <div className="flex flex-wrap gap-2">
-                {exampleCommands.map((example, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => handleExampleClick(example)}
-                    className="px-2.5 py-1 text-xs bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground rounded-md transition-colors border border-transparent hover:border-border"
-                  >
-                    {example}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </form>
-
-        {/* Results Animation */}
-        {(disabled || showResults) && (
-          <div className="mt-4 pt-4 border-t border-border/50 space-y-2 font-mono text-sm">
-            {disabled && (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                <span>Searching B2B data sources...</span>
-              </div>
-            )}
-            
-            {showResults && !disabled && (
-              <>
-                <div 
-                  className={`flex items-center gap-2 transition-all duration-300 ${showSteps[0] ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}
-                >
-                  <CheckCircle className="w-4 h-4 text-green-400" />
-                  <span className="text-muted-foreground">
-                    Found <span className="text-primary font-semibold">{resultsCount}</span> qualified leads
-                  </span>
-                </div>
-                <div 
-                  className={`flex items-center gap-2 transition-all duration-300 ${showSteps[1] ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}
-                >
-                  <CheckCircle className="w-4 h-4 text-green-400" />
-                  <span className="text-muted-foreground">ICP scores calculated</span>
-                </div>
-                <div 
-                  className={`flex items-center gap-2 transition-all duration-300 ${showSteps[2] ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}
-                >
-                  <CheckCircle className="w-4 h-4 text-green-400" />
-                  <span className="text-muted-foreground">Ready to activate</span>
-                </div>
-              </>
-            )}
-          </div>
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <div
+        className={cn(
+          "flex items-center gap-2 rounded-xl border bg-background/60 px-3 transition-colors",
+          "border-border/60 focus-within:border-primary/70 focus-within:ring-2 focus-within:ring-primary/20",
         )}
-      </CardContent>
-    </Card>
+      >
+        <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+        <input
+          ref={inputRef}
+          type="text"
+          value={command}
+          onChange={(e) => setCommand(e.target.value)}
+          placeholder="Founders at seed-stage fintech companies in the UK"
+          aria-label="Describe the leads you are looking for"
+          // 16px on mobile, or iOS zooms the page on focus.
+          className="h-14 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground/70 sm:text-sm"
+          disabled={disabled}
+        />
+        <Button type="submit" size="sm" disabled={!command.trim() || disabled} className="shrink-0 gap-2">
+          {disabled ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
+          <span>{disabled ? "Searching" : "Search"}</span>
+        </Button>
+      </div>
+
+      <div className="flex flex-wrap gap-1.5">
+        {exampleCommands.map((example) => (
+          <button
+            key={example}
+            type="button"
+            onClick={() => {
+              setCommand(example);
+              inputRef.current?.focus();
+            }}
+            disabled={disabled}
+            className="rounded-full border border-border/50 px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-border hover:text-foreground disabled:opacity-50"
+          >
+            {example}
+          </button>
+        ))}
+      </div>
+    </form>
   );
 };

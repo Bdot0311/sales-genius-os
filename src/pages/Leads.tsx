@@ -8,12 +8,13 @@ import { AddLeadDialog } from "@/components/dashboard/AddLeadDialog";
 import { ImportLeadsDialog } from "@/components/dashboard/ImportLeadsDialog";
 import { ExternalLeadsTable } from "@/components/dashboard/ExternalLeadsTable";
 import { AILeadCommand } from "@/components/dashboard/AILeadCommand";
+import { Skeleton } from "@/components/ui/skeleton";
 import { DomainICPBuilder } from "@/components/dashboard/DomainICPBuilder";
 import { TargetCompanies } from "@/components/dashboard/TargetCompanies";
 import { FindPerson } from "@/components/dashboard/FindPerson";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { buildExternalFilters, ParsedIcpFilters } from "@/lib/lead-filters";
-import { Sparkles, Loader2, Users, RefreshCw, Lock, CreditCard, ChevronLeft, ChevronRight } from "lucide-react";
+import { Sparkles, Users, RefreshCw, CreditCard, ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -207,11 +208,14 @@ const Leads = () => {
         {canAccessLeadGen && (
           <>
             <Tabs value={inputTab} onValueChange={setInputTab} className="w-full">
-              <TabsList className="mb-4 flex flex-wrap h-auto">
-                <TabsTrigger value="describe">Describe your ICP</TabsTrigger>
-                <TabsTrigger value="website">Analyze your website</TabsTrigger>
-                <TabsTrigger value="companies">Target companies</TabsTrigger>
-                <TabsTrigger value="person">Find a person</TabsTrigger>
+              {/* Scrolls rather than wrapping: four labels this long stack into a
+                  2x2 block on a phone, which reads as two rows of buttons rather
+                  than one row of tabs. */}
+              <TabsList className="mb-4 flex h-auto w-full justify-start overflow-x-auto sm:w-auto">
+                <TabsTrigger value="describe" className="shrink-0">Describe your ICP</TabsTrigger>
+                <TabsTrigger value="website" className="shrink-0">Analyze your website</TabsTrigger>
+                <TabsTrigger value="companies" className="shrink-0">Target companies</TabsTrigger>
+                <TabsTrigger value="person" className="shrink-0">Find a person</TabsTrigger>
               </TabsList>
 
 
@@ -364,8 +368,6 @@ const Leads = () => {
                 }
               }}
               isSearching={externalLoading}
-              resultsCount={externalLeads.length}
-              showResults={showExternalLeads && externalLeads.length > 0 && !externalLoading}
             />
               </TabsContent>
 
@@ -434,9 +436,22 @@ const Leads = () => {
             </CardHeader>
             <CardContent>
               {externalLoading ? (
-                <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
-                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                  <span>Searching B2B data sources...</span>
+                /* Rows in the shape the results will take, so the page does not
+                   reflow when they land and the wait reads as progress rather
+                   than as nothing happening. The command box above no longer
+                   reports this: it was saying the same sentence at the same
+                   time, so one search produced two spinners. */
+                <div className="space-y-2" role="status" aria-label="Searching for leads">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="flex items-center gap-3 rounded-lg border border-border/40 p-3">
+                      <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <Skeleton className="h-3.5 w-[42%]" />
+                        <Skeleton className="h-3 w-[65%]" />
+                      </div>
+                      <Skeleton className="hidden h-8 w-16 shrink-0 rounded-md sm:block" />
+                    </div>
+                  ))}
                 </div>
               ) : externalLeads.length > 0 ? (
                 <div className="space-y-4">
