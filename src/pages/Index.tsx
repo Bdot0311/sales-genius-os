@@ -135,9 +135,9 @@ const Index = () => {
   return (
     <>
       <SEOHead
-        title="B2B Cold Email Outbound With an AI SDR"
+        title="OutReign — The AI SDR That Runs Your Entire Outbound Pipeline"
         socialTitle="The output of a sales team. Headcount of one."
-        description="Describe your customer in plain English. Get ranked prospects with verified emails, a first draft for each, and an AI SDR that works the replies from your Gmail."
+        description="OutReign is the AI SDR that replaces prospecting. Describe your customer, get ranked leads with verified emails, and let AI handle replies from Gmail."
         keywords="B2B lead generation, lead discovery, outbound email software, ICP scoring, SMTP verified emails, plain English lead search, B2B prospecting, AI email drafting, email enrichment, outbound sales automation, find B2B leads, lead scoring software, B2B email outreach"
       />
       <SoftwareApplicationSchema />
