@@ -48,6 +48,35 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
   const signupFormOpenedAt = useRef(Date.now());
   const [googleLoading, setGoogleLoading] = useState(false);
   const { toast } = useToast();
+  // Set when a sign-in is refused because the address was never verified, so we
+  // can offer the link again instead of leaving the person stuck.
+  const [unconfirmedEmail, setUnconfirmedEmail] = useState("");
+  const [resendLoading, setResendLoading] = useState(false);
+
+  const handleResendConfirmation = async () => {
+    setResendLoading(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: unconfirmedEmail,
+        options: { emailRedirectTo: `${window.location.origin}/` },
+      });
+      if (error) throw error;
+      toast({
+        title: "Verification email sent",
+        description: `We sent a new link to ${unconfirmedEmail}. It can take a minute to arrive.`,
+      });
+    } catch (err: any) {
+      toast({
+        title: "Couldn't resend the email",
+        description: err?.message || "Please try again in a moment.",
+        variant: "destructive",
+      });
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
 
   const handleGoogleAuth = async () => {
     setGoogleLoading(true);
@@ -130,6 +159,7 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
           return;
         }
         if (signInError.message.toLowerCase().includes("email not confirmed")) {
+          setUnconfirmedEmail(email);
           toast({
             title: "Verify your email",
             description:
@@ -138,6 +168,7 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
           });
           return;
         }
+
         throw signInError;
       }
 
@@ -463,6 +494,24 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
                   Sign In
                 </Button>
               </form>
+
+              {unconfirmedEmail && (
+                <div className="rounded-lg border border-border/60 bg-muted/40 p-3 text-sm">
+                  <p className="text-muted-foreground">
+                    Your email isn't verified yet. Check your inbox for the link we sent to{" "}
+                    <span className="text-foreground">{unconfirmedEmail}</span>.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleResendConfirmation}
+                    disabled={resendLoading}
+                    className="mt-2 text-primary hover:underline disabled:opacity-60"
+                  >
+                    {resendLoading ? "Sending…" : "Send the verification email again"}
+                  </button>
+                </div>
+              )}
+
 
               <div className="text-center">
                 <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
