@@ -3,11 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { UserSearch, Loader2, Search, Mail, Phone, Linkedin, Building2, CheckCircle2 } from "lucide-react";
+import { Loader2, Search, Mail, Phone, Linkedin, Building2, CheckCircle2 } from "lucide-react";
 
 interface FoundPerson {
   id?: string | null;
@@ -79,13 +78,8 @@ export const FindPerson = () => {
   };
 
   return (
-    <Card className="border-primary/20 bg-gradient-to-br from-card via-card to-primary/5 overflow-hidden">
-      <CardContent className="p-6 space-y-5">
+    <div className="space-y-5">
         <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <UserSearch className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium">Find a person</span>
-          </div>
           <p className="text-xs text-muted-foreground">
             Know who you want to reach but not how? Enter their name and company — or an email or LinkedIn
             profile — and we'll fill in the rest of the contact record.
@@ -200,7 +194,6 @@ export const FindPerson = () => {
             </Button>
           </div>
         )}
-      </CardContent>
-    </Card>
+    </div>
   );
 };

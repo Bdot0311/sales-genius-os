@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Button, type ButtonProps } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,10 +16,15 @@ import { format } from "date-fns";
 import { posthog } from "@/lib/posthog";
 
 interface ImportLeadsDialogProps {
+  /**
+   * The trigger's weight is the caller's call: on the leads page the primary
+   * action is the search, so importing should not out-shout it.
+   */
+  triggerVariant?: ButtonProps["variant"];
   onImportComplete?: () => void;
 }
 
-export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) => {
+export const ImportLeadsDialog = ({ onImportComplete, triggerVariant }: ImportLeadsDialogProps) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [source, setSource] = useState<string>("");
@@ -525,9 +530,9 @@ export const ImportLeadsDialog = ({ onImportComplete }: ImportLeadsDialogProps) 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
+        <Button variant={triggerVariant} size="sm">
           <Upload className="w-4 h-4 mr-2" />
-          Import Leads
+          Import
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col overflow-hidden">

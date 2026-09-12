@@ -52,6 +52,8 @@ describe("one social card URL, not twelve", () => {
 describe("search title and social title are separate", () => {
   const HEAD = readFileSync("src/components/seo/SEOHead.tsx", "utf8");
   const INDEX = readFileSync("src/pages/Index.tsx", "utf8");
+  const HTML = readFileSync("index.html", "utf8");
+  const PLUGIN = readFileSync("vite-plugin-seo-routes.ts", "utf8");
 
   it("social tags read a title of their own", () => {
     expect(HEAD).toContain("socialTitle");
@@ -79,6 +81,12 @@ describe("search title and social title are separate", () => {
       ? indexTitle
       : `${indexTitle} | OutReign`;
     expect(formatted).toBe(htmlTitle);
+
+    // Third copy: the prerender plugin's route table, which is what a crawler
+    // gets on every route other than "/".
+    const pluginTitle = PLUGIN.match(/path: "\/",\s*\n\s*title: "([^"]+)"/)?.[1] ?? "";
+    expect(pluginTitle).not.toBe("");
+    expect(pluginTitle).toBe(indexTitle);
   });
 
   it("the homepage social title carries the positioning", () => {
