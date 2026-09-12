@@ -95,7 +95,7 @@ export async function subscribeToPush(): Promise<PushSubscription> {
   }
 
   const reg = await registerPushSW();
-  await navigator.serviceWorker.ready;
+
 
   let subscription = await reg.pushManager.getSubscription();
   if (!subscription) {
