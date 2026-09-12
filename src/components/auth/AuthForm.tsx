@@ -495,6 +495,24 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
                 </Button>
               </form>
 
+              {unconfirmedEmail && (
+                <div className="rounded-lg border border-border/60 bg-muted/40 p-3 text-sm">
+                  <p className="text-muted-foreground">
+                    Your email isn't verified yet. Check your inbox for the link we sent to{" "}
+                    <span className="text-foreground">{unconfirmedEmail}</span>.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleResendConfirmation}
+                    disabled={resendLoading}
+                    className="mt-2 text-primary hover:underline disabled:opacity-60"
+                  >
+                    {resendLoading ? "Sending…" : "Send the verification email again"}
+                  </button>
+                </div>
+              )}
+
+
               <div className="text-center">
                 <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
                   <DialogTrigger asChild>
