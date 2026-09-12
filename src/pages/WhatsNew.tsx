@@ -1,8 +1,10 @@
 import { useEffect } from "react";
+import { Link } from "react-router-dom";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Wrench, Bug, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Sparkles, Wrench, Bug, Clock, ArrowLeft } from "lucide-react";
 import { CHANGELOG, TAG_LABELS, type ChangelogTag } from "@/lib/changelog";
 import { useWhatsNew } from "@/hooks/use-whats-new";
 
