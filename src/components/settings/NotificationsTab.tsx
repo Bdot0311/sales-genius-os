@@ -127,11 +127,23 @@ export default function NotificationsTab() {
               />
             </div>
 
-            {subscribed && (
-          <Button onClick={sendTest} disabled={loading} variant="outline" className="w-full sm:w-auto">
-                {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Bell className="h-4 w-4 mr-2" />}
-                Send test notification
-              </Button>
+            <Button
+              onClick={sendTest}
+              disabled={loading || !subscribed}
+              variant="outline"
+              className="w-full sm:w-auto"
+            >
+              {loading ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Bell className="h-4 w-4 mr-2" />
+              )}
+              Send test notification
+            </Button>
+            {!subscribed && (
+              <p className="text-xs text-muted-foreground">
+                Turn the switch on to unlock the test notification.
+              </p>
             )}
           </>
         )}
