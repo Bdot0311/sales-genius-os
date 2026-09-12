@@ -27,10 +27,14 @@ serve(async (req) => {
   const authHeader = req.headers.get("Authorization") ?? "";
   const token = authHeader.replace(/^Bearer\s+/i, "").trim();
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  // Cron/DB triggers carry the rotating internal secret rather than the
+  // service-role key, so accept either.
+  const internalSecret = Deno.env.get("INTERNAL_TRIGGER_SECRET") ?? "";
   let isAuthed = false;
 
-  if (token && token === serviceKey) {
+  if (token && ((serviceKey && token === serviceKey) || (internalSecret && token === internalSecret))) {
     isAuthed = true;
+
   } else if (token) {
     const { data: userData } = await supabase.auth.getUser(token);
     if (userData?.user) {
