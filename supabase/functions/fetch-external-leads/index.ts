@@ -1105,6 +1105,10 @@ serve(async (req) => {
     // and the spend telemetry cannot tell the two apart — which is exactly the
     // number needed to judge whether the fallback is worth its credits.
     let sourcedFromColdIq = false;
+    // Set when the fallback provider refused for billing reasons. An empty
+    // result then means "we could not look", not "nobody matched" — and the two
+    // need different copy, or the user edits filters that were never the problem.
+    let providerUnavailable = false;
 
     console.log('=== REQUEST TO RAILWAY ===');
     console.log('URL:', railwayUrl);
@@ -1660,6 +1664,9 @@ serve(async (req) => {
         const { records, error: cqErr } = await coldiqSearchPeople(cq);
         if (cqErr) {
           console.error('[coldiq] fallback failed:', cqErr);
+          if (cqErr === COLDIQ_CREDITS_ERROR || /credit|balance|402/i.test(cqErr)) {
+            providerUnavailable = true;
+          }
         } else if (records.length > 0) {
           sourcedFromColdIq = true;
           // Through the same mapper as every other provider: it resolves field
