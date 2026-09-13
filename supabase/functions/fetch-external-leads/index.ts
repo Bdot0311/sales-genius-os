@@ -26,7 +26,7 @@ import { verifyEmails, hasPaidVerifier, type VerificationStatus } from "../_shar
 import { emailDomainMismatch, isCompanyLinkedIn, isPersonLinkedIn, normalizeDomain } from "../_shared/email-rules.ts";
 // Last-resort lead sourcing. Only runs when the primary provider returned
 // nothing — see _shared/coldiq.ts for why there is no "always" mode.
-import { coldiqLeadsMode, coldiqSearchPeople, coldiqConfigured } from "../_shared/coldiq.ts";
+import { coldiqLeadsMode, coldiqSearchPeople, coldiqConfigured, COLDIQ_CREDITS_ERROR } from "../_shared/coldiq.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -1680,16 +1680,22 @@ serve(async (req) => {
 
     // If all retries exhausted, log schema for diagnosis and refund.
     if (rawLeads.length === 0) {
+      // Diagnostic only, and strictly time-boxed: this runs after several
+      // provider round-trips have already elapsed, so an unbounded probe here is
+      // what pushes a slow search past the gateway timeout into a 504.
       console.log('All retries returned 0 leads — fetching Railway schema for diagnosis...');
       try {
-        const schemaRes = await fetch(`${baseUrl}/openapi.json`, { headers: railwayHeaders });
+        const schemaRes = await fetch(`${baseUrl}/openapi.json`, {
+          headers: railwayHeaders,
+          signal: AbortSignal.timeout(4000),
+        });
         if (schemaRes.ok) {
           const schema = await schemaRes.json();
           console.log('=== RAILWAY OPENAPI SCHEMA ===');
           console.log(JSON.stringify(schema, null, 2).substring(0, 8000));
         } else {
           console.log('Schema not available:', schemaRes.status);
-          const rootRes = await fetch(baseUrl, { headers: railwayHeaders });
+          const rootRes = await fetch(baseUrl, { headers: railwayHeaders, signal: AbortSignal.timeout(4000) });
           console.log('Root endpoint:', rootRes.status, (await rootRes.text()).substring(0, 500));
         }
       } catch (probeErr) { console.log('Schema probe failed:', probeErr); }
