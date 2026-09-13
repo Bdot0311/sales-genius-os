@@ -26,7 +26,7 @@ import { verifyEmails, hasPaidVerifier, type VerificationStatus } from "../_shar
 import { emailDomainMismatch, isCompanyLinkedIn, isPersonLinkedIn, normalizeDomain } from "../_shared/email-rules.ts";
 // Last-resort lead sourcing. Only runs when the primary provider returned
 // nothing — see _shared/coldiq.ts for why there is no "always" mode.
-import { coldiqLeadsMode, coldiqSearchPeople, coldiqConfigured } from "../_shared/coldiq.ts";
+import { coldiqLeadsMode, coldiqSearchPeople, coldiqConfigured, COLDIQ_CREDITS_ERROR } from "../_shared/coldiq.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -1105,6 +1105,10 @@ serve(async (req) => {
     // and the spend telemetry cannot tell the two apart — which is exactly the
     // number needed to judge whether the fallback is worth its credits.
     let sourcedFromColdIq = false;
+    // Set when the fallback provider refused for billing reasons. An empty
+    // result then means "we could not look", not "nobody matched" — and the two
+    // need different copy, or the user edits filters that were never the problem.
+    let providerUnavailable = false;
 
     console.log('=== REQUEST TO RAILWAY ===');
     console.log('URL:', railwayUrl);
@@ -1660,6 +1664,9 @@ serve(async (req) => {
         const { records, error: cqErr } = await coldiqSearchPeople(cq);
         if (cqErr) {
           console.error('[coldiq] fallback failed:', cqErr);
+          if (cqErr === COLDIQ_CREDITS_ERROR || /credit|balance|402/i.test(cqErr)) {
+            providerUnavailable = true;
+          }
         } else if (records.length > 0) {
           sourcedFromColdIq = true;
           // Through the same mapper as every other provider: it resolves field
@@ -1673,16 +1680,22 @@ serve(async (req) => {
 
     // If all retries exhausted, log schema for diagnosis and refund.
     if (rawLeads.length === 0) {
+      // Diagnostic only, and strictly time-boxed: this runs after several
+      // provider round-trips have already elapsed, so an unbounded probe here is
+      // what pushes a slow search past the gateway timeout into a 504.
       console.log('All retries returned 0 leads — fetching Railway schema for diagnosis...');
       try {
-        const schemaRes = await fetch(`${baseUrl}/openapi.json`, { headers: railwayHeaders });
+        const schemaRes = await fetch(`${baseUrl}/openapi.json`, {
+          headers: railwayHeaders,
+          signal: AbortSignal.timeout(4000),
+        });
         if (schemaRes.ok) {
           const schema = await schemaRes.json();
           console.log('=== RAILWAY OPENAPI SCHEMA ===');
           console.log(JSON.stringify(schema, null, 2).substring(0, 8000));
         } else {
           console.log('Schema not available:', schemaRes.status);
-          const rootRes = await fetch(baseUrl, { headers: railwayHeaders });
+          const rootRes = await fetch(baseUrl, { headers: railwayHeaders, signal: AbortSignal.timeout(4000) });
           console.log('Root endpoint:', rootRes.status, (await rootRes.text()).substring(0, 500));
         }
       } catch (probeErr) { console.log('Schema probe failed:', probeErr); }
@@ -1704,12 +1717,19 @@ serve(async (req) => {
           applied_filters: applied,
           // The UI offers a broaden action, which re-runs with relax: true and
           // reports back whatever it dropped in relaxed_filters.
-          can_broaden: !filters.relax && !filters.strict,
-          message: applied.length
-            ? `No leads match all of: ${applied.join(' · ')}. Nothing broader was searched — `
-              + 'results that stopped matching your description are worse than none. '
-              + 'Loosen a filter, or broaden this search to see what a wider version returns.'
-            : 'No leads found for this search. Try different search criteria.',
+          can_broaden: !providerUnavailable && !filters.relax && !filters.strict,
+          provider_unavailable: providerUnavailable,
+          // A provider that refused to answer is not the same as a search that
+          // matched nobody. Telling the user to loosen filters in that case
+          // sends them to edit an ICP that was never the problem.
+          message: providerUnavailable
+            ? 'Our lead data network is temporarily unavailable, so this search could not be '
+              + 'completed. Your search credit was not used — please try again shortly.'
+            : applied.length
+              ? `No leads match all of: ${applied.join(' · ')}. Nothing broader was searched — `
+                + 'results that stopped matching your description are worse than none. '
+                + 'Loosen a filter, or broaden this search to see what a wider version returns.'
+              : 'No leads found for this search. Try different search criteria.',
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );

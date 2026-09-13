@@ -435,7 +435,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                   {/* Monthly Credits */}
                     <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="hidden xs:flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md bg-muted/50 border border-border">
+                      <div className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md bg-muted/50 border border-border flex-shrink-0">
                         <Search className="w-3 h-3 text-primary flex-shrink-0" />
                         <span className="text-[10px] sm:text-sm font-semibold leading-tight whitespace-nowrap">
                           {credits.remainingCredits.toLocaleString()}/{credits.totalCredits.toLocaleString()}
