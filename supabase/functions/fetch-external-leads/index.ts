@@ -1717,12 +1717,19 @@ serve(async (req) => {
           applied_filters: applied,
           // The UI offers a broaden action, which re-runs with relax: true and
           // reports back whatever it dropped in relaxed_filters.
-          can_broaden: !filters.relax && !filters.strict,
-          message: applied.length
-            ? `No leads match all of: ${applied.join(' · ')}. Nothing broader was searched — `
-              + 'results that stopped matching your description are worse than none. '
-              + 'Loosen a filter, or broaden this search to see what a wider version returns.'
-            : 'No leads found for this search. Try different search criteria.',
+          can_broaden: !providerUnavailable && !filters.relax && !filters.strict,
+          provider_unavailable: providerUnavailable,
+          // A provider that refused to answer is not the same as a search that
+          // matched nobody. Telling the user to loosen filters in that case
+          // sends them to edit an ICP that was never the problem.
+          message: providerUnavailable
+            ? 'Our lead data network is temporarily unavailable, so this search could not be '
+              + 'completed. Your search credit was not used — please try again shortly.'
+            : applied.length
+              ? `No leads match all of: ${applied.join(' · ')}. Nothing broader was searched — `
+                + 'results that stopped matching your description are worse than none. '
+                + 'Loosen a filter, or broaden this search to see what a wider version returns.'
+              : 'No leads found for this search. Try different search criteria.',
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
