@@ -95,6 +95,17 @@ function fromErrorCode(input: SearchErrorInput): SearchErrorToast | null {
           "Could not reach the lead data provider. No credit was used — this is usually temporary, please try again in a moment.",
       };
 
+    // Distinct from the two above on purpose. The search ran and the providers
+    // answered; it simply took longer than anyone was willing to wait. Calling
+    // that "could not reach the provider" sends the reader to a provider
+    // dashboard where nothing is wrong, which is exactly what happened.
+    case "upstream_timeout":
+      return {
+        title: "Search took too long",
+        description:
+          "The search was stopped before it finished. No credit was used — a narrower search (fewer titles, one country, a smaller page) usually returns in time.",
+      };
+
     case "fetch_error":
       return {
         title: "Search failed",
