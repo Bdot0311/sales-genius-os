@@ -907,6 +907,42 @@ serve(async (req) => {
     // Ensure we always hit the /search endpoint, regardless of how the secret is configured
     const baseUrl = railwayBaseUrl.replace(/\/+$/, '').replace(/\/(search|docs|health)$/, '');
     const railwayUrl = `${baseUrl}/search`;
+
+    // A search that never returns is worse than a short one.
+    //
+    // The backend walks its provider chain inside a 75-second budget, so a call
+    // that has not answered in 90 has not been slow — it has been abandoned,
+    // and this function will be killed for its own wall clock long before it
+    // hears back. Production ran three sequential variants of 101, 100 and 80
+    // seconds; the caller gave up, the catch below reported "could not reach
+    // lead data provider", and the backend logs showed every one of them
+    // returning 200. Nothing was unreachable. It was just too late.
+    const RAILWAY_TIMEOUT_MS = 90_000;
+
+    // And a bound on the fan-out as a whole, because its variants run one after
+    // another: two calls inside their own timeouts still add up past what this
+    // function is allowed to live for.
+    const FANOUT_BUDGET_MS = 100_000;
+
+    /** fetch, with a deadline. Throws a named error so a timeout is not
+     *  mistaken for the provider being unreachable — they call for opposite
+     *  responses from the person reading the message. */
+    const fetchWithTimeout = async (url: string, init: RequestInit, ms: number) => {
+      const abort = new AbortController();
+      const timer = setTimeout(() => abort.abort(), ms);
+      try {
+        return await fetch(url, { ...init, signal: abort.signal });
+      } catch (err) {
+        if (abort.signal.aborted) {
+          const timeout = new Error(`Search timed out after ${Math.round(ms / 1000)}s`);
+          timeout.name = 'SearchTimeout';
+          throw timeout;
+        }
+        throw err;
+      } finally {
+        clearTimeout(timer);
+      }
+    };
     console.log('Calling Railway API:', railwayUrl);
 
     // Admin-only schema probe: call with { _probe: true } to retrieve the Railway OpenAPI schema.
@@ -1243,16 +1279,24 @@ serve(async (req) => {
       // pool is gone: "second search didn't show anything".
       const perVariant = Math.max(1, Math.ceil(limit / Math.max(variants.length, 1)));
       const collectedIcp: any[] = [];
+      const fanoutDeadline = Date.now() + FANOUT_BUDGET_MS;
       for (const body of variants.slice(0, 8)) {
         // Stop once the page is full. The remaining variants would spend
         // people this response has no room to show.
         if (collectedIcp.length >= limit + offset) break;
+        // Variants run one after another, so the second one starting late is
+        // the third one never finishing and this whole function being killed.
+        if (Date.now() > fanoutDeadline) {
+          console.warn('[icp-fanout] budget spent — returning',
+                       collectedIcp.length, 'lead(s) rather than being killed mid-call');
+          break;
+        }
         try {
-          const r = await fetch(railwayUrl, {
+          const r = await fetchWithTimeout(railwayUrl, {
             method: 'POST',
             headers: railwayHeaders,
             body: JSON.stringify({ ...body, limit: perVariant }),
-          });
+          }, RAILWAY_TIMEOUT_MS);
           if (!r.ok) {
             console.warn('[icp-fanout] variant failed', body.job_title, r.status);
             continue;
@@ -1306,19 +1350,31 @@ serve(async (req) => {
     let response: Response;
     try {
       console.log('Fetching from Railway URL:', railwayUrl);
-      response = await fetch(railwayUrl, {
+      response = await fetchWithTimeout(railwayUrl, {
         method: 'POST',
         headers: railwayHeaders,
         body: JSON.stringify(requestBody),
-      });
+      }, RAILWAY_TIMEOUT_MS);
       console.log('Railway response status:', response.status);
       console.log('Railway response headers:', JSON.stringify(Object.fromEntries(response.headers.entries())));
     } catch (fetchError) {
-      console.error('Fetch to Railway failed entirely:', fetchError);
-      await refundCredit('network_error');
-      await updateUsageEvent(supabase, usageEventId, 'error', 0, 'network_error');
+      // A timeout is not the provider being unreachable, and saying so sends
+      // the user to check a provider dashboard where nothing is wrong. The
+      // search ran; it just took longer than anyone was willing to wait.
+      const timedOut = (fetchError as Error)?.name === 'SearchTimeout';
+      const code = timedOut ? 'upstream_timeout' : 'network_error';
+      console.error(timedOut ? 'Railway search timed out:' : 'Fetch to Railway failed entirely:',
+                    fetchError);
+      await refundCredit(code);
+      await updateUsageEvent(supabase, usageEventId, 'error', 0, code);
       return new Response(
-        JSON.stringify({ error: 'Could not reach lead data provider.', error_code: 'network_error', leads: [] }),
+        JSON.stringify({
+          error: timedOut
+            ? 'This search took too long and was stopped. No credit was used — narrowing it usually helps.'
+            : 'Could not reach lead data provider.',
+          error_code: code,
+          leads: [],
+        }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

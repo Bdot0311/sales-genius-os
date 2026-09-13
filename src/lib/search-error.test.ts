@@ -119,3 +119,47 @@ describe("classifySearchError", () => {
     expect(toast.description).toBe("Something odd happened");
   });
 });
+
+describe("a timeout is not an outage", () => {
+  /**
+   * Production: three sequential searches of 101, 100 and 80 seconds. The
+   * caller gave up, the edge function reported a failed fetch, and the user was
+   * told the lead data provider could not be reached — while the backend logs
+   * showed every one of those searches returning 200. Nothing was unreachable.
+   */
+  it("says the search was too slow, not that the provider is down", () => {
+    const { title, description } = classifySearchError({
+      message: "This search took too long and was stopped. No credit was used — narrowing it usually helps.",
+      code: "upstream_timeout",
+    });
+
+    expect(title).toMatch(/too long/i);
+    // The words that sent the reader to a provider dashboard.
+    expect(description).not.toMatch(/could not reach/i);
+    expect(description).not.toMatch(/unreachable/i);
+  });
+
+  it("still promises the credit back, because it is refunded", () => {
+    const { description } = classifySearchError({
+      message: "This search took too long and was stopped. No credit was used — narrowing it usually helps.",
+      code: "upstream_timeout",
+    });
+    expect(description).toMatch(/no credit was used/i);
+  });
+
+  it("tells the reader what to actually do about it", () => {
+    const { description } = classifySearchError({
+      message: "This search took too long and was stopped. No credit was used — narrowing it usually helps.",
+      code: "upstream_timeout",
+    });
+    expect(description).toMatch(/narrow/i);
+  });
+
+  it("leaves a real connection failure reading as one", () => {
+    const { description } = classifySearchError({
+      message: "Could not reach lead data provider.",
+      code: "network_error",
+    });
+    expect(description).toMatch(/could not reach/i);
+  });
+});
