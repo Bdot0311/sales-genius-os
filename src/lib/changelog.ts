@@ -25,6 +25,33 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-09-13",
+    date: "2026-09-13",
+    title: "Clearer lead searches and your credit counter is back",
+    summary:
+      "Searches now tell you when our data network is the reason nothing came back, and your monthly credit count is visible in the header again.",
+    items: [
+      {
+        tag: "fixed",
+        title: "Honest empty searches",
+        description:
+          "If our lead data network can't answer, you'll see that instead of a blank 'no leads found' — and your search credit isn't used.",
+      },
+      {
+        tag: "fixed",
+        title: "Monthly credits in the header",
+        description:
+          "The monthly search credit counter was hidden on every screen size. It's showing again on phones, tablets and desktop.",
+      },
+      {
+        tag: "improved",
+        title: "Faster failed searches",
+        description:
+          "Searches that come back empty now finish quickly instead of hanging until they time out.",
+      },
+    ],
+  },
+  {
     id: "2026-09-12",
     date: "2026-09-12",
     title: "What's New, plus a clearer AI SDR story",
