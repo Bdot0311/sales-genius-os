@@ -25,6 +25,33 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-09-14-3",
+    date: "2026-09-14",
+    title: "Lead enrichment is working and metered again",
+    summary:
+      "Enriching a lead now runs the lookup and spends one search credit by default, while the credit counter stays honest for every account.",
+    items: [
+      {
+        tag: "fixed",
+        title: "Enrichment actually enriches",
+        description:
+          "The 'Enrich & Save' path was silently skipping the provider lookup. It now fills in emails, phones, titles and company details as intended.",
+      },
+      {
+        tag: "improved",
+        title: "Enrichment uses your search credits",
+        description:
+          "Each enrichment costs one search credit again by default, with a simple env switch to make it free if needed. The state is logged so your invoice never surprises you.",
+      },
+      {
+        tag: "fixed",
+        title: "Credit meter is accurate for support too",
+        description:
+          "Admin and support accounts are now counted like everyone else, so the credit counter you see reflects real usage instead of staying frozen.",
+      },
+    ],
+  },
+  {
     id: "2026-09-14-2",
     date: "2026-09-14",
     title: "More accurate people lookups and a more reliable inbox test",
