@@ -1,9 +1,8 @@
-import { ReactNode } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
 import { PageHeader } from "@/components/dashboard/PageHeader";
-import { Panel } from "@/components/dashboard/Panel";
+import { EmptyState } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RefreshCw } from "lucide-react";
@@ -43,25 +42,6 @@ const SectionHeading = ({ title, sub }: { title: string; sub?: string }) => (
     <h2 className="text-[0.625rem] font-medium uppercase tracking-[0.1em] text-muted-foreground/60">{title}</h2>
     {sub && <p className="mt-1 text-[0.6875rem] leading-relaxed text-muted-foreground">{sub}</p>}
   </div>
-);
-
-/** The three states that are not the dashboard: gated, broken, empty. */
-const StatePanel = ({
-  title,
-  body,
-  action,
-}: {
-  title: string;
-  body: string;
-  action?: ReactNode;
-}) => (
-  <Panel>
-    <div className="px-5 py-10 text-center">
-      <p className="text-[0.8125rem] font-medium text-foreground">{title}</p>
-      <p className="mx-auto mt-1.5 max-w-md text-[0.6875rem] leading-relaxed text-muted-foreground">{body}</p>
-      {action ? <div className="mt-4 flex justify-center">{action}</div> : null}
-    </div>
-  </Panel>
 );
 
 const Deliverability = () => {
@@ -104,13 +84,13 @@ const Deliverability = () => {
       />
       <div className="mx-auto w-full max-w-[1400px] space-y-6 px-4 py-5 sm:px-6">
         {gated ? (
-          <StatePanel
+          <EmptyState
             title="The deliverability suite is a Growth feature"
             body="Reputation scoring, domain auth, blacklist monitoring and the spam checker unlock on Growth and above."
             action={<Button size="sm" onClick={() => triggerGate("deliverabilityDashboard")}>See plans</Button>}
           />
         ) : errored ? (
-          <StatePanel
+          <EmptyState
             title="Couldn't load deliverability data"
             body="This usually means the deliverability tables haven't been created in the database yet. Apply the latest migrations, then retry."
             action={

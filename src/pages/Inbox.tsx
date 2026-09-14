@@ -1,13 +1,13 @@
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { EmptyState } from "@/components/dashboard/Panel";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemoMode } from "@/hooks/use-demo-mode";
 import { maybeMask } from "@/lib/demo-mask";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -15,11 +15,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Inbox as InboxIcon,
   Send,
   Archive,
   Mail,
-  Lock,
   RefreshCw,
   Search,
   ArrowLeft,
@@ -371,17 +369,11 @@ const Inbox = () => {
       <div className="space-y-4 pt-4">
 
         {inboxGated ? (
-          <Card className="border-dashed">
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <Lock className="w-12 h-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Unified Inbox</h3>
-              <p className="text-muted-foreground text-center mb-4">
-                See every sent email and reply in one threaded inbox, and respond without leaving
-                OutReign. Available on Growth and above.
-              </p>
-              <Button onClick={() => triggerGate("unifiedInbox")}>Upgrade to Unlock</Button>
-            </CardContent>
-          </Card>
+          <EmptyState
+            title="The unified inbox is a Growth feature"
+            body="Every sent email and reply in one threaded view, answered without leaving OutReign."
+            action={<Button size="sm" onClick={() => triggerGate("unifiedInbox")}>See plans</Button>}
+          />
         ) : isLoading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
@@ -389,15 +381,10 @@ const Inbox = () => {
             ))}
           </div>
         ) : conversations.length === 0 ? (
-          <Card className="border-dashed">
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <InboxIcon className="w-12 h-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No conversations yet</h3>
-              <p className="text-muted-foreground text-center">
-                Once you send outreach, every thread and reply will show up here.
-              </p>
-            </CardContent>
-          </Card>
+          <EmptyState
+            title="No conversations yet"
+            body="Once you send outreach, every thread and reply shows up here."
+          />
         ) : (
           <div className="flex gap-4 h-[calc(100dvh-220px)]">
             {/* Left: conversation list */}
