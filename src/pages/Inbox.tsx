@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { PageHeader } from "@/components/dashboard/PageHeader";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
 import { supabase } from "@/integrations/supabase/client";
@@ -355,22 +356,19 @@ const Inbox = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Inbox</h1>
-            <p className="text-muted-foreground">
-              Every outreach conversation from your connected mailboxes
-              {unreadCount > 0 ? ` · ${unreadCount} unread` : ""}
-            </p>
-          </div>
-          {!inboxGated && (
+      <PageHeader
+        title="Inbox"
+        description={`Every outreach conversation from your connected mailboxes${unreadCount > 0 ? ` · ${unreadCount} unread` : ""}`}
+        actions={
+          !inboxGated ? (
             <Button variant="outline" size="sm" onClick={handleSync} disabled={syncing}>
               <RefreshCw className={`w-3.5 h-3.5 mr-2 ${syncing ? "animate-spin" : ""}`} />
               {syncing ? "Syncing…" : "Sync"}
             </Button>
-          )}
-        </div>
+          ) : undefined
+        }
+      />
+      <div className="space-y-4 pt-4">
 
         {inboxGated ? (
           <Card className="border-dashed">

@@ -1,4 +1,5 @@
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { PageHeader } from "@/components/dashboard/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { LeadAssignmentDialog } from "@/components/dashboard/LeadAssignmentDialog";
 import { LeadDetailSheet } from "@/components/dashboard/LeadDetailSheet";
-import { Search, Download, ArrowUpDown, Trash2, UserPlus, LayoutGrid, Table as TableIcon, ArrowLeft, CheckCircle, Sparkles, AlertCircle, Filter, Gauge } from "lucide-react";
+import { Search, Download, ArrowUpDown, Trash2, UserPlus, LayoutGrid, Table as TableIcon, CheckCircle, Sparkles, AlertCircle, Filter, Gauge } from "lucide-react";
 import { IntentScoreBadge } from "@/components/dashboard/IntentScoreBadge";
 import { LeadStageSelect, LEAD_STAGES } from "@/components/dashboard/LeadStageSelect";
 import { LeadTierBadge } from "@/components/dashboard/LeadTierBadge";
@@ -523,18 +524,15 @@ const SavedLeads = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard/leads')}>
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold">Saved Leads</h1>
-              <p className="text-muted-foreground">Your enriched leads ready for outreach</p>
-            </div>
-          </div>
-        </div>
+      {/* The breadcrumb is the way back. An icon-only arrow beside the title
+          said the same thing without saying where to, and it was the only
+          back button in the dashboard. */}
+      <PageHeader
+        breadcrumbs={[{ label: "Leads", href: "/dashboard/leads" }, { label: "Saved" }]}
+        title="Saved Leads"
+        description="Your enriched leads ready for outreach"
+      />
+      <div className="space-y-4 pt-4">
 
         <Card>
           <CardHeader>

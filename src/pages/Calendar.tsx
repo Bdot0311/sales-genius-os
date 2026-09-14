@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { PageHeader } from "@/components/dashboard/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -302,13 +303,10 @@ const Calendar = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">Calendar</h1>
-            <p className="text-muted-foreground text-sm sm:text-base">Manage your meetings and schedule</p>
-          </div>
-          <div className="flex items-center gap-2">
+      <PageHeader title="Calendar" description="Manage your meetings and schedule" />
+      <div className="space-y-4 pt-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-4">
+          <div className="mobile-action-row flex items-center gap-2">
             {!isFreeTier && (
               <Button
                 size="sm"

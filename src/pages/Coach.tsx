@@ -1,4 +1,5 @@
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { PageHeader } from "@/components/dashboard/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -408,20 +409,20 @@ const Coach = () => {
         currentPlan={currentPlan}
       />
       
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">AI Sales Coach</h1>
-            <p className="text-muted-foreground text-sm sm:text-base">
-              Get personalized coaching and insights to improve your sales performance
-            </p>
-            <Badge variant="secondary" className="mt-2">
-              {coachLimit === -1
-                ? "Unlimited coaching messages"
-                : `${Math.min(messagesUsed, coachLimit)} / ${coachLimit} coaching messages this month`}
-            </Badge>
-          </div>
-          <div className="flex gap-2 flex-wrap">
+      <PageHeader
+        title="AI Sales Coach"
+        description="Get personalized coaching and insights to improve your sales performance"
+        actions={
+          <Badge variant="secondary" className="font-normal">
+            {coachLimit === -1
+              ? "Unlimited coaching messages"
+              : `${Math.min(messagesUsed, coachLimit)} / ${coachLimit} coaching messages this month`}
+          </Badge>
+        }
+      />
+      <div className="space-y-4 pt-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-4">
+          <div className="mobile-action-row flex gap-2 flex-wrap">
             <Button variant="outline" size="sm" onClick={() => setShowHistory(!showHistory)}>
               <History className="w-4 h-4 mr-2" />
               History
