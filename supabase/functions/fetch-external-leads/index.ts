@@ -705,7 +705,19 @@ serve(async (req) => {
     let creditBalanceAfter: number | null = null;
 
 
-    if (!isAdmin) {
+    // Admins run through the same accounting, and are stopped by none of it.
+    //
+    // The whole block used to sit behind `if (!isAdmin)`, so an admin's
+    // searches were invisible: no daily counter, no usage event, no credit
+    // movement. On the one account that runs support and testing — the account
+    // most likely to be generating provider spend — the meter read the same
+    // number every day because nothing had ever been recorded against it.
+    //
+    // Metering is not the same thing as gating. The counters below now run for
+    // everyone so the numbers are true; the three places that refuse a request
+    // are the ones that skip admins, so a support session can never be locked
+    // out mid-investigation by an allowance it just spent.
+    {
       const { data: subscription, error: subError } = await supabase
         .from('subscriptions')
         .select('plan, status, account_status, search_credits_remaining, daily_searches_used, daily_searches_reset_at, stripe_subscription_id')
@@ -724,10 +736,10 @@ serve(async (req) => {
       const planConfig = getPlanSearchLimits(userPlan);
 
       // Create the audit row for this search before any gate so failures are recorded.
-      usageEventId = await createUsageEvent(supabase, filters, user.id, userPlan, false);
+      usageEventId = await createUsageEvent(supabase, filters, user.id, userPlan, isAdmin);
 
       // Hard-lock only explicitly locked accounts.
-      if (subscription?.account_status === 'locked') {
+      if (!isAdmin && subscription?.account_status === 'locked') {
         await updateUsageEvent(supabase, usageEventId, 'error', 0, 'account_locked');
         return new Response(
           JSON.stringify({ error: 'Account is locked. Please contact support.', error_code: 'account_locked', leads: [] }),
@@ -755,8 +767,10 @@ serve(async (req) => {
           .eq('user_id', user.id);
       }
 
-      // Check daily limit
-      if (dailyUsed >= planConfig.dailySearchLimit) {
+      // Check daily limit. Counted for admins below, never enforced against
+      // them: the cap is there to bound provider spend on customer accounts,
+      // and an admin hitting it mid-support-session helps nobody.
+      if (!isAdmin && dailyUsed >= planConfig.dailySearchLimit) {
         console.log('Daily limit reached:', { userId: user.id, dailyUsed, limit: planConfig.dailySearchLimit });
         await updateUsageEvent(supabase, usageEventId, 'error', 0, 'daily_limit_reached');
         return new Response(
@@ -779,7 +793,7 @@ serve(async (req) => {
       chargesPerSearch = userPlan === 'free';
 
       const remainingCredits = subscription?.search_credits_remaining ?? planConfig.monthlySearchCredits;
-      if (chargesPerSearch && remainingCredits <= 0) {
+      if (!isAdmin && chargesPerSearch && remainingCredits <= 0) {
         console.log('Free search allowance exhausted:', { userId: user.id, remaining: remainingCredits });
         await updateUsageEvent(supabase, usageEventId, 'error', 0, 'credits_exhausted');
         return new Response(
@@ -800,7 +814,10 @@ serve(async (req) => {
       // that paid searching costs no credits.
       const newDailyUsed = dailyUsed + 1;
       const update: Record<string, unknown> = { daily_searches_used: newDailyUsed };
-      const newRemaining = remainingCredits - 1;
+      // Floored: two searches racing each other, or an admin metered against an
+      // allowance nothing is stopping them spending, would otherwise write a
+      // negative balance and the meter would read below empty.
+      const newRemaining = Math.max(0, remainingCredits - 1);
       if (chargesPerSearch) {
         update.search_credits_remaining = newRemaining;
         creditBalanceAfter = newRemaining;
