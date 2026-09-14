@@ -27,195 +27,195 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     id: "2026-09-14-3",
     date: "2026-09-14",
-    title: "Lead enrichment is working and metered again",
+    title: "Lead profiles now enrich with one click",
     summary:
-      "Enriching a lead now runs the lookup and spends one search credit by default, while the credit counter stays honest for every account.",
+      "Enrich & Save pulls in real contact details, job titles, and company info, and your remaining search credits update right away.",
     items: [
       {
         tag: "fixed",
-        title: "Enrichment actually enriches",
+        title: "Enrichment fills in the blanks",
         description:
-          "The 'Enrich & Save' path was silently skipping the provider lookup. It now fills in emails, phones, titles and company details as intended.",
+          "The Enrich & Save button now adds emails, phone numbers, job titles, and company details as you'd expect.",
       },
       {
         tag: "improved",
-        title: "Enrichment uses your search credits",
+        title: "Credits update instantly",
         description:
-          "Each enrichment costs one search credit again by default, with a simple env switch to make it free if needed. The state is logged so your invoice never surprises you.",
+          "Each enrichment uses one search credit, and your credit counter reflects it immediately so you always know where you stand.",
       },
       {
         tag: "fixed",
-        title: "Credit meter is accurate for support too",
+        title: "Everyone's credits count the same",
         description:
-          "Admin and support accounts are now counted like everyone else, so the credit counter you see reflects real usage instead of staying frozen.",
+          "Your credit meter now tracks usage consistently across every account type, so the number you see is always accurate.",
       },
     ],
   },
   {
     id: "2026-09-14-2",
     date: "2026-09-14",
-    title: "More accurate people lookups and a more reliable inbox test",
+    title: "People search results are more accurate, and inbox tests are steadier",
     summary:
-      "Looking up a specific person no longer hands you back your own search as the result, and the inbox placement test handles a hard-to-read test inbox cleanly.",
+      "Looking up a specific person now returns the right person or clearly says no match, and the inbox placement test no longer gives misleading results when a test inbox can't be read.",
     items: [
       {
         tag: "fixed",
         title: "Person lookups return the right person",
         description:
-          "When you search for someone by name and company, a lookup that finds no one now says so instead of showing your own search details as if they were the person.",
+          "Searching by name and company now shows the actual match, or tells you honestly when we can't find anyone.",
       },
       {
         tag: "improved",
         title: "Look before you save",
         description:
-          "A people lookup no longer writes to your leads on its own. You see what the lookup found — and what it would change on an existing lead — before you decide to save it.",
+          "You'll see what we found before anything is saved to your leads, so you can decide whether to keep it.",
       },
       {
         tag: "improved",
         title: "Credit meter follows your real balance",
         description:
-          "The credit counter now tracks your actual remaining balance as searches happen, so the number you see is the number you have.",
+          "Your search credit balance updates as you use it, so the number in the header is always current.",
       },
       {
         tag: "fixed",
         title: "Inbox placement test is more dependable",
         description:
-          "If the test inbox can't be read at that moment, the placement test now tells you plainly instead of failing silently or reporting a misleading result.",
+          "If the test inbox can't be read at the moment, you'll get a clear message instead of a confusing result.",
       },
     ],
   },
   {
     id: "2026-09-14",
     date: "2026-09-14",
-    title: "Lead searches no longer hang",
+    title: "Lead searches now finish or tell you why",
     summary:
-      "Long searches now stop and explain themselves instead of silently failing, and outage messages actually reach you.",
+      "Long searches time out with a clear explanation instead of silently failing, and data-network issues are surfaced so you know to retry later.",
     items: [
       {
         tag: "fixed",
         title: "No more searches that never come back",
         description:
-          "Every step of a lead search now has a time limit, so a slow data provider can't leave you waiting until the search dies. Your credit is returned when a search can't finish.",
+          "Searches now have a firm time limit, so a slow data source can't leave you waiting forever. If a search can't finish, your credit is refunded.",
       },
       {
         tag: "fixed",
         title: "You'll see when the data network is down",
         description:
-          "Empty results caused by an outage now say so, and the 'Broaden this search' button is hidden — no more editing filters that were never the problem.",
+          "If our lead data partners can't respond, you'll see that directly instead of a blank 'no leads found' page.",
       },
     ],
   },
   {
     id: "2026-09-13",
     date: "2026-09-13",
-    title: "Clearer lead searches and your credit counter is back",
+    title: "Search failures are clearer, and your monthly credits are back in the header",
     summary:
-      "Searches now tell you when our data network is the reason nothing came back, and your monthly credit count is visible in the header again.",
+      "When our lead data network is unavailable, we say so plainly, and your monthly search credit count is visible again across all devices.",
     items: [
       {
         tag: "fixed",
         title: "Honest empty searches",
         description:
-          "If our lead data network can't answer, you'll see that instead of a blank 'no leads found' — and your search credit isn't used.",
+          "If the data network can't answer, we say so and don't charge a search credit.",
       },
       {
         tag: "fixed",
         title: "Monthly credits in the header",
         description:
-          "The monthly search credit counter was hidden on every screen size. It's showing again on phones, tablets and desktop.",
+          "Your remaining monthly credits show again on desktop, tablet, and mobile.",
       },
       {
         tag: "improved",
         title: "Faster failed searches",
         description:
-          "Searches that come back empty now finish quickly instead of hanging until they time out.",
+          "Searches that can't complete now fail quickly instead of hanging until they time out.",
       },
     ],
   },
   {
     id: "2026-09-12",
     date: "2026-09-12",
-    title: "What's New, plus a clearer AI SDR story",
+    title: "A What's New page, plus a clearer look at the AI SDR",
     summary:
-      "You can now see everything we ship in one place, and the AI SDR has its own home so it's easier to understand what it does for you.",
+      "All product updates now live in one place, and the AI SDR has its own page explaining what it handles for you.",
     items: [
       {
         tag: "new",
         title: "What's New page",
         description:
-          "Every improvement, fix and upcoming change in one list. A badge appears in your header whenever there's something you haven't read.",
+          "See every new feature, improvement, and fix in one place. A badge appears in the header whenever there's something you haven't read.",
       },
       {
         tag: "improved",
         title: "Easy dashboard return",
         description:
-          "The What's New page now has a clear Back to dashboard button, so you don't have to reach for the sidebar or refresh.",
+          "A clear Back to dashboard button saves you from hunting for the sidebar or refreshing the page.",
       },
       {
         tag: "improved",
         title: "AI SDR overview",
         description:
-          "A dedicated page walks through how the AI SDR finds people, writes the first touch and follows up, so you know what to hand over to it.",
+          "A dedicated page walks through how the AI SDR finds prospects, writes first touches, and follows up.",
       },
       {
         tag: "coming",
         title: "Reply-driven follow-ups",
         description:
-          "Follow-ups that adapt to how someone replied, instead of running the same steps for everyone.",
+          "Soon, follow-ups will adapt based on how each prospect replies, instead of running the same steps for everyone.",
       },
     ],
   },
   {
     id: "2026-09-10",
     date: "2026-09-10",
-    title: "Follow-ups that actually go out",
+    title: "Sequences keep moving, and seniority filters work as expected",
     summary:
-      "Sequences now keep moving after the first email, and searches respect the seniority you picked.",
+      "Follow-up emails now send after the first step, and choosing a seniority level filters correctly across mixed job titles.",
     items: [
       {
         tag: "fixed",
         title: "Stuck sequences",
         description:
-          "Follow-up emails for enrolled leads no longer stall after the first send — waiting steps are re-checked every hour.",
+          "Follow-up emails for enrolled leads now send on schedule, with waiting steps rechecked every hour.",
       },
       {
         tag: "fixed",
         title: "Seniority filter",
         description:
-          "Choosing a seniority level now filters correctly even when you search a mix of job titles.",
+          "The seniority level you pick now filters correctly, even when you search across many job titles.",
       },
       {
         tag: "new",
         title: "Service status notices",
         description:
-          "If something on our side is degraded, you'll see a short notice at the top of your dashboard instead of guessing.",
+          "If anything on our side is slow or down, you'll see a short notice at the top of your dashboard instead of guessing.",
       },
     ],
   },
   {
     id: "2026-09-08",
     date: "2026-09-08",
-    title: "A smoother start and a smarter coach",
+    title: "A guided setup and clearer AI Sales Coach limits",
     summary:
-      "New accounts get a guided setup, and the AI Sales Coach is available on every paid plan with clear monthly limits.",
+      "New accounts answer a short setup flow, then land straight in their first campaign. The AI Sales Coach now shows its monthly limit on every paid plan.",
     items: [
       {
         tag: "new",
         title: "Guided setup",
         description:
-          "A short set of questions builds your ideal customer profile up front, then drops you straight into your first campaign.",
+          "Answer a few questions about your ideal customer, then start your first campaign right away.",
       },
       {
         tag: "improved",
         title: "AI Sales Coach limits",
         description:
-          "Each plan now shows exactly how many coaching sessions you get each month, with usage visible on the coach page.",
+          "Each plan shows exactly how many coaching sessions you get each month, with usage right on the coach page.",
       },
       {
         tag: "improved",
         title: "Lead imports add, never replace",
         description:
-          "Importing a CSV now appends to your saved leads and maps names, emails and LinkedIn URLs properly.",
+          "Importing a CSV now appends to your saved leads and maps names, emails, and LinkedIn URLs correctly.",
       },
     ],
   },
