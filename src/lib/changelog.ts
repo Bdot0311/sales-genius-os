@@ -25,6 +25,33 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-09-14-4",
+    date: "2026-09-14",
+    title: "Accounts lists open the right record, and reveals charge the right credit",
+    summary:
+      "Clicking any account entry now takes you straight to the matching lead or company, and revealing emails or phones costs one search credit exactly when the details appear.",
+    items: [
+      {
+        tag: "fixed",
+        title: "Lists open what they show",
+        description:
+          "Every row in the Accounts panel opens the lead or company it displays, so you never land on the wrong record again.",
+      },
+      {
+        tag: "fixed",
+        title: "Reveal charges are precise",
+        description:
+          "Email and phone reveals use one search credit at the moment the contact info is shown, not before.",
+      },
+      {
+        tag: "improved",
+        title: "Accounts view is finished",
+        description:
+          "The Accounts page now shows the complete picture for each account, including recent activity and why it's relevant to you.",
+      },
+    ],
+  },
+  {
     id: "2026-09-14-3",
     date: "2026-09-14",
     title: "Lead profiles now enrich with one click",
