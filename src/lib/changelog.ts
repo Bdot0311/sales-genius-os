@@ -25,6 +25,27 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-09-14-2",
+    date: "2026-09-14",
+    title: "More accurate people lookups and a more reliable inbox test",
+    summary:
+      "Looking up a specific person no longer hands you back your own search as the result, and the inbox placement test handles a hard-to-read test inbox cleanly.",
+    items: [
+      {
+        tag: "fixed",
+        title: "Person lookups return the right person",
+        description:
+          "When you search for someone by name and company, a lookup that finds no one now says so instead of showing your own search details as if they were the person.",
+      },
+      {
+        tag: "fixed",
+        title: "Inbox placement test is more dependable",
+        description:
+          "If the test inbox can't be read at that moment, the placement test now tells you plainly instead of failing silently or reporting a misleading result.",
+      },
+    ],
+  },
+  {
     id: "2026-09-14",
     date: "2026-09-14",
     title: "Lead searches no longer hang",
