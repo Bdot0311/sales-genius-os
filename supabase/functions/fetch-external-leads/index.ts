@@ -924,6 +924,22 @@ serve(async (req) => {
     // function is allowed to live for.
     const FANOUT_BUDGET_MS = 100_000;
 
+    // One deadline for every upstream call this invocation makes, per-call
+    // timeouts included. Production returned 504 twice in two minutes: the
+    // gateway killed the function mid-call, so no JSON body reached the client,
+    // no error_code was classified, and refundCredit never ran — the user paid
+    // a credit for a search that never answered. A budget we own always beats a
+    // wall clock we don't.
+    const REQUEST_BUDGET_MS = 110_000;
+    const requestDeadline = Date.now() + REQUEST_BUDGET_MS;
+    /** Milliseconds left before we must answer the client no matter what. */
+    const budgetLeftMs = () => requestDeadline - Date.now();
+    /** A per-call timeout that can never outlive the request budget. */
+    const callTimeoutMs = (max = RAILWAY_TIMEOUT_MS) =>
+      Math.max(1_000, Math.min(max, budgetLeftMs()));
+    /** True when there is no longer time for another provider round trip. */
+    const outOfBudget = (needMs = 5_000) => budgetLeftMs() < needMs;
+
     /** fetch, with a deadline. Throws a named error so a timeout is not
      *  mistaken for the provider being unreachable — they call for opposite
      *  responses from the person reading the message. */
@@ -1155,11 +1171,24 @@ serve(async (req) => {
         const name = typeof t?.name === 'string' ? t.name.trim() : '';
         const domain = typeof t?.domain === 'string' ? t.domain.trim() : '';
         if (!name && !domain) continue;
+        // Ten companies searched one after another is ten chances to run past
+        // the gateway's patience. Answer with what we have instead of dying.
+        if (outOfBudget(8_000)) {
+          console.warn('[companies] budget spent — returning', collected.length, 'lead(s)');
+          for (const rest of targets.slice(targets.indexOf(t))) {
+            const label = (typeof rest?.name === 'string' && rest.name.trim())
+              || (typeof rest?.domain === 'string' ? rest.domain.trim() : '');
+            if (label) emptyCompanies.push(label);
+          }
+          break;
+        }
         const body: Record<string, any> = { ...roleFields, limit: perCompany };
         if (domain) body.company_domain = domain;
         if (name) body.company = name;
         try {
-          const r = await fetch(railwayUrl, { method: 'POST', headers: railwayHeaders, body: JSON.stringify(body) });
+          const r = await fetchWithTimeout(railwayUrl,
+            { method: 'POST', headers: railwayHeaders, body: JSON.stringify(body) },
+            callTimeoutMs(25_000));
           if (!r.ok) { emptyCompanies.push(name || domain); continue; }
           const d = await r.json();
           const arr = Array.isArray(d) ? d
@@ -1300,7 +1329,7 @@ serve(async (req) => {
             method: 'POST',
             headers: railwayHeaders,
             body: JSON.stringify({ ...body, limit: perVariant }),
-          }, RAILWAY_TIMEOUT_MS);
+          }, callTimeoutMs());
           if (!r.ok) {
             console.warn('[icp-fanout] variant failed', body.job_title, r.status);
             continue;
@@ -1358,7 +1387,7 @@ serve(async (req) => {
         method: 'POST',
         headers: railwayHeaders,
         body: JSON.stringify(requestBody),
-      }, RAILWAY_TIMEOUT_MS);
+      }, callTimeoutMs());
       console.log('Railway response status:', response.status);
       console.log('Railway response headers:', JSON.stringify(Object.fromEntries(response.headers.entries())));
     } catch (fetchError) {
@@ -1437,11 +1466,11 @@ serve(async (req) => {
         if (stillTargeted) {
           console.log('Provider rejected', offending.join(', '), '— retrying without it');
           try {
-            const retryRes = await fetch(railwayUrl, {
+            const retryRes = await fetchWithTimeout(railwayUrl, {
               method: 'POST',
               headers: railwayHeaders,
               body: JSON.stringify(retryBody),
-            });
+            }, callTimeoutMs(30_000));
             if (retryRes.ok) {
               response = retryRes;
               recovered = true;
@@ -1604,9 +1633,17 @@ serve(async (req) => {
         // Never fire a search with nothing meaningful left to match on.
         if (!relaxed.job_title && !relaxed.seniority && !relaxed.company && !relaxed.company_domain) continue;
 
+        // Four ladder rungs, each a full provider round trip. Without a budget
+        // check the last one is what gets this function killed.
+        if (outOfBudget(8_000)) {
+          console.warn('[broaden] budget spent — stopping the ladder');
+          break;
+        }
         console.log(`0 results — broadening by dropping ${applicable.join(', ')}:`, JSON.stringify(relaxed));
         try {
-          const r = await fetch(railwayUrl, { method: 'POST', headers: railwayHeaders, body: JSON.stringify(relaxed) });
+          const r = await fetchWithTimeout(railwayUrl,
+            { method: 'POST', headers: railwayHeaders, body: JSON.stringify(relaxed) },
+            callTimeoutMs(25_000));
           if (!r.ok) {
             console.error('Broadening retry failed with status', r.status);
             continue;

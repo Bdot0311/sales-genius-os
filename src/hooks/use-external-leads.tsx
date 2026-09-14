@@ -55,7 +55,28 @@ export interface SearchDisclosure {
   applied: Record<string, unknown> | null;
   /** Filters dropped by an opt-in broadening retry — empty when none were. */
   relaxed: string[];
+  /**
+   * The edge function's own explanation of an empty result. An outage and a
+   * genuinely empty match set are different problems, and only the backend
+   * knows which one happened.
+   */
+  message: string | null;
+  /** True when the data provider could not answer at all. */
+  providerUnavailable: boolean;
+  /**
+   * Whether re-running wider could possibly help. False during an outage —
+   * loosening filters that were never the problem just wastes the user's time.
+   */
+  canBroaden: boolean;
 }
+
+const EMPTY_DISCLOSURE: SearchDisclosure = {
+  applied: null,
+  relaxed: [],
+  message: null,
+  providerUnavailable: false,
+  canBroaden: true,
+};
 
 export interface LeadScores {
   /** Null when the user has stated no ICP — nothing to measure fit against. */
@@ -128,7 +149,7 @@ export function useExternalLeads() {
   const [lastFilters, setLastFilters] = useState<ExternalLeadFilters | null>(null);
   // Surfacing what the search actually ran with is the difference between
   // "these leads look random" and "industry was dropped, here is why".
-  const [disclosure, setDisclosure] = useState<SearchDisclosure>({ applied: null, relaxed: [] });
+  const [disclosure, setDisclosure] = useState<SearchDisclosure>(EMPTY_DISCLOSURE);
   // How many results the last search dropped as confirmed-undeliverable. A page
   // that comes back short is otherwise indistinguishable from a weak search.
   const [removedUndeliverable, setRemovedUndeliverable] = useState(0);
@@ -160,7 +181,7 @@ export function useExternalLeads() {
     // Clear previous results immediately when starting a new search (not page change)
     if (!isPageChange) {
       setLeads([]);
-      setDisclosure({ applied: null, relaxed: [] });
+      setDisclosure(EMPTY_DISCLOSURE);
       setRemovedUndeliverable(0);
       setPagination({
         currentPage: 1,
@@ -198,6 +219,11 @@ export function useExternalLeads() {
       setDisclosure({
         applied: data.applied_filters ?? null,
         relaxed: Array.isArray(data.relaxed_filters) ? data.relaxed_filters : [],
+        // An empty page is either "nobody matched" or "the network was down".
+        // The backend says which; the UI must not invent the friendlier one.
+        message: typeof data.message === 'string' ? data.message : null,
+        providerUnavailable: data.provider_unavailable === true,
+        canBroaden: data.can_broaden !== false,
       });
       setRemovedUndeliverable(Number(data.removed_undeliverable) || 0);
       
@@ -567,7 +593,7 @@ export function useExternalLeads() {
   const clearLeads = () => {
     setLeads([]);
     setCursors(resetTrail());
-    setDisclosure({ applied: null, relaxed: [] });
+    setDisclosure(EMPTY_DISCLOSURE);
     setPagination({
       currentPage: 1,
       totalPages: 1,

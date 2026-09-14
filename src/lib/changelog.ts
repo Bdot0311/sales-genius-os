@@ -25,6 +25,27 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-09-14",
+    date: "2026-09-14",
+    title: "Lead searches no longer hang",
+    summary:
+      "Long searches now stop and explain themselves instead of silently failing, and outage messages actually reach you.",
+    items: [
+      {
+        tag: "fixed",
+        title: "No more searches that never come back",
+        description:
+          "Every step of a lead search now has a time limit, so a slow data provider can't leave you waiting until the search dies. Your credit is returned when a search can't finish.",
+      },
+      {
+        tag: "fixed",
+        title: "You'll see when the data network is down",
+        description:
+          "Empty results caused by an outage now say so, and the 'Broaden this search' button is hidden — no more editing filters that were never the problem.",
+      },
+    ],
+  },
+  {
     id: "2026-09-13",
     date: "2026-09-13",
     title: "Clearer lead searches and your credit counter is back",
