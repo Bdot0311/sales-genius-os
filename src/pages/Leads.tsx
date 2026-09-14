@@ -671,13 +671,20 @@ const Leads = () => {
                 </div>
               ) : (
                 <div className="text-center py-8 space-y-3">
+                  {/* An outage is not an empty match set. Telling someone to
+                      loosen filters while the data network is down sends them
+                      to edit an ICP that was never the problem. */}
                   <p className="text-muted-foreground">
-                    No leads match that exactly. Nothing broader is shown by default — results
-                    that stopped matching your description are worse than none.
+                    {disclosure.providerUnavailable
+                      ? disclosure.message ||
+                        "Our lead data network is temporarily unavailable, so this search could not be completed. Your search credit was not used — please try again shortly."
+                      : "No leads match that exactly. Nothing broader is shown by default — results that stopped matching your description are worse than none."}
                   </p>
                   {/* Which filters produced nothing. "Try different criteria" is
                       not actionable without knowing what was actually sent. */}
-                  {Array.isArray(disclosure.applied) && disclosure.applied.length > 0 && (
+                  {!disclosure.providerUnavailable &&
+                    Array.isArray(disclosure.applied) &&
+                    disclosure.applied.length > 0 && (
                     <p className="text-xs text-muted-foreground">
                       searched:{" "}
                       <span className="text-foreground">
@@ -685,7 +692,8 @@ const Leads = () => {
                       </span>
                     </p>
                   )}
-                  {(externalFilters.industry || externalFilters.keywords?.length) && (
+                  {disclosure.canBroaden &&
+                    (externalFilters.industry || externalFilters.keywords?.length) && (
                     <Button
                       variant="outline"
                       size="sm"
