@@ -924,6 +924,22 @@ serve(async (req) => {
     // function is allowed to live for.
     const FANOUT_BUDGET_MS = 100_000;
 
+    // One deadline for every upstream call this invocation makes, per-call
+    // timeouts included. Production returned 504 twice in two minutes: the
+    // gateway killed the function mid-call, so no JSON body reached the client,
+    // no error_code was classified, and refundCredit never ran — the user paid
+    // a credit for a search that never answered. A budget we own always beats a
+    // wall clock we don't.
+    const REQUEST_BUDGET_MS = 110_000;
+    const requestDeadline = Date.now() + REQUEST_BUDGET_MS;
+    /** Milliseconds left before we must answer the client no matter what. */
+    const budgetLeftMs = () => requestDeadline - Date.now();
+    /** A per-call timeout that can never outlive the request budget. */
+    const callTimeoutMs = (max = RAILWAY_TIMEOUT_MS) =>
+      Math.max(1_000, Math.min(max, budgetLeftMs()));
+    /** True when there is no longer time for another provider round trip. */
+    const outOfBudget = (needMs = 5_000) => budgetLeftMs() < needMs;
+
     /** fetch, with a deadline. Throws a named error so a timeout is not
      *  mistaken for the provider being unreachable — they call for opposite
      *  responses from the person reading the message. */
