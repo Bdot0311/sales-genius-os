@@ -32,12 +32,15 @@ export const Panel = ({
   children,
   className,
   flat,
+  id,
 }: {
   children: ReactNode;
   className?: string;
   /** Drop the shadow for a panel that sits inside another region. */
   flat?: boolean;
-}) => <div className={cn(SURFACE, !flat && ELEVATION, className)}>{children}</div>;
+  /** Anchor target, for a panel something links directly to. */
+  id?: string;
+}) => <div id={id} className={cn(SURFACE, !flat && ELEVATION, className)}>{children}</div>;
 
 /**
  * A panel's header strip.

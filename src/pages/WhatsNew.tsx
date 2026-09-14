@@ -1,25 +1,29 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { PageHeader } from "@/components/dashboard/PageHeader";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Sparkles, Wrench, Bug, Clock } from "lucide-react";
-import { CHANGELOG, TAG_LABELS, type ChangelogTag } from "@/lib/changelog";
+import { Panel, PanelHeader, EmptyState } from "@/components/dashboard/Panel";
+import { ArrowRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { CHANGELOG, ROADMAP, TAG_LABELS, unreadCount, type ChangelogTag } from "@/lib/changelog";
 import { useWhatsNew } from "@/hooks/use-whats-new";
 
-const tagStyles: Record<ChangelogTag, string> = {
+/**
+ * Tag colour carries meaning here, so it is the one place on this page with
+ * more than one hue. Billing is the loudest because a change to what somebody
+ * is charged is the one thing they must not scroll past.
+ */
+const TAG_STYLES: Record<ChangelogTag, string> = {
+  billing: "border-amber-400/40 bg-amber-400/10 text-amber-400",
   new: "border-primary/40 bg-primary/10 text-primary",
-  improved: "border-sky-500/40 bg-sky-500/10 text-sky-400",
-  fixed: "border-emerald-500/40 bg-emerald-500/10 text-emerald-400",
-  coming: "border-amber-500/40 bg-amber-500/10 text-amber-400",
+  improved: "border-border/60 bg-muted/40 text-muted-foreground",
+  fixed: "border-border/60 bg-muted/40 text-muted-foreground",
 };
 
-const tagIcons: Record<ChangelogTag, typeof Sparkles> = {
-  new: Sparkles,
-  improved: Wrench,
-  fixed: Bug,
-  coming: Clock,
+const ROADMAP_STATUS: Record<string, { label: string; className: string }> = {
+  building: { label: "Building now", className: "text-primary" },
+  next: { label: "Up next", className: "text-foreground/70" },
+  exploring: { label: "Exploring", className: "text-muted-foreground/70" },
 };
 
 const formatDate = (iso: string) =>
@@ -30,12 +34,52 @@ const formatDate = (iso: string) =>
     timeZone: "UTC",
   });
 
+type Filter = "all" | ChangelogTag;
+
+const FILTERS: { value: Filter; label: string }[] = [
+  { value: "all", label: "Everything" },
+  { value: "new", label: "New" },
+  { value: "improved", label: "Improved" },
+  { value: "fixed", label: "Fixed" },
+  { value: "billing", label: "Billing" },
+];
+
+/**
+ * What's new.
+ *
+ * The first version was a stack of cards, one per merged branch, in date order,
+ * with no way to filter and no mention of what was coming — which is the half
+ * people open a changelog to find. Three changes:
+ *
+ * "Coming next" is pinned above the history, because a customer checking
+ * whether the thing they asked for is being worked on should not have to read
+ * six weeks of releases to find out.
+ *
+ * The filter exists because this list only grows. At five entries you scroll
+ * it; at fifty you need to be able to ask "what changed about billing".
+ *
+ * And an entry the customer has not seen is marked as such. The header dot told
+ * them something was new and then the page gave them no way to tell which part.
+ */
 const WhatsNew = () => {
-  const { markSeen } = useWhatsNew();
+  const { markSeen, seenDate } = useWhatsNew();
+  const navigate = useNavigate();
+  const [filter, setFilter] = useState<Filter>("all");
+
+  // Captured once, on arrival: marking the page read immediately would clear
+  // the "new" marks in the same frame the reader is looking for them.
+  const [unreadAtArrival] = useState(() => unreadCount(seenDate));
 
   useEffect(() => {
     markSeen();
   }, [markSeen]);
+
+  const entries = useMemo(() => {
+    if (filter === "all") return CHANGELOG;
+    return CHANGELOG
+      .map((entry) => ({ ...entry, items: entry.items.filter((i) => i.tag === filter) }))
+      .filter((entry) => entry.items.length > 0);
+  }, [filter]);
 
   return (
     <DashboardLayout>
@@ -48,42 +92,119 @@ const WhatsNew = () => {
       <PageHeader
         breadcrumbs={[{ label: "Dashboard", href: "/dashboard" }, { label: "What's new" }]}
         title="What's new"
-        description="Everything we've shipped recently, and a look at what's coming next."
+        description="Everything we've shipped, newest first, and what's being built next."
       />
-      <div className="mx-auto w-full max-w-3xl space-y-6 pt-4">
 
-        <div className="space-y-5">
-          {CHANGELOG.map((entry) => (
-            <Card key={entry.id} id={entry.id}>
-              <CardHeader className="space-y-2 pb-3">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  {formatDate(entry.date)}
-                </p>
-                <CardTitle className="text-lg sm:text-xl">{entry.title}</CardTitle>
-                <p className="text-sm text-muted-foreground">{entry.summary}</p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {entry.items.map((item) => {
-                  const Icon = tagIcons[item.tag];
-                  return (
-                    <div key={item.title} className="flex gap-3">
-                      <Icon className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                      <div className="min-w-0 space-y-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-sm font-medium">{item.title}</p>
-                          <Badge variant="outline" className={`text-[10px] ${tagStyles[item.tag]}`}>
-                            {TAG_LABELS[item.tag]}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground">{item.description}</p>
+      <div className="mx-auto w-full max-w-3xl space-y-4 pt-4">
+        {/* Pinned above the history on purpose. */}
+        <Panel>
+          <PanelHeader title="Coming next" meta="no dates, on purpose" />
+          <div>
+            {ROADMAP.map((item, i) => {
+              const status = ROADMAP_STATUS[item.status] ?? ROADMAP_STATUS.exploring;
+              return (
+                <div
+                  key={item.title}
+                  className={cn("px-4 py-3.5 sm:px-5", i > 0 && "border-t border-border/30")}
+                >
+                  <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+                    <p className="text-[0.8125rem] font-medium text-foreground">{item.title}</p>
+                    <span className={cn("text-[0.625rem] uppercase tracking-[0.1em]", status.className)}>
+                      {status.label}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[0.6875rem] leading-relaxed text-muted-foreground">
+                    {item.description}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </Panel>
+
+        <div className="-mx-1 flex flex-wrap gap-1.5 px-1">
+          {FILTERS.map((f) => (
+            <button
+              key={f.value}
+              type="button"
+              onClick={() => setFilter(f.value)}
+              className={cn(
+                "rounded-full border px-3 py-1 text-[0.6875rem] transition-colors",
+                filter === f.value
+                  ? "border-primary/50 bg-primary/10 text-foreground"
+                  : "border-border/50 text-muted-foreground hover:border-border hover:text-foreground",
+              )}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+
+        {entries.length === 0 ? (
+          <EmptyState
+            title="Nothing under that filter yet"
+            body="Try another one, or read everything."
+          />
+        ) : (
+          entries.map((entry, entryIndex) => (
+            <Panel key={entry.id} id={entry.id}>
+              <PanelHeader
+                title={entry.title}
+                meta={formatDate(entry.date)}
+                actions={
+                  entryIndex < unreadAtArrival ? (
+                    <span className="text-[0.625rem] uppercase tracking-[0.1em] text-primary">New to you</span>
+                  ) : undefined
+                }
+              />
+              <p className="px-4 py-3 text-[0.8125rem] leading-relaxed text-muted-foreground sm:px-5">
+                {entry.summary}
+              </p>
+              <div className="border-t border-border/30">
+                {entry.items.map((item, i) => {
+                  const body = (
+                    <>
+                      <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+                        <p className="text-[0.8125rem] font-medium text-foreground">{item.title}</p>
+                        <span
+                          className={cn(
+                            "rounded-full border px-1.5 py-px text-[0.5625rem] uppercase tracking-[0.08em]",
+                            TAG_STYLES[item.tag],
+                          )}
+                        >
+                          {TAG_LABELS[item.tag]}
+                        </span>
                       </div>
+                      <p className="mt-1 text-[0.6875rem] leading-relaxed text-muted-foreground">
+                        {item.description}
+                      </p>
+                    </>
+                  );
+                  const rowClass = cn("px-4 py-3 sm:px-5", i > 0 && "border-t border-border/30");
+                  // An entry you cannot click is an announcement, not a feature.
+                  return item.href ? (
+                    <button
+                      key={item.title}
+                      type="button"
+                      onClick={() => navigate(item.href!)}
+                      className={cn(rowClass, "group flex w-full items-start gap-3 text-left transition-colors hover:bg-primary/5")}
+                    >
+                      <span className="min-w-0 flex-1">{body}</span>
+                      <ArrowRight
+                        className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                        aria-hidden
+                      />
+                    </button>
+                  ) : (
+                    <div key={item.title} className={rowClass}>
+                      {body}
                     </div>
                   );
                 })}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              </div>
+            </Panel>
+          ))
+        )}
       </div>
     </DashboardLayout>
   );
