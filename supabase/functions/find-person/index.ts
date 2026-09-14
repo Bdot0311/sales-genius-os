@@ -7,10 +7,26 @@
 // It reuses the same upstream verb as enrich-lead (Railway /enrich, which takes
 // EXACTLY ONE of full_name+company, email, or linkedin_url) and the same credit
 // rules: paid plan only, one credit, refunded when nothing matched.
+//
+// Two actions (POST body):
+//   { action: "lookup", ... }  — ask the provider. Writes nothing.
+//   { action: "save", person, lead_id? } — write the result to leads.
+//
+// The lookup used to save on its own, which is how a lookup that learned
+// nothing still reported "Saved to leads", and how repeating one on somebody
+// already saved overwrote their row with the caller's own input. Looking is now
+// separate from writing, and the caller is told what a write would change
+// before deciding to make it.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
 import { rateLimit, rateLimitResponse } from "../_shared/rate-limit.ts";
+import {
+  diffAgainstLead,
+  isRealMatch,
+  providerContributions,
+  savableRecord,
+} from "../_shared/person-match.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -73,6 +89,62 @@ serve(async (req) => {
     if (!rl.allowed) return rateLimitResponse(rl.retryAfter, corsHeaders);
 
     const body = await req.json().catch(() => ({}));
+
+    // ---------- SAVE ----------
+    // Writing is its own call now, and costs nothing: the credit was spent on
+    // the lookup that produced this record.
+    if (body.action === "save") {
+      const person = (body.person ?? {}) as Record<string, unknown>;
+      const record = savableRecord(person);
+      if (Object.keys(record).length === 0) {
+        return json({ error: "Nothing to save.", error_code: "empty_record" }, 400);
+      }
+      record.enrichment_status = "enriched";
+      record.enriched_at = new Date().toISOString();
+
+      let leadId = typeof body.lead_id === "string" ? body.lead_id : null;
+      if (leadId) {
+        // Scoped to this user: a lead id from the client is a claim, not proof.
+        const { data: owned } = await supabase
+          .from("leads").select("id").eq("id", leadId).eq("user_id", user.id).maybeSingle();
+        if (!owned) return json({ error: "Lead not found.", error_code: "not_found" }, 404);
+        const { error } = await supabase.from("leads").update(record).eq("id", leadId).eq("user_id", user.id);
+        if (error) {
+          console.error("[find-person] update failed:", error.message);
+          return json({ error: "Could not update the lead." }, 500);
+        }
+      } else {
+        const { data, error } = await supabase.from("leads")
+          .insert({
+            ...record,
+            user_id: user.id,
+            company_name: record.company_name ?? "Unknown company",
+            contact_name: record.contact_name ?? String(record.contact_email ?? "Unknown contact"),
+            source: "People search",
+            lead_status: "active",
+            pipeline_stage: "new",
+          })
+          .select("id").single();
+        if (error) {
+          console.error("[find-person] insert failed:", error.message);
+          return json({ error: "Could not save the lead." }, 500);
+        }
+        leadId = data.id;
+      }
+
+      // Score it on the same path enrichment uses, best-effort.
+      try {
+        await fetch(`${supabaseUrl}/functions/v1/score-lead`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: authHeader, apikey: serviceKey },
+          body: JSON.stringify({ leadId }),
+        });
+      } catch (e) {
+        console.error("[find-person] score-lead failed:", e instanceof Error ? e.message : e);
+      }
+
+      return json({ lead_id: leadId, saved: true, created: !body.lead_id });
+    }
     const fullName = typeof body.full_name === "string" ? body.full_name.trim() : "";
     const company = typeof body.company === "string" ? body.company.trim() : "";
     const domain = cleanDomain(body.company_domain);
@@ -227,16 +299,6 @@ serve(async (req) => {
     const resolvedCompany = c.name ?? c.company_name ?? root.company_name ?? (company || null);
     const website = c.website ?? c.domain ?? root.company_domain ?? domain;
 
-    // A record with neither a name nor an email is not a usable contact.
-    if (!resolvedName && !resolvedEmail) {
-      await refundCredit("no_match");
-      return json({
-        person: null,
-        error: "No matching contact found. Try adding their company domain, work email, or LinkedIn URL.",
-        error_code: "no_match",
-      });
-    }
-
     const person: Record<string, unknown> = {
       contact_name: resolvedName,
       contact_email: resolvedEmail || null,
@@ -256,76 +318,65 @@ serve(async (req) => {
     };
     const rawCountry = p.country ?? p.location_country ?? p.country_code ?? p.location ?? c.country ?? null;
     const country = typeof rawCountry === "string" && rawCountry.trim() ? rawCountry.trim().slice(0, 100) : null;
+    if (country) person.country = country;
 
-    // Save (or refresh) the lead so the result is immediately usable everywhere
-    // else — sequences, the SDR, outreach. Matching on email first, then on
-    // name+company, keeps a repeat lookup from creating a duplicate record.
-    let leadId: string | null = null;
-    let created = false;
-    try {
-      let existing: { id: string } | null = null;
-      if (person.contact_email) {
-        const { data } = await supabase.from("leads")
-          .select("id").eq("user_id", user.id)
-          .ilike("contact_email", String(person.contact_email)).limit(1).maybeSingle();
-        existing = data ?? null;
-      }
-      if (!existing && person.contact_name && person.company_name) {
-        const { data } = await supabase.from("leads")
-          .select("id").eq("user_id", user.id)
-          .ilike("contact_name", String(person.contact_name))
-          .ilike("company_name", String(person.company_name))
-          .limit(1).maybeSingle();
-        existing = data ?? null;
-      }
-
-      const record: Record<string, unknown> = {};
-      for (const [k, v] of Object.entries(person)) if (v) record[k] = v;
-      record.enrichment_status = "enriched";
-      record.enriched_at = new Date().toISOString();
-
-      if (existing) {
-        leadId = existing.id;
-        await supabase.from("leads").update(record).eq("id", existing.id).eq("user_id", user.id);
-      } else {
-        const { data, error } = await supabase.from("leads")
-          .insert({
-            ...record,
-            user_id: user.id,
-            company_name: person.company_name ?? "Unknown company",
-            contact_name: person.contact_name ?? String(person.contact_email),
-            source: "People search",
-            lead_status: "active",
-            pipeline_stage: "new",
-          })
-          .select("id").single();
-        if (error) throw error;
-        leadId = data.id;
-        created = true;
-      }
-
-      if (leadId && country) {
-        const { error: cErr } = await supabase.from("leads").update({ country }).eq("id", leadId).eq("user_id", user.id);
-        if (cErr) console.warn("[find-person] country write skipped:", cErr.message);
-      }
-    } catch (e) {
-      console.error("[find-person] lead save failed:", e instanceof Error ? e.message : e);
+    // Did the provider actually find anyone?
+    //
+    // The old test was "is there a name or an email", and the name falls back
+    // to the one the caller typed — so for a name-plus-company lookup it was
+    // satisfied before the provider was called. An empty upstream answer came
+    // back as a found contact whose only fields were the caller's own input,
+    // charged a credit, and was written into leads under a "Saved to leads"
+    // badge. At least one field has to have come from upstream.
+    const lookupInput = { fullName, company, email, linkedin };
+    if (!isRealMatch(person, lookupInput)) {
+      await refundCredit("no_match");
+      return json({
+        person: null,
+        error:
+          "No matching contact found — the provider returned nothing beyond what you typed, so no credit was charged. " +
+          "A company domain, work email, or LinkedIn URL usually finds someone a name alone cannot.",
+        error_code: "no_match",
+      });
     }
 
-    // Score it on the same path enrichment uses, best-effort.
-    if (leadId) {
-      try {
-        await fetch(`${supabaseUrl}/functions/v1/score-lead`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: authHeader, apikey: serviceKey },
-          body: JSON.stringify({ leadId }),
-        });
-      } catch (e) {
-        console.error("[find-person] score-lead failed:", e instanceof Error ? e.message : e);
-      }
+    // Is this somebody already in their leads, and what would a save change?
+    // Matching on email first, then on name+company, is the same pairing the
+    // automatic save used — it is the writing that has moved, not the matching.
+    let existingLead: Record<string, unknown> | null = null;
+    const leadColumns =
+      "id, contact_name, contact_email, contact_phone, job_title, seniority, linkedin_url, " +
+      "company_name, company_website, company_linkedin, industry, employee_count, company_description, country";
+    if (person.contact_email) {
+      const { data } = await supabase.from("leads")
+        .select(leadColumns).eq("user_id", user.id)
+        .ilike("contact_email", String(person.contact_email)).limit(1).maybeSingle();
+      existingLead = data ?? null;
+    }
+    if (!existingLead && person.contact_name && person.company_name) {
+      const { data } = await supabase.from("leads")
+        .select(leadColumns).eq("user_id", user.id)
+        .ilike("contact_name", String(person.contact_name))
+        .ilike("company_name", String(person.company_name))
+        .limit(1).maybeSingle();
+      existingLead = data ?? null;
     }
 
-    return json({ person: { ...person, id: leadId, country }, lead_id: leadId, created });
+    return json({
+      person: { ...person, id: existingLead?.id ?? null },
+      // What upstream contributed, so the caller can say what the lookup added
+      // rather than claiming a find it did not make.
+      found_fields: providerContributions(person, lookupInput),
+      existing_lead: existingLead
+        ? {
+            id: existingLead.id,
+            contact_name: existingLead.contact_name,
+            company_name: existingLead.company_name,
+            changes: diffAgainstLead(person, existingLead),
+          }
+        : null,
+      saved: false,
+    });
   } catch (error) {
     console.error("[find-person] error:", error instanceof Error ? error.message : error);
     return json({ person: null, error: "Lookup failed. Please try again." });

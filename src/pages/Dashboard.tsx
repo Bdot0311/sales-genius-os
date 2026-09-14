@@ -1,45 +1,86 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { PageHeader } from "@/components/dashboard/PageHeader";
 import { AddLeadDialog } from "@/components/dashboard/AddLeadDialog";
 import { OnboardingChecklist } from "@/components/dashboard/OnboardingChecklist";
 import { DashboardTour } from "@/components/dashboard/DashboardTour";
 import { DiscoveryPrompt } from "@/components/dashboard/DiscoveryPrompt";
 import { ProspectUsageMeter } from "@/components/dashboard/ProspectUsageMeter";
-import { TrendingUp, Users, DollarSign, Calendar, Mail } from "lucide-react";
+import { Panel, PanelHeader, MetricStrip, type Metric } from "@/components/dashboard/Panel";
+import { ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { SEOHead } from "@/components/seo/SEOHead";
 
+interface Stats {
+  totalLeads: number;
+  totalDeals: number;
+  totalValue: number;
+  meetingsThisWeek: number;
+  leadsMissingEmail: number;
+  leadsNeverContacted: number;
+}
+
+const EMPTY: Stats = {
+  totalLeads: 0,
+  totalDeals: 0,
+  totalValue: 0,
+  meetingsThisWeek: 0,
+  leadsMissingEmail: 0,
+  leadsNeverContacted: 0,
+};
+
+/**
+ * The page you land on.
+ *
+ * It carried three things that were not doing the work they looked like they
+ * were doing.
+ *
+ * "Quick Actions" was three identical cards — icon chip, heading, line of text
+ * — linking to Outreach, Pipeline and Calendar. All three are in the sidebar,
+ * two clicks from anywhere including this page, so the row restated the
+ * navigation in the most recognisable generated-interface shape there is.
+ *
+ * Beside it sat a tinted panel, captioned as an AI insight, which read the four
+ * numbers directly above it back as a sentence. Announcing that a restatement
+ * is an insight is worse than not having one. (The captions are described
+ * rather than quoted: the test guarding this asserts those strings are absent
+ * from the file.)
+ *
+ * And the four metrics each carried an icon in a different hue — blue, violet,
+ * emerald, amber — which is a rainbow legend for four unrelated numbers, chosen
+ * because the tiles looked bare without it.
+ *
+ * What replaced them: the numbers say what they mean and are clickable through
+ * to the thing they count, and the space the nav cards took now holds what
+ * actually needs doing, computed from the data. "12 leads have no email
+ * address" is a thing to act on. A card whose whole content is the name of a
+ * page is a link.
+ */
 const Dashboard = () => {
-  const { currentPlan, loading: planLoading } = usePlanFeatures();
+  const { currentPlan } = usePlanFeatures();
   const navigate = useNavigate();
-  const isFreeTier = currentPlan === 'free';
+  const isFreeTier = currentPlan === "free";
   const [showChecklist, setShowChecklist] = useState(true);
   const [showTour, setShowTour] = useState(false);
-  const [stats, setStats] = useState({
-    totalLeads: 0,
-    totalDeals: 0,
-    totalValue: 0,
-    meetingsThisWeek: 0,
-  });
-
+  const [stats, setStats] = useState<Stats>(EMPTY);
 
   useEffect(() => {
     loadStats();
     checkFirstVisit();
 
     const leadsChannel = supabase
-      .channel('dashboard-leads-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => loadStats())
+      .channel("dashboard-leads-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "leads" }, () => loadStats())
       .subscribe();
     const dealsChannel = supabase
-      .channel('dashboard-deals-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'deals' }, () => loadStats())
+      .channel("dashboard-deals-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "deals" }, () => loadStats())
       .subscribe();
     const activitiesChannel = supabase
-      .channel('dashboard-activities-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'activities' }, () => loadStats())
+      .channel("dashboard-activities-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "activities" }, () => loadStats())
       .subscribe();
 
     return () => {
@@ -70,32 +111,105 @@ const Dashboard = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { data: leads } = await supabase.from("leads").select("id").eq("user_id", user.id);
+      const { data: leads } = await supabase
+        .from("leads")
+        .select("id, contact_email, last_contacted_at")
+        .eq("user_id", user.id);
       const { data: deals } = await supabase.from("deals").select("id, value").eq("user_id", user.id);
       const { data: activities } = await supabase
         .from("activities")
-        .select("*")
+        .select("id")
         .eq("user_id", user.id)
         .eq("type", "meeting")
         .gte("due_date", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+
       const totalValue = deals?.reduce((sum, deal) => sum + (Number(deal.value) || 0), 0) || 0;
+      const rows = leads ?? [];
       setStats({
-        totalLeads: leads?.length || 0,
+        totalLeads: rows.length,
         totalDeals: deals?.length || 0,
         totalValue,
         meetingsThisWeek: activities?.length || 0,
+        // A lead with no address cannot be sent to. It is the one thing on this
+        // page that is both quantifiable and immediately fixable.
+        leadsMissingEmail: rows.filter((l) => !l.contact_email).length,
+        leadsNeverContacted: rows.filter((l) => l.contact_email && !l.last_contacted_at).length,
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error loading stats:", error);
     }
   };
 
-  const statCards = [
-    { title: "Total Leads", value: stats.totalLeads, icon: Users, color: "text-blue-400" },
-    { title: "Active Deals", value: stats.totalDeals, icon: TrendingUp, color: "text-violet-400" },
-    { title: "Pipeline Value", value: `$${stats.totalValue.toLocaleString()}`, icon: DollarSign, color: "text-emerald-400" },
-    { title: "Meetings This Week", value: stats.meetingsThisWeek, icon: Calendar, color: "text-amber-400" },
+  const money = (n: number) =>
+    n >= 1000 ? `$${Math.round(n / 1000).toLocaleString()}k` : `$${n.toLocaleString()}`;
+
+  const metrics: Metric[] = [
+    {
+      label: "Leads",
+      value: stats.totalLeads.toLocaleString(),
+      note: stats.leadsMissingEmail > 0 ? `${stats.leadsMissingEmail} with no email` : "all have an address",
+      onClick: () => navigate("/dashboard/leads/saved"),
+    },
+    {
+      label: "Deals",
+      value: stats.totalDeals.toLocaleString(),
+      note: stats.totalDeals > 0 ? "open in the pipeline" : "none open yet",
+      onClick: () => navigate("/dashboard/pipeline"),
+    },
+    {
+      label: "Pipeline value",
+      value: money(stats.totalValue),
+      note: stats.totalDeals > 0 ? `across ${stats.totalDeals} ${stats.totalDeals === 1 ? "deal" : "deals"}` : "nothing to total",
+      onClick: () => navigate("/dashboard/pipeline"),
+    },
+    {
+      label: "Meetings",
+      value: stats.meetingsThisWeek.toLocaleString(),
+      note: "booked in the last 7 days",
+      onClick: () => navigate("/dashboard/calendar"),
+    },
   ];
+
+  /**
+   * Things to do, from the data rather than from the sidebar.
+   *
+   * Each entry has to be a state the account is actually in — a count of real
+   * rows — and a place that acts on it. An item that is always present is a
+   * link, and links belong in the navigation.
+   */
+  const attention = [
+    stats.leadsMissingEmail > 0 && {
+      key: "missing-email",
+      count: stats.leadsMissingEmail,
+      title: `${stats.leadsMissingEmail} ${stats.leadsMissingEmail === 1 ? "lead has" : "leads have"} no email address`,
+      body: "They cannot be sent to. Person search fills in a contact record from a name and company.",
+      action: "Find their details",
+      href: "/dashboard/leads",
+    },
+    stats.leadsNeverContacted > 0 && {
+      key: "never-contacted",
+      count: stats.leadsNeverContacted,
+      title: `${stats.leadsNeverContacted} reachable ${stats.leadsNeverContacted === 1 ? "lead has" : "leads have"} never been contacted`,
+      body: "They have a verified address and no send against them yet.",
+      action: "Open outreach",
+      href: "/dashboard/outreach",
+    },
+    stats.totalLeads === 0 && {
+      key: "no-leads",
+      count: 0,
+      title: "No leads yet",
+      body: "Describe who you want in plain English and the search returns ranked contacts with verified emails.",
+      action: "Run a search",
+      href: "/dashboard/leads",
+    },
+  ].filter(Boolean) as {
+    key: string;
+    count: number;
+    title: string;
+    body: string;
+    action: string;
+    href: string;
+  }[];
 
   return (
     <DashboardLayout>
@@ -104,90 +218,53 @@ const Dashboard = () => {
         description="Track prospects, pipeline activity, and outreach performance from your OutReign dashboard."
         noIndex
       />
-      <div className="px-6 py-6 space-y-6 max-w-[1400px] mx-auto">
+      <PageHeader
+        title="Overview"
+        description={new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+        actions={<AddLeadDialog onLeadAdded={loadStats} triggerVariant="outline" />}
+      />
+      <div className="mx-auto max-w-[1400px] space-y-4 px-6 py-5">
         <DashboardTour isOpen={showTour} onClose={() => setShowTour(false)} />
         <DiscoveryPrompt />
         {showChecklist && (
           <OnboardingChecklist onClose={() => setShowChecklist(false)} onStartTour={() => setShowTour(true)} />
         )}
-        
-        
-
-        {/* Header row */}
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-[11px] text-muted-foreground uppercase tracking-widest mb-1 font-medium">Overview</p>
-            <h1 className="text-xl font-semibold">
-              {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-            </h1>
-          </div>
-          <AddLeadDialog onLeadAdded={loadStats} />
-        </div>
 
         {!isFreeTier && <ProspectUsageMeter />}
 
-        {/* Metrics strip */}
-        <div data-tour="stats" className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-border/60 rounded-lg overflow-hidden border border-border/60">
-          {statCards.map((stat) => (
-            <div key={stat.title} className="bg-card px-5 py-4 flex flex-col gap-1">
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-muted-foreground">{stat.title}</p>
-                <stat.icon className={`w-3.5 h-3.5 ${stat.color}`} />
-              </div>
-              <p className="text-2xl font-semibold tabular-nums">{stat.value}</p>
-            </div>
-          ))}
+        <div data-tour="stats">
+          <MetricStrip metrics={metrics} />
         </div>
 
-        {/* Quick actions + insight */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-2 space-y-2">
-            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-widest">Quick Actions</p>
-            <div data-tour="quick-actions" className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {[
-                { label: "Outreach Studio", desc: "Generate AI-powered emails", icon: Mail, href: '/dashboard/outreach' },
-                { label: "View Pipeline", desc: "Manage your deals", icon: TrendingUp, href: '/dashboard/pipeline' },
-                { label: "Schedule Meeting", desc: "Book a call with a lead", icon: Calendar, href: '/dashboard/calendar' },
-              ].map((action) => (
+        {attention.length > 0 && (
+          <Panel>
+            <PanelHeader
+              title="Needs attention"
+              meta={`${attention.length} ${attention.length === 1 ? "item" : "items"}`}
+            />
+            <div data-tour="quick-actions">
+              {attention.map((item, i) => (
                 <button
-                  key={action.label}
-                  onClick={() => navigate(action.href)}
-                  className="flex items-start gap-3 p-4 rounded-lg border border-border/60 bg-card hover:bg-accent/50 hover:border-primary/30 transition-all text-left group"
+                  key={item.key}
+                  type="button"
+                  onClick={() => navigate(item.href)}
+                  className={`group flex w-full items-start gap-4 px-4 py-3.5 text-left transition-colors hover:bg-primary/5 sm:px-5 ${
+                    i > 0 ? "border-t border-border/30" : ""
+                  }`}
                 >
-                  <div className="p-1.5 rounded-md bg-primary/10 group-hover:bg-primary/20 transition-colors flex-shrink-0">
-                    <action.icon className="w-4 h-4 text-primary" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[0.8125rem] font-medium text-foreground">{item.title}</p>
+                    <p className="mt-1 text-[0.6875rem] leading-relaxed text-muted-foreground">{item.body}</p>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium">{action.label}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{action.desc}</p>
-                  </div>
+                  <span className="mt-0.5 flex shrink-0 items-center gap-1.5 text-[0.6875rem] text-muted-foreground transition-colors group-hover:text-foreground">
+                    <span className="hidden sm:inline">{item.action}</span>
+                    <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+                  </span>
                 </button>
               ))}
             </div>
-          </div>
-
-          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 flex flex-col justify-between">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="p-1.5 rounded-md bg-primary/15">
-                <TrendingUp className="w-3.5 h-3.5 text-primary" />
-              </div>
-              <p className="text-[11px] font-semibold text-primary uppercase tracking-wider">AI Insight</p>
-            </div>
-            <p className="text-sm text-foreground/80 leading-relaxed flex-1">
-              {stats.totalLeads > 0
-                ? `${stats.totalLeads} lead${stats.totalLeads > 1 ? 's' : ''}, ${stats.totalDeals} deal${stats.totalDeals !== 1 ? 's' : ''} worth $${stats.totalValue.toLocaleString()}. ${stats.meetingsThisWeek > 0 ? `${stats.meetingsThisWeek} meeting${stats.meetingsThisWeek > 1 ? 's' : ''} this week.` : 'No meetings this week yet.'}`
-                : isFreeTier
-                  ? 'Free plan: 100 lead searches and 100 outbound emails this month. Upgrade for unlimited capacity.'
-                  : 'Add your first lead to get AI-powered insights and coaching.'}
-            </p>
-            <button
-              onClick={() => navigate('/dashboard/coach')}
-              className="mt-4 text-xs text-primary hover:text-primary/80 font-medium flex items-center gap-1 transition-colors"
-            >
-              Open AI Coach →
-            </button>
-          </div>
-        </div>
+          </Panel>
+        )}
       </div>
     </DashboardLayout>
   );

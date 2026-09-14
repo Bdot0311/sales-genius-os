@@ -17,16 +17,20 @@ interface TourStep {
   fallbackPosition?: { top: number; left: number; width: number; height: number };
 }
 
-const tourSteps: TourStep[] = [
+const ALL_STEPS: TourStep[] = [
   {
-    title: "Your Stats at a Glance",
-    description: "Track total leads, active deals, pipeline value, and meetings — all updated in real-time as your data changes.",
+    title: "Your numbers",
+    description: "Leads, open deals, pipeline value and meetings, live as the data changes. Each one opens the page it counts.",
     selector: "[data-tour='stats']",
     position: "bottom",
   },
   {
-    title: "Quick Actions",
-    description: "Jump straight into outreach, pipeline management, or scheduling without navigating away.",
+    // Was "Quick Actions", describing a row of three cards that linked to
+    // Outreach, Pipeline and Calendar — all of which are in the sidebar. The
+    // row is gone and this is what took its place, so the step describes that
+    // instead of a thing the reader cannot see.
+    title: "What needs doing",
+    description: "Leads with no email address, reachable leads nobody has contacted. Real states of your account, each with somewhere to act on it.",
     selector: "[data-tour='quick-actions']",
     position: "top",
   },
@@ -58,6 +62,17 @@ const tourSteps: TourStep[] = [
 
 
 export const DashboardTour = ({ isOpen, onClose }: DashboardTourProps) => {
+  /**
+   * Only the steps whose target is on the page.
+   *
+   * A missing target used to fall back to a box floating in the middle of the
+   * screen, describing something the reader could not see and pointing at
+   * nothing. "What needs doing" is legitimately absent on an account with
+   * nothing wrong with it, so that case is now normal rather than exceptional.
+   * Resolved once per opening: the steps must not renumber underneath someone
+   * halfway through.
+   */
+  const [tourSteps, setTourSteps] = useState<TourStep[]>(ALL_STEPS);
   const [currentStep, setCurrentStep] = useState(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const [animating, setAnimating] = useState(false);
@@ -72,8 +87,11 @@ export const DashboardTour = ({ isOpen, onClose }: DashboardTourProps) => {
   }, [currentStep, isOpen, tooltipHeight]);
 
 
-  const findTarget = useCallback((step: number) => {
-    const el = document.querySelector(tourSteps[step].selector);
+  // Takes the selector, not the step index: the step list became state when
+  // absent steps started being filtered out, and an index resolved against a
+  // list this callback had closed over would point at the wrong step.
+  const findTarget = useCallback((selector: string) => {
+    const el = document.querySelector(selector);
     if (!el) {
       // Fallback — show center-screen
       setTargetRect(new DOMRect(window.innerWidth / 2 - 150, window.innerHeight / 2 - 30, 300, 60));
@@ -108,12 +126,18 @@ export const DashboardTour = ({ isOpen, onClose }: DashboardTourProps) => {
 
   useEffect(() => {
     if (isOpen) {
+      // Resolved here rather than in an effect of its own: setState is not
+      // synchronous, so a separate effect would leave this one opening on the
+      // unfiltered first step.
+      const present = ALL_STEPS.filter((s) => document.querySelector(s.selector));
+      const steps = present.length > 0 ? present : ALL_STEPS;
+      setTourSteps(steps);
       setCurrentStep(0);
       setVisible(false);
       // Small delay so overlay fades in first
       requestAnimationFrame(() => {
         setVisible(true);
-        findTarget(0);
+        findTarget(steps[0].selector);
       });
     } else {
       setVisible(false);
@@ -133,13 +157,13 @@ export const DashboardTour = ({ isOpen, onClose }: DashboardTourProps) => {
       window.removeEventListener("resize", remeasure);
       window.removeEventListener("scroll", remeasure, true);
     };
-  }, [isOpen, currentStep]);
+  }, [isOpen, currentStep, tourSteps]);
 
 
   const goToStep = (step: number) => {
     setAnimating(true);
     setCurrentStep(step);
-    findTarget(step);
+    findTarget(tourSteps[step].selector);
   };
 
   const handleNext = () => {
