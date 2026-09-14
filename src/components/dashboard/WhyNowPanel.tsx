@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Panel, PanelHeader, PanelFooter } from "@/components/dashboard/Panel";
 import { Loader2, ExternalLink } from "lucide-react";
 
 interface Claim { claim: string; source_url: string; confidence: string }
 
+/* Confidence as a ramp, not three unrelated colours. The border halves went
+   with the pill they outlined. */
 const CONF: Record<string, string> = {
-  high: "text-green-500 border-green-500/30",
-  medium: "text-yellow-500 border-yellow-500/30",
-  low: "text-slate-400 border-slate-500/25",
+  high: "text-emerald-400/90",
+  medium: "text-amber-400/80",
+  low: "text-muted-foreground/60",
 };
 
 // Why-now claims for an account. Every rendered claim carries a source link.
@@ -53,34 +54,62 @@ export const WhyNowPanel = ({ companyId }: { companyId: string }) => {
   }, [companyId]);
 
   return (
-    <Card>
-      <CardHeader className="pb-3 flex flex-row items-center justify-between gap-3">
-        <CardTitle className="text-base">why now</CardTitle>
-        {running && <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground"><Loader2 className="w-3 h-3 animate-spin" />researching automatically</span>}
-      </CardHeader>
-      <CardContent className="space-y-2">
-        {loading ? (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="w-3.5 h-3.5 animate-spin" />loading...</div>
-        ) : claims.length === 0 ? (
-          <p className="text-xs text-muted-foreground">
-            {reason ?? "researching sourced reasons from this account's detected signals."}
-          </p>
-        ) : (
-          claims.map((c, i) => (
-            <div key={i} className="flex items-start gap-2 text-xs py-1.5 border-b border-border/40 last:border-0">
-              <Badge variant="outline" className={`text-[10px] shrink-0 ${CONF[c.confidence] || ""}`}>{c.confidence}</Badge>
+    <Panel>
+      <PanelHeader
+        title="Why now"
+        meta={
+          running ? (
+            <span className="inline-flex items-center gap-1.5">
+              <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+              Researching
+            </span>
+          ) : undefined
+        }
+      />
+      {loading ? (
+        <p className="flex items-center gap-2 px-4 py-4 text-[0.8125rem] text-muted-foreground sm:px-5">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+          Loading…
+        </p>
+      ) : claims.length === 0 ? (
+        <p className="px-4 py-4 text-[0.6875rem] leading-relaxed text-muted-foreground sm:px-5">
+          {reason ?? "Researching sourced reasons from this account's detected signals."}
+        </p>
+      ) : (
+        /* One claim per row, divided by a hairline. Confidence leads the row as
+           a word at the scale of the rest of the chrome, rather than as an
+           outlined pill per row — twenty pills down a column is a texture, not
+           a signal. */
+        <div>
+          {claims.map((c, i) => (
+            <div
+              key={i}
+              className={`flex items-start gap-3 px-4 py-2.5 sm:px-5 ${i > 0 ? "border-t border-border/30" : ""}`}
+            >
+              <span className={`w-12 shrink-0 pt-0.5 text-[0.625rem] uppercase tracking-[0.08em] ${CONF[c.confidence] || "text-muted-foreground"}`}>
+                {c.confidence}
+              </span>
               <div className="min-w-0 flex-1">
-                <p className="text-foreground/80">{c.claim}</p>
-                <a href={c.source_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline">
-                  source <ExternalLink className="w-3 h-3" />
+                <p className="text-[0.8125rem] leading-relaxed text-foreground/90">{c.claim}</p>
+                <a
+                  href={c.source_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-1 inline-flex items-center gap-1 text-[0.6875rem] text-muted-foreground transition-colors hover:text-primary"
+                >
+                  Source <ExternalLink className="h-3 w-3" aria-hidden />
                 </a>
               </div>
-              {c.confidence === "low" && <span className="text-[10px] text-muted-foreground shrink-0">not used in tokens</span>}
+              {c.confidence === "low" && (
+                <span className="shrink-0 pt-0.5 text-[0.625rem] text-muted-foreground/60">not used in tokens</span>
+              )}
             </div>
-          ))
-        )}
-        {researchedAt && <p className="text-[10px] text-muted-foreground pt-1">last researched {new Date(researchedAt).toLocaleDateString()}</p>}
-      </CardContent>
-    </Card>
+          ))}
+        </div>
+      )}
+      {researchedAt && (
+        <PanelFooter>Last researched {new Date(researchedAt).toLocaleDateString()}</PanelFooter>
+      )}
+    </Panel>
   );
 };

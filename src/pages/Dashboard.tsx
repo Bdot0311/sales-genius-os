@@ -176,23 +176,29 @@ const Dashboard = () => {
    * Each entry has to be a state the account is actually in — a count of real
    * rows — and a place that acts on it. An item that is always present is a
    * link, and links belong in the navigation.
+   *
+   * Each href opens the rows the count counted. The first version sent both of
+   * these to the lead search, which is the page for finding leads you do not
+   * have — not the ones just counted — so the item named a set and then opened
+   * something else. A count you cannot click through to is trivia with a number
+   * on it.
    */
   const attention = [
     stats.leadsMissingEmail > 0 && {
       key: "missing-email",
       count: stats.leadsMissingEmail,
       title: `${stats.leadsMissingEmail} ${stats.leadsMissingEmail === 1 ? "lead has" : "leads have"} no email address`,
-      body: "They cannot be sent to. Person search fills in a contact record from a name and company.",
-      action: "Find their details",
-      href: "/dashboard/leads",
+      body: "They cannot be sent to. Opening them filters your saved leads down to exactly these, and person search fills in a contact record from a name and company.",
+      action: "Show them",
+      href: "/dashboard/leads/saved?show=no-email",
     },
     stats.leadsNeverContacted > 0 && {
       key: "never-contacted",
       count: stats.leadsNeverContacted,
       title: `${stats.leadsNeverContacted} reachable ${stats.leadsNeverContacted === 1 ? "lead has" : "leads have"} never been contacted`,
       body: "They have a verified address and no send against them yet.",
-      action: "Open outreach",
-      href: "/dashboard/outreach",
+      action: "Show them",
+      href: "/dashboard/leads/saved?show=never-contacted",
     },
     stats.totalLeads === 0 && {
       key: "no-leads",
