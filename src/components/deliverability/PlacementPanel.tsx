@@ -27,6 +27,14 @@ export const PlacementPanel = ({ accounts }: { accounts: SendingAccount[] }) => 
   const [testId, setTestId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string>("");
   const [busy, setBusy] = useState(false);
+  // Which inbox this test measures against. The function has always returned
+  // it and nothing showed it, so the user watched a test run with no idea what
+  // it was measuring — and when the seed failed, the whole feature read as
+  // broken rather than one mailbox being unreadable.
+  const [seedEmail, setSeedEmail] = useState<string>("");
+  // A revoked seed token answers identically every time. Offering "Check
+  // again" against it is offering a button that cannot work.
+  const [terminal, setTerminal] = useState(false);
 
 
   // Guard against setState after unmount and clean up the pending auto-check
@@ -52,6 +60,8 @@ export const PlacementPanel = ({ accounts }: { accounts: SendingAccount[] }) => 
       setTestId(res.testId);
       setGmail("pending");
       setErrorMsg("");
+      setSeedEmail(res.seedEmail ?? "");
+      setTerminal(false);
       setStatus("running");
 
       toast.success("Test email sent to the seed inbox. Checking placement…");
@@ -68,6 +78,12 @@ export const PlacementPanel = ({ accounts }: { accounts: SendingAccount[] }) => 
       const msg = e instanceof Error ? e.message : "Placement test failed";
       if (!mounted.current) return;
       if (msg.includes("seed_not_configured") || msg.toLowerCase().includes("seed inbox")) {
+        // Render what the function actually said. The canned paragraph this
+        // replaced told the reader to "add the seed inbox credentials", which
+        // is an operator instruction about a secret they have no access to —
+        // and it was shown for every seed problem, including ones they could
+        // have fixed by connecting a second mailbox.
+        setErrorMsg(msg);
         setStatus("unconfigured");
       } else {
         toast.error(msg);
@@ -100,6 +116,7 @@ export const PlacementPanel = ({ accounts }: { accounts: SendingAccount[] }) => 
       const res = await collectPlacementTest(id);
       if (!mounted.current) return;
       setGmail(res.gmail);
+      if (res.seedEmail) setSeedEmail(res.seedEmail);
 
       if (res.gmail !== "pending" && res.gmail !== "missing") {
         setStatus("done");
@@ -117,12 +134,13 @@ export const PlacementPanel = ({ accounts }: { accounts: SendingAccount[] }) => 
       // A read we can never perform (seed mailbox unreadable / disconnected) is
       // terminal: retrying it just leaves the badge spinning forever, which is
       // exactly the bug this replaced. Surface it and stop.
-      const terminal = /could not be read|could not search|seed_unavailable|not configured|reconnect/i.test(msg);
-      if (terminal) {
+      const unreadable = /could not be read|could not search|seed_unavailable|not configured|reconnect/i.test(msg);
+      if (unreadable) {
         if (timer.current) clearTimeout(timer.current);
         setErrorMsg(msg);
         setStatus("error");
         setGmail("missing");
+        setTerminal(true);
         if (!silent) toast.error(msg);
         return;
       }
@@ -143,9 +161,8 @@ export const PlacementPanel = ({ accounts }: { accounts: SendingAccount[] }) => 
       <CardContent className="space-y-4">
         {status === "unconfigured" ? (
           <p className="text-sm text-muted-foreground">
-            Placement testing needs a Gmail seed inbox to measure against. It isn't configured yet, so
-            no results are shown (rather than a made-up number). Add the seed inbox credentials to
-            enable real Gmail placement; Outlook and Yahoo need their own seed accounts.
+            {errorMsg ||
+              "Placement testing needs a second Gmail inbox to measure against, and there isn't one available. No results are shown rather than a made-up number. Outlook and Yahoo need their own seed accounts."}
           </p>
         ) : active.length === 0 ? (
           <p className="text-sm text-muted-foreground">No active sending account to test from.</p>
@@ -165,7 +182,10 @@ export const PlacementPanel = ({ accounts }: { accounts: SendingAccount[] }) => 
                 {busy ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Send className="mr-1 h-3.5 w-3.5" />}
                 Run test
               </Button>
-              {testId && (
+              {/* Hidden once the seed is unreadable for good: re-checking a
+                  revoked token returns the identical error every time, so the
+                  button was an invitation to watch nothing happen. */}
+              {testId && !terminal && (
                 <Button size="sm" variant="outline" onClick={() => collect(testId)} disabled={busy}>
                   Check again
                 </Button>
@@ -184,6 +204,12 @@ export const PlacementPanel = ({ accounts }: { accounts: SendingAccount[] }) => 
               <p className="text-sm text-destructive">{errorMsg}</p>
             )}
 
+
+            {seedEmail && status !== "idle" && (
+              <p className="text-xs text-muted-foreground">
+                Measuring against <span className="text-foreground">{seedEmail}</span>.
+              </p>
+            )}
 
             {status !== "idle" && (
               <div className="flex flex-wrap items-center gap-2">

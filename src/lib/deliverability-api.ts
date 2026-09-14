@@ -93,10 +93,19 @@ export interface PlacementStartResult {
   testId: string;
   marker: string;
   status: string;
+  /**
+   * The inbox this test is measuring against — the shared platform seed, or
+   * one of the user's own mailboxes when the platform seed is unreadable. The
+   * function always returned it; nothing displayed it, so a user watched a
+   * test run with no idea what it was measuring, and a seed failure read as
+   * the whole feature being broken.
+   */
+  seedEmail?: string;
 }
 export interface PlacementCollectResult {
   testId: string;
   gmail: "inbox" | "spam" | "promotions" | "missing" | "pending";
+  seedEmail?: string;
 }
 
 /** Send a placement test from a mailbox to the seed inbox. */

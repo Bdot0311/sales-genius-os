@@ -27,7 +27,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-import { READ_FAILURE_ENDS_TEST, seedFailureMessage } from "../_shared/placement-seed.ts";
+import { readFailureEndsTest, seedFailureMessage } from "../_shared/placement-seed.ts";
 
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GMAIL_API = "https://gmail.googleapis.com/gmail/v1/users/me";
@@ -37,21 +37,31 @@ function toBase64Url(str: string): string {
 }
 
 /**
- * The last reason a token exchange failed.
+ * Why a token exchange failed, carried on the return value.
  *
  * Google says exactly what is wrong — invalid_grant for a revoked or expired
  * refresh token, unauthorized_client for a mismatched app — and that answer
  * went to a console log the user cannot read, while they were shown a generic
  * sentence telling them to reconnect a mailbox they may not even own.
+ *
+ * It was then held in a mutable variable at module scope (named for the last
+ * token error; not quoted here, because the test guarding this asserts the
+ * identifier is gone from the file). Edge functions reuse one isolate across
+ * concurrent invocations, so a variable up there is shared by every request in
+ * flight: one account's failure could be read out in another account's
+ * response, naming a mailbox and an error that had nothing to do with them.
+ * Returning the reason keeps each request's own.
  */
-let lastTokenError: string | null = null;
+interface TokenResult {
+  token: string | null;
+  error: string | null;
+}
 
-async function accessTokenFromRefresh(refreshToken: string): Promise<string | null> {
+async function accessTokenFromRefresh(refreshToken: string): Promise<TokenResult> {
   const clientId = Deno.env.get("GOOGLE_CLIENT_ID");
   const clientSecret = Deno.env.get("GOOGLE_CLIENT_SECRET");
   if (!clientId || !clientSecret) {
-    lastTokenError = "Google OAuth credentials are not configured on the server";
-    return null;
+    return { token: null, error: "Google OAuth credentials are not configured on the server" };
   }
   const res = await fetch(GOOGLE_TOKEN_URL, {
     method: "POST",
@@ -63,40 +73,48 @@ async function accessTokenFromRefresh(refreshToken: string): Promise<string | nu
     console.error("seed token refresh failed:", res.status, body.slice(0, 300));
     let code = "";
     try { code = String(JSON.parse(body)?.error ?? ""); } catch { code = ""; }
-    lastTokenError = code
-      ? `Google refused the token: ${code}`
-      : `Google refused the token (HTTP ${res.status})`;
-    return null;
+    return {
+      token: null,
+      error: code
+        ? `Google refused the token: ${code}`
+        : `Google refused the token (HTTP ${res.status})`,
+    };
   }
-  lastTokenError = null;
   const j = await res.json();
-  return j.access_token ?? null;
+  return { token: j.access_token ?? null, error: null };
+}
+
+interface MailboxToken {
+  token: string;
+  email: string;
 }
 
 // deno-lint-ignore no-explicit-any
-async function tokenForIntegration(admin: any, integrationId: string): Promise<{ token: string; email: string } | null> {
+async function tokenForIntegration(admin: any, integrationId: string): Promise<{ mailbox: MailboxToken | null; error: string | null }> {
   const { data: integ } = await admin.from("integrations").select("id, config, connected_email").eq("id", integrationId).maybeSingle();
-  if (!integ) return null;
+  if (!integ) return { mailbox: null, error: "That mailbox is no longer connected." };
   const config = (integ.config ?? {}) as Record<string, unknown>;
   let token = (config.accessToken as string) || (config.provider_token as string) || "";
   const email = (integ.connected_email as string) || (config.connected_email as string) || (config.googleEmail as string) || "";
   const expiresAt = config.expiresAt as number | undefined;
   const refreshToken = config.refreshToken as string | undefined;
+  let error: string | null = null;
   // Refresh proactively: a missing expiry used to mean "assume valid", which
   // sends/reads with a dead token and Gmail answers 401.
   if ((!token || !expiresAt || Date.now() >= expiresAt - 120_000) && refreshToken) {
     const fresh = await accessTokenFromRefresh(refreshToken);
-    if (fresh) {
-      token = fresh;
-      await admin.from("integrations").update({ config: { ...config, accessToken: fresh, expiresAt: Date.now() + 3300 * 1000 } }).eq("id", integrationId);
+    error = fresh.error;
+    if (fresh.token) {
+      token = fresh.token;
+      await admin.from("integrations").update({ config: { ...config, accessToken: fresh.token, expiresAt: Date.now() + 3300 * 1000 } }).eq("id", integrationId);
     }
   }
-  return token ? { token, email } : null;
+  return token ? { mailbox: { token, email }, error: null } : { mailbox: null, error };
 }
 
 /** Read a mailbox we can access: the platform seed, or one of the user's own. */
 // deno-lint-ignore no-explicit-any
-async function seedReadToken(admin: any, userId: string, seedEmail: string): Promise<string | null> {
+async function seedReadToken(admin: any, userId: string, seedEmail: string): Promise<TokenResult> {
   const platformAddress = (Deno.env.get("DELIVERABILITY_SEED_GMAIL_ADDRESS") ?? "").toLowerCase();
   const platformRefresh = Deno.env.get("DELIVERABILITY_SEED_GMAIL_REFRESH");
   if (platformRefresh && seedEmail.toLowerCase() === platformAddress) {
@@ -113,8 +131,37 @@ async function seedReadToken(admin: any, userId: string, seedEmail: string): Pro
     const email = ((i.connected_email as string) || (cfg.connected_email as string) || (cfg.googleEmail as string) || "").toLowerCase();
     if (email === seedEmail.toLowerCase()) {
       const t = await tokenForIntegration(admin, i.id as string);
-      return t?.token ?? null;
+      return { token: t.mailbox?.token ?? null, error: t.error };
     }
+  }
+  return { token: null, error: `${seedEmail} is no longer connected to this account.` };
+}
+
+/**
+ * One of the user's own Gmail mailboxes that a test could measure against.
+ *
+ * The sending mailbox is excluded on purpose: Gmail does not spam-filter mail a
+ * account sends to itself, so measuring there would report "inbox" for every
+ * send regardless of reputation — a number worse than no number.
+ *
+ * Both the seed choice and the failure message need this answer, and the
+ * message used to assume it rather than ask.
+ */
+// deno-lint-ignore no-explicit-any
+async function findFallbackSeed(admin: any, userId: string, excludeIntegrationId?: string | null): Promise<string | null> {
+  const { data: integs } = await admin
+    .from("integrations")
+    .select("id, connected_email, config")
+    .eq("user_id", userId)
+    .eq("integration_id", "google")
+    .eq("is_active", true);
+  for (const i of integs ?? []) {
+    if (excludeIntegrationId && i.id === excludeIntegrationId) continue;
+    const cfg = (i.config ?? {}) as Record<string, unknown>;
+    const email = (i.connected_email as string) || (cfg.connected_email as string) || (cfg.googleEmail as string) || "";
+    if (!email) continue;
+    const t = await tokenForIntegration(admin, i.id as string);
+    if (t.mailbox?.token) return email;
   }
   return null;
 }
@@ -152,36 +199,43 @@ serve(async (req) => {
       if (!acct.integration_id) return json({ error: "This mailbox has no connected Gmail integration." }, 400);
 
       const sender = await tokenForIntegration(admin, acct.integration_id);
-      if (!sender?.token) return json({ error: "Could not get a Gmail token for this mailbox. Reconnect Gmail." }, 400);
+      if (!sender.mailbox) {
+        return json({
+          error: sender.error
+            ? `Could not get a Gmail token for this mailbox. ${sender.error}`
+            : "Could not get a Gmail token for this mailbox. Reconnect Gmail.",
+        }, 400);
+      }
 
       // Pick a readable seed inbox.
       let seedEmail = "";
+      let platformSeedError: string | null = null;
       const platformAddress = Deno.env.get("DELIVERABILITY_SEED_GMAIL_ADDRESS");
       const platformRefresh = Deno.env.get("DELIVERABILITY_SEED_GMAIL_REFRESH");
-      if (platformAddress && platformRefresh && (await accessTokenFromRefresh(platformRefresh))) {
-        seedEmail = platformAddress;
-      } else {
+      if (platformAddress && platformRefresh) {
+        const platform = await accessTokenFromRefresh(platformRefresh);
+        if (platform.token) seedEmail = platformAddress;
+        else platformSeedError = platform.error;
+      }
+      if (!seedEmail) {
         // Fall back to one of the user's other connected Gmail mailboxes.
-        const { data: integs } = await admin
-          .from("integrations")
-          .select("id, connected_email, config")
-          .eq("user_id", user.id)
-          .eq("integration_id", "google")
-          .eq("is_active", true);
-        for (const i of integs ?? []) {
-          if (i.id === acct.integration_id) continue;
-          const cfg = (i.config ?? {}) as Record<string, unknown>;
-          const email = (i.connected_email as string) || (cfg.connected_email as string) || (cfg.googleEmail as string) || "";
-          if (!email) continue;
-          const t = await tokenForIntegration(admin, i.id as string);
-          if (t?.token) { seedEmail = email; break; }
-        }
+        seedEmail = (await findFallbackSeed(admin, user.id, acct.integration_id)) ?? "";
       }
 
       if (!seedEmail) {
+        // Two different situations wore the same sentence. "No seed is
+        // configured" is an operator problem the reader cannot touch; "our
+        // shared seed is down and you have no second mailbox" is theirs to
+        // solve by connecting one. Saying which is which is the difference
+        // between an instruction and a shrug.
         return json({
           error: "seed_not_configured",
-          message: "Placement testing needs a second inbox to measure against. Connect another Gmail mailbox (or configure the platform seed inbox) and run the test again.",
+          message: platformSeedError
+            ? `Our shared seed inbox is not answering right now (${platformSeedError}), and measuring ` +
+              `placement needs a second inbox we can read — a mailbox cannot measure its own. Connect ` +
+              `another Gmail on the Integrations page and run the test again.`
+            : `Placement testing needs a second inbox to measure against. Connect another Gmail ` +
+              `mailbox on the Integrations page and run the test again.`,
         }, 400);
       }
 
@@ -205,7 +259,7 @@ serve(async (req) => {
       }
 
       const mime = [
-        `From: ${sender.email || acct.email}`,
+        `From: ${sender.mailbox.email || acct.email}`,
         `To: ${seedEmail}`,
         `Subject: ${subject}`,
         "Content-Type: text/plain; charset=UTF-8",
@@ -213,7 +267,7 @@ serve(async (req) => {
       ].join("\r\n");
       const sendRes = await fetch(`${GMAIL_API}/messages/send`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${sender.token}`, "Content-Type": "application/json" },
+        headers: { Authorization: `Bearer ${sender.mailbox.token}`, "Content-Type": "application/json" },
         body: JSON.stringify({ raw: toBase64Url(mime) }),
       });
 
@@ -231,6 +285,10 @@ serve(async (req) => {
         { test_id: test.id, provider: "yahoo", placement: "unsupported", detail: "No Yahoo seed inbox configured" },
       ]);
 
+      // The seed goes back to the caller so the panel can name the inbox it is
+      // measuring against. Without it the user watches a test run with no idea
+      // what it is measuring, which is what made a seed failure read as the
+      // whole feature being broken.
       return json({ testId: test.id, marker, seedEmail, status: "running" });
     }
 
@@ -238,31 +296,44 @@ serve(async (req) => {
     if (action === "collect") {
       const { data: test } = await admin
         .from("placement_tests")
-        .select("id, subject, status, seed_email")
+        .select("id, subject, status, seed_email, sending_account_id")
         .eq("id", testId)
         .eq("user_id", user.id)
         .maybeSingle();
       if (!test) return json({ error: "Test not found" }, 404);
 
       const seedEmail = (test.seed_email as string) || Deno.env.get("DELIVERABILITY_SEED_GMAIL_ADDRESS") || "";
-      const seedToken = seedEmail ? await seedReadToken(admin, user.id, seedEmail) : null;
-      if (!seedToken) {
-        // A read we cannot perform is not a placement verdict, and it is not a
-        // dead test either. The email is sitting in the seed inbox either way,
-        // so the result is still there to be collected — which is the reasoning
-        // the "missing" branch below already applies and this one did not.
-        // Marking the row failed threw away a recoverable test and made "Check
-        // again" look broken, because the thing it re-checked had been declared
-        // dead one transient error earlier.
-        if (READ_FAILURE_ENDS_TEST) {
+      const seed = seedEmail
+        ? await seedReadToken(admin, user.id, seedEmail)
+        : { token: null, error: null };
+      if (!seed.token) {
+        // A transient read failure is not a placement verdict and not a dead
+        // test: the email is sitting in the seed inbox either way, so the
+        // result is still there to be collected — the reasoning the "missing"
+        // branch below already applies. A revoked refresh token is the other
+        // case: every later check returns the identical error, so leaving the
+        // row `running` parks it forever behind a "Check again" that cannot
+        // succeed. One such test sat unresolved on the timeline for ten days.
+        const terminal = readFailureEndsTest(seed.error);
+        if (terminal) {
           await admin.from("placement_tests").update({ status: "failed", completed_at: new Date().toISOString() }).eq("id", test.id);
         }
+        const { data: acctRow } = await admin
+          .from("sending_accounts")
+          .select("integration_id")
+          .eq("id", test.sending_account_id)
+          .maybeSingle();
         return json({
           error: "seed_unavailable",
+          terminal,
           message: seedFailureMessage({
             seedEmail,
             platformAddress: Deno.env.get("DELIVERABILITY_SEED_GMAIL_ADDRESS"),
-            reason: lastTokenError,
+            reason: seed.error,
+            // Asked rather than assumed. The message used to promise a re-run
+            // would measure against one of their own mailboxes whether or not
+            // they had a second one to measure against.
+            fallbackSeed: await findFallbackSeed(admin, user.id, acctRow?.integration_id ?? null),
           }),
         }, 409);
       }
@@ -270,7 +341,7 @@ serve(async (req) => {
       // Search the seed inbox (including spam) for this test's marker.
       const q = encodeURIComponent(`${test.subject} newer_than:1d`);
       const listRes = await fetch(`${GMAIL_API}/messages?q=${q}&includeSpamTrash=true&maxResults=5`, {
-        headers: { Authorization: `Bearer ${seedToken}` },
+        headers: { Authorization: `Bearer ${seed.token}` },
       });
       if (!listRes.ok) {
         const detail = await listRes.text();
@@ -282,7 +353,7 @@ serve(async (req) => {
 
       let placement = "missing";
       if (msgs.length > 0) {
-        const getRes = await fetch(`${GMAIL_API}/messages/${msgs[0].id}?format=metadata`, { headers: { Authorization: `Bearer ${seedToken}` } });
+        const getRes = await fetch(`${GMAIL_API}/messages/${msgs[0].id}?format=metadata`, { headers: { Authorization: `Bearer ${seed.token}` } });
         if (getRes.ok) {
           const msg = await getRes.json();
           const labels: string[] = msg.labelIds ?? [];
