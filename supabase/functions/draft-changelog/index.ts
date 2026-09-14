@@ -1,6 +1,9 @@
 // draft-changelog — turns a merged pull request into a changelog draft.
 //
-// Called by .github/workflows/changelog-draft.yml when something lands on main.
+// Called by .github/workflows/changelog-draft.yml when something lands on main,
+// authenticated with CHANGELOG_DRAFT_SECRET — a key that unlocks this function
+// and nothing else, because it lives in a GitHub repository secret. See
+// _shared/changelog-auth.ts for why it is not the shared internal secret.
 // It never publishes: it writes into today's `draft` entry, and an admin
 // reviews and publishes from the Admin Panel.
 //
@@ -14,7 +17,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { aiFetch } from "../_shared/ai-provider.ts";
-import { corsHeaders, requireServiceRole } from "../_shared/internal-auth.ts";
+import { corsHeaders, requireChangelogCaller } from "../_shared/changelog-auth.ts";
 import {
   DRAFT_SYSTEM_PROMPT,
   isWorthAnnouncing,
@@ -35,7 +38,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
-  const unauthorized = requireServiceRole(req);
+  const unauthorized = requireChangelogCaller(req);
   if (unauthorized) return unauthorized;
 
   try {

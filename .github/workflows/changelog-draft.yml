@@ -6,7 +6,14 @@
 #
 # Needs two repository secrets:
 #   SUPABASE_FUNCTIONS_URL   https://<project-ref>.supabase.co/functions/v1
-#   CHANGELOG_DRAFT_SECRET   the project's INTERNAL_TRIGGER_SECRET
+#   CHANGELOG_DRAFT_SECRET   a value you generate, set identically as a Supabase
+#                            edge function secret of the same name
+#
+# Deliberately NOT the shared INTERNAL_TRIGGER_SECRET: that one authorises
+# sixteen functions including the ones that send mail to customers, and a
+# repository secret is readable by every workflow here and usable by anyone
+# with write access. This key unlocks drafting a changelog entry and nothing
+# else.
 name: Draft changelog entry
 
 on:

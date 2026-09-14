@@ -11,6 +11,7 @@ import {
 const MIGRATION = readFileSync("supabase/migrations/20260914235000_changelog_entries.sql", "utf8");
 const FN = readFileSync("supabase/functions/draft-changelog/index.ts", "utf8");
 const WORKFLOW = readFileSync(".github/workflows/changelog-draft.yml", "utf8");
+const AUTH = readFileSync("supabase/functions/_shared/changelog-auth.ts", "utf8");
 const HOOK = readFileSync("src/hooks/use-changelog.tsx", "utf8");
 const ADMIN = readFileSync("src/components/admin/ChangelogTab.tsx", "utf8");
 
@@ -133,8 +134,26 @@ describe("nothing reaches a customer unreviewed", () => {
     expect(FN).toContain('existing.status === "published"');
   });
 
-  it("it is service-role only", () => {
-    expect(FN).toContain("requireServiceRole(req)");
+  it("uses a key scoped to this function, not the shared internal secret", () => {
+    // The caller is a GitHub Actions workflow, so the credential lives in a
+    // repository secret — readable by every workflow and usable by anyone with
+    // write access. INTERNAL_TRIGGER_SECRET authorises sixteen functions,
+    // among them the ones that send mail to customers.
+    expect(FN).toContain("requireChangelogCaller(req)");
+    expect(FN).not.toContain("requireServiceRole");
+    expect(AUTH).toContain('Deno.env.get("CHANGELOG_DRAFT_SECRET")');
+    // Matched on reading the variable rather than on the name appearing: the
+    // comment above it names the shared secret to explain why this is not it,
+    // and an assertion that forbids the word forbids the explanation too.
+    expect(AUTH).not.toContain('Deno.env.get("INTERNAL_TRIGGER_SECRET")');
+  });
+
+  it("an unset secret does not accept an empty bearer", () => {
+    expect(AUTH).toContain("if (!a || !b || a.length !== b.length) return false;");
+  });
+
+  it("compares the token in constant time", () => {
+    expect(AUTH).toContain("diff |= a.charCodeAt(i) ^ b.charCodeAt(i)");
   });
 
   it("drafts are invisible to customers", () => {
