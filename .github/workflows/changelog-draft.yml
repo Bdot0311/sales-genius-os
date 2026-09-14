@@ -1,0 +1,70 @@
+# Draft a changelog entry when a pull request lands on main.
+#
+# It only ever writes a draft. An admin reviews and publishes from the Admin
+# Panel, which is the gate that stops this becoming the thing it replaces —
+# a page of polished commit messages.
+#
+# Needs two repository secrets:
+#   SUPABASE_FUNCTIONS_URL   https://<project-ref>.supabase.co/functions/v1
+#   CHANGELOG_DRAFT_SECRET   the project's INTERNAL_TRIGGER_SECRET
+name: Draft changelog entry
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  draft:
+    # `closed` fires for abandoned pull requests too, and an entry about a
+    # change nobody shipped is worse than no entry.
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send the merged pull request to the drafting function
+        env:
+          FUNCTIONS_URL: ${{ secrets.SUPABASE_FUNCTIONS_URL }}
+          DRAFT_SECRET: ${{ secrets.CHANGELOG_DRAFT_SECRET }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          MERGED_AT: ${{ github.event.pull_request.merged_at }}
+          SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        run: |
+          if [ -z "$FUNCTIONS_URL" ] || [ -z "$DRAFT_SECRET" ]; then
+            echo "Changelog drafting is not configured (missing secrets) — skipping."
+            exit 0
+          fi
+
+          # Through a file and jq rather than string interpolation: a PR body is
+          # arbitrary text, and pasting it into a shell-built JSON string is both
+          # a quoting bug and an injection waiting to happen.
+          jq -n \
+            --arg pr_number "$PR_NUMBER" \
+            --arg pr_title "$PR_TITLE" \
+            --arg pr_body "$PR_BODY" \
+            --arg merged_at "$MERGED_AT" \
+            --arg sha "$SHA" \
+            --argjson labels "${PR_LABELS:-[]}" \
+            '{pr_number: ($pr_number|tonumber?), pr_title: $pr_title, pr_body: $pr_body, merged_at: $merged_at, sha: $sha, labels: $labels}' \
+            > payload.json
+
+          code=$(curl -sS -o response.json -w '%{http_code}' \
+            -X POST "${FUNCTIONS_URL%/}/draft-changelog" \
+            -H "Authorization: Bearer $DRAFT_SECRET" \
+            -H "Content-Type: application/json" \
+            --data-binary @payload.json)
+
+          echo "HTTP $code"
+          cat response.json
+
+          # A failed draft must not fail the merge — the change shipped either
+          # way, and the entry can be written by hand. Anything other than a
+          # 2xx is reported and moves on.
+          if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then
+            echo "::warning::Changelog draft failed (HTTP $code). Write it by hand in the Admin Panel."
+          fi

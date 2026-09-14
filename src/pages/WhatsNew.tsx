@@ -5,7 +5,8 @@ import { PageHeader } from "@/components/dashboard/PageHeader";
 import { Panel, PanelHeader, EmptyState } from "@/components/dashboard/Panel";
 import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { CHANGELOG, ROADMAP, TAG_LABELS, unreadCount, type ChangelogTag } from "@/lib/changelog";
+import { TAG_LABELS, type ChangelogTag } from "@/lib/changelog";
+import { useChangelog } from "@/hooks/use-changelog";
 import { useWhatsNew } from "@/hooks/use-whats-new";
 
 /**
@@ -63,23 +64,32 @@ const FILTERS: { value: Filter; label: string }[] = [
  */
 const WhatsNew = () => {
   const { markSeen, seenDate } = useWhatsNew();
+  const { entries: published, roadmap, latestDate } = useChangelog();
   const navigate = useNavigate();
   const [filter, setFilter] = useState<Filter>("all");
 
-  // Captured once, on arrival: marking the page read immediately would clear
-  // the "new" marks in the same frame the reader is looking for them.
-  const [unreadAtArrival] = useState(() => unreadCount(seenDate));
-
+  // Captured once, when the first real answer arrives — not on mount, when the
+  // list is still the fallback, and not after markSeen, which would clear the
+  // marks in the same frame the reader is looking for them.
+  const [unreadAtArrival, setUnreadAtArrival] = useState<number | null>(null);
   useEffect(() => {
-    markSeen();
-  }, [markSeen]);
+    if (unreadAtArrival === null && published.length > 0) {
+      setUnreadAtArrival(published.filter((e) => e.date > seenDate).length);
+    }
+  }, [published, seenDate, unreadAtArrival]);
+
+  // Marked read against what is actually on the page. Stamping the file's date
+  // would mark entries read that had not been published yet.
+  useEffect(() => {
+    if (latestDate) markSeen(latestDate);
+  }, [markSeen, latestDate]);
 
   const entries = useMemo(() => {
-    if (filter === "all") return CHANGELOG;
-    return CHANGELOG
+    if (filter === "all") return published;
+    return published
       .map((entry) => ({ ...entry, items: entry.items.filter((i) => i.tag === filter) }))
       .filter((entry) => entry.items.length > 0);
-  }, [filter]);
+  }, [filter, published]);
 
   return (
     <DashboardLayout>
@@ -100,7 +110,7 @@ const WhatsNew = () => {
         <Panel>
           <PanelHeader title="Coming next" meta="no dates, on purpose" />
           <div>
-            {ROADMAP.map((item, i) => {
+            {roadmap.map((item, i) => {
               const status = ROADMAP_STATUS[item.status] ?? ROADMAP_STATUS.exploring;
               return (
                 <div
@@ -152,7 +162,7 @@ const WhatsNew = () => {
                 title={entry.title}
                 meta={formatDate(entry.date)}
                 actions={
-                  entryIndex < unreadAtArrival ? (
+                  unreadAtArrival !== null && entryIndex < unreadAtArrival ? (
                     <span className="text-[0.625rem] uppercase tracking-[0.1em] text-primary">New to you</span>
                   ) : undefined
                 }

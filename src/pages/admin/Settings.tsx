@@ -14,10 +14,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
-import { Settings, CreditCard, Key, Mail, Flag, Plus, Pencil, Trash2, Loader2, Save, Info } from "lucide-react";
+import { Settings, CreditCard, Key, Mail, Flag, Megaphone, Plus, Pencil, Trash2, Loader2, Save, Info } from "lucide-react";
 import type { Json } from "@/integrations/supabase/types";
 import { EmailLogsPanel } from "@/components/admin/EmailLogsPanel";
 import { DemoModeCard } from "@/components/admin/DemoModeCard";
+import { ChangelogTab } from "@/components/admin/ChangelogTab";
 
 
 function debounce<T extends (...args: any[]) => any>(fn: T, ms: number): T {
@@ -284,7 +285,7 @@ const AdminSettings = () => {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="general" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="general" className="flex items-center gap-1.5">
               <Settings className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">General</span>
@@ -305,7 +306,16 @@ const AdminSettings = () => {
               <Flag className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Features</span>
             </TabsTrigger>
+            <TabsTrigger value="changelog" className="flex items-center gap-1.5">
+              <Megaphone className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">What's new</span>
+            </TabsTrigger>
           </TabsList>
+
+          {/* Drafts written by merged pull requests, published from here. */}
+          <TabsContent value="changelog" className="space-y-4">
+            <ChangelogTab />
+          </TabsContent>
 
           {/* General Settings */}
           <TabsContent value="general" className="space-y-4">
