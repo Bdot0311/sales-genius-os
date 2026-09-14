@@ -55,7 +55,28 @@ export interface SearchDisclosure {
   applied: Record<string, unknown> | null;
   /** Filters dropped by an opt-in broadening retry — empty when none were. */
   relaxed: string[];
+  /**
+   * The edge function's own explanation of an empty result. An outage and a
+   * genuinely empty match set are different problems, and only the backend
+   * knows which one happened.
+   */
+  message: string | null;
+  /** True when the data provider could not answer at all. */
+  providerUnavailable: boolean;
+  /**
+   * Whether re-running wider could possibly help. False during an outage —
+   * loosening filters that were never the problem just wastes the user's time.
+   */
+  canBroaden: boolean;
 }
+
+const EMPTY_DISCLOSURE: SearchDisclosure = {
+  applied: null,
+  relaxed: [],
+  message: null,
+  providerUnavailable: false,
+  canBroaden: true,
+};
 
 export interface LeadScores {
   /** Null when the user has stated no ICP — nothing to measure fit against. */
