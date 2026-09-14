@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { LATEST_CHANGELOG_DATE } from "@/lib/changelog";
+import { LATEST_CHANGELOG_DATE, unreadCount } from "@/lib/changelog";
 
 const STORAGE_KEY = "outreign:whats-new-seen";
 
@@ -39,6 +39,10 @@ export const useWhatsNew = () => {
 
   return {
     hasUnread: Boolean(LATEST_CHANGELOG_DATE) && seenDate < LATEST_CHANGELOG_DATE,
+    /** How many entries they have not opened, for a dot that can carry a count. */
+    unread: unreadCount(seenDate),
+    /** Exposed so the page can mark which entries are new to this reader. */
+    seenDate,
     latestDate: LATEST_CHANGELOG_DATE,
     markSeen,
   };
