@@ -179,15 +179,18 @@ serve(async (req) => {
       .maybeSingle();
     const isAdmin = adminRole?.role === "admin";
 
+    // Metered for everyone, refused for no admin — the same split the search
+    // and enrichment paths use. An admin spending nothing and showing nothing
+    // is how the meter came to read the same number every day.
     let creditWasDeducted = false;
-    if (!isAdmin) {
+    {
       const { data: subscription } = await supabase
         .from("subscriptions")
         .select("plan, status, search_credits_remaining")
         .eq("user_id", user.id)
         .maybeSingle();
 
-      if (!subscription || subscription.plan === "free") {
+      if (!isAdmin && (!subscription || subscription.plan === "free")) {
         return json({
           person: null,
           error: "People search requires a paid plan. Upgrade to Growth to unlock contact lookups.",
@@ -196,8 +199,8 @@ serve(async (req) => {
         });
       }
 
-      const remaining = subscription.search_credits_remaining || 0;
-      if (remaining <= 0) {
+      const remaining = subscription?.search_credits_remaining || 0;
+      if (!isAdmin && remaining <= 0) {
         return json({
           person: null,
           error: "No search credits remaining. Add more credits to look up contacts.",
@@ -205,9 +208,10 @@ serve(async (req) => {
         });
       }
 
+      const nextRemaining = Math.max(0, remaining - 1);
       const { error: deductError } = await supabase
         .from("subscriptions")
-        .update({ search_credits_remaining: remaining - 1 })
+        .update({ search_credits_remaining: nextRemaining })
         .eq("user_id", user.id);
       if (deductError) {
         console.error("[find-person] credit deduction failed:", deductError.message);
@@ -218,7 +222,7 @@ serve(async (req) => {
         user_id: user.id,
         type: "usage",
         amount: -1,
-        balance_after: remaining - 1,
+        balance_after: nextRemaining,
         description: "People search",
       });
     }

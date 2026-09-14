@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { PageHeader } from "@/components/dashboard/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -116,13 +117,11 @@ const OnboardingStatus = () => {
 
   return (
     <DashboardLayout>
-      <div className="max-w-3xl mx-auto p-6 space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Onboarding status</h1>
-          <p className="text-muted-foreground mt-1">
-            A clear view of where your account stands. If anything is pending, you'll see how to fix it here.
-          </p>
-        </div>
+      <PageHeader
+        title="Onboarding status"
+        description="Where your account stands. Anything still pending says how to fix it."
+      />
+      <div className="mx-auto max-w-3xl space-y-4 pt-4">
 
         <Card className="border-2">
           <CardHeader>

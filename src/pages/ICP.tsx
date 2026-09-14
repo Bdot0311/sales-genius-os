@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { PageHeader } from "@/components/dashboard/PageHeader";
 import { useICPProfiles, ICPProfile } from "@/hooks/use-icp-profiles";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
@@ -242,14 +243,16 @@ const ICP = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Ideal Customer Profiles</h1>
-            <p className="text-muted-foreground">Define exactly who you sell to — across firmographics, people, signals, and strategy.</p>
-          </div>
-          <Button onClick={openNew} disabled={planLoading}><Plus className="w-4 h-4 mr-2" />New ICP</Button>
-        </div>
+      <PageHeader
+        title="Ideal Customer Profiles"
+        description="Define exactly who you sell to — across firmographics, people, signals, and strategy."
+        actions={
+          <Button variant="outline" size="sm" onClick={openNew} disabled={planLoading}>
+            <Plus className="w-4 h-4 mr-2" />New ICP
+          </Button>
+        }
+      />
+      <div className="space-y-4 pt-4">
 
         {profilesError && (
           <div className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">

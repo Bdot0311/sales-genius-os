@@ -1,10 +1,10 @@
 import { useEffect } from "react";
-import { Link } from "react-router-dom";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { PageHeader } from "@/components/dashboard/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Wrench, Bug, Clock, ArrowLeft } from "lucide-react";
+import { Sparkles, Wrench, Bug, Clock } from "lucide-react";
 import { CHANGELOG, TAG_LABELS, type ChangelogTag } from "@/lib/changelog";
 import { useWhatsNew } from "@/hooks/use-whats-new";
 
@@ -45,20 +45,12 @@ const WhatsNew = () => {
         content="Everything we've shipped in OutReign recently, plus what's coming next."
       />
 
-      <div className="mx-auto w-full max-w-3xl space-y-6">
-        <Button variant="ghost" size="sm" asChild className="-ml-2 w-fit">
-          <Link to="/dashboard">
-            <ArrowLeft className="mr-1 h-4 w-4" />
-            Back to dashboard
-          </Link>
-        </Button>
-
-        <div className="space-y-2">
-          <h1 className="text-2xl font-bold sm:text-3xl">What's new</h1>
-          <p className="text-sm text-muted-foreground">
-            Everything we've shipped recently, and a look at what's coming next.
-          </p>
-        </div>
+      <PageHeader
+        breadcrumbs={[{ label: "Dashboard", href: "/dashboard" }, { label: "What's new" }]}
+        title="What's new"
+        description="Everything we've shipped recently, and a look at what's coming next."
+      />
+      <div className="mx-auto w-full max-w-3xl space-y-6 pt-4">
 
         <div className="space-y-5">
           {CHANGELOG.map((entry) => (

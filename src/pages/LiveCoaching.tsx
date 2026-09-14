@@ -1,4 +1,5 @@
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { PageHeader } from "@/components/dashboard/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -370,21 +371,14 @@ Respond in this EXACT JSON format (no markdown, just raw JSON):
         currentPlan={currentPlan}
       />
 
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard/coach')}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
-              <Mail className="w-7 h-7 text-primary" />
-              Outbound Email Role-Play
-            </h1>
-            <p className="text-muted-foreground text-sm">
-              Practice writing cold emails, follow-ups, and breakup emails — get scored on modern outbound best practices
-            </p>
-          </div>
-        </div>
+      {/* The breadcrumb is the way back, and it says where to. An icon-only
+          arrow beside the title did not. */}
+      <PageHeader
+        breadcrumbs={[{ label: "Coach", href: "/dashboard/coach" }, { label: "Role-play" }]}
+        title="Outbound Email Role-Play"
+        description="Practice cold emails, follow-ups and breakups — scored on modern outbound best practices."
+      />
+      <div className="space-y-4 pt-4">
 
         {!sessionActive ? (
           <div>

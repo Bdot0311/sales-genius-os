@@ -1,4 +1,5 @@
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { PageHeader } from "@/components/dashboard/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,8 +41,16 @@ interface Message {
   content: string;
 }
 
+/**
+ * The drill-down title.
+ *
+ * It keeps a local back button because that one resets state rather than
+ * navigating, so a breadcrumb would not do the same thing. What it does not
+ * keep is 30px bold: every other page title in the dashboard is 18px, and this
+ * was one of six places that disagreed.
+ */
 const PlaybookHeading = ({ children }: { children: ReactNode }) => (
-  <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+  <h1 className="flex items-center gap-2 text-lg font-semibold">
     {children}
   </h1>
 );
@@ -586,20 +595,12 @@ Be encouraging but direct. Experienced outbound coaches don't sugarcoat.`;
     return (
       <DashboardLayout>
         <FeatureGateModal open={gateModalOpen} onOpenChange={setGateModalOpen} feature={gatedFeature || 'customPlaybooks'} currentPlan={currentPlan} />
-        <div className="space-y-6">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard/coach')}>
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div>
-              <PlaybookHeading>
-                <BookOpen className="w-7 h-7 text-primary" /> Outbound Playbooks
-              </PlaybookHeading>
-              <p className="text-muted-foreground text-sm">
-                Proven outbound strategies with step-by-step execution guides and AI practice sessions
-              </p>
-            </div>
-          </div>
+        <PageHeader
+          breadcrumbs={[{ label: "Coach", href: "/dashboard/coach" }, { label: "Playbooks" }]}
+          title="Outbound Playbooks"
+          description="Proven outbound strategies with step-by-step execution guides and AI practice sessions."
+        />
+        <div className="space-y-4 pt-4">
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {PLAYBOOKS.map((pb) => (

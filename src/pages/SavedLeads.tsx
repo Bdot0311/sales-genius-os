@@ -1,4 +1,5 @@
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { PageHeader } from "@/components/dashboard/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,13 +9,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { LeadAssignmentDialog } from "@/components/dashboard/LeadAssignmentDialog";
 import { LeadDetailSheet } from "@/components/dashboard/LeadDetailSheet";
-import { Search, Download, ArrowUpDown, Trash2, UserPlus, LayoutGrid, Table as TableIcon, ArrowLeft, CheckCircle, Sparkles, AlertCircle, Filter, Gauge } from "lucide-react";
+import { Search, Download, ArrowUpDown, Trash2, UserPlus, LayoutGrid, Table as TableIcon, CheckCircle, Sparkles, AlertCircle, Filter, Gauge } from "lucide-react";
 import { IntentScoreBadge } from "@/components/dashboard/IntentScoreBadge";
 import { LeadStageSelect, LEAD_STAGES } from "@/components/dashboard/LeadStageSelect";
 import { LeadTierBadge } from "@/components/dashboard/LeadTierBadge";
 import { Progress } from "@/components/ui/progress";
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Analytics } from "@/lib/analytics";
@@ -55,7 +56,30 @@ interface Lead {
   score_breakdown?: any;
   signal_date?: string | null;
   pipeline_stage?: string | null;
+  last_contacted_at?: string | null;
 }
+
+/**
+ * Filters this page can be opened with.
+ *
+ * The overview counts leads with no email address and reachable leads nobody
+ * has contacted, and offered to open them. It opened the lead search instead —
+ * a page about finding new leads, which is not where the ones it had just
+ * counted are. A count you cannot click through to the rows it counted is
+ * trivia with a number on it.
+ */
+const URL_FILTERS = {
+  "no-email": {
+    label: "leads with no email address",
+    match: (l: Lead) => !l.contact_email,
+  },
+  "never-contacted": {
+    label: "reachable leads never contacted",
+    match: (l: Lead) => Boolean(l.contact_email) && !l.last_contacted_at,
+  },
+} as const;
+
+type UrlFilterKey = keyof typeof URL_FILTERS;
 
 const getEnrichmentBadge = (lead: Lead) => {
   const isEnriched = lead.enrichment_status === 'enriched' || lead.enrichment_status === 'success' || !!lead.enriched_at;
@@ -97,6 +121,10 @@ const SavedLeads = () => {
   const [filterCompanySize, setFilterCompanySize] = useState<string>("all");
   const [filterSeniority, setFilterSeniority] = useState<string>("all");
   const [filterStage, setFilterStage] = useState<string>("all");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const showParam = searchParams.get("show");
+  const urlFilter: UrlFilterKey | null =
+    showParam && showParam in URL_FILTERS ? (showParam as UrlFilterKey) : null;
   const [updatingStage, setUpdatingStage] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -206,6 +234,7 @@ const SavedLeads = () => {
       if (filterCompanySize !== "all" && lead.company_size !== filterCompanySize) return false;
       if (filterSeniority !== "all" && lead.seniority !== filterSeniority) return false;
       if (filterStage !== "all" && (lead.pipeline_stage || "new") !== filterStage) return false;
+      if (urlFilter && !URL_FILTERS[urlFilter].match(lead)) return false;
       return true;
     })
     .sort((a, b) => {
@@ -523,22 +552,44 @@ const SavedLeads = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard/leads')}>
-              <ArrowLeft className="w-4 h-4" />
+      {/* The breadcrumb is the way back. An icon-only arrow beside the title
+          said the same thing without saying where to, and it was the only
+          back button in the dashboard. */}
+      <PageHeader
+        breadcrumbs={[{ label: "Leads", href: "/dashboard/leads" }, { label: "Saved" }]}
+        title="Saved Leads"
+        description="Your enriched leads ready for outreach"
+      />
+      <div className="space-y-4 pt-4">
+
+        {/* Say the list is filtered, and give it back.
+            A page that silently shows a subset is a page the reader will read
+            as their whole list and act on as if it were. */}
+        {urlFilter && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/50 bg-muted/20 px-4 py-2.5">
+            <p className="text-[0.6875rem] text-muted-foreground">
+              Showing <span className="text-foreground">{filteredAndSortedLeads.length}</span>{" "}
+              {URL_FILTERS[urlFilter].label} out of {leads.length}.
+            </p>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                const next = new URLSearchParams(searchParams);
+                next.delete("show");
+                setSearchParams(next, { replace: true });
+              }}
+            >
+              Show all
             </Button>
-            <div>
-              <h1 className="text-3xl font-bold">Saved Leads</h1>
-              <p className="text-muted-foreground">Your enriched leads ready for outreach</p>
-            </div>
           </div>
-        </div>
+        )}
 
         <Card>
           <CardHeader>
-            <CardTitle>All Leads ({filteredAndSortedLeads.length})</CardTitle>
+            <CardTitle>
+              {urlFilter ? "Matching leads" : "All Leads"} ({filteredAndSortedLeads.length})
+            </CardTitle>
             <CardDescription>All leads are pre-enriched with company and contact data</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

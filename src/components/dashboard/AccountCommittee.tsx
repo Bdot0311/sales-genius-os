@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Loader2, CheckCircle2, Lock } from "lucide-react";
+import { Panel, PanelHeader } from "@/components/dashboard/Panel";
+import { Loader2 } from "lucide-react";
 
 interface Slot {
   label: string;
@@ -140,43 +138,81 @@ export const AccountCommittee = ({ companyId, companyName, companyDomain, onEnri
     return () => { mounted = false; };
   }, [companyDomain, companyId, companyName, onEnriched, saveCandidate]);
 
-  if (loading) return <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" />mapping the committee...</div>;
-  if (gated) return (
-    <div className="flex items-start gap-2 p-3 rounded-md bg-muted/40 text-sm text-muted-foreground">
-      <Lock className="w-4 h-4 mt-0.5 shrink-0" />the buying committee map is on pro and agency.
-    </div>
-  );
-  if (err) return <p className="text-sm text-muted-foreground py-4">{err}</p>;
-
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between gap-3">
-          <CardTitle className="text-base">{companyName} committee</CardTitle>
-          <span className="text-xs text-muted-foreground">{coverage}% covered</span>
+  if (loading) {
+    return (
+      <Panel>
+        <div className="flex items-center gap-2 px-5 py-6 text-[0.8125rem] text-muted-foreground">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+          Mapping the committee…
         </div>
-        <Progress value={coverage} className="h-1.5 mt-1" />
-      </CardHeader>
-      <CardContent className="grid sm:grid-cols-2 gap-3">
-        {slots.map((s) => (
-          <div key={s.label} className="rounded-lg border border-border/60 p-3 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">{s.label}</span>
-              {s.required && <Badge variant="outline" className="text-[10px]">required</Badge>}
-            </div>
+      </Panel>
+    );
+  }
+  if (gated) {
+    return (
+      <Panel>
+        <div className="px-5 py-8 text-center">
+          <p className="text-[0.8125rem] font-medium text-foreground">The buying committee map is on Pro and Agency</p>
+          <p className="mx-auto mt-1.5 max-w-sm text-[0.6875rem] leading-relaxed text-muted-foreground">
+            It shows which roles in an account you already have a verified contact for, and which you do not.
+          </p>
+        </div>
+      </Panel>
+    );
+  }
+  if (err) {
+    return (
+      <Panel>
+        <p className="px-5 py-6 text-[0.8125rem] text-muted-foreground">{err}</p>
+      </Panel>
+    );
+  }
+
+  const covered = slots.filter((s) => s.contacts.length > 0).length;
+
+  /* Rows on one surface, not a grid of bordered boxes inside a bordered card.
+     Each slot was its own rounded border nested in the card's, which is a card
+     inside a card, and a required marker was a badge saying so on every one —
+     a label repeated on most items labels nothing. The gap is the point, so
+     the rows that are empty are the ones that read differently. */
+  return (
+    <Panel>
+      <PanelHeader
+        title={`${companyName} committee`}
+        meta={`${covered} of ${slots.length} roles covered`}
+      />
+      <div className="h-0.5 bg-muted/30">
+        <div className="h-full bg-primary/70 transition-all" style={{ width: `${coverage}%` }} />
+      </div>
+      <div>
+        {slots.map((s, i) => (
+          <div
+            key={s.label}
+            className={`flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-4 py-2.5 sm:px-5 ${
+              i > 0 ? "border-t border-border/30" : ""
+            }`}
+          >
+            <span className="flex items-baseline gap-2 text-[0.8125rem]">
+              <span className={s.contacts.length > 0 ? "text-foreground" : "text-muted-foreground"}>{s.label}</span>
+              {s.required && s.contacts.length === 0 && (
+                <span className="text-[0.625rem] uppercase tracking-[0.1em] text-amber-500/80">needed</span>
+              )}
+            </span>
             {s.contacts.length > 0 ? (
-              s.contacts.map((c) => (
-                <div key={c.id} className="flex items-center gap-2 text-xs">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
-                  <span className="min-w-0 truncate"><span className="text-foreground/90">{c.name || c.email}</span>{c.job_title ? ` · ${c.job_title}` : ""}</span>
-                </div>
-              ))
+              <span className="min-w-0 text-right text-[0.6875rem] text-muted-foreground">
+                {s.contacts.map((c) => (
+                  <span key={c.id} className="block truncate">
+                    <span className="text-foreground/90">{c.name || c.email}</span>
+                    {c.job_title ? ` · ${c.job_title}` : ""}
+                  </span>
+                ))}
+              </span>
             ) : (
-              <span className="text-xs text-muted-foreground">no verified contact found</span>
+              <span className="text-[0.6875rem] text-muted-foreground/60">no contact yet</span>
             )}
           </div>
         ))}
-      </CardContent>
-    </Card>
+      </div>
+    </Panel>
   );
 };

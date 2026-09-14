@@ -23,21 +23,25 @@ const FREE_EMAIL_DOMAINS = new Set([
 ]);
 
 /**
- * Whether enrichment costs the user a credit.
+ * Whether enrichment costs the user a credit. It does.
  *
- * Currently it does not: the provider bill is absorbed rather than passed on,
- * deliberately, while known gaps are being closed. Enrichment was silently not
- * running at all on the search "Enrich & Save" path, so users have been saving
- * leads with no email and no phone and had no way to tell whether we had looked
- * and found nothing or never looked. Charging for the fixed version, having not
- * delivered the broken one, is not a trade worth making.
+ * This is where the meter moves. Searching is free on a paid plan by design —
+ * a credit buys a revealed contact, not a query — so enrichment is the only
+ * thing that spends, and it was switched off.
  *
- * Flip by setting ENRICHMENT_CREDITS=charge. Kept as an env switch rather than a
- * code change so it can be turned back on the day it should be, and the state is
- * logged on every call so it is never a surprise on the invoice.
+ * It was switched off for a reason that has since expired: enrichment was
+ * silently not running at all on the search "Enrich & Save" path, so users
+ * saved leads with no email and no phone and no way to tell whether we had
+ * looked and found nothing or never looked. Charging for the fixed version
+ * having not delivered the broken one was not a trade worth making. The gap is
+ * closed, so the default is back on.
+ *
+ * Still an env switch, now defaulting the other way: ENRICHMENT_CREDITS=free
+ * turns it off again without a deploy. The state is logged on every call, so
+ * which way it is running is never a surprise on an invoice.
  */
 function chargeForEnrichment(): boolean {
-  return (Deno.env.get('ENRICHMENT_CREDITS') || 'free').toLowerCase() === 'charge';
+  return (Deno.env.get('ENRICHMENT_CREDITS') || 'charge').toLowerCase() !== 'free';
 }
 
 function isJobTitle(name: string): boolean {
@@ -131,20 +135,23 @@ serve(async (req) => {
       .maybeSingle();
     const isAdmin = adminRole?.role === 'admin';
 
-    // The paywall and the quota are two different gates, and only the quota is
-    // being waived. Enrichment stays a paid-plan feature — waiving that too
-    // would hand every free signup an uncapped provider bill, which is not what
-    // "don't charge the user a credit" means. What changes is that a paying
-    // customer's credit balance is no longer spent on it.
+    // Admins are metered here too, and stopped by none of it.
+    //
+    // The whole block sat behind a non-admin check, so the account that runs
+    // support and testing spent nothing and showed nothing — which is half of
+    // why the meter read the same number every day. Counting is not gating:
+    // the deduction runs for everyone so the numbers are true, and the two
+    // refusals below skip admins so a support session cannot be stopped by an
+    // allowance it just spent.
     let creditWasDeducted = false;
-    if (!isAdmin) {
+    {
       const { data: subscription } = await supabase
         .from('subscriptions')
         .select('plan, status, search_credits_remaining')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (!subscription || subscription.plan === 'free') {
+      if (!isAdmin && (!subscription || subscription.plan === 'free')) {
         return new Response(
           JSON.stringify({
             error: 'Lead enrichment requires a paid plan. Upgrade to Growth ($49/mo) to unlock enrichment.',
@@ -156,8 +163,8 @@ serve(async (req) => {
       }
 
       if (chargeForEnrichment()) {
-        const remaining = subscription.search_credits_remaining || 0;
-        if (remaining <= 0) {
+        const remaining = subscription?.search_credits_remaining || 0;
+        if (!isAdmin && remaining <= 0) {
           return new Response(
             JSON.stringify({
               error: 'No search credits remaining. Add more credits to enrich leads.',
@@ -168,9 +175,13 @@ serve(async (req) => {
         }
 
         // Deduct 1 credit up-front; refunded below on no-match / failure.
+        // Floored, because an admin is metered against an allowance nothing is
+        // stopping them spending, and two reveals racing could already breach
+        // zero on any account.
+        const nextRemaining = Math.max(0, remaining - 1);
         const { error: deductError } = await supabase
           .from('subscriptions')
-          .update({ search_credits_remaining: remaining - 1 })
+          .update({ search_credits_remaining: nextRemaining })
           .eq('user_id', user.id);
         if (deductError) {
           console.error('Enrich credit deduction failed:', deductError);
@@ -181,7 +192,7 @@ serve(async (req) => {
           user_id: user.id,
           type: 'usage',
           amount: -1,
-          balance_after: remaining - 1,
+          balance_after: nextRemaining,
           description: 'Lead enrichment',
         });
       }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { PageHeader } from "@/components/dashboard/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -528,13 +529,11 @@ const DashboardIntegrations = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Integrations</h1>
-          <p className="text-muted-foreground">
-            Connect your favorite tools to supercharge your sales workflow
-          </p>
-        </div>
+      <PageHeader
+        title="Integrations"
+        description="Connect the tools your outbound already runs through."
+      />
+      <div className="space-y-4 pt-4">
 
         {/* Category Filter */}
         <div className="flex gap-2 flex-wrap">

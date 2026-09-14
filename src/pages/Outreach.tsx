@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import { Analytics } from "@/lib/analytics";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { PageHeader } from "@/components/dashboard/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -1962,15 +1963,13 @@ ${formattedBody}
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">Outreach Studio</h1>
-            <p className="text-muted-foreground text-sm sm:text-base">
-              Generate AI-powered cold emails using proven frameworks
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
+      <PageHeader
+        title="Outreach Studio"
+        description="Generate cold emails from proven frameworks, then send them from your own mailbox."
+      />
+      <div className="space-y-4 pt-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-4">
+          <div className="mobile-action-row flex items-center gap-2">
             <BulkSendDialog
               leads={leads}
               dailyEmailLimit={dailyEmailLimit}
