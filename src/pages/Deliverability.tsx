@@ -1,10 +1,12 @@
+import { ReactNode } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
-import { Card, CardContent } from "@/components/ui/card";
+import { PageHeader } from "@/components/dashboard/PageHeader";
+import { Panel } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Lock, ShieldCheck, AlertTriangle, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { HealthOverview } from "@/components/deliverability/HealthOverview";
 import { AlertsPanel } from "@/components/deliverability/AlertsPanel";
 import { AccountHealthGrid } from "@/components/deliverability/AccountHealthGrid";
@@ -28,11 +30,38 @@ import {
 import { useDeliverabilityRealtime } from "@/hooks/use-deliverability-realtime";
 import { LiveIndicator } from "@/components/deliverability/LiveIndicator";
 
+/**
+ * A section's label, at the scale the rest of the dashboard uses.
+ *
+ * This page is twelve sections deep, and every heading was set at the same
+ * weight as a panel title with a full sentence under it, so scrolling it read
+ * as twelve equally important announcements rather than one page with an
+ * order. The label recedes; the panel under it is the content.
+ */
 const SectionHeading = ({ title, sub }: { title: string; sub?: string }) => (
-  <div className="mb-3">
-    <h2 className="text-sm font-semibold">{title}</h2>
-    {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
+  <div className="mb-2">
+    <h2 className="text-[0.625rem] font-medium uppercase tracking-[0.1em] text-muted-foreground/60">{title}</h2>
+    {sub && <p className="mt-1 text-[0.6875rem] leading-relaxed text-muted-foreground">{sub}</p>}
   </div>
+);
+
+/** The three states that are not the dashboard: gated, broken, empty. */
+const StatePanel = ({
+  title,
+  body,
+  action,
+}: {
+  title: string;
+  body: string;
+  action?: ReactNode;
+}) => (
+  <Panel>
+    <div className="px-5 py-10 text-center">
+      <p className="text-[0.8125rem] font-medium text-foreground">{title}</p>
+      <p className="mx-auto mt-1.5 max-w-md text-[0.6875rem] leading-relaxed text-muted-foreground">{body}</p>
+      {action ? <div className="mt-4 flex justify-center">{action}</div> : null}
+    </div>
+  </Panel>
 );
 
 const Deliverability = () => {
@@ -64,54 +93,32 @@ const Deliverability = () => {
 
   return (
     <DashboardLayout>
-      <div className="mx-auto w-full max-w-5xl space-y-8 p-4 sm:p-6">
-        {/* Header */}
-        <div>
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="flex items-center gap-2 text-xl font-bold">
-              <ShieldCheck className="h-5 w-5 text-primary" />
-              Deliverability
-            </h1>
-            {!gated && <LiveIndicator status={liveStatus} lastUpdate={lastUpdate} />}
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Reputation, authentication, blacklists, and content risk for every sending account, in one place.
-          </p>
-        </div>
-
+      {/* The shared header, like every other page. It hand-rolled an h1 with an
+          icon beside it and a paragraph underneath, at a size nothing else in
+          the dashboard uses, which is why this page never looked like part of
+          the same product. */}
+      <PageHeader
+        title="Deliverability"
+        description="Reputation, authentication, blacklists and content risk for every sending account, in one place."
+        actions={!gated ? <LiveIndicator status={liveStatus} lastUpdate={lastUpdate} /> : undefined}
+      />
+      <div className="mx-auto w-full max-w-[1400px] space-y-6 px-4 py-5 sm:px-6">
         {gated ? (
-          <Card className="border-border/50">
-            <CardContent className="flex flex-col items-center gap-4 p-10 text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                <Lock className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="font-semibold">The Deliverability suite is a Growth feature</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Reputation scoring, domain auth, blacklist monitoring, and the spam checker unlock on Growth and above.
-                </p>
-              </div>
-              <Button onClick={() => triggerGate("deliverabilityDashboard")}>See plans</Button>
-            </CardContent>
-          </Card>
+          <StatePanel
+            title="The deliverability suite is a Growth feature"
+            body="Reputation scoring, domain auth, blacklist monitoring and the spam checker unlock on Growth and above."
+            action={<Button size="sm" onClick={() => triggerGate("deliverabilityDashboard")}>See plans</Button>}
+          />
         ) : errored ? (
-          <Card className="border-destructive/40">
-            <CardContent className="flex flex-col items-center gap-4 p-10 text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
-                <AlertTriangle className="h-5 w-5 text-destructive" />
-              </div>
-              <div>
-                <p className="font-semibold">Couldn't load deliverability data</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  This usually means the deliverability tables haven't been created in the database yet.
-                  Apply the latest migrations, then retry.
-                </p>
-              </div>
-              <Button variant="outline" onClick={retryAll}>
-                <RefreshCw className="mr-1 h-4 w-4" /> Retry
+          <StatePanel
+            title="Couldn't load deliverability data"
+            body="This usually means the deliverability tables haven't been created in the database yet. Apply the latest migrations, then retry."
+            action={
+              <Button variant="outline" size="sm" onClick={retryAll}>
+                <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Retry
               </Button>
-            </CardContent>
-          </Card>
+            }
+          />
         ) : loading ? (
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
