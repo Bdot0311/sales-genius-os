@@ -38,6 +38,18 @@ export const CHANGELOG: ChangelogEntry[] = [
           "When you search for someone by name and company, a lookup that finds no one now says so instead of showing your own search details as if they were the person.",
       },
       {
+        tag: "improved",
+        title: "Look before you save",
+        description:
+          "A people lookup no longer writes to your leads on its own. You see what the lookup found — and what it would change on an existing lead — before you decide to save it.",
+      },
+      {
+        tag: "improved",
+        title: "Credit meter follows your real balance",
+        description:
+          "The credit counter now tracks your actual remaining balance as searches happen, so the number you see is the number you have.",
+      },
+      {
         tag: "fixed",
         title: "Inbox placement test is more dependable",
         description:
