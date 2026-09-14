@@ -63,6 +63,68 @@ export const useSearchCredits = () => {
     fetchCredits();
   }, [fetchCredits]);
 
+  /**
+   * Follow the balance instead of reading it once.
+   *
+   * "Credits don't move on the UI — I have 86 leads enriched many times and it
+   * still says 15,000 of 15,000 every day."
+   *
+   * The deduction happens server-side, inside the edge functions, precisely so
+   * a client cannot be the thing that decides what was spent. useCredit below
+   * is not on that path — the leads page says so in as many words — so the only
+   * client-side write to this state never fires for a search. Nothing else
+   * refetched, so the number was whatever it had been at mount and stayed there
+   * until a full page reload. A meter that updates once a session is not a
+   * meter.
+   *
+   * `subscriptions` is already in the realtime publication, so this is a
+   * subscription to the row that was already being broadcast, filtered to the
+   * one user. Reconnecting also refetches, because a socket that dropped during
+   * a search comes back to a stale number otherwise.
+   */
+  useEffect(() => {
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
+
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || cancelled) return;
+      channel = supabase
+        .channel(`search-credits:${session.user.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "subscriptions",
+            filter: `user_id=eq.${session.user.id}`,
+          },
+          () => { void fetchCredits(); },
+        )
+        .subscribe((status) => {
+          if (status === "SUBSCRIBED") void fetchCredits();
+        });
+    })();
+
+    return () => {
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [fetchCredits]);
+
+  /**
+   * Refetch when the tab comes back to the foreground.
+   *
+   * The allowance also changes without any action in this tab — a scheduled
+   * run, another tab, the monthly reset — and realtime only covers the window
+   * the socket was actually open for.
+   */
+  useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === "visible") void fetchCredits(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [fetchCredits]);
+
   const purchaseTopUp = useCallback(async (priceId: string) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
