@@ -217,7 +217,7 @@ export const TeamMembersTab = () => {
             </div>
           )}
           {members.length >= 10 && (
-            <p className="text-sm text-amber-600 mt-4">
+            <p className="text-sm text-amber-400 mt-4">
               You've reached the maximum of 10 team members for the Pro plan.
             </p>
           )}

@@ -229,7 +229,7 @@ export function EmailLogsPanel() {
 
 function StatCard({ label, value, tone }: { label: string; value: number; tone?: "success" | "danger" }) {
   const toneClass =
-    tone === "success" ? "text-green-600" : tone === "danger" ? "text-destructive" : "text-foreground";
+    tone === "success" ? "text-emerald-400" : tone === "danger" ? "text-destructive" : "text-foreground";
   return (
     <div className="border rounded-lg p-3">
       <p className="text-xs text-muted-foreground">{label}</p>

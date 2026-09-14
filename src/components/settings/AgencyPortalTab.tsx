@@ -176,11 +176,11 @@ export const AgencyPortalTab = () => {
         </Card>
         <Card>
           <CardContent className="pt-5">
-            <div className="flex items-center gap-2 mb-1 text-green-600">
+            <div className="flex items-center gap-2 mb-1 text-emerald-400">
               <DollarSign className="h-4 w-4" />
               <span className="text-xs">Your 50%</span>
             </div>
-            <p className="text-2xl font-bold text-green-600">{fmtCents(yourShare)}</p>
+            <p className="text-2xl font-bold text-emerald-400">{fmtCents(yourShare)}</p>
             <p className="text-xs text-muted-foreground mt-1">est. / mo</p>
           </CardContent>
         </Card>
@@ -221,7 +221,7 @@ export const AgencyPortalTab = () => {
             </p>
           )}
           <p className="text-xs text-muted-foreground">
-            Revenue split: <span className="font-medium text-green-600">50% to you</span> · 50% to OutReign.
+            Revenue split: <span className="font-medium text-emerald-400">50% to you</span> · 50% to OutReign.
             Connect your Stripe account below to receive automatic monthly payouts. For any issues email <a href="mailto:support@bdotindustries.com" className="underline">support@bdotindustries.com</a>.
           </p>
         </CardContent>
@@ -353,7 +353,7 @@ export const AgencyPortalTab = () => {
                       </TableCell>
                       <TableCell className="text-sm capitalize">{client.plan || "—"}</TableCell>
                       <TableCell className="text-right text-sm font-mono">{fmtCents(client.monthly_value_cents)}</TableCell>
-                      <TableCell className="text-right text-sm font-mono text-green-600 font-medium">
+                      <TableCell className="text-right text-sm font-mono text-emerald-400 font-medium">
                         {fmtCents(client.agency_earnings_cents || Math.round(client.monthly_value_cents * 0.5))}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">

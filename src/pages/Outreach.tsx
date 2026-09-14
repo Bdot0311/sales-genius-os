@@ -2330,7 +2330,7 @@ For logos, use HTML:
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card className="p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-                  <h2 className="text-lg sm:text-xl font-semibold">Email Configuration</h2>
+                  <h2 className="text-[0.8125rem] font-medium text-foreground">Email configuration</h2>
                   <div className="flex items-center gap-2">
                     <EmailTemplateManager
                       currentTemplate={{
@@ -2397,8 +2397,8 @@ For logos, use HTML:
                       return (
                         <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-xs">
                           <div className="flex items-start gap-1.5">
-                            <AlertTriangle className="w-3.5 h-3.5 text-amber-600 mt-0.5 flex-shrink-0" />
-                            <div className="text-amber-800">
+                            <AlertTriangle className="w-3.5 h-3.5 text-amber-400 mt-0.5 flex-shrink-0" />
+                            <div className="text-amber-400">
                               <p className="font-medium">Personal email detected</p>
                               <ul className="list-disc list-inside mt-1 space-y-0.5">
                                 {validation.warnings.map((w, i) => <li key={i}>{w}</li>)}
@@ -2413,8 +2413,8 @@ For logos, use HTML:
                   {/* Send time compliance warning */}
                   {sendTimeWarning && (
                     <div className="p-2 bg-yellow-50 border border-yellow-200 rounded flex items-start gap-2">
-                      <Clock className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
-                      <p className="text-xs text-yellow-800">{sendTimeWarning}</p>
+                      <Clock className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
+                      <p className="text-xs text-amber-400">{sendTimeWarning}</p>
                     </div>
                   )}
 
@@ -2455,17 +2455,17 @@ For logos, use HTML:
                               <span key={`t${i}`} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-secondary/60 text-foreground/70">{tech}</span>
                             ))}
                             {lead.icp_score > 0 && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-green-500/10 text-green-600 font-medium">ICP {lead.icp_score}/100</span>
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-green-500/10 text-emerald-400 font-medium">ICP {lead.icp_score}/100</span>
                             )}
                           </div>
                           {lead.company_description && (
                             <p className="text-xs text-muted-foreground line-clamp-1">{lead.company_description}</p>
                           )}
                           {lead.notes && (
-                            <p className="text-xs text-amber-600/80 line-clamp-1">📝 {lead.notes}</p>
+                            <p className="text-xs text-amber-400/80 line-clamp-1">📝 {lead.notes}</p>
                           )}
                           {tags.length === 0 && techs.length === 0 && (
-                            <p className="text-xs text-amber-600">⚠️ Limited lead data — enrich this lead for better personalization</p>
+                            <p className="text-xs text-amber-400">⚠️ Limited lead data — enrich this lead for better personalization</p>
                           )}
                         </div>
                       );
@@ -2663,7 +2663,7 @@ For logos, use HTML:
                       </Button>
                     </div>
                     {!selectedLead && (
-                      <p className="text-xs text-amber-600 mt-1">
+                      <p className="text-xs text-amber-400 mt-1">
                         ⚠️ Select a lead above to enable AI generation
                       </p>
                     )}
@@ -2696,7 +2696,7 @@ For logos, use HTML:
                       {subjectLine && (() => {
                         const lead = leads.find(l => l.id === selectedLead);
                         const { score, flags } = scoreSubjectLine(subjectLine, lead);
-                        const color = score >= 80 ? "bg-green-500/15 text-green-700 dark:text-green-400" : score >= 50 ? "bg-yellow-500/15 text-yellow-700 dark:text-yellow-400" : "bg-destructive/15 text-destructive";
+                        const color = score >= 80 ? "bg-green-500/15 text-green-400" : score >= 50 ? "bg-yellow-500/15 text-yellow-400" : "bg-destructive/15 text-destructive";
                         return (
                           <TooltipProvider>
                             <Tooltip>
@@ -2741,7 +2741,7 @@ For logos, use HTML:
                       </Button>
                     </div>
                     {!selectedLead && (
-                      <p className="text-xs text-amber-600 mt-1">
+                      <p className="text-xs text-amber-400 mt-1">
                         ⚠️ Select a lead above to enable AI generation
                       </p>
                     )}
@@ -2813,7 +2813,7 @@ For logos, use HTML:
                       </label>
                     </div>
                     {!businessDescription && selectedLead && (
-                      <p className="text-xs text-amber-600 text-center">
+                      <p className="text-xs text-amber-400 text-center">
                         ⚠️ Add your business description above for stronger personalization and social proof
                       </p>
                     )}
@@ -2898,7 +2898,7 @@ For logos, use HTML:
               </Card>
 
               <Card className="p-6">
-                <h2 className="text-xl font-semibold mb-4">Generated Email</h2>
+                <h2 className="mb-3 text-[0.8125rem] font-medium text-foreground">Generated email</h2>
                 <div className="space-y-4">
                   <div className="bg-muted/30 p-3 rounded-lg border mb-2">
                     <p className="text-sm">
@@ -2914,8 +2914,8 @@ For logos, use HTML:
                   {/* P0.1 — First touch HTML signature warning */}
                   {isFirstTouch && signature && /<[a-z]/i.test(signature) && (
                     <Alert className="border-yellow-500/40 bg-yellow-500/10">
-                      <AlertTriangle className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
-                      <AlertDescription className="text-yellow-700 dark:text-yellow-400 text-xs">
+                      <AlertTriangle className="w-4 h-4 text-yellow-400" />
+                      <AlertDescription className="text-yellow-400 text-xs">
                         First-touch plain text mode — HTML signature stripped. Keeps you out of promotions tab.
                       </AlertDescription>
                     </Alert>
@@ -3132,14 +3132,14 @@ For logos, use HTML:
 
           <TabsContent value="sent" className="mt-6">
             <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Sent Emails</h2>
+              <h2 className="mb-3 text-[0.8125rem] font-medium text-foreground">Sent emails</h2>
               <SentEmailsTable onDeleted={loadCounts} />
             </Card>
           </TabsContent>
 
           <TabsContent value="drafts" className="mt-6">
             <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Email Drafts</h2>
+              <h2 className="mb-3 text-[0.8125rem] font-medium text-foreground">Email drafts</h2>
               <EmailDraftsTable onLoadDraft={loadDraft} />
             </Card>
           </TabsContent>
@@ -3156,7 +3156,7 @@ For logos, use HTML:
           <TabsContent value="performance" className="mt-6">
             <div className="space-y-4">
               {/* P3.3 / P4.3 — Open tracking warning */}
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-sm">
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm">
                 <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                 <span>Open tracking pixels can hurt cold email deliverability. <strong>Reply rate</strong> is your real metric — use opens as directional only.</span>
               </div>

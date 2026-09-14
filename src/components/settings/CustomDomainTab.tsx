@@ -182,12 +182,12 @@ export const CustomDomainTab = () => {
                 <div className="flex items-center gap-2">
                   <h4 className="font-semibold">Domain Status:</h4>
                   {isVerified ? (
-                    <div className="flex items-center gap-1 text-green-600">
+                    <div className="flex items-center gap-1 text-emerald-400">
                       <CheckCircle className="h-4 w-4" />
                       <span className="text-sm">Verified</span>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-1 text-amber-600">
+                    <div className="flex items-center gap-1 text-amber-400">
                       <AlertCircle className="h-4 w-4" />
                       <span className="text-sm">Pending Verification</span>
                     </div>
@@ -270,7 +270,7 @@ export const CustomDomainTab = () => {
 
                 {isVerified && (
                   <Alert>
-                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <CheckCircle className="h-4 w-4 text-emerald-400" />
                     <AlertTitle>Domain Active</AlertTitle>
                     <AlertDescription>
                       Your custom domain is verified and active. Your application is now accessible at {currentDomain}.

@@ -632,7 +632,7 @@ const Coach = () => {
                           </div>
                         )}
                         {msg.role === 'assistant' ? (
-                          <div className="prose prose-sm dark:prose-invert max-w-none">
+                          <div className="prose prose-sm prose-invert max-w-none">
                             {msg.content ? (
                               <ReactMarkdown>{msg.content}</ReactMarkdown>
                             ) : loading ? (

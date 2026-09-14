@@ -363,7 +363,7 @@ const AdminSettings = () => {
 
           {/* Billing Settings */}
           <TabsContent value="billing" className="space-y-4">
-            <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+            <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-primary">
               <Info className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-500" />
               <p>
                 <span className="font-medium">For reference only</span> — plan limits and trial periods below are stored as reference values.

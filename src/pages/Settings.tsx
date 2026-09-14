@@ -346,8 +346,8 @@ const Settings = () => {
 
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
                     <div className="flex items-start gap-2">
-                      <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5" />
-                      <p className="text-sm text-amber-800">
+                      <AlertTriangle className="h-4 w-4 text-amber-400 mt-0.5" />
+                      <p className="text-sm text-amber-400">
                         The CAN-SPAM Act requires a physical postal address and clear opt-out mechanism.
                         Non-compliance can result in penalties up to ${CAN_SPAM_PENALTY.toLocaleString()} per violation.
                       </p>
@@ -509,7 +509,7 @@ const Settings = () => {
                     )}
                   </Button>
                   {!subscription?.stripeCustomerId && (
-                    <p className="text-sm text-amber-600">
+                    <p className="text-sm text-amber-400">
                       Subscribe to a plan to access billing management.
                     </p>
                   )}
@@ -683,7 +683,7 @@ const Settings = () => {
                   </div>
                   <Progress value={usage.percentageUsed} className="h-2" />
                   {usage.percentageUsed > 80 && (
-                    <p className="text-sm text-amber-600">
+                    <p className="text-sm text-amber-400">
                       You're approaching your leads limit. Consider upgrading your plan.
                     </p>
                   )}

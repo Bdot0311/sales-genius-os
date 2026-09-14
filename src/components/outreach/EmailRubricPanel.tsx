@@ -166,7 +166,7 @@ export const EmailRubricPanel = ({ subject, body, onApplyBody, onApplySubject }:
         ) : dims ? (
           <div className="space-y-2">
             {allStrong(dims) && (
-              <p className="text-[11px] text-green-600 dark:text-green-500">
+              <p className="text-[11px] text-green-500">
                 Every dimension is at or above the bar. Nothing here is holding this email back.
               </p>
             )}
@@ -208,7 +208,7 @@ export const EmailRubricPanel = ({ subject, body, onApplyBody, onApplySubject }:
                   <p className="text-foreground/80">{s.suggestion}</p>
                   {s.snippet && <p className="text-[11px] text-muted-foreground truncate">on: "{s.snippet}"</p>}
                   {reoffered && (
-                    <p className="text-[11px] text-amber-600 dark:text-amber-500">
+                    <p className="text-[11px] text-amber-500">
                       Applied, and the rubric still wants this changed. The rewrite did not move it.
                     </p>
                   )}

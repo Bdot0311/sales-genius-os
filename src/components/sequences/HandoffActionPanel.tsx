@@ -196,7 +196,7 @@ export const HandoffActionPanel = ({ enrollments, onRefresh }: HandoffActionPane
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   {getPauseReasonIcon(enrollment.paused_reason)}
-                  <span className="text-orange-600 dark:text-orange-400">
+                  <span className="text-orange-400">
                     {enrollment.paused_reason || 'Paused for review'}
                   </span>
                 </div>
