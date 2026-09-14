@@ -44,12 +44,12 @@ const CATEGORY_ICONS: Record<string, any> = {
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
-  opener: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
-  pain_point: 'bg-red-500/10 text-red-600 border-red-500/20',
-  social_proof: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20',
-  cta: 'bg-green-500/10 text-green-600 border-green-500/20',
+  opener: 'bg-blue-500/10 text-primary border-blue-500/20',
+  pain_point: 'bg-red-500/10 text-destructive border-red-500/20',
+  social_proof: 'bg-yellow-500/10 text-amber-400 border-yellow-500/20',
+  cta: 'bg-green-500/10 text-emerald-400 border-green-500/20',
   closing: 'bg-purple-500/10 text-purple-600 border-purple-500/20',
-  objection_handler: 'bg-orange-500/10 text-orange-600 border-orange-500/20',
+  objection_handler: 'bg-orange-500/10 text-amber-400 border-orange-500/20',
 };
 
 export const MessageBlocksList = () => {

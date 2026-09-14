@@ -76,9 +76,9 @@ export const ReplyIntentBadge = ({
   const getColorClasses = () => {
     switch (intentClassification) {
       case 'high_intent':
-        return 'bg-orange-500/10 text-orange-600 border-orange-500/20 hover:bg-orange-500/20';
+        return 'bg-orange-500/10 text-amber-400 border-orange-500/20 hover:bg-orange-500/20';
       case 'low_intent':
-        return 'bg-blue-500/10 text-blue-600 border-blue-500/20 hover:bg-blue-500/20';
+        return 'bg-blue-500/10 text-primary border-blue-500/20 hover:bg-blue-500/20';
       default:
         return 'bg-muted text-muted-foreground';
     }

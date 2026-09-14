@@ -243,7 +243,7 @@ export const AiSequenceBuilder = () => {
       {touches.length > 0 && (
         <div className="space-y-4">
           {lowPersonalization && (
-            <div className="flex items-start gap-2 rounded-md border border-yellow-500/30 bg-yellow-500/10 p-3 text-xs text-yellow-600 dark:text-yellow-500">
+            <div className="flex items-start gap-2 rounded-md border border-yellow-500/30 bg-yellow-500/10 p-3 text-xs text-yellow-500">
               <span>this prospect had no hook above generic persona pain. review carefully, or route it to a segment-level sequence.</span>
             </div>
           )}

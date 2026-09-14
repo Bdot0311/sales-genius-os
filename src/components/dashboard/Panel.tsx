@@ -198,6 +198,42 @@ export const MetricStrip = ({ metrics, className }: { metrics: Metric[]; classNa
 );
 
 /**
+ * The three states that are not content: gated, empty, broken.
+ *
+ * Every page built its own, and they converged on the same shape without ever
+ * agreeing on it: a 48px icon, or a 32px icon inside a tinted circle, centred
+ * over a heading and a paragraph, on a dashed border or a solid one, at py-8 or
+ * py-10 or py-12. The icon is the part worth dropping — a padlock over "this is
+ * a Growth feature" and an inbox over "no conversations yet" illustrate the
+ * sentence directly beneath them, which is decoration standing in for an
+ * answer.
+ *
+ * What the reader needs is what state they are in, why, and what to do. That is
+ * three pieces of text and at most one button.
+ */
+export const EmptyState = ({
+  title,
+  body,
+  action,
+  className,
+}: {
+  title: ReactNode;
+  body?: ReactNode;
+  action?: ReactNode;
+  className?: string;
+}) => (
+  <Panel className={className}>
+    <div className="px-5 py-10 text-center">
+      <p className="text-[0.8125rem] font-medium text-foreground">{title}</p>
+      {body ? (
+        <p className="mx-auto mt-1.5 max-w-md text-[0.6875rem] leading-relaxed text-muted-foreground">{body}</p>
+      ) : null}
+      {action ? <div className="mt-4 flex flex-wrap justify-center gap-2">{action}</div> : null}
+    </div>
+  </Panel>
+);
+
+/**
  * The label above a region that is not itself a panel.
  *
  * One size, one weight, one tracking, everywhere — the same label was appearing

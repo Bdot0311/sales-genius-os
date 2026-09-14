@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { PageHeader } from "@/components/dashboard/PageHeader";
+import { Panel, PanelHeader, PanelBody, MetricStrip } from "@/components/dashboard/Panel";
 
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -13,8 +13,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from "recharts";
 import {
-  TrendingUp, Users, DollarSign, Target, Loader2, Download, FileText, Sparkles,
-  ArrowRight, FileDown, Mail, MessageSquareReply, Eye, Clock, Trophy, Building2, Gauge,
+  Loader2, Download, FileText, Sparkles, ArrowRight, FileDown, Mail,
 } from "lucide-react";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
@@ -61,27 +60,48 @@ const STAGES = [
 
 const PIPELINE_STAGES = ["new", "contacted", "engaged", "no_response", "meeting_booked", "won", "lost"];
 
-const COLORS = ["hsl(var(--primary))", "#22c55e", "#3b82f6", "#f59e0b", "#ef4444", "#a855f7", "#14b8a6"];
+/* Three series on one chart do need telling apart — that is encoding, not
+   decoration, and a ramp would make overlapping lines unreadable. What they do
+   not need is three raw hex values lifted from a default palette and never
+   checked against this product's near-black ground. Named once, here. */
+const SERIES = {
+  primary: "hsl(var(--primary))",
+  contrast: "hsl(190 80% 55%)",
+  accent: "hsl(35 90% 60%)",
+};
+
+/* Pie slices as one hue at descending strength, not seven hard-coded hex
+   values borrowed from a default palette. The slices are pipeline stages, which
+   are ordered, so seven unrelated colours told the reader they were seven
+   unrelated things. Stated in the same terms as the rest of the design system
+   rather than as raw hex. */
+const COLORS = [
+  "hsl(var(--primary))",
+  "hsl(var(--primary) / 0.82)",
+  "hsl(var(--primary) / 0.66)",
+  "hsl(var(--primary) / 0.52)",
+  "hsl(var(--primary) / 0.4)",
+  "hsl(var(--primary) / 0.3)",
+  "hsl(var(--primary) / 0.22)",
+];
 
 const pctOf = (n: number, d: number) => (d > 0 ? Math.round((n / d) * 1000) / 10 : 0);
 const dayKey = (iso: string) => iso.slice(0, 10);
 const money = (n: number) => `$${Math.round(n).toLocaleString()}`;
 const prettyStage = (s: string) => s.replace(/[_-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
-const StatCard = ({ title, value, sub, icon: Icon, color, bg }: any) => (
-  <Card className="p-5">
-    <div className="flex items-start justify-between gap-3">
-      <div className="min-w-0">
-        <p className="text-sm text-muted-foreground mb-1 truncate">{title}</p>
-        <p className="text-2xl md:text-3xl font-bold tabular-nums">{value}</p>
-        {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
-      </div>
-      <div className={`p-2.5 rounded-lg shrink-0 ${bg}`}>
-        <Icon className={`w-5 h-5 ${color}`} />
-      </div>
-    </div>
-  </Card>
-);
+/*
+ * The per-metric card component is gone. It was the hero-metric template
+ * exactly — big number, small
+ * label, an icon in a tinted square — one card each, in a four-across grid. Nine
+ * of them across this page carried nine different hues: blue, purple, green,
+ * orange, pink, cyan, yellow, red, teal. Nine unrelated numbers in nine colours
+ * is a rainbow legend for a key that does not exist, and the colours were chosen
+ * because the cards looked bare without them.
+ *
+ * MetricStrip puts the same numbers on one divided surface and gives the room
+ * the icon took to what each number means instead.
+ */
 
 const Analytics = () => {
   const navigate = useNavigate();
@@ -369,31 +389,37 @@ const Analytics = () => {
 
           {/* OVERVIEW */}
           <TabsContent value="overview" className="space-y-6 mt-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-              <StatCard title="Leads" value={m.totalLeads.toLocaleString()} sub={`${m.contactRate}% contacted`} icon={Users} color="text-blue-500" bg="bg-blue-500/10" />
-              <StatCard title="Open Pipeline" value={money(m.pipelineValue)} sub={`${m.openDeals} open deals`} icon={Target} color="text-purple-500" bg="bg-purple-500/10" />
-              <StatCard title="Closed Won" value={money(m.wonValue)} sub={`${m.winRate}% win rate`} icon={DollarSign} color="text-green-500" bg="bg-green-500/10" />
-              <StatCard title="Avg Deal Size" value={money(m.avgDealSize)} sub={m.avgSalesCycleDays !== null ? `${m.avgSalesCycleDays}d avg cycle` : "Cycle: n/a"} icon={TrendingUp} color="text-orange-500" bg="bg-orange-500/10" />
-            </div>
+            <MetricStrip
+              metrics={[
+                { label: "Leads", value: m.totalLeads.toLocaleString(), note: `${m.contactRate}% contacted` },
+                { label: "Open pipeline", value: money(m.pipelineValue), note: `${m.openDeals} open deals` },
+                { label: "Closed won", value: money(m.wonValue), note: `${m.winRate}% win rate` },
+                {
+                  label: "Weighted forecast",
+                  value: money(m.weighted),
+                  note: m.avgDealSize > 0 ? `${money(m.avgDealSize)} average deal` : "value × probability",
+                },
+              ]}
+            />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <StatCard title="Weighted Forecast" value={money(m.weighted)} sub="Value × probability" icon={Gauge} color="text-pink-500" bg="bg-pink-500/10" />
-              <Card className="p-5 flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-medium">Email analytics</p>
-                  <p className="text-xs text-muted-foreground">
+            <Panel flat className="bg-transparent">
+              <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-5">
+                <div className="min-w-0">
+                  <p className="text-[0.8125rem] font-medium text-foreground">Email analytics</p>
+                  <p className="mt-0.5 text-[0.6875rem] text-muted-foreground">
                     Opens, replies, clicks, templates, sequences, mailboxes and timing live in one place.
                   </p>
                 </div>
-                <Button size="sm" variant="outline" className="gap-1.5 shrink-0" onClick={() => navigate("/outreach?tab=performance")}>
-                  <Mail className="w-3.5 h-3.5" />
+                <Button size="sm" variant="outline" className="shrink-0 gap-1.5" onClick={() => navigate("/dashboard/outreach?tab=performance")}>
+                  <Mail className="h-3.5 w-3.5" />
                   Performance
                 </Button>
-              </Card>
-            </div>
+              </div>
+            </Panel>
 
-            <Card className="p-5">
-              <h2 className="text-lg font-semibold mb-4">Revenue funnel</h2>
+            <Panel>
+              <PanelHeader title="Revenue funnel" />
+              <PanelBody className="">
               <div className="space-y-3">
                 {m.funnel.map((step, i) => {
                   const top = Math.max(...m.funnel.map((f) => f.people), 1);
@@ -414,10 +440,12 @@ const Analytics = () => {
                   );
                 })}
               </div>
-            </Card>
+            </PanelBody>
+            </Panel>
 
-            <Card className="p-5">
-              <h2 className="text-lg font-semibold mb-4">Daily activity</h2>
+            <Panel>
+              <PanelHeader title="Daily activity" />
+              <PanelBody className="">
               <ResponsiveContainer width="100%" height={300}>
                 <AreaChart data={m.series}>
                   <defs>
@@ -430,19 +458,21 @@ const Analytics = () => {
                   <XAxis dataKey="day" className="text-xs" /><YAxis className="text-xs" allowDecimals={false} />
                   <Tooltip /><Legend />
                   <Area type="monotone" dataKey="leads" name="Leads" stroke="hsl(var(--primary))" fill="url(#aLeads)" />
-                  <Line type="monotone" dataKey="emails" name="Emails" stroke="#3b82f6" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="replies" name="Replies" stroke="#22c55e" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="deals" name="Deals" stroke="#f59e0b" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="emails" name="Emails" stroke={SERIES.primary} strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="replies" name="Replies" stroke={SERIES.contrast} strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="deals" name="Deals" stroke={SERIES.accent} strokeWidth={2} dot={false} />
                 </AreaChart>
               </ResponsiveContainer>
-            </Card>
+            </PanelBody>
+            </Panel>
           </TabsContent>
 
           {/* PIPELINE */}
           <TabsContent value="pipeline" className="space-y-6 mt-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="p-5">
-                <h2 className="text-lg font-semibold mb-4">Deals by stage</h2>
+              <Panel>
+              <PanelHeader title="Deals by stage" />
+              <PanelBody className="">
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={m.dealsByStage}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -450,12 +480,14 @@ const Analytics = () => {
                     <Bar dataKey="count" name="Deals" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
-              </Card>
-              <Card className="p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold">Value by stage</h2>
-                  {!features.funnelAnalytics && <FeatureHighlight availableOn="pro" onUpgrade={() => triggerGate("funnelAnalytics")} inline />}
-                </div>
+              </PanelBody>
+            </Panel>
+              <Panel>
+              <PanelHeader
+                title="Value by stage"
+                actions={!features.funnelAnalytics ? <FeatureHighlight availableOn="pro" onUpgrade={() => triggerGate("funnelAnalytics")} inline /> : undefined}
+              />
+              <PanelBody>
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie data={m.dealsByStage.filter((d) => d.value > 0)} dataKey="value" nameKey="stage" cx="50%" cy="50%" outerRadius={100} label>
@@ -464,11 +496,13 @@ const Analytics = () => {
                     <Tooltip formatter={(v: any) => money(Number(v))} /><Legend />
                   </PieChart>
                 </ResponsiveContainer>
-              </Card>
+              </PanelBody>
+            </Panel>
             </div>
 
-            <Card className="p-5 overflow-x-auto">
-              <h2 className="text-lg font-semibold mb-4">Largest open opportunities</h2>
+            <Panel>
+              <PanelHeader title="Largest open opportunities" />
+              <PanelBody className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -491,21 +525,25 @@ const Analytics = () => {
                   {!m.topDeals.length && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No deals yet</TableCell></TableRow>}
                 </TableBody>
               </Table>
-            </Card>
+            </PanelBody>
+            </Panel>
           </TabsContent>
 
           {/* LEADS */}
           <TabsContent value="leads" className="space-y-6 mt-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-              <StatCard title="New Leads" value={m.totalLeads.toLocaleString()} sub={`in last ${rangeDays > 365 ? "all time" : `${rangeDays}d`}`} icon={Users} color="text-blue-500" bg="bg-blue-500/10" />
-              <StatCard title="Contacted" value={m.contacted.toLocaleString()} sub={`${m.contactRate}% of leads`} icon={Mail} color="text-cyan-500" bg="bg-cyan-500/10" />
-              <StatCard title="Enriched" value={`${m.enrichRate}%`} sub="Data completeness" icon={Building2} color="text-purple-500" bg="bg-purple-500/10" />
-              <StatCard title="Lead → Deal" value={`${m.leadToDeal}%`} sub="Conversion" icon={Trophy} color="text-green-500" bg="bg-green-500/10" />
-            </div>
+            <MetricStrip
+              metrics={[
+                { label: "New leads", value: m.totalLeads.toLocaleString(), note: `in the last ${rangeDays > 365 ? "all time" : `${rangeDays} days`}` },
+                { label: "Contacted", value: m.contacted.toLocaleString(), note: `${m.contactRate}% of leads` },
+                { label: "Enriched", value: `${m.enrichRate}%`, note: "have a full contact record" },
+                { label: "Lead to deal", value: `${m.leadToDeal}%`, note: "became an open deal" },
+              ]}
+            />
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="p-5">
-                <h2 className="text-lg font-semibold mb-4">Pipeline stage distribution</h2>
+              <Panel>
+              <PanelHeader title="Pipeline stage distribution" />
+              <PanelBody className="">
                 <ResponsiveContainer width="100%" height={280}>
                   <BarChart data={m.pipelineDist} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -515,14 +553,16 @@ const Analytics = () => {
                     <Bar dataKey="count" name="Leads" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
-              </Card>
-              <Card className="p-5">
-                <h2 className="text-lg font-semibold mb-4">ICP score distribution</h2>
+              </PanelBody>
+            </Panel>
+              <Panel>
+              <PanelHeader title="ICP score distribution" />
+              <PanelBody className="">
                 <ResponsiveContainer width="100%" height={280}>
                   <BarChart data={m.scoreBuckets}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="bucket" className="text-xs" /><YAxis className="text-xs" allowDecimals={false} /><Tooltip />
-                    <Bar dataKey="count" name="Leads" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="count" name="Leads" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
                 {!!m.tiers.length && (
@@ -530,11 +570,13 @@ const Analytics = () => {
                     {m.tiers.map((t) => <Badge key={t.tier} variant="secondary">Tier {t.tier}: {t.count}</Badge>)}
                   </div>
                 )}
-              </Card>
+              </PanelBody>
+            </Panel>
             </div>
 
-            <Card className="p-5 overflow-x-auto">
-              <h2 className="text-lg font-semibold mb-4">Highest intent leads</h2>
+            <Panel>
+              <PanelHeader title="Highest intent leads" />
+              <PanelBody className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -557,14 +599,16 @@ const Analytics = () => {
                   {!m.hotLeads.length && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No leads in this range</TableCell></TableRow>}
                 </TableBody>
               </Table>
-            </Card>
+            </PanelBody>
+            </Panel>
           </TabsContent>
 
 
           {/* SOURCES */}
           <TabsContent value="sources" className="space-y-6 mt-6">
-            <Card className="p-5 overflow-x-auto">
-              <h2 className="text-lg font-semibold mb-4">Lead sources</h2>
+            <Panel>
+              <PanelHeader title="Lead sources" />
+              <PanelBody className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -586,11 +630,13 @@ const Analytics = () => {
                   {!m.bySource.length && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No lead sources yet</TableCell></TableRow>}
                 </TableBody>
               </Table>
-            </Card>
+            </PanelBody>
+            </Panel>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="p-5">
-                <h2 className="text-lg font-semibold mb-4">Top industries</h2>
+              <Panel>
+              <PanelHeader title="Top industries" />
+              <PanelBody className="">
                 <ResponsiveContainer width="100%" height={280}>
                   <BarChart data={m.byIndustry} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -600,24 +646,28 @@ const Analytics = () => {
                     <Bar dataKey="leads" name="Leads" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
-              </Card>
-              <Card className="p-5">
-                <h2 className="text-lg font-semibold mb-4">Top geographies</h2>
+              </PanelBody>
+            </Panel>
+              <Panel>
+              <PanelHeader title="Top geographies" />
+              <PanelBody className="">
                 <ResponsiveContainer width="100%" height={280}>
                   <BarChart data={m.byCountry}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="country" className="text-xs" /><YAxis className="text-xs" allowDecimals={false} /><Tooltip />
-                    <Bar dataKey="leads" name="Leads" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="leads" name="Leads" fill={SERIES.primary} radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
-              </Card>
+              </PanelBody>
+            </Panel>
             </div>
           </TabsContent>
 
           {/* ACTIVITY */}
           <TabsContent value="activity" className="space-y-6 mt-6">
-            <Card className="p-5 overflow-x-auto">
-              <h2 className="text-lg font-semibold mb-4">Activity by type</h2>
+            <Panel>
+              <PanelHeader title="Activity by type" />
+              <PanelBody className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -637,35 +687,37 @@ const Analytics = () => {
                   {!m.activityByType.length && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">No activity logged in this range</TableCell></TableRow>}
                 </TableBody>
               </Table>
-            </Card>
+            </PanelBody>
+            </Panel>
 
             {features.repPerformance ? (
-              <Card className="p-5">
-                <h2 className="text-lg font-semibold mb-4">Rep performance</h2>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  {[
-                    { icon: Users, color: "text-primary", label: "Leads managed", value: m.totalLeads.toLocaleString() },
-                    { icon: Target, color: "text-green-500", label: "Lead → deal", value: `${m.leadToDeal}%` },
-                    { icon: DollarSign, color: "text-yellow-500", label: "Avg deal value", value: money(m.avgDealSize) },
-                    { icon: Clock, color: "text-blue-500", label: "Avg sales cycle", value: m.avgSalesCycleDays !== null ? `${m.avgSalesCycleDays}d` : "—" },
-                  ].map((s) => (
-                    <div key={s.label} className="p-4 rounded-lg bg-muted/50">
-                      <div className="flex items-center gap-2 mb-2"><s.icon className={`w-4 h-4 ${s.color}`} /><span className="text-sm font-medium">{s.label}</span></div>
-                      <p className="text-2xl font-bold tabular-nums">{s.value}</p>
-                    </div>
-                  ))}
-                </div>
-              </Card>
+              <MetricStrip
+                metrics={[
+                  { label: "Leads managed", value: m.totalLeads.toLocaleString() },
+                  { label: "Lead to deal", value: `${m.leadToDeal}%`, note: "became an open deal" },
+                  { label: "Avg deal value", value: money(m.avgDealSize) },
+                  {
+                    label: "Avg sales cycle",
+                    value: m.avgSalesCycleDays !== null ? `${m.avgSalesCycleDays}d` : "—",
+                    note: m.avgSalesCycleDays !== null ? "first touch to close" : "no closed deals yet",
+                  },
+                ]}
+              />
             ) : (
-              <Card className="p-6 border-dashed border-2 border-primary/20">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                  <div>
-                    <h2 className="text-lg font-semibold mb-1">Rep performance</h2>
-                    <p className="text-muted-foreground text-sm">Track individual rep performance and identify coaching opportunities.</p>
+              /* Quiet, and last. A dashed double border in the accent colour is
+                 the loudest treatment on the page, spent on a feature the
+                 reader does not have. */
+              <Panel flat className="bg-transparent">
+                <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-5">
+                  <div className="min-w-0">
+                    <p className="text-[0.8125rem] font-medium text-foreground">Rep performance</p>
+                    <p className="mt-0.5 text-[0.6875rem] text-muted-foreground">
+                      Per-rep numbers, and where coaching would move them.
+                    </p>
                   </div>
                   <FeatureHighlight availableOn="pro" onUpgrade={() => triggerGate("funnelAnalytics")} />
                 </div>
-              </Card>
+              </Panel>
             )}
           </TabsContent>
 
@@ -682,17 +734,24 @@ const Analytics = () => {
 function OutboundBenchmarksCard({ userReplyRate }: { userReplyRate: number | null }) {
   const kb = OUTBOUND_KB.benchmarks;
 
+  /* Three tiers on one scale, so they read as a ramp rather than as three
+     unrelated categories. Yellow, blue and violet for average, top quartile and
+     elite made the best tier look like a different kind of thing from the
+     others rather than more of the same thing. */
   const benchmarkTiers = [
-    { label: "Industry Average", rate: kb.industryAvgReplyRate, color: "bg-yellow-500" },
-    { label: "Top Quartile", rate: kb.topQuartileReplyRate, color: "bg-blue-500" },
-    { label: "Elite (Top 10%)", rate: kb.eliteReplyRate, color: "bg-[#9263E9]" },
+    { label: "Industry average", rate: kb.industryAvgReplyRate, color: "bg-primary/30" },
+    { label: "Top quartile", rate: kb.topQuartileReplyRate, color: "bg-primary/60" },
+    { label: "Elite (top 10%)", rate: kb.eliteReplyRate, color: "bg-primary" },
   ];
 
+  /* The reader's own bar used to be green whatever it said, which contradicted
+     the badge beside it — you could be told "below average" next to a healthy
+     green bar. Bar and badge come from the same verdict now. */
   const getRateStatus = (rate: number) => {
-    if (rate >= kb.eliteReplyRate) return { label: "Elite", color: "text-[#9263E9]", bg: "bg-[#9263E9]/10" };
-    if (rate >= kb.topQuartileReplyRate) return { label: "Top Quartile", color: "text-blue-500", bg: "bg-blue-500/10" };
-    if (rate >= kb.industryAvgReplyRate) return { label: "Average", color: "text-yellow-500", bg: "bg-yellow-500/10" };
-    return { label: "Below Average", color: "text-red-500", bg: "bg-red-500/10" };
+    if (rate >= kb.eliteReplyRate) return { label: "Elite", color: "text-emerald-400", bar: "bg-emerald-400", bg: "bg-emerald-400/10" };
+    if (rate >= kb.topQuartileReplyRate) return { label: "Top quartile", color: "text-primary", bar: "bg-primary", bg: "bg-primary/10" };
+    if (rate >= kb.industryAvgReplyRate) return { label: "Average", color: "text-amber-400", bar: "bg-amber-400", bg: "bg-amber-400/10" };
+    return { label: "Below average", color: "text-destructive", bar: "bg-destructive", bg: "bg-destructive/10" };
   };
 
   const likelyCauses = [
@@ -702,19 +761,19 @@ function OutboundBenchmarksCard({ userReplyRate }: { userReplyRate: number | nul
   ];
 
   return (
-    <Card className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-lg font-semibold">Your performance vs. industry</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">2026 benchmarks — Instantly Benchmark Report (billions of emails)</p>
-        </div>
-        {userReplyRate !== null && (
-          <Badge className={`${getRateStatus(userReplyRate).bg} ${getRateStatus(userReplyRate).color} border-0`}>
-            {getRateStatus(userReplyRate).label}
-          </Badge>
-        )}
-      </div>
-
+    <Panel>
+      <PanelHeader
+        title="Your performance vs. industry"
+        meta="2026 benchmarks, Instantly Benchmark Report"
+        actions={
+          userReplyRate !== null ? (
+            <Badge className={`${getRateStatus(userReplyRate).bg} ${getRateStatus(userReplyRate).color} border-0 font-normal`}>
+              {getRateStatus(userReplyRate).label}
+            </Badge>
+          ) : undefined
+        }
+      />
+      <PanelBody>
       <div className="space-y-4">
         {benchmarkTiers.map((tier) => {
           const pct = Math.round(tier.rate * 100 * 10) / 10;
@@ -741,7 +800,7 @@ function OutboundBenchmarksCard({ userReplyRate }: { userReplyRate: number | nul
               </span>
             </div>
             <div className="h-2 rounded-full bg-muted overflow-hidden">
-              <div className="h-full rounded-full bg-green-500" style={{ width: `${Math.min((userReplyRate / kb.eliteReplyRate) * 100, 100)}%` }} />
+              <div className={`h-full rounded-full ${getRateStatus(userReplyRate).bar}`} style={{ width: `${Math.min((userReplyRate / kb.eliteReplyRate) * 100, 100)}%` }} />
             </div>
           </div>
         )}
@@ -763,14 +822,14 @@ function OutboundBenchmarksCard({ userReplyRate }: { userReplyRate: number | nul
       </div>
 
       {(userReplyRate === null || userReplyRate < kb.industryAvgReplyRate) && (
-        <div className="mt-5 rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-4">
-          <p className="text-sm font-medium text-yellow-600 dark:text-yellow-400 mb-3">
+        <div className="mt-5 rounded-lg border border-border/40 bg-muted/20 p-4">
+          <p className="mb-3 text-[0.8125rem] font-medium text-foreground">
             {userReplyRate === null ? "To reach elite reply rates, focus on:" : "Your reply rate is below average. Most likely causes:"}
           </p>
           <div className="space-y-2">
             {likelyCauses.map((cause) => (
               <div key={cause.issue} className="flex items-start gap-2 text-xs">
-                <ArrowRight className="w-3.5 h-3.5 text-yellow-500 shrink-0 mt-0.5" />
+                <ArrowRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                 <span>
                   <span className="font-medium">{cause.issue}:</span>{" "}
                   <span className="text-muted-foreground">{cause.fix}</span>
@@ -780,7 +839,8 @@ function OutboundBenchmarksCard({ userReplyRate }: { userReplyRate: number | nul
           </div>
         </div>
       )}
-    </Card>
+      </PanelBody>
+    </Panel>
   );
 }
 

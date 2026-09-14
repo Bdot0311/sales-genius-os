@@ -1,4 +1,5 @@
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { EmptyState } from "@/components/dashboard/Panel";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +15,7 @@ import { TargetCompanies } from "@/components/dashboard/TargetCompanies";
 import { FindPerson } from "@/components/dashboard/FindPerson";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { buildExternalFilters, ParsedIcpFilters } from "@/lib/lead-filters";
-import { Sparkles, Users, RefreshCw, CreditCard, ChevronLeft, ChevronRight } from "lucide-react";
+import { Users, RefreshCw, CreditCard, ChevronLeft, ChevronRight } from "lucide-react";
 import { PLAN_CONFIG } from "@/lib/stripe-config";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
@@ -220,24 +221,16 @@ const Leads = () => {
 
         {/* Free-leads exhausted upsell — shown only after the 100 free leads are used */}
         {isOutOfFreeLeads && (
-          <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10">
-            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-5">
-                <Sparkles className="w-7 h-7 text-primary" />
-              </div>
-              <h2 className="text-2xl font-bold mb-2">You've used your {PLAN_SEARCH_LIMITS.free.monthlySearchCredits} free lead searches</h2>
-              <p className="text-muted-foreground max-w-md mb-6">
-                Nice work exploring the lead engine. Upgrade to a paid plan to unlock thousands of monthly searches and verified contact data.
-              </p>
-              <Button onClick={() => navigate('/pricing')} size="lg" className="gap-2">
-                <CreditCard className="w-4 h-4" />
-                Upgrade to get more leads
+          <EmptyState
+            title={`You've used your ${PLAN_SEARCH_LIMITS.free.monthlySearchCredits} free lead searches`}
+            body="A paid plan unlocks thousands of monthly searches and verified contact data. From $39/mo, cancel anytime."
+            action={
+              <Button size="sm" onClick={() => navigate('/pricing')} className="gap-2">
+                <CreditCard className="h-3.5 w-3.5" />
+                See plans
               </Button>
-              <p className="text-sm text-muted-foreground mt-3">
-                Plans from $39/mo · Cancel anytime
-              </p>
-            </CardContent>
-          </Card>
+            }
+          />
         )}
 
 

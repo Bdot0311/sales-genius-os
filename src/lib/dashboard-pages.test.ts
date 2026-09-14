@@ -102,8 +102,14 @@ describe("deliverability", () => {
   });
 
   it("gated and errored states share one shape", () => {
-    // Both were centred icon-in-a-circle cards, built separately.
-    expect(DELIVERABILITY).toContain("const StatePanel");
+    // Both were centred icon-in-a-circle cards, built separately. This first
+    // pinned the name of the local component that unified them, which is the
+    // implementation rather than the point — it broke the moment that local
+    // one was promoted to the shared EmptyState every page now uses. What
+    // matters is that the two states are one shape and neither is a card with
+    // an icon in a circle.
+    const gated = DELIVERABILITY.slice(DELIVERABILITY.indexOf("{gated ? ("), DELIVERABILITY.indexOf(") : loading ? ("));
+    expect(gated.match(/<EmptyState/g) ?? []).toHaveLength(2);
     expect(DELIVERABILITY).not.toMatch(/<Card\b/);
     expect(DELIVERABILITY).not.toContain("rounded-full bg-primary/10");
   });

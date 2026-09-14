@@ -200,7 +200,7 @@ const ClientPortal = () => {
                 <p className="text-sm text-muted-foreground mt-1">{data.clientEmail}</p>
               )}
             </div>
-            <Badge className="self-start sm:self-center bg-green-500/10 text-green-600 border-green-500/20 hover:bg-green-500/20">
+            <Badge className="self-start sm:self-center bg-green-500/10 text-emerald-400 border-green-500/20 hover:bg-green-500/20">
               Live
             </Badge>
           </div>

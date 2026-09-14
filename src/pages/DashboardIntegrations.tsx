@@ -596,7 +596,7 @@ const DashboardIntegrations = () => {
                     {accounts.map((account) => (
                       <div key={account.id} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/50 border border-border/50">
                         <div className="flex items-center gap-2 min-w-0">
-                          <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                           <span className="text-sm truncate">{account.email}</span>
                         </div>
                         <Button
@@ -621,7 +621,7 @@ const DashboardIntegrations = () => {
                         <span className="text-xs font-medium">Sync Error</span>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2 text-green-600">
+                      <div className="flex items-center gap-2 text-emerald-400">
                         <CheckCircle2 className="w-4 h-4" />
                         <span className="text-xs font-medium">Active</span>
                       </div>

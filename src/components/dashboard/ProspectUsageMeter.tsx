@@ -112,7 +112,7 @@ export const ProspectUsageMeter = () => {
           <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
             <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-amber-600 dark:text-amber-400">Daily limit reached</p>
+              <p className="text-sm font-medium text-amber-400">Daily limit reached</p>
               <p className="text-xs text-muted-foreground">
                 Please try again tomorrow.
               </p>

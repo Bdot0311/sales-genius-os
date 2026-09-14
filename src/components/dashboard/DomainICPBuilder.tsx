@@ -246,7 +246,7 @@ export const DomainICPBuilder = ({ onFindLeads, onSwitchToDescribe, isSearching 
             {summary && <p className="text-sm text-muted-foreground">{summary}</p>}
 
             {lowConfidence && (
-              <div className="flex items-start gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-3 text-xs text-yellow-600 dark:text-yellow-500">
+              <div className="flex items-start gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-3 text-xs text-yellow-500">
                 <Info className="h-4 w-4 mt-0.5 shrink-0" />
                 <p>We couldn't read much from that site (it may be JavaScript-rendered). Please review these fields carefully before searching.</p>
               </div>

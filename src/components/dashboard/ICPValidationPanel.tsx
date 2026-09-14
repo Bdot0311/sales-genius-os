@@ -65,7 +65,7 @@ export const ICPValidationPanel = ({ profile }: { profile: ValidationProfile }) 
       ) : (
         <>
           {result.tooBroad && (
-            <p className="text-yellow-600 dark:text-yellow-500">this icp matches {Math.round((result.matchShare || 0) * 100)}% of your {result.sampleSize} leads, which is likely too broad.</p>
+            <p className="text-yellow-500">this icp matches {Math.round((result.matchShare || 0) * 100)}% of your {result.sampleSize} leads, which is likely too broad.</p>
           )}
           {result.uselessCriteria.length > 0 && (
             <p className="text-muted-foreground">these criteria are doing no filtering: {result.uselessCriteria.join(", ")}.</p>
@@ -80,7 +80,7 @@ export const ICPValidationPanel = ({ profile }: { profile: ValidationProfile }) 
       {!result.hasEnoughReplyData ? (
         <p className="text-muted-foreground flex items-start gap-1.5"><Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />not enough replies yet to validate the icp against who actually replied ({result.replySize} so far, need 5).</p>
       ) : result.replyMismatches.length > 0 ? (
-        result.replyMismatches.map((m, i) => <p key={i} className="text-yellow-600 dark:text-yellow-500">{m}.</p>)
+        result.replyMismatches.map((m, i) => <p key={i} className="text-yellow-500">{m}.</p>)
       ) : (
         <p className="text-muted-foreground">your replies line up with the stated icp across {result.replySize} replies.</p>
       )}

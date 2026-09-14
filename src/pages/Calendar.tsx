@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { EmptyState } from "@/components/dashboard/Panel";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -512,24 +513,19 @@ const Calendar = () => {
 
         {/* Empty state — no calendar connected and no meetings */}
         {hasNoMeetings && (
-          <Card className="p-8 flex flex-col items-center text-center gap-4">
-            <div className="p-4 rounded-full bg-muted">
-              <Link2 className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold">No meetings yet</h3>
-            <p className="text-sm text-muted-foreground max-w-md">
-              Connect your Google Calendar in Integrations to see your booked meetings here, or schedule one manually.
-            </p>
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={() => navigate("/integrations")}>
+          <EmptyState
+            title="No meetings yet"
+            body="Connect Google Calendar to see your booked meetings here, or schedule one by hand."
+            action={<>
+              <Button variant="outline" size="sm" onClick={() => navigate("/dashboard/integrations")}>
                 Connect Calendar
               </Button>
-              <Button onClick={() => setIsDialogOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
+              <Button size="sm" onClick={() => setIsDialogOpen(true)}>
+                <Plus className="mr-2 h-3.5 w-3.5" />
                 Schedule Meeting
               </Button>
-            </div>
-          </Card>
+            </>}
+          />
         )}
 
         {/* Booked Meetings section */}

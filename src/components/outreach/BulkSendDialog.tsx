@@ -111,7 +111,7 @@ export const BulkSendDialog = ({
   const getVerificationBadge = (lead: Lead) => {
     if (lead.email_verified === true || lead.email_verification_status === "valid") {
       return (
-        <Badge variant="secondary" className="gap-1 text-green-700">
+        <Badge variant="secondary" className="gap-1 text-emerald-400">
           <CheckCircle2 className="w-3 h-3" />
           Verified
         </Badge>
@@ -129,7 +129,7 @@ export const BulkSendDialog = ({
 
     if (lead.email_verification_status === "catch_all") {
       return (
-        <Badge variant="outline" className="gap-1 text-amber-700 border-amber-300">
+        <Badge variant="outline" className="gap-1 text-amber-400 border-amber-300">
           <AlertTriangle className="w-3 h-3" />
           Catch-all
         </Badge>
@@ -140,7 +140,7 @@ export const BulkSendDialog = ({
     // risk is complaints against your sending domain, not a bounce.
     if (lead.email_verification_status === "role") {
       return (
-        <Badge variant="outline" className="gap-1 text-amber-700 border-amber-300">
+        <Badge variant="outline" className="gap-1 text-amber-400 border-amber-300">
           <AlertTriangle className="w-3 h-3" />
           Shared inbox
         </Badge>
@@ -567,8 +567,8 @@ export const BulkSendDialog = ({
                 if (!validation.isPersonal) return null;
                 return (
                   <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
-                    <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                    <div className="text-xs text-amber-800">
+                    <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
+                    <div className="text-xs text-amber-400">
                       <p className="font-medium">Personal email detected</p>
                       <p className="mt-1">Bulk sending from Gmail/Outlook is limited to 5 emails. Connect a business domain for higher volume.</p>
                     </div>
@@ -747,7 +747,7 @@ export const BulkSendDialog = ({
               </div>
               <Progress value={((progress.sent + progress.failed) / Math.max(progress.total, 1)) * 100} />
               <div className="flex gap-3 text-xs">
-                <span className="text-green-600">✓ {progress.sent} sent</span>
+                <span className="text-emerald-400">✓ {progress.sent} sent</span>
                 {progress.failed > 0 && <span className="text-destructive">✗ {progress.failed} failed</span>}
               </div>
             </div>

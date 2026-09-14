@@ -173,7 +173,7 @@ export const AdminDashboard = () => {
       value: `$${displayMonthlyRevenue.toLocaleString()}`,
       icon: DollarSign,
       description: stripeRevenueAvailable ? "From Stripe (real-time)" : "Current month MRR",
-      color: "text-green-600",
+      color: "text-emerald-400",
     },
     {
       title: "Total Revenue",

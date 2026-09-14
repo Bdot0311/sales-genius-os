@@ -169,9 +169,9 @@ export const WebhookTestDialog = ({ webhook, open, onOpenChange }: WebhookTestDi
               <div className={`p-4 rounded-lg border ${testResult.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
                 <div className="flex items-center gap-2 mb-2">
                   {testResult.success ? (
-                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <CheckCircle className="h-5 w-5 text-emerald-400" />
                   ) : (
-                    <XCircle className="h-5 w-5 text-red-600" />
+                    <XCircle className="h-5 w-5 text-destructive" />
                   )}
                   <span className="font-semibold">
                     {testResult.success ? 'Success' : 'Failed'}
@@ -193,8 +193,8 @@ export const WebhookTestDialog = ({ webhook, open, onOpenChange }: WebhookTestDi
 
                 {testResult.error && (
                   <div className="mt-3">
-                    <p className="text-sm font-medium mb-1 text-red-600">Error:</p>
-                    <p className="text-sm text-red-700">{testResult.error}</p>
+                    <p className="text-sm font-medium mb-1 text-destructive">Error:</p>
+                    <p className="text-sm text-destructive">{testResult.error}</p>
                   </div>
                 )}
               </div>

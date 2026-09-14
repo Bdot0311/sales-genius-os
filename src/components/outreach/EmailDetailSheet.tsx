@@ -107,7 +107,7 @@ export const EmailDetailSheet = ({ email, open, onOpenChange }: EmailDetailSheet
             <div className="bg-muted p-4 rounded-md max-h-[400px] overflow-y-auto">
               {email.body_html ? (
                 <div 
-                  className="prose prose-sm dark:prose-invert max-w-none"
+                  className="prose prose-sm prose-invert max-w-none"
                   dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(email.body_html) }}
                 />
               ) : (

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { EmptyState } from "@/components/dashboard/Panel";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { useICPProfiles, ICPProfile } from "@/hooks/use-icp-profiles";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
@@ -267,16 +268,15 @@ const ICP = () => {
         {isLoading ? (
           <div className="grid gap-4 md:grid-cols-2">{[1, 2].map((i) => <Skeleton key={i} className="h-48" />)}</div>
         ) : !profilesError && profiles.length === 0 ? (
-          <Card className="border-dashed">
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <Target className="w-12 h-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No ICPs yet</h3>
-              <p className="text-muted-foreground text-center mb-4 max-w-md">
-                Build a precise ICP across 7 dimensions — firmographics, personas, signals, exclusions, strategy, and custom scoring weights.
-              </p>
-              <Button onClick={openNew} disabled={planLoading}><Plus className="w-4 h-4 mr-2" />Create First ICP</Button>
-            </CardContent>
-          </Card>
+          <EmptyState
+            title="No ICPs yet"
+            body="An ICP describes who you sell to across seven dimensions — firmographics, personas, signals, exclusions, strategy and your own scoring weights — and every search and score reads from it."
+            action={
+              <Button size="sm" onClick={openNew} disabled={planLoading}>
+                <Plus className="mr-2 h-3.5 w-3.5" />Create the first one
+              </Button>
+            }
+          />
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
             {profiles.map((p) => {
