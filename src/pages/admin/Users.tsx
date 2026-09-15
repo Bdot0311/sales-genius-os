@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { UserStatsCards } from "@/components/admin/UserStatsCards";
 import { UserTable } from "@/components/admin/UserTable";
+import { UserActionBar } from "@/components/admin/UserActionBar";
 import { CreateUserDialog } from "@/components/admin/CreateUserDialog";
 import { DeleteUserDialog } from "@/components/admin/DeleteUserDialog";
 import { TrialDialog } from "@/components/admin/TrialDialog";
