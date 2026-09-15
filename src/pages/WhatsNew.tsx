@@ -161,7 +161,7 @@ const WhatsNew = () => {
             body="Try another one, or read everything."
           />
         ) : (
-          entries.map((entry, entryIndex) => (
+          entries.map((entry) => (
             <Panel key={entry.id} id={entry.id}>
               <PanelHeader
                 title={entry.title}
