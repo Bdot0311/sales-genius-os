@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { format, formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -247,17 +247,17 @@ export function HistoryTab({ agents, userId }: HistoryTabProps) {
 
   return (
     <div className="space-y-4">
-      <Card className="border-border/60 bg-card/60">
-        <CardHeader className="pb-3">
+      <Panel className="border-border/60 bg-card/60">
+        <PanelHeader className="pb-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <CardTitle className="flex items-center gap-2 text-base font-semibold">
+              <PanelTitle className="flex items-center gap-2 font-semibold">
                 <History className="w-4 h-4" />
                 Run history
-              </CardTitle>
-              <CardDescription>
+              </PanelTitle>
+              <PanelDescription>
                 Every agent run, what it produced, and the reason when it produced nothing.
-              </CardDescription>
+              </PanelDescription>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Select value={agentFilter} onValueChange={setAgentFilter}>
@@ -300,8 +300,8 @@ export function HistoryTab({ agents, userId }: HistoryTabProps) {
               </Button>
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
+        </PanelHeader>
+        <PanelBody>
           {loading ? (
             <div className="flex items-center justify-center py-10 text-muted-foreground">
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -467,8 +467,8 @@ export function HistoryTab({ agents, userId }: HistoryTabProps) {
               })}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
     </div>
   );
 }

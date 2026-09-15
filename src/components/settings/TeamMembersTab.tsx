@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -149,17 +149,17 @@ export const TeamMembersTab = () => {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
+      <Panel>
+        <PanelHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2">
+              <PanelTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
                 Team Members
-              </CardTitle>
-              <CardDescription>
+              </PanelTitle>
+              <PanelDescription>
                 Manage up to 10 team accounts (Pro plan feature)
-              </CardDescription>
+              </PanelDescription>
             </div>
             <Button
               onClick={() => setShowInviteDialog(true)}
@@ -170,8 +170,8 @@ export const TeamMembersTab = () => {
               Invite Member
             </Button>
           </div>
-        </CardHeader>
-        <CardContent>
+        </PanelHeader>
+        <PanelBody>
           {members.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -221,8 +221,8 @@ export const TeamMembersTab = () => {
               You've reached the maximum of 10 team members for the Pro plan.
             </p>
           )}
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
       {/* Invite Dialog */}
       <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>

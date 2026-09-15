@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -227,13 +227,13 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
   return (
     <div className="space-y-5 max-w-3xl">
       {/* Identity */}
-      <Card className="border-border/60 bg-card/60">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold">
+      <Panel className="border-border/60 bg-card/60">
+        <PanelHeader className="pb-3">
+          <PanelTitle className="font-semibold">
             Agent Identity
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+          </PanelTitle>
+        </PanelHeader>
+        <PanelBody className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="agent-name">Agent Name</Label>
             <Input
@@ -367,17 +367,17 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
               onChange={(e) => setCompanyContext(e.target.value)}
             />
           </div>
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
       {/* Lead generation */}
-      <Card className="border-border/60 bg-card/60">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold">
+      <Panel className="border-border/60 bg-card/60">
+        <PanelHeader className="pb-3">
+          <PanelTitle className="font-semibold">
             Lead Generation
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+          </PanelTitle>
+        </PanelHeader>
+        <PanelBody className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium">Find new leads automatically</p>
@@ -515,17 +515,17 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
             </>
           )}
 
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
       {/* Outreach sending */}
-      <Card className="border-border/60 bg-card/60">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold">
+      <Panel className="border-border/60 bg-card/60">
+        <PanelHeader className="pb-3">
+          <PanelTitle className="font-semibold">
             Outreach Sending
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+          </PanelTitle>
+        </PanelHeader>
+        <PanelBody className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium">Send first-touch emails</p>
@@ -575,17 +575,17 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
               )}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
       {/* Value Propositions */}
-      <Card className="border-border/60 bg-card/60">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold">
+      <Panel className="border-border/60 bg-card/60">
+        <PanelHeader className="pb-3">
+          <PanelTitle className="font-semibold">
             Value Propositions
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
+          </PanelTitle>
+        </PanelHeader>
+        <PanelBody className="space-y-3">
           {valueProps.map((vp, i) => (
             <div key={i} className="flex items-center gap-2">
               <Input
@@ -615,20 +615,20 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
             <Plus className="w-4 h-4" />
             Add Value Prop
           </Button>
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
       {/* Objection Handling */}
       <ObjectionLibrary />
 
       {/* Auto-reply settings */}
-      <Card className="border-border/60 bg-card/60">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold">
+      <Panel className="border-border/60 bg-card/60">
+        <PanelHeader className="pb-3">
+          <PanelTitle className="font-semibold">
             Reply Handling
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+          </PanelTitle>
+        </PanelHeader>
+        <PanelBody className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium">Reply to interested prospects</p>
@@ -680,8 +680,8 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
               />
             </div>
           )}
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
       {/* Save */}
       <div className="flex justify-end pb-4">

@@ -10,13 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { stepTypeFor } from "../../../supabase/functions/_shared/sequence-steps.ts";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import {
   Select,
   SelectContent,
@@ -302,30 +296,30 @@ export function SequenceBuilder() {
 
       {/* Stats Row */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Total Enrolled</CardDescription>
-            <CardTitle className="text-2xl">{sequence.total_enrollments || 0}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Completed</CardDescription>
-            <CardTitle className="text-2xl">{sequence.total_completed || 0}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Steps</CardDescription>
-            <CardTitle className="text-2xl">{steps.length}/{isUnlimited ? '∞' : maxSteps}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Sequence Type</CardDescription>
-            <CardTitle className="text-2xl capitalize">{sequenceType}</CardTitle>
-          </CardHeader>
-        </Card>
+        <Panel>
+          <PanelHeader className="pb-2">
+            <PanelDescription>Total Enrolled</PanelDescription>
+            <PanelTitle className="text-2xl">{sequence.total_enrollments || 0}</PanelTitle>
+          </PanelHeader>
+        </Panel>
+        <Panel>
+          <PanelHeader className="pb-2">
+            <PanelDescription>Completed</PanelDescription>
+            <PanelTitle className="text-2xl">{sequence.total_completed || 0}</PanelTitle>
+          </PanelHeader>
+        </Panel>
+        <Panel>
+          <PanelHeader className="pb-2">
+            <PanelDescription>Steps</PanelDescription>
+            <PanelTitle className="text-2xl">{steps.length}/{isUnlimited ? '∞' : maxSteps}</PanelTitle>
+          </PanelHeader>
+        </Panel>
+        <Panel>
+          <PanelHeader className="pb-2">
+            <PanelDescription>Sequence Type</PanelDescription>
+            <PanelTitle className="text-2xl capitalize">{sequenceType}</PanelTitle>
+          </PanelHeader>
+        </Panel>
       </div>
 
       {/* Upgrade prompt if at step limit */}
@@ -404,15 +398,15 @@ export function SequenceBuilder() {
         </div>
 
         {steps.length === 0 ? (
-          <Card className="border-dashed">
-            <CardContent className="flex flex-col items-center justify-center py-12">
+          <Panel className="border-dashed">
+            <PanelBody className="flex flex-col items-center justify-center py-12">
               <p className="text-muted-foreground mb-4">No steps yet. Add your first step to get started.</p>
               <Button onClick={() => setIsAddStepOpen(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add First Step
               </Button>
-            </CardContent>
-          </Card>
+            </PanelBody>
+          </Panel>
         ) : (
           <div className="space-y-4">
             {steps.map((step, index) => (

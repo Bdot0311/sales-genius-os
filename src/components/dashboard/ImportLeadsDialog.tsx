@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Card } from "@/components/ui/card";
+import { Panel } from "@/components/dashboard/Panel";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Upload, Download, Loader2, ExternalLink, Clock, History, Settings2, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -655,7 +655,7 @@ export const ImportLeadsDialog = ({ onImportComplete, triggerVariant }: ImportLe
                       </div>
 
                       {showFieldMapping && (
-                        <Card className="p-4 space-y-3">
+                        <Panel className="p-4 space-y-3">
                           <h5 className="font-semibold text-sm">Custom Field Mapping</h5>
                           <div className="grid grid-cols-2 gap-3">
                             <div>
@@ -695,7 +695,7 @@ export const ImportLeadsDialog = ({ onImportComplete, triggerVariant }: ImportLe
                               />
                             </div>
                           </div>
-                        </Card>
+                        </Panel>
                       )}
 
                       <div className="space-y-2">
@@ -703,7 +703,7 @@ export const ImportLeadsDialog = ({ onImportComplete, triggerVariant }: ImportLe
                           {searchResults.length} results found - Select leads to import
                         </p>
                         {searchResults.map((result, idx) => (
-                          <Card key={idx} className="p-3 cursor-pointer hover:bg-muted/50" onClick={() => toggleLeadSelection(idx)}>
+                          <Panel key={idx} className="p-3 cursor-pointer hover:bg-muted/50" onClick={() => toggleLeadSelection(idx)}>
                             <div className="flex items-start gap-3">
                               <Checkbox
                                 checked={selectedLeads.has(idx)}
@@ -722,7 +722,7 @@ export const ImportLeadsDialog = ({ onImportComplete, triggerVariant }: ImportLe
                                 </div>
                               </div>
                             </div>
-                          </Card>
+                          </Panel>
                         ))}
                       </div>
                     </>
@@ -743,7 +743,7 @@ export const ImportLeadsDialog = ({ onImportComplete, triggerVariant }: ImportLe
               {scheduledImports.length > 0 ? (
                 <div className="space-y-3">
                   {scheduledImports.map((schedule) => (
-                    <Card key={schedule.id} className="p-4">
+                    <Panel key={schedule.id} className="p-4">
                       <div className="flex items-start justify-between">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
@@ -783,7 +783,7 @@ export const ImportLeadsDialog = ({ onImportComplete, triggerVariant }: ImportLe
                           </Button>
                         </div>
                       </div>
-                    </Card>
+                    </Panel>
                   ))}
                 </div>
               ) : (
@@ -801,7 +801,7 @@ export const ImportLeadsDialog = ({ onImportComplete, triggerVariant }: ImportLe
               {importHistory.length > 0 ? (
                 <div className="space-y-3">
                   {importHistory.map((entry) => (
-                    <Card key={entry.id} className="p-4">
+                    <Panel key={entry.id} className="p-4">
                       <div className="flex items-start justify-between">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
@@ -827,7 +827,7 @@ export const ImportLeadsDialog = ({ onImportComplete, triggerVariant }: ImportLe
                           <p className="text-xs text-muted-foreground">leads</p>
                         </div>
                       </div>
-                    </Card>
+                    </Panel>
                   ))}
                 </div>
               ) : (
@@ -842,7 +842,7 @@ export const ImportLeadsDialog = ({ onImportComplete, triggerVariant }: ImportLe
         </Tabs>
 
         {selectedIntegration && searchQuery && (
-          <Card className="p-3 bg-muted/50">
+          <Panel className="p-3 bg-muted/50">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Label className="text-sm">Schedule Frequency:</Label>
@@ -857,7 +857,7 @@ export const ImportLeadsDialog = ({ onImportComplete, triggerVariant }: ImportLe
                 </Select>
               </div>
             </div>
-          </Card>
+          </Panel>
         )}
       </DialogContent>
     </Dialog>

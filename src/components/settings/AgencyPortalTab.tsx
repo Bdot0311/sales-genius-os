@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -152,8 +152,8 @@ export const AgencyPortalTab = () => {
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <Card>
-          <CardContent className="pt-5">
+        <Panel>
+          <PanelBody className="pt-5">
             <div className="flex items-center gap-2 mb-1 text-muted-foreground">
               <Users className="h-4 w-4" />
               <span className="text-xs">Active Clients</span>
@@ -162,52 +162,52 @@ export const AgencyPortalTab = () => {
             {pendingClients.length > 0 && (
               <p className="text-xs text-muted-foreground mt-1">{pendingClients.length} pending</p>
             )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-5">
+          </PanelBody>
+        </Panel>
+        <Panel>
+          <PanelBody className="pt-5">
             <div className="flex items-center gap-2 mb-1 text-muted-foreground">
               <DollarSign className="h-4 w-4" />
               <span className="text-xs">Client MRR</span>
             </div>
             <p className="text-2xl font-bold">{fmtCents(totalMRR)}</p>
             <p className="text-xs text-muted-foreground mt-1">/mo combined</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-5">
+          </PanelBody>
+        </Panel>
+        <Panel>
+          <PanelBody className="pt-5">
             <div className="flex items-center gap-2 mb-1 text-emerald-400">
               <DollarSign className="h-4 w-4" />
               <span className="text-xs">Your 50%</span>
             </div>
             <p className="text-2xl font-bold text-emerald-400">{fmtCents(yourShare)}</p>
             <p className="text-xs text-muted-foreground mt-1">est. / mo</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-5">
+          </PanelBody>
+        </Panel>
+        <Panel>
+          <PanelBody className="pt-5">
             <div className="flex items-center gap-2 mb-1 text-muted-foreground">
               <DollarSign className="h-4 w-4" />
               <span className="text-xs">Total Earned</span>
             </div>
             <p className="text-2xl font-bold">{fmtCents(totalEarnings)}</p>
             <p className="text-xs text-muted-foreground mt-1">all-time</p>
-          </CardContent>
-        </Card>
+          </PanelBody>
+        </Panel>
       </div>
 
       {/* Invite link */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
+      <Panel>
+        <PanelHeader>
+          <PanelTitle className="flex items-center gap-2">
             <Link2 className="h-4 w-4" />
             Your Platform Invite Link
-          </CardTitle>
-          <CardDescription>
+          </PanelTitle>
+          <PanelDescription>
             Anyone who signs up via this link will see <strong>your branding only</strong>. They won't know it's built on OutReign.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+          </PanelDescription>
+        </PanelHeader>
+        <PanelBody className="space-y-4">
           {inviteLink ? (
             <div className="flex gap-2">
               <Input readOnly value={inviteLink} className="font-mono text-xs" />
@@ -224,21 +224,21 @@ export const AgencyPortalTab = () => {
             Revenue split: <span className="font-medium text-emerald-400">50% to you</span> · 50% to OutReign.
             Connect your Stripe account below to receive automatic monthly payouts. For any issues email <a href="mailto:support@bdotindustries.com" className="underline">support@bdotindustries.com</a>.
           </p>
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
       {/* Stripe Payouts */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-base">
+      <Panel>
+        <PanelHeader className="pb-3">
+          <PanelTitle className="flex items-center gap-2">
             <DollarSign className="h-4 w-4" />
             Payout Account
-          </CardTitle>
-          <CardDescription>
+          </PanelTitle>
+          <PanelDescription>
             Connect your Stripe account to receive automatic monthly payouts of your 50% revenue share.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
+          </PanelDescription>
+        </PanelHeader>
+        <PanelBody className="space-y-3">
           <Button
             variant="outline"
             className="gap-2 w-full sm:w-auto"
@@ -251,12 +251,12 @@ export const AgencyPortalTab = () => {
             Payouts are processed on the 1st of each month. Questions? Email{" "}
             <a href="mailto:support@bdotindustries.com" className="underline">support@bdotindustries.com</a>.
           </p>
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
       {/* Branding shortcut */}
-      <Card className="border-dashed">
-        <CardContent className="pt-5 flex items-center justify-between gap-4">
+      <Panel className="border-dashed">
+        <PanelBody className="pt-5 flex items-center justify-between gap-4">
           <div>
             <p className="text-sm font-medium">Set up your branding</p>
             <p className="text-xs text-muted-foreground mt-0.5">
@@ -267,21 +267,21 @@ export const AgencyPortalTab = () => {
             <Palette className="h-4 w-4 mr-2" />
             Open Branding
           </Button>
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
       {/* Invite by email */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
+      <Panel>
+        <PanelHeader>
+          <PanelTitle className="flex items-center gap-2">
             <UserPlus className="h-4 w-4" />
             Invite a Specific Client
-          </CardTitle>
-          <CardDescription>
+          </PanelTitle>
+          <PanelDescription>
             Generate a one-time invite link for a named client email address.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+          </PanelDescription>
+        </PanelHeader>
+        <PanelBody>
           <form onSubmit={handleInvite} className="flex gap-2">
             <div className="flex-1">
               <Label htmlFor="invite-email" className="sr-only">Client email</Label>
@@ -299,24 +299,24 @@ export const AgencyPortalTab = () => {
               Create Invite
             </Button>
           </form>
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
       {/* Client list */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+      <Panel>
+        <PanelHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle className="flex items-center gap-2 text-base">
+            <PanelTitle className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               Clients
-            </CardTitle>
-            <CardDescription>Users currently on your white-label platform</CardDescription>
+            </PanelTitle>
+            <PanelDescription>Users currently on your white-label platform</PanelDescription>
           </div>
           <Button variant="ghost" size="sm" onClick={loadData} disabled={loading}>
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
-        </CardHeader>
-        <CardContent>
+        </PanelHeader>
+        <PanelBody>
           {loading ? (
             <div className="flex justify-center py-8">
               <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -384,8 +384,8 @@ export const AgencyPortalTab = () => {
               </Table>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
     </div>
   );
 };

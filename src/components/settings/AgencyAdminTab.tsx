@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -286,17 +286,17 @@ export const AgencyAdminTab = () => {
 
       {/* Summary */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Card>
-          <CardContent className="pt-5">
+        <Panel>
+          <PanelBody className="pt-5">
             <div className="flex items-center gap-2 mb-1 text-muted-foreground">
               <Building2 className="h-4 w-4" /><span className="text-xs">Client Workspaces</span>
             </div>
             <p className="text-2xl font-bold">{active.length}</p>
             <p className="text-xs text-muted-foreground mt-1">{pending.length} pending</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-5">
+          </PanelBody>
+        </Panel>
+        <Panel>
+          <PanelBody className="pt-5">
             <div className="flex items-center gap-2 mb-1 text-muted-foreground">
               <Users className="h-4 w-4" /><span className="text-xs">Team Seats Used</span>
             </div>
@@ -304,26 +304,26 @@ export const AgencyAdminTab = () => {
             <p className="text-xs text-muted-foreground mt-1">
               {members.filter((m) => m.status === "active").length} active
             </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-5">
+          </PanelBody>
+        </Panel>
+        <Panel>
+          <PanelBody className="pt-5">
             <div className="flex items-center gap-2 mb-1 text-muted-foreground">
               <Activity className="h-4 w-4" /><span className="text-xs">Client MRR</span>
             </div>
             <p className="text-2xl font-bold">{fmtCents(totalMRR)}</p>
             <p className="text-xs text-muted-foreground mt-1">combined / mo</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-5">
+          </PanelBody>
+        </Panel>
+        <Panel>
+          <PanelBody className="pt-5">
             <div className="flex items-center gap-2 mb-1 text-muted-foreground">
               <Lock className="h-4 w-4" /><span className="text-xs">Data Isolation</span>
             </div>
             <p className="text-2xl font-bold text-green-500">On</p>
             <p className="text-xs text-muted-foreground mt-1">per-workspace</p>
-          </CardContent>
-        </Card>
+          </PanelBody>
+        </Panel>
       </div>
 
       <Tabs defaultValue="clients" className="space-y-6">
@@ -337,14 +337,14 @@ export const AgencyAdminTab = () => {
 
         {/* CLIENTS */}
         <TabsContent value="clients" className="space-y-6">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2"><Mail className="h-4 w-4" />Add a Client Workspace</CardTitle>
-              <CardDescription>
+          <Panel>
+            <PanelHeader className="pb-3">
+              <PanelTitle className="flex items-center gap-2"><Mail className="h-4 w-4" />Add a Client Workspace</PanelTitle>
+              <PanelDescription>
                 Each client gets their own isolated workspace — leads, sequences, inboxes and analytics are never shared between clients.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+              </PanelDescription>
+            </PanelHeader>
+            <PanelBody className="space-y-4">
               <form onSubmit={handleInvite} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
                 <div className="space-y-1.5">
                   <Label htmlFor="client-name">Client / company name</Label>
@@ -372,22 +372,22 @@ export const AgencyAdminTab = () => {
                   </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </PanelBody>
+          </Panel>
 
-          <Card>
-            <CardHeader className="pb-3">
+          <Panel>
+            <PanelHeader className="pb-3">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <CardTitle className="text-base">Client Accounts</CardTitle>
-                  <CardDescription>Assign an owner, keep internal notes, and control access per client.</CardDescription>
+                  <PanelTitle>Client Accounts</PanelTitle>
+                  <PanelDescription>Assign an owner, keep internal notes, and control access per client.</PanelDescription>
                 </div>
                 <Button variant="outline" size="sm" onClick={() => setShowArchived((v) => !v)}>
                   {showArchived ? "Show active" : `Show archived (${clients.filter((c) => c.archived).length})`}
                 </Button>
               </div>
-            </CardHeader>
-            <CardContent>
+            </PanelHeader>
+            <PanelBody>
               {visible.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -474,8 +474,8 @@ export const AgencyAdminTab = () => {
                   </Table>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </PanelBody>
+          </Panel>
 
           <Alert>
             <Info className="h-4 w-4" />
@@ -500,12 +500,12 @@ export const AgencyAdminTab = () => {
 
         {/* WORKSPACE CONFIG */}
         <TabsContent value="workspace" className="space-y-6">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Workspace Configuration</CardTitle>
-              <CardDescription>Branding, custom domain, and the client-facing experience for every workspace you run.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-3 sm:grid-cols-3">
+          <Panel>
+            <PanelHeader className="pb-3">
+              <PanelTitle>Workspace Configuration</PanelTitle>
+              <PanelDescription>Branding, custom domain, and the client-facing experience for every workspace you run.</PanelDescription>
+            </PanelHeader>
+            <PanelBody className="grid gap-3 sm:grid-cols-3">
               <Button variant="outline" className="gap-2 justify-start" onClick={() => navigate("/settings?tab=api-keys")}>
                 <Lock className="h-4 w-4" />API keys
               </Button>
@@ -515,8 +515,8 @@ export const AgencyAdminTab = () => {
               <Button variant="outline" className="gap-2 justify-start" onClick={() => navigate("/settings?tab=notifications")}>
                 <Mail className="h-4 w-4" />Notifications
               </Button>
-            </CardContent>
-          </Card>
+            </PanelBody>
+          </Panel>
           <WhiteLabelTab />
         </TabsContent>
 
@@ -527,12 +527,12 @@ export const AgencyAdminTab = () => {
 
         {/* ACCESS & ISOLATION */}
         <TabsContent value="security" className="space-y-6">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2"><ShieldCheck className="h-4 w-4" />Access & Data Isolation</CardTitle>
-              <CardDescription>How client data stays separated across the workspaces you manage.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
+          <Panel>
+            <PanelHeader className="pb-3">
+              <PanelTitle className="flex items-center gap-2"><ShieldCheck className="h-4 w-4" />Access & Data Isolation</PanelTitle>
+              <PanelDescription>How client data stays separated across the workspaces you manage.</PanelDescription>
+            </PanelHeader>
+            <PanelBody className="space-y-3 text-sm">
               {[
                 ["Per-workspace ownership", "Every lead, sequence, inbox, and email belongs to a single client workspace and is enforced at the database level — not in the UI."],
                 ["No cross-client reads", "Your admin panel only receives aggregate counts per client. Record-level data is never returned across workspaces."],
@@ -548,8 +548,8 @@ export const AgencyAdminTab = () => {
                   </div>
                 </div>
               ))}
-            </CardContent>
-          </Card>
+            </PanelBody>
+          </Panel>
         </TabsContent>
       </Tabs>
 

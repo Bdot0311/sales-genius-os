@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Panel } from "@/components/dashboard/Panel";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -460,7 +460,7 @@ const AgentChat = () => {
           the conversation. */}
       <div className="flex flex-col lg:flex-row gap-4 h-[calc(100dvh-5rem)] sm:h-[calc(100dvh-6rem)] min-h-0">
         {/* Threads */}
-        <Card
+        <Panel
           className={cn(
             "w-full lg:w-64 flex-shrink-0 p-3 flex-col gap-3 overflow-hidden lg:max-h-none lg:flex",
             // Gone entirely when collapsed, not merely short: a Card wrapping
@@ -517,10 +517,10 @@ const AgentChat = () => {
               ))}
             </div>
           </ScrollArea>
-        </Card>
+        </Panel>
 
         {/* Chat */}
-        <Card className="flex-1 min-h-0 min-w-0 flex flex-col overflow-hidden">
+        <Panel className="flex-1 min-h-0 min-w-0 flex flex-col overflow-hidden">
           <div className="border-b border-border/60 px-3 py-2 sm:px-4 sm:py-3">
             {/* Thread controls, mobile only. On lg these live in the sidebar,
                 which is always on screen; below it the sidebar is collapsed so
@@ -789,7 +789,7 @@ const AgentChat = () => {
                 : "Approval mode: the agent asks you to approve sends and runs right here in the chat."}
             </p>
           </div>
-        </Card>
+        </Panel>
       </div>
     </DashboardLayout>
   );

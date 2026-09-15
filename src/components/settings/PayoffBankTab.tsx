@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -71,12 +71,12 @@ export const PayoffBankTab = () => {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>payoff bank</CardTitle>
-          <CardDescription>the generator may only use payoffs you add here. this is what keeps value-first copy honest: the model cannot invent a stat, so you supply the real ones. an empty bank means the generator falls back to observation-only copy with no numbers.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <Panel>
+        <PanelHeader>
+          <PanelTitle>payoff bank</PanelTitle>
+          <PanelDescription>the generator may only use payoffs you add here. this is what keeps value-first copy honest: the model cannot invent a stat, so you supply the real ones. an empty bank means the generator falls back to observation-only copy with no numbers.</PanelDescription>
+        </PanelHeader>
+        <PanelBody className="space-y-4">
           <div className="grid sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs">type</Label>
@@ -102,12 +102,12 @@ export const PayoffBankTab = () => {
           <Button onClick={add} disabled={saving}>
             {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}add to bank
           </Button>
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
-      <Card>
-        <CardHeader className="pb-3"><CardTitle className="text-base">entries</CardTitle></CardHeader>
-        <CardContent className="space-y-2">
+      <Panel>
+        <PanelHeader className="pb-3"><PanelTitle>entries</PanelTitle></PanelHeader>
+        <PanelBody className="space-y-2">
           {entries.length === 0 ? (
             <p className="text-sm text-muted-foreground">no entries yet. the generator will write observation-only copy until you add real payoffs.</p>
           ) : entries.map((e) => (
@@ -122,8 +122,8 @@ export const PayoffBankTab = () => {
               <Button variant="ghost" size="icon" onClick={() => remove(e.id)}><Trash2 className="w-4 h-4" /></Button>
             </div>
           ))}
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
     </div>
   );
 };

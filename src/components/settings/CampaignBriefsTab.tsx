@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -71,12 +71,12 @@ export const CampaignBriefsTab = () => {
 
   if (editing) {
     return (
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-base">{editing.id ? "edit brief" : "new brief"}</CardTitle>
+      <Panel>
+        <PanelHeader className="flex flex-row items-center justify-between">
+          <PanelTitle>{editing.id ? "edit brief" : "new brief"}</PanelTitle>
           <Button variant="ghost" size="sm" onClick={() => setEditing(null)}>close</Button>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        </PanelHeader>
+        <PanelBody className="space-y-4">
           <div className="space-y-1.5"><Label className="text-xs">name</Label><Input value={editing.name} onChange={(e) => patch({ name: e.target.value })} placeholder="e.g. q3 revops push" /></div>
           <div className="space-y-1.5"><Label className="text-xs">offer</Label><Textarea value={editing.offer || ""} onChange={(e) => patch({ offer: e.target.value })} placeholder="what you offer" className="min-h-[60px]" /></div>
           <div className="space-y-1.5"><Label className="text-xs">what it replaces</Label><Input value={editing.replaces || ""} onChange={(e) => patch({ replaces: e.target.value })} placeholder="the status quo you displace" /></div>
@@ -107,18 +107,18 @@ export const CampaignBriefsTab = () => {
           </div>
 
           <Button onClick={save} disabled={saving}>{saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}save brief</Button>
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
     );
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-start justify-between gap-3">
-        <div><CardTitle>campaign briefs</CardTitle><CardDescription>captured once per campaign and reused across its sequences. generation grounds copy in the brief and never makes a forbidden claim.</CardDescription></div>
+    <Panel>
+      <PanelHeader className="flex flex-row items-start justify-between gap-3">
+        <div><PanelTitle>campaign briefs</PanelTitle><PanelDescription>captured once per campaign and reused across its sequences. generation grounds copy in the brief and never makes a forbidden claim.</PanelDescription></div>
         <Button size="sm" variant="outline" onClick={() => setEditing(blank())}><Plus className="w-4 h-4 mr-1.5" />new</Button>
-      </CardHeader>
-      <CardContent className="space-y-1">
+      </PanelHeader>
+      <PanelBody className="space-y-1">
         {briefs.length === 0 ? (
           <p className="text-sm text-muted-foreground">no briefs yet.</p>
         ) : briefs.map((b) => (
@@ -130,7 +130,7 @@ export const CampaignBriefsTab = () => {
             <Button variant="ghost" size="icon" onClick={() => remove(b.id)}><Trash2 className="w-4 h-4" /></Button>
           </div>
         ))}
-      </CardContent>
-    </Card>
+      </PanelBody>
+    </Panel>
   );
 };

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -565,12 +565,12 @@ export const EmailPerformanceStats = () => {
         </TabsList>
 
         <TabsContent value="overview" className="mt-4 space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Send &amp; engagement volume</CardTitle>
-              <CardDescription>Sends, opens, replies and clicks per day — streaming live.</CardDescription>
-            </CardHeader>
-            <CardContent className="h-[280px]">
+          <Panel>
+            <PanelHeader>
+              <PanelTitle>Send &amp; engagement volume</PanelTitle>
+              <PanelDescription>Sends, opens, replies and clicks per day — streaming live.</PanelDescription>
+            </PanelHeader>
+            <PanelBody className="h-[280px]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={trend}>
                   <defs>
@@ -595,16 +595,16 @@ export const EmailPerformanceStats = () => {
                   <Line type="monotone" dataKey="replied" stroke="hsl(var(--destructive))" strokeWidth={2} dot={false} name="Replied" />
                 </AreaChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
+            </PanelBody>
+          </Panel>
 
           <div className="grid gap-4 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Outbound funnel</CardTitle>
-                <CardDescription>From send to closed revenue.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
+            <Panel>
+              <PanelHeader>
+                <PanelTitle>Outbound funnel</PanelTitle>
+                <PanelDescription>From send to closed revenue.</PanelDescription>
+              </PanelHeader>
+              <PanelBody className="space-y-3">
                 <FunnelRow label="Sent" value={totals.sent} base={totals.sent} onClick={() => openEmails("Sent", "All sends in this window.", sent)} />
                 <FunnelRow
                   label="Opened"
@@ -657,15 +657,15 @@ export const EmailPerformanceStats = () => {
                 <p className="text-xs text-muted-foreground">
                   Closed value in range: <span className="font-medium text-foreground">${totals.wonValue.toLocaleString()}</span>
                 </p>
-              </CardContent>
-            </Card>
+              </PanelBody>
+            </Panel>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Delivery health</CardTitle>
-                <CardDescription>Send outcomes in the selected window — click any tile for detail.</CardDescription>
-              </CardHeader>
-              <CardContent className="grid grid-cols-2 gap-3">
+            <Panel>
+              <PanelHeader>
+                <PanelTitle>Delivery health</PanelTitle>
+                <PanelDescription>Send outcomes in the selected window — click any tile for detail.</PanelDescription>
+              </PanelHeader>
+              <PanelBody className="grid grid-cols-2 gap-3">
                 <MiniStat label="Delivered" value={totals.sent} onClick={() => openEmails("Delivered emails", "Successfully sent emails.", sent)} />
                 <MiniStat
                   label="Failed / bounced"
@@ -712,18 +712,18 @@ export const EmailPerformanceStats = () => {
                   value={accounts.length}
                   onClick={() => setDrill({ title: "Active mailboxes", description: "Performance per sending mailbox.", breakdown: accounts })}
                 />
-              </CardContent>
-            </Card>
+              </PanelBody>
+            </Panel>
           </div>
         </TabsContent>
 
         <TabsContent value="engagement" className="mt-4 space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Open &amp; reply rate over time</CardTitle>
-              <CardDescription>Daily rates — watch for deliverability dips.</CardDescription>
-            </CardHeader>
-            <CardContent className="h-[260px]">
+          <Panel>
+            <PanelHeader>
+              <PanelTitle>Open &amp; reply rate over time</PanelTitle>
+              <PanelDescription>Daily rates — watch for deliverability dips.</PanelDescription>
+            </PanelHeader>
+            <PanelBody className="h-[260px]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={trend}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
@@ -741,8 +741,8 @@ export const EmailPerformanceStats = () => {
                   <Line type="monotone" dataKey="replyRate" stroke="hsl(var(--destructive))" strokeWidth={2} dot={false} name="Reply rate" />
                 </AreaChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
+            </PanelBody>
+          </Panel>
 
           <RateTable
             title="Top subject lines"
@@ -770,7 +770,7 @@ export const EmailPerformanceStats = () => {
           ) : (
             <div className="space-y-3">
               {templates.map((t) => (
-                <Card
+                <Panel
                   key={t.key}
                   role="button"
                   tabIndex={0}
@@ -783,7 +783,7 @@ export const EmailPerformanceStats = () => {
                   }}
                   className="cursor-pointer transition-colors hover:border-primary/50"
                 >
-                  <CardContent className="pt-6 space-y-3">
+                  <PanelBody className="pt-6 space-y-3">
                     <div className="flex items-center justify-between gap-2 flex-wrap">
                       <div>
                         <h4 className="font-medium">{t.name}</h4>
@@ -796,8 +796,8 @@ export const EmailPerformanceStats = () => {
                       <Meter icon={<MessageSquareReply className="w-3 h-3" />} label="Reply Rate" value={t.replyRate} scale={5} />
                       <Meter icon={<MousePointerClick className="w-3 h-3" />} label="Click Rate" value={t.clickRate} scale={5} />
                     </div>
-                  </CardContent>
-                </Card>
+                  </PanelBody>
+                </Panel>
               ))}
             </div>
           )}
@@ -830,12 +830,12 @@ export const EmailPerformanceStats = () => {
           {accounts.length === 0 ? (
             <Empty text="No mailbox sends in this window" hint="Connect a mailbox and start sending" />
           ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Mailbox performance</CardTitle>
-                <CardDescription>Volume, engagement and reputation per sending account.</CardDescription>
-              </CardHeader>
-              <CardContent className="overflow-x-auto">
+            <Panel>
+              <PanelHeader>
+                <PanelTitle>Mailbox performance</PanelTitle>
+                <PanelDescription>Volume, engagement and reputation per sending account.</PanelDescription>
+              </PanelHeader>
+              <PanelBody className="overflow-x-auto">
                 <Table className="min-w-[720px]">
                   <TableHeader>
                     <TableRow>
@@ -874,8 +874,8 @@ export const EmailPerformanceStats = () => {
                     ))}
                   </TableBody>
                 </Table>
-              </CardContent>
-            </Card>
+              </PanelBody>
+            </Panel>
           )}
         </TabsContent>
 
@@ -914,12 +914,12 @@ export const EmailPerformanceStats = () => {
               onClick={() => setDrill({ title: "Intent scores", description: "All analyzed replies, with their intent scores.", replyRows: replies })}
             />
           </div>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Reply intent breakdown</CardTitle>
-              <CardDescription>Classification of every analyzed reply in this window.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
+          <Panel>
+            <PanelHeader>
+              <PanelTitle>Reply intent breakdown</PanelTitle>
+              <PanelDescription>Classification of every analyzed reply in this window.</PanelDescription>
+            </PanelHeader>
+            <PanelBody className="space-y-3">
               {replyBreakdown.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No replies analyzed yet.</p>
               ) : (
@@ -956,17 +956,17 @@ export const EmailPerformanceStats = () => {
                   </div>
                 ))
               )}
-            </CardContent>
-          </Card>
+            </PanelBody>
+          </Panel>
         </TabsContent>
 
         <TabsContent value="timing" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Best send times</CardTitle>
-              <CardDescription>Hour of day (your local time) ranked by reply rate.</CardDescription>
-            </CardHeader>
-            <CardContent>
+          <Panel>
+            <PanelHeader>
+              <PanelTitle>Best send times</PanelTitle>
+              <PanelDescription>Hour of day (your local time) ranked by reply rate.</PanelDescription>
+            </PanelHeader>
+            <PanelBody>
               {byHour.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Not enough sends yet.</p>
               ) : (
@@ -1003,8 +1003,8 @@ export const EmailPerformanceStats = () => {
                   </Table>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </PanelBody>
+          </Panel>
         </TabsContent>
       </Tabs>
 
@@ -1145,7 +1145,7 @@ function Kpi({
   onClick?: () => void;
 }) {
   return (
-    <Card
+    <Panel
       onClick={onClick}
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
@@ -1157,15 +1157,15 @@ function Kpi({
       }}
       className={onClick ? "cursor-pointer transition-colors hover:border-primary/50 hover:bg-muted/40" : undefined}
     >
-      <CardContent className="p-4">
+      <PanelBody className="p-4">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           {icon}
           <span>{label}</span>
         </div>
         <p className="mt-1 text-2xl font-bold">{value}</p>
         {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
-      </CardContent>
-    </Card>
+      </PanelBody>
+    </Panel>
   );
 }
 
@@ -1324,12 +1324,12 @@ function RateTable({
   onRowClick?: (row: { key: string; name: string }) => void;
 }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-      <CardContent>
+    <Panel>
+      <PanelHeader>
+        <PanelTitle>{title}</PanelTitle>
+        <PanelDescription>{description}</PanelDescription>
+      </PanelHeader>
+      <PanelBody>
         {rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">{empty}</p>
         ) : (
@@ -1364,8 +1364,8 @@ function RateTable({
             </Table>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </PanelBody>
+    </Panel>
   );
 }
 

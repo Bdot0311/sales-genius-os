@@ -7,13 +7,7 @@ import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import {
   Dialog,
   DialogContent,
@@ -399,19 +393,19 @@ export function SequencesList() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {sequences.map((sequence) => (
-            <Card 
+            <Panel 
               key={sequence.id} 
               className="hover:border-primary/50 transition-colors cursor-pointer"
               onClick={() => navigate(`/dashboard/sequences/${sequence.id}`)}
             >
-              <CardHeader className="pb-3">
+              <PanelHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
-                    <CardTitle className="text-lg">{sequence.name}</CardTitle>
+                    <PanelTitle>{sequence.name}</PanelTitle>
                     {sequence.description && (
-                      <CardDescription className="line-clamp-2">
+                      <PanelDescription className="line-clamp-2">
                         {sequence.description}
-                      </CardDescription>
+                      </PanelDescription>
                     )}
                   </div>
                   <DropdownMenu>
@@ -460,8 +454,8 @@ export function SequencesList() {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
-              </CardHeader>
-              <CardContent>
+              </PanelHeader>
+              <PanelBody>
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <Badge 
                     variant="outline" 
@@ -497,8 +491,8 @@ export function SequencesList() {
                     />
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </PanelBody>
+            </Panel>
           ))}
         </div>
       )}

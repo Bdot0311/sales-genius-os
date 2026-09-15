@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -143,11 +143,11 @@ export const CreditsUsageTab = () => {
 
   if (!credits) {
     return (
-      <Card>
-        <CardContent className="py-8 text-center text-muted-foreground">
+      <Panel>
+        <PanelBody className="py-8 text-center text-muted-foreground">
           No subscription data available
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
     );
   }
 
@@ -170,14 +170,14 @@ export const CreditsUsageTab = () => {
       {/* Credits Overview Cards */}
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Credits Card */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
+        <Panel>
+          <PanelHeader className="pb-2">
+            <PanelTitle className="font-medium flex items-center gap-2">
               <Coins className="h-4 w-4 text-primary" />
               Search Credits
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+            </PanelTitle>
+          </PanelHeader>
+          <PanelBody>
             <div className="space-y-3">
               <div className="flex items-baseline justify-between">
                 <span className="text-3xl font-bold">{credits.remainingCredits}</span>
@@ -194,18 +194,18 @@ export const CreditsUsageTab = () => {
                 </span>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </PanelBody>
+        </Panel>
 
         {/* Daily Searches Card */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
+        <Panel>
+          <PanelHeader className="pb-2">
+            <PanelTitle className="font-medium flex items-center gap-2">
               <Clock className="h-4 w-4 text-primary" />
               Daily Searches
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+            </PanelTitle>
+          </PanelHeader>
+          <PanelBody>
             <div className="space-y-3">
               <div className="flex items-baseline justify-between">
                 <span className="text-3xl font-bold">
@@ -224,18 +224,18 @@ export const CreditsUsageTab = () => {
                 <span>Resets at midnight</span>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </PanelBody>
+        </Panel>
 
         {/* Plan Info Card */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
+        <Panel>
+          <PanelHeader className="pb-2">
+            <PanelTitle className="font-medium flex items-center gap-2">
               <Zap className="h-4 w-4 text-primary" />
               Current Plan
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+            </PanelTitle>
+          </PanelHeader>
+          <PanelBody>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-3xl font-bold capitalize">{credits.plan}</span>
@@ -248,22 +248,22 @@ export const CreditsUsageTab = () => {
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </PanelBody>
+        </Panel>
       </div>
 
       {/* Plan Limits Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <Panel>
+        <PanelHeader>
+          <PanelTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5" />
             Plan Limits
-          </CardTitle>
-          <CardDescription>
+          </PanelTitle>
+          <PanelDescription>
             Your {credits.plan} plan includes the following search limits
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+          </PanelDescription>
+        </PanelHeader>
+        <PanelBody>
           <div className="grid md:grid-cols-3 gap-4">
             <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
               <div className="p-2 rounded-full bg-primary/10">
@@ -293,12 +293,12 @@ export const CreditsUsageTab = () => {
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
       {/* Buy Credits CTA */}
-      <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
-        <CardContent className="py-6">
+      <Panel className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
+        <PanelBody className="py-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="text-center sm:text-left">
               <h3 className="font-semibold text-lg flex items-center gap-2 justify-center sm:justify-start">
@@ -314,21 +314,21 @@ export const CreditsUsageTab = () => {
               Buy credits
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
       {/* Transaction History */}
-      <Card>
-        <CardHeader>
+      <Panel>
+        <PanelHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2">
+              <PanelTitle className="flex items-center gap-2">
                 <History className="h-5 w-5" />
                 Transaction History
-              </CardTitle>
-              <CardDescription>
+              </PanelTitle>
+              <PanelDescription>
                 Recent credit usage and additions
-              </CardDescription>
+              </PanelDescription>
             </div>
             <Button 
               variant="outline" 
@@ -343,8 +343,8 @@ export const CreditsUsageTab = () => {
               Refresh
             </Button>
           </div>
-        </CardHeader>
-        <CardContent>
+        </PanelHeader>
+        <PanelBody>
           {loadingTransactions ? (
             <div className="space-y-3">
               {[...Array(5)].map((_, i) => (
@@ -397,8 +397,8 @@ export const CreditsUsageTab = () => {
               </div>
             </ScrollArea>
           )}
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
       <QuickBuyCreditsDialog 
         open={topupDialogOpen} 

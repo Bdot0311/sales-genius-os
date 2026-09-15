@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -133,13 +133,13 @@ export function SettingsTab({
       )}
 
       {/* Connected email — status only, managed from Integrations */}
-      <Card className="border-border/60 bg-card/60">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold">
+      <Panel className="border-border/60 bg-card/60">
+        <PanelHeader className="pb-3">
+          <PanelTitle className="font-semibold">
             Connected Email Account
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+          </PanelTitle>
+        </PanelHeader>
+        <PanelBody>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-lg ${gmailConnected ? "bg-green-500/10" : "bg-muted/50"}`}>
@@ -188,15 +188,15 @@ export function SettingsTab({
               {gmailConnected ? "Manage" : "Connect"}
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
       {/* Agent Limits */}
-      <Card className="border-border/60 bg-card/60">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold">Agent Limits</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <Panel className="border-border/60 bg-card/60">
+        <PanelHeader className="pb-3">
+          <PanelTitle className="font-semibold">Agent Limits</PanelTitle>
+        </PanelHeader>
+        <PanelBody className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="max-daily-replies">
@@ -260,17 +260,17 @@ export function SettingsTab({
               {savingLimits ? "Saving…" : "Save Limits"}
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
       {/* Danger Zone */}
-      <Card className="border-destructive/30 bg-destructive/5">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold text-destructive">
+      <Panel className="border-destructive/30 bg-destructive/5">
+        <PanelHeader className="pb-3">
+          <PanelTitle className="font-semibold text-destructive">
             Danger Zone
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+          </PanelTitle>
+        </PanelHeader>
+        <PanelBody>
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-sm font-medium">Reset all agent data</p>
@@ -317,8 +317,8 @@ export function SettingsTab({
               </AlertDialogContent>
             </AlertDialog>
           </div>
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
     </div>
   );
 }

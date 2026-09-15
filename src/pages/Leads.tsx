@@ -1,8 +1,7 @@
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
-import { EmptyState } from "@/components/dashboard/Panel";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState, Panel, PanelBody, PanelHeader } from "@/components/dashboard/Panel";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AddLeadDialog } from "@/components/dashboard/AddLeadDialog";
@@ -504,19 +503,17 @@ const Leads = () => {
                 could act on. The same border and radius as the search panel, so
                 the two read as one instrument rather than two widgets. */}
             {showExternalLeads && (
-          <Card className="rounded-xl border-border/50 shadow-[0_18px_44px_-30px_hsl(0_0%_0%/0.9)]">
-            <CardHeader className="pb-3">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                <div className="flex items-baseline gap-2.5">
-                  <CardTitle className="text-base sm:text-lg">Results</CardTitle>
-                  {externalLeads.length > 0 && (
-                    <span className="text-xs tabular-nums text-muted-foreground">
-                      {externalLeads.length} {externalLeads.length === 1 ? "contact" : "contacts"}
-                    </span>
-                  )}
-                </div>
-                {/* One button. There were two, side by side, running the
-                    identical three setters under different names. */}
+          <Panel>
+            <PanelHeader
+              title="Results"
+              meta={
+                externalLeads.length > 0
+                  ? `${externalLeads.length} ${externalLeads.length === 1 ? "contact" : "contacts"}`
+                  : undefined
+              }
+              actions={
+                /* One button. There were two, side by side, running the
+                   identical three setters under different names. */
                 <Button
                   variant="outline"
                   size="sm"
@@ -526,15 +523,17 @@ const Leads = () => {
                     setAiSearchQuery("");
                   }}
                 >
-                  <RefreshCw className="w-4 h-4 mr-2" />
+                  <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
                   New search
                 </Button>
+              }
+            />
+            {aiSearchQuery && (
+              <div className="border-b border-border/30 px-4 py-2 sm:px-5">
+                <p className="truncate text-[0.6875rem] text-muted-foreground">{aiSearchQuery}</p>
               </div>
-              {aiSearchQuery && (
-                <CardDescription className="truncate">{aiSearchQuery}</CardDescription>
-              )}
-            </CardHeader>
-            <CardContent>
+            )}
+            <PanelBody>
               {externalLoading ? (
                 /* Rows in the shape the results will take, so the page does not
                    reflow when they land and the wait reads as progress rather
@@ -700,8 +699,8 @@ const Leads = () => {
                   )}
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </PanelBody>
+          </Panel>
         )}
           </>
         )}

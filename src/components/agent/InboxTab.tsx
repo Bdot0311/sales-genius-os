@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
+import { Panel, PanelBody } from "@/components/dashboard/Panel";
 import { Badge } from "@/components/ui/badge";
 import { Mail } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -108,8 +108,8 @@ export function InboxTab() {
     return (
       <div className="space-y-3">
         {Array.from({ length: 6 }).map((_, i) => (
-          <Card key={i} className="border-border/60 bg-card/60">
-            <CardContent className="p-4">
+          <Panel key={i} className="border-border/60 bg-card/60">
+            <PanelBody className="p-4">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="h-3 bg-muted animate-pulse rounded w-1/3" />
@@ -118,8 +118,8 @@ export function InboxTab() {
                 <div className="h-3 bg-muted animate-pulse rounded w-2/3" />
                 <div className="h-3 bg-muted animate-pulse rounded w-1/2" />
               </div>
-            </CardContent>
-          </Card>
+            </PanelBody>
+          </Panel>
         ))}
       </div>
     );
@@ -150,11 +150,11 @@ export function InboxTab() {
           : null;
 
         return (
-          <Card
+          <Panel
             key={thread.id}
             className="border-border/60 bg-card/60 hover:bg-card/80 transition-colors"
           >
-            <CardContent className="p-4">
+            <PanelBody className="p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -198,8 +198,8 @@ export function InboxTab() {
                   )}
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </PanelBody>
+          </Panel>
         );
       })}
     </div>

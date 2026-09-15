@@ -1,6 +1,6 @@
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { PageHeader } from "@/components/dashboard/PageHeader";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -386,12 +386,12 @@ Respond in this EXACT JSON format (no markdown, just raw JSON):
             <p className="text-sm text-muted-foreground mb-4">Each scenario simulates a real outbound situation. Write your email, get prospect reactions, and receive a scorecard.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {SCENARIOS.map((scenario) => (
-                <Card
+                <Panel
                   key={scenario.id}
                   className="cursor-pointer hover:border-primary/50 transition-all hover:shadow-md"
                   onClick={() => startSession(scenario)}
                 >
-                  <CardHeader className="pb-3">
+                  <PanelHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                         {scenario.icon}
@@ -400,18 +400,18 @@ Respond in this EXACT JSON format (no markdown, just raw JSON):
                         {scenario.difficulty}
                       </Badge>
                     </div>
-                    <CardTitle className="text-base mt-2">{scenario.name}</CardTitle>
-                    <CardDescription>{scenario.type}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
+                    <PanelTitle className="mt-2">{scenario.name}</PanelTitle>
+                    <PanelDescription>{scenario.type}</PanelDescription>
+                  </PanelHeader>
+                  <PanelBody>
                     <p className="text-xs text-muted-foreground mb-1 font-medium">Prospect:</p>
                     <p className="text-sm mb-2">{scenario.prospect.split(',')[0]}</p>
                     <p className="text-xs text-muted-foreground line-clamp-2">{scenario.context}</p>
                     <Button variant="outline" size="sm" className="mt-4 w-full gap-2">
                       <Play className="w-4 h-4" /> Start Scenario
                     </Button>
-                  </CardContent>
-                </Card>
+                  </PanelBody>
+                </Panel>
               ))}
             </div>
           </div>
@@ -419,16 +419,16 @@ Respond in this EXACT JSON format (no markdown, just raw JSON):
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Chat area */}
             <div className="lg:col-span-2 space-y-4">
-              <Card>
-                <CardHeader className="pb-3">
+              <Panel>
+                <PanelHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
                         {selectedScenario?.icon}
                       </div>
                       <div>
-                        <CardTitle className="text-base">{selectedScenario?.name}</CardTitle>
-                        <CardDescription className="text-xs">{selectedScenario?.type}</CardDescription>
+                        <PanelTitle>{selectedScenario?.name}</PanelTitle>
+                        <PanelDescription className="text-xs">{selectedScenario?.type}</PanelDescription>
                       </div>
                     </div>
                     <div className="flex gap-2">
@@ -438,8 +438,8 @@ Respond in this EXACT JSON format (no markdown, just raw JSON):
                       </Button>
                     </div>
                   </div>
-                </CardHeader>
-                <CardContent>
+                </PanelHeader>
+                <PanelBody>
                   <ScrollArea className="h-[400px] pr-4">
                     <div className="space-y-4">
                       {messages.filter(m => m.role !== 'system').map((msg, i) => (
@@ -503,17 +503,17 @@ Respond in this EXACT JSON format (no markdown, just raw JSON):
                       </Button>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </PanelBody>
+              </Panel>
             </div>
 
             {/* Sidebar */}
             <div className="space-y-4">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm">Scenario Brief</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm">
+              <Panel>
+                <PanelHeader className="pb-3">
+                  <PanelTitle>Scenario Brief</PanelTitle>
+                </PanelHeader>
+                <PanelBody className="space-y-3 text-sm">
                   <div>
                     <p className="font-medium text-xs text-muted-foreground mb-1">PROSPECT</p>
                     <p>{selectedScenario?.prospect}</p>
@@ -522,14 +522,14 @@ Respond in this EXACT JSON format (no markdown, just raw JSON):
                     <p className="font-medium text-xs text-muted-foreground mb-1">CONTEXT</p>
                     <p>{selectedScenario?.context}</p>
                   </div>
-                </CardContent>
-              </Card>
+                </PanelBody>
+              </Panel>
 
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm">Quick Tips</CardTitle>
-                </CardHeader>
-                <CardContent className="text-xs text-muted-foreground space-y-2">
+              <Panel>
+                <PanelHeader className="pb-3">
+                  <PanelTitle>Quick Tips</PanelTitle>
+                </PanelHeader>
+                <PanelBody className="text-xs text-muted-foreground space-y-2">
                   <p>✅ Keep cold emails under 100 words</p>
                   <p>✅ Start with "Subject:" then your subject line</p>
                   <p>✅ Reference a trigger event or specific detail</p>
@@ -537,8 +537,8 @@ Respond in this EXACT JSON format (no markdown, just raw JSON):
                   <p>✅ Problem-focused, not product-focused</p>
                   <p>❌ No "just checking in" or "I hope this finds you well"</p>
                   <p>❌ No feature dumps or company intros</p>
-                </CardContent>
-              </Card>
+                </PanelBody>
+              </Panel>
 
               <Button
                 onClick={endAndScore}
@@ -551,14 +551,14 @@ Respond in this EXACT JSON format (no markdown, just raw JSON):
               </Button>
 
               {scoreCard && (
-                <Card className="border-primary/30">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2">
+                <Panel className="border-primary/30">
+                  <PanelHeader className="pb-3">
+                    <PanelTitle className="flex items-center gap-2">
                       <Trophy className="w-5 h-5 text-primary" />
                       Email Scorecard
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+                    </PanelTitle>
+                  </PanelHeader>
+                  <PanelBody className="space-y-4">
                     <div className="text-center">
                       <span className={`text-4xl font-bold ${getScoreColor(scoreCard.overall)}`}>
                         {scoreCard.overall}
@@ -586,8 +586,8 @@ Respond in this EXACT JSON format (no markdown, just raw JSON):
                       <p className="text-sm font-medium mb-1">Coach's Notes</p>
                       <p className="text-sm text-muted-foreground">{scoreCard.feedback}</p>
                     </div>
-                  </CardContent>
-                </Card>
+                  </PanelBody>
+                </Panel>
               )}
             </div>
           </div>

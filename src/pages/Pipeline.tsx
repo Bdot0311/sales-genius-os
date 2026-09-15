@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/dashboard/PageHeader";
 import { PipelineColumn } from "@/components/dashboard/PipelineColumn";
 import { AddDealDialog } from "@/components/dashboard/AddDealDialog";
 import { Button } from "@/components/ui/button";
-import { Panel, PanelHeader, MetricStrip, type Metric } from "@/components/dashboard/Panel";
+import { Panel, MetricStrip, type Metric } from "@/components/dashboard/Panel";
 import { Plus, Sparkles, Settings, TrendingUp, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";

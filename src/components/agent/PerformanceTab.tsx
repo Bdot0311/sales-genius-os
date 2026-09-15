@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -149,12 +149,12 @@ export function PerformanceTab() {
             />
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Slowest tools</CardTitle>
-              <CardDescription>Ranked by total time spent — the best places to optimize.</CardDescription>
-            </CardHeader>
-            <CardContent>
+          <Panel>
+            <PanelHeader>
+              <PanelTitle>Slowest tools</PanelTitle>
+              <PanelDescription>Ranked by total time spent — the best places to optimize.</PanelDescription>
+            </PanelHeader>
+            <PanelBody>
               {stats.tools.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   No runs recorded in this window yet. Chat with your agent and timings will appear here.
@@ -189,16 +189,16 @@ export function PerformanceTab() {
                   </table>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </PanelBody>
+          </Panel>
 
           {stats.failures.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Recent failures</CardTitle>
-                <CardDescription>What broke, and how long it ran before failing.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
+            <Panel>
+              <PanelHeader>
+                <PanelTitle>Recent failures</PanelTitle>
+                <PanelDescription>What broke, and how long it ran before failing.</PanelDescription>
+              </PanelHeader>
+              <PanelBody className="space-y-2">
                 {stats.failures.map((f) => (
                   <div key={f.id} className="rounded-md border border-border/60 p-2 text-sm">
                     <div className="flex flex-wrap items-center gap-2">
@@ -211,8 +211,8 @@ export function PerformanceTab() {
                     {f.detail && <p className="mt-1 text-xs text-muted-foreground break-words">{f.detail}</p>}
                   </div>
                 ))}
-              </CardContent>
-            </Card>
+              </PanelBody>
+            </Panel>
           )}
         </>
       )}
@@ -232,15 +232,15 @@ function StatCard({
   hint: string;
 }) {
   return (
-    <Card>
-      <CardContent className="p-4">
+    <Panel>
+      <PanelBody className="p-4">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           {icon}
           <span>{label}</span>
         </div>
         <p className="mt-1 text-2xl font-semibold">{value}</p>
         <p className="text-xs text-muted-foreground">{hint}</p>
-      </CardContent>
-    </Card>
+      </PanelBody>
+    </Panel>
   );
 }

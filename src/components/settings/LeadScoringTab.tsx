@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
@@ -103,12 +103,12 @@ export const LeadScoringTab = () => {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>lead scoring rubric</CardTitle>
-          <CardDescription>tune how fit and intent are weighted, then preview against your real leads before saving. saving queues a rescore.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
+      <Panel>
+        <PanelHeader>
+          <PanelTitle>lead scoring rubric</PanelTitle>
+          <PanelDescription>tune how fit and intent are weighted, then preview against your real leads before saving. saving queues a rescore.</PanelDescription>
+        </PanelHeader>
+        <PanelBody className="space-y-6">
           <div>
             <div className="flex items-center justify-between mb-3">
               <Label className="text-sm font-medium">fit weights</Label>
@@ -164,19 +164,19 @@ export const LeadScoringTab = () => {
               save rubric
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
       {preview && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">preview</CardTitle>
-            <CardDescription>
+        <Panel>
+          <PanelHeader className="pb-3">
+            <PanelTitle>preview</PanelTitle>
+            <PanelDescription>
               {preview.length ? "how these weights would score your most recent leads. nothing is saved until you save the rubric." : "no leads to preview yet."}
-            </CardDescription>
-          </CardHeader>
+            </PanelDescription>
+          </PanelHeader>
           {preview.length > 0 && (
-            <CardContent className="space-y-2">
+            <PanelBody className="space-y-2">
               {preview.map((r) => (
                 <div key={r.lead_id} className="flex items-start gap-3 py-2 border-b border-border/40 last:border-0">
                   <Badge variant="outline" className={`text-xs font-semibold ${TIER_COLOR[r.tier] || ""}`}>{r.tier}</Badge>
@@ -190,9 +190,9 @@ export const LeadScoringTab = () => {
                   </div>
                 </div>
               ))}
-            </CardContent>
+            </PanelBody>
           )}
-        </Card>
+        </Panel>
       )}
     </div>
   );

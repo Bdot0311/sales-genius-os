@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -144,11 +144,11 @@ export const AiSequenceBuilder = () => {
         </p>
       </div>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Inputs</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2">
+      <Panel>
+        <PanelHeader className="pb-3">
+          <PanelTitle>Inputs</PanelTitle>
+        </PanelHeader>
+        <PanelBody className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2 md:col-span-2">
             <Label>Prospect</Label>
             <Select value={leadId} onValueChange={setLeadId}>
@@ -237,8 +237,8 @@ export const AiSequenceBuilder = () => {
               {loading ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generating 4 touches…</>) : (<><Sparkles className="w-4 h-4 mr-2" /> Generate sequence</>)}
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
       {touches.length > 0 && (
         <div className="space-y-4">
@@ -248,14 +248,14 @@ export const AiSequenceBuilder = () => {
             </div>
           )}
           {touches.map((t, i) => (
-            <Card key={i} className="border-primary/20">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2">
+            <Panel key={i} className="border-primary/20">
+              <PanelHeader className="pb-3">
+                <PanelTitle className="flex items-center gap-2">
                   <Badge variant="outline" className="text-[10px]">Day {t.day}</Badge>
                   <span className="text-muted-foreground font-normal capitalize">{t.purpose}</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
+                </PanelTitle>
+              </PanelHeader>
+              <PanelBody className="space-y-3">
                 <div>
                   <div className="text-xs text-muted-foreground mb-1">Subject</div>
                   <div className="text-sm font-medium">{t.subject || "—"}</div>
@@ -285,8 +285,8 @@ export const AiSequenceBuilder = () => {
                     Open in Compose →
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
+              </PanelBody>
+            </Panel>
           ))}
         </div>
       )}

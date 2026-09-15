@@ -1,6 +1,6 @@
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { PageHeader } from "@/components/dashboard/PageHeader";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -604,20 +604,20 @@ Be encouraging but direct. Experienced outbound coaches don't sugarcoat.`;
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {PLAYBOOKS.map((pb) => (
-              <Card
+              <Panel
                 key={pb.id}
                 className={`cursor-pointer hover:border-primary/50 transition-all hover:shadow-md border-l-4 ${pb.color}`}
                 onClick={() => { setSelectedPlaybook(pb); setActiveStep(0); setPracticeMode(false); setMessages([]); }}
               >
-                <CardHeader className="pb-3">
+                <PanelHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <span className="text-2xl">{pb.icon}</span>
                     <Badge variant="outline" className="text-xs">{pb.steps.length} steps</Badge>
                   </div>
-                  <CardTitle className="text-base mt-2">{pb.name}</CardTitle>
-                  <CardDescription>{pb.tagline}</CardDescription>
-                </CardHeader>
-                <CardContent>
+                  <PanelTitle className="mt-2">{pb.name}</PanelTitle>
+                  <PanelDescription>{pb.tagline}</PanelDescription>
+                </PanelHeader>
+                <PanelBody>
                   <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{pb.description}</p>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Target className="w-3 h-3" />
@@ -626,8 +626,8 @@ Be encouraging but direct. Experienced outbound coaches don't sugarcoat.`;
                   <Button variant="outline" size="sm" className="mt-4 w-full gap-2">
                     <ChevronRight className="w-4 h-4" /> Open Playbook
                   </Button>
-                </CardContent>
-              </Card>
+                </PanelBody>
+              </Panel>
             ))}
           </div>
         </div>
@@ -655,26 +655,26 @@ Be encouraging but direct. Experienced outbound coaches don't sugarcoat.`;
           </div>
         </div>
 
-        <Card>
-          <CardContent className="pt-6">
+        <Panel>
+          <PanelBody className="pt-6">
             <p className="text-sm">{selectedPlaybook.description}</p>
             <div className="flex items-center gap-2 mt-3 text-sm text-muted-foreground">
               <Target className="w-4 h-4" />
               <span><strong>Best for:</strong> {selectedPlaybook.bestFor}</span>
             </div>
-          </CardContent>
-        </Card>
+          </PanelBody>
+        </Panel>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Step navigation */}
           <div className="space-y-2">
             {selectedPlaybook.steps.map((step, idx) => (
-              <Card
+              <Panel
                 key={idx}
                 className={`cursor-pointer transition-all ${idx === activeStep ? 'border-primary bg-primary/5' : 'hover:border-primary/30'}`}
                 onClick={() => { setActiveStep(idx); setPracticeMode(false); setMessages([]); }}
               >
-                <CardContent className="p-4 flex items-center gap-3">
+                <PanelBody className="p-4 flex items-center gap-3">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
                     idx === activeStep ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
                   }`}>
@@ -683,22 +683,22 @@ Be encouraging but direct. Experienced outbound coaches don't sugarcoat.`;
                   <div>
                     <p className={`text-sm font-medium ${idx === activeStep ? 'text-primary' : ''}`}>{step.title}</p>
                   </div>
-                </CardContent>
-              </Card>
+                </PanelBody>
+              </Panel>
             ))}
           </div>
 
           {/* Step detail */}
           <div className="lg:col-span-2 space-y-4">
-            <Card>
-              <CardHeader>
+            <Panel>
+              <PanelHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">Step {activeStep + 1}: {currentStep.title}</CardTitle>
+                  <PanelTitle>Step {activeStep + 1}: {currentStep.title}</PanelTitle>
                   <Badge variant="outline">Step {activeStep + 1} of {selectedPlaybook.steps.length}</Badge>
                 </div>
-                <CardDescription>{currentStep.description}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
+                <PanelDescription>{currentStep.description}</PanelDescription>
+              </PanelHeader>
+              <PanelBody className="space-y-6">
                 <div>
                   <h4 className="font-semibold text-sm flex items-center gap-2 mb-3">
                     <CheckCircle className="w-4 h-4 text-primary" />
@@ -755,22 +755,22 @@ Be encouraging but direct. Experienced outbound coaches don't sugarcoat.`;
                     <Brain className="w-4 h-4" /> Practice This Step
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
+              </PanelBody>
+            </Panel>
 
             {/* Practice mode */}
             {practiceMode && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
+              <Panel>
+                <PanelHeader className="pb-3">
+                  <PanelTitle className="flex items-center gap-2">
                     <Brain className="w-5 h-5 text-primary" />
                     Practice: {currentStep.title}
-                  </CardTitle>
-                  <CardDescription>
+                  </PanelTitle>
+                  <PanelDescription>
                     Write what you'd say or send to a prospect for this step. The AI coach will give you feedback.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
+                  </PanelDescription>
+                </PanelHeader>
+                <PanelBody>
                   <ScrollArea className="h-[250px] pr-4 mb-4">
                     <div className="space-y-3">
                       {messages.map((msg, i) => (
@@ -815,8 +815,8 @@ Be encouraging but direct. Experienced outbound coaches don't sugarcoat.`;
                       {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
+                </PanelBody>
+              </Panel>
             )}
           </div>
         </div>

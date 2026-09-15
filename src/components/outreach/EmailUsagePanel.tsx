@@ -1,4 +1,4 @@
-import { Card } from "@/components/ui/card";
+import { Panel } from "@/components/dashboard/Panel";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,9 +20,9 @@ export function EmailUsagePanel({ variant = "full" }: Props) {
 
   if (isLoading || !usage) {
     return (
-      <Card className="p-4 bg-card/40 border-border/40">
+      <Panel className="p-4 bg-card/40 border-border/40">
         <div className="h-20 animate-pulse" />
-      </Card>
+      </Panel>
     );
   }
 
@@ -33,7 +33,7 @@ export function EmailUsagePanel({ variant = "full" }: Props) {
 
   if (variant === "compact") {
     return (
-      <Card className="p-3 bg-card/40 border-border/40 flex items-center justify-between gap-4">
+      <Panel className="p-3 bg-card/40 border-border/40 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
           <Mail className="w-4 h-4 text-primary shrink-0" />
           <div className="min-w-0">
@@ -56,7 +56,7 @@ export function EmailUsagePanel({ variant = "full" }: Props) {
             )}
           </div>
         )}
-      </Card>
+      </Panel>
     );
   }
 
@@ -64,7 +64,7 @@ export function EmailUsagePanel({ variant = "full" }: Props) {
     <div className="space-y-4">
       {/* Stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Card className="p-4">
+        <Panel className="p-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs uppercase tracking-wide text-muted-foreground">Sent this month</span>
             <Mail className="w-4 h-4 text-primary" />
@@ -74,9 +74,9 @@ export function EmailUsagePanel({ variant = "full" }: Props) {
             of {formatMonthlyLimit(usage.monthly_limit)} on {usage.plan}
           </div>
           {!unlimited && <Progress value={pct} className="mt-3 h-1.5" />}
-        </Card>
+        </Panel>
 
-        <Card className="p-4">
+        <Panel className="p-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs uppercase tracking-wide text-muted-foreground">Remaining</span>
             <Badge variant={atCap ? "destructive" : nearCap ? "secondary" : "outline"}>
@@ -94,9 +94,9 @@ export function EmailUsagePanel({ variant = "full" }: Props) {
               <Link to="/pricing">Upgrade plan <ArrowUpRight className="w-3.5 h-3.5 ml-1" /></Link>
             </Button>
           )}
-        </Card>
+        </Panel>
 
-        <Card className="p-4">
+        <Panel className="p-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs uppercase tracking-wide text-muted-foreground">Resets in</span>
             <Calendar className="w-4 h-4 text-primary" />
@@ -105,11 +105,11 @@ export function EmailUsagePanel({ variant = "full" }: Props) {
           <div className="text-xs text-muted-foreground mt-1">
             {format(new Date(usage.monthly_reset_at), "MMM d, yyyy")} · 00:00 UTC
           </div>
-        </Card>
+        </Panel>
       </div>
 
       {/* 30-day trend chart */}
-      <Card className="p-4">
+      <Panel className="p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-primary" />
@@ -142,11 +142,11 @@ export function EmailUsagePanel({ variant = "full" }: Props) {
             </AreaChart>
           </ResponsiveContainer>
         </div>
-      </Card>
+      </Panel>
 
       {/* Per-sequence breakdown */}
       {sequences && sequences.length > 0 && (
-        <Card className="p-4">
+        <Panel className="p-4">
           <div className="text-sm font-medium mb-3">By sequence this month</div>
           <div className="space-y-2">
             {sequences.map((s) => (
@@ -156,7 +156,7 @@ export function EmailUsagePanel({ variant = "full" }: Props) {
               </div>
             ))}
           </div>
-        </Card>
+        </Panel>
       )}
     </div>
   );

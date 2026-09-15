@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Circle, X } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
@@ -164,14 +164,14 @@ export const OnboardingChecklist = ({ onClose, onStartTour }: OnboardingChecklis
   if (progressPercentage === 100) return null;
 
   return (
-    <Card className="border-primary/20">
-      <CardHeader>
+    <Panel className="border-primary/20">
+      <PanelHeader>
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle>Get Started with OutReign</CardTitle>
-            <CardDescription>
+            <PanelTitle>Get Started with OutReign</PanelTitle>
+            <PanelDescription>
               Complete these steps to get the most out of your account
-            </CardDescription>
+            </PanelDescription>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-4 w-4" />
@@ -184,8 +184,8 @@ export const OnboardingChecklist = ({ onClose, onStartTour }: OnboardingChecklis
           </div>
           <Progress value={progressPercentage} className="h-2" />
         </div>
-      </CardHeader>
-      <CardContent>
+      </PanelHeader>
+      <PanelBody>
         <div className="space-y-3">
           {steps.map((step) => {
             const isCompleted = progress?.[step.key] || false;
@@ -228,7 +228,7 @@ export const OnboardingChecklist = ({ onClose, onStartTour }: OnboardingChecklis
             );
           })}
         </div>
-      </CardContent>
-    </Card>
+      </PanelBody>
+    </Panel>
   );
 };

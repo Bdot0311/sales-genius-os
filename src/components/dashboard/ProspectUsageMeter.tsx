@@ -1,4 +1,4 @@
-import { Card } from "@/components/ui/card";
+import { Panel } from "@/components/dashboard/Panel";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Users, AlertTriangle, ArrowUpRight } from "lucide-react";
@@ -11,9 +11,9 @@ export const ProspectUsageMeter = () => {
 
   if (loading || !usage) {
     return (
-      <Card className="p-4 bg-card border-border animate-pulse">
+      <Panel className="p-4 bg-card border-border animate-pulse">
         <div className="h-20 bg-muted rounded" />
-      </Card>
+      </Panel>
     );
   }
 
@@ -34,7 +34,7 @@ export const ProspectUsageMeter = () => {
 
   if (plan === 'free') {
     return (
-      <Card className="p-4 bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
+      <Panel className="p-4 bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-primary/10">
@@ -49,12 +49,12 @@ export const ProspectUsageMeter = () => {
             View Plans <ArrowUpRight className="w-3 h-3" />
           </Button>
         </div>
-      </Card>
+      </Panel>
     );
   }
 
   return (
-    <Card className={`p-4 ${isMonthlyAtLimit ? 'bg-destructive/5 border-destructive/30' : 'bg-card border-border'}`}>
+    <Panel className={`p-4 ${isMonthlyAtLimit ? 'bg-destructive/5 border-destructive/30' : 'bg-card border-border'}`}>
       <div className="space-y-4">
         {/* Monthly Usage */}
         <div>
@@ -120,6 +120,6 @@ export const ProspectUsageMeter = () => {
           </div>
         )}
       </div>
-    </Card>
+    </Panel>
   );
 };

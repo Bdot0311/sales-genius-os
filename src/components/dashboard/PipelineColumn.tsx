@@ -1,4 +1,4 @@
-import { Card } from "@/components/ui/card";
+import { Panel } from "@/components/dashboard/Panel";
 import { Badge } from "@/components/ui/badge";
 import { MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,7 @@ export const PipelineColumn = ({ title, deals, totalValue, color, onMoveDeal, st
 
       <div className="space-y-3">
         {deals.map((deal) => (
-          <Card
+          <Panel
             key={deal.id}
             className="p-4 bg-card border-border hover:border-primary/50 transition-all duration-300 cursor-pointer group"
           >
@@ -73,7 +73,7 @@ export const PipelineColumn = ({ title, deals, totalValue, color, onMoveDeal, st
                 {deal.probability}% likely
               </Badge>
             </div>
-          </Card>
+          </Panel>
         ))}
 
         {deals.length === 0 && (

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Card } from "@/components/ui/card";
+import { Panel } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -211,7 +211,7 @@ export function AgentSwitcher({
   };
 
   return (
-    <Card className="p-4">
+    <Panel className="p-4">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
         <div>
           <p className="text-sm font-semibold">Your agents</p>
@@ -501,6 +501,6 @@ export function AgentSwitcher({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Card>
+    </Panel>
   );
 }
