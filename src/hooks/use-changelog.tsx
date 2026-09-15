@@ -111,8 +111,10 @@ export const useChangelog = (): ChangelogData => {
   }, [load]);
 
   useEffect(() => {
+    // Unique per mount: the header badge and the page both read this, and two
+    // channels sharing a name step on each other.
     const channel = supabase
-      .channel("changelog-live")
+      .channel(`changelog-live-${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "changelog_entries" }, () => {
         void load();
       })
