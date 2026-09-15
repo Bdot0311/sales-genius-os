@@ -85,7 +85,7 @@ const steps = [
             Subject: Quick idea for Northline's outbound push
           </p>
           <p className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
-            Hey Jordan — saw Northline is scaling the sales team in NYC and hiring SDRs right now. That usually means more pressure to build pipeline fast…
+            Hey Jordan, saw Northline is scaling the sales team in NYC and hiring SDRs right now. That usually means more pressure to build pipeline fast…
           </p>
         </div>
       </div>
@@ -146,7 +146,7 @@ export const HowItWorks = () => {
                 filter: "url(#c3-noise)",
               }}
             >
-              A few minutes.
+              Three steps.
             </span>
           </motion.h2>
 

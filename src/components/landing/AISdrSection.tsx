@@ -27,7 +27,7 @@ const activityItems = [
     type: "classify",
     prospect: "Rina Shah",
     company: "GraphiteIQ",
-    text: "Classified reply as objection → \"Not the right time\" — response queued",
+    text: "Classified reply as objection → \"Not the right time\". Response queued",
     color: "hsl(45 90% 60%)",
     dot: "hsl(45 90% 60%)",
   },

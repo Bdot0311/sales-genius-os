@@ -199,3 +199,107 @@ describe("blog claims match the rest of the site", () => {
     expect(BLOG).toContain("20 minutes of staring at a blank page");
   });
 });
+
+/**
+ * The hero has to let someone start.
+ *
+ * Both of its buttons needed a human on the other end: book a campaign-setup
+ * call, or open the demo. The trust line two rows below promised "100 free lead
+ * searches" and there was nothing on the screen to click for them, so a visitor
+ * who was ready to start had to go looking for the door.
+ */
+describe("the hero lets someone start", () => {
+  const HERO = readFileSync(join(DIR, "HeroSection.tsx"), "utf8");
+
+  it("offers the free plan it promises two rows below", () => {
+    expect(HERO).toContain("Start free");
+    expect(HERO).toContain('href="/auth"');
+  });
+
+  it("keeps the campaign-setup call, below it rather than instead of it", () => {
+    // It is the real differentiator, so it stays. Compared against the handler
+    // on the button, not the import at the top of the file.
+    expect(HERO).toContain("openCampaignSetupBooking");
+    expect(HERO.indexOf("Start free")).toBeLessThan(HERO.indexOf('openCampaignSetupBooking("hero_book_setup"'));
+  });
+
+  it("renders nothing from the session, which would break hydration", () => {
+    // The hero is prerendered to static HTML and hydrated over. `signedIn` is
+    // false during the server pass, so branching on it in markup mismatches the
+    // first client paint. It is read inside the click handler instead, which is
+    // what the booking CTA beside it already did.
+    expect(HERO).toContain('navigate(signedIn ? "/dashboard" : "/auth")');
+    expect(HERO).not.toMatch(/\{signedIn \?[^}]*\}\s*</);
+  });
+});
+
+/**
+ * Two house rules from the writing standard, checked rather than remembered:
+ * no em dashes in shipped prose, and none of the banned vocabulary.
+ *
+ * Deliberately NOT policed here: the duration claim. "A few minutes" is the
+ * honest answer to something nobody measured, and the banned-claims list at the
+ * top of this file is what keeps a fabricated number from coming back in its
+ * place.
+ */
+describe("no AI tells in shipped landing copy", () => {
+  /** Line-wise, so an offender can be named by file and line. */
+  const proseLines = (text: string) =>
+    text.split("\n").filter((l) => {
+      const t = l.trim();
+      return !t.startsWith("//") && !t.startsWith("*") && !t.startsWith("/*") && !t.startsWith("{/*") && !l.includes("{/*");
+    });
+
+  const SURFACES = [...ALL, { file: "Index.tsx", text: readFileSync("src/pages/Index.tsx", "utf8") }];
+
+  it("uses no em dashes outside simulated app chrome", () => {
+    // What survives is a separator inside mock product UI ("OutReign — AI SDR
+    // · Activity Feed"), where a dash names a pane rather than punctuating a
+    // sentence.
+    const offenders: string[] = [];
+    for (const { file, text } of SURFACES) {
+      proseLines(text).forEach((l, i) => {
+        if (!l.includes("—")) return;
+        if (/OutReign —|AI Draft —/.test(l)) return;
+        offenders.push(`${file}:${i + 1}: ${l.trim().slice(0, 70)}`);
+      });
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("uses none of the banned vocabulary", () => {
+    const banned =
+      /\b(leverage|utilize|seamless|robust|holistic|unlock|elevate|supercharge|empower|cutting-edge|game-chang\w*|delve|tapestry|realm|synergy|testament|myriad|take it to the next level|move the needle)\b/i;
+    const offenders: string[] = [];
+    for (const { file, text } of SURFACES) {
+      proseLines(text).forEach((l, i) => {
+        const m = l.match(banned);
+        if (m) offenders.push(`${file}:${i + 1}: ${m[0]}`);
+      });
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("asserts what things are without first saying what they are not", () => {
+    // Negative parallelism: "It's not X, it's Y", "Not just X, but Y". The
+    // single most common tell, and it hides in many shapes.
+    const offenders: string[] = [];
+    for (const { file, text } of SURFACES) {
+      proseLines(text).forEach((l, i) => {
+        if (/(it'?s not [a-z ]{3,30}, it'?s|not just [a-z ]{3,30}, (but )?[a-z]|we don'?t just)/i.test(l)) {
+          offenders.push(`${file}:${i + 1}`);
+        }
+      });
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("the sample email does not read as machine-written", () => {
+    // It is the one artifact on the page showing what the product writes, and
+    // an em dash straight after the greeting is the most recognisable tell
+    // there is — on the page whose whole job is answering that objection.
+    const steps = readFileSync(join(DIR, "HowItWorks.tsx"), "utf8");
+    expect(steps).toContain("Hey Jordan, saw Northline");
+    expect(steps).not.toContain("Hey Jordan —");
+  });
+});

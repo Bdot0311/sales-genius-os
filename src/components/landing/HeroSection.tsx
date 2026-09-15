@@ -63,29 +63,48 @@ export const HeroSection = () => {
         <div
           className="mb-6 flex w-full max-w-[20rem] flex-col items-center gap-3 sm:mb-8 sm:max-w-none sm:flex-row sm:justify-center sm:gap-4"
         >
+          {/* The href stays "/auth" in the markup whatever the session is: the
+              hero is prerendered to static HTML and hydrated, so anything
+              rendered from `signedIn` would differ between the server pass and
+              the first client paint. The session is read in the handler, which
+              is the same thing the booking CTA below already does. */}
+          <a
+            href="/auth"
+            onClick={(e) => { e.preventDefault(); navigate(signedIn ? "/dashboard" : "/auth"); }}
+            className="cta-pill-glow inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-full px-8 text-sm font-semibold text-white group sm:w-auto transition-transform active:scale-[0.98] hover:scale-[1.02]"
+            style={{ background: "linear-gradient(135deg, hsl(261 75% 60%) 0%, hsl(261 75% 50%) 100%)" }}
+            aria-label="Start free with 100 lead searches"
+          >
+            Start free
+            <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+          </a>
+
+          {/* The old label read like a coupon and never said a person would be
+              on the other end of it. This one says what actually happens. */}
           <a
             href={CAMPAIGN_SETUP_BOOKING_URL}
             onClick={(e) => { e.preventDefault(); void openCampaignSetupBooking("hero_book_setup", null, { signedIn }); }}
             target="_blank"
             rel="noopener noreferrer"
-            className="cta-pill-glow inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-full px-8 text-sm font-semibold text-white group sm:w-auto transition-transform active:scale-[0.98] hover:scale-[1.02]"
-            style={{ background: "linear-gradient(135deg, hsl(261 75% 60%) 0%, hsl(261 75% 50%) 100%)" }}
-            aria-label="Claim your free campaign setup"
+            className="inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-full border border-white/25 bg-white/5 px-7 text-sm font-medium text-white transition-colors hover:bg-white/10 sm:w-auto"
+            aria-label="Book a call and we build your first campaign with you"
           >
-            Get your free campaign setup
-            <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
-          </a>
-
-          <a
-            href="/demo"
-            onClick={(e) => { e.preventDefault(); Analytics.demoCtaClicked("hero_see_how_it_works"); navigate("/demo"); }}
-            className="inline-flex h-11 items-center justify-center gap-1.5 px-5 text-sm text-white/85 transition-all duration-200 hover:text-white hover:translate-x-0.5 sm:h-[52px]"
-            aria-label="See how OutReign works"
-          >
-            See how it works
-            <ArrowRight className="h-3.5 w-3.5 ml-0.5" aria-hidden="true" />
+            Or build it with us on a call
           </a>
         </div>
+
+        {/* Kept as a quiet third option rather than a button. It was competing
+            with the two actions that actually start something, and the product
+            tour is the next section down anyway. */}
+        <a
+          href="/demo"
+          onClick={(e) => { e.preventDefault(); Analytics.demoCtaClicked("hero_see_how_it_works"); navigate("/demo"); }}
+          className="mb-5 inline-flex items-center gap-1 text-sm text-white/70 underline-offset-4 transition-colors hover:text-white hover:underline"
+          aria-label="See how OutReign works"
+        >
+          See how it works
+          <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+        </a>
 
         <p
           className="mb-3 flex max-w-[21rem] flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-xs leading-tight text-white/90 sm:flex-nowrap"
@@ -102,7 +121,7 @@ export const HeroSection = () => {
           className="text-xs text-center"
           style={{ color: "hsl(0 0% 100% / 0.5)" }}
         >
-          Built by operators who run real outbound every day
+          Built by operators who run outbound every day
         </p>
 
         {/* Three directory badges, not the footer's nineteen. See
