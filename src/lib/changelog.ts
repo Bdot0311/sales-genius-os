@@ -92,6 +92,29 @@ export const ROADMAP: RoadmapItem[] = [
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-09-15",
+    date: "2026-09-15",
+    title: "You'll be told when there's something new",
+    summary:
+      "The \"What's new\" nudge in the header now lights up the moment a new update is published, and the page marks exactly which updates you haven't read.",
+    items: [
+      {
+        tag: "fixed",
+        title: "The \"What's new\" nudge appears again",
+        description:
+          "New updates were going out quietly. The header now highlights as soon as something is published, and goes quiet once you've read it.",
+        href: "/dashboard/whats-new",
+      },
+      {
+        tag: "improved",
+        title: "\"New to you\" stays on the right update",
+        description:
+          "Filtering the list by New, Improved, Fixed or Billing no longer moves the marker onto updates you had already read.",
+        href: "/dashboard/whats-new",
+      },
+    ],
+  },
+  {
     id: "2026-09-14",
     date: "2026-09-14",
     title: "Credits move again, and the dashboard was rebuilt",
