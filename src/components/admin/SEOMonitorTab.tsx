@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -162,42 +162,42 @@ export const SEOMonitorTab = () => {
 
       {/* Stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Open issues</CardDescription>
-            <CardTitle className="text-3xl">{counts.open_total}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Critical</CardDescription>
-            <CardTitle className="text-3xl text-red-500">{counts.open_critical}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>High</CardDescription>
-            <CardTitle className="text-3xl text-orange-500">{counts.open_high}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Unacknowledged</CardDescription>
-            <CardTitle className="text-3xl text-primary">{counts.unacknowledged}</CardTitle>
-          </CardHeader>
-        </Card>
+        <Panel>
+          <PanelHeader className="pb-2">
+            <PanelDescription>Open issues</PanelDescription>
+            <PanelTitle className="text-3xl">{counts.open_total}</PanelTitle>
+          </PanelHeader>
+        </Panel>
+        <Panel>
+          <PanelHeader className="pb-2">
+            <PanelDescription>Critical</PanelDescription>
+            <PanelTitle className="text-3xl text-red-500">{counts.open_critical}</PanelTitle>
+          </PanelHeader>
+        </Panel>
+        <Panel>
+          <PanelHeader className="pb-2">
+            <PanelDescription>High</PanelDescription>
+            <PanelTitle className="text-3xl text-orange-500">{counts.open_high}</PanelTitle>
+          </PanelHeader>
+        </Panel>
+        <Panel>
+          <PanelHeader className="pb-2">
+            <PanelDescription>Unacknowledged</PanelDescription>
+            <PanelTitle className="text-3xl text-primary">{counts.unacknowledged}</PanelTitle>
+          </PanelHeader>
+        </Panel>
       </div>
 
       {/* Trend */}
       {trendData.length > 1 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
+        <Panel>
+          <PanelHeader>
+            <PanelTitle className="flex items-center gap-2">
               <Activity className="h-4 w-4" /> Issue trend
-            </CardTitle>
-            <CardDescription>Issues found per audit run</CardDescription>
-          </CardHeader>
-          <CardContent>
+            </PanelTitle>
+            <PanelDescription>Issues found per audit run</PanelDescription>
+          </PanelHeader>
+          <PanelBody>
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={trendData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -215,8 +215,8 @@ export const SEOMonitorTab = () => {
                 <Line type="monotone" dataKey="new" stroke="hsl(var(--destructive))" strokeWidth={2} dot={false} name="New issues" />
               </LineChart>
             </ResponsiveContainer>
-          </CardContent>
-        </Card>
+          </PanelBody>
+        </Panel>
       )}
 
       <Tabs defaultValue="issues">
@@ -227,14 +227,14 @@ export const SEOMonitorTab = () => {
 
         <TabsContent value="issues" className="space-y-2">
           {openIssues.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center text-muted-foreground">
+            <Panel>
+              <PanelBody className="py-12 text-center text-muted-foreground">
                 <CheckCircle2 className="h-10 w-10 mx-auto mb-3 text-green-500" />
                 No open SEO issues. Last audit looks clean.
-              </CardContent>
-            </Card>
+              </PanelBody>
+            </Panel>
           ) : (
-            <Card>
+            <Panel>
               <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -290,12 +290,12 @@ export const SEOMonitorTab = () => {
                 </TableBody>
               </Table>
               </div>
-            </Card>
+            </Panel>
           )}
         </TabsContent>
 
         <TabsContent value="runs">
-          <Card>
+          <Panel>
             <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -336,7 +336,7 @@ export const SEOMonitorTab = () => {
               </TableBody>
             </Table>
             </div>
-          </Card>
+          </Panel>
         </TabsContent>
       </Tabs>
     </div>

@@ -5,7 +5,7 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -141,17 +141,17 @@ export const SignupChannelsCard = () => {
 
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHeader className="flex-row items-start justify-between gap-4">
+      <Panel>
+        <PanelHeader className="flex-row items-start justify-between gap-4">
           <div>
-            <CardTitle className="text-base">Signup channels</CardTitle>
-            <CardDescription>Answers to "Where did you find OutReign?" — {total} answered so far.</CardDescription>
+            <PanelTitle>Signup channels</PanelTitle>
+            <PanelDescription>Answers to "Where did you find OutReign?" — {total} answered so far.</PanelDescription>
           </div>
           <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
             <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Refresh
           </Button>
-        </CardHeader>
-        <CardContent>
+        </PanelHeader>
+        <PanelBody>
           <Table>
             <TableHeader><TableRow><TableHead>Channel</TableHead><TableHead className="text-right">Signups</TableHead><TableHead className="text-right">Share</TableHead><TableHead>Most recent</TableHead></TableRow></TableHeader>
             <TableBody>
@@ -166,15 +166,15 @@ export const SignupChannelsCard = () => {
               ))}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Questionnaire responses</CardTitle>
-          <CardDescription>Every completed signup questionnaire and the answers used to personalize activation.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <Panel>
+        <PanelHeader>
+          <PanelTitle>Questionnaire responses</PanelTitle>
+          <PanelDescription>Every completed signup questionnaire and the answers used to personalize activation.</PanelDescription>
+        </PanelHeader>
+        <PanelBody className="space-y-4">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <div className="relative max-w-md flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -205,8 +205,8 @@ export const SignupChannelsCard = () => {
               </TableBody>
             </Table>
           </div>
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
       <Dialog open={Boolean(editing)} onOpenChange={(open) => !open && setEditing(null)}>
         <DialogContent>

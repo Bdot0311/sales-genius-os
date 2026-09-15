@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -161,11 +161,11 @@ export default function AdminAlerts() {
       </div>
 
       {/* Alert list */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Recent alerts</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <Panel>
+        <PanelHeader>
+          <PanelTitle>Recent alerts</PanelTitle>
+        </PanelHeader>
+        <PanelBody>
           {loading ? (
             <p className="text-sm text-muted-foreground py-8 text-center">Loading…</p>
           ) : alerts.length === 0 ? (
@@ -215,8 +215,8 @@ export default function AdminAlerts() {
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
     </div>
   );
 }
@@ -237,8 +237,8 @@ function StatCard({
       ? "text-yellow-400"
       : "text-foreground";
   return (
-    <Card>
-      <CardContent className="p-4">
+    <Panel>
+      <PanelBody className="p-4">
         <div className="flex items-center justify-between">
           <p className="text-xs text-muted-foreground uppercase tracking-wide">{label}</p>
           {value > 0 && tone !== "default" && (
@@ -246,7 +246,7 @@ function StatCard({
           )}
         </div>
         <p className={`text-2xl font-bold mt-2 ${color}`}>{value}</p>
-      </CardContent>
-    </Card>
+      </PanelBody>
+    </Panel>
   );
 }

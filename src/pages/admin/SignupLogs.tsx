@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -129,8 +129,8 @@ const AdminSignupLogs = () => {
         {(["success", "warning", "error", "info"] as Status[]).map((s) => {
           const Icon = STATUS_META[s].icon;
           return (
-            <Card key={s}>
-              <CardContent className="pt-6">
+            <Panel key={s}>
+              <PanelBody className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs text-muted-foreground uppercase">{s}</p>
@@ -138,15 +138,15 @@ const AdminSignupLogs = () => {
                   </div>
                   <Icon className="h-6 w-6 text-muted-foreground" />
                 </div>
-              </CardContent>
-            </Card>
+              </PanelBody>
+            </Panel>
           );
         })}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Events</CardTitle>
+      <Panel>
+        <PanelHeader>
+          <PanelTitle>Events</PanelTitle>
           <div className="flex flex-col md:flex-row gap-3 mt-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -170,8 +170,8 @@ const AdminSignupLogs = () => {
               </SelectContent>
             </Select>
           </div>
-        </CardHeader>
-        <CardContent>
+        </PanelHeader>
+        <PanelBody>
           <ScrollArea className="h-[600px] pr-4">
             {loading && rows.length === 0 ? (
               <p className="text-sm text-muted-foreground py-12 text-center">Loading…</p>
@@ -219,8 +219,8 @@ const AdminSignupLogs = () => {
               </div>
             )}
           </ScrollArea>
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
         <DialogContent className="max-w-2xl">

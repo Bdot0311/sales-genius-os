@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelHeader } from "@/components/dashboard/Panel";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
-import { Bot, AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 
 interface AiGatewayUsage {
@@ -68,17 +68,12 @@ export const AiGatewayUsageCard = () => {
 
   if (loading) {
     return (
-      <Card className="border-l-4" style={{ borderLeftColor: "hsl(var(--primary))" }}>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">AI Gateway Usage</CardTitle>
-          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-            <Bot className="h-5 w-5 text-primary" />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="h-8 w-32 bg-muted animate-pulse rounded" />
-        </CardContent>
-      </Card>
+      <Panel>
+        <PanelHeader title="AI gateway usage" />
+        <PanelBody>
+          <div className="h-7 w-32 animate-pulse rounded bg-muted" />
+        </PanelBody>
+      </Panel>
     );
   }
 
@@ -89,22 +84,19 @@ export const AiGatewayUsageCard = () => {
   const isCritical = usage.credits_used >= settings.cap;
 
   return (
-    <Card className="border-l-4" style={{ borderLeftColor: "hsl(var(--primary))" }}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">AI Gateway Usage</CardTitle>
-        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-          <Bot className="h-5 w-5 text-primary" />
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="flex items-baseline justify-between">
-          <div className="text-3xl font-bold tracking-tight">
+    <Panel>
+      <PanelHeader
+        title="AI gateway usage"
+        meta={`${usage.calls_count.toLocaleString()} calls this period`}
+      />
+      <PanelBody className="space-y-3">
+        <div className="flex items-baseline justify-between gap-3">
+          <p className="text-xl font-semibold tabular-nums text-foreground">
             {usage.credits_used.toLocaleString()}
-            <span className="text-sm font-medium text-muted-foreground"> / {settings.cap.toLocaleString()}</span>
-          </div>
-          <div className="text-xs text-muted-foreground">
-            {usage.calls_count.toLocaleString()} calls this period
-          </div>
+            <span className="text-[0.8125rem] font-normal text-muted-foreground">
+              {" "}of {settings.cap.toLocaleString()}
+            </span>
+          </p>
         </div>
 
         <Progress value={percentage} className="h-2" />
@@ -122,7 +114,7 @@ export const AiGatewayUsageCard = () => {
               : "AI Gateway usage above warning threshold."}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </PanelBody>
+    </Panel>
   );
 };

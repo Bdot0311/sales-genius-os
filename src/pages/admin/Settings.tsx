@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -266,24 +266,24 @@ const AdminSettings = () => {
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-12">
+      <Panel>
+        <PanelBody className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+    <Panel>
+      <PanelHeader>
+        <PanelTitle className="flex items-center gap-2">
           <Settings className="h-5 w-5" />
           Admin Settings
-        </CardTitle>
-        <CardDescription>Configure system-wide settings and feature flags</CardDescription>
-      </CardHeader>
-      <CardContent>
+        </PanelTitle>
+        <PanelDescription>Configure system-wide settings and feature flags</PanelDescription>
+      </PanelHeader>
+      <PanelBody>
         <Tabs defaultValue="general" className="space-y-4">
           <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="general" className="flex items-center gap-1.5">
@@ -712,8 +712,8 @@ const AdminSettings = () => {
             </div>
           </TabsContent>
         </Tabs>
-      </CardContent>
-    </Card>
+      </PanelBody>
+    </Panel>
   );
 };
 

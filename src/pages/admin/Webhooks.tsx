@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -143,13 +143,13 @@ const AdminWebhooks = () => {
       </div>
 
       {/* Lifecycle legend */}
-      <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground">
+      <Panel className="border-border/50 bg-card/80 backdrop-blur-sm">
+        <PanelHeader className="pb-3">
+          <PanelTitle className="text-xs uppercase tracking-wider text-muted-foreground">
             Event Lifecycle
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+          </PanelTitle>
+        </PanelHeader>
+        <PanelBody>
           <div className="flex items-center gap-3 flex-wrap text-sm">
             <Step icon={Inbox} label="Received" hint="Webhook hit our endpoint" tone="muted" />
             <Arrow />
@@ -161,12 +161,12 @@ const AdminWebhooks = () => {
             <Arrow />
             <Step icon={Skull} label="Dead-letter" hint="Max retries reached" tone="danger" count={counts.dead_letter} />
           </div>
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
       {/* Filters */}
-      <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
-        <CardHeader className="pb-3">
+      <Panel className="border-border/50 bg-card/80 backdrop-blur-sm">
+        <PanelHeader className="pb-3">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-2 flex-wrap">
               <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
@@ -202,8 +202,8 @@ const AdminWebhooks = () => {
               </Button>
             </div>
           </div>
-        </CardHeader>
-        <CardContent className="p-0">
+        </PanelHeader>
+        <PanelBody className="p-0">
           {loading ? (
             <div className="p-8 text-center text-muted-foreground">Loading webhook events…</div>
           ) : filtered.length === 0 ? (
@@ -261,8 +261,8 @@ const AdminWebhooks = () => {
               </div>
             </ScrollArea>
           )}
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
         <DialogContent className="max-w-3xl">

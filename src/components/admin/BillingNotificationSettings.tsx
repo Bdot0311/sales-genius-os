@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -128,19 +128,19 @@ export function BillingNotificationSettings() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
+    <Panel>
+      <PanelHeader>
+        <PanelTitle className="flex items-center gap-2">
           <Bell className="h-4 w-4 text-primary" />
           Billing alert emails
           {saving && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
-        </CardTitle>
-        <CardDescription>
+        </PanelTitle>
+        <PanelDescription>
           Who gets emailed the moment a subscription cancels or an invoice fails. Every alert includes the
           customer's email and a direct link to the Stripe invoice when one exists.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
+        </PanelDescription>
+      </PanelHeader>
+      <PanelBody className="space-y-6">
         <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-3">
           <div>
             <Label className="text-sm">Send billing alert emails</Label>
@@ -379,8 +379,8 @@ export function BillingNotificationSettings() {
           </div>
         </div>
 
-      </CardContent>
-    </Card>
+      </PanelBody>
+    </Panel>
   );
 }
 

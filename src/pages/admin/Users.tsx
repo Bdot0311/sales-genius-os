@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -242,13 +242,13 @@ const AdminUsers = () => {
       <UserStatsCards stats={stats} />
 
       {/* Plan Distribution Bar */}
-      <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+      <Panel className="border-border/50 bg-card/80 backdrop-blur-sm">
+        <PanelHeader className="pb-3">
+          <PanelTitle className="font-medium text-muted-foreground uppercase tracking-wider">
             Plan Distribution
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+          </PanelTitle>
+        </PanelHeader>
+        <PanelBody>
           <div className="flex gap-1 h-3 rounded-full overflow-hidden bg-muted/50">
             {stats.total > 0 && (
               <>
@@ -307,15 +307,15 @@ const AdminUsers = () => {
               <div className="w-2 h-2 rounded-full bg-muted-foreground/40" /> Free ({stats.planBreakdown.free})
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
       {/* User Table */}
-      <Card className="border-border/50 bg-card/80 backdrop-blur-sm overflow-hidden">
-        <CardHeader className="border-b border-border/50">
+      <Panel className="border-border/50 bg-card/80 backdrop-blur-sm overflow-hidden">
+        <PanelHeader className="border-b border-border/50">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-lg">All Users</CardTitle>
+              <PanelTitle>All Users</PanelTitle>
               <p className="text-sm text-muted-foreground mt-1">
                 {filteredSubscriptions.length} of {subscriptions.length} users
               </p>
@@ -350,8 +350,8 @@ const AdminUsers = () => {
               className="pl-10 bg-muted/30 border-border/50"
             />
           </div>
-        </CardHeader>
-        <CardContent className="p-0">
+        </PanelHeader>
+        <PanelBody className="p-0">
           <UserTable
             subscriptions={filteredSubscriptions}
             loading={loading}
@@ -365,8 +365,8 @@ const AdminUsers = () => {
             onResetPassword={sendResetPasswordEmail}
             onEditUser={(user) => { setSelectedUser(user); setEditUserOpen(true); }}
           />
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
       <CreateUserDialog
         open={createUserOpen}

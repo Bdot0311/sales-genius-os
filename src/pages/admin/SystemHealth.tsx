@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, AlertTriangle, XCircle, HelpCircle, RefreshCw, ShieldCheck } from "lucide-react";
@@ -80,39 +80,39 @@ export default function SystemHealth() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Broken</CardDescription>
-            <CardTitle className="text-3xl text-destructive">{failing.length}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Needs attention</CardDescription>
-            <CardTitle className="text-3xl text-amber-400">{warning.length}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Healthy</CardDescription>
-            <CardTitle className="text-3xl text-emerald-400">{healthy.length}</CardTitle>
-          </CardHeader>
-        </Card>
+        <Panel>
+          <PanelHeader className="pb-2">
+            <PanelDescription>Broken</PanelDescription>
+            <PanelTitle className="text-3xl text-destructive">{failing.length}</PanelTitle>
+          </PanelHeader>
+        </Panel>
+        <Panel>
+          <PanelHeader className="pb-2">
+            <PanelDescription>Needs attention</PanelDescription>
+            <PanelTitle className="text-3xl text-amber-400">{warning.length}</PanelTitle>
+          </PanelHeader>
+        </Panel>
+        <Panel>
+          <PanelHeader className="pb-2">
+            <PanelDescription>Healthy</PanelDescription>
+            <PanelTitle className="text-3xl text-emerald-400">{healthy.length}</PanelTitle>
+          </PanelHeader>
+        </Panel>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
+      <Panel>
+        <PanelHeader>
+          <PanelTitle className="flex items-center gap-2">
             <ShieldCheck className="h-4 w-4 text-primary" />
             Checks
-          </CardTitle>
-          <CardDescription>
+          </PanelTitle>
+          <PanelDescription>
             {report
               ? `Last run ${formatDistanceToNow(new Date(report.generated_at), { addSuffix: true })}`
               : "Running…"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
+          </PanelDescription>
+        </PanelHeader>
+        <PanelBody className="space-y-3">
           {checks.length === 0 && !loading && (
             <p className="text-sm text-muted-foreground">No results yet. Run the checks to see current status.</p>
           )}
@@ -137,8 +137,8 @@ export default function SystemHealth() {
               </div>
             );
           })}
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
     </div>
   );
 }

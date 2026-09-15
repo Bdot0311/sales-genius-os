@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -334,8 +334,8 @@ const AdminSecurity = () => {
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardContent className="pt-6">
+        <Panel>
+          <PanelBody className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-destructive/10">
                 <Ban className="h-5 w-5 text-destructive" />
@@ -345,10 +345,10 @@ const AdminSecurity = () => {
                 <p className="text-sm text-muted-foreground">Blocked IPs</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
+          </PanelBody>
+        </Panel>
+        <Panel>
+          <PanelBody className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-red-500/10">
                 <LogIn className="h-5 w-5 text-red-500" />
@@ -358,10 +358,10 @@ const AdminSecurity = () => {
                 <p className="text-sm text-muted-foreground">Failed Logins Today</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
+          </PanelBody>
+        </Panel>
+        <Panel>
+          <PanelBody className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-amber-500/10">
                 <ShieldAlert className="h-5 w-5 text-amber-500" />
@@ -371,10 +371,10 @@ const AdminSecurity = () => {
                 <p className="text-sm text-muted-foreground">Security Events Today</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
+          </PanelBody>
+        </Panel>
+        <Panel>
+          <PanelBody className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/10">
                 <Activity className="h-5 w-5 text-blue-500" />
@@ -384,8 +384,8 @@ const AdminSecurity = () => {
                 <p className="text-sm text-muted-foreground">Rate Limit Violations</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </PanelBody>
+        </Panel>
       </div>
 
       {/* Main Tabs */}
@@ -416,20 +416,20 @@ const AdminSecurity = () => {
 
         {/* Security Events Tab */}
         <TabsContent value="security-events" className="space-y-4">
-          <Card>
-            <CardHeader>
+          <Panel>
+            <PanelHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Security Events</CardTitle>
-                  <CardDescription>Real-time security event monitoring</CardDescription>
+                  <PanelTitle>Security Events</PanelTitle>
+                  <PanelDescription>Real-time security event monitoring</PanelDescription>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
                   Live
                 </div>
               </div>
-            </CardHeader>
-            <CardContent>
+            </PanelHeader>
+            <PanelBody>
               {securityEvents.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <ShieldAlert className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -487,26 +487,26 @@ const AdminSecurity = () => {
                   </div>
                 </ScrollArea>
               )}
-            </CardContent>
-          </Card>
+            </PanelBody>
+          </Panel>
         </TabsContent>
 
         {/* Login Attempts Tab */}
         <TabsContent value="login-attempts" className="space-y-4">
-          <Card>
-            <CardHeader>
+          <Panel>
+            <PanelHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Login Attempts</CardTitle>
-                  <CardDescription>Monitor successful and failed authentication attempts</CardDescription>
+                  <PanelTitle>Login Attempts</PanelTitle>
+                  <PanelDescription>Monitor successful and failed authentication attempts</PanelDescription>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
                   Live
                 </div>
               </div>
-            </CardHeader>
-            <CardContent>
+            </PanelHeader>
+            <PanelBody>
               {loginAttempts.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <LogIn className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -565,18 +565,18 @@ const AdminSecurity = () => {
                   </Table>
                 </ScrollArea>
               )}
-            </CardContent>
-          </Card>
+            </PanelBody>
+          </Panel>
         </TabsContent>
 
         {/* Rate Limits Tab */}
         <TabsContent value="rate-limits" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Active Rate Limit Buckets</CardTitle>
-              <CardDescription>Current token bucket state for API rate limiting</CardDescription>
-            </CardHeader>
-            <CardContent>
+          <Panel>
+            <PanelHeader>
+              <PanelTitle>Active Rate Limit Buckets</PanelTitle>
+              <PanelDescription>Current token bucket state for API rate limiting</PanelDescription>
+            </PanelHeader>
+            <PanelBody>
               {rateLimitBuckets.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -612,18 +612,18 @@ const AdminSecurity = () => {
                   </TableBody>
                 </Table>
               )}
-            </CardContent>
-          </Card>
+            </PanelBody>
+          </Panel>
         </TabsContent>
 
         {/* IP Blocking Tab */}
         <TabsContent value="ip-blocking" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Block IP Address</CardTitle>
-              <CardDescription>Add IP addresses to the blocklist</CardDescription>
-            </CardHeader>
-            <CardContent>
+          <Panel>
+            <PanelHeader>
+              <PanelTitle>Block IP Address</PanelTitle>
+              <PanelDescription>Add IP addresses to the blocklist</PanelDescription>
+            </PanelHeader>
+            <PanelBody>
               <div className="flex gap-4 flex-wrap">
                 <div className="flex-1 min-w-[200px]">
                   <Label htmlFor="ip">IP Address</Label>
@@ -650,15 +650,15 @@ const AdminSecurity = () => {
                   </Button>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </PanelBody>
+          </Panel>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Blocked IP Addresses</CardTitle>
-              <CardDescription>{blockedIPs.length} IP addresses currently blocked</CardDescription>
-            </CardHeader>
-            <CardContent>
+          <Panel>
+            <PanelHeader>
+              <PanelTitle>Blocked IP Addresses</PanelTitle>
+              <PanelDescription>{blockedIPs.length} IP addresses currently blocked</PanelDescription>
+            </PanelHeader>
+            <PanelBody>
               {blockedIPs.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <Ban className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -701,8 +701,8 @@ const AdminSecurity = () => {
                   </Table>
                 </ScrollArea>
               )}
-            </CardContent>
-          </Card>
+            </PanelBody>
+          </Panel>
         </TabsContent>
       </Tabs>
     </div>

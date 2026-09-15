@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -187,14 +187,14 @@ export default function AdminBilling() {
           { label: "Cancelling soon", value: stats.scheduled },
           { label: "Chargebacks", value: stats.disputes },
         ].map((s) => (
-          <Card key={s.label}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{s.label}</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <Panel key={s.label}>
+            <PanelHeader className="pb-2">
+              <PanelTitle className="font-medium text-muted-foreground">{s.label}</PanelTitle>
+            </PanelHeader>
+            <PanelBody>
               <p className="text-2xl font-bold">{s.value}</p>
-            </CardContent>
-          </Card>
+            </PanelBody>
+          </Panel>
         ))}
       </div>
 
@@ -207,18 +207,18 @@ export default function AdminBilling() {
 
 
       {!loading && issues.length === 0 && (
-        <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
+        <Panel>
+          <PanelBody className="py-12 text-center text-muted-foreground">
             <CheckCircle2 className="h-8 w-8 mx-auto mb-3 text-primary" />
             No billing issues. Every subscription is paying and active.
-          </CardContent>
-        </Card>
+          </PanelBody>
+        </Panel>
       )}
 
       <div className="space-y-3">
         {issues.map((issue) => (
-          <Card key={issue.alert_id} className={issue.resolved ? "opacity-60" : undefined}>
-            <CardContent className="p-4 space-y-3">
+          <Panel key={issue.alert_id} className={issue.resolved ? "opacity-60" : undefined}>
+            <PanelBody className="p-4 space-y-3">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="space-y-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
@@ -305,8 +305,8 @@ export default function AdminBilling() {
                   )}
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </PanelBody>
+          </Panel>
         ))}
       </div>
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -105,12 +105,12 @@ export const DemoModeCard = () => {
   };
 
   return (
-    <Card>
-      <CardHeader>
+    <Panel>
+      <PanelHeader>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <MonitorPlay className="h-5 w-5 text-primary" />
-            <CardTitle>Demo Mode</CardTitle>
+            <PanelTitle>Demo Mode</PanelTitle>
             {isDemoMode && <Badge className="bg-primary">Active</Badge>}
           </div>
           <div className="flex items-center gap-2">
@@ -125,13 +125,13 @@ export const DemoModeCard = () => {
             />
           </div>
         </div>
-        <CardDescription>
+        <PanelDescription>
           Fills your own account with a realistic outbound operation for prospect calls. While it's on, plan gates are
           lifted, real emails, lead searches, enrichment and agent runs are simulated instead of spending credits, and
           real customer names are masked on screen. Nothing here affects other users.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+        </PanelDescription>
+      </PanelHeader>
+      <PanelBody className="space-y-4">
         <div className="flex flex-wrap gap-2">
           <Button onClick={() => run("seed")} disabled={busy !== null}>
             {busy === "seed" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Database className="h-4 w-4 mr-2" />}
@@ -170,7 +170,7 @@ export const DemoModeCard = () => {
               ))}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </PanelBody>
+    </Panel>
   );
 };

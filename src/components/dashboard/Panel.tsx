@@ -58,26 +58,54 @@ export const PanelHeader = ({
   title,
   meta,
   actions,
+  children,
   className,
 }: {
-  title: ReactNode;
+  title?: ReactNode;
   /** A count, a timestamp, a state — sits beside the title, quieter. */
   meta?: ReactNode;
   actions?: ReactNode;
+  /**
+   * Free-form header content, for a strip that is not a title and a count.
+   * The admin pages carry a title with a sentence under it, written as
+   * children rather than passed in, and rewriting all two hundred of them to
+   * fit a two-prop signature would be a worse change than letting the strip
+   * hold what it is given.
+   */
+  children?: ReactNode;
   className?: string;
 }) => (
   <div
     className={cn(
-      "flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-border/40 px-4 py-2.5 sm:px-5",
+      "border-b border-border/40 px-4 py-2.5 sm:px-5",
+      children ? "space-y-1" : "flex flex-wrap items-center justify-between gap-x-3 gap-y-2",
       className,
     )}
   >
-    <div className="flex min-w-0 items-baseline gap-2.5">
-      <h2 className="truncate text-[0.8125rem] font-medium text-foreground">{title}</h2>
-      {meta ? <span className="shrink-0 text-[0.6875rem] text-muted-foreground">{meta}</span> : null}
-    </div>
-    {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
+    {children ?? (
+      <>
+        <div className="flex min-w-0 items-baseline gap-2.5">
+          <h2 className="truncate text-[0.8125rem] font-medium text-foreground">{title}</h2>
+          {meta ? <span className="shrink-0 text-[0.6875rem] text-muted-foreground">{meta}</span> : null}
+        </div>
+        {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
+      </>
+    )}
   </div>
+);
+
+/**
+ * A title and a sentence inside a header strip.
+ *
+ * The same two shapes shadcn's Card gives, at this design's scale rather than
+ * at Card's: 13px for the title instead of 24, and 11 for the line under it.
+ */
+export const PanelTitle = ({ children, className }: { children: ReactNode; className?: string }) => (
+  <h2 className={cn("text-[0.8125rem] font-medium leading-snug text-foreground", className)}>{children}</h2>
+);
+
+export const PanelDescription = ({ children, className }: { children: ReactNode; className?: string }) => (
+  <p className={cn("text-[0.6875rem] leading-relaxed text-muted-foreground", className)}>{children}</p>
 );
 
 export const PanelBody = ({ children, className }: { children: ReactNode; className?: string }) => (
