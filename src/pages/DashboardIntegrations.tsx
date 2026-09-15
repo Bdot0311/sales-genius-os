@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { PageHeader } from "@/components/dashboard/PageHeader";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { EmptyState, Panel, PanelHeader } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,10 +21,8 @@ import {
   Building2,
   Cloud,
   Settings,
-  Check,
   AlertCircle,
   CheckCircle2,
-  Clock,
 } from "lucide-react";
 
 interface Integration {
@@ -534,156 +531,162 @@ const DashboardIntegrations = () => {
         description="Connect the tools your outbound already runs through."
       />
       <div className="space-y-4 pt-4">
-
-        {/* Category Filter */}
-        <div className="flex gap-2 flex-wrap">
-          {categories.map((category) => (
-            <Button
-              key={category}
-              variant={selectedCategory === category ? "default" : "outline"}
-              size="sm"
-              onClick={() => setSelectedCategory(category)}
-            >
-              {category}
-            </Button>
-          ))}
-        </div>
-
-        {/* Integrations Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredIntegrations.map((integration) => {
-            const Icon = integration.icon;
-            const isConnected = connectedIntegrations.has(integration.id);
-            const status = integrationStatus.get(integration.id);
-            const isOAuth = integration.oauthProvider;
-            const accounts = connectedAccounts.get(integration.id) || [];
-
+        {/* Quiet text filters, not a row of filled buttons.
+            A solid primary button for the category you are already looking at
+            made the loudest mark on the page a statement of where you are. */}
+        <div className="-mx-1 flex gap-0.5 overflow-x-auto px-1">
+          {categories.map((category) => {
+            const active = selectedCategory === category;
             return (
-              <Card
-                key={integration.id}
-                className="p-6 hover:border-primary/50 transition-all duration-300 hover:shadow-glow group relative"
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`shrink-0 whitespace-nowrap rounded-md px-2.5 py-1.5 text-[0.75rem] transition-colors ${
+                  active ? "bg-muted/60 font-medium text-foreground" : "text-muted-foreground hover:text-foreground"
+                }`}
               >
-                {isConnected && (
-                  <div className="absolute top-3 right-3">
-                    <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                      <Check className="w-4 h-4 text-white" />
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex items-start gap-4 mb-4">
-                  <div
-                    className={`w-12 h-12 ${integration.color} rounded-lg flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform duration-300`}
-                  >
-                    <Icon className="w-6 h-6" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-semibold">{integration.name}</h3>
-                      <Badge variant="secondary" className="text-xs">
-                        {integration.category}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {integration.description}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Connected accounts list for OAuth providers */}
-                {isOAuth && accounts.length > 0 && (
-                  <div className="mb-4 space-y-2">
-                    {accounts.map((account) => (
-                      <div key={account.id} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/50 border border-border/50">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                          <span className="text-sm truncate">{account.email}</span>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 text-xs shrink-0"
-                          onClick={() => handleDisconnect(integration.id, account.id)}
-                        >
-                          Remove
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Sync Status for non-OAuth connected integrations */}
-                {!isOAuth && isConnected && status && (
-                  <div className="mb-4 p-3 rounded-lg bg-muted/50 space-y-2">
-                    {status.error ? (
-                      <div className="flex items-center gap-2 text-destructive">
-                        <AlertCircle className="w-4 h-4" />
-                        <span className="text-xs font-medium">Sync Error</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 text-emerald-400">
-                        <CheckCircle2 className="w-4 h-4" />
-                        <span className="text-xs font-medium">Active</span>
-                      </div>
-                    )}
-                    {status.lastSync && (
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Clock className="w-3 h-3" />
-                        <span className="text-xs">
-                          Last sync: {new Date(status.lastSync).toLocaleString()}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <div className="flex gap-2">
-                  {isOAuth ? (
-                    <Button
-                      variant={accounts.length > 0 ? "outline" : "hero"}
-                      size="sm"
-                      className="w-full"
-                      onClick={() => handleConnect(integration)}
-                    >
-                      <Icon className="w-4 h-4 mr-2" />
-                      {accounts.length > 0
-                        ? (integration.id === 'google' ? "Add Another Account" : "Reconnect")
-                        : `Sign in with ${integration.name}`}
-                    </Button>
-                  ) : isConnected ? (
-                    <>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1"
-                        onClick={() => handleConnect(integration)}
-                      >
-                        <Settings className="w-4 h-4 mr-2" />
-                        Configure
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDisconnect(integration.id)}
-                      >
-                        Disconnect
-                      </Button>
-                    </>
-                  ) : (
-                    <Button
-                      variant="hero"
-                      size="sm"
-                      className="w-full"
-                      onClick={() => handleConnect(integration)}
-                    >
-                      Connect
-                    </Button>
-                  )}
-                </div>
-              </Card>
+                {category}
+              </button>
             );
           })}
         </div>
+
+        {/*
+          Connected first, then the rest.
+
+          Every integration was a card with a 48px coloured tile, a bold name, a
+          category pill, a description and a full-width Connect button, three
+          across — which is the most recognisable generated-interface shape
+          there is, and it meant the two tools you had actually connected were
+          scattered somewhere among the twelve you had not. Connection state was
+          also said three times over on a connected card: a green disc pinned to
+          the corner, a green tick beside each account, and the button changing
+          its label.
+        */}
+        {[
+          { key: "connected", label: "Connected", rows: filteredIntegrations.filter((i) => connectedIntegrations.has(i.id)) },
+          { key: "available", label: "Available", rows: filteredIntegrations.filter((i) => !connectedIntegrations.has(i.id)) },
+        ]
+          .filter((group) => group.rows.length > 0)
+          .map((group) => (
+            <Panel key={group.key}>
+              <PanelHeader title={group.label} meta={`${group.rows.length}`} />
+              <div>
+                {group.rows.map((integration) => {
+                  const Icon = integration.icon;
+                  const isConnected = connectedIntegrations.has(integration.id);
+                  const status = integrationStatus.get(integration.id);
+                  const isOAuth = integration.oauthProvider;
+                  const accounts = connectedAccounts.get(integration.id) || [];
+
+                  return (
+                    <div
+                      key={integration.id}
+                      className="border-b border-border/30 px-4 py-3.5 last:border-b-0 sm:px-5"
+                    >
+                      <div className="flex flex-wrap items-start gap-x-4 gap-y-3">
+                        {/* The brand mark at the size a list item needs, and it
+                            no longer grows when the cursor passes over it. */}
+                        <div
+                          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-white ${integration.color}`}
+                        >
+                          <Icon className="h-4 w-4" />
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                            <h3 className="text-[0.8125rem] font-medium text-foreground">{integration.name}</h3>
+                            <span className="text-[0.625rem] uppercase tracking-[0.08em] text-muted-foreground/60">
+                              {integration.category}
+                            </span>
+                          </div>
+                          <p className="mt-1 max-w-[70ch] text-[0.6875rem] leading-relaxed text-muted-foreground">
+                            {integration.description}
+                          </p>
+
+                          {isOAuth && accounts.length > 0 && (
+                            <ul className="mt-2 space-y-1">
+                              {accounts.map((account) => (
+                                <li key={account.id} className="flex items-center justify-between gap-2">
+                                  <span className="truncate text-[0.6875rem] text-foreground/85">{account.email}</span>
+                                  <button
+                                    onClick={() => handleDisconnect(integration.id, account.id)}
+                                    className="shrink-0 text-[0.625rem] text-muted-foreground transition-colors hover:text-destructive"
+                                  >
+                                    Remove
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+
+                          {!isOAuth && isConnected && status && (
+                            <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.625rem]">
+                              {status.error ? (
+                                <span className="inline-flex items-center gap-1.5 text-destructive">
+                                  <AlertCircle className="h-3 w-3" /> Sync failing
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1.5 text-emerald-400">
+                                  <CheckCircle2 className="h-3 w-3" /> Syncing
+                                </span>
+                              )}
+                              {status.lastSync && (
+                                <span className="text-muted-foreground">
+                                  Last sync {new Date(status.lastSync).toLocaleString()}
+                                </span>
+                              )}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex shrink-0 gap-1.5">
+                          {isOAuth ? (
+                            <Button variant="outline" size="sm" onClick={() => handleConnect(integration)}>
+                              {accounts.length > 0
+                                ? integration.id === "google"
+                                  ? "Add account"
+                                  : "Reconnect"
+                                : `Sign in with ${integration.name}`}
+                            </Button>
+                          ) : isConnected ? (
+                            <>
+                              <Button variant="outline" size="sm" onClick={() => handleConnect(integration)}>
+                                <Settings className="mr-1.5 h-3.5 w-3.5" />
+                                Configure
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-muted-foreground"
+                                onClick={() => handleDisconnect(integration.id)}
+                              >
+                                Disconnect
+                              </Button>
+                            </>
+                          ) : (
+                            /* Not the hero variant. Ten heroes on one page is
+                               ten buttons of equal weight, which is none. */
+                            <Button variant="outline" size="sm" onClick={() => handleConnect(integration)}>
+                              Connect
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Panel>
+          ))}
+
+        {filteredIntegrations.length === 0 && (
+          <EmptyState
+            title="Nothing in this category"
+            body="Pick another category, or ask us for an integration you need."
+          />
+        )}
+
 
         {/* Configuration Dialog (only for webhook-based integrations like Zapier) */}
         <Dialog
