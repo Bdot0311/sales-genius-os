@@ -1277,6 +1277,78 @@ export type Database = {
         }
         Relationships: []
       }
+      changelog_entries: {
+        Row: {
+          created_at: string
+          entry_date: string
+          id: string
+          items: Json
+          published_at: string | null
+          source: Json
+          status: string
+          summary: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          entry_date: string
+          id?: string
+          items?: Json
+          published_at?: string | null
+          source?: Json
+          status?: string
+          summary?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          entry_date?: string
+          id?: string
+          items?: Json
+          published_at?: string | null
+          source?: Json
+          status?: string
+          summary?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      changelog_roadmap: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          position: number
+          status: string
+          title: string
+          updated_at: string
+          visible: boolean
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          id?: string
+          position?: number
+          status?: string
+          title: string
+          updated_at?: string
+          visible?: boolean
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          position?: number
+          status?: string
+          title?: string
+          updated_at?: string
+          visible?: boolean
+        }
+        Relationships: []
+      }
       coaching_conversations: {
         Row: {
           created_at: string

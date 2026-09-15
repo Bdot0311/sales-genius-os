@@ -8,6 +8,13 @@
       "when": 1789223365721,
       "tag": "0000_switch_system_health_alert_sender_domain",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789430724276,
+      "tag": "0001_changelog_entries",
+      "breakpoints": true
     }
   ]
 }
