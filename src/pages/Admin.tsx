@@ -5,8 +5,6 @@ import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { useAdmin } from "@/hooks/use-admin";
 import { toast } from "sonner";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { Shield } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
 
 // Import admin sub-pages / grouped pages
 import AdminSecurity from "./admin/Security";
@@ -32,11 +30,10 @@ const Admin = () => {
       <SidebarProvider>
         <div className="flex min-h-screen w-full">
           <AdminSidebar />
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Loading admin panel...</p>
-            </div>
+          <div className="flex flex-1 items-center justify-center">
+            {/* A 48px ring spinning over a sentence is a page-sized way to say
+                "one moment". */}
+            <p className="text-[0.6875rem] text-muted-foreground">Checking your access…</p>
           </div>
         </div>
       </SidebarProvider>
@@ -49,23 +46,22 @@ const Admin = () => {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-muted/30">
+      {/* One ground. The shell tinted the content area and left the header
+          strip on the page background, so the panel looked like two documents
+          stacked, neither of them the colour the rest of the product uses. */}
+      <div className="flex min-h-screen w-full bg-background">
         <AdminSidebar />
-        
-        <div className="flex-1 flex flex-col">
-          {/* Header */}
-          <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-6">
+
+        <div className="flex min-w-0 flex-1 flex-col">
+          <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b border-border/50 bg-background/95 px-4 backdrop-blur-sm sm:px-6">
             <SidebarTrigger />
-            <div className="flex items-center gap-2 flex-1">
-              <Shield className="h-6 w-6 text-primary" />
-              <div>
-                <h1 className="text-xl font-bold">Admin Control Panel</h1>
-              </div>
-            </div>
+            {/* No shield icon: the sidebar it sits beside is already labelled
+                Admin, and a 24px primary badge for a heading is the loudest
+                mark on a page whose content is numbers. */}
+            <h1 className="text-[0.8125rem] font-medium text-foreground">Admin</h1>
           </header>
 
-          {/* Main Content with Nested Routes */}
-          <main className="flex-1 p-6 overflow-auto">
+          <main className="min-w-0 flex-1 overflow-auto p-4 sm:p-6">
             <Routes>
               <Route index element={<AdminDashboard />} />
               {/* Grouped pages */}

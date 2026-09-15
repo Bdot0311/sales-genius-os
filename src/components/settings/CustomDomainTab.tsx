@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -145,17 +145,17 @@ export const CustomDomainTab = () => {
         </AlertDescription>
       </Alert>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <Panel>
+        <PanelHeader>
+          <PanelTitle className="flex items-center gap-2">
             <Globe className="h-5 w-5" />
             Domain Configuration
-          </CardTitle>
-          <CardDescription>
+          </PanelTitle>
+          <PanelDescription>
             Enter your domain and configure DNS records
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
+          </PanelDescription>
+        </PanelHeader>
+        <PanelBody className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="domain">Domain Name</Label>
             <div className="flex gap-2">
@@ -321,8 +321,8 @@ export const CustomDomainTab = () => {
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
     </div>
   );
 };

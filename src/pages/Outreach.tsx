@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import { Analytics } from "@/lib/analytics";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { PageHeader } from "@/components/dashboard/PageHeader";
-import { Card } from "@/components/ui/card";
+import { Panel, PanelBody, PanelHeader } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -1966,10 +1966,8 @@ ${formattedBody}
       <PageHeader
         title="Outreach Studio"
         description="Generate cold emails from proven frameworks, then send them from your own mailbox."
-      />
-      <div className="space-y-4 pt-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-4">
-          <div className="mobile-action-row flex items-center gap-2">
+        actions={
+          <>
             <BulkSendDialog
               leads={leads}
               dailyEmailLimit={dailyEmailLimit}
@@ -2014,8 +2012,8 @@ ${formattedBody}
             <Dialog open={signatureDialogOpen} onOpenChange={setSignatureDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm">
-                  <Settings2 className="w-4 h-4 mr-2" />
-                  {signature ? "Edit Signature" : "Add Signature"}
+                  <Settings2 className="mr-1.5 h-3.5 w-3.5" />
+                  {signature ? "Edit signature" : "Add signature"}
                 </Button>
               </DialogTrigger>
             <DialogContent className="max-w-2xl">
@@ -2186,9 +2184,10 @@ For logos, use HTML:
               )}
             </DialogContent>
             </Dialog>
-          </div>
-        </div>
-
+          </>
+        }
+      />
+      <div className="space-y-4 pt-4">
         {/* Collapsible Keyboard Shortcuts Card */}
         {showShortcuts && (
           <div className="hidden md:flex items-center justify-between px-4 py-3 bg-muted/50 border rounded-lg animate-fade-in">
@@ -2286,53 +2285,69 @@ For logos, use HTML:
             </div>
             {/* Follow-up due reminders */}
 
+            {/* One panel, not a stack of amber slabs.
+                Every reminder was its own tinted, bordered box with a bell
+                emoji, so five follow-ups painted five amber bars across the top
+                of the page and the urgency stopped meaning anything. They are
+                rows under one heading; the count is what says how much is
+                waiting. */}
             {dueFollowUps.length > 0 && (
-              <div className="mb-4 space-y-2">
-                {dueFollowUps.map(fu => {
-                  const lead = leads.find(l => l.id === fu.lead_id);
-                  return (
-                    <div key={fu.id} className="flex items-center justify-between gap-3 px-4 py-3 rounded-lg border border-amber-500/30 bg-amber-500/5 text-sm">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-amber-500 shrink-0">🔔</span>
-                        <span className="font-medium text-foreground truncate">
-                          Follow-up due{lead ? ` with ${lead.contact_name} (${lead.company_name})` : ""}: <span className="text-muted-foreground font-normal">{fu.subject}</span>
-                        </span>
-                      </div>
-                      <div className="flex gap-2 shrink-0">
-                        {lead && (
+              <Panel className="mb-4">
+                <PanelHeader
+                  title="Follow-ups due"
+                  meta={`${dueFollowUps.length} waiting`}
+                />
+                <div>
+                  {dueFollowUps.map(fu => {
+                    const lead = leads.find(l => l.id === fu.lead_id);
+                    return (
+                      <div
+                        key={fu.id}
+                        className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-border/30 px-4 py-2.5 last:border-b-0 sm:px-5"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[0.8125rem] text-foreground">
+                            {lead ? `${lead.contact_name} · ${lead.company_name}` : "Follow-up due"}
+                          </p>
+                          <p className="mt-0.5 truncate text-[0.6875rem] text-muted-foreground">{fu.subject}</p>
+                        </div>
+                        <div className="flex shrink-0 gap-1">
+                          {lead && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-[0.6875rem]"
+                              onClick={() => {
+                                setSelectedLead(lead.id);
+                                setSelectedTemplate("follow_up");
+                                dismissFollowUpReminder(fu.id);
+                              }}
+                            >
+                              Compose
+                            </Button>
+                          )}
                           <Button
                             size="sm"
-                            variant="outline"
-                            className="h-7 text-xs"
-                            onClick={() => {
-                              setSelectedLead(lead.id);
-                              setSelectedTemplate("follow_up");
-                              dismissFollowUpReminder(fu.id);
-                            }}
+                            variant="ghost"
+                            className="h-7 text-[0.6875rem] text-muted-foreground"
+                            onClick={() => dismissFollowUpReminder(fu.id)}
                           >
-                            Compose
+                            Done
                           </Button>
-                        )}
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 text-xs text-muted-foreground"
-                          onClick={() => dismissFollowUpReminder(fu.id)}
-                        >
-                          Done
-                        </Button>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              </Panel>
             )}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="p-6">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-                  <h2 className="text-[0.8125rem] font-medium text-foreground">Email configuration</h2>
-                  <div className="flex items-center gap-2">
-                    <EmailTemplateManager
+              <Panel>
+                <PanelHeader
+                  title="Email configuration"
+                  actions={
+                    <>
+                      <EmailTemplateManager
                       currentTemplate={{
                         goal: resolveActiveTemplate().goal,
                         suggestedSubject: subjectLine,
@@ -2347,15 +2362,16 @@ For logos, use HTML:
                         }
                         setCurrentTemplateId(template.id);
                       }}
-                    />
-                    {currentDraftId && (
-                      <Button variant="ghost" size="sm" onClick={clearForm}>
-                        New Email
-                      </Button>
-                    )}
-                  </div>
-                </div>
-                <div className="space-y-4">
+                      />
+                      {currentDraftId && (
+                        <Button variant="ghost" size="sm" onClick={clearForm}>
+                          New email
+                        </Button>
+                      )}
+                    </>
+                  }
+                />
+                <PanelBody className="space-y-4">
                   {/* Send From selector */}
                   <div>
                     <Label>
@@ -2395,7 +2411,7 @@ For logos, use HTML:
                       const validation = validateSenderDomain(account.email);
                       if (!validation.isPersonal) return null;
                       return (
-                        <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-xs">
+                        <div className="mt-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-xs">
                           <div className="flex items-start gap-1.5">
                             <AlertTriangle className="w-3.5 h-3.5 text-amber-400 mt-0.5 flex-shrink-0" />
                             <div className="text-amber-400">
@@ -2412,7 +2428,7 @@ For logos, use HTML:
 
                   {/* Send time compliance warning */}
                   {sendTimeWarning && (
-                    <div className="p-2 bg-yellow-50 border border-yellow-200 rounded flex items-start gap-2">
+                    <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2">
                       <Clock className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
                       <p className="text-xs text-amber-400">{sendTimeWarning}</p>
                     </div>
@@ -2894,12 +2910,12 @@ For logos, use HTML:
                       )}
                     </div>
                   )}
-                </div>
-              </Card>
+                </PanelBody>
+              </Panel>
 
-              <Card className="p-6">
-                <h2 className="mb-3 text-[0.8125rem] font-medium text-foreground">Generated email</h2>
-                <div className="space-y-4">
+              <Panel>
+                <PanelHeader title="Generated email" />
+                <PanelBody className="space-y-4">
                   <div className="bg-muted/30 p-3 rounded-lg border mb-2">
                     <p className="text-sm">
                       <span className="text-muted-foreground">To:</span>{" "}
@@ -2975,7 +2991,7 @@ For logos, use HTML:
                           </div>
                           {/* Screen */}
                           <div
-                            className="bg-white dark:bg-gray-100 rounded-b-2xl p-4 border border-gray-700 overflow-auto"
+                            className="overflow-auto rounded-b-2xl border border-gray-700 bg-white p-4"
                             style={{ maxHeight: '400px', fontSize: '14px', lineHeight: '1.5', color: '#333' }}
                           >
                             <div
@@ -3125,23 +3141,27 @@ For logos, use HTML:
                       })()}
                     </div>
                   )}
-                </div>
-              </Card>
+                </PanelBody>
+              </Panel>
             </div>
           </TabsContent>
 
           <TabsContent value="sent" className="mt-6">
-            <Card className="p-6">
-              <h2 className="mb-3 text-[0.8125rem] font-medium text-foreground">Sent emails</h2>
-              <SentEmailsTable onDeleted={loadCounts} />
-            </Card>
+            <Panel>
+              <PanelHeader title="Sent emails" meta={sentCount > 0 ? `${sentCount} sent` : undefined} />
+              <PanelBody>
+                <SentEmailsTable onDeleted={loadCounts} />
+              </PanelBody>
+            </Panel>
           </TabsContent>
 
           <TabsContent value="drafts" className="mt-6">
-            <Card className="p-6">
-              <h2 className="mb-3 text-[0.8125rem] font-medium text-foreground">Email drafts</h2>
-              <EmailDraftsTable onLoadDraft={loadDraft} />
-            </Card>
+            <Panel>
+              <PanelHeader title="Email drafts" meta={draftsCount > 0 ? `${draftsCount} saved` : undefined} />
+              <PanelBody>
+                <EmailDraftsTable onLoadDraft={loadDraft} />
+              </PanelBody>
+            </Panel>
           </TabsContent>
 
           <TabsContent value="sequences" className="mt-6 space-y-8">

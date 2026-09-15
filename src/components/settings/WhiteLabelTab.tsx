@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -240,17 +240,17 @@ export const WhiteLabelTab = () => {
         </AlertDescription>
       </Alert>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <Panel>
+        <PanelHeader>
+          <PanelTitle className="flex items-center gap-2">
             <Palette className="h-5 w-5" />
             Branding & Appearance
-          </CardTitle>
-          <CardDescription>
+          </PanelTitle>
+          <PanelDescription>
             Customize the look and feel of your dashboard
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
+          </PanelDescription>
+        </PanelHeader>
+        <PanelBody className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="company_name">Company Name</Label>
             <Input
@@ -428,21 +428,21 @@ export const WhiteLabelTab = () => {
               </>
             )}
           </Button>
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
       {/* Custom Domain Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <Panel>
+        <PanelHeader>
+          <PanelTitle className="flex items-center gap-2">
             <Globe className="h-5 w-5" />
             Custom Domain
-          </CardTitle>
-          <CardDescription>
+          </PanelTitle>
+          <PanelDescription>
             Connect your own domain to serve your branded application
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
+          </PanelDescription>
+        </PanelHeader>
+        <PanelBody className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="domain">Domain Name</Label>
             <div className="flex gap-2">
@@ -643,8 +643,8 @@ export const WhiteLabelTab = () => {
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
     </div>
   );
 };

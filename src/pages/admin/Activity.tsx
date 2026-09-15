@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -288,12 +288,12 @@ const AdminActivity = () => {
         </TabsList>
 
         <TabsContent value="user-actions" className="space-y-4">
-          <Card>
-            <CardHeader>
+          <Panel>
+            <PanelHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>User Actions</CardTitle>
-                  <CardDescription>Recent actions performed by users</CardDescription>
+                  <PanelTitle>User Actions</PanelTitle>
+                  <PanelDescription>Recent actions performed by users</PanelDescription>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="relative">
@@ -330,8 +330,8 @@ const AdminActivity = () => {
                   </Select>
                 </div>
               </div>
-            </CardHeader>
-            <CardContent>
+            </PanelHeader>
+            <PanelBody>
               <ScrollArea className="h-[500px]">
                 {loading ? (
                   <div className="flex items-center justify-center h-32">
@@ -371,17 +371,17 @@ const AdminActivity = () => {
                   </div>
                 )}
               </ScrollArea>
-            </CardContent>
-          </Card>
+            </PanelBody>
+          </Panel>
         </TabsContent>
 
         <TabsContent value="logins" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Login History</CardTitle>
-              <CardDescription>User authentication events</CardDescription>
-            </CardHeader>
-            <CardContent>
+          <Panel>
+            <PanelHeader>
+              <PanelTitle>Login History</PanelTitle>
+              <PanelDescription>User authentication events</PanelDescription>
+            </PanelHeader>
+            <PanelBody>
               {loginEvents.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <LogIn className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -421,17 +421,17 @@ const AdminActivity = () => {
                   </TableBody>
                 </Table>
               )}
-            </CardContent>
-          </Card>
+            </PanelBody>
+          </Panel>
         </TabsContent>
 
         <TabsContent value="system" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>System Events</CardTitle>
-              <CardDescription>Background jobs, webhooks, and system notifications</CardDescription>
-            </CardHeader>
-            <CardContent>
+          <Panel>
+            <PanelHeader>
+              <PanelTitle>System Events</PanelTitle>
+              <PanelDescription>Background jobs, webhooks, and system notifications</PanelDescription>
+            </PanelHeader>
+            <PanelBody>
               {systemEvents.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <Settings className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -464,8 +464,8 @@ const AdminActivity = () => {
                   </div>
                 </ScrollArea>
               )}
-            </CardContent>
-          </Card>
+            </PanelBody>
+          </Panel>
         </TabsContent>
       </Tabs>
     </div>

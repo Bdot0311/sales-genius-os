@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Progress } from "@/components/ui/progress";
 import { AlertTriangle, CheckCircle2, XCircle, AlertCircle, Loader2 } from "lucide-react";
 import { OUTBOUND_KB } from "@/lib/outbound-kb";
@@ -355,15 +355,15 @@ export const EmailQualityChecker = ({ subject, body, isFirstTouch = true, onFix,
   const wordCountColor = wordCount <= 75 ? "text-green-500" : wordCount <= 130 ? "text-yellow-500" : "text-destructive";
 
   return (
-    <Card className="border-border/50">
-      <CardHeader className="pb-3 pt-4 px-4">
-        <CardTitle className="text-sm font-medium flex items-center gap-2">
+    <Panel className="border-border/50">
+      <PanelHeader className="pb-3 pt-4 px-4">
+        <PanelTitle className="font-medium flex items-center gap-2">
           <StatusIcon status={overallStatus} />
           Outbound Quality Check
           <span className="ml-auto text-xs font-normal text-muted-foreground">{overallScore}/100</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="px-4 pb-4 space-y-3">
+        </PanelTitle>
+      </PanelHeader>
+      <PanelBody className="px-4 pb-4 space-y-3">
         {/* Word Count indicator */}
         <div className="flex items-center justify-between py-1.5 px-2.5 rounded-md bg-muted/40">
           <span className="text-xs text-muted-foreground font-medium">Word Count</span>
@@ -409,7 +409,7 @@ export const EmailQualityChecker = ({ subject, body, isFirstTouch = true, onFix,
             </p>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </PanelBody>
+    </Panel>
   );
 };

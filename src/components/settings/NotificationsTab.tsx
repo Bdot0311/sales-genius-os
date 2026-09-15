@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Bell, BellOff, ExternalLink, Loader2 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -85,18 +85,18 @@ export default function NotificationsTab() {
   const unavailable = inPreview || !supported;
 
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="p-4 sm:p-6">
-        <CardTitle className="flex items-center gap-2">
+    <Panel className="overflow-hidden">
+      <PanelHeader className="p-4 sm:p-6">
+        <PanelTitle className="flex items-center gap-2">
           <Bell className="h-5 w-5" />
           Push notifications
-        </CardTitle>
-        <CardDescription>
+        </PanelTitle>
+        <PanelDescription>
           Receive real-time alerts on this device for new replies, hot leads, and agent activity.
           Install the app to your home screen for the best experience on mobile.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4 p-4 pt-0 sm:p-6 sm:pt-0">
+        </PanelDescription>
+      </PanelHeader>
+      <PanelBody className="space-y-4 p-4 pt-0 sm:p-6 sm:pt-0">
         {unavailable ? (
           <div className="rounded-lg border border-border bg-muted/30 p-4 text-sm text-muted-foreground flex items-start gap-2">
             <BellOff className="h-4 w-4 mt-0.5 flex-shrink-0" />
@@ -153,7 +153,7 @@ export default function NotificationsTab() {
           On iPhone and iPad, add OutReign to your home screen first — Safari only allows
           notifications for installed apps.
         </p>
-      </CardContent>
-    </Card>
+      </PanelBody>
+    </Panel>
   );
 }

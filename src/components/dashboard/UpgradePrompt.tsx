@@ -1,4 +1,4 @@
-import { Card } from "@/components/ui/card";
+import { Panel } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Lock, ArrowUpRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -12,7 +12,7 @@ export const UpgradePrompt = ({ feature, requiredPlan }: UpgradePromptProps) => 
   const navigate = useNavigate();
 
   return (
-    <Card className="p-12 text-center bg-gradient-subtle border-border/50">
+    <Panel className="p-12 text-center bg-gradient-subtle border-border/50">
       <div className="max-w-md mx-auto space-y-6">
         <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
           <Lock className="w-8 h-8 text-primary" />
@@ -43,6 +43,6 @@ export const UpgradePrompt = ({ feature, requiredPlan }: UpgradePromptProps) => 
           </p>
         </div>
       </div>
-    </Card>
+    </Panel>
   );
 };

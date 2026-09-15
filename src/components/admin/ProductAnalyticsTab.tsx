@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -180,46 +180,46 @@ export const ProductAnalyticsTab = () => {
 
       {totals && (
         <div className="grid gap-4 md:grid-cols-5">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Visitors</CardDescription>
-              <CardTitle className="text-2xl">{totals.visitors.toLocaleString()}</CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Pageviews</CardDescription>
-              <CardTitle className="text-2xl">{totals.pageviews.toLocaleString()}</CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Sessions</CardDescription>
-              <CardTitle className="text-2xl">{totals.sessions.toLocaleString()}</CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Bounce rate</CardDescription>
-              <CardTitle className="text-2xl">{totals.bounce_rate}%</CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Avg. session</CardDescription>
-              <CardTitle className="text-2xl">{formatDuration(totals.avg_session_seconds)}</CardTitle>
-            </CardHeader>
-          </Card>
+          <Panel>
+            <PanelHeader className="pb-2">
+              <PanelDescription>Visitors</PanelDescription>
+              <PanelTitle className="text-2xl">{totals.visitors.toLocaleString()}</PanelTitle>
+            </PanelHeader>
+          </Panel>
+          <Panel>
+            <PanelHeader className="pb-2">
+              <PanelDescription>Pageviews</PanelDescription>
+              <PanelTitle className="text-2xl">{totals.pageviews.toLocaleString()}</PanelTitle>
+            </PanelHeader>
+          </Panel>
+          <Panel>
+            <PanelHeader className="pb-2">
+              <PanelDescription>Sessions</PanelDescription>
+              <PanelTitle className="text-2xl">{totals.sessions.toLocaleString()}</PanelTitle>
+            </PanelHeader>
+          </Panel>
+          <Panel>
+            <PanelHeader className="pb-2">
+              <PanelDescription>Bounce rate</PanelDescription>
+              <PanelTitle className="text-2xl">{totals.bounce_rate}%</PanelTitle>
+            </PanelHeader>
+          </Panel>
+          <Panel>
+            <PanelHeader className="pb-2">
+              <PanelDescription>Avg. session</PanelDescription>
+              <PanelTitle className="text-2xl">{formatDuration(totals.avg_session_seconds)}</PanelTitle>
+            </PanelHeader>
+          </Panel>
         </div>
       )}
 
       {!!data?.trend?.length && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Traffic</CardTitle>
-            <CardDescription>Visitors and pageviews from PostHog</CardDescription>
-          </CardHeader>
-          <CardContent>
+        <Panel>
+          <PanelHeader>
+            <PanelTitle>Traffic</PanelTitle>
+            <PanelDescription>Visitors and pageviews from PostHog</PanelDescription>
+          </PanelHeader>
+          <PanelBody>
             <ChartContainer config={chartConfig} className="h-[320px]">
               <AreaChart
                 data={data.trend.map((p) => ({ ...p, label: formatBucket(p.bucket, activeRange) }))}
@@ -250,17 +250,17 @@ export const ProductAnalyticsTab = () => {
                 />
               </AreaChart>
             </ChartContainer>
-          </CardContent>
-        </Card>
+          </PanelBody>
+        </Panel>
       )}
 
       {!!data?.funnel?.length && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Activation funnel</CardTitle>
-            <CardDescription>Unique people reaching each milestone in this window</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
+        <Panel>
+          <PanelHeader>
+            <PanelTitle>Activation funnel</PanelTitle>
+            <PanelDescription>Unique people reaching each milestone in this window</PanelDescription>
+          </PanelHeader>
+          <PanelBody className="space-y-3">
             {(() => {
               const top = Math.max(...data.funnel.map((f) => f.people), 1);
               return data.funnel.map((step, i) => {
@@ -285,18 +285,18 @@ export const ProductAnalyticsTab = () => {
                 );
               });
             })()}
-          </CardContent>
-        </Card>
+          </PanelBody>
+        </Panel>
       )}
 
       <div className="grid gap-4 md:grid-cols-2">
         {!!data?.top_pages?.length && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Top pages</CardTitle>
-              <CardDescription>Most viewed paths</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
+          <Panel>
+            <PanelHeader>
+              <PanelTitle>Top pages</PanelTitle>
+              <PanelDescription>Most viewed paths</PanelDescription>
+            </PanelHeader>
+            <PanelBody className="space-y-2">
               {data.top_pages.map((p) => (
                 <div key={p.path} className="flex items-center justify-between text-sm">
                   <span className="truncate pr-3 font-mono text-xs">{p.path}</span>
@@ -305,17 +305,17 @@ export const ProductAnalyticsTab = () => {
                   </span>
                 </div>
               ))}
-            </CardContent>
-          </Card>
+            </PanelBody>
+          </Panel>
         )}
 
         {!!data?.top_referrers?.length && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Top referrers</CardTitle>
-              <CardDescription>Where visitors came from</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
+          <Panel>
+            <PanelHeader>
+              <PanelTitle>Top referrers</PanelTitle>
+              <PanelDescription>Where visitors came from</PanelDescription>
+            </PanelHeader>
+            <PanelBody className="space-y-2">
               {data.top_referrers.map((r) => (
                 <div key={r.referrer} className="flex items-center justify-between text-sm">
                   <span className="truncate pr-3">{r.referrer}</span>
@@ -324,26 +324,26 @@ export const ProductAnalyticsTab = () => {
                   </span>
                 </div>
               ))}
-            </CardContent>
-          </Card>
+            </PanelBody>
+          </Panel>
         )}
       </div>
 
       {!!data?.top_events?.length && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Top product events</CardTitle>
-            <CardDescription>Custom events captured from the app and backend</CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-2 sm:grid-cols-2">
+        <Panel>
+          <PanelHeader>
+            <PanelTitle>Top product events</PanelTitle>
+            <PanelDescription>Custom events captured from the app and backend</PanelDescription>
+          </PanelHeader>
+          <PanelBody className="grid gap-2 sm:grid-cols-2">
             {data.top_events.map((e) => (
               <div key={e.event} className="flex items-center justify-between text-sm">
                 <span className="truncate pr-3 font-mono text-xs">{e.event}</span>
                 <span className="shrink-0 text-muted-foreground">{e.total.toLocaleString()}</span>
               </div>
             ))}
-          </CardContent>
-        </Card>
+          </PanelBody>
+        </Panel>
       )}
     </div>
   );

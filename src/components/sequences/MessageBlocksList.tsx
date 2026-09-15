@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Panel, PanelBody, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -188,8 +188,8 @@ export const MessageBlocksList = () => {
       {loading ? (
         <div className="text-center py-8 text-muted-foreground">Loading...</div>
       ) : Object.keys(groupedBlocks).length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
+        <Panel>
+          <PanelBody className="py-12 text-center">
             <MessageSquare className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="font-medium mb-2">No message blocks yet</h3>
             <p className="text-sm text-muted-foreground mb-4">
@@ -199,8 +199,8 @@ export const MessageBlocksList = () => {
               <Plus className="w-4 h-4 mr-2" />
               Create Your First Block
             </Button>
-          </CardContent>
-        </Card>
+          </PanelBody>
+        </Panel>
       ) : (
         <div className="space-y-6">
           {Object.entries(groupedBlocks).map(([category, categoryBlocks]) => {
@@ -220,16 +220,16 @@ export const MessageBlocksList = () => {
                 </div>
                 <div className="grid gap-3 md:grid-cols-2">
                   {categoryBlocks.map((block) => (
-                    <Card key={block.id} className="group">
-                      <CardHeader className="py-3 px-4">
+                    <Panel key={block.id} className="group">
+                      <PanelHeader className="py-3 px-4">
                         <div className="flex items-start justify-between">
                           <div className="flex-1 min-w-0">
-                            <CardTitle className="text-sm font-medium flex items-center gap-2">
+                            <PanelTitle className="font-medium flex items-center gap-2">
                               {block.name}
                               {block.is_shared && (
                                 <Users className="w-3.5 h-3.5 text-muted-foreground" />
                               )}
-                            </CardTitle>
+                            </PanelTitle>
                             <p className="text-xs text-muted-foreground mt-0.5">
                               Used {block.use_count} times
                             </p>
@@ -261,13 +261,13 @@ export const MessageBlocksList = () => {
                             </Button>
                           </div>
                         </div>
-                      </CardHeader>
-                      <CardContent className="pt-0 px-4 pb-3">
+                      </PanelHeader>
+                      <PanelBody className="pt-0 px-4 pb-3">
                         <p className="text-sm text-muted-foreground line-clamp-3">
                           {block.content}
                         </p>
-                      </CardContent>
-                    </Card>
+                      </PanelBody>
+                    </Panel>
                   ))}
                 </div>
               </div>

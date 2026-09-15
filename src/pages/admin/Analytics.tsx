@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -183,8 +183,8 @@ const AdminAnalytics = () => {
 
       {/* Quick Stats from Real Data */}
       <div className="grid gap-4 md:grid-cols-5">
-        <Card>
-          <CardContent className="pt-6">
+        <Panel>
+          <PanelBody className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/10">
                 <Users className="h-6 w-6 text-blue-500" />
@@ -194,11 +194,11 @@ const AdminAnalytics = () => {
                 <p className="text-2xl font-bold">{stats.totalUsers}</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </PanelBody>
+        </Panel>
 
-        <Card>
-          <CardContent className="pt-6">
+        <Panel>
+          <PanelBody className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-emerald-500/10">
                 <DollarSign className="h-6 w-6 text-emerald-500" />
@@ -208,11 +208,11 @@ const AdminAnalytics = () => {
                 <p className="text-2xl font-bold">${stats.monthlyRevenue.toLocaleString()}</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </PanelBody>
+        </Panel>
 
-        <Card>
-          <CardContent className="pt-6">
+        <Panel>
+          <PanelBody className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/10">
                 <CreditCard className="h-6 w-6 text-purple-500" />
@@ -222,11 +222,11 @@ const AdminAnalytics = () => {
                 <p className="text-2xl font-bold">{stats.activeSubscriptions}</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </PanelBody>
+        </Panel>
 
-        <Card>
-          <CardContent className="pt-6">
+        <Panel>
+          <PanelBody className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-amber-500/10">
                 <TrendingUp className="h-6 w-6 text-amber-500" />
@@ -236,11 +236,11 @@ const AdminAnalytics = () => {
                 <p className="text-2xl font-bold">{stats.activeTrials}</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </PanelBody>
+        </Panel>
 
-        <Card>
-          <CardContent className="pt-6">
+        <Panel>
+          <PanelBody className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-destructive/10">
                 <Users className="h-6 w-6 text-destructive" />
@@ -250,8 +250,8 @@ const AdminAnalytics = () => {
                 <p className="text-2xl font-bold">{stats.lockedAccounts}</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </PanelBody>
+        </Panel>
       </div>
 
       <Tabs defaultValue={(() => {
@@ -277,12 +277,12 @@ const AdminAnalytics = () => {
 
 
         <TabsContent value="growth" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>User Growth Over Time</CardTitle>
-              <CardDescription>Total users and new signups based on current data</CardDescription>
-            </CardHeader>
-            <CardContent>
+          <Panel>
+            <PanelHeader>
+              <PanelTitle>User Growth Over Time</PanelTitle>
+              <PanelDescription>Total users and new signups based on current data</PanelDescription>
+            </PanelHeader>
+            <PanelBody>
               <ChartContainer config={chartConfig} className="h-[350px]">
                 <AreaChart data={userGrowthData}>
                   <defs>
@@ -300,17 +300,17 @@ const AdminAnalytics = () => {
                   <Line type="monotone" dataKey="newUsers" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={{ r: 4 }} name="New Users" />
                 </AreaChart>
               </ChartContainer>
-            </CardContent>
-          </Card>
+            </PanelBody>
+          </Panel>
         </TabsContent>
 
         <TabsContent value="revenue" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Revenue Trends</CardTitle>
-              <CardDescription>Monthly revenue and MRR based on current subscriptions</CardDescription>
-            </CardHeader>
-            <CardContent>
+          <Panel>
+            <PanelHeader>
+              <PanelTitle>Revenue Trends</PanelTitle>
+              <PanelDescription>Monthly revenue and MRR based on current subscriptions</PanelDescription>
+            </PanelHeader>
+            <PanelBody>
               <ChartContainer config={chartConfig} className="h-[350px]">
                 <LineChart data={revenueData}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -322,18 +322,18 @@ const AdminAnalytics = () => {
                   <Line type="monotone" dataKey="mrr" stroke="hsl(var(--chart-2))" strokeWidth={3} dot={{ r: 5 }} name="MRR" />
                 </LineChart>
               </ChartContainer>
-            </CardContent>
-          </Card>
+            </PanelBody>
+          </Panel>
         </TabsContent>
 
         <TabsContent value="subscriptions" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Subscription Distribution</CardTitle>
-                <CardDescription>Breakdown by plan type (Real Data)</CardDescription>
-              </CardHeader>
-              <CardContent>
+            <Panel>
+              <PanelHeader>
+                <PanelTitle>Subscription Distribution</PanelTitle>
+                <PanelDescription>Breakdown by plan type (Real Data)</PanelDescription>
+              </PanelHeader>
+              <PanelBody>
                 {planDistribution.every(p => p.value === 0) ? (
                   <div className="flex items-center justify-center h-[300px] text-muted-foreground">
                     No subscription data available
@@ -359,15 +359,15 @@ const AdminAnalytics = () => {
                     </PieChart>
                   </ChartContainer>
                 )}
-              </CardContent>
-            </Card>
+              </PanelBody>
+            </Panel>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Plan Revenue Breakdown</CardTitle>
-                <CardDescription>Revenue contribution by plan (Real Data)</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-4">
+            <Panel>
+              <PanelHeader>
+                <PanelTitle>Plan Revenue Breakdown</PanelTitle>
+                <PanelDescription>Revenue contribution by plan (Real Data)</PanelDescription>
+              </PanelHeader>
+              <PanelBody className="space-y-4 pt-4">
                 <div className="space-y-3">
                   {revenueBreakdown.map(plan => (
                     <div key={plan.name} className="flex items-center justify-between">
@@ -392,8 +392,8 @@ const AdminAnalytics = () => {
                     </span>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </PanelBody>
+            </Panel>
           </div>
         </TabsContent>
       </Tabs>

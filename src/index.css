@@ -195,18 +195,14 @@ All colors MUST be HSL. Using 8px spacing scale.
       white-space: nowrap;
     }
 
-    /* Settings has many destinations, so keep every option visible rather
-       than hiding them beyond a horizontal swipe on mobile. */
-    [role="tablist"].settings-tab-list {
-      display: grid !important;
-      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-      overflow-x: visible;
-    }
-
+    /* Settings scrolls like every other tab bar again.
+       It used to be forced into a two-column grid so that all fifteen
+       destinations stayed on screen, which built a stack eight rows tall above
+       whatever you came to change. The rail it now uses on a wide screen has
+       room for all of them; on a phone it is a strip you swipe, like the rest
+       of the product. */
     [role="tablist"].settings-tab-list > * {
-      min-width: 0;
-      white-space: normal;
-      overflow-wrap: anywhere;
+      white-space: nowrap;
     }
 
     /* Keep action rows usable when labels or localized copy run long.

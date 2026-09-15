@@ -4,7 +4,7 @@
  */
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { X } from "lucide-react";
@@ -65,17 +65,17 @@ export const DiscoveryPrompt = () => {
   if (!visible) return null;
 
   return (
-    <Card className="border-primary/20">
-      <CardHeader className="flex-row items-start justify-between gap-4 pb-3">
+    <Panel className="border-primary/20">
+      <PanelHeader className="flex-row items-start justify-between gap-4 pb-3">
         <div>
-          <CardTitle className="text-base">Quick one: where did you find OutReign?</CardTitle>
-          <CardDescription>Helps us know which channels are worth showing up on.</CardDescription>
+          <PanelTitle>Quick one: where did you find OutReign?</PanelTitle>
+          <PanelDescription>Helps us know which channels are worth showing up on.</PanelDescription>
         </div>
         <Button variant="ghost" size="icon" onClick={dismiss} aria-label="Dismiss">
           <X className="h-4 w-4" />
         </Button>
-      </CardHeader>
-      <CardContent className="space-y-3">
+      </PanelHeader>
+      <PanelBody className="space-y-3">
         <div className="flex flex-wrap gap-2">
           {DISCOVERY_OPTIONS.map((o) => (
             <Button
@@ -101,7 +101,7 @@ export const DiscoveryPrompt = () => {
             </Button>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </PanelBody>
+    </Panel>
   );
 };

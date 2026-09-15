@@ -2,7 +2,7 @@ import { Fragment, useCallback, useEffect, useState } from "react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -188,18 +188,18 @@ const AdminCampaignSetup = () => {
         </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <Panel>
+        <PanelHeader>
+          <PanelTitle className="flex items-center gap-2">
             <MailPlus className="h-5 w-5" />
             Request access from a customer
-          </CardTitle>
-          <CardDescription>
+          </PanelTitle>
+          <PanelDescription>
             Sends the customer an email asking them to grant 14-day setup access. They still approve it themselves in
             Settings → Support access.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
+          </PanelDescription>
+        </PanelHeader>
+        <PanelBody className="space-y-3">
           <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
             <Input
               type="email"
@@ -219,20 +219,20 @@ const AdminCampaignSetup = () => {
             onChange={(e) => setOutNote(e.target.value)}
             rows={2}
           />
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <Panel>
+        <PanelHeader>
+          <PanelTitle className="flex items-center gap-2">
             <ShieldCheck className="h-5 w-5" />
             Active access ({activeGrants.length})
-          </CardTitle>
-          <CardDescription>
+          </PanelTitle>
+          <PanelDescription>
             Open an account to build their sequences. End access as soon as the setup is done.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+          </PanelDescription>
+        </PanelHeader>
+        <PanelBody>
           {activeGrants.length === 0 ? (
             <p className="text-sm text-muted-foreground">No customer has granted access right now.</p>
           ) : (
@@ -317,20 +317,20 @@ const AdminCampaignSetup = () => {
               </Table>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <Panel>
+        <PanelHeader>
+          <PanelTitle className="flex items-center gap-2">
             <ExternalLink className="h-5 w-5" />
             Setup requests ({requests.length})
-          </CardTitle>
-          <CardDescription>
+          </PanelTitle>
+          <PanelDescription>
             Everyone who clicked a "book a campaign setup" call to action, plus outbound requests you sent.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+          </PanelDescription>
+        </PanelHeader>
+        <PanelBody>
           {requests.length === 0 ? (
             <p className="text-sm text-muted-foreground">No requests logged yet.</p>
           ) : (
@@ -407,8 +407,8 @@ const AdminCampaignSetup = () => {
               </Table>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
     </div>
   );
 };

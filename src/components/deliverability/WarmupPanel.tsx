@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelHeader } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
-import { Flame, Play, Loader2 } from "lucide-react";
+import { Play, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useLiveStats } from "@/hooks/use-deliverability";
 import { runWarmupNow } from "@/lib/deliverability-api";
@@ -42,20 +42,17 @@ export const WarmupPanel = ({ accounts }: { accounts: SendingAccount[] }) => {
   const replyRate = t.replyRate === null ? null : Math.round(t.replyRate);
 
   return (
-    <Card className="border-border/50">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center justify-between gap-2 text-sm">
-          <span className="flex items-center gap-2">
-            <Flame className="h-4 w-4 text-orange-400" />
-            Warmup
-          </span>
+    <Panel>
+      <PanelHeader
+        title="Pool activity"
+        actions={
           <Button size="sm" variant="outline" onClick={handleRun} disabled={running}>
             {running ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Play className="mr-1 h-3.5 w-3.5" />}
             Run now
           </Button>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+        }
+      />
+      <PanelBody className="space-y-4">
         {warmingCount === 0 ? (
           <p className="text-sm text-muted-foreground">
             Warmup is off for all accounts. Turn on the Warmup switch on an account above to join the
@@ -92,8 +89,8 @@ export const WarmupPanel = ({ accounts }: { accounts: SendingAccount[] }) => {
           </>
         )}
         {isLoading && <p className="text-xs text-muted-foreground">Loading warmup activity…</p>}
-      </CardContent>
-    </Card>
+      </PanelBody>
+    </Panel>
   );
 };
 

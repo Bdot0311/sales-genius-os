@@ -1,4 +1,4 @@
-import { Card, CardContent } from "@/components/ui/card";
+import { Panel, PanelBody } from "@/components/dashboard/Panel";
 import { Users, Crown, Clock, Lock, TrendingUp, Shield } from "lucide-react";
 
 interface Stats {
@@ -61,11 +61,11 @@ export const UserStatsCards = ({ stats }: { stats: Stats }) => {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
       {cards.map((card) => (
-        <Card
+        <Panel
           key={card.label}
           className="border-border/50 bg-card/80 backdrop-blur-sm hover:border-border transition-colors"
         >
-          <CardContent className="p-4">
+          <PanelBody className="p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 {card.label}
@@ -75,8 +75,8 @@ export const UserStatsCards = ({ stats }: { stats: Stats }) => {
               </div>
             </div>
             <p className="text-2xl font-bold tracking-tight">{card.value}</p>
-          </CardContent>
-        </Card>
+          </PanelBody>
+        </Panel>
       ))}
     </div>
   );

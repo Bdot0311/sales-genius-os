@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Separator } from "@/components/ui/separator";
 import {
   AlertDialog,
@@ -123,18 +123,18 @@ export const SupportAccessCard = () => {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+    <Panel>
+      <PanelHeader>
+        <PanelTitle className="flex items-center gap-2">
           <KeyRound className="h-5 w-5" />
           Campaign setup access
-        </CardTitle>
-        <CardDescription>
+        </PanelTitle>
+        <PanelDescription>
           Let the OutReign team build your campaigns inside your account — without ever sharing your
           password. Access is limited, time-boxed and fully logged.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-5">
+        </PanelDescription>
+      </PanelHeader>
+      <PanelBody className="space-y-5">
         {loading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" /> Loading…
@@ -225,8 +225,8 @@ export const SupportAccessCard = () => {
             </div>
           </>
         )}
-      </CardContent>
-    </Card>
+      </PanelBody>
+    </Panel>
   );
 };
 

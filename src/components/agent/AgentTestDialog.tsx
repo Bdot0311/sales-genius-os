@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
+import { Panel } from "@/components/dashboard/Panel";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Accordion,
@@ -259,7 +259,7 @@ export function AgentTestDialog({ disabled, agentId }: { disabled?: boolean; age
         </DialogHeader>
 
         <div className="space-y-4">
-          <Card className="p-4 space-y-3 border-primary/20 bg-primary/5">
+          <Panel className="p-4 space-y-3 border-primary/20 bg-primary/5">
             <div className="flex items-center gap-2">
               <Mail className="w-4 h-4 text-primary" />
               <p className="text-sm font-medium">Live test to your own inbox (burner address)</p>
@@ -319,13 +319,13 @@ export function AgentTestDialog({ disabled, agentId }: { disabled?: boolean; age
               </Button>
             </div>
             {sent && (
-              <Card className="p-3 bg-background/60">
+              <Panel className="p-3 bg-background/60">
                 <p className="text-xs text-muted-foreground mb-1">Sent to {sent.to}</p>
                 <p className="text-sm font-medium">{sent.subject}</p>
                 <p className="text-sm whitespace-pre-wrap text-muted-foreground mt-1">{sent.body}</p>
-              </Card>
+              </Panel>
             )}
-          </Card>
+          </Panel>
 
           <div className="space-y-2">
             <p className="text-sm font-medium">Extra replies to test (one per line, optional)</p>
@@ -396,10 +396,10 @@ export function AgentTestDialog({ disabled, agentId }: { disabled?: boolean; age
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="pb-3 space-y-3">
-                    <Card className="p-3 bg-muted/30">
+                    <Panel className="p-3 bg-muted/30">
                       <p className="text-xs text-muted-foreground mb-1">Reply tested</p>
                       <p className="text-sm">{r.body}</p>
-                    </Card>
+                    </Panel>
                     <div className="grid sm:grid-cols-2 gap-3 text-sm">
                       <div>
                         <p className="text-xs text-muted-foreground">Expected</p>
@@ -426,10 +426,10 @@ export function AgentTestDialog({ disabled, agentId }: { disabled?: boolean; age
                       </p>
                     )}
                     {r.draft && (
-                      <Card className="p-3 border-primary/20 bg-primary/5">
+                      <Panel className="p-3 border-primary/20 bg-primary/5">
                         <p className="text-xs text-muted-foreground mb-1">Draft reply</p>
                         <p className="text-sm whitespace-pre-wrap">{r.draft}</p>
-                      </Card>
+                      </Panel>
                     )}
                   </AccordionContent>
                 </AccordionItem>

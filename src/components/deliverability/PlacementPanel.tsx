@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Inbox, Ban, FolderOpen, HelpCircle, Send } from "lucide-react";
@@ -154,11 +154,8 @@ export const PlacementPanel = ({ accounts }: { accounts: SendingAccount[] }) => 
   };
 
   return (
-    <Card className="border-border/50">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm">Inbox placement test</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <Panel>
+      <PanelBody className="space-y-4">
         {status === "unconfigured" ? (
           <p className="text-sm text-muted-foreground">
             {errorMsg ||
@@ -228,7 +225,7 @@ export const PlacementPanel = ({ accounts }: { accounts: SendingAccount[] }) => 
             </p>
           </>
         )}
-      </CardContent>
-    </Card>
+      </PanelBody>
+    </Panel>
   );
 };

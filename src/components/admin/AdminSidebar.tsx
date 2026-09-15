@@ -7,7 +7,6 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -30,24 +29,28 @@ export function AdminSidebar() {
   return (
     <Sidebar className="border-r">
       <SidebarContent>
-        <div className="px-4 py-6">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <LayoutDashboard className="h-4 w-4 text-primary-foreground" />
-            </div>
-            {open && (
-              <div>
-                <h2 className="font-semibold text-lg">
-                  <span className="text-foreground">Out</span><span className="text-primary">Reign</span>
-                </h2>
-                <p className="text-xs text-muted-foreground">Admin Panel</p>
-              </div>
-            )}
-          </div>
+        {/* The wordmark, at the weight the dashboard's own sidebar uses. The
+            filled primary square with a dashboard glyph in it said "this is an
+            app" beside the words that already say which app. */}
+        <div className="border-b border-border/40 px-4 py-4">
+          {open ? (
+            <>
+              <p className="text-[0.8125rem] font-semibold tracking-tight">
+                <span className="text-foreground">Out</span>
+                <span className="text-primary">Reign</span>
+              </p>
+              <p className="mt-0.5 text-[0.625rem] uppercase tracking-[0.1em] text-muted-foreground/60">
+                Admin
+              </p>
+            </>
+          ) : (
+            <p className="text-center text-[0.8125rem] font-semibold text-primary">O</p>
+          )}
         </div>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          {/* Removed the "Navigation" label: a list of links in a sidebar does
+              not need to be told it is navigation. */}
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (
@@ -69,24 +72,16 @@ export function AdminSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <div className="mt-auto p-4 space-y-3">
-          <Button variant="outline" size="sm" className="w-full" asChild>
+        {/* Was a button and, under it, a tinted box with a padlock announcing
+            "Admin Access — elevated permissions enabled" to somebody who is
+            looking at the admin panel. */}
+        <div className="mt-auto border-t border-border/40 p-3">
+          <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground" asChild>
             <Link to="/dashboard">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              {open && "Back to Dashboard"}
+              <ArrowLeft className="h-3.5 w-3.5" />
+              {open && <span className="ml-2">Back to dashboard</span>}
             </Link>
           </Button>
-          <div className={`bg-muted/50 rounded-lg p-3 ${!open && 'text-center'}`}>
-            <Lock className={`h-4 w-4 text-muted-foreground ${!open ? 'mx-auto' : 'mb-2'}`} />
-            {open && (
-              <>
-                <p className="text-xs font-medium">Admin Access</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Elevated permissions enabled
-                </p>
-              </>
-            )}
-          </div>
         </div>
       </SidebarContent>
     </Sidebar>

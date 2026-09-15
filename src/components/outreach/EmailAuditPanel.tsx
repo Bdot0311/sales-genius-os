@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ShieldCheck, ShieldAlert, AlertTriangle, Info, Loader2 } from "lucide-react";
@@ -70,9 +70,9 @@ export function EmailAuditPanel({
   const warnings = findings?.filter((f) => f.severity === "warning").length ?? 0;
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-        <CardTitle className="flex items-center gap-2 text-sm">
+    <Panel>
+      <PanelHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+        <PanelTitle className="flex items-center gap-2">
           <ShieldCheck className="h-4 w-4" />
           Rule audit
           {findings && findings.length === 0 && (
@@ -88,13 +88,13 @@ export function EmailAuditPanel({
               {warnings} warning{warnings === 1 ? "" : "s"}
             </Badge>
           )}
-        </CardTitle>
+        </PanelTitle>
         <Button size="sm" variant="outline" onClick={run} disabled={running || !body.trim()}>
           {running ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
           {findings ? "Re-run" : "Audit"}
         </Button>
-      </CardHeader>
-      <CardContent className="pt-0">
+      </PanelHeader>
+      <PanelBody className="pt-0">
         {!findings && (
           <p className="text-xs text-muted-foreground">
             Checks merge fields, unbacked claims, banned openers, length, and the
@@ -130,7 +130,7 @@ export function EmailAuditPanel({
             })}
           </ul>
         )}
-      </CardContent>
-    </Card>
+      </PanelBody>
+    </Panel>
   );
 }

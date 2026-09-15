@@ -1,6 +1,6 @@
 import { Mail, Calendar, XCircle, X, RefreshCw, AlertTriangle, Brain, CheckCircle2, XCircle as XCircleIcon, UserPlus, Send, ShieldQuestion } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { formatDistanceToNow } from "date-fns";
 
 interface AgentAction {
@@ -57,11 +57,11 @@ export function OverviewTab({ actions, loading, config, gmailConnected }: Overvi
   return (
     <div className="space-y-6">
       {showChecklist && (
-        <Card className="border-border/60 bg-card/60">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base font-semibold text-foreground">Setup Checklist</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
+        <Panel className="border-border/60 bg-card/60">
+          <PanelHeader className="pb-3">
+            <PanelTitle className="font-semibold text-foreground">Setup Checklist</PanelTitle>
+          </PanelHeader>
+          <PanelBody className="space-y-3">
             <ChecklistItem
               done={gmailConnected}
               label="Gmail connected"
@@ -77,15 +77,15 @@ export function OverviewTab({ actions, loading, config, gmailConnected }: Overvi
               label="Agent enabled"
               description="Toggle the agent on to start automatic prospect follow-ups"
             />
-          </CardContent>
-        </Card>
+          </PanelBody>
+        </Panel>
       )}
 
-      <Card className="border-border/60 bg-card/60">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold text-foreground">Recent Activity</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <Panel className="border-border/60 bg-card/60">
+        <PanelHeader className="pb-3">
+          <PanelTitle className="font-semibold text-foreground">Recent Activity</PanelTitle>
+        </PanelHeader>
+        <PanelBody>
           {loading ? (
             <div className="space-y-3">
               {Array.from({ length: 5 }).map((_, i) => (
@@ -158,8 +158,8 @@ export function OverviewTab({ actions, loading, config, gmailConnected }: Overvi
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
     </div>
   );
 }

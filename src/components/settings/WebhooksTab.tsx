@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -282,25 +282,25 @@ const OutboundWebhooksPanel = () => {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
+      <Panel>
+        <PanelHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2">
+              <PanelTitle className="flex items-center gap-2">
                 <Webhook className="h-5 w-5" />
                 Webhooks
-              </CardTitle>
-              <CardDescription>
+              </PanelTitle>
+              <PanelDescription>
                 Receive real-time notifications for events in your account
-              </CardDescription>
+              </PanelDescription>
             </div>
             <Button onClick={() => setShowCreateDialog(true)} className="gap-2">
               <Plus className="h-4 w-4" />
               Create Webhook
             </Button>
           </div>
-        </CardHeader>
-        <CardContent>
+        </PanelHeader>
+        <PanelBody>
           {webhooks.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Webhook className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -384,8 +384,8 @@ const OutboundWebhooksPanel = () => {
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
       {/* Create Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>

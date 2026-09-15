@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Panel, PanelBody, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
@@ -157,17 +157,17 @@ export const HandoffActionPanel = ({ enrollments, onRefresh }: HandoffActionPane
   }
 
   return (
-    <Card className="border-orange-500/20 bg-orange-500/5">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg flex items-center gap-2">
+    <Panel className="border-orange-500/20 bg-orange-500/5">
+      <PanelHeader className="pb-3">
+        <PanelTitle className="flex items-center gap-2">
           <AlertCircle className="w-5 h-5 text-orange-500" />
           Leads Requiring Action
           <Badge variant="secondary" className="ml-2">
             {pausedEnrollments.length}
           </Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
+        </PanelTitle>
+      </PanelHeader>
+      <PanelBody className="space-y-3">
         {pausedEnrollments.map((enrollment) => (
           <div 
             key={enrollment.id}
@@ -271,7 +271,7 @@ export const HandoffActionPanel = ({ enrollments, onRefresh }: HandoffActionPane
             )}
           </div>
         ))}
-      </CardContent>
-    </Card>
+      </PanelBody>
+    </Panel>
   );
 };

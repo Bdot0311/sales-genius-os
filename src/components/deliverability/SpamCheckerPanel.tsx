@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelHeader } from "@/components/dashboard/Panel";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
@@ -24,19 +24,19 @@ export const SpamCheckerPanel = () => {
         : result.rating === "risky" ? "text-yellow-500" : "text-destructive";
 
   return (
-    <Card className="border-border/50">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center justify-between text-sm">
-          Spam &amp; placement checker
-          {hasContent && (
-            <span className={`flex items-center gap-1.5 text-sm font-semibold ${scoreColor}`}>
-              {result.rating === "excellent" && <CheckCircle2 className="h-4 w-4" />}
+    <Panel>
+      <PanelHeader
+        title="Your draft"
+        actions={
+          hasContent ? (
+            <span className={`flex items-center gap-1.5 text-[0.8125rem] font-semibold tabular-nums ${scoreColor}`}>
+              {result.rating === "excellent" && <CheckCircle2 className="h-3.5 w-3.5" />}
               {result.score}/100
             </span>
-          )}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
+          ) : undefined
+        }
+      />
+      <PanelBody className="space-y-3">
         <Input placeholder="Subject line" value={subject} onChange={(e) => setSubject(e.target.value)} />
         <Textarea
           placeholder="Paste your email body (HTML or plain text) to score its inbox-placement risk…"
@@ -79,7 +79,7 @@ export const SpamCheckerPanel = () => {
             )}
           </>
         )}
-      </CardContent>
-    </Card>
+      </PanelBody>
+    </Panel>
   );
 };

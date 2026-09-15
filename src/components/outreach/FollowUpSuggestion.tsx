@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Card } from "@/components/ui/card";
+import { Panel } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Clock, Calendar, ArrowRight, X, Loader2, RefreshCw } from "lucide-react";
@@ -136,7 +136,7 @@ export const FollowUpSuggestion = ({
 
   if (isGenerating) {
     return (
-      <Card className="p-4 border-primary/30 bg-gradient-to-r from-primary/5 to-accent/5 animate-fade-in">
+      <Panel className="p-4 border-primary/30 bg-gradient-to-r from-primary/5 to-accent/5 animate-fade-in">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-primary/10">
             <Loader2 className="w-5 h-5 text-primary animate-spin" />
@@ -146,7 +146,7 @@ export const FollowUpSuggestion = ({
             <p className="text-xs text-muted-foreground">Analyzing your sent email for best follow-up strategy</p>
           </div>
         </div>
-      </Card>
+      </Panel>
     );
   }
 
@@ -155,7 +155,7 @@ export const FollowUpSuggestion = ({
   }
 
   return (
-    <Card className="p-4 border-primary/30 bg-gradient-to-r from-primary/5 to-accent/5 animate-fade-in">
+    <Panel className="p-4 border-primary/30 bg-gradient-to-r from-primary/5 to-accent/5 animate-fade-in">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3 flex-1">
           <div className="p-2 rounded-lg bg-primary/10 shrink-0">
@@ -218,6 +218,6 @@ export const FollowUpSuggestion = ({
           <X className="w-4 h-4" />
         </Button>
       </div>
-    </Card>
+    </Panel>
   );
 };

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -98,25 +98,25 @@ export function EmailLogsPanel() {
   }, [filtered]);
 
   return (
-    <Card>
-      <CardHeader>
+    <Panel>
+      <PanelHeader>
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div>
-            <CardTitle className="flex items-center gap-2">
+            <PanelTitle className="flex items-center gap-2">
               <Mail className="h-5 w-5" />
               Email Send Logs
-            </CardTitle>
-            <CardDescription>
+            </PanelTitle>
+            <PanelDescription>
               All branded transactional and auth emails sent from the platform (deduplicated by message).
-            </CardDescription>
+            </PanelDescription>
           </div>
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-1 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
+      </PanelHeader>
+      <PanelBody className="space-y-4">
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
           <StatCard label="Total" value={stats.total} />
           <StatCard label="Sent" value={stats.sent} tone="success" />
@@ -222,8 +222,8 @@ export function EmailLogsPanel() {
             Showing the most recent 200 of {filtered.length} matching emails.
           </p>
         )}
-      </CardContent>
-    </Card>
+      </PanelBody>
+    </Panel>
   );
 }
 

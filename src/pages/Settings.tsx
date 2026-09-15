@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { PageHeader } from "@/components/dashboard/PageHeader";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelHeader, SectionLabel } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -255,16 +255,20 @@ const Settings = () => {
       />
       <PageHeader title="Settings" description="Account, preferences, and billing" />
       <div className="w-full min-w-0 px-4 py-4 sm:px-6 sm:py-6 space-y-4 sm:space-y-6 max-w-[1400px] mx-auto">
-        <Tabs defaultValue={searchParams.get("tab") ?? "profile"} className="space-y-6">
+        <Tabs
+          defaultValue={searchParams.get("tab") ?? "profile"}
+          className="flex flex-col gap-4 lg:grid lg:grid-cols-[13rem_minmax(0,1fr)] lg:items-start lg:gap-6"
+        >
           {(() => {
             const showPro = isAdmin || subscription?.plan === 'pro' || subscription?.plan === 'agency';
             const isAgency = isAdmin || subscription?.plan === 'agency';
             const showGrowthPlus = isAdmin || ['growth', 'pro', 'agency'].includes(subscription?.plan || '');
-            const tabBase = "min-w-0 min-h-11 w-full whitespace-normal px-2 py-2 text-center leading-tight data-[state=active]:bg-muted data-[state=active]:text-foreground hover:bg-muted/50 gap-1.5 justify-start sm:justify-center";
-            // Fixed tracks prevent variable-width labels from colliding and keep desktop tabs to two rows.
-            const listCls = "settings-tab-list grid h-auto min-h-0 w-full grid-cols-2 gap-2 overflow-visible bg-transparent p-0 sm:!h-auto sm:grid-cols-4 md:grid-cols-8";
+            const tabBase =
+              "min-h-9 w-full justify-start gap-2 whitespace-nowrap rounded-md px-2.5 py-1.5 text-left text-[0.8125rem] font-normal leading-tight text-muted-foreground data-[state=active]:bg-muted/60 data-[state=active]:text-foreground data-[state=active]:shadow-none hover:bg-muted/30 hover:text-foreground lg:min-h-8";
+            const listCls =
+              "settings-tab-list flex h-auto min-h-0 w-max min-w-full gap-1 overflow-visible bg-transparent p-0 lg:w-full lg:flex-col lg:items-stretch";
             return (
-              <div className="bg-card border rounded-lg p-2 sm:p-3 mb-4 sm:mb-6 overflow-hidden">
+              <div className="-mx-1 overflow-x-auto px-1 pb-1 lg:sticky lg:top-4 lg:mx-0 lg:overflow-visible lg:px-0 lg:pb-0">
                 <TabsList className={listCls}>
                   <TabsTrigger value="profile" className={tabBase}><User className="h-4 w-4" />Profile</TabsTrigger>
                   <TabsTrigger value="billing" className={tabBase}><Settings2 className="h-4 w-4" />Billing</TabsTrigger>
@@ -293,17 +297,11 @@ const Settings = () => {
           </TabsContent>
 
           <TabsContent value="profile" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  Profile Information
-                </CardTitle>
-                <CardDescription>
-                  Update your personal and company details
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <Panel>
+              {/* No icon on the title: the tab you clicked to get here already
+                  carries it, and repeating it says the same thing twice. */}
+              <PanelHeader title="Profile" meta="Your personal and company details" />
+              <PanelBody className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="full_name">Full Name</Label>
                   <Input
@@ -341,10 +339,10 @@ const Settings = () => {
                 <div className="border-t pt-6 mt-6">
                   <div className="flex items-center gap-2 mb-4">
                     <Shield className="h-5 w-5 text-primary" />
-                    <h3 className="text-lg font-semibold">CAN-SPAM Compliance</h3>
+                    <h3 className="text-[0.8125rem] font-medium text-foreground">CAN-SPAM compliance</h3>
                   </div>
 
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                  <div className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
                     <div className="flex items-start gap-2">
                       <AlertTriangle className="h-4 w-4 text-amber-400 mt-0.5" />
                       <p className="text-sm text-amber-400">
@@ -435,28 +433,20 @@ const Settings = () => {
                     </>
                   )}
                 </Button>
-              </CardContent>
-            </Card>
+              </PanelBody>
+            </Panel>
           </TabsContent>
 
           <TabsContent value="billing" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="h-5 w-5" />
-                  Subscription & Billing
-                </CardTitle>
-                <CardDescription>
-                  Manage your subscription, payment methods, and billing history
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
+            <Panel>
+              <PanelHeader title="Subscription and billing" meta="Payment methods, invoices and plan changes" />
+              <PanelBody className="space-y-6">
                 {/* Current Plan Summary */}
                 <div className="p-4 bg-muted/50 rounded-lg border">
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <p className="text-sm text-muted-foreground">Current Plan</p>
-                      <p className="text-2xl font-bold capitalize">{subscription?.plan || 'None'}</p>
+                      <p className="text-[0.625rem] font-medium uppercase tracking-[0.1em] text-muted-foreground/60">Current plan</p>
+                      <p className="mt-1 text-xl font-semibold capitalize text-foreground">{subscription?.plan || 'None'}</p>
                     </div>
                     <Badge variant={subscription?.status === 'active' ? 'default' : 'secondary'}>
                       {subscription?.status || 'No subscription'}
@@ -486,7 +476,7 @@ const Settings = () => {
 
                 {/* Customer Portal Button */}
                 <div className="space-y-3">
-                  <h3 className="text-lg font-semibold">Manage Your Subscription</h3>
+                  <h3 className="text-[0.8125rem] font-medium text-foreground">Manage your subscription</h3>
                   <p className="text-sm text-muted-foreground">
                     Update payment methods, view invoices, change plans, or cancel your subscription through Stripe's secure customer portal.
                   </p>
@@ -517,7 +507,7 @@ const Settings = () => {
 
                 {/* Quick Actions */}
                 <div className="border-t pt-6 space-y-3">
-                  <h3 className="text-lg font-semibold">Quick Actions</h3>
+                  <h3 className="text-[0.8125rem] font-medium text-foreground">Quick actions</h3>
                   <div className="grid sm:grid-cols-2 gap-3">
                     <Button
                       variant="outline"
@@ -557,24 +547,18 @@ const Settings = () => {
                     </Button>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </PanelBody>
+            </Panel>
           </TabsContent>
 
           <TabsContent value="subscription" className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold">Subscription Plans</h2>
-                <p className="text-muted-foreground">Choose the plan that works best for you</p>
-              </div>
-              <Button
-                variant="outline"
-                onClick={handleRefreshSubscription}
-                disabled={syncing}
-                className="gap-2"
-              >
-                <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
-                {syncing ? 'Syncing...' : 'Refresh'}
+            {/* The tab you clicked says "Plan"; a 24px bold heading three
+                lines below repeating it is the page announcing itself. */}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <SectionLabel>Choose the plan that fits how much you send</SectionLabel>
+              <Button variant="outline" size="sm" onClick={handleRefreshSubscription} disabled={syncing}>
+                <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${syncing ? 'animate-spin' : ''}`} />
+                {syncing ? 'Syncing…' : 'Refresh'}
               </Button>
             </div>
 
@@ -582,63 +566,65 @@ const Settings = () => {
               {plans.map((plan) => {
                 const isCurrentPlan = subscription?.plan === plan.value;
                 return (
-                  <Card 
-                    key={plan.value} 
-                    className={`p-6 ${
-                      plan.highlighted
-                        ? 'bg-gradient-primary border-primary shadow-glow'
-                        : isCurrentPlan 
-                          ? 'border-primary' 
-                          : 'border-border'
-                    } transition-all duration-300`}
+                  /*
+                    The recommended plan was a gradient slab with a glow and
+                    white type, which made one column a different product from
+                    the four beside it and made the price impossible to compare
+                    across the row — the one thing a pricing grid is for. It is
+                    marked by a rule along its top edge and a word, and every
+                    column is otherwise drawn the same way.
+                  */
+                  <Panel
+                    key={plan.value}
+                    className={`relative flex flex-col ${
+                      plan.highlighted || isCurrentPlan ? 'border-primary/40' : ''
+                    }`}
                   >
-                    <div className="mb-6">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className={`text-2xl font-bold ${plan.highlighted ? 'text-white' : ''}`}>
-                          {plan.name}
-                        </h3>
-                        {isCurrentPlan && (
-                          <Badge variant={plan.highlighted ? "secondary" : "default"}>
-                            Current Plan
-                          </Badge>
-                        )}
+                    {(plan.highlighted || isCurrentPlan) && (
+                      <div className="absolute inset-x-0 top-0 h-0.5 bg-primary" aria-hidden="true" />
+                    )}
+                    <div className="flex flex-1 flex-col p-5">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <h3 className="text-[0.8125rem] font-medium text-foreground">{plan.name}</h3>
+                        {isCurrentPlan ? (
+                          <span className="text-[0.625rem] uppercase tracking-[0.08em] text-primary">Your plan</span>
+                        ) : plan.highlighted ? (
+                          <span className="text-[0.625rem] uppercase tracking-[0.08em] text-muted-foreground/70">Most picked</span>
+                        ) : null}
                       </div>
-                      <div className={`text-4xl font-bold mb-2 ${plan.highlighted ? 'text-white' : ''}`}>
+                      <p className="mt-2 text-2xl font-semibold tabular-nums text-foreground">
                         {plan.price}
-                        <span className={`text-lg font-normal ${plan.highlighted ? 'text-white/70' : 'text-muted-foreground'}`}>/mo</span>
-                      </div>
-                      <p className={`text-sm ${plan.highlighted ? 'text-white/80' : 'text-muted-foreground'}`}>
+                        <span className="text-[0.8125rem] font-normal text-muted-foreground">/mo</span>
+                      </p>
+                      <p className="mt-1.5 text-[0.6875rem] leading-relaxed text-muted-foreground">
                         {plan.description}
                       </p>
+
+                      <ul className="mt-4 flex-1 space-y-1.5">
+                        {plan.features.map((feature, i) => (
+                          <li key={i} className="flex items-start gap-2 text-[0.75rem] leading-relaxed text-foreground/85">
+                            <Check className="mt-[0.1875rem] h-3 w-3 flex-shrink-0 text-primary" />
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+
+                      {isCurrentPlan ? (
+                        <Button variant="outline" size="sm" className="mt-5 w-full" onClick={handleManageSubscription}>
+                          Manage subscription
+                        </Button>
+                      ) : (
+                        <Button
+                          variant={plan.highlighted ? "default" : "outline"}
+                          size="sm"
+                          className="mt-5 w-full"
+                          onClick={() => handleCheckout(plan.paymentLink)}
+                        >
+                          {subscription && subscription.plan !== plan.value ? 'Change plan' : 'Start 14-day trial'}
+                        </Button>
+                      )}
                     </div>
-
-                    <ul className="space-y-2 mb-6">
-                      {plan.features.map((feature, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm">
-                          <Check className={`h-4 w-4 mt-0.5 flex-shrink-0 ${plan.highlighted ? 'text-white' : 'text-primary'}`} />
-                          <span className={plan.highlighted ? 'text-white/90' : ''}>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-
-                    {isCurrentPlan ? (
-                      <Button 
-                        variant={plan.highlighted ? "secondary" : "outline"}
-                        className="w-full"
-                        onClick={handleManageSubscription}
-                      >
-                        Manage Subscription
-                      </Button>
-                    ) : (
-                      <Button 
-                        variant={plan.highlighted ? "secondary" : "hero"}
-                        className="w-full"
-                        onClick={() => handleCheckout(plan.paymentLink)}
-                      >
-                        {subscription && subscription.plan !== plan.value ? 'Change Plan' : 'Start 14-Day Trial'}
-                      </Button>
-                    )}
-                  </Card>
+                  </Panel>
                 );
               })}
             </div>
@@ -659,20 +645,12 @@ const Settings = () => {
           <TabsContent value="credits" className="space-y-6">
             <CreditsUsageTab />
             {usage && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5" />
-                    Leads Usage
-                  </CardTitle>
-                  <CardDescription>
-                    Track your leads usage against your plan limit
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
+              <Panel>
+                <PanelHeader title="Leads used" meta="Against the limit on your plan" />
+                <PanelBody className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-2xl font-bold">{usage.leadsCount.toLocaleString()}</p>
+                      <p className="text-xl font-semibold tabular-nums text-foreground">{usage.leadsCount.toLocaleString()}</p>
                       <p className="text-sm text-muted-foreground">
                         of {usage.leadsLimit.toLocaleString()} leads used
                       </p>
@@ -687,8 +665,8 @@ const Settings = () => {
                       You're approaching your leads limit. Consider upgrading your plan.
                     </p>
                   )}
-                </CardContent>
-              </Card>
+                </PanelBody>
+              </Panel>
             )}
           </TabsContent>
 

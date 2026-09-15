@@ -8,7 +8,7 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -109,31 +109,31 @@ const AdminTraffic = () => {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-3">
-            <Card>
-              <CardHeader className="pb-2"><CardDescription>Logged visits</CardDescription></CardHeader>
-              <CardContent><p className="text-3xl font-bold">{totals.visits}</p></CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2"><CardDescription>Unattributable</CardDescription></CardHeader>
-              <CardContent>
+            <Panel>
+              <PanelHeader className="pb-2"><PanelDescription>Logged visits</PanelDescription></PanelHeader>
+              <PanelBody><p className="text-3xl font-bold">{totals.visits}</p></PanelBody>
+            </Panel>
+            <Panel>
+              <PanelHeader className="pb-2"><PanelDescription>Unattributable</PanelDescription></PanelHeader>
+              <PanelBody>
                 <p className="text-3xl font-bold">{totals.unattributed}</p>
                 <p className="text-xs text-muted-foreground">{totals.share}% of visits</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2"><CardDescription>Distinct sources</CardDescription></CardHeader>
-              <CardContent><p className="text-3xl font-bold">{rows.length}</p></CardContent>
-            </Card>
+              </PanelBody>
+            </Panel>
+            <Panel>
+              <PanelHeader className="pb-2"><PanelDescription>Distinct sources</PanelDescription></PanelHeader>
+              <PanelBody><p className="text-3xl font-bold">{rows.length}</p></PanelBody>
+            </Panel>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">By source</CardTitle>
-              <CardDescription>
+          <Panel>
+            <PanelHeader>
+              <PanelTitle>By source</PanelTitle>
+              <PanelDescription>
                 Source and medium come from utm params when present, otherwise from the referrer.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+              </PanelDescription>
+            </PanelHeader>
+            <PanelBody>
               <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -171,8 +171,8 @@ const AdminTraffic = () => {
                 </TableBody>
               </Table>
               </div>
-            </CardContent>
-          </Card>
+            </PanelBody>
+          </Panel>
         </TabsContent>
 
         <TabsContent value="builder">
@@ -209,17 +209,17 @@ const LinkBuilder = () => {
 
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
+      <Panel>
+        <PanelHeader>
+          <PanelTitle className="flex items-center gap-2">
             <Link2 className="h-4 w-4" /> Tagged links
-          </CardTitle>
-          <CardDescription>
+          </PanelTitle>
+          <PanelDescription>
             Use these instead of the bare URL. Mobile apps strip referrers, so a tagged link is the
             only way an arrival can be traced back to where you posted it.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
+          </PanelDescription>
+        </PanelHeader>
+        <PanelBody className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label>Destination</Label>
             <Select value={path} onValueChange={setPath}>
@@ -240,15 +240,15 @@ const LinkBuilder = () => {
               onChange={(e) => setCampaign(e.target.value)}
             />
           </div>
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
       {groups.map(([group, list]) => (
-        <Card key={group}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">{group}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
+        <Panel key={group}>
+          <PanelHeader className="pb-2">
+            <PanelTitle>{group}</PanelTitle>
+          </PanelHeader>
+          <PanelBody className="space-y-2">
             {list.map((link) => (
               <div
                 key={link.id}
@@ -261,8 +261,8 @@ const LinkBuilder = () => {
                 </Button>
               </div>
             ))}
-          </CardContent>
-        </Card>
+          </PanelBody>
+        </Panel>
       ))}
 
       <p className="text-xs text-muted-foreground">

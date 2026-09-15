@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -153,19 +153,19 @@ const AdminReEngagement = () => {
           { label: "Skipped", value: stats.skipped, cls: "text-muted-foreground" },
           { label: "Failed", value: stats.failed, cls: "text-red-400" },
         ].map((s) => (
-          <Card key={s.label}>
-            <CardContent className="p-4">
+          <Panel key={s.label}>
+            <PanelBody className="p-4">
               <p className="text-xs text-muted-foreground uppercase tracking-wide">{s.label}</p>
               <p className={`text-2xl font-semibold tabular-nums mt-1 ${s.cls ?? ""}`}>{s.value}</p>
-            </CardContent>
-          </Card>
+            </PanelBody>
+          </Panel>
         ))}
       </div>
 
-      <Card>
-        <CardHeader>
+      <Panel>
+        <PanelHeader>
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
-            <CardTitle className="text-base">Attempt log</CardTitle>
+            <PanelTitle>Attempt log</PanelTitle>
             <div className="flex gap-2">
               <Input
                 placeholder="Search email…"
@@ -184,8 +184,8 @@ const AdminReEngagement = () => {
               </Select>
             </div>
           </div>
-        </CardHeader>
-        <CardContent className="p-0">
+        </PanelHeader>
+        <PanelBody className="p-0">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -266,8 +266,8 @@ const AdminReEngagement = () => {
               </TableBody>
             </Table>
           </div>
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
     </div>
   );
 };

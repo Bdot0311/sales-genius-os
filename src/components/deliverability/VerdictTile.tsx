@@ -1,4 +1,4 @@
-import { Card, CardContent } from "@/components/ui/card";
+import { Panel, PanelBody } from "@/components/dashboard/Panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Lock } from "lucide-react";
@@ -46,10 +46,10 @@ export const VerdictTile = ({
   const style = STATE_STYLES[verdict.state];
 
   return (
-    <Card className="relative overflow-hidden border-border/50">
+    <Panel className="relative overflow-hidden border-border/50">
       {/* The state, readable before any text is */}
       <div className={`absolute inset-x-0 top-0 h-0.5 ${style.bar}`} aria-hidden="true" />
-      <CardContent className="space-y-3 p-5">
+      <PanelBody className="space-y-3 p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
             {icon}
@@ -95,7 +95,7 @@ export const VerdictTile = ({
             )}
           </>
         )}
-      </CardContent>
-    </Card>
+      </PanelBody>
+    </Panel>
   );
 };

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Loader2, Lock, CheckCircle2, AlertCircle, XCircle, X } from "lucide-react";
@@ -149,14 +149,14 @@ export const EmailRubricPanel = ({ subject, body, onApplyBody, onApplySubject }:
   }, [subject, body]);
 
   return (
-    <Card className="border-border/50">
-      <CardHeader className="pb-3 pt-4 px-4">
-        <CardTitle className="text-sm font-medium flex items-center gap-2">
+    <Panel className="border-border/50">
+      <PanelHeader className="pb-3 pt-4 px-4">
+        <PanelTitle className="font-medium flex items-center gap-2">
           reply rubric
           {loading && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="px-4 pb-4 space-y-4">
+        </PanelTitle>
+      </PanelHeader>
+      <PanelBody className="px-4 pb-4 space-y-4">
         {/* R.E.P.L.Y. dimensions */}
         {gated ? (
           <div className="flex items-start gap-2 p-2.5 rounded-md bg-muted/40">
@@ -248,7 +248,7 @@ export const EmailRubricPanel = ({ subject, body, onApplyBody, onApplySubject }:
             </div>
           ))}
         </div>
-      </CardContent>
-    </Card>
+      </PanelBody>
+    </Panel>
   );
 };

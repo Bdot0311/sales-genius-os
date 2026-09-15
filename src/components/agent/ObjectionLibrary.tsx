@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -124,15 +124,15 @@ export const ObjectionLibrary = () => {
   if (loading) return <div className="flex items-center gap-2 py-8 text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" />loading library...</div>;
 
   return (
-    <Card className="border-border/60 bg-card/60">
-      <CardHeader className="flex flex-row items-start justify-between gap-3">
+    <Panel className="border-border/60 bg-card/60">
+      <PanelHeader className="flex flex-row items-start justify-between gap-3">
         <div>
-          <CardTitle className="text-base font-semibold">objection library</CardTitle>
-          <CardDescription>talk tracks the agent grounds its objection replies in. leave an entry empty and the agent handles that objection the way it does today.</CardDescription>
+          <PanelTitle className="font-semibold">objection library</PanelTitle>
+          <PanelDescription>talk tracks the agent grounds its objection replies in. leave an entry empty and the agent handles that objection the way it does today.</PanelDescription>
         </div>
         <Button size="sm" variant="outline" onClick={addCustom}><Plus className="w-4 h-4 mr-1.5" />add</Button>
-      </CardHeader>
-      <CardContent className="space-y-1">
+      </PanelHeader>
+      <PanelBody className="space-y-1">
         {entries.map((e) => {
           const filled = !!(e.positioning || e.talk_track);
           return (
@@ -154,7 +154,7 @@ export const ObjectionLibrary = () => {
             </button>
           );
         })}
-      </CardContent>
+      </PanelBody>
 
       <Sheet open={!!editing} onOpenChange={(o) => { if (!o) setEditing(null); }}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
@@ -235,6 +235,6 @@ export const ObjectionLibrary = () => {
           )}
         </SheetContent>
       </Sheet>
-    </Card>
+    </Panel>
   );
 };

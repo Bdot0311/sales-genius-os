@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -44,11 +44,8 @@ export const DomainAuthPanel = () => {
   };
 
   return (
-    <Card className="border-border/50">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm">Domain authentication &amp; blacklists</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <Panel>
+      <PanelBody className="space-y-4">
         <div className="flex gap-2">
           <Input
             placeholder="yourcompany.com"
@@ -74,8 +71,8 @@ export const DomainAuthPanel = () => {
             {domains.map((d) => <DomainRow key={d.id} domain={d} />)}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </PanelBody>
+    </Panel>
   );
 };
 

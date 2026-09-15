@@ -1,11 +1,17 @@
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { PageHeader } from "@/components/dashboard/PageHeader";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  MetricStrip,
+  Panel,
+  PanelBody,
+  PanelFooter,
+  PanelHeader,
+  SectionLabel,
+} from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Mic, Send, TrendingUp, Target, Lightbulb, Loader2, Sparkles, BookOpen, Radio, MessageSquare, Plus, Trash2, History } from "lucide-react";
+import { Send, Loader2, Sparkles, BookOpen, Radio, Plus, Trash2, History } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
@@ -13,6 +19,23 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
+
+/**
+ * The openers.
+ *
+ * There were two lists of these: four buttons that asked a question when you
+ * clicked them, and a second list of four different example questions printed
+ * under the composer as plain text you could only read and retype. The second
+ * list was the better writing, so it is the one that survives — as buttons.
+ */
+const STARTER_QUESTIONS = [
+  "How do I handle price objections for enterprise deals?",
+  "What's the best way to follow up after a demo?",
+  "Help me prepare for a call with a CFO",
+  "Review my cold outreach template",
+  "How can I improve my close rate?",
+  "What should I focus on this week?",
+];
 
 interface Message {
   id?: string;
@@ -392,6 +415,26 @@ const Coach = () => {
     navigate('/dashboard/coach/live');
   };
 
+  /**
+   * What this workspace's own numbers suggest doing next.
+   *
+   * These were paragraphs, each starting with a literal bullet character,
+   * inside a card titled "Recommendations" and described as "AI-powered
+   * insights" — which they are not: they are four if-statements reading the
+   * counts above them. The card is gone; when there is nothing to say, so is
+   * the panel.
+   */
+  const focusPoints = [
+    stats.upcomingMeetings > 0 &&
+      `Prepare for ${stats.upcomingMeetings} upcoming meeting${stats.upcomingMeetings > 1 ? "s" : ""}.`,
+    stats.activeDeals > 0 &&
+      `Focus on closing $${stats.pipelineValue.toLocaleString()} sitting in your pipeline.`,
+    stats.closeRate > 0 && stats.closeRate < 25 &&
+      `Your close rate is ${stats.closeRate}%. Ask what is losing the deals you work.`,
+    stats.totalLeads > 0 && stats.activeDeals === 0 &&
+      `You have ${stats.totalLeads} leads and no open deals. Convert the best of them.`,
+  ].filter(Boolean) as string[];
+
   const handleCustomPlaybooks = () => {
     if (!hasCustomPlaybooks) {
       triggerGate('customPlaybooks');
@@ -411,296 +454,247 @@ const Coach = () => {
       
       <PageHeader
         title="AI Sales Coach"
-        description="Get personalized coaching and insights to improve your sales performance"
+        description="Ask for advice on a deal, rehearse an objection, or have a call reviewed."
         actions={
-          <Badge variant="secondary" className="font-normal">
-            {coachLimit === -1
-              ? "Unlimited coaching messages"
-              : `${Math.min(messagesUsed, coachLimit)} / ${coachLimit} coaching messages this month`}
-          </Badge>
-        }
-      />
-      <div className="space-y-4 pt-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-4">
-          <div className="mobile-action-row flex gap-2 flex-wrap">
+          <>
             <Button variant="outline" size="sm" onClick={() => setShowHistory(!showHistory)}>
-              <History className="w-4 h-4 mr-2" />
+              <History className="mr-1.5 h-3.5 w-3.5" />
               History
-              {conversations.length > 0 && <Badge variant="secondary" className="ml-2">{conversations.length}</Badge>}
+              {conversations.length > 0 && (
+                <span className="ml-1.5 tabular-nums text-muted-foreground">{conversations.length}</span>
+              )}
             </Button>
             <Button variant="outline" size="sm" onClick={handleLiveCoaching}>
-              <Radio className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">Live Coaching</span>
+              <Radio className="mr-1.5 h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Live coaching</span>
               <span className="sm:hidden">Live</span>
-              {!hasLiveCoaching && <Sparkles className="w-3 h-3 ml-2 text-primary" />}
+              {!hasLiveCoaching && <Sparkles className="ml-1.5 h-3 w-3 text-primary" />}
             </Button>
             <Button variant="outline" size="sm" onClick={handleCustomPlaybooks}>
-              <BookOpen className="w-4 h-4 mr-2" />
+              <BookOpen className="mr-1.5 h-3.5 w-3.5" />
               Playbooks
-              {!hasCustomPlaybooks && <Sparkles className="w-3 h-3 ml-2 text-primary" />}
+              {!hasCustomPlaybooks && <Sparkles className="ml-1.5 h-3 w-3 text-primary" />}
             </Button>
-          </div>
-        </div>
+          </>
+        }
+      />
 
+      <div className="space-y-4 pt-4">
         {showHistory && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="w-5 h-5" />
-                Conversation History
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {conversations.length === 0 ? (
-                <p className="text-muted-foreground text-center py-4">No previous conversations</p>
-              ) : (
-                <div className="space-y-2">
-                  {conversations.map(conv => (
-                    <div 
-                      key={conv.id} 
-                      className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer hover:bg-accent/50 transition-colors ${currentConversationId === conv.id ? 'bg-accent' : ''}`}
+          <Panel>
+            <PanelHeader
+              title="Past conversations"
+              meta={conversations.length > 0 ? `${conversations.length} saved` : undefined}
+              actions={
+                <button
+                  onClick={() => setShowHistory(false)}
+                  className="text-[0.6875rem] text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Hide
+                </button>
+              }
+            />
+            {conversations.length === 0 ? (
+              <PanelBody className="py-8 text-center text-[0.6875rem] text-muted-foreground">
+                Nothing saved yet. A conversation is kept once you send your first question.
+              </PanelBody>
+            ) : (
+              <div>
+                {conversations.map((conv) => (
+                  <div
+                    key={conv.id}
+                    className={`flex items-center justify-between gap-3 border-b border-border/30 px-4 py-2.5 transition-colors last:border-b-0 hover:bg-muted/20 sm:px-5 ${
+                      currentConversationId === conv.id ? "bg-muted/40" : ""
+                    }`}
+                  >
+                    <button
                       onClick={() => loadConversationMessages(conv.id)}
+                      className="min-w-0 flex-1 text-left"
                     >
-                      <div>
-                        <p className="font-medium">{conv.title || "Untitled"}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(conv.updated_at).toLocaleDateString()} at {new Date(conv.updated_at).toLocaleTimeString()}
-                        </p>
-                      </div>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={(e) => { e.stopPropagation(); deleteConversation(conv.id); }}
-                      >
-                        <Trash2 className="w-4 h-4 text-muted-foreground" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                      <span className="block truncate text-[0.8125rem] text-foreground">
+                        {conv.title || "Untitled"}
+                      </span>
+                      <span className="mt-0.5 block text-[0.625rem] text-muted-foreground">
+                        {new Date(conv.updated_at).toLocaleDateString()} ·{" "}
+                        {new Date(conv.updated_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => deleteConversation(conv.id)}
+                      className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                      title="Delete conversation"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Panel>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-primary" />
-                Performance
-              </CardTitle>
-              <CardDescription>Your recent sales metrics</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Close Rate</span>
-                  <Badge variant="outline">{stats.closeRate}%</Badge>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Avg Deal Size</span>
-                  <Badge variant="outline">${stats.avgDealSize.toLocaleString()}</Badge>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Upcoming Meetings</span>
-                  <Badge variant="outline">{stats.upcomingMeetings}</Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/*
+          Six numbers, one strip.
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="w-5 h-5 text-primary" />
-                Goals
-              </CardTitle>
-              <CardDescription>Your current objectives</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Total Leads</span>
-                  <Badge className="bg-green-500">{stats.totalLeads}</Badge>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Active Deals</span>
-                  <Badge className="bg-blue-500">{stats.activeDeals}</Badge>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Pipeline Value</span>
-                  <Badge className="bg-purple-500">${stats.pipelineValue.toLocaleString()}</Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          These were three cards in a row, each with an icon, a title, a
+          description and three label-and-badge rows — and the two neighbours
+          disagreed about how to draw the same thing, one using outlined badges
+          and the other solid green, blue and purple ones, which made the three
+          loudest marks on the page a set of colours that meant nothing. The
+          middle card was also titled "Goals" and described as "your current
+          objectives" while listing how many leads and deals exist, which are
+          counts and not objectives.
+        */}
+        <MetricStrip
+          columns={3}
+          metrics={[
+            { label: "Close rate", value: `${stats.closeRate}%`, note: "Deals won against deals worked" },
+            { label: "Average deal", value: `$${stats.avgDealSize.toLocaleString()}`, note: "Across your closed deals" },
+            { label: "Meetings ahead", value: stats.upcomingMeetings, note: "Booked and still to happen" },
+            { label: "Leads", value: stats.totalLeads, note: "Saved to your workspace" },
+            { label: "Open deals", value: stats.activeDeals, note: "In the pipeline right now" },
+            { label: "Pipeline", value: `$${stats.pipelineValue.toLocaleString()}`, note: "Total value of open deals" },
+          ]}
+        />
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Lightbulb className="w-5 h-5 text-primary" />
-                Recommendations
-              </CardTitle>
-              <CardDescription>AI-powered insights</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {stats.totalLeads > 0 ? (
-                <div className="space-y-2 text-sm">
-                  {stats.upcomingMeetings > 0 && (
-                    <p>• Prepare for {stats.upcomingMeetings} upcoming meeting{stats.upcomingMeetings > 1 ? 's' : ''}</p>
-                  )}
-                  {stats.activeDeals > 0 && (
-                    <p>• Focus on closing ${stats.pipelineValue.toLocaleString()} in pipeline</p>
-                  )}
-                  {stats.closeRate > 0 && stats.closeRate < 25 && (
-                    <p>• Work on improving your {stats.closeRate}% close rate</p>
-                  )}
-                  {stats.totalLeads > 0 && stats.activeDeals === 0 && (
-                    <p>• Convert some of your {stats.totalLeads} leads into deals</p>
-                  )}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">Add leads to get AI-powered insights</p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+        {focusPoints.length > 0 && (
+          <Panel>
+            <PanelHeader title="Worth your attention" />
+            <PanelBody>
+              {/* A real list. These were paragraphs each beginning with a
+                  literal bullet character, which is a list drawn by hand. */}
+              <ul className="space-y-1.5">
+                {focusPoints.map((point) => (
+                  <li
+                    key={point}
+                    className="flex items-start gap-2 text-[0.8125rem] leading-relaxed text-foreground/85"
+                  >
+                    <span className="mt-[0.4375rem] h-1 w-1 shrink-0 rounded-full bg-primary" />
+                    {point}
+                  </li>
+                ))}
+              </ul>
+            </PanelBody>
+          </Panel>
+        )}
 
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Ask Your AI Coach</CardTitle>
-                <CardDescription>
-                  Get personalized advice, practice objection handling, or analyze your sales calls
-                </CardDescription>
-              </div>
-              {messages.length > 0 && (
+        <Panel>
+          <PanelHeader
+            title="Ask your coach"
+            actions={
+              messages.length > 0 ? (
                 <Button variant="outline" size="sm" onClick={startNewSession}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  New Session
+                  <Plus className="mr-1.5 h-3.5 w-3.5" />
+                  New session
                 </Button>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {messages.length === 0 && (
-              <div className="flex gap-2 flex-wrap">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => handleQuickQuestion("How can I improve my close rate?")}
-                >
-                  Improve close rate
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => handleQuickQuestion("What should I focus on this week?")}
-                >
-                  Weekly priorities
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => handleQuickQuestion("How do I handle price objections?")}
-                >
-                  Handle objections
-                </Button>
-              </div>
-            )}
+              ) : undefined
+            }
+          />
 
-            {messages.length > 0 && (
-              <ScrollArea className="h-[400px] pr-4">
-                <div className="space-y-4">
-                  {messages.map((msg, idx) => (
-                    <div 
-                      key={idx} 
-                      className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+          {messages.length > 0 ? (
+            <ScrollArea className="h-[400px]">
+              <div className="space-y-4 p-4 sm:p-5">
+                {messages.map((msg, idx) => (
+                  <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                    <div
+                      className={`max-w-[85%] rounded-lg px-3.5 py-3 ${
+                        msg.role === "user"
+                          ? "bg-primary/15 text-foreground"
+                          : "border border-border/40 bg-muted/25"
+                      }`}
                     >
-                      <div 
-                        className={`max-w-[80%] p-4 rounded-lg ${
-                          msg.role === 'user' 
-                            ? 'bg-primary text-primary-foreground' 
-                            : 'bg-muted'
-                        }`}
-                      >
-                        {msg.role === 'assistant' && (
-                          <div className="flex items-center gap-2 mb-2">
-                            <Lightbulb className="w-4 h-4 text-primary" />
-                            <span className="text-sm font-medium">Coach</span>
-                          </div>
-                        )}
-                        {msg.role === 'assistant' ? (
-                          <div className="prose prose-sm prose-invert max-w-none">
-                            {msg.content ? (
-                              <ReactMarkdown>{msg.content}</ReactMarkdown>
-                            ) : loading ? (
-                              <span className="flex items-center gap-2">
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                Thinking...
-                              </span>
-                            ) : null}
-                          </div>
-                        ) : (
-                          <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                        )}
-                      </div>
+                      {msg.role === "assistant" && (
+                        <p className="mb-1.5 text-[0.625rem] font-medium uppercase tracking-[0.1em] text-muted-foreground/60">
+                          Coach
+                        </p>
+                      )}
+                      {msg.role === "assistant" ? (
+                        /* prose-invert, not prose: the light-mode prose colours
+                           set body text to a near-black grey, and this page has
+                           only ever rendered on a dark ground. */
+                        <div className="prose prose-sm prose-invert max-w-none text-[0.8125rem]">
+                          {msg.content ? (
+                            <ReactMarkdown>{msg.content}</ReactMarkdown>
+                          ) : loading ? (
+                            <span className="flex items-center gap-2 text-muted-foreground">
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              Thinking…
+                            </span>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <p className="whitespace-pre-wrap text-[0.8125rem] leading-relaxed">{msg.content}</p>
+                      )}
                     </div>
-                  ))}
-                  <div ref={messagesEndRef} />
-                </div>
-              </ScrollArea>
-            )}
-
-            <div className="space-y-2">
-              <Textarea
-                placeholder="Type your question or describe a sales scenario you need help with..."
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSubmit();
-                  }
-                }}
-                className="min-h-[80px]"
-              />
-
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleSubmit}
-                  disabled={loading || !input.trim()}
-                  className="flex-1"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Thinking...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4 mr-2" />
-                      Send
-                    </>
-                  )}
-                </Button>
+                  </div>
+                ))}
+                <div ref={messagesEndRef} />
               </div>
+            </ScrollArea>
+          ) : (
+            /* One list of openers, and every one of them is clickable.
+               There were two: four buttons that asked a question, and below
+               the composer a second list of four different example questions
+               rendered as plain text you could only read and retype. */
+            <PanelBody className="space-y-2.5">
+              <SectionLabel>Start with one of these</SectionLabel>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {STARTER_QUESTIONS.map((q) => (
+                  <button
+                    key={q}
+                    onClick={() => handleQuickQuestion(q)}
+                    className="rounded-lg border border-border/40 px-3 py-2.5 text-left text-[0.8125rem] leading-relaxed text-foreground/85 transition-colors hover:border-primary/40 hover:bg-primary/5"
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </PanelBody>
+          )}
+
+          <div className="border-t border-border/40 p-4 sm:p-5">
+            <Textarea
+              placeholder="Ask anything, or describe the situation you need help with…"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmit();
+                }
+              }}
+              /* 16px on mobile: below that, focusing the field makes iOS Safari
+                 zoom the page and never zoom back out. */
+              className="min-h-[72px] resize-none border-border/50 bg-background text-base sm:text-[0.8125rem]"
+            />
+            <div className="mt-2 flex items-center justify-between gap-3">
+              <p className="text-[0.625rem] text-muted-foreground">
+                Enter to send, Shift and Enter for a new line.
+              </p>
+              <Button size="sm" onClick={handleSubmit} disabled={loading || !input.trim()}>
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    Thinking…
+                  </>
+                ) : (
+                  <>
+                    <Send className="mr-1.5 h-3.5 w-3.5" />
+                    Send
+                  </>
+                )}
+              </Button>
             </div>
+          </div>
 
-            {messages.length === 0 && (
-              <div className="mt-6 p-4 bg-accent/50 rounded-lg">
-                <h4 className="font-semibold mb-2">Example Questions:</h4>
-                <ul className="space-y-1 text-sm text-muted-foreground">
-                  <li>• "How do I handle price objections for enterprise deals?"</li>
-                  <li>• "What's the best way to follow up after a demo?"</li>
-                  <li>• "Help me prepare for a call with a CFO"</li>
-                  <li>• "Review my email template for cold outreach"</li>
-                </ul>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+          {/* The allowance belongs to the thing that spends it. It was a badge
+              in the page header, which is where a page says what it is. */}
+          <PanelFooter>
+            {coachLimit === -1
+              ? "Unlimited coaching messages on your plan"
+              : `${Math.min(messagesUsed, coachLimit)} of ${coachLimit} coaching messages used this month`}
+          </PanelFooter>
+        </Panel>
       </div>
     </DashboardLayout>
   );

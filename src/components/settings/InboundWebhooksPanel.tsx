@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -221,26 +221,26 @@ export const InboundWebhooksPanel = () => {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
+      <Panel>
+        <PanelHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2">
+              <PanelTitle className="flex items-center gap-2">
                 <ArrowDownToLine className="h-5 w-5" />
                 Incoming Endpoints
-              </CardTitle>
-              <CardDescription>
+              </PanelTitle>
+              <PanelDescription>
                 Give external tools a URL that pushes data into OutReign — leads, contacts, stage
                 changes and deals.
-              </CardDescription>
+              </PanelDescription>
             </div>
             <Button onClick={() => setShowCreate(true)} className="gap-2">
               <Plus className="h-4 w-4" />
               Create Endpoint
             </Button>
           </div>
-        </CardHeader>
-        <CardContent>
+        </PanelHeader>
+        <PanelBody>
           {hooks.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <ArrowDownToLine className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -332,13 +332,13 @@ export const InboundWebhooksPanel = () => {
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">How to send data in</CardTitle>
-          <CardDescription>
+      <Panel>
+        <PanelHeader>
+          <PanelTitle>How to send data in</PanelTitle>
+          <PanelDescription>
             Send a POST request to the unique endpoint URL. Providers that support custom headers
             can also send <code>x-webhook-secret</code> with the endpoint secret for an additional
             check. Field names are flexible — <code>email</code>, <code>first_name</code>,{" "}
@@ -347,9 +347,9 @@ export const InboundWebhooksPanel = () => {
             <code>notes</code> are all recognised. Leads are matched on email, so repeat sends update
             instead of duplicating. Batch up to 100 records with{" "}
             <code>{`{"event":"lead.created","leads":[...]}`}</code>.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+          </PanelDescription>
+        </PanelHeader>
+        <PanelBody>
           <pre className="text-xs bg-muted p-3 rounded overflow-x-auto">
 {`POST ${FUNCTIONS_BASE}/<endpoint-token>
 Content-Type: application/json
@@ -368,16 +368,16 @@ Optional: x-webhook-secret: <endpoint-secret>
   }
 }`}
           </pre>
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
       {receipts.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Recent incoming requests</CardTitle>
-            <CardDescription>The last 15 requests received on your endpoints</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
+        <Panel>
+          <PanelHeader>
+            <PanelTitle>Recent incoming requests</PanelTitle>
+            <PanelDescription>The last 15 requests received on your endpoints</PanelDescription>
+          </PanelHeader>
+          <PanelBody className="space-y-2">
             {receipts.map((r) => {
               const hook = hooks.find((h) => h.id === r.webhook_id);
               const ok = r.status === "success";
@@ -403,8 +403,8 @@ Optional: x-webhook-secret: <endpoint-secret>
                 </div>
               );
             })}
-          </CardContent>
-        </Card>
+          </PanelBody>
+        </Panel>
       )}
 
       <Dialog open={showCreate} onOpenChange={setShowCreate}>

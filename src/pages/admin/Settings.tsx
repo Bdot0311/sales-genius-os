@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -266,24 +266,24 @@ const AdminSettings = () => {
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-12">
+      <Panel>
+        <PanelBody className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+    <Panel>
+      <PanelHeader>
+        <PanelTitle className="flex items-center gap-2">
           <Settings className="h-5 w-5" />
           Admin Settings
-        </CardTitle>
-        <CardDescription>Configure system-wide settings and feature flags</CardDescription>
-      </CardHeader>
-      <CardContent>
+        </PanelTitle>
+        <PanelDescription>Configure system-wide settings and feature flags</PanelDescription>
+      </PanelHeader>
+      <PanelBody>
         <Tabs defaultValue="general" className="space-y-4">
           <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="general" className="flex items-center gap-1.5">
@@ -373,8 +373,8 @@ const AdminSettings = () => {
 
           {/* Billing Settings */}
           <TabsContent value="billing" className="space-y-4">
-            <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-primary">
-              <Info className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-500" />
+            <div className="flex items-start gap-2 rounded-lg border border-primary/25 bg-primary/10 p-3 text-sm text-foreground/85">
+              <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
               <p>
                 <span className="font-medium">For reference only</span> — plan limits and trial periods below are stored as reference values.
                 Actual enforcement is configured in <span className="font-medium">Stripe</span> (products, prices, and entitlements).
@@ -712,8 +712,8 @@ const AdminSettings = () => {
             </div>
           </TabsContent>
         </Tabs>
-      </CardContent>
-    </Card>
+      </PanelBody>
+    </Panel>
   );
 };
 

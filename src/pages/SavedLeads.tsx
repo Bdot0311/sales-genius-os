@@ -1,7 +1,7 @@
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -585,14 +585,14 @@ const SavedLeads = () => {
           </div>
         )}
 
-        <Card>
-          <CardHeader>
-            <CardTitle>
+        <Panel>
+          <PanelHeader>
+            <PanelTitle>
               {urlFilter ? "Matching leads" : "All Leads"} ({filteredAndSortedLeads.length})
-            </CardTitle>
-            <CardDescription>All leads are pre-enriched with company and contact data</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+            </PanelTitle>
+            <PanelDescription>All leads are pre-enriched with company and contact data</PanelDescription>
+          </PanelHeader>
+          <PanelBody className="space-y-4">
             <div className="flex gap-2 flex-wrap">
               <div className="relative flex-1 min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -919,12 +919,12 @@ const SavedLeads = () => {
                 </div>
                 
                 {filteredAndSortedLeads.map((lead) => (
-                  <Card 
+                  <Panel 
                     key={lead.id} 
                     className="cursor-pointer hover:bg-muted/50"
                     onClick={() => handleLeadClick(lead)}
                   >
-                    <CardContent className="p-4">
+                    <PanelBody className="p-4">
                       <div className="flex items-start gap-3">
                         <Checkbox
                           checked={selectedLeads.has(lead.id)}
@@ -998,13 +998,13 @@ const SavedLeads = () => {
                           {new Date(lead.created_at).toLocaleDateString()}
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
+                    </PanelBody>
+                  </Panel>
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </PanelBody>
+        </Panel>
       </div>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

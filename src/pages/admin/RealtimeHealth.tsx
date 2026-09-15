@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -207,43 +207,43 @@ export default function RealtimeHealth() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Channel Status</CardDescription>
-          </CardHeader>
-          <CardContent>{statusBadge}</CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Subscribed Tables</CardDescription>
-          </CardHeader>
-          <CardContent className="text-2xl font-bold">{SUBSCRIBED_TABLES.length}</CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Missing from Publication</CardDescription>
-          </CardHeader>
-          <CardContent className={`text-2xl font-bold ${missingCount > 0 ? "text-destructive" : "text-emerald-400"}`}>
+        <Panel>
+          <PanelHeader className="pb-2">
+            <PanelDescription>Channel Status</PanelDescription>
+          </PanelHeader>
+          <PanelBody>{statusBadge}</PanelBody>
+        </Panel>
+        <Panel>
+          <PanelHeader className="pb-2">
+            <PanelDescription>Subscribed Tables</PanelDescription>
+          </PanelHeader>
+          <PanelBody className="text-2xl font-bold">{SUBSCRIBED_TABLES.length}</PanelBody>
+        </Panel>
+        <Panel>
+          <PanelHeader className="pb-2">
+            <PanelDescription>Missing from Publication</PanelDescription>
+          </PanelHeader>
+          <PanelBody className={`text-2xl font-bold ${missingCount > 0 ? "text-destructive" : "text-emerald-400"}`}>
             {missingCount}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Events This Session</CardDescription>
-          </CardHeader>
-          <CardContent className="text-2xl font-bold">{totalEvents}</CardContent>
-        </Card>
+          </PanelBody>
+        </Panel>
+        <Panel>
+          <PanelHeader className="pb-2">
+            <PanelDescription>Events This Session</PanelDescription>
+          </PanelHeader>
+          <PanelBody className="text-2xl font-bold">{totalEvents}</PanelBody>
+        </Panel>
       </div>
 
       {heartbeatSentAt && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
+        <Panel>
+          <PanelHeader className="pb-3">
+            <PanelTitle className="flex items-center gap-2">
               <Zap className="h-4 w-4 text-primary" />
               Last Heartbeat
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm flex flex-wrap gap-x-6 gap-y-1">
+            </PanelTitle>
+          </PanelHeader>
+          <PanelBody className="text-sm flex flex-wrap gap-x-6 gap-y-1">
             <span className="text-muted-foreground">
               Sent: <span className="text-foreground">{new Date(heartbeatSentAt).toLocaleTimeString()}</span>
             </span>
@@ -257,19 +257,19 @@ export default function RealtimeHealth() {
                 <span className="text-muted-foreground">waiting…</span>
               )}
             </span>
-          </CardContent>
-        </Card>
+          </PanelBody>
+        </Panel>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Table Status</CardTitle>
-          <CardDescription>
+      <Panel>
+        <PanelHeader>
+          <PanelTitle>Table Status</PanelTitle>
+          <PanelDescription>
             "In Publication" must be true for realtime to deliver events. REPLICA IDENTITY FULL is recommended so
             UPDATE/DELETE payloads include the full row.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
+          </PanelDescription>
+        </PanelHeader>
+        <PanelBody className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -311,30 +311,30 @@ export default function RealtimeHealth() {
               ))}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
       {missingCount > 0 && (
-        <Card className="border-destructive/40">
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2 text-destructive">
+        <Panel className="border-destructive/40">
+          <PanelHeader>
+            <PanelTitle className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="h-4 w-4" />
               Fix Required
-            </CardTitle>
-            <CardDescription>
+            </PanelTitle>
+            <PanelDescription>
               These tables are subscribed by the app but are NOT in the <code>supabase_realtime</code> publication.
               Add them via a migration:
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+            </PanelDescription>
+          </PanelHeader>
+          <PanelBody>
             <pre className="text-xs bg-muted/40 p-3 rounded-md overflow-x-auto">
 {rows
   .filter((r) => !r.inPublication)
   .map((r) => `ALTER PUBLICATION supabase_realtime ADD TABLE public.${r.table};`)
   .join("\n")}
             </pre>
-          </CardContent>
-        </Card>
+          </PanelBody>
+        </Panel>
       )}
     </div>
   );

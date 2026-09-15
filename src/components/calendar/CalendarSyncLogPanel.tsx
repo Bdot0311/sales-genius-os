@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card } from "@/components/ui/card";
+import { Panel } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -57,7 +57,7 @@ export function CalendarSyncLogPanel() {
   const retryCount = logs.filter((l) => l.status === "retry").length;
 
   return (
-    <Card className="p-4 sm:p-5">
+    <Panel className="p-4 sm:p-5">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 justify-between mb-4">
         <div className="flex items-center gap-2 min-w-0">
           <History className="w-4 h-4 text-muted-foreground shrink-0" />
@@ -155,6 +155,6 @@ export function CalendarSyncLogPanel() {
           </div>
         </ScrollArea>
       )}
-    </Card>
+    </Panel>
   );
 }

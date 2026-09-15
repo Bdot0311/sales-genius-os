@@ -6,11 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-} from "@/components/ui/card";
+import { Panel, PanelBody, PanelHeader } from "@/components/dashboard/Panel";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -141,13 +137,13 @@ export function SequenceStepCard({
         <div className="absolute left-6 top-full w-0.5 h-4 bg-border" />
       )}
       
-      <Card className={`relative ${!step.is_active ? 'opacity-50' : ''}`}>
+      <Panel className={`relative ${!step.is_active ? 'opacity-50' : ''}`}>
         {/* Step number badge */}
         <div className="absolute -left-3 top-4 w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-semibold flex items-center justify-center">
           {stepNumber}
         </div>
         
-        <CardHeader className="pb-3 pl-8">
+        <PanelHeader className="pb-3 pl-8">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-muted">
@@ -208,14 +204,14 @@ export function SequenceStepCard({
               </DropdownMenu>
             </div>
           </div>
-        </CardHeader>
+        </PanelHeader>
         
-        <CardContent className="pl-8 pt-0">
+        <PanelBody className="pl-8 pt-0">
           <p className="text-sm text-muted-foreground line-clamp-2">
             {step.body_template}
           </p>
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
       {/* Branch paths */}
       {localBranch.enabled && (

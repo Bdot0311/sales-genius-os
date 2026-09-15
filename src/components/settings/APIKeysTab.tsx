@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -131,25 +131,25 @@ export const APIKeysTab = () => {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
+      <Panel>
+        <PanelHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2">
+              <PanelTitle className="flex items-center gap-2">
                 <Key className="h-5 w-5" />
                 API Keys
-              </CardTitle>
-              <CardDescription>
+              </PanelTitle>
+              <PanelDescription>
                 Manage your API keys for programmatic access
-              </CardDescription>
+              </PanelDescription>
             </div>
             <Button onClick={() => setShowCreateDialog(true)} className="gap-2">
               <Plus className="h-4 w-4" />
               Create Key
             </Button>
           </div>
-        </CardHeader>
-        <CardContent>
+        </PanelHeader>
+        <PanelBody>
           {keys.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Key className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -195,8 +195,8 @@ export const APIKeysTab = () => {
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
       {/* Create API Key Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>

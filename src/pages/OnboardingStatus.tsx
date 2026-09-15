@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { PageHeader } from "@/components/dashboard/PageHeader";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle, AlertCircle, Loader2, Mail, Sparkles, RefreshCw, ShieldCheck } from "lucide-react";
@@ -123,15 +123,15 @@ const OnboardingStatus = () => {
       />
       <div className="mx-auto max-w-3xl space-y-4 pt-4">
 
-        <Card className="border-2">
-          <CardHeader>
+        <Panel className="border-2">
+          <PanelHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2">
+                <PanelTitle className="flex items-center gap-2">
                   <ShieldCheck className="h-5 w-5 text-primary" />
                   Account health
-                </CardTitle>
-                <CardDescription className="mt-1">
+                </PanelTitle>
+                <PanelDescription className="mt-1">
                   {overall === "ok"
                     ? "All set — your account is fully ready."
                     : overall === "loading"
@@ -139,15 +139,15 @@ const OnboardingStatus = () => {
                     : overall === "error"
                     ? "Something needs attention before you can use everything."
                     : "Almost there. Complete the steps below."}
-                </CardDescription>
+                </PanelDescription>
               </div>
               <Button variant="outline" size="sm" onClick={() => load(true)} disabled={refreshing}>
                 <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
                 Refresh
               </Button>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
+          </PanelHeader>
+          <PanelBody className="space-y-4">
             <StatusRow
               state={emailState}
               icon={Mail}
@@ -227,19 +227,19 @@ const OnboardingStatus = () => {
                 ) : null
               }
             />
-          </CardContent>
-        </Card>
+          </PanelBody>
+        </Panel>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">What's next?</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col sm:flex-row gap-3">
+        <Panel>
+          <PanelHeader>
+            <PanelTitle>What's next?</PanelTitle>
+          </PanelHeader>
+          <PanelBody className="flex flex-col sm:flex-row gap-3">
             <Button asChild className="flex-1"><Link to="/dashboard">Go to dashboard</Link></Button>
             <Button asChild variant="outline" className="flex-1"><Link to="/dashboard/leads">Find leads</Link></Button>
             <Button asChild variant="outline" className="flex-1"><Link to="/settings">Account settings</Link></Button>
-          </CardContent>
-        </Card>
+          </PanelBody>
+        </Panel>
       </div>
     </DashboardLayout>
   );

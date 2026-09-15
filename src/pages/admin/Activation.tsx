@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -132,8 +132,8 @@ const AdminActivation = () => {
           const count = funnel?.cohorts?.[k] ?? 0;
           const p = pct(count);
           return (
-            <Card key={k} className={cohort === k ? "border-primary" : ""}>
-              <CardContent className="pt-6">
+            <Panel key={k} className={cohort === k ? "border-primary" : ""}>
+              <PanelBody className="pt-6">
                 <button
                   className="w-full text-left"
                   onClick={() => setCohort(cohort === k ? "all" : k)}
@@ -145,26 +145,26 @@ const AdminActivation = () => {
                   <div className="text-3xl font-bold">{count}</div>
                   <div className="text-xs text-muted-foreground mt-1">{p}% of signups</div>
                 </button>
-              </CardContent>
-            </Card>
+              </PanelBody>
+            </Panel>
           );
         })}
       </div>
 
       {/* Funnel */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <Panel>
+        <PanelHeader>
+          <PanelTitle className="flex items-center gap-2">
             <TrendingDown className="h-5 w-5" />
             Activation funnel
-          </CardTitle>
+          </PanelTitle>
           <p className="text-xs text-muted-foreground">
             Each step counts users who reached it or went further, so the steps
             can only go down. Where a raw count differs, someone skipped the
             step and it is shown alongside.
           </p>
-        </CardHeader>
-        <CardContent>
+        </PanelHeader>
+        <PanelBody>
           {!monotonic && (
             <div className="mb-4 rounded border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">
               A step gained users, which a cumulative funnel cannot do. The
@@ -223,13 +223,13 @@ const AdminActivation = () => {
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
       {/* Users table */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Signups ({filtered.length})</CardTitle>
+      <Panel>
+        <PanelHeader className="flex flex-row items-center justify-between">
+          <PanelTitle>Signups ({filtered.length})</PanelTitle>
           <div className="flex items-center gap-2">
             <Input
               placeholder="Search email or name"
@@ -243,8 +243,8 @@ const AdminActivation = () => {
               </Button>
             )}
           </div>
-        </CardHeader>
-        <CardContent>
+        </PanelHeader>
+        <PanelBody>
           {loading ? (
             <div className="text-center py-8 text-muted-foreground">Loading...</div>
           ) : filtered.length === 0 ? (
@@ -304,8 +304,8 @@ const AdminActivation = () => {
               </Table>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
       <UserTimelineDrawer
         userId={openUserId}
