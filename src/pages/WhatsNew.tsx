@@ -72,9 +72,14 @@ const WhatsNew = () => {
   // list is still the fallback, and not after markSeen, which would clear the
   // marks in the same frame the reader is looking for them.
   const [unreadAtArrival, setUnreadAtArrival] = useState<number | null>(null);
+  // The date they had read up to when they arrived. Marks are compared by date
+  // rather than row position, so filtering the list cannot move them onto the
+  // wrong entries.
+  const [seenAtArrival, setSeenAtArrival] = useState<string | null>(null);
   useEffect(() => {
     if (unreadAtArrival === null && published.length > 0) {
       setUnreadAtArrival(published.filter((e) => e.date > seenDate).length);
+      setSeenAtArrival(seenDate);
     }
   }, [published, seenDate, unreadAtArrival]);
 
