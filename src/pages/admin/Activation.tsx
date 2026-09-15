@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
-import { Panel, PanelBody, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
+import { MetricStrip, Panel, PanelBody, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Users, TrendingDown, Zap, Snowflake, Flame } from "lucide-react";
+import { Users, Zap, Snowflake, Flame } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { UserTimelineDrawer } from "@/components/admin/UserTimelineDrawer";
@@ -100,7 +100,7 @@ const AdminActivation = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold">Signup Activation</h2>
+          <h2 className="text-[0.9375rem] font-semibold tracking-tight text-foreground">Signup Activation</h2>
           <p className="text-sm text-muted-foreground">
             Track where new signups drop off and who's likely to convert.
           </p>
@@ -125,39 +125,25 @@ const AdminActivation = () => {
         </Select>
       </div>
 
-      {/* Cohort tiles */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {(["tire_kicker", "explorer", "active", "power"] as const).map((k) => {
-          const meta = COHORT_META[k];
-          const count = funnel?.cohorts?.[k] ?? 0;
-          const p = pct(count);
-          return (
-            <Panel key={k} className={cohort === k ? "border-primary" : ""}>
-              <PanelBody className="pt-6">
-                <button
-                  className="w-full text-left"
-                  onClick={() => setCohort(cohort === k ? "all" : k)}
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <meta.Icon className="h-4 w-4" />
-                    <span className="text-sm text-muted-foreground">{meta.label}</span>
-                  </div>
-                  <div className="text-3xl font-bold">{count}</div>
-                  <div className="text-xs text-muted-foreground mt-1">{p}% of signups</div>
-                </button>
-              </PanelBody>
-            </Panel>
-          );
-        })}
-      </div>
+      {/* The cohorts, as one strip you filter by.
+          They were four bordered tiles, each holding a button, each with its
+          own icon — and the one you had filtered to was marked by turning its
+          whole border primary, which reads as an error before it reads as a
+          selection. */}
+      <MetricStrip
+        metrics={(["tire_kicker", "explorer", "active", "power"] as const).map((k) => ({
+          label: COHORT_META[k].label,
+          value: funnel?.cohorts?.[k] ?? 0,
+          note: `${pct(funnel?.cohorts?.[k] ?? 0)}% of signups`,
+          selected: cohort === k,
+          onClick: () => setCohort(cohort === k ? "all" : k),
+        }))}
+      />
 
       {/* Funnel */}
       <Panel>
         <PanelHeader>
-          <PanelTitle className="flex items-center gap-2">
-            <TrendingDown className="h-5 w-5" />
-            Activation funnel
-          </PanelTitle>
+          <PanelTitle>Activation funnel</PanelTitle>
           <p className="text-xs text-muted-foreground">
             Each step counts users who reached it or went further, so the steps
             can only go down. Where a raw count differs, someone skipped the

@@ -29,7 +29,7 @@ export const RecoveryLedger = ({ days = 30 }: { days?: number }) => {
       <Panel>
         <PanelBody className="flex items-start gap-3 p-4">
           <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">
+          <p className="text-[0.6875rem] leading-relaxed text-muted-foreground">
             Nothing has needed containing in the last {days} days. If a mailbox's reputation
             falls below your threshold it gets pulled from rotation automatically, its remaining
             sends move to healthy mailboxes, and every action shows up here.

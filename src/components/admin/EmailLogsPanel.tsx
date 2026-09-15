@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertCircle, Loader2, Mail, RefreshCw } from "lucide-react";
+import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface EmailLog {
@@ -102,10 +102,7 @@ export function EmailLogsPanel() {
       <PanelHeader>
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div>
-            <PanelTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5" />
-              Email Send Logs
-            </PanelTitle>
+            <PanelTitle>Email Send Logs</PanelTitle>
             <PanelDescription>
               All branded transactional and auth emails sent from the platform (deduplicated by message).
             </PanelDescription>

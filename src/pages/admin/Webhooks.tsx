@@ -136,8 +136,8 @@ const AdminWebhooks = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Stripe Webhooks</h1>
-        <p className="text-sm text-muted-foreground mt-1">
+        <h1 className="text-[0.9375rem] font-semibold tracking-tight text-foreground">Stripe webhooks</h1>
+        <p className="mt-1 text-[0.6875rem] leading-relaxed text-muted-foreground">
           Lifecycle of every Stripe event: received → verified → applied, or failed with retry/dead-letter.
         </p>
       </div>

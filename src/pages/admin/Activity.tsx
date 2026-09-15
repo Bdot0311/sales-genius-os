@@ -228,7 +228,7 @@ const AdminActivity = () => {
             <Activity className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold">Activity Logs</h2>
+            <h2 className="text-[0.9375rem] font-semibold tracking-tight text-foreground">Activity Logs</h2>
             <p className="text-muted-foreground">Monitor user actions and system events in real-time</p>
             <div className="mt-2"><LastCronRun jobs={["detect-suspicious-activity-15min"]} /></div>
           </div>

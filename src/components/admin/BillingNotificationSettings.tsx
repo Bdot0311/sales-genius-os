@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Bell, Plus, X, Loader2 } from "lucide-react";
+import { Plus, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 const SETTING_KEY = "billing_notifications";
@@ -131,7 +131,6 @@ export function BillingNotificationSettings() {
     <Panel>
       <PanelHeader>
         <PanelTitle className="flex items-center gap-2">
-          <Bell className="h-4 w-4 text-primary" />
           Billing alert emails
           {saving && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
         </PanelTitle>

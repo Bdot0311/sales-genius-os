@@ -56,7 +56,7 @@ export const EventTimeline = ({ days = 30 }: { days?: number }) => {
   if (isError) {
     return (
       <Panel>
-        <PanelBody className="p-6 text-center text-sm text-muted-foreground">
+        <PanelBody className="px-5 py-10 text-center text-[0.6875rem] leading-relaxed text-muted-foreground">
           Could not load the change history, so this is not a statement that nothing changed.
           Reload the page to try again.
         </PanelBody>
@@ -67,7 +67,7 @@ export const EventTimeline = ({ days = 30 }: { days?: number }) => {
   if (!data || data.length === 0) {
     return (
       <Panel>
-        <PanelBody className="p-6 text-center text-sm text-muted-foreground">
+        <PanelBody className="px-5 py-10 text-center text-[0.6875rem] leading-relaxed text-muted-foreground">
           Nothing has changed in the last {days} days — no mailboxes added or paused, no limits
           moved, no DNS edits. Changes appear here as they happen, so a shift in the numbers
           above can be traced to what caused it.

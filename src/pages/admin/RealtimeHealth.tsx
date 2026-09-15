@@ -5,7 +5,7 @@ import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/c
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Activity, CheckCircle2, AlertTriangle, RefreshCw, Radio, Zap, XCircle } from "lucide-react";
+import { CheckCircle2, AlertTriangle, RefreshCw, Radio, Zap, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
@@ -186,11 +186,10 @@ export default function RealtimeHealth() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Activity className="h-6 w-6 text-primary" />
+          <h1 className="text-[0.9375rem] font-semibold tracking-tight text-foreground">
             Realtime Health
           </h1>
-          <p className="text-muted-foreground text-sm mt-1">
+          <p className="mt-1 text-[0.6875rem] leading-relaxed text-muted-foreground">
             Verifies every subscribed table is broadcasting live updates end-to-end.
           </p>
         </div>
@@ -217,13 +216,13 @@ export default function RealtimeHealth() {
           <PanelHeader className="pb-2">
             <PanelDescription>Subscribed Tables</PanelDescription>
           </PanelHeader>
-          <PanelBody className="text-2xl font-bold">{SUBSCRIBED_TABLES.length}</PanelBody>
+          <PanelBody className="text-xl font-semibold tabular-nums">{SUBSCRIBED_TABLES.length}</PanelBody>
         </Panel>
         <Panel>
           <PanelHeader className="pb-2">
             <PanelDescription>Missing from Publication</PanelDescription>
           </PanelHeader>
-          <PanelBody className={`text-2xl font-bold ${missingCount > 0 ? "text-destructive" : "text-emerald-400"}`}>
+          <PanelBody className={`text-xl font-semibold tabular-nums ${missingCount > 0 ? "text-destructive" : "text-emerald-400"}`}>
             {missingCount}
           </PanelBody>
         </Panel>
@@ -231,17 +230,14 @@ export default function RealtimeHealth() {
           <PanelHeader className="pb-2">
             <PanelDescription>Events This Session</PanelDescription>
           </PanelHeader>
-          <PanelBody className="text-2xl font-bold">{totalEvents}</PanelBody>
+          <PanelBody className="text-xl font-semibold tabular-nums">{totalEvents}</PanelBody>
         </Panel>
       </div>
 
       {heartbeatSentAt && (
         <Panel>
           <PanelHeader className="pb-3">
-            <PanelTitle className="flex items-center gap-2">
-              <Zap className="h-4 w-4 text-primary" />
-              Last Heartbeat
-            </PanelTitle>
+            <PanelTitle>Last Heartbeat</PanelTitle>
           </PanelHeader>
           <PanelBody className="text-sm flex flex-wrap gap-x-6 gap-y-1">
             <span className="text-muted-foreground">
@@ -317,10 +313,7 @@ export default function RealtimeHealth() {
       {missingCount > 0 && (
         <Panel className="border-destructive/40">
           <PanelHeader>
-            <PanelTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="h-4 w-4" />
-              Fix Required
-            </PanelTitle>
+            <PanelTitle className="text-destructive">Fix required</PanelTitle>
             <PanelDescription>
               These tables are subscribed by the app but are NOT in the <code>supabase_realtime</code> publication.
               Add them via a migration:

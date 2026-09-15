@@ -42,8 +42,12 @@ describe("the thread list does not take the screen on mobile", () => {
     expect(PAGE).toContain("max-h-[45vh]");
   });
 
-  it("keeps the desktop sidebar untouched", () => {
-    expect(PAGE).toContain("w-full lg:w-64");
+  it("keeps the desktop sidebar the same width", () => {
+    // This pinned the utility that set it, `lg:w-64`. The list and the
+    // conversation later became one surface split by a grid rather than two
+    // panels with a gap, so the width is now the grid's first column — the
+    // same 16rem, declared somewhere else.
+    expect(PAGE).toMatch(/lg:(?:w-64|grid-cols-\[16rem)/);
     expect(PAGE).toContain("lg:max-h-none");
   });
 
@@ -54,20 +58,35 @@ describe("the thread list does not take the screen on mobile", () => {
 });
 
 describe("the chat header earns its height on mobile", () => {
+  /*
+    These three pinned the exact class attribute that produced each behaviour,
+    so a redesign that kept every one of them still broke all three. What they
+    are defending is the height of the conversation on a phone; they check that
+    now, and let the classes be written however the page writes them.
+  */
   it("drops the title block below sm, since the New chat row identifies the pane", () => {
-    expect(PAGE).toContain('className="hidden items-center gap-2 min-w-0 sm:flex"');
+    const title = PAGE.slice(PAGE.indexOf("Chat with your AI SDR") - 400, PAGE.indexOf("Chat with your AI SDR"));
+    expect(title).toMatch(/className="[^"]*\bhidden\b[^"]*\bsm:(?:flex|block)\b/);
   });
 
   it("drops the strapline on a phone", () => {
     // Onboarding copy, and it cost a line of the conversation on every turn.
-    expect(PAGE).toContain('className="hidden text-xs text-muted-foreground truncate sm:block"');
+    const strapline = PAGE.slice(PAGE.indexOf("It can enrich, score") - 300, PAGE.indexOf("It can enrich, score"));
+    expect(strapline).toMatch(/className="[^"]*\bhidden\b[^"]*\bsm:block\b/);
   });
 
   it("puts the two selects on one row instead of stacking them full width", () => {
     expect(PAGE).not.toContain('className="w-full min-w-0 sm:w-[190px]"');
     expect(PAGE).not.toContain('className="w-full min-w-0 sm:w-[168px]"');
-    expect(PAGE).toContain("flex-1 min-w-0 sm:flex-none sm:w-[190px]");
-    expect(PAGE).toContain("flex-1 min-w-0 sm:flex-none sm:w-[168px]");
+    // Each shares the row on a phone (flex-1, and min-w-0 so it can shrink),
+    // and takes a fixed width once there is space.
+    for (const width of ["190px", "168px"]) {
+      const trigger = PAGE.match(new RegExp(`<SelectTrigger className="([^"]*${width.replace("[", "\\[")}[^"]*)"`))?.[1];
+      expect(trigger, width).toBeTruthy();
+      expect(trigger, width).toMatch(/\bflex-1\b/);
+      expect(trigger, width).toMatch(/\bmin-w-0\b/);
+      expect(trigger, width).toMatch(/\bsm:flex-none\b/);
+    }
   });
 
   it("still gives the messages the remaining space", () => {

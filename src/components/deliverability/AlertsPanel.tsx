@@ -19,7 +19,7 @@ export const AlertsPanel = ({ alerts }: { alerts: DeliverabilityAlert[] }) => {
   if (alerts.length === 0) {
     return (
       <Panel>
-        <PanelBody className="flex items-center gap-3 p-5 text-sm text-muted-foreground">
+        <PanelBody className="flex items-center gap-3 p-5 text-[0.8125rem] text-muted-foreground">
           <ShieldCheck className="h-5 w-5 text-green-500" />
           No active deliverability alerts. Accounts, domains, and blacklists are clear.
         </PanelBody>

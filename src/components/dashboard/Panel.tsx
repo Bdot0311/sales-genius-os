@@ -181,6 +181,12 @@ export interface Metric {
   /** What the number means or what to do about it. A number alone is trivia. */
   note?: ReactNode;
   onClick?: () => void;
+  /**
+   * For a strip used as a filter row: which reading is currently applied.
+   * Marked on the top edge rather than by tinting the whole cell, so the
+   * numbers stay comparable across the row.
+   */
+  selected?: boolean;
 }
 
 /**
@@ -236,8 +242,16 @@ export const MetricStrip = ({
           key={m.label}
           type="button"
           onClick={m.onClick}
-          className={cn("px-4 py-3.5 text-left transition-colors hover:bg-primary/5 sm:px-5 sm:py-4", border)}
+          aria-pressed={m.selected}
+          className={cn(
+            "relative px-4 py-3.5 text-left transition-colors hover:bg-primary/5 sm:px-5 sm:py-4",
+            m.selected && "bg-primary/5",
+            border,
+          )}
         >
+          {m.selected ? (
+            <span className="absolute inset-x-0 top-0 h-0.5 bg-primary" aria-hidden="true" />
+          ) : null}
           {inner}
         </button>
       ) : (
@@ -284,6 +298,51 @@ export const EmptyState = ({
     </div>
   </Panel>
 );
+
+/**
+ * One chip.
+ *
+ * The small marks that say "this applies" — a chosen industry, a tag, a fact
+ * the agent will personalise from. Every screen that had them invented its own:
+ * a solid primary Badge here, an outlined one there, a "secondary" one for the
+ * same thing one line down, a rounded pill with a tinted background somewhere
+ * else. Filled marks are the problem — a dozen of them turns a record of what
+ * you picked into the loudest thing on the page — so selection is carried by a
+ * tinted border and nothing else.
+ */
+export const Chip = ({
+  children,
+  selected,
+  onClick,
+  title,
+  className,
+}: {
+  children: ReactNode;
+  selected?: boolean;
+  /** Omit for a chip that only states a fact. */
+  onClick?: () => void;
+  title?: string;
+  className?: string;
+}) => {
+  const shape = cn(
+    "inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[0.75rem] leading-none",
+    selected
+      ? "border-primary/50 bg-primary/10 text-foreground"
+      : "border-border/50 text-muted-foreground",
+    onClick && "transition-colors",
+    onClick && !selected && "hover:border-border hover:text-foreground",
+    className,
+  );
+  return onClick ? (
+    <button type="button" title={title} onClick={onClick} className={shape}>
+      {children}
+    </button>
+  ) : (
+    <span title={title} className={shape}>
+      {children}
+    </span>
+  );
+};
 
 /**
  * The label above a region that is not itself a panel.
