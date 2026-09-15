@@ -1,4 +1,4 @@
-import { Card, CardContent } from "@/components/ui/card";
+import { Panel, PanelBody } from "@/components/dashboard/Panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -33,11 +33,11 @@ export const ConnectionHealthGrid = ({ accounts }: { accounts: SendingAccount[] 
 
   if (accounts.length === 0) {
     return (
-      <Card className="border-border/50">
-        <CardContent className="p-6 text-center text-sm text-muted-foreground">
+      <Panel>
+        <PanelBody className="p-6 text-center text-sm text-muted-foreground">
           No mailboxes connected yet. Connect one to start sending.
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
     );
   }
 
@@ -68,8 +68,8 @@ export const ConnectionHealthGrid = ({ accounts }: { accounts: SendingAccount[] 
         {data.map(({ account, diagnosis }) => {
           const style = STATE_STYLE[diagnosis.state];
           return (
-            <Card key={account.id} className="border-border/50">
-              <CardContent className="space-y-2 p-4">
+            <Panel key={account.id}>
+              <PanelBody className="space-y-2 p-4">
                 <div className="flex items-start justify-between gap-2">
                   <p className="min-w-0 truncate text-sm font-medium">{account.email}</p>
                   <Badge variant="outline" className={`shrink-0 gap-1 ${style.cls}`}>
@@ -98,8 +98,8 @@ export const ConnectionHealthGrid = ({ accounts }: { accounts: SendingAccount[] 
                     {diagnosis.fix.label}
                   </Button>
                 )}
-              </CardContent>
-            </Card>
+              </PanelBody>
+            </Panel>
           );
         })}
       </div>

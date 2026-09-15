@@ -1,6 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, ShieldCheck, Loader2, X } from "lucide-react";
+import { ShieldCheck, Loader2, X } from "lucide-react";
 import { useResolveAlert } from "@/hooks/use-deliverability";
 import type { DeliverabilityAlert } from "@/lib/deliverability-db";
 
@@ -18,24 +18,18 @@ export const AlertsPanel = ({ alerts }: { alerts: DeliverabilityAlert[] }) => {
 
   if (alerts.length === 0) {
     return (
-      <Card className="border-border/50">
-        <CardContent className="flex items-center gap-3 p-5 text-sm text-muted-foreground">
+      <Panel>
+        <PanelBody className="flex items-center gap-3 p-5 text-sm text-muted-foreground">
           <ShieldCheck className="h-5 w-5 text-green-500" />
           No active deliverability alerts. Accounts, domains, and blacklists are clear.
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
     );
   }
 
   return (
-    <Card className="border-border/50">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-sm">
-          <AlertTriangle className="h-4 w-4 text-yellow-500" />
-          Active alerts ({alerts.length})
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2">
+    <Panel>
+      <PanelBody className="space-y-2">
         {alerts.map((a) => {
           const border =
             a.severity === "critical" ? "hsl(0 72% 51% / 0.4)" : a.severity === "warning" ? "hsl(45 93% 47% / 0.4)" : "hsl(var(--border))";
@@ -60,7 +54,7 @@ export const AlertsPanel = ({ alerts }: { alerts: DeliverabilityAlert[] }) => {
             </div>
           );
         })}
-      </CardContent>
-    </Card>
+      </PanelBody>
+    </Panel>
   );
 };

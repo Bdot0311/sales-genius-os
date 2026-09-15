@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Card, CardContent } from "@/components/ui/card";
+import { Panel, PanelBody } from "@/components/dashboard/Panel";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
@@ -77,8 +77,8 @@ export function OpenTrackingToggle() {
   };
 
   return (
-    <Card>
-      <CardContent className="flex items-start justify-between gap-6 p-4">
+    <Panel>
+      <PanelBody className="flex items-start justify-between gap-6 p-4">
         <div className="space-y-1.5">
           <Label htmlFor="open-tracking" className="text-sm font-medium">
             Open tracking
@@ -106,7 +106,7 @@ export function OpenTrackingToggle() {
             onCheckedChange={(v) => void save(v)}
           />
         </div>
-      </CardContent>
-    </Card>
+      </PanelBody>
+    </Panel>
   );
 }

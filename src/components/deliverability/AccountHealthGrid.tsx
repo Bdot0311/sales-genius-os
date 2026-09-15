@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel, PanelBody, PanelHeader } from "@/components/dashboard/Panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -18,12 +18,12 @@ interface Props {
 export const AccountHealthGrid = ({ accounts, snapshots, stats = [] }: Props) => {
   if (accounts.length === 0) {
     return (
-      <Card className="border-border/50">
-        <CardContent className="p-6 text-center text-sm text-muted-foreground">
+      <Panel>
+        <PanelBody className="p-6 text-center text-sm text-muted-foreground">
           No sending accounts yet. Connect a mailbox on the Integrations page — it appears here
           automatically and starts building a reputation once you send.
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
     );
   }
 
@@ -65,13 +65,13 @@ const AccountCard = ({ account, snapshots, stats }: {
   };
 
   return (
-    <Card className="border-border/50">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center justify-between gap-2 text-sm">
-          <span className="flex min-w-0 items-center gap-2">
-            <Mail className="h-4 w-4 shrink-0 text-muted-foreground" />
-            <span className="truncate font-medium">{account.email}</span>
-          </span>
+    <Panel>
+      <PanelHeader
+        title={<span className="flex min-w-0 items-center gap-2">
+          <Mail className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <span className="truncate">{account.email}</span>
+        </span>}
+        actions={
           <Badge
             variant="outline"
             className={
@@ -84,9 +84,9 @@ const AccountCard = ({ account, snapshots, stats }: {
           >
             {account.status}
           </Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+        }
+      />
+      <PanelBody className="space-y-4">
         {/* Score + rates */}
         <div className="flex items-center justify-between">
           <div>
@@ -170,7 +170,7 @@ const AccountCard = ({ account, snapshots, stats }: {
             </Button>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </PanelBody>
+    </Panel>
   );
 };

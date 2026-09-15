@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { HTMLAttributes, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -32,15 +32,20 @@ export const Panel = ({
   children,
   className,
   flat,
-  id,
+  ...rest
 }: {
   children: ReactNode;
   className?: string;
   /** Drop the shadow for a panel that sits inside another region. */
   flat?: boolean;
-  /** Anchor target, for a panel something links directly to. */
-  id?: string;
-}) => <div id={id} className={cn(SURFACE, !flat && ELEVATION, className)}>{children}</div>;
+} & Omit<HTMLAttributes<HTMLDivElement>, "children" | "className">) => (
+  // The rest of a div's attributes pass through, so a panel that reports a
+  // changing state can carry role="status" and aria-live without that having to
+  // become a prop here for every attribute a page turns out to need.
+  <div className={cn(SURFACE, !flat && ELEVATION, className)} {...rest}>
+    {children}
+  </div>
+);
 
 /**
  * A panel's header strip.

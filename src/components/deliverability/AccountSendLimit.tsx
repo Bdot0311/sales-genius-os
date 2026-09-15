@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Card, CardContent } from "@/components/ui/card";
+import { Panel, PanelBody } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -88,8 +88,8 @@ export function AccountSendLimit() {
   if (limit === null) return null;
 
   return (
-    <Card>
-      <CardContent className="pt-6 space-y-3">
+    <Panel>
+      <PanelBody className="pt-6 space-y-3">
         <div className="flex flex-wrap items-end gap-3">
           <div className="space-y-1.5 max-w-[10rem]">
             <Label htmlFor="account-daily-limit">Emails per day</Label>
@@ -115,7 +115,7 @@ export function AccountSendLimit() {
           scheduled sends. Per-mailbox limits sit under each account above, and the lower
           of the two always wins.
         </p>
-      </CardContent>
-    </Card>
+      </PanelBody>
+    </Panel>
   );
 }

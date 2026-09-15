@@ -1,4 +1,4 @@
-import { Card, CardContent } from "@/components/ui/card";
+import { Panel, PanelBody } from "@/components/dashboard/Panel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ShieldCheck } from "lucide-react";
 import { useQuarantineLog } from "@/hooks/use-deliverability-timeline";
@@ -26,22 +26,22 @@ export const RecoveryLedger = ({ days = 30 }: { days?: number }) => {
 
   if (automatic.length === 0) {
     return (
-      <Card className="border-border/50">
-        <CardContent className="flex items-start gap-3 p-4">
+      <Panel>
+        <PanelBody className="flex items-start gap-3 p-4">
           <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">
             Nothing has needed containing in the last {days} days. If a mailbox's reputation
             falls below your threshold it gets pulled from rotation automatically, its remaining
             sends move to healthy mailboxes, and every action shows up here.
           </p>
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
     );
   }
 
   return (
-    <Card className="border-border/50">
-      <CardContent className="space-y-3 p-4">
+    <Panel>
+      <PanelBody className="space-y-3 p-4">
         <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
           <p className="text-sm">
             <span className="text-lg font-bold tabular-nums">{automatic.length}</span>{" "}
@@ -71,7 +71,7 @@ export const RecoveryLedger = ({ days = 30 }: { days?: number }) => {
             </div>
           ))}
         </div>
-      </CardContent>
-    </Card>
+      </PanelBody>
+    </Panel>
   );
 };

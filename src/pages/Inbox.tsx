@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
-import { EmptyState } from "@/components/dashboard/Panel";
+import { EmptyState, Panel } from "@/components/dashboard/Panel";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
@@ -9,11 +9,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useDemoMode } from "@/hooks/use-demo-mode";
 import { maybeMask } from "@/lib/demo-mask";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Send,
   Archive,
@@ -350,24 +348,38 @@ const Inbox = () => {
     if (conv.unread && conv.replyThreadIds.length) markRead.mutate(conv.replyThreadIds);
   };
 
-  const unreadCount = conversations.filter((c) => c.unread).length;
+  // The folder strip said "All Mail / Unread / Replied / Awaiting Reply /
+  // Sent" and nothing else, so picking one was a guess about whether it held
+  // anything. The counts are the whole reason to have folders.
+  const counts = useMemo(() => {
+    const c = { all: 0, unread: 0, replied: 0, awaiting: 0, sent: 0 } as Record<Folder, number>;
+    for (const conv of conversations) {
+      c.all += 1;
+      if (conv.unread) c.unread += 1;
+      if (conv.hasReply) c.replied += 1;
+      else c.awaiting += 1;
+      if (conv.messages.some((m) => m.direction === "out")) c.sent += 1;
+    }
+    return c;
+  }, [conversations]);
+
+  const unreadCount = counts.unread;
 
   return (
     <DashboardLayout>
       <PageHeader
         title="Inbox"
-        description={`Every outreach conversation from your connected mailboxes${unreadCount > 0 ? ` · ${unreadCount} unread` : ""}`}
+        description="Every outreach conversation from your connected mailboxes."
         actions={
           !inboxGated ? (
             <Button variant="outline" size="sm" onClick={handleSync} disabled={syncing}>
-              <RefreshCw className={`w-3.5 h-3.5 mr-2 ${syncing ? "animate-spin" : ""}`} />
+              <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
               {syncing ? "Syncing…" : "Sync"}
             </Button>
           ) : undefined
         }
       />
       <div className="space-y-4 pt-4">
-
         {inboxGated ? (
           <EmptyState
             title="The unified inbox is a Growth feature"
@@ -375,54 +387,73 @@ const Inbox = () => {
             action={<Button size="sm" onClick={() => triggerGate("unifiedInbox")}>See plans</Button>}
           />
         ) : isLoading ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-20" />
-            ))}
-          </div>
+          <Panel>
+            <div className="space-y-px p-4">
+              {[1, 2, 3, 4].map((i) => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
+            </div>
+          </Panel>
         ) : conversations.length === 0 ? (
           <EmptyState
             title="No conversations yet"
             body="Once you send outreach, every thread and reply shows up here."
           />
         ) : (
-          <div className="flex gap-4 h-[calc(100dvh-220px)]">
-            {/* Left: conversation list */}
+          /* One surface, divided.
+             This was two separately bordered boxes with a gap between them, so
+             a mail client — the most familiar two-pane layout there is — read
+             as two unrelated cards that happened to sit next to each other.
+             The list and the thread are one thing split by a rule. */
+          <Panel className="flex h-[calc(100dvh-13rem)] min-h-[32rem] flex-col md:grid md:grid-cols-[19rem_minmax(0,1fr)]">
             <div
-              className={`w-full md:w-80 flex-shrink-0 flex-col border rounded-lg overflow-hidden ${
+              className={`flex min-h-0 flex-col md:border-r md:border-border/40 ${
                 selected ? "hidden md:flex" : "flex"
               }`}
             >
-              <div className="p-2 border-b space-y-2">
+              <div className="shrink-0 border-b border-border/40 px-3 py-2.5">
                 <div className="relative">
-                  <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Search mail"
-                    className="h-8 pl-8 text-xs"
+                    /* 16px on mobile: anything smaller makes iOS Safari zoom
+                       the page on focus and never zoom back out. */
+                    className="h-9 border-border/50 bg-background pl-8 text-base sm:h-8 sm:text-xs"
                   />
                 </div>
-                <div className="flex gap-1 overflow-x-auto">
-                  {FOLDERS.map((f) => (
-                    <button
-                      key={f.value}
-                      onClick={() => setFolder(f.value)}
-                      className={`px-2 py-1 text-xs rounded whitespace-nowrap transition-colors ${
-                        folder === f.value
-                          ? "bg-primary text-primary-foreground"
-                          : "hover:bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      {f.label}
-                    </button>
-                  ))}
+                <div className="-mx-1 mt-2 flex gap-0.5 overflow-x-auto px-1">
+                  {FOLDERS.map((f) => {
+                    const active = folder === f.value;
+                    return (
+                      <button
+                        key={f.value}
+                        onClick={() => setFolder(f.value)}
+                        /* A filled primary pill for the current folder made the
+                           loudest thing on the page a statement of where you
+                           already are. The mark is now the smallest one that
+                           still reads. */
+                        className={`flex shrink-0 items-baseline gap-1.5 whitespace-nowrap rounded-md px-2 py-1 text-[0.6875rem] transition-colors ${
+                          active
+                            ? "bg-muted/60 font-medium text-foreground"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {f.label}
+                        <span className={`tabular-nums ${active ? "text-muted-foreground" : "text-muted-foreground/50"}`}>
+                          {counts[f.value]}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-              <ScrollArea className="flex-1">
+
+              <div className="min-h-0 flex-1 overflow-y-auto">
                 {filtered.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-8">
-                    Nothing in this folder
+                  <p className="px-4 py-10 text-center text-[0.6875rem] text-muted-foreground">
+                    Nothing in this folder.
                   </p>
                 ) : (
                   filtered.map((conv) => {
@@ -430,171 +461,176 @@ const Inbox = () => {
                     const config = conv.classification
                       ? CLASSIFICATION_CONFIG[conv.classification as Classification]
                       : null;
+                    const active = selectedKey === conv.key;
                     return (
                       <button
                         key={conv.key}
                         onClick={() => handleSelect(conv)}
-                        className={`w-full text-left p-3 border-b transition-colors hover:bg-muted/50 ${
-                          selectedKey === conv.key ? "bg-muted" : ""
+                        className={`relative flex w-full gap-2.5 border-b border-border/30 px-3 py-2.5 text-left transition-colors last:border-b-0 hover:bg-muted/30 ${
+                          active ? "bg-muted/50" : ""
                         }`}
                       >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0 flex-1">
-                            <p className={`text-sm truncate ${conv.unread ? "font-semibold" : ""}`}>
-                              {maybeMask(isDemoMode, conv.contactName ? 'name' : 'email', conv.contactName || conv.counterpart)}
-                            </p>
-                            {conv.companyName && (
-                              <p className="text-xs text-muted-foreground truncate">
-                                {conv.companyName}
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1 flex-shrink-0">
-                            {conv.messages.length > 1 && (
-                              <span className="text-[10px] text-muted-foreground">
+                        {/* A gutter the dot sits in whether or not there is a
+                            dot, so names line up down the column instead of
+                            stepping in and out as threads are read. */}
+                        <span className="mt-[0.4375rem] flex w-1.5 shrink-0 justify-center">
+                          {conv.unread ? <span className="h-1.5 w-1.5 rounded-full bg-primary" /> : null}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-baseline justify-between gap-2">
+                            <span className={`truncate text-[0.8125rem] ${conv.unread ? "font-semibold text-foreground" : "text-foreground/90"}`}>
+                              {maybeMask(isDemoMode, conv.contactName ? "name" : "email", conv.contactName || conv.counterpart)}
+                            </span>
+                            <span className="shrink-0 text-[0.625rem] tabular-nums text-muted-foreground/70">
+                              {formatDistanceToNow(new Date(conv.lastAt), { addSuffix: false })}
+                            </span>
+                          </span>
+                          <span className="mt-0.5 flex items-baseline gap-1.5">
+                            <span className="truncate text-[0.6875rem] text-foreground/70">{conv.subject}</span>
+                            {conv.messages.length > 1 ? (
+                              <span className="shrink-0 text-[0.625rem] tabular-nums text-muted-foreground/60">
                                 {conv.messages.length}
                               </span>
-                            )}
-                            {config && (
-                              <Badge variant="outline" className={`text-[10px] ${config.color}`}>
-                                {config.emoji}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                        <p className="text-xs text-muted-foreground truncate mt-1">{conv.subject}</p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {last?.direction === "out" ? "You: " : ""}
-                          {(last?.body || "").slice(0, 80)}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-[10px] text-muted-foreground">
-                            {formatDistanceToNow(new Date(conv.lastAt), { addSuffix: true })}
+                            ) : null}
                           </span>
-                          {!conv.hasReply && (
-                            <span className="text-[10px] text-muted-foreground">· awaiting reply</span>
+                          <span className="mt-0.5 block truncate text-[0.6875rem] text-muted-foreground">
+                            {last?.direction === "out" ? "You: " : ""}
+                            {(last?.body || "").slice(0, 90) || "(no content)"}
+                          </span>
+                          {(config || !conv.hasReply || conv.companyName) && (
+                            <span className="mt-1 flex items-center gap-1.5 text-[0.625rem] text-muted-foreground/70">
+                              {config ? (
+                                <span className={config.color}>{config.emoji} {config.label}</span>
+                              ) : !conv.hasReply ? (
+                                <span>Awaiting reply</span>
+                              ) : null}
+                              {conv.companyName ? <span className="truncate">{conv.companyName}</span> : null}
+                            </span>
                           )}
-                        </div>
+                        </span>
                       </button>
                     );
                   })
                 )}
-              </ScrollArea>
+              </div>
             </div>
 
-            {/* Right: thread view */}
-            <div
-              className={`flex-1 border rounded-lg overflow-hidden ${
-                selected ? "flex" : "hidden md:flex"
-              }`}
-            >
+            <div className={`min-h-0 flex-1 flex-col ${selected ? "flex" : "hidden md:flex"}`}>
               {selected ? (
-                <div className="flex flex-col h-full w-full">
-                  <div className="p-4 border-b space-y-1">
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="md:hidden h-7 w-7"
-                        onClick={() => setSelectedKey(null)}
-                      >
-                        <ArrowLeft className="w-4 h-4" />
-                      </Button>
-                      <h2 className="font-semibold truncate flex-1">{selected.subject}</h2>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => archiveConversation.mutate(selected)}
-                      >
-                        <Archive className="w-3.5 h-3.5" />
-                      </Button>
+                <>
+                  <div className="flex shrink-0 items-start gap-2 border-b border-border/40 px-4 py-2.5">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="-ml-1 h-7 w-7 shrink-0 md:hidden"
+                      onClick={() => setSelectedKey(null)}
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                    </Button>
+                    <div className="min-w-0 flex-1">
+                      <h2 className="truncate text-[0.8125rem] font-medium text-foreground">{selected.subject}</h2>
+                      <p className="mt-0.5 truncate text-[0.6875rem] text-muted-foreground">
+                        {selected.contactName ? `${maybeMask(isDemoMode, "name", selected.contactName)} · ` : ""}
+                        {maybeMask(isDemoMode, "email", selected.counterpart)}
+                        {selected.companyName ? ` · ${selected.companyName}` : ""}
+                      </p>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {selected.contactName ? `${maybeMask(isDemoMode, "name", selected.contactName)} · ` : ""}
-                      {maybeMask(isDemoMode, 'email', selected.counterpart)}
-                      {selected.companyName ? ` · ${selected.companyName}` : ""}
-                    </p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 shrink-0 px-2 text-[0.6875rem] text-muted-foreground hover:text-foreground"
+                      onClick={() => archiveConversation.mutate(selected)}
+                    >
+                      <Archive className="mr-1.5 h-3.5 w-3.5" /> Archive
+                    </Button>
                   </div>
 
-                  <ScrollArea className="flex-1 p-4">
-                    <div className="space-y-3">
-                      {selected.messages.map((m) => (
-                        <div
-                          key={m.id}
-                          className={`p-3 rounded-lg border max-w-[92%] ${
-                            m.direction === "out"
-                              ? "ml-auto bg-primary/10 border-primary/20"
-                              : "bg-muted/40"
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 mb-1">
-                            {m.direction === "out" ? (
-                              <Send className="w-3 h-3 text-muted-foreground" />
-                            ) : (
-                              <Mail className="w-3 h-3 text-muted-foreground" />
-                            )}
-                            <span className="text-xs font-medium">{maybeMask(isDemoMode, 'email', m.from)}</span>
-                            <span className="text-[10px] text-muted-foreground">
-                              {format(new Date(m.at), "MMM d, h:mm a")}
+                  {/* Messages, not chat bubbles.
+                      Right-aligned tinted bubbles at 92% width are a messaging
+                      app's shape, and this is mail: the threads are long, the
+                      paragraphs are real paragraphs, and alternating margins
+                      cost the reader a line length that changes every message.
+                      Direction is carried by the sender line and a rule. */}
+                  <div className="min-h-0 flex-1 overflow-y-auto">
+                    {selected.messages.map((m) => (
+                      <div
+                        key={m.id}
+                        className={`border-b border-border/25 px-4 py-3.5 last:border-b-0 ${
+                          m.direction === "out" ? "bg-muted/15" : ""
+                        }`}
+                      >
+                        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                          {m.direction === "out" ? (
+                            <Send className="h-3 w-3 shrink-0 translate-y-0.5 text-muted-foreground/60" />
+                          ) : (
+                            <Mail className="h-3 w-3 shrink-0 translate-y-0.5 text-primary/70" />
+                          )}
+                          <span className="text-[0.75rem] font-medium text-foreground">
+                            {m.direction === "out" ? "You" : maybeMask(isDemoMode, "email", m.from)}
+                          </span>
+                          <span className="text-[0.625rem] tabular-nums text-muted-foreground/70">
+                            {format(new Date(m.at), "MMM d, h:mm a")}
+                          </span>
+                          {m.direction === "out" ? (
+                            <span className="inline-flex items-center gap-1 text-[0.625rem] text-muted-foreground/70">
+                              {m.opened ? <Eye className="h-3 w-3" /> : <MailOpen className="h-3 w-3" />}
+                              {m.opened ? "Opened" : "Sent"}
                             </span>
-                            {m.direction === "out" &&
-                              (m.opened ? (
-                                <span className="text-[10px] text-muted-foreground inline-flex items-center gap-1">
-                                  <Eye className="w-3 h-3" /> opened
-                                </span>
-                              ) : (
-                                <span className="text-[10px] text-muted-foreground inline-flex items-center gap-1">
-                                  <MailOpen className="w-3 h-3" /> sent
-                                </span>
-                              ))}
-                            {m.classification &&
-                              CLASSIFICATION_CONFIG[m.classification as Classification] && (
-                                <Badge
-                                  variant="outline"
-                                  className={`text-[10px] ${
-                                    CLASSIFICATION_CONFIG[m.classification as Classification].color
-                                  }`}
-                                >
-                                  {CLASSIFICATION_CONFIG[m.classification as Classification].emoji}{" "}
-                                  {CLASSIFICATION_CONFIG[m.classification as Classification].label}
-                                </Badge>
-                              )}
-                          </div>
-                          <p className="text-sm whitespace-pre-wrap">{m.body || "(no content)"}</p>
+                          ) : null}
+                          {m.classification && CLASSIFICATION_CONFIG[m.classification as Classification] ? (
+                            <span className={`text-[0.625rem] ${CLASSIFICATION_CONFIG[m.classification as Classification].color}`}>
+                              {CLASSIFICATION_CONFIG[m.classification as Classification].emoji}{" "}
+                              {CLASSIFICATION_CONFIG[m.classification as Classification].label}
+                            </span>
+                          ) : null}
                         </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
+                        {/* Capped where prose stops being comfortable to read.
+                            A reply pasted from a wide screen otherwise runs the
+                            full width of the pane. */}
+                        <p className="mt-2 max-w-[68ch] whitespace-pre-wrap text-[0.8125rem] leading-relaxed text-foreground/90">
+                          {m.body || "(no content)"}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
 
-                  <div className="p-4 border-t space-y-2">
+                  <div className="shrink-0 border-t border-border/40 bg-muted/10 px-4 py-3">
                     <Textarea
                       value={draftReply}
                       onChange={(e) => setDraftReply(e.target.value)}
                       placeholder={`Reply to ${maybeMask(isDemoMode, "email", selected.counterpart)}…`}
-                      className="min-h-[90px] text-sm"
+                      /* Short until there is something to say. A 90px box
+                         standing empty under every thread took a tenth of the
+                         pane to hold nothing. */
+                      className={`resize-none border-border/50 bg-background text-base transition-[height] sm:text-[0.8125rem] ${
+                        draftReply ? "h-24" : "h-10"
+                      }`}
                     />
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-xs text-muted-foreground">
+                    <div className="mt-2 flex items-center justify-between gap-2">
+                      <p className="text-[0.625rem] text-muted-foreground">
                         Sends in-thread from your connected mailbox.
                       </p>
                       <Button
                         size="sm"
+                        className="h-8"
                         disabled={!draftReply.trim() || sendReply.isPending}
                         onClick={() => sendReply.mutate({ conv: selected, body: draftReply })}
                       >
-                        <Send className="w-3.5 h-3.5 mr-2" />
-                        {sendReply.isPending ? "Sending…" : "Send Reply"}
+                        <Send className="mr-1.5 h-3.5 w-3.5" />
+                        {sendReply.isPending ? "Sending…" : "Send"}
                       </Button>
                     </div>
                   </div>
-                </div>
+                </>
               ) : (
-                <div className="flex items-center justify-center h-full w-full text-muted-foreground">
-                  <p className="text-sm">Select a conversation to view</p>
+                <div className="flex h-full w-full items-center justify-center px-6 text-center">
+                  <p className="text-[0.6875rem] text-muted-foreground">
+                    Select a conversation to read it and reply in thread.
+                  </p>
                 </div>
               )}
             </div>
-          </div>
+          </Panel>
         )}
       </div>
 

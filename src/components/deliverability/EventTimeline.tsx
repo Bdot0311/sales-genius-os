@@ -1,4 +1,4 @@
-import { Card, CardContent } from "@/components/ui/card";
+import { Panel, PanelBody } from "@/components/dashboard/Panel";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -55,24 +55,24 @@ export const EventTimeline = ({ days = 30 }: { days?: number }) => {
   // a claim about the account, and a failed query has not established it.
   if (isError) {
     return (
-      <Card className="border-border/50">
-        <CardContent className="p-6 text-center text-sm text-muted-foreground">
+      <Panel>
+        <PanelBody className="p-6 text-center text-sm text-muted-foreground">
           Could not load the change history, so this is not a statement that nothing changed.
           Reload the page to try again.
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
     );
   }
 
   if (!data || data.length === 0) {
     return (
-      <Card className="border-border/50">
-        <CardContent className="p-6 text-center text-sm text-muted-foreground">
+      <Panel>
+        <PanelBody className="p-6 text-center text-sm text-muted-foreground">
           Nothing has changed in the last {days} days — no mailboxes added or paused, no limits
           moved, no DNS edits. Changes appear here as they happen, so a shift in the numbers
           above can be traced to what caused it.
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
     );
   }
 
@@ -85,8 +85,8 @@ export const EventTimeline = ({ days = 30 }: { days?: number }) => {
   }
 
   return (
-    <Card className="border-border/50">
-      <CardContent className="space-y-4 p-5">
+    <Panel>
+      <PanelBody className="space-y-4 p-5">
         {[...byDay.entries()].map(([day, events]) => (
           <div key={day} className="space-y-2">
             <p className="text-xs font-semibold text-muted-foreground">{dayLabel(day)}</p>
@@ -116,7 +116,7 @@ export const EventTimeline = ({ days = 30 }: { days?: number }) => {
             </div>
           </div>
         ))}
-      </CardContent>
-    </Card>
+      </PanelBody>
+    </Panel>
   );
 };

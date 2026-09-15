@@ -1,6 +1,4 @@
-import type { ReactNode } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { ShieldCheck, AlertTriangle, Send, Globe } from "lucide-react";
+import { Panel } from "@/components/dashboard/Panel";
 import { reputationDisplay, MIN_VOLUME_FOR_SCORE } from "@/lib/reputation";
 import { totalStats, type SendingAccount, type DeliverabilityAlert, type SendingDomain, type ReputationSnapshot, type LiveStats } from "@/lib/deliverability-db";
 import { aggregateHealth } from "@/hooks/use-deliverability";
@@ -46,37 +44,44 @@ export const HealthOverview = ({ accounts, alerts, domains, stats = [] }: Props)
         : `${remaining} more sends to score`;
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {/* Aggregate health */}
-      <Card className="border-border/50">
-        <CardContent className="flex items-center gap-4 p-5">
-          <div className="relative flex h-16 w-16 shrink-0 items-center justify-center">
-            <svg viewBox="0 0 36 36" className="h-16 w-16 -rotate-90">
-              <circle cx="18" cy="18" r="15.5" fill="none" stroke="hsl(var(--muted))" strokeWidth="3" />
-              <circle
-                cx="18" cy="18" r="15.5" fill="none"
-                stroke={score !== null ? display.hsl : "hsl(var(--primary))"}
-                strokeWidth="3" strokeLinecap="round"
-                strokeDasharray={`${
-                  (score !== null
-                    ? score / 100
-                    : Math.min(1, volume / MIN_VOLUME_FOR_SCORE)) * 97.4
-                } 97.4`}
-                opacity={score !== null ? 1 : 0.5}
-              />
-            </svg>
-            <span className="absolute text-lg font-bold tabular-nums">{score ?? "—"}</span>
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs text-muted-foreground">Aggregate health</p>
-            <p className={`text-sm font-semibold ${display.color}`}>{display.label}</p>
-            <p className="text-xs text-muted-foreground">{healthSub}</p>
-          </div>
-        </CardContent>
-      </Card>
+    /**
+     * The gauge and the three numbers on one surface.
+     *
+     * These were four separately bordered, separately shadowed tiles, each with
+     * its own icon in its own colour — the shape that made every dashboard page
+     * open with a rainbow of unrelated figures. The gauge keeps its weight
+     * because it is the summary; the rest are hairline-divided readings of it.
+     */
+    <Panel className="grid sm:grid-cols-2 lg:grid-cols-[minmax(0,1.15fr)_repeat(3,minmax(0,1fr))]">
+      <div className="flex items-center gap-4 px-4 py-4 sm:px-5">
+        <div className="relative flex h-16 w-16 shrink-0 items-center justify-center">
+          <svg viewBox="0 0 36 36" className="h-16 w-16 -rotate-90">
+            <circle cx="18" cy="18" r="15.5" fill="none" stroke="hsl(var(--muted))" strokeWidth="3" />
+            <circle
+              cx="18" cy="18" r="15.5" fill="none"
+              stroke={score !== null ? display.hsl : "hsl(var(--primary))"}
+              strokeWidth="3" strokeLinecap="round"
+              strokeDasharray={`${
+                (score !== null
+                  ? score / 100
+                  : Math.min(1, volume / MIN_VOLUME_FOR_SCORE)) * 97.4
+              } 97.4`}
+              opacity={score !== null ? 1 : 0.5}
+            />
+          </svg>
+          <span className="absolute text-lg font-bold tabular-nums">{score ?? "—"}</span>
+        </div>
+        <div className="min-w-0">
+          <p className="text-[0.625rem] font-medium uppercase tracking-[0.1em] text-muted-foreground/60">
+            Aggregate health
+          </p>
+          <p className={`mt-1 text-[0.8125rem] font-semibold ${display.color}`}>{display.label}</p>
+          <p className="mt-0.5 text-[0.6875rem] leading-relaxed text-muted-foreground">{healthSub}</p>
+        </div>
+      </div>
 
-      <StatCard
-        icon={<Send className="h-5 w-5" />}
+      <Reading
+        position="first"
         label="Sent (30 days)"
         value={String(volume)}
         sub={
@@ -89,44 +94,67 @@ export const HealthOverview = ({ accounts, alerts, domains, stats = [] }: Props)
         tone={bounceRate === null ? undefined : bounceRate >= 5 ? "bad" : bounceRate >= 2 ? "warn" : "good"}
       />
 
-      <StatCard
-        icon={<AlertTriangle className="h-5 w-5" />}
+      <Reading
         label="Active alerts"
         value={String(alerts.length)}
-        sub={criticalAlerts > 0 ? `${criticalAlerts} critical` : "none critical"}
+        sub={criticalAlerts > 0 ? `${criticalAlerts} critical` : "None critical"}
         tone={alerts.length > 0 ? (criticalAlerts > 0 ? "bad" : "warn") : "good"}
       />
 
-      <StatCard
-        icon={authIssues > 0 ? <AlertTriangle className="h-5 w-5" /> : <ShieldCheck className="h-5 w-5" />}
+      <Reading
+        position="last"
         label="Domain auth"
         value={domains.length === 0 ? "—" : authIssues > 0 ? `${authIssues} failing` : `${domains.length} ok`}
         sub={domains.length === 0 ? "Add a domain below" : `${domains.length} domain${domains.length === 1 ? "" : "s"}`}
         tone={authIssues > 0 ? "bad" : domains.length > 0 ? "good" : undefined}
-        secondaryIcon={<Globe className="h-3.5 w-3.5" />}
       />
-    </div>
+    </Panel>
   );
 };
 
-
-const StatCard = ({
-  icon, label, value, sub, tone, secondaryIcon,
+/**
+ * One reading in the strip.
+ *
+ * No icon: a paper plane beside "Sent (30 days)" and a shield beside "Domain
+ * auth" illustrate the label they sit next to, and three of them in three
+ * colours turn a row of facts into a legend. Tone is carried by the number
+ * itself, which is the part that changes.
+ */
+const Reading = ({
+  label,
+  value,
+  sub,
+  tone,
+  position = "middle",
 }: {
-  icon: ReactNode; label: string; value: string; sub?: string;
-  tone?: "good" | "warn" | "bad"; secondaryIcon?: ReactNode;
+  label: string;
+  value: string;
+  sub?: string;
+  tone?: "good" | "warn" | "bad";
+  /** Where this reading sits once the row wraps to two columns. */
+  position?: "first" | "middle" | "last";
 }) => {
-  const toneColor = tone === "bad" ? "text-destructive" : tone === "warn" ? "text-yellow-500" : tone === "good" ? "text-green-500" : "text-foreground";
+  const toneColor =
+    tone === "bad"
+      ? "text-destructive"
+      : tone === "warn"
+        ? "text-yellow-500"
+        : tone === "good"
+          ? "text-green-500"
+          : "text-foreground";
   return (
-    <Card className="border-border/50">
-      <CardContent className="p-5">
-        <div className="mb-2 flex items-center gap-2 text-muted-foreground">
-          {secondaryIcon ?? icon}
-          <span className="text-xs">{label}</span>
-        </div>
-        <p className={`text-2xl font-bold tabular-nums ${toneColor}`}>{value}</p>
-        {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
-      </CardContent>
-    </Card>
+    // The rules that divide the strip depend on where the row wraps, so each
+    // reading is told its own position. Selecting them by their index in the
+    // group instead would have to be correct at every breakpoint at once, and
+    // the wrap point moves between two columns and four.
+    <div
+      className={`border-t border-border/30 px-4 py-4 sm:px-5 lg:border-l lg:border-t-0 ${
+        position === "first" ? "sm:border-l sm:border-t-0" : "sm:border-l-0"
+      } ${position === "last" ? "sm:border-l" : ""}`}
+    >
+      <p className="text-[0.625rem] font-medium uppercase tracking-[0.1em] text-muted-foreground/60">{label}</p>
+      <p className={`mt-1.5 text-xl font-semibold tabular-nums ${toneColor}`}>{value}</p>
+      {sub && <p className="mt-1 text-[0.6875rem] leading-relaxed text-muted-foreground">{sub}</p>}
+    </div>
   );
 };
