@@ -43,7 +43,7 @@ export const ProofBar = ({ metrics }: ProofBarProps) => {
             rel="noopener noreferrer"
             className="underline underline-offset-2 hover:opacity-80 transition-opacity"
           >
-            Follow the journey
+            Follow along
           </a>
         </p>
       </div>

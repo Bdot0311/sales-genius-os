@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "ads-writing-style": {
+      "source": "swan-gtm/gtm-skills",
+      "sourceType": "github",
+      "skillPath": "skills/ivan-falco/ads-writing-style/SKILL.md",
+      "computedHash": "e5c00a984e0364aaa19931eaf4b4e2cb942e9a020da1257338a3276221cb09fd"
+    },
     "anti-ai-slop-writing": {
       "source": "swan-gtm/gtm-skills",
       "sourceType": "github",

@@ -72,7 +72,7 @@ const OutreachPreview = () => (
           Subject: Quick idea for Northline's outbound push
         </p>
         <p className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.65)" }}>
-          Hey Jordan — saw Northline is scaling the sales team in NYC. That usually means more pressure to build pipeline fast.
+          Hey Jordan, saw Northline is scaling the sales team in NYC. That usually means more pressure to build pipeline fast.
         </p>
         <p className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.65)" }}>
           OutReign helps teams like yours find better-fit leads and move into outreach in one session. No list-building, no copy-paste.
@@ -98,7 +98,7 @@ const ReplyPreview = () => (
   <div className="w-full h-full flex flex-col gap-3 p-6">
     {/* Thread list */}
     {[
-      { name: "Jordan Park",  last: "Thanks — can we talk Thursday?",     badge: "Reply",    badgeColor: "hsl(142 70% 50%)" },
+      { name: "Jordan Park",  last: "Thanks, can we talk Thursday?",     badge: "Reply",    badgeColor: "hsl(142 70% 50%)" },
       { name: "Rina Shah",    last: "Interested, send me a demo link",      badge: "Hot",      badgeColor: "hsl(22 90% 60%)"  },
       { name: "Alex Müller",  last: "Not right now, maybe Q3",              badge: "Follow up", badgeColor: "hsl(261 75% 60%)" },
       { name: "Priya Nair",   last: "Who are you? (sent your follow-up)",   badge: "Opened",   badgeColor: "hsl(0 0% 50%)"    },
@@ -201,7 +201,7 @@ const CoachPreview = () => (
       style={{ background: "hsl(0 0% 100% / 0.03)", border: "1px solid hsl(0 0% 100% / 0.07)" }}
     >
       <p className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
-        Northline ($24K, proposal) has gone quiet for 9 days — send the pricing recap today.
+        Northline ($24K, proposal) has gone quiet for 9 days. Send the pricing recap today.
       </p>
       <p className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
         Rina Shah scores 88 and asked for a demo link. Book her before Thursday.
@@ -256,7 +256,7 @@ const modules = [
     number: "05",
     title: "AI Sales Coach",
     tagline: "A coach that already read your pipeline.",
-    description: "Ask what to do next and get answers from your own deals, lead scores and stalled threads. Included on every plan — 5 messages a month on Explore, unlimited on Agency.",
+    description: "Ask what to do next and get answers from your own deals, lead scores and stalled threads. Included on every plan. 5 messages a month on Explore, unlimited on Agency.",
   },
 ];
 
@@ -313,7 +313,7 @@ export const ModulesSection = () => {
               className="font-display text-center text-5xl"
               style={{ fontSize: "clamp(2.4rem, 5vw, 4rem)", fontWeight: 800, lineHeight: 1.05, letterSpacing: "-0.02em", color: "hsl(0 0% 96%)" }}
             >
-              Five screens, one job:
+              Five screens doing one job
               <br />
               <span
                 className="italic animate-shiny"

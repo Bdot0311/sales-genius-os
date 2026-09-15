@@ -24,7 +24,7 @@ export const TrustBar = () => (
         className="text-center mb-6 text-[10px] uppercase tracking-[0.25em] font-medium"
         style={{ color: "hsl(261 70% 80%)" }}
       >
-        Built with security and honesty in mind
+        What you are trusting us with, and how it is handled
       </p>
       <div className="flex flex-wrap justify-center items-center gap-x-8 gap-y-3">
         {items.map(({ Icon, label }) => (
