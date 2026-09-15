@@ -49,6 +49,7 @@ const AdminUsers = () => {
   const [editUserOpen, setEditUserOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserSubscription | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [resyncing, setResyncing] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
