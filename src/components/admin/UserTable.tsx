@@ -184,67 +184,6 @@ export const UserTable = ({
                       ? <span className="text-xs text-primary font-medium">Unlimited</span>
                       : sub.leads_limit.toLocaleString()}
                   </TableCell>
-                  <TableCell>
-                    <div className="flex gap-0.5 justify-end opacity-60 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        size="sm" variant="ghost"
-                        className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-                        onClick={() => onEditUser(sub)}
-                        title="Edit user"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        size="sm" variant="ghost"
-                        className={`h-7 w-7 p-0 ${admin ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-                        onClick={() => onToggleAdmin(sub.user_id, admin)}
-                        title={admin ? 'Remove Admin' : 'Make Admin'}
-                      >
-                        <Shield className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        size="sm" variant="ghost" className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-                        onClick={() => onSetTrial(sub)}
-                        title="Set Trial"
-                      >
-                        <Clock className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        size="sm" variant="ghost" className="h-7 w-7 p-0 text-blue-400 hover:text-blue-300"
-                        onClick={() => onResetPassword(sub)}
-                        title="Send Password Reset Email"
-                      >
-                        <KeyRound className="h-3.5 w-3.5" />
-                      </Button>
-                      {sub.account_status === 'locked' ? (
-                        <Button
-                          size="sm" variant="ghost"
-                          className="h-7 w-7 p-0 text-emerald-400 hover:text-emerald-300"
-                          onClick={() => onUnlockUser(sub.user_id)}
-                          title="Unlock"
-                        >
-                          <Unlock className="h-3.5 w-3.5" />
-                        </Button>
-                      ) : (
-                        <Button
-                          size="sm" variant="ghost"
-                          className="h-7 w-7 p-0 text-amber-400 hover:text-amber-300"
-                          onClick={() => onLockUser(sub.user_id)}
-                          title="Lock"
-                        >
-                          <Lock className="h-3.5 w-3.5" />
-                        </Button>
-                      )}
-                      <Button
-                        size="sm" variant="ghost"
-                        className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                        onClick={() => onDeleteUser(sub)}
-                        title="Delete"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </TableCell>
                 </TableRow>
               );
             })
