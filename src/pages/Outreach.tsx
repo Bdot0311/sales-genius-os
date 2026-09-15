@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import { Analytics } from "@/lib/analytics";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { PageHeader } from "@/components/dashboard/PageHeader";
-import { Panel, PanelBody, PanelHeader } from "@/components/dashboard/Panel";
+import { Chip, Panel, PanelBody, PanelHeader, SectionLabel } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -2078,7 +2078,7 @@ ${formattedBody}
                   </div>
                   {signature && (
                     <div>
-                      <Label className="text-muted-foreground">Preview</Label>
+                      <Label className="text-[0.8125rem] font-medium text-muted-foreground">Preview</Label>
                       <div
                         className="mt-2 p-4 border rounded-lg bg-background prose prose-sm max-w-none"
                         dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(signature.replace(/\n/g, "<br/>")) }}
@@ -2105,7 +2105,7 @@ ${formattedBody}
               ) : (
               <div className="space-y-4">
                 <div>
-                  <Label>Your Signature (supports HTML for logos/images)</Label>
+                  <Label className="text-[0.8125rem] font-medium text-foreground">Your signature</Label>
                   <Textarea
                     value={signature}
                     onChange={(e) => setSignature(e.target.value)}
@@ -2158,7 +2158,7 @@ For logos, use HTML:
                 </div>
                 {signature && (
                   <div>
-                    <Label className="text-muted-foreground">Preview</Label>
+                    <Label className="text-[0.8125rem] font-medium text-muted-foreground">Preview</Label>
                     <div 
                       className="mt-2 p-4 border rounded-lg bg-background prose prose-sm max-w-none"
                       dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(signature.replace(/\n/g, '<br/>')) }}
@@ -2374,8 +2374,8 @@ For logos, use HTML:
                 <PanelBody className="space-y-4">
                   {/* Send From selector */}
                   <div>
-                    <Label>
-                      Send From
+                    <Label className="text-[0.8125rem] font-medium text-foreground">
+                      Send from
                       {connectedAccounts.length === 0 && (
                         <span className="ml-2 text-xs text-destructive">No accounts connected</span>
                       )}
@@ -2435,7 +2435,7 @@ For logos, use HTML:
                   )}
 
                   <div>
-                    <Label>Select Lead</Label>
+                    <Label className="text-[0.8125rem] font-medium text-foreground">Lead</Label>
                     <Select value={selectedLead} onValueChange={setSelectedLead}>
                       <SelectTrigger>
                         <SelectValue placeholder="Choose a lead" />
@@ -2461,27 +2461,30 @@ For logos, use HTML:
                       ].filter(Boolean);
                       const techs = lead.technologies?.slice(0, 3) || [];
                       return (
-                        <div className="mt-2 p-3 rounded-lg border border-border/40 bg-muted/20 space-y-1.5">
-                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">AI will personalize using</p>
+                        /* Three pill treatments lived in this one box — a
+                           tinted primary one for a fact, a "secondary" one for
+                           a tool, a green one for the score — which made three
+                           kinds of the same thing. And two emoji stood in for
+                           labels, which is a picture doing a word's job. */
+                        <div className="mt-2 space-y-2 rounded-lg border border-border/40 bg-muted/20 p-3">
+                          <SectionLabel>What the agent will personalise from</SectionLabel>
                           <div className="flex flex-wrap gap-1.5">
-                            {tags.map((tag, i) => (
-                              <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-primary/10 text-primary font-medium">{tag}</span>
-                            ))}
-                            {techs.map((tech, i) => (
-                              <span key={`t${i}`} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-secondary/60 text-foreground/70">{tech}</span>
-                            ))}
-                            {lead.icp_score > 0 && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-green-500/10 text-emerald-400 font-medium">ICP {lead.icp_score}/100</span>
-                            )}
+                            {tags.map((tag, i) => <Chip key={i}>{tag}</Chip>)}
+                            {techs.map((tech, i) => <Chip key={`t${i}`}>{tech}</Chip>)}
+                            {lead.icp_score > 0 && <Chip selected>ICP {lead.icp_score}/100</Chip>}
                           </div>
                           {lead.company_description && (
-                            <p className="text-xs text-muted-foreground line-clamp-1">{lead.company_description}</p>
+                            <p className="line-clamp-1 text-[0.6875rem] text-muted-foreground">{lead.company_description}</p>
                           )}
                           {lead.notes && (
-                            <p className="text-xs text-amber-400/80 line-clamp-1">📝 {lead.notes}</p>
+                            <p className="line-clamp-1 text-[0.6875rem] text-muted-foreground">
+                              <span className="text-muted-foreground/60">Your note</span> {lead.notes}
+                            </p>
                           )}
                           {tags.length === 0 && techs.length === 0 && (
-                            <p className="text-xs text-amber-400">⚠️ Limited lead data — enrich this lead for better personalization</p>
+                            <p className="text-[0.6875rem] leading-relaxed text-amber-400">
+                              Almost nothing is known about this lead, so the email will be generic. Enrich it first.
+                            </p>
                           )}
                         </div>
                       );
@@ -2502,8 +2505,8 @@ For logos, use HTML:
 
 
                   <div>
-                    <Label>
-                      Email Template
+                    <Label className="text-[0.8125rem] font-medium text-foreground">
+                      Template
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -2580,13 +2583,15 @@ For logos, use HTML:
                   </div>
 
                   {/* P0.1 — First touch toggle */}
-                  <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
-                    <div>
-                      <p className="text-sm font-medium">
-                        {isFirstTouch ? "First touch (plain text)" : "Warm follow-up (HTML allowed)"}
+                  <div className="flex items-center justify-between gap-3 rounded-lg border border-border/40 bg-muted/20 p-3">
+                    <div className="min-w-0">
+                      <p className="text-[0.8125rem] font-medium text-foreground">
+                        {isFirstTouch ? "First touch, plain text" : "Warm follow-up, HTML allowed"}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {isFirstTouch ? "Strips HTML from signature — better inbox placement" : "HTML signature allowed for warm sequences"}
+                      <p className="mt-1 text-[0.6875rem] leading-relaxed text-muted-foreground">
+                        {isFirstTouch
+                          ? "HTML is stripped from your signature, which lands in the inbox more often."
+                          : "Your HTML signature is kept, for people who already know you."}
                       </p>
                     </div>
                     <Switch
@@ -2597,7 +2602,7 @@ For logos, use HTML:
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label>Email Tone</Label>
+                      <Label className="text-[0.8125rem] font-medium text-foreground">Tone</Label>
                       <Select value={emailTone} onValueChange={setEmailTone}>
                         <SelectTrigger>
                           <SelectValue />
@@ -2612,7 +2617,7 @@ For logos, use HTML:
                     </div>
 
                     <div>
-                      <Label>
+                      <Label className="text-[0.8125rem] font-medium text-foreground">
                         Opening Word
                         <TooltipProvider>
                           <Tooltip>
@@ -2642,7 +2647,7 @@ For logos, use HTML:
                   </div>
 
                   <div>
-                    <Label>
+                    <Label className="text-[0.8125rem] font-medium text-foreground">
                       Trigger/Context
                       <TooltipProvider>
                         <Tooltip>
@@ -2690,7 +2695,7 @@ For logos, use HTML:
 
 
                   <div>
-                    <Label>
+                    <Label className="text-[0.8125rem] font-medium text-foreground">
                       Your Business
                       <Badge variant="outline" className="ml-2 text-xs">Saved</Badge>
                     </Label>
@@ -2708,7 +2713,7 @@ For logos, use HTML:
 
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <Label>Subject Line</Label>
+                      <Label className="text-[0.8125rem] font-medium text-foreground">Subject line</Label>
                       {subjectLine && (() => {
                         const lead = leads.find(l => l.id === selectedLead);
                         const { score, flags } = scoreSubjectLine(subjectLine, lead);
@@ -2916,16 +2921,25 @@ For logos, use HTML:
               <Panel>
                 <PanelHeader title="Generated email" />
                 <PanelBody className="space-y-4">
-                  <div className="bg-muted/30 p-3 rounded-lg border mb-2">
-                    <p className="text-sm">
-                      <span className="text-muted-foreground">To:</span>{" "}
-                      {leads.find(l => l.id === selectedLead)?.contact_email || "Select a lead"}
-                    </p>
-                    <p className="text-sm">
-                      <span className="text-muted-foreground">Subject:</span>{" "}
-                      {subjectLine || "Add a subject line"}
-                    </p>
-                  </div>
+                  {/* The envelope, in the shape an envelope has: a fixed label
+                      column so the two values line up instead of starting at
+                      wherever their label happened to end. */}
+                  <dl className="space-y-1 rounded-lg border border-border/40 bg-muted/20 p-3">
+                    <div className="flex gap-2 text-[0.8125rem]">
+                      <dt className="w-14 shrink-0 text-muted-foreground/60">To</dt>
+                      <dd className="min-w-0 truncate text-foreground">
+                        {leads.find(l => l.id === selectedLead)?.contact_email || (
+                          <span className="text-muted-foreground">Pick a lead first</span>
+                        )}
+                      </dd>
+                    </div>
+                    <div className="flex gap-2 text-[0.8125rem]">
+                      <dt className="w-14 shrink-0 text-muted-foreground/60">Subject</dt>
+                      <dd className="min-w-0 text-foreground">
+                        {subjectLine || <span className="text-muted-foreground">Not written yet</span>}
+                      </dd>
+                    </div>
+                  </dl>
 
                   {/* P0.1 — First touch HTML signature warning */}
                   {isFirstTouch && signature && /<[a-z]/i.test(signature) && (
@@ -2957,7 +2971,7 @@ For logos, use HTML:
                   <div>
                     {/* P3.1 — Desktop/Mobile preview toggle */}
                     <div className="flex items-center justify-between mb-1.5">
-                      <Label>Email Body</Label>
+                      <Label className="text-[0.8125rem] font-medium text-foreground">Body</Label>
                       <div className="flex items-center gap-1 rounded-md border p-0.5">
                         <Button
                           variant={previewMode === "desktop" ? "secondary" : "ghost"}
@@ -3086,7 +3100,7 @@ For logos, use HTML:
                                 className={cn("p-3 pointer-events-auto")}
                               />
                               <div>
-                                <Label className="text-xs">Time</Label>
+                                <Label className="text-[0.6875rem] text-muted-foreground">Time</Label>
                                 <Input
                                   type="time"
                                   value={scheduleTime}

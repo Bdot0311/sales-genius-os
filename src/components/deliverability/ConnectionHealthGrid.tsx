@@ -1,5 +1,4 @@
-import { Panel, PanelBody } from "@/components/dashboard/Panel";
-import { Badge } from "@/components/ui/badge";
+import { EmptyState, Panel, PanelFooter, PanelHeader } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
@@ -33,76 +32,97 @@ export const ConnectionHealthGrid = ({ accounts }: { accounts: SendingAccount[] 
 
   if (accounts.length === 0) {
     return (
-      <Panel>
-        <PanelBody className="p-6 text-center text-sm text-muted-foreground">
-          No mailboxes connected yet. Connect one to start sending.
-        </PanelBody>
-      </Panel>
+      <EmptyState
+        title="No mailboxes connected"
+        body="Connect one on the Integrations page and it appears here automatically."
+      />
     );
   }
 
   if (isLoading || !data) {
-    return <div className="grid gap-3 sm:grid-cols-2">{[0, 1].map((i) => <Skeleton key={i} className="h-24 w-full" />)}</div>;
+    // Rows in the shape the rows will take, so the panel does not reflow from
+    // a two-column grid into a list the moment the data lands.
+    return (
+      <Panel>
+        <PanelHeader title="Mailboxes" />
+        <div>
+          {[0, 1].map((i) => (
+            <div key={i} className="border-b border-border/30 px-4 py-3 last:border-b-0 sm:px-5">
+              <Skeleton className="h-4 w-48" />
+              <Skeleton className="mt-2 h-3 w-full max-w-md" />
+            </div>
+          ))}
+        </div>
+      </Panel>
+    );
   }
 
   const summary = connectionSummary(data.map((d) => d.diagnosis));
   const allSending = summary.sending === summary.total;
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-        <span>
-          {allSending
-            ? `All ${summary.total} mailboxes sending.`
-            : `${summary.sending} of ${summary.total} sending.`}
-        </span>
-        {/* Stated every time, because a green grid here is the exact thing
-            users misread as "my mail is landing". */}
-        <span className="flex items-center gap-1">
-          <ShieldQuestion className="h-3 w-3" />
-          This is uptime, not placement — whether mail lands is above.
-        </span>
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-2">
+    /* One panel of rows, not a grid of small cards.
+       Each mailbox carried an address, a state and one sentence — a row's worth
+       of content given a border, a shadow and its own padding — and at six
+       mailboxes the grid made you read in two directions to answer one
+       question. */
+    <Panel>
+      <PanelHeader
+        title="Mailboxes"
+        meta={allSending ? `all ${summary.total} sending` : `${summary.sending} of ${summary.total} sending`}
+      />
+      <div>
         {data.map(({ account, diagnosis }) => {
           const style = STATE_STYLE[diagnosis.state];
           return (
-            <Panel key={account.id}>
-              <PanelBody className="space-y-2 p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <p className="min-w-0 truncate text-sm font-medium">{account.email}</p>
-                  <Badge variant="outline" className={`shrink-0 gap-1 ${style.cls}`}>
+            <div
+              key={account.id}
+              className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 border-b border-border/30 px-4 py-3 last:border-b-0 sm:px-5"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                  <p className="truncate text-[0.8125rem] text-foreground">{account.email}</p>
+                  <span className={`inline-flex shrink-0 items-center gap-1 text-[0.625rem] ${style.cls}`}>
                     {style.icon}
                     {style.label}
-                  </Badge>
+                  </span>
                 </div>
-
                 {/* Plain English, always. The raw provider error stays in logs. */}
-                <p className="text-xs leading-snug text-muted-foreground">{diagnosis.explanation}</p>
+                <p className="mt-1 max-w-[70ch] text-[0.6875rem] leading-relaxed text-muted-foreground">
+                  {diagnosis.explanation}
+                </p>
+              </div>
 
-                {diagnosis.fix && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7 text-xs"
-                    disabled={update.isPending}
-                    onClick={() => {
-                      if (diagnosis.fix?.kind === "reconnect") {
-                        navigate("/integrations");
-                        return;
-                      }
-                      update.mutate({ id: account.id, patch: { status: "active", paused_reason: null } });
-                    }}
-                  >
-                    {diagnosis.fix.label}
-                  </Button>
-                )}
-              </PanelBody>
-            </Panel>
+              {diagnosis.fix && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 shrink-0 text-[0.6875rem]"
+                  disabled={update.isPending}
+                  onClick={() => {
+                    if (diagnosis.fix?.kind === "reconnect") {
+                      navigate("/integrations");
+                      return;
+                    }
+                    update.mutate({ id: account.id, patch: { status: "active", paused_reason: null } });
+                  }}
+                >
+                  {diagnosis.fix.label}
+                </Button>
+              )}
+            </div>
           );
         })}
       </div>
-    </div>
+
+      {/* Said on the panel itself, because a column of green ticks here is the
+          exact thing people misread as "my mail is landing". */}
+      <PanelFooter>
+        <span className="inline-flex items-center gap-1.5">
+          <ShieldQuestion className="h-3 w-3" />
+          This is uptime, not placement. Whether mail reaches an inbox is measured above.
+        </span>
+      </PanelFooter>
+    </Panel>
   );
 };

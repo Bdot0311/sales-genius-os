@@ -157,12 +157,12 @@ export const PlacementPanel = ({ accounts }: { accounts: SendingAccount[] }) => 
     <Panel>
       <PanelBody className="space-y-4">
         {status === "unconfigured" ? (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-[0.6875rem] leading-relaxed text-muted-foreground">
             {errorMsg ||
               "Placement testing needs a second Gmail inbox to measure against, and there isn't one available. No results are shown rather than a made-up number. Outlook and Yahoo need their own seed accounts."}
           </p>
         ) : active.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No active sending account to test from.</p>
+          <p className="text-[0.6875rem] leading-relaxed text-muted-foreground">No active sending account to test from.</p>
         ) : (
           <>
             <div className="flex flex-wrap items-center gap-2">

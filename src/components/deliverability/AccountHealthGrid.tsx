@@ -1,4 +1,4 @@
-import { Panel, PanelBody, PanelHeader } from "@/components/dashboard/Panel";
+import { EmptyState, Panel, PanelBody, PanelHeader } from "@/components/dashboard/Panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -18,12 +18,10 @@ interface Props {
 export const AccountHealthGrid = ({ accounts, snapshots, stats = [] }: Props) => {
   if (accounts.length === 0) {
     return (
-      <Panel>
-        <PanelBody className="p-6 text-center text-sm text-muted-foreground">
-          No sending accounts yet. Connect a mailbox on the Integrations page — it appears here
-          automatically and starts building a reputation once you send.
-        </PanelBody>
-      </Panel>
+      <EmptyState
+        title="No sending accounts yet"
+        body="Connect a mailbox on the Integrations page. It appears here automatically and starts building a reputation once you send."
+      />
     );
   }
 
@@ -88,20 +86,21 @@ const AccountCard = ({ account, snapshots, stats }: {
       />
       <PanelBody className="space-y-4">
         {/* Score + rates */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between gap-3">
           <div>
-            <span className={`text-3xl font-bold tabular-nums ${display.color}`}>
-              {score ?? "—"}
-            </span>
-            <span className="ml-2 text-xs text-muted-foreground">{display.label}</span>
+            <p className="flex items-baseline gap-2">
+              <span className={`text-xl font-semibold tabular-nums ${display.color}`}>{score ?? "—"}</span>
+              <span className="text-[0.75rem] text-muted-foreground">{display.label}</span>
+            </p>
+            <p className="mt-0.5 text-[0.625rem] uppercase tracking-[0.1em] text-muted-foreground/60">
+              Reputation
+            </p>
           </div>
           {stats && (
-            <div className="text-right text-xs text-muted-foreground">
-              <div>{volume} sent / 30d</div>
-              <div>{stats.outreach_sent} outreach · {stats.warmup_sent} warmup</div>
-              <div>
-                {stats.bounce_rate ?? 0}% bounce · {stats.open_rate ?? 0}% open
-              </div>
+            <div className="space-y-0.5 text-right text-[0.6875rem] text-muted-foreground">
+              <div className="tabular-nums text-foreground/85">{volume} sent in 30 days</div>
+              <div className="tabular-nums">{stats.outreach_sent} outreach · {stats.warmup_sent} warmup</div>
+              <div className="tabular-nums">{stats.bounce_rate ?? 0}% bounce · {stats.open_rate ?? 0}% open</div>
             </div>
           )}
         </div>
@@ -114,9 +113,9 @@ const AccountCard = ({ account, snapshots, stats }: {
                 style={{ width: `${Math.min(100, (volume / MIN_VOLUME_FOR_SCORE) * 100)}%` }}
               />
             </div>
-            <p className="text-xs text-muted-foreground">
-              {volume} of {MIN_VOLUME_FOR_SCORE} sends needed before a reputation score is calculated.
-              Outreach and warmup both count. Rates above are live.
+            <p className="text-[0.6875rem] leading-relaxed text-muted-foreground">
+              {volume} of {MIN_VOLUME_FOR_SCORE} sends needed before a reputation score can be calculated.
+              Outreach and warmup both count. The rates above are live either way.
             </p>
           </div>
         )}
@@ -124,11 +123,11 @@ const AccountCard = ({ account, snapshots, stats }: {
         <ReputationTrend snapshots={snapshots} />
 
         {account.status === "paused" && account.paused_reason && (
-          <p className="text-xs text-yellow-500">{account.paused_reason}</p>
+          <p className="text-[0.6875rem] leading-relaxed text-amber-400">{account.paused_reason}</p>
         )}
 
         {/* Daily usage */}
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <div className="flex items-center justify-between text-[0.6875rem] text-muted-foreground">
           <span>
             {account.sent_today_date === new Date().toISOString().slice(0, 10) ? account.sent_today : 0}
             {" / "}{account.daily_limit} sent today
@@ -155,7 +154,7 @@ const AccountCard = ({ account, snapshots, stats }: {
               }
               aria-label="Toggle warmup"
             />
-            <span className="text-xs text-muted-foreground">Warmup</span>
+            <span className="text-[0.6875rem] text-muted-foreground">Warmup</span>
           </div>
           <div className="flex items-center gap-1">
             <SendingControlsDialog account={account} />

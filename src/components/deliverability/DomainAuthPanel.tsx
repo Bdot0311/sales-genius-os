@@ -60,9 +60,9 @@ export const DomainAuthPanel = () => {
         </div>
 
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading domains…</p>
+          <p className="text-[0.6875rem] leading-relaxed text-muted-foreground">Loading domains…</p>
         ) : domains.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-[0.6875rem] leading-relaxed text-muted-foreground">
             Add your sending domain to validate SPF/DKIM/DMARC and monitor blacklists. All checks
             are live DNS lookups.
           </p>

@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/dashboard/PageHeader";
 import { useICPProfiles, ICPProfile } from "@/hooks/use-icp-profiles";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
-import { EmptyState, Panel, PanelBody, PanelHeader } from "@/components/dashboard/Panel";
+import { Chip, EmptyState, Panel, PanelBody, PanelHeader } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -73,41 +73,6 @@ const emptyProfile: Partial<ICPProfile> = {
   preferred_channels: [], customer_examples: null,
   scoring_weights: { title: 25, industry: 25, size: 25, tech: 25 },
 };
-
-/**
- * One chip, in the one shape every chooser on this screen uses.
- *
- * There were three vocabularies for the same act of picking something: a solid
- * primary Badge for a selected option, an outlined Badge for an unselected one,
- * a "secondary" Badge for a tag you had typed, and a rounded pill prefixed with
- * a plus for a suggestion. Selecting five industries out of thirty-six painted
- * five solid blocks into a field of outlines, which made the loudest marks on
- * the screen a record of what you had already done.
- */
-const Chip = ({
-  children,
-  selected,
-  onClick,
-  title,
-}: {
-  children: ReactNode;
-  selected?: boolean;
-  onClick: () => void;
-  title?: string;
-}) => (
-  <button
-    type="button"
-    title={title}
-    onClick={onClick}
-    className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[0.75rem] leading-none transition-colors ${
-      selected
-        ? "border-primary/50 bg-primary/10 text-foreground"
-        : "border-border/50 text-muted-foreground hover:border-border hover:text-foreground"
-    }`}
-  >
-    {children}
-  </button>
-);
 
 /**
  * A field: its name, what it is for, and the control.

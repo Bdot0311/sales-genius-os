@@ -286,6 +286,51 @@ export const EmptyState = ({
 );
 
 /**
+ * One chip.
+ *
+ * The small marks that say "this applies" — a chosen industry, a tag, a fact
+ * the agent will personalise from. Every screen that had them invented its own:
+ * a solid primary Badge here, an outlined one there, a "secondary" one for the
+ * same thing one line down, a rounded pill with a tinted background somewhere
+ * else. Filled marks are the problem — a dozen of them turns a record of what
+ * you picked into the loudest thing on the page — so selection is carried by a
+ * tinted border and nothing else.
+ */
+export const Chip = ({
+  children,
+  selected,
+  onClick,
+  title,
+  className,
+}: {
+  children: ReactNode;
+  selected?: boolean;
+  /** Omit for a chip that only states a fact. */
+  onClick?: () => void;
+  title?: string;
+  className?: string;
+}) => {
+  const shape = cn(
+    "inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[0.75rem] leading-none",
+    selected
+      ? "border-primary/50 bg-primary/10 text-foreground"
+      : "border-border/50 text-muted-foreground",
+    onClick && "transition-colors",
+    onClick && !selected && "hover:border-border hover:text-foreground",
+    className,
+  );
+  return onClick ? (
+    <button type="button" title={title} onClick={onClick} className={shape}>
+      {children}
+    </button>
+  ) : (
+    <span title={title} className={shape}>
+      {children}
+    </span>
+  );
+};
+
+/**
  * The label above a region that is not itself a panel.
  *
  * One size, one weight, one tracking, everywhere — the same label was appearing

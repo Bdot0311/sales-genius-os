@@ -54,18 +54,18 @@ export const WarmupPanel = ({ accounts }: { accounts: SendingAccount[] }) => {
       />
       <PanelBody className="space-y-4">
         {warmingCount === 0 ? (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-[0.6875rem] leading-relaxed text-muted-foreground">
             Warmup is off for all accounts. Turn on the Warmup switch on an account above to join the
             shared warmup pool. Mailboxes in the pool exchange light, natural email to build sender
             reputation.
           </p>
         ) : sent === 0 && warmingCount < 2 ? (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-[0.6875rem] leading-relaxed text-muted-foreground">
             1 mailbox in the pool. Warmup needs at least two active mailboxes to run, so it stays idle
             by design (no filler traffic) until a second mailbox joins.
           </p>
         ) : sent === 0 ? (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-[0.6875rem] leading-relaxed text-muted-foreground">
             {warmingCount} mailboxes in the pool and ready to warm. The worker runs hourly, so activity
             will start showing up here after its next run.
           </p>

@@ -59,7 +59,7 @@ export const VerdictTile = ({
         </div>
 
         {verdict.value && (
-          <p className="text-2xl font-bold tabular-nums leading-none">{verdict.value}</p>
+          <p className="text-xl font-semibold tabular-nums leading-none">{verdict.value}</p>
         )}
 
         {locked ? (
