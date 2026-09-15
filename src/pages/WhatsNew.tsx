@@ -167,7 +167,7 @@ const WhatsNew = () => {
                 title={entry.title}
                 meta={formatDate(entry.date)}
                 actions={
-                  unreadAtArrival !== null && entryIndex < unreadAtArrival ? (
+                  seenAtArrival !== null && entry.date > seenAtArrival ? (
                     <span className="text-[0.625rem] uppercase tracking-[0.1em] text-primary">New to you</span>
                   ) : undefined
                 }
