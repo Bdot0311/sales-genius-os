@@ -84,6 +84,7 @@ export const ALL_BADGES: DirectoryBadge[] = [
   { href: "https://boostdomainrating.com/item/outreign.io?utm_source=badge", src: "https://boostdomainrating.com/api/badge/outreign.io?color=dark", alt: "OutReign - Domain Rating", w: 212, h: 54 },
   { href: "https://orynth.dev/projects/outreign", src: "https://orynth.dev/api/badge/outreign?theme=dark&style=minimal", alt: "Featured on Orynth", w: 152, h: 48 },
   FEATURED_BADGES[2],
+  { href: "https://launchstag.com/p/outreign", src: "https://launchstag.com/badge-dark.svg", alt: "Featured on Launchstag", w: 198, h: 62 },
   { href: "https://www.producthunt.com/products/outreign-io?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-outreign-io", src: "https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1174023&theme=dark&t=1781681273997", alt: "OutReign.io - Find who to sell to then close them. | Product Hunt", w: 250, h: 54 },
   { href: "https://www.uneed.best/tool/outreign", src: "https://www.uneed.best/EMBED1B.png", alt: "Featured on Uneed", w: 200, h: 54 },
   { href: "https://scoutforge.net/apps/outreign?ref=badge", src: "https://scoutforge.net/badge/outreign/image?theme=dark&size=default", alt: "OutReign on Scout Forge", w: 300, h: 72 },
