@@ -16,9 +16,19 @@ describe("the icp editor", () => {
     // There were four: a solid primary badge for a selected option, an outlined
     // one for an unselected one, a "secondary" one for a tag you typed, and a
     // rounded pill prefixed with a plus for a suggestion.
-    expect(ICP).toContain("const Chip = (");
+    //
+    // This first pinned where the shared mark was declared, which broke the
+    // moment it moved into Panel.tsx so that Outreach could use it too — a
+    // change that made it more correct. What matters is that all three
+    // choosers on this screen draw the same mark, and that none of the old
+    // vocabularies survive.
     expect(ICP).not.toMatch(/<Badge\b/);
     expect(ICP).not.toContain('variant={value.includes(opt) ? "default" : "outline"}');
+    expect(ICP).not.toContain("rounded-full bg-muted hover:bg-muted/70");
+    for (const chooser of ["function TagInput", "function MultiSelect"]) {
+      const body = ICP.slice(ICP.indexOf(chooser), ICP.indexOf("}", ICP.indexOf(chooser)) + 4000);
+      expect(body, chooser).toContain("<Chip");
+    }
   });
 
   it("does not render thirty-six options at once", () => {
