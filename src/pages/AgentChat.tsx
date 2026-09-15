@@ -17,7 +17,6 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
-  Bot,
   Plus,
   SendHorizonal,
   Loader2,
@@ -458,14 +457,14 @@ const AgentChat = () => {
           main is py-4, so 5rem is the real cost on a phone and 6rem once
           sm:py-6 applies — the extra 2.5-3.5rem was coming straight out of
           the conversation. */}
-      <div className="flex flex-col lg:flex-row gap-4 h-[calc(100dvh-5rem)] sm:h-[calc(100dvh-6rem)] min-h-0">
+      <Panel className="flex h-[calc(100dvh-5rem)] min-h-0 flex-col overflow-hidden sm:h-[calc(100dvh-6rem)] lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]">
         {/* Threads */}
-        <Panel
+        <div
           className={cn(
-            "w-full lg:w-64 flex-shrink-0 p-3 flex-col gap-3 overflow-hidden lg:max-h-none lg:flex",
-            // Gone entirely when collapsed, not merely short: a Card wrapping
-            // one button still costs a border, p-3 and the parent gap-4, which
-            // is most of a message. Its controls live in the chat header on
+            "min-h-0 flex-col gap-3 overflow-hidden p-3 lg:flex lg:max-h-none lg:border-r lg:border-border/40",
+            // Gone entirely when collapsed, not merely short: a bordered box
+            // wrapping one button still costs a rule and its padding, which is
+            // most of a message. Its controls live in the chat header on
             // mobile instead. Open, it is capped so it cannot take over.
             historyOpen ? "flex max-h-[45vh]" : "hidden max-h-none",
           )}
@@ -492,7 +491,7 @@ const AgentChat = () => {
                   key={t.id}
                   className={cn(
                     "group flex items-center gap-1 rounded-lg px-2 py-2 text-sm cursor-pointer transition-colors",
-                    t.id === threadId ? "bg-primary/15 text-foreground" : "hover:bg-muted/50",
+                    t.id === threadId ? "bg-muted/60 text-foreground" : "hover:bg-muted/30",
                   )}
                 >
                   <button
@@ -517,10 +516,10 @@ const AgentChat = () => {
               ))}
             </div>
           </ScrollArea>
-        </Panel>
+        </div>
 
         {/* Chat */}
-        <Panel className="flex-1 min-h-0 min-w-0 flex flex-col overflow-hidden">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <div className="border-b border-border/60 px-3 py-2 sm:px-4 sm:py-3">
             {/* Thread controls, mobile only. On lg these live in the sidebar,
                 which is always on screen; below it the sidebar is collapsed so
@@ -542,21 +541,16 @@ const AgentChat = () => {
             </div>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
             {/* The row above already identifies this pane on a phone. */}
-            <div className="hidden items-center gap-2 min-w-0 sm:flex">
-              <div className="p-1.5 rounded-lg bg-primary/15 flex-shrink-0">
-                <Bot className="w-4 h-4 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold truncate">Chat with your AI SDR</p>
-                <p className="hidden text-xs text-muted-foreground truncate sm:block">
-                  It can enrich, score, draft, send and run full cycles on your leads
-                </p>
-              </div>
+            <div className="hidden min-w-0 sm:block">
+              <p className="truncate text-[0.8125rem] font-medium text-foreground">Chat with your AI SDR</p>
+              <p className="mt-0.5 hidden truncate text-[0.6875rem] text-muted-foreground sm:block">
+                It can enrich, score, draft, send and run full cycles on your leads.
+              </p>
             </div>
             <div className="flex items-center gap-2 sm:flex-shrink-0">
             {agents.length > 1 && (
               <Select value={agentId ?? "primary"} onValueChange={handleAgentChange}>
-                <SelectTrigger className="flex-1 min-w-0 sm:flex-none sm:w-[190px]" aria-label="Agent build">
+                <SelectTrigger className="h-8 min-w-0 flex-1 border-border/50 text-[0.75rem] sm:w-[190px] sm:flex-none" aria-label="Agent build">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -570,7 +564,7 @@ const AgentChat = () => {
               </Select>
             )}
             <Select value={autonomy} onValueChange={(v) => handleAutonomyChange(v as any)}>
-              <SelectTrigger className="flex-1 min-w-0 sm:flex-none sm:w-[168px]" aria-label="Autonomy">
+              <SelectTrigger className="h-8 min-w-0 flex-1 border-border/50 text-[0.75rem] sm:w-[168px] sm:flex-none" aria-label="Autonomy">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -592,23 +586,20 @@ const AgentChat = () => {
               )}
 
               {!loading && messages.length === 0 && (
-                <div className="py-10 text-center space-y-5">
-                  <div className="inline-flex p-3 rounded-2xl bg-primary/10">
-                    <Bot className="w-7 h-7 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-semibold">Hand the work over</p>
-                    <p className="text-sm text-muted-foreground mt-1">
+                <div className="space-y-4 py-10">
+                  <div className="text-center">
+                    <p className="text-[0.8125rem] font-medium text-foreground">Hand the work over</p>
+                    <p className="mx-auto mt-1.5 max-w-md text-[0.6875rem] leading-relaxed text-muted-foreground">
                       Search leads however you like, then tell the agent to take it from there.
                     </p>
                   </div>
-                  <div className="grid sm:grid-cols-2 gap-2 text-left">
+                  <div className="grid gap-2 text-left sm:grid-cols-2">
                     {SUGGESTIONS.map((s) => (
                       <button
                         key={s}
                         type="button"
                         onClick={() => handleSend(s)}
-                        className="rounded-xl border border-border/60 bg-card/60 p-3 text-sm hover:border-primary/50 transition-colors"
+                        className="rounded-lg border border-border/40 px-3 py-2.5 text-[0.8125rem] leading-relaxed text-foreground/85 transition-colors hover:border-primary/40 hover:bg-primary/5"
                       >
                         {s}
                       </button>
@@ -620,7 +611,7 @@ const AgentChat = () => {
               {messages.map((m) =>
                 m.role === "user" ? (
                   <div key={m.id} className="flex justify-end">
-                    <div className="max-w-[85%] rounded-2xl rounded-br-sm bg-primary px-4 py-2.5 text-sm text-primary-foreground whitespace-pre-wrap break-words">
+                    <div className="max-w-[85%] whitespace-pre-wrap break-words rounded-lg bg-primary/15 px-3.5 py-2.5 text-[0.8125rem] leading-relaxed text-foreground">
                       {m.content}
                     </div>
                   </div>
@@ -752,7 +743,7 @@ const AgentChat = () => {
                 }}
                 placeholder="e.g. Enrich the 12 leads I just saved, score them, and draft emails for anyone above 70"
                 rows={2}
-                className="min-w-0 flex-1 resize-none text-base sm:text-sm"
+                className="min-w-0 flex-1 resize-none border-border/50 bg-background text-base sm:text-[0.8125rem]"
                 disabled={sending || runActive || loading}
               />
               {sending || runActive ? (
@@ -783,14 +774,14 @@ const AgentChat = () => {
                 </Button>
               )}
             </div>
-            <p className="max-w-3xl mx-auto mt-2 text-[11px] text-muted-foreground">
+            <p className="mx-auto mt-2 max-w-3xl text-[0.625rem] text-muted-foreground">
               {autonomy === "autonomous"
                 ? "Full autonomy: sends, enrollments and full runs execute immediately."
                 : "Approval mode: the agent asks you to approve sends and runs right here in the chat."}
             </p>
           </div>
-        </Panel>
-      </div>
+        </div>
+      </Panel>
     </DashboardLayout>
   );
 };

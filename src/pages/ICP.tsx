@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { useICPProfiles, ICPProfile } from "@/hooks/use-icp-profiles";
@@ -6,7 +6,6 @@ import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
 import { EmptyState, Panel, PanelBody, PanelHeader } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,7 +17,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { Slider } from "@/components/ui/slider";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Target, Plus, Trash2, X, Save, Building2, Users, Activity, Ban, Lightbulb, Sparkles, BarChart3, Search } from "lucide-react";
+import { Plus, Trash2, X, Save, Search } from "lucide-react";
 import { toast } from "sonner";
 import { ICPLookalikesDialog } from "@/components/dashboard/ICPLookalikesDialog";
 import { ICPValidationPanel } from "@/components/dashboard/ICPValidationPanel";
@@ -60,16 +59,6 @@ const HIRING_SIGNAL_OPTIONS = [
   "Hiring Data team", "Hiring Founding [role]", "Hiring Security / Compliance",
 ];
 
-const SECTION_ICONS = {
-  basics: Target,
-  firmographics: Building2,
-  people: Users,
-  signals: Activity,
-  exclusions: Ban,
-  strategy: Lightbulb,
-  scoring: BarChart3,
-};
-
 const emptyProfile: Partial<ICPProfile> = {
   name: "", industries: [], company_size_min: 1, company_size_max: 10000,
   revenue_range: [], geographies: [], target_titles: [], tech_stack: [],
@@ -85,23 +74,79 @@ const emptyProfile: Partial<ICPProfile> = {
   scoring_weights: { title: 25, industry: 25, size: 25, tech: 25 },
 };
 
+/**
+ * One chip, in the one shape every chooser on this screen uses.
+ *
+ * There were three vocabularies for the same act of picking something: a solid
+ * primary Badge for a selected option, an outlined Badge for an unselected one,
+ * a "secondary" Badge for a tag you had typed, and a rounded pill prefixed with
+ * a plus for a suggestion. Selecting five industries out of thirty-six painted
+ * five solid blocks into a field of outlines, which made the loudest marks on
+ * the screen a record of what you had already done.
+ */
+const Chip = ({
+  children,
+  selected,
+  onClick,
+  title,
+}: {
+  children: ReactNode;
+  selected?: boolean;
+  onClick: () => void;
+  title?: string;
+}) => (
+  <button
+    type="button"
+    title={title}
+    onClick={onClick}
+    className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[0.75rem] leading-none transition-colors ${
+      selected
+        ? "border-primary/50 bg-primary/10 text-foreground"
+        : "border-border/50 text-muted-foreground hover:border-border hover:text-foreground"
+    }`}
+  >
+    {children}
+  </button>
+);
+
+/**
+ * A field: its name, what it is for, and the control.
+ *
+ * Labels ran at shadcn's default size with no explanation, so a screen of
+ * thirty inputs gave the reader thirty nouns and no idea which ones mattered.
+ */
+const Field = ({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) => (
+  <div className="space-y-2">
+    <div>
+      <Label className="text-[0.8125rem] font-medium text-foreground">{label}</Label>
+      {hint && <p className="mt-0.5 text-[0.6875rem] leading-relaxed text-muted-foreground">{hint}</p>}
+    </div>
+    {children}
+  </div>
+);
+
 function TagInput({ value, onChange, placeholder, suggestions }: { value: string[]; onChange: (v: string[]) => void; placeholder: string; suggestions?: string[] }) {
   const [input, setInput] = useState("");
   const filteredSuggestions = suggestions?.filter(s => !value.includes(s) && (input.length === 0 || s.toLowerCase().includes(input.toLowerCase()))).slice(0, 6);
   return (
-    <div>
-      <div className="flex flex-wrap gap-1.5 mb-2">
-        {value.map((tag) => (
-          <Badge key={tag} variant="secondary" className="gap-1 text-xs">
-            {tag}
-            <button type="button" onClick={() => onChange(value.filter((t) => t !== tag))}><X className="w-3 h-3" /></button>
-          </Badge>
-        ))}
-      </div>
+    <div className="space-y-2">
+      {value.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {value.map((tag) => (
+            <Chip key={tag} selected onClick={() => onChange(value.filter((t) => t !== tag))} title={`Remove ${tag}`}>
+              {tag}
+              <X className="h-3 w-3 opacity-60" />
+            </Chip>
+          ))}
+        </div>
+      )}
       <Input
         placeholder={placeholder}
         value={input}
         onChange={(e) => setInput(e.target.value)}
+        /* 16px on a phone: below that, focusing a field makes iOS Safari zoom
+           the page and never zoom back out, and this screen is forty fields. */
+        className="h-9 border-border/50 bg-background text-base sm:text-[0.8125rem]"
         onKeyDown={(e) => {
           if (e.key === "Enter" && input.trim()) {
             e.preventDefault();
@@ -111,16 +156,12 @@ function TagInput({ value, onChange, placeholder, suggestions }: { value: string
         }}
       />
       {filteredSuggestions && filteredSuggestions.length > 0 && (
-        <div className="flex flex-wrap gap-1 mt-2">
+        <div className="flex flex-wrap gap-1.5">
           {filteredSuggestions.map(s => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => { onChange([...value, s]); setInput(""); }}
-              className="text-xs px-2 py-0.5 rounded-full bg-muted hover:bg-muted/70 text-muted-foreground transition-colors"
-            >
-              + {s}
-            </button>
+            <Chip key={s} onClick={() => { onChange([...value, s]); setInput(""); }}>
+              <Plus className="h-3 w-3 opacity-60" />
+              {s}
+            </Chip>
           ))}
         </div>
       )}
@@ -128,28 +169,55 @@ function TagInput({ value, onChange, placeholder, suggestions }: { value: string
   );
 }
 
+/**
+ * Pick any number from a list.
+ *
+ * Thirty-six industries were all rendered at once, so the control for one field
+ * filled a screen and the six of them stacked in a two-column grid were
+ * unusable on a phone. Long lists now show the first dozen and what you have
+ * already chosen, and open the rest on request — the chosen ones always
+ * surface, so opening it is never how you find out what you picked.
+ */
 function MultiSelect({ options, value, onChange }: { options: string[]; value: string[]; onChange: (v: string[]) => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const LIMIT = 12;
+  const long = options.length > LIMIT;
+  const toggle = (opt: string) =>
+    onChange(value.includes(opt) ? value.filter((v) => v !== opt) : [...value, opt]);
+
+  const shown = !long || expanded
+    ? options
+    : [...options.filter((o) => value.includes(o)), ...options.filter((o) => !value.includes(o))].slice(0, LIMIT);
+  const hidden = options.length - shown.length;
+
   return (
-    <div className="flex flex-wrap gap-2">
-      {options.map((opt) => (
-        <Badge
-          key={opt}
-          variant={value.includes(opt) ? "default" : "outline"}
-          className="cursor-pointer text-xs"
-          onClick={() => onChange(value.includes(opt) ? value.filter((v) => v !== opt) : [...value, opt])}
-        >
+    <div className="flex flex-wrap items-center gap-1.5">
+      {shown.map((opt) => (
+        <Chip key={opt} selected={value.includes(opt)} onClick={() => toggle(opt)}>
           {opt}
-        </Badge>
+        </Chip>
       ))}
+      {long && (
+        <button
+          type="button"
+          onClick={() => setExpanded((e) => !e)}
+          className="px-1.5 text-[0.6875rem] text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline"
+        >
+          {expanded ? "Show fewer" : `${hidden} more`}
+        </button>
+      )}
     </div>
   );
 }
 
 function ListInput({ value, onChange, placeholder, maxItems = 10 }: { value: string[]; onChange: (v: string[]) => void; placeholder: string; maxItems?: number }) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       {value.map((item, i) => (
-        <div key={i} className="flex gap-2">
+        <div key={i} className="flex items-center gap-1.5">
+          {/* The row's index in a fixed gutter, so a list of eight pain points
+              reads as an ordered list rather than eight identical boxes. */}
+          <span className="w-3 shrink-0 text-right text-[0.625rem] tabular-nums text-muted-foreground/50">{i + 1}</span>
           <Input
             value={item}
             onChange={(e) => {
@@ -158,16 +226,26 @@ function ListInput({ value, onChange, placeholder, maxItems = 10 }: { value: str
               onChange(next);
             }}
             placeholder={placeholder}
+            className="h-9 border-border/50 bg-background text-base sm:text-[0.8125rem]"
           />
-          <Button type="button" variant="ghost" size="icon" onClick={() => onChange(value.filter((_, idx) => idx !== i))}>
-            <X className="w-4 h-4" />
-          </Button>
+          <button
+            type="button"
+            onClick={() => onChange(value.filter((_, idx) => idx !== i))}
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+            title="Remove"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
         </div>
       ))}
       {value.length < maxItems && (
-        <Button type="button" variant="outline" size="sm" onClick={() => onChange([...value, ""])}>
-          <Plus className="w-3 h-3 mr-1" /> Add
-        </Button>
+        <button
+          type="button"
+          onClick={() => onChange([...value, ""])}
+          className="ml-[1.125rem] inline-flex items-center gap-1.5 text-[0.6875rem] text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <Plus className="h-3 w-3" /> Add {value.length > 0 ? "another" : "one"}
+        </button>
       )}
     </div>
   );
@@ -389,131 +467,142 @@ const ICP = () => {
 
       {/* Advanced Editor Sheet */}
       <Sheet open={!!editing} onOpenChange={(open) => { if (!open) setEditing(null); }}>
-        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-primary" />
-              {isNew ? "New ICP Profile" : "Edit ICP Profile"}
+        {/* The editor keeps its own scroll, so the tab strip and the save bar
+            stay put while forty fields move under them. It used to scroll the
+            whole sheet, which took the tabs off screen on the second field and
+            left no way back to another section but scrolling up. */}
+        <SheetContent className="flex w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
+          <SheetHeader className="shrink-0 space-y-1 border-b border-border/40 px-5 py-4 text-left">
+            {/* No sparkle. It sat beside the words it decorated, and the line
+                under them sold the builder to somebody already inside it. */}
+            <SheetTitle className="text-[0.9375rem] font-medium">
+              {isNew ? "New ICP" : editing?.name || "Edit ICP"}
             </SheetTitle>
-            <SheetDescription>The most detailed ICP builder in outbound — fill what matters, skip what doesn't.</SheetDescription>
+            <SheetDescription className="text-[0.6875rem] leading-relaxed">
+              Fill what you know. Every field here is read by search, by scoring and by the agent — blanks are
+              simply not used, so a half-filled profile still works.
+            </SheetDescription>
           </SheetHeader>
 
           {editing && (
-            <div className="mt-6">
-              <div className="mb-4 space-y-3">
-                <ICPValidationPanel profile={editing as any} />
-                {editing.id && <IcpVersionHistory icpProfileId={editing.id} />}
-              </div>
-              <Tabs defaultValue="basics" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-4 sm:grid-cols-4">
-                  <TabsTrigger value="basics">Basics</TabsTrigger>
-                  <TabsTrigger value="targeting">Targeting</TabsTrigger>
-                  <TabsTrigger value="signals">Signals</TabsTrigger>
-                  <TabsTrigger value="strategy">Strategy</TabsTrigger>
+            <Tabs defaultValue="basics" className="flex min-h-0 flex-1 flex-col">
+              <div className="shrink-0 border-b border-border/40 px-5 py-2">
+                <TabsList className="h-auto w-full justify-start gap-1 bg-transparent p-0">
+                  {[
+                    { value: "basics", label: "Basics" },
+                    { value: "targeting", label: "Targeting" },
+                    { value: "signals", label: "Signals" },
+                    { value: "strategy", label: "Strategy" },
+                  ].map((t) => (
+                    <TabsTrigger
+                      key={t.value}
+                      value={t.value}
+                      className="rounded-md px-2.5 py-1.5 text-[0.75rem] font-normal text-muted-foreground data-[state=active]:bg-muted/60 data-[state=active]:text-foreground data-[state=active]:shadow-none"
+                    >
+                      {t.label}
+                    </TabsTrigger>
+                  ))}
                 </TabsList>
+              </div>
+
+              <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+                <div className="mb-4 space-y-3">
+                  <ICPValidationPanel profile={editing as any} />
+                  {editing.id && <IcpVersionHistory icpProfileId={editing.id} />}
+                </div>
 
                 {/* ─── BASICS ──────────────────────────── */}
                 <TabsContent value="basics" className="space-y-6">
-                  <div className="space-y-2">
-                    <Label>Profile Name *</Label>
+                  <Field label="Name" hint="What you will call this ICP in search and in sequences.">
                     <Input
                       value={editing.name || ""}
                       onChange={(e) => update({ name: e.target.value })}
                       placeholder="e.g., Mid-Market SaaS RevOps Leaders"
                     />
-                  </div>
+                  </Field>
 
-                  <div className="space-y-2">
-                    <Label>Value Proposition (1–2 sentences)</Label>
+                  <Field label="Value proposition" hint="What you offer this ICP specifically. The agent writes from this.">
                     <Textarea
                       value={editing.value_proposition || ""}
                       onChange={(e) => update({ value_proposition: e.target.value })}
                       placeholder="What you uniquely offer this ICP. e.g., 'We help RevOps leaders at $10M–$100M SaaS companies cut their lead enrichment costs by 60% while improving data accuracy.'"
                       className="min-h-[80px]"
                     />
-                  </div>
+                  </Field>
 
-                  <div className="space-y-2">
-                    <Label>Example Customers (your best-fit closed-won deals)</Label>
+                  <Field label="Example customers" hint="Three to five closed-won deals and what made them ideal.">
                     <Textarea
                       value={editing.customer_examples || ""}
                       onChange={(e) => update({ customer_examples: e.target.value })}
                       placeholder="List 3–5 of your best customers and what makes them ideal. e.g., 'Acme Corp — 80 employees, Series B, struggling with manual CRM hygiene...'"
                       className="min-h-[100px]"
                     />
-                  </div>
+                  </Field>
 
-                  <div className="space-y-2">
-                    <Label>Top Pain Points (the problems you solve)</Label>
+                  <Field label="Pain points" hint="The problems you solve, in their words.">
                     <ListInput
                       value={editing.pain_points || []}
                       onChange={(v) => update({ pain_points: v })}
                       placeholder="e.g., 'Sales reps waste 4hrs/day on data entry'"
                       maxItems={8}
                     />
-                  </div>
+                  </Field>
 
-                  <div className="space-y-2">
-                    <Label>Use Cases (specific scenarios where they'd use you)</Label>
+                  <Field label="Use cases" hint="Specific situations where they would reach for you.">
                     <ListInput
                       value={editing.use_cases || []}
                       onChange={(v) => update({ use_cases: v })}
                       placeholder="e.g., 'Auto-enrich inbound demo requests'"
                       maxItems={8}
                     />
-                  </div>
+                  </Field>
 
-                  <div className="space-y-2">
-                    <Label>Common Objections (what they'll push back on)</Label>
+                  <Field label="Common objections" hint="What they push back on, so replies can answer it.">
                     <ListInput
                       value={editing.objections || []}
                       onChange={(v) => update({ objections: v })}
                       placeholder="e.g., 'Already using ZoomInfo'"
                       maxItems={6}
                     />
-                  </div>
+                  </Field>
 
-                  <div className="space-y-2">
-                    <Label>Success Metrics (how they'll measure ROI)</Label>
+                  <Field label="Success metrics" hint="How they will decide it worked.">
                     <ListInput
                       value={editing.success_metrics || []}
                       onChange={(v) => update({ success_metrics: v })}
                       placeholder="e.g., 'Pipeline generated per SDR'"
                       maxItems={6}
                     />
-                  </div>
+                  </Field>
 
-                  <div className="space-y-2">
-                    <Label>Notes</Label>
+                  <Field label="Notes" hint="Anything else worth remembering about this ICP.">
                     <Textarea
                       placeholder="Any additional context for this ICP..."
                       value={editing.notes || ""}
                       onChange={(e) => update({ notes: e.target.value })}
                       className="min-h-[80px]"
                     />
-                  </div>
+                  </Field>
                 </TabsContent>
 
                 {/* ─── TARGETING ──────────────────────────── */}
                 <TabsContent value="targeting" className="space-y-2">
                   <Accordion type="multiple" defaultValue={["firmo", "people"]} className="w-full">
                     <AccordionItem value="firmo">
-                      <AccordionTrigger className="text-sm font-semibold">
-                        <span className="flex items-center gap-2"><Building2 className="w-4 h-4" />Firmographics</span>
+                      <AccordionTrigger className="py-3 text-[0.625rem] font-medium uppercase tracking-[0.1em] text-muted-foreground/70 hover:no-underline">
+                        Firmographics
                       </AccordionTrigger>
                       <AccordionContent className="space-y-5 pt-2">
-                        <div className="space-y-2">
-                          <Label>Industries</Label>
+                        <Field label="Industries">
                           <MultiSelect options={INDUSTRY_OPTIONS} value={editing.industries || []} onChange={(v) => update({ industries: v })} />
                           <TagInput
                             value={(editing.industries || []).filter(i => !INDUSTRY_OPTIONS.includes(i))}
                             onChange={(custom) => update({ industries: [...(editing.industries || []).filter(i => INDUSTRY_OPTIONS.includes(i)), ...custom] })}
                             placeholder="Custom industry — press Enter"
                           />
-                        </div>
+                        </Field>
 
-                        <div className="space-y-2">
-                          <Label>Company Size (employees)</Label>
+                        <Field label="Company size">
                           <div className="flex items-center gap-3">
                             <Input
                               type="number"
@@ -534,101 +623,86 @@ const ICP = () => {
                             />
                             <span className="text-muted-foreground text-sm">employees</span>
                           </div>
-                        </div>
+                        </Field>
 
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-2">
-                            <Label>Annual Revenue</Label>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <Field label="Annual revenue">
                             <MultiSelect options={REVENUE_OPTIONS} value={editing.revenue_range || []} onChange={(v) => update({ revenue_range: v })} />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Business Model</Label>
+                          </Field>
+                          <Field label="Business model">
                             <MultiSelect options={BUSINESS_MODELS} value={editing.business_model || []} onChange={(v) => update({ business_model: v })} />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Growth Stage</Label>
+                          </Field>
+                          <Field label="Growth stage">
                             <MultiSelect options={GROWTH_STAGES} value={editing.growth_stage || []} onChange={(v) => update({ growth_stage: v })} />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Company Age</Label>
+                          </Field>
+                          <Field label="Company age">
                             <MultiSelect options={COMPANY_AGE} value={editing.company_age_range || []} onChange={(v) => update({ company_age_range: v })} />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Deal Size (ACV)</Label>
+                          </Field>
+                          <Field label="Deal size (ACV)">
                             <MultiSelect options={DEAL_SIZES} value={editing.deal_size_range || []} onChange={(v) => update({ deal_size_range: v })} />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Sales Cycle</Label>
+                          </Field>
+                          <Field label="Sales cycle">
                             <MultiSelect options={SALES_CYCLES} value={editing.sales_cycle || []} onChange={(v) => update({ sales_cycle: v })} />
-                          </div>
+                          </Field>
                         </div>
 
-                        <div className="space-y-2">
-                          <Label>Funding Stages</Label>
+                        <Field label="Funding stages">
                           <MultiSelect options={FUNDING_STAGES} value={editing.funding_stages || []} onChange={(v) => update({ funding_stages: v })} />
-                        </div>
+                        </Field>
 
-                        <div className="space-y-2">
-                          <Label>Geography</Label>
+                        <Field label="Geography">
                           <MultiSelect options={GEO_OPTIONS} value={editing.geographies || []} onChange={(v) => update({ geographies: v })} />
                           <TagInput
                             value={(editing.geographies || []).filter(g => !GEO_OPTIONS.includes(g))}
                             onChange={(custom) => update({ geographies: [...(editing.geographies || []).filter(g => GEO_OPTIONS.includes(g)), ...custom] })}
                             placeholder="Specific city / state / country — press Enter"
                           />
-                        </div>
+                        </Field>
                       </AccordionContent>
                     </AccordionItem>
 
                     <AccordionItem value="people">
-                      <AccordionTrigger className="text-sm font-semibold">
-                        <span className="flex items-center gap-2"><Users className="w-4 h-4" />People & Personas</span>
+                      <AccordionTrigger className="py-3 text-[0.625rem] font-medium uppercase tracking-[0.1em] text-muted-foreground/70 hover:no-underline">
+                        People and personas
                       </AccordionTrigger>
                       <AccordionContent className="space-y-5 pt-2">
-                        <div className="space-y-2">
-                          <Label>Target Job Titles</Label>
+                        <Field label="Target job titles" hint="The roles you sell to. Search reads these directly.">
                           <TagInput
                             value={editing.target_titles || []}
                             onChange={(v) => update({ target_titles: v })}
                             placeholder="Type a title and press Enter"
                             suggestions={["VP of Sales", "Head of Growth", "CRO", "CMO", "RevOps Manager", "SDR Manager", "Founder", "CEO", "Director of Demand Gen"]}
                           />
-                        </div>
+                        </Field>
 
-                        <div className="space-y-2">
-                          <Label>Departments</Label>
+                        <Field label="Departments">
                           <MultiSelect options={DEPARTMENTS} value={editing.departments || []} onChange={(v) => update({ departments: v })} />
-                        </div>
+                        </Field>
 
-                        <div className="space-y-2">
-                          <Label>Seniority Levels</Label>
+                        <Field label="Seniority">
                           <MultiSelect options={SENIORITY} value={editing.seniority_levels || []} onChange={(v) => update({ seniority_levels: v })} />
-                        </div>
+                        </Field>
 
-                        <div className="space-y-2">
-                          <Label>Budget Authority</Label>
+                        <Field label="Budget authority">
                           <MultiSelect options={BUDGET_AUTHORITY} value={editing.budget_authority || []} onChange={(v) => update({ budget_authority: v })} />
-                        </div>
+                        </Field>
                       </AccordionContent>
                     </AccordionItem>
 
                     <AccordionItem value="exclusions">
-                      <AccordionTrigger className="text-sm font-semibold">
-                        <span className="flex items-center gap-2"><Ban className="w-4 h-4" />Exclusions (Never Target)</span>
+                      <AccordionTrigger className="py-3 text-[0.625rem] font-medium uppercase tracking-[0.1em] text-muted-foreground/70 hover:no-underline">
+                        Never target
                       </AccordionTrigger>
                       <AccordionContent className="space-y-5 pt-2">
-                        <div className="space-y-2">
-                          <Label>Exclude Industries</Label>
+                        <Field label="Exclude industries">
                           <TagInput value={editing.exclude_industries || []} onChange={(v) => update({ exclude_industries: v })} placeholder="e.g., Gambling" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Exclude Job Titles</Label>
+                        </Field>
+                        <Field label="Exclude job titles">
                           <TagInput value={editing.exclude_titles || []} onChange={(v) => update({ exclude_titles: v })} placeholder="e.g., Intern, Student" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Exclude Keywords (in company name or description)</Label>
+                        </Field>
+                        <Field label="Exclude keywords" hint="Matched against company name and description.">
                           <TagInput value={editing.exclude_keywords || []} onChange={(v) => update({ exclude_keywords: v })} placeholder="e.g., agency, freelance, consulting" />
-                        </div>
+                        </Field>
                         <div className="space-y-3 rounded-lg border border-border/60 p-3">
                           <Label className="text-sm">Hard exclusions</Label>
                           <div className="space-y-1.5">
@@ -654,15 +728,14 @@ const ICP = () => {
                             <TagInput value={editing.exclude_regulated || []} onChange={(v) => update({ exclude_regulated: v })} placeholder="e.g., gambling, defense, tobacco" />
                           </div>
                         </div>
-                        <div className="space-y-2">
-                          <Label>Disqualifiers (free-form)</Label>
+                        <Field label="Disqualifiers" hint="Anything else that rules a company out.">
                           <Textarea
                             placeholder="Describe who is NOT a fit, even if they match the criteria above..."
                             value={editing.disqualifiers || ""}
                             onChange={(e) => update({ disqualifiers: e.target.value })}
                             className="min-h-[80px]"
                           />
-                        </div>
+                        </Field>
                       </AccordionContent>
                     </AccordionItem>
                   </Accordion>
@@ -670,8 +743,7 @@ const ICP = () => {
 
                 {/* ─── SIGNALS ──────────────────────────── */}
                 <TabsContent value="signals" className="space-y-6">
-                  <div className="space-y-2">
-                    <Label>Buying Signals to Watch</Label>
+                  <Field label="Buying signals" hint="Events that make a company worth reaching now.">
                     <p className="text-xs text-muted-foreground">Trigger events that indicate it's the right time to reach out.</p>
                     <div className="grid grid-cols-1 gap-2 mt-2">
                       {SIGNAL_OPTIONS.map((signal) => (
@@ -687,69 +759,63 @@ const ICP = () => {
                         </label>
                       ))}
                     </div>
-                  </div>
+                  </Field>
 
-                  <div className="space-y-2">
-                    <Label>Custom Trigger Events</Label>
+                  <Field label="Custom triggers" hint="Your own signals, beyond the list above.">
                     <TagInput
                       value={editing.event_triggers || []}
                       onChange={(v) => update({ event_triggers: v })}
                       placeholder="e.g., Opened a new office in EU"
                     />
-                  </div>
+                  </Field>
 
-                  <div className="space-y-2">
-                    <Label>Hiring Signals</Label>
+                  <Field label="Hiring signals">
                     <MultiSelect options={HIRING_SIGNAL_OPTIONS} value={editing.hiring_signals || []} onChange={(v) => update({ hiring_signals: v })} />
-                  </div>
+                  </Field>
 
-                  <div className="space-y-2">
-                    <Label>Intent Keywords (what they search / post about)</Label>
+                  <Field label="Intent keywords" hint="What they search for or post about.">
                     <TagInput
                       value={editing.intent_keywords || []}
                       onChange={(v) => update({ intent_keywords: v })}
                       placeholder="e.g., 'replace ZoomInfo', 'lead enrichment'"
                     />
-                  </div>
+                  </Field>
 
-                  <div className="space-y-2">
-                    <Label>Tech Stack They Use</Label>
+                  <Field label="Tech stack" hint="Tools they already run.">
                     <TagInput
                       value={editing.tech_stack || []}
                       onChange={(v) => update({ tech_stack: v })}
                       placeholder="e.g., HubSpot, Salesforce, Apollo"
                       suggestions={["HubSpot", "Salesforce", "Apollo", "Outreach", "Salesloft", "Gong", "ZoomInfo", "Clay", "Instantly", "Smartlead"]}
                     />
-                  </div>
+                  </Field>
 
-                  <div className="space-y-2">
-                    <Label>Competitor Tools (tools you replace)</Label>
+                  <Field label="Competitor tools" hint="What you would be replacing.">
                     <TagInput
                       value={editing.competitor_tools || []}
                       onChange={(v) => update({ competitor_tools: v })}
                       placeholder="e.g., ZoomInfo, Lusha"
                     />
-                  </div>
+                  </Field>
                 </TabsContent>
 
                 {/* ─── STRATEGY ──────────────────────────── */}
                 <TabsContent value="strategy" className="space-y-6">
-                  <div className="space-y-2">
-                    <Label>Preferred Outreach Channels</Label>
+                  <Field label="Preferred channels" hint="Where this ICP is most reachable.">
                     <p className="text-xs text-muted-foreground">Where this ICP is most reachable.</p>
                     <MultiSelect options={CHANNELS} value={editing.preferred_channels || []} onChange={(v) => update({ preferred_channels: v })} />
-                  </div>
+                  </Field>
 
-                  <div className="space-y-3 rounded-lg border border-border p-4 bg-muted/30">
-                    <Label className="flex items-center gap-2 mb-2"><BarChart3 className="w-4 h-4" />Scoring Weights</Label>
-                    <p className="text-xs text-muted-foreground">How much each criterion contributes to a lead's fit score (must total 100).</p>
+                  <Panel flat className="bg-muted/10">
+                    <PanelHeader title="Scoring weights" meta="How a lead's fit score is made up" />
+                    <PanelBody className="space-y-3">
                     {(["title", "industry", "size", "tech"] as const).map((key) => {
                       const weights = editing.scoring_weights || { title: 25, industry: 25, size: 25, tech: 25 };
                       return (
-                        <div key={key} className="space-y-1">
-                          <div className="flex justify-between text-xs">
-                            <span className="capitalize">{key} match</span>
-                            <span className="font-mono">{weights[key]}%</span>
+                        <div key={key} className="space-y-1.5">
+                          <div className="flex justify-between text-[0.75rem]">
+                            <span className="capitalize text-foreground/85">{key} match</span>
+                            <span className="tabular-nums text-muted-foreground">{weights[key]}%</span>
                           </div>
                           <Slider
                             min={0} max={100} step={5}
@@ -763,24 +829,52 @@ const ICP = () => {
                       const w = editing.scoring_weights || { title: 25, industry: 25, size: 25, tech: 25 };
                       const total = w.title + w.industry + w.size + w.tech;
                       return (
-                        <p className={`text-xs ${total === 100 ? "text-green-500" : "text-yellow-500"}`}>
-                          Total: {total}% {total !== 100 && "(should equal 100)"}
+                        // Green when correct and yellow when not is a traffic
+                        // light for arithmetic. The number is the answer; colour
+                        // appears only when something is actually wrong.
+                        <p className={`border-t border-border/30 pt-2.5 text-[0.6875rem] ${total === 100 ? "text-muted-foreground" : "text-amber-400"}`}>
+                          {total === 100
+                            ? "Totals 100%."
+                            : `Totals ${total}%. These are shares of one score, so they need to add up to 100.`}
                         </p>
                       );
                     })()}
-                  </div>
+                    </PanelBody>
+                  </Panel>
                 </TabsContent>
-              </Tabs>
-
-              <div className="flex gap-2 pt-6 border-t mt-6 sticky bottom-0 bg-background">
-                <Button onClick={handleSave} className="flex-1"><Save className="w-4 h-4 mr-2" />Save ICP</Button>
-                {!isNew && editing.id && (
-                  <Button variant="destructive" size="icon" onClick={() => { handleDelete(editing.id!); setEditing(null); }}>
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                )}
               </div>
-            </div>
+
+              {/* The save bar is a real strip on the sheet's bottom edge rather
+                  than a sticky div inside the scrolling content, where it drew
+                  no rule of its own and rode over whatever it happened to
+                  cover. Delete sits apart from save, and says what it deletes. */}
+              <div className="flex shrink-0 items-center justify-between gap-3 border-t border-border/40 bg-muted/10 px-5 py-3">
+                {!isNew && editing.id ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                    onClick={() => { handleDelete(editing.id!); setEditing(null); }}
+                  >
+                    <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                    Delete ICP
+                  </Button>
+                ) : (
+                  <span className="text-[0.625rem] text-muted-foreground">
+                    Nothing is saved until you press Save.
+                  </span>
+                )}
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setEditing(null)}>
+                    Cancel
+                  </Button>
+                  <Button size="sm" onClick={handleSave}>
+                    <Save className="mr-1.5 h-3.5 w-3.5" />
+                    Save ICP
+                  </Button>
+                </div>
+              </div>
+            </Tabs>
           )}
         </SheetContent>
       </Sheet>
