@@ -356,7 +356,7 @@ serve(async (req) => {
         .select(leadColumns).eq("user_id", user.id)
         .ilike("contact_email", String(person.contact_email)).limit(1).maybeSingle();
       if (!leadErr && data) {
-        existingLead = data as Record<string, unknown>;
+        existingLead = data as unknown as Record<string, unknown>;
       }
     }
     if (!existingLead && person.contact_name && person.company_name) {
@@ -366,7 +366,7 @@ serve(async (req) => {
         .ilike("company_name", String(person.company_name))
         .limit(1).maybeSingle();
       if (!leadErr && data) {
-        existingLead = data as Record<string, unknown>;
+        existingLead = data as unknown as Record<string, unknown>;
       }
     }
 
