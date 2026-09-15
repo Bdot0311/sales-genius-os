@@ -566,7 +566,7 @@ export const BulkSendDialog = ({
                 const validation = validateSenderDomain(senderEmail);
                 if (!validation.isPersonal) return null;
                 return (
-                  <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
+                  <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
                     <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
                     <div className="text-xs text-amber-400">
                       <p className="font-medium">Personal email detected</p>

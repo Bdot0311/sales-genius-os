@@ -344,7 +344,7 @@ const Settings = () => {
                     <h3 className="text-lg font-semibold">CAN-SPAM Compliance</h3>
                   </div>
 
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                  <div className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
                     <div className="flex items-start gap-2">
                       <AlertTriangle className="h-4 w-4 text-amber-400 mt-0.5" />
                       <p className="text-sm text-amber-400">

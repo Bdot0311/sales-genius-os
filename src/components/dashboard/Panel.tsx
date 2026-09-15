@@ -164,10 +164,23 @@ export interface Metric {
  * a rainbow legend. The room goes to `note` instead, so each number can say
  * what it means.
  */
-export const MetricStrip = ({ metrics, className }: { metrics: Metric[]; className?: string }) => (
+export const MetricStrip = ({
+  metrics,
+  columns = 4,
+  className,
+}: {
+  metrics: Metric[];
+  /** How many sit across the strip once there is room. */
+  columns?: 3 | 4 | 5;
+  className?: string;
+}) => (
   <div
     className={cn(
-      "grid grid-cols-2 overflow-hidden rounded-xl border border-border/30 lg:grid-cols-4",
+      "grid grid-cols-2 overflow-hidden rounded-xl border border-border/30",
+      // Written out, never interpolated: Tailwind ships only the classes it can
+      // see in the source, so a class name built from the count compiles to no
+      // CSS at all and the strip silently stays 2-up.
+      { 3: "lg:grid-cols-3", 4: "lg:grid-cols-4", 5: "lg:grid-cols-5" }[columns],
       className,
     )}
   >
@@ -182,8 +195,11 @@ export const MetricStrip = ({ metrics, className }: { metrics: Metric[]; classNa
         </>
       );
       const border = cn(
+        // Two across until there is room: rule down the middle, rule between
+        // rows.
         i % 2 === 1 && "border-l border-border/30",
         i >= 2 && "border-t border-border/30",
+        // In one row it is rules between neighbours and nothing else.
         "lg:border-t-0",
         i > 0 && "lg:border-l lg:border-border/30",
       );

@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
-import { EmptyState } from "@/components/dashboard/Panel";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { useICPProfiles, ICPProfile } from "@/hooks/use-icp-profiles";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState, Panel, PanelBody, PanelHeader } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -19,7 +18,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { Slider } from "@/components/ui/slider";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, Target, Plus, Trash2, X, Save, Building2, Users, Activity, Ban, Lightbulb, Sparkles, BarChart3, Search } from "lucide-react";
+import { Target, Plus, Trash2, X, Save, Building2, Users, Activity, Ban, Lightbulb, Sparkles, BarChart3, Search } from "lucide-react";
 import { toast } from "sonner";
 import { ICPLookalikesDialog } from "@/components/dashboard/ICPLookalikesDialog";
 import { ICPValidationPanel } from "@/components/dashboard/ICPValidationPanel";
@@ -248,86 +247,143 @@ const ICP = () => {
         title="Ideal Customer Profiles"
         description="Define exactly who you sell to — across firmographics, people, signals, and strategy."
         actions={
-          <Button variant="outline" size="sm" onClick={openNew} disabled={planLoading}>
-            <Plus className="w-4 h-4 mr-2" />New ICP
+          <Button size="sm" onClick={openNew} disabled={planLoading}>
+            <Plus className="mr-1.5 h-3.5 w-3.5" />New ICP
           </Button>
         }
       />
       <div className="space-y-4 pt-4">
-
         {profilesError && (
-          <div className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
-            <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-            <div>
-              <p className="font-medium">Could not load ICP profiles</p>
-              <p className="text-xs mt-0.5 opacity-80">{(profilesError as any)?.message ?? String(profilesError)}</p>
-            </div>
-          </div>
+          <Panel>
+            <PanelBody className="py-3.5">
+              <p className="text-[0.8125rem] font-medium text-destructive">Could not load your ICPs</p>
+              <p className="mt-1 break-words text-[0.6875rem] leading-relaxed text-muted-foreground">
+                {(profilesError as any)?.message ?? String(profilesError)}
+              </p>
+            </PanelBody>
+          </Panel>
         )}
 
         {isLoading ? (
-          <div className="grid gap-4 md:grid-cols-2">{[1, 2].map((i) => <Skeleton key={i} className="h-48" />)}</div>
+          <Panel>
+            <PanelBody className="space-y-2">
+              {[1, 2].map((i) => <Skeleton key={i} className="h-14 w-full" />)}
+            </PanelBody>
+          </Panel>
         ) : !profilesError && profiles.length === 0 ? (
           <EmptyState
             title="No ICPs yet"
             body="An ICP describes who you sell to across seven dimensions — firmographics, personas, signals, exclusions, strategy and your own scoring weights — and every search and score reads from it."
             action={
               <Button size="sm" onClick={openNew} disabled={planLoading}>
-                <Plus className="mr-2 h-3.5 w-3.5" />Create the first one
+                <Plus className="mr-1.5 h-3.5 w-3.5" />Create the first one
               </Button>
             }
           />
         ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            {profiles.map((p) => {
-              const score = getCompletionScore(p);
-              return (
-                <Card key={p.id} className="hover:border-primary/50 transition-colors cursor-pointer" onClick={() => openEdit(p)}>
-                  <CardHeader className="pb-3">
-                    <div className="flex justify-between items-start">
-                      <CardTitle className="text-lg">{p.name}</CardTitle>
-                      <Badge variant="outline" className={score >= 70 ? "text-green-500 border-green-500/30" : score >= 40 ? "text-yellow-500 border-yellow-500/30" : "text-red-500 border-red-500/30"}>
-                        {score}% complete
-                      </Badge>
-                    </div>
-                    {p.value_proposition && (
-                      <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{p.value_proposition}</p>
-                    )}
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {p.industries.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {p.industries.slice(0, 3).map((i) => <Badge key={i} variant="secondary" className="text-xs">{i}</Badge>)}
-                        {p.industries.length > 3 && <Badge variant="outline" className="text-xs">+{p.industries.length - 3}</Badge>}
-                      </div>
-                    )}
-                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                      <span>{p.company_size_min}–{p.company_size_max} employees</span>
-                      {p.business_model && p.business_model.length > 0 && <span>• {p.business_model.join(", ")}</span>}
-                      {p.deal_size_range && p.deal_size_range.length > 0 && <span>• {p.deal_size_range.join(", ")} ACV</span>}
-                    </div>
-                    {p.target_titles.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {p.target_titles.slice(0, 3).map((t) => <Badge key={t} variant="outline" className="text-xs">{t}</Badge>)}
-                        {p.target_titles.length > 3 && <Badge variant="outline" className="text-xs">+{p.target_titles.length - 3}</Badge>}
-                      </div>
-                    )}
-                    <div className="pt-2 border-t">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full"
-                        onClick={(e) => openLookalikes(p, e)}
+          /*
+            A list, not a grid of cards.
+            Each ICP was a card carrying a coloured completion badge, a row of
+            filled badges for industries, a row of outlined badges for titles,
+            and a full-width outlined button — so the heaviest element on the
+            page was repeated once per profile, three badge variants appeared on
+            one card, and the whole card was clickable with a button inside it.
+            Rows compare down a column, which is what you do with a set of ICPs,
+            and they still read at ten profiles where the grid did not.
+          */
+          <Panel>
+            <PanelHeader
+              title="Your ICPs"
+              meta={`${profiles.length} ${profiles.length === 1 ? "profile" : "profiles"}`}
+            />
+            <div>
+              {profiles.map((p) => {
+                const score = getCompletionScore(p);
+                const targets = [
+                  p.industries.length > 0 ? p.industries.slice(0, 3).join(", ") : null,
+                  p.industries.length > 3 ? `+${p.industries.length - 3} more industries` : null,
+                  `${p.company_size_min}–${p.company_size_max} employees`,
+                  p.business_model?.length ? p.business_model.join(", ") : null,
+                  p.deal_size_range?.length ? `${p.deal_size_range.join(", ")} ACV` : null,
+                ].filter(Boolean) as string[];
+                const people =
+                  p.target_titles.length > 0
+                    ? p.target_titles.slice(0, 4).join(", ") +
+                      (p.target_titles.length > 4 ? ` +${p.target_titles.length - 4}` : "")
+                    : null;
+
+                return (
+                  <div
+                    key={p.id}
+                    className="group border-b border-border/30 px-4 py-3.5 transition-colors last:border-b-0 hover:bg-muted/20 sm:px-5"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+                      <button
+                        type="button"
+                        onClick={() => openEdit(p)}
+                        className="min-w-0 flex-1 text-left"
                       >
-                        <Search className="w-3.5 h-3.5 mr-1.5" />
-                        Find Lookalikes
-                      </Button>
+                        <span className="block truncate text-[0.8125rem] font-medium text-foreground">
+                          {p.name}
+                        </span>
+                        {p.value_proposition && (
+                          <span className="mt-1 line-clamp-2 block max-w-[70ch] text-[0.6875rem] leading-relaxed text-muted-foreground">
+                            {p.value_proposition}
+                          </span>
+                        )}
+                      </button>
+
+                      {/* Completion as a measure rather than a traffic light.
+                          A red, amber or green badge says "bad / medium / good"
+                          about a profile that is simply unfinished, and the
+                          three colours carry no more information than the
+                          number does. Colour appears only low enough down that
+                          the searches reading this ICP will be poor. */}
+                      <div className="flex shrink-0 items-center gap-2.5">
+                        <div className="h-1 w-16 overflow-hidden rounded-full bg-muted">
+                          <div
+                            className={`h-full rounded-full ${score >= 40 ? "bg-primary" : "bg-amber-500"}`}
+                            style={{ width: `${Math.max(4, score)}%` }}
+                          />
+                        </div>
+                        <span className="w-16 text-[0.625rem] tabular-nums text-muted-foreground">
+                          {score}% filled
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => openLookalikes(p, e)}
+                          className="inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-[0.6875rem] text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                        >
+                          <Search className="h-3.5 w-3.5" />
+                          Lookalikes
+                        </button>
+                      </div>
                     </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+
+                    {/* Plain text, not badge soup. Six pills on a row is six
+                        borders and six backgrounds to say what a sentence says
+                        in one. */}
+                    {(targets.length > 0 || people) && (
+                      <dl className="mt-2 space-y-1">
+                        {targets.length > 0 && (
+                          <div className="flex gap-2 text-[0.6875rem] leading-relaxed">
+                            <dt className="w-14 shrink-0 text-muted-foreground/60">Companies</dt>
+                            <dd className="min-w-0 text-muted-foreground">{targets.join(" · ")}</dd>
+                          </div>
+                        )}
+                        {people && (
+                          <div className="flex gap-2 text-[0.6875rem] leading-relaxed">
+                            <dt className="w-14 shrink-0 text-muted-foreground/60">People</dt>
+                            <dd className="min-w-0 text-muted-foreground">{people}</dd>
+                          </div>
+                        )}
+                      </dl>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </Panel>
         )}
       </div>
 

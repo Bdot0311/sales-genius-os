@@ -166,7 +166,7 @@ export const WebhookTestDialog = ({ webhook, open, onOpenChange }: WebhookTestDi
           {testResult && (
             <div className="space-y-2">
               <Label>Test Result</Label>
-              <div className={`p-4 rounded-lg border ${testResult.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+              <div className={`rounded-lg border p-4 ${testResult.success ? 'border-emerald-500/30 bg-emerald-500/10' : 'border-destructive/30 bg-destructive/10'}`}>
                 <div className="flex items-center gap-2 mb-2">
                   {testResult.success ? (
                     <CheckCircle className="h-5 w-5 text-emerald-400" />

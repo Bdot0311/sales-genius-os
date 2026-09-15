@@ -2,25 +2,21 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { PageHeader } from "@/components/dashboard/PageHeader";
-import { Card } from "@/components/ui/card";
+import {
+  MetricStrip,
+  Panel,
+  PanelBody,
+  PanelFooter,
+  PanelHeader,
+  SectionLabel,
+  type Metric,
+} from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import {
-  Bot,
-  MessageSquare,
-  CalendarCheck,
-  Activity,
-  Clock,
-  AlertCircle,
-  Lock,
-  Zap,
-  Users,
-  Send,
-} from "lucide-react";
+import { Bot, MessageSquare, Lock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useSubscription } from "@/hooks/use-subscription";
 import { getAgentTier, getNextPlan, PLAN_FEATURES, type PlanType } from "@/lib/plan-features";
@@ -107,6 +103,9 @@ const Agent = () => {
   const [toggling, setToggling] = useState(false);
   const [gmailConnected, setGmailConnected] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  // Controlled, so the "not configured yet" panel can send the reader to the
+  // tab that fixes it instead of telling them to go and find it.
+  const [tab, setTab] = useState("overview");
 
 
   const loadData = useCallback(async () => {
@@ -257,53 +256,6 @@ const Agent = () => {
 
   const isEnabled = config?.enabled ?? false;
 
-  const statCards = [
-    {
-      label: "Leads Found Today",
-      value: stats.leadsToday,
-      icon: Users,
-      color: "text-cyan-400",
-      bg: "bg-cyan-500/10",
-    },
-    {
-      label: "Emails Sent Today",
-      value: stats.outreachToday,
-      icon: Send,
-      color: "text-indigo-400",
-      bg: "bg-indigo-500/10",
-    },
-    {
-      label: "Active Threads",
-      value: stats.activeThreads,
-      icon: MessageSquare,
-      color: "text-blue-400",
-      bg: "bg-blue-500/10",
-    },
-    {
-      label: "Replies Sent Today",
-      value: stats.repliesToday,
-      icon: Activity,
-      color: "text-purple-400",
-      bg: "bg-purple-500/10",
-    },
-    {
-      label: "Meetings Booked",
-      value: stats.meetingsBooked,
-      icon: CalendarCheck,
-      color: "text-green-400",
-      bg: "bg-green-500/10",
-    },
-    {
-      label: "Last Run",
-      value: stats.lastRun
-        ? formatDistanceToNow(new Date(stats.lastRun), { addSuffix: true })
-        : "Never",
-      icon: Clock,
-      color: "text-orange-400",
-      bg: "bg-orange-500/10",
-    },
-  ];
-
   const currentPlan = (subscription?.plan ?? "free") as PlanType;
   const tierSpec = getAgentTier(currentPlan);
   const agentTier = tierSpec.id;
@@ -312,79 +264,141 @@ const Agent = () => {
   const nextPlan = getNextPlan(currentPlan);
   const fmt = (n: number) => (n === -1 ? "Unlimited" : n.toLocaleString());
 
+  /**
+   * What the agent did today.
+   *
+   * These were six tiles in a grid, each with its own icon in its own colour —
+   * cyan, indigo, blue, purple, green, orange — which turned six unrelated
+   * numbers into a legend and made the brightest thing on the page a set of
+   * squares that mean nothing. The room the icons took goes to saying what each
+   * number is. When the agent last ran is no longer among them: that is its
+   * state rather than a count of its work, and the page already said it twice.
+   */
+  const metrics: Metric[] = [
+    { label: "Leads found", value: stats.leadsToday, note: "Sourced today against your ICP" },
+    { label: "Emails sent", value: stats.outreachToday, note: "First-touch outreach today" },
+    { label: "Active threads", value: stats.activeThreads, note: "Conversations still open" },
+    { label: "Replies sent", value: stats.repliesToday, note: "Answered by the agent today" },
+    { label: "Meetings booked", value: stats.meetingsBooked, note: "Since this agent was enabled" },
+  ];
 
   return (
     <DashboardLayout>
       <PageHeader
         title="AI Sales Agent"
-        description="Finds leads, writes and sends first-touch outreach, then handles replies — end to end"
+        description="Finds leads, writes and sends first-touch outreach, then handles replies, end to end."
         actions={
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={isEnabled}
-                onCheckedChange={handleToggle}
-                disabled={toggling || loading}
-                aria-label="Toggle agent"
-              />
-              <span className="text-sm text-muted-foreground">
-                {toggling ? "Updating…" : isEnabled ? "Enabled" : "Disabled"}
-              </span>
-            </div>
+          <>
             <Button
               variant="outline"
-              className="gap-2"
+              size="sm"
               onClick={() => navigate("/dashboard/agent/chat")}
             >
-              <MessageSquare className="w-4 h-4" />
+              <MessageSquare className="mr-1.5 h-3.5 w-3.5" />
               Chat with agent
             </Button>
-
             <AgentTestDialog disabled={loading} agentId={activeAgentId} />
-          </div>
+          </>
         }
       />
 
-      <div className="space-y-6 mt-6">
-        {/* Status bar */}
-        <div className="flex flex-wrap items-center gap-3 px-1">
-          <div className="flex items-center gap-2">
-            <Bot className="w-5 h-5 text-primary" />
-            <span className="text-sm font-medium">
-              {config?.agent_name ?? "AI Agent"}
-            </span>
-            {config && (
-              <Badge variant="outline" className="text-[10px]">
-                {roleLabel(config.role)}
-              </Badge>
-            )}
-          </div>
-          <Badge
-            variant="outline"
-            className={
-              isEnabled
-                ? "bg-green-500/15 text-green-400 border-green-500/30"
-                : "bg-muted/40 text-muted-foreground border-border"
-            }
-          >
-            <span
-              className={`mr-1.5 inline-block w-1.5 h-1.5 rounded-full ${
-                isEnabled ? "bg-green-400" : "bg-muted-foreground"
-              }`}
-            />
-            {isEnabled ? "Active" : "Inactive"}
-          </Badge>
-          {stats.lastRun && (
-            <span className="text-xs text-muted-foreground">
-              Last run:{" "}
-              {formatDistanceToNow(new Date(stats.lastRun), {
-                addSuffix: true,
-              })}
-            </span>
-          )}
-        </div>
+      <div className="space-y-4 pt-4">
+        {/*
+          Identity, the switch, what it is allowed to do, and what it is allowed
+          to spend — one surface.
 
-        {/* Agent builds */}
+          These were three: a bare status line floating with no surface under
+          it, a card of plan bullets, and a switch stranded in the page header
+          two hundred pixels from the word telling you whether it was on. They
+          are one question — is this thing running, and within what limits —
+          so they are one panel.
+        */}
+        <Panel>
+          <PanelHeader
+            title={
+              <span className="flex min-w-0 items-center gap-2">
+                <Bot className="h-3.5 w-3.5 shrink-0 text-primary" />
+                <span className="truncate">{config?.agent_name ?? "AI Agent"}</span>
+                {config ? (
+                  <span className="shrink-0 text-[0.6875rem] font-normal text-muted-foreground">
+                    {roleLabel(config.role)}
+                  </span>
+                ) : null}
+              </span>
+            }
+            actions={
+              <div className="flex items-center gap-2.5">
+                <span
+                  className={`inline-flex items-center gap-1.5 text-[0.6875rem] ${
+                    isEnabled ? "text-green-400" : "text-muted-foreground"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-1.5 w-1.5 rounded-full ${
+                      isEnabled ? "bg-green-400" : "bg-muted-foreground/50"
+                    }`}
+                  />
+                  {toggling ? "Updating…" : isEnabled ? "Running" : "Stopped"}
+                </span>
+                <Switch
+                  checked={isEnabled}
+                  onCheckedChange={handleToggle}
+                  disabled={toggling || loading}
+                  aria-label="Toggle agent"
+                />
+              </div>
+            }
+          />
+
+          <PanelBody className="space-y-3">
+            <SectionLabel>What it may do on its own, on {PLAN_FEATURES[currentPlan].name}</SectionLabel>
+            <ul className="grid gap-x-6 gap-y-1.5 sm:grid-cols-2">
+              {tierSpec.can.map((c) => (
+                <li key={c} className="flex items-start gap-2 text-[0.8125rem] leading-relaxed text-foreground/85">
+                  <span className="mt-[0.4375rem] h-1 w-1 shrink-0 rounded-full bg-primary" />
+                  {c}
+                </li>
+              ))}
+            </ul>
+          </PanelBody>
+
+          <PanelFooter className="justify-between">
+            <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <span>
+                <span className="text-muted-foreground/60">Builds</span>{" "}
+                <span className="tabular-nums text-foreground">{fmt(tierSpec.builds)}</span>
+              </span>
+              <span>
+                <span className="text-muted-foreground/60">Replies / day</span>{" "}
+                <span className="tabular-nums text-foreground">{fmt(tierSpec.dailyReplies)}</span>
+              </span>
+              <span>
+                <span className="text-muted-foreground/60">Leads / day</span>{" "}
+                <span className="tabular-nums text-foreground">{fmt(tierSpec.dailyLeadSourcing)}</span>
+              </span>
+              {stats.lastRun ? (
+                <span>
+                  <span className="text-muted-foreground/60">Last run</span>{" "}
+                  <span className="text-foreground">
+                    {formatDistanceToNow(new Date(stats.lastRun), { addSuffix: true })}
+                  </span>
+                </span>
+              ) : (
+                <span className="text-muted-foreground/60">Has not run yet</span>
+              )}
+            </span>
+            {nextPlan && (
+              <button
+                onClick={() => navigate("/pricing")}
+                className="inline-flex items-center gap-1.5 text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <Lock className="h-3 w-3" />
+                More volume on {PLAN_FEATURES[nextPlan].name}
+              </button>
+            )}
+          </PanelFooter>
+        </Panel>
+
         <AgentSwitcher
           agents={agents}
           activeAgentId={activeAgentId}
@@ -395,125 +409,51 @@ const Agent = () => {
           onChanged={loadData}
         />
 
-        {/* Plan tier panel */}
-        <Card className="p-5">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <Zap className="w-4 h-4 text-primary" />
-                <p className="text-sm font-semibold">{tierSpec.label}</p>
-                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
-                  {PLAN_FEATURES[currentPlan].name} plan
-                </Badge>
-              </div>
-              <p className="text-xs text-muted-foreground mb-3">
-                Included on every plan — higher tiers unlock more agent builds, more daily
-                volume, and more the agent is allowed to do on its own.
-              </p>
-              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5">
-                {tierSpec.can.map((c) => (
-                  <li key={c} className="text-xs text-muted-foreground flex items-start gap-2">
-                    <span className="mt-1.5 w-1 h-1 rounded-full bg-primary flex-shrink-0" />
-                    {c}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
-              <div className="flex flex-wrap gap-4 sm:text-right">
-
-                <div>
-                  <p className="text-[11px] text-muted-foreground">Agent builds</p>
-                  <p className="text-sm font-semibold">{fmt(tierSpec.builds)}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] text-muted-foreground">Replies / day</p>
-                  <p className="text-sm font-semibold">{fmt(tierSpec.dailyReplies)}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] text-muted-foreground">Leads / day</p>
-                  <p className="text-sm font-semibold">{fmt(tierSpec.dailyLeadSourcing)}</p>
-                </div>
-              </div>
-              {nextPlan && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  onClick={() => navigate("/pricing")}
-                >
-                  <Lock className="w-3.5 h-3.5" />
-                  Upgrade for more agent volume
-                </Button>
-              )}
-            </div>
-          </div>
-        </Card>
-
-        {/* Stats row */}
         {loading ? (
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Card key={i} className="p-5">
-                <div className="space-y-2">
-                  <div className="h-3 bg-muted animate-pulse rounded w-2/3" />
-                  <div className="h-7 bg-muted animate-pulse rounded w-1/2" />
-                </div>
-              </Card>
+          <div className="grid grid-cols-2 overflow-hidden rounded-xl border border-border/30 lg:grid-cols-5">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="space-y-2 px-4 py-4 sm:px-5">
+                <div className="h-2.5 w-2/3 animate-pulse rounded bg-muted" />
+                <div className="h-6 w-1/2 animate-pulse rounded bg-muted" />
+              </div>
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-            {statCards.map((card) => (
-              <Card key={card.label} className="p-5">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">
-                      {card.label}
-                    </p>
-                    <p className="text-2xl font-bold">{card.value}</p>
-                  </div>
-                  <div className={`p-2 rounded-lg ${card.bg}`}>
-                    <card.icon className={`w-5 h-5 ${card.color}`} />
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
+          <MetricStrip metrics={metrics} columns={5} />
         )}
 
-        {/* No-config prompt */}
+        {/* Not a dashed, tinted slab with a 24px icon in a tinted circle — that
+            is decoration standing in for the sentence beside it, and this one
+            sentence is the whole message. */}
         {!loading && agents.length > 0 && config === null && (
-          <Card className="p-6 border-dashed border-2 border-primary/20 bg-primary/5">
-            <div className="flex items-start gap-4">
-              <div className="p-3 rounded-full bg-primary/15 flex-shrink-0">
-                <AlertCircle className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <p className="font-semibold text-foreground">
-                  No agent configuration found
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Head to the{" "}
-                  <strong className="text-foreground">Configuration</strong> tab
-                  to set up your agent's persona, tone, and auto-reply settings
-                  before enabling it.
+          <Panel>
+            <PanelBody className="flex flex-col gap-3 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <p className="text-[0.8125rem] font-medium text-foreground">This agent is not configured yet</p>
+                <p className="mt-1 text-[0.6875rem] leading-relaxed text-muted-foreground">
+                  Set its persona, tone and auto-reply rules before turning it on, or it will run with defaults.
                 </p>
               </div>
-            </div>
-          </Card>
+              <Button size="sm" className="shrink-0" onClick={() => setTab("configuration")}>
+                Configure agent
+              </Button>
+            </PanelBody>
+          </Panel>
         )}
 
-        {/* Tabs */}
-        <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="bg-muted/40 border border-border/60">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="inbox">Inbox</TabsTrigger>
-            <TabsTrigger value="configuration">Configuration</TabsTrigger>
-            <TabsTrigger value="history">History</TabsTrigger>
-            <TabsTrigger value="performance">Performance</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
-          </TabsList>
+        <Tabs value={tab} onValueChange={setTab} className="space-y-4">
+          {/* Scrollable at narrow widths: six triggers do not fit on a phone,
+              and a TabsList that does not scroll simply hides the last two. */}
+          <div className="-mx-1 overflow-x-auto px-1">
+            <TabsList className="inline-flex w-auto border border-border/50 bg-muted/30">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="inbox">Inbox</TabsTrigger>
+              <TabsTrigger value="configuration">Configuration</TabsTrigger>
+              <TabsTrigger value="history">History</TabsTrigger>
+              <TabsTrigger value="performance">Performance</TabsTrigger>
+              <TabsTrigger value="settings">Settings</TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="overview">
             <OverviewTab
@@ -524,17 +464,12 @@ const Agent = () => {
             />
           </TabsContent>
 
-
           <TabsContent value="inbox">
             <InboxTab />
           </TabsContent>
 
           <TabsContent value="configuration">
-            <ConfigTab
-              config={config}
-              userId={userId}
-              onSaved={setConfig}
-            />
+            <ConfigTab config={config} userId={userId} onSaved={setConfig} />
           </TabsContent>
 
           <TabsContent value="history">
