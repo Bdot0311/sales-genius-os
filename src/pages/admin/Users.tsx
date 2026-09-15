@@ -442,20 +442,30 @@ const AdminUsers = () => {
               className="pl-10 bg-muted/30 border-border/50"
             />
           </div>
+          <div className="mt-3">
+            <UserActionBar
+              selected={selectedUsers}
+              allAdmin={allSelectedAdmin}
+              onClear={() => setSelectedIds([])}
+              onUpdatePlan={bulkUpdatePlan}
+              onLock={bulkLock}
+              onUnlock={bulkUnlock}
+              onToggleAdmin={bulkToggleAdmin}
+              onResetPassword={bulkResetPassword}
+              onDelete={bulkDelete}
+              onSetTrial={() => { setSelectedUser(selectedUsers[0]); setTrialDialogOpen(true); }}
+              onEdit={() => { setSelectedUser(selectedUsers[0]); setEditUserOpen(true); }}
+            />
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           <UserTable
             subscriptions={filteredSubscriptions}
             loading={loading}
             isUserAdmin={isUserAdmin}
-            onUpdateSubscription={updateSubscription}
-            onLockUser={lockUser}
-            onUnlockUser={unlockUser}
-            onToggleAdmin={toggleAdminStatus}
-            onSetTrial={(user) => { setSelectedUser(user); setTrialDialogOpen(true); }}
-            onDeleteUser={(user) => { setSelectedUser(user); setDeleteUserOpen(true); }}
-            onResetPassword={sendResetPasswordEmail}
-            onEditUser={(user) => { setSelectedUser(user); setEditUserOpen(true); }}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleSelect}
+            onToggleSelectAll={toggleSelectAll}
           />
         </CardContent>
       </Card>
