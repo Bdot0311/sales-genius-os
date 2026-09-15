@@ -3,14 +3,20 @@ import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useWhatsNew } from "@/hooks/use-whats-new";
+import { useChangelog } from "@/hooks/use-changelog";
 
 /**
  * Header shortcut to the What's New page. Shows a highlighted "New" pill only
  * while there's an update the customer hasn't read; otherwise a quiet icon.
+ *
+ * Unread is measured against what is actually published, not the copy compiled
+ * into the bundle — otherwise publishing an entry would never light the badge.
  */
 export const WhatsNewButton = () => {
   const navigate = useNavigate();
-  const { hasUnread } = useWhatsNew();
+  const { seenDate } = useWhatsNew();
+  const { latestDate } = useChangelog();
+  const hasUnread = Boolean(latestDate) && seenDate < latestDate;
 
   if (hasUnread) {
     return (
