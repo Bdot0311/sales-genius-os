@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
+import { MetricStrip, Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -320,7 +320,7 @@ const AdminSecurity = () => {
             <Shield className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold">Security Center</h2>
+            <h2 className="text-[0.9375rem] font-semibold tracking-tight text-foreground">Security Center</h2>
             <p className="text-sm text-muted-foreground">
               Real-time security monitoring • Last updated {formatDistanceToNow(lastUpdated, { addSuffix: true })}
             </p>
@@ -333,60 +333,17 @@ const AdminSecurity = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Panel>
-          <PanelBody className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-destructive/10">
-                <Ban className="h-5 w-5 text-destructive" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.totalBlockedIPs}</p>
-                <p className="text-sm text-muted-foreground">Blocked IPs</p>
-              </div>
-            </div>
-          </PanelBody>
-        </Panel>
-        <Panel>
-          <PanelBody className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-red-500/10">
-                <LogIn className="h-5 w-5 text-red-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.failedLoginsToday}</p>
-                <p className="text-sm text-muted-foreground">Failed Logins Today</p>
-              </div>
-            </div>
-          </PanelBody>
-        </Panel>
-        <Panel>
-          <PanelBody className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-amber-500/10">
-                <ShieldAlert className="h-5 w-5 text-amber-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.securityEventsToday}</p>
-                <p className="text-sm text-muted-foreground">Security Events Today</p>
-              </div>
-            </div>
-          </PanelBody>
-        </Panel>
-        <Panel>
-          <PanelBody className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-blue-500/10">
-                <Activity className="h-5 w-5 text-blue-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.rateLimitViolationsToday}</p>
-                <p className="text-sm text-muted-foreground">Rate Limit Violations</p>
-              </div>
-            </div>
-          </PanelBody>
-        </Panel>
-      </div>
+      {/* Four numbers, one strip. They were four tiles each with an icon in
+          its own coloured disc — red, red, amber, blue — which turned four
+          unrelated counts into a legend. */}
+      <MetricStrip
+        metrics={[
+          { label: "Blocked IPs", value: stats.totalBlockedIPs, note: "Currently denied at the edge" },
+          { label: "Failed logins", value: stats.failedLoginsToday, note: "Today, across all accounts" },
+          { label: "Security events", value: stats.securityEventsToday, note: "Today, all categories" },
+          { label: "Rate limit hits", value: stats.rateLimitViolationsToday, note: "Today, requests refused" },
+        ]}
+      />
 
       {/* Main Tabs */}
       <Tabs defaultValue="security-events" className="space-y-4">

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, RefreshCw, ShieldCheck, ShieldOff, ExternalLink, Send, MailPlus, ChevronDown, ChevronRight } from "lucide-react";
+import { Loader2, RefreshCw, ShieldOff, Send, ChevronDown, ChevronRight } from "lucide-react";
 import { SupportAccessWorkspace } from "@/components/admin/SupportAccessWorkspace";
 
 interface SetupRequest {
@@ -190,10 +190,7 @@ const AdminCampaignSetup = () => {
 
       <Panel>
         <PanelHeader>
-          <PanelTitle className="flex items-center gap-2">
-            <MailPlus className="h-5 w-5" />
-            Request access from a customer
-          </PanelTitle>
+          <PanelTitle>Request access from a customer</PanelTitle>
           <PanelDescription>
             Sends the customer an email asking them to grant 14-day setup access. They still approve it themselves in
             Settings → Support access.
@@ -224,10 +221,7 @@ const AdminCampaignSetup = () => {
 
       <Panel>
         <PanelHeader>
-          <PanelTitle className="flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5" />
-            Active access ({activeGrants.length})
-          </PanelTitle>
+          <PanelTitle>Active access ({activeGrants.length})</PanelTitle>
           <PanelDescription>
             Open an account to build their sequences. End access as soon as the setup is done.
           </PanelDescription>
@@ -322,10 +316,7 @@ const AdminCampaignSetup = () => {
 
       <Panel>
         <PanelHeader>
-          <PanelTitle className="flex items-center gap-2">
-            <ExternalLink className="h-5 w-5" />
-            Setup requests ({requests.length})
-          </PanelTitle>
+          <PanelTitle>Setup requests ({requests.length})</PanelTitle>
           <PanelDescription>
             Everyone who clicked a "book a campaign setup" call to action, plus outbound requests you sent.
           </PanelDescription>

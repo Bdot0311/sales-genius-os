@@ -181,6 +181,12 @@ export interface Metric {
   /** What the number means or what to do about it. A number alone is trivia. */
   note?: ReactNode;
   onClick?: () => void;
+  /**
+   * For a strip used as a filter row: which reading is currently applied.
+   * Marked on the top edge rather than by tinting the whole cell, so the
+   * numbers stay comparable across the row.
+   */
+  selected?: boolean;
 }
 
 /**
@@ -236,8 +242,16 @@ export const MetricStrip = ({
           key={m.label}
           type="button"
           onClick={m.onClick}
-          className={cn("px-4 py-3.5 text-left transition-colors hover:bg-primary/5 sm:px-5 sm:py-4", border)}
+          aria-pressed={m.selected}
+          className={cn(
+            "relative px-4 py-3.5 text-left transition-colors hover:bg-primary/5 sm:px-5 sm:py-4",
+            m.selected && "bg-primary/5",
+            border,
+          )}
         >
+          {m.selected ? (
+            <span className="absolute inset-x-0 top-0 h-0.5 bg-primary" aria-hidden="true" />
+          ) : null}
           {inner}
         </button>
       ) : (

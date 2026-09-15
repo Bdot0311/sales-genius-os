@@ -277,10 +277,7 @@ const AdminSettings = () => {
   return (
     <Panel>
       <PanelHeader>
-        <PanelTitle className="flex items-center gap-2">
-          <Settings className="h-5 w-5" />
-          Admin Settings
-        </PanelTitle>
+        <PanelTitle>Admin Settings</PanelTitle>
         <PanelDescription>Configure system-wide settings and feature flags</PanelDescription>
       </PanelHeader>
       <PanelBody>

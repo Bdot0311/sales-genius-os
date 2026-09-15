@@ -1,5 +1,4 @@
-import { Panel, PanelBody } from "@/components/dashboard/Panel";
-import { Users, Crown, Clock, Lock, TrendingUp, Shield } from "lucide-react";
+import { MetricStrip } from "@/components/dashboard/Panel";
 
 interface Stats {
   total: number;
@@ -12,72 +11,25 @@ interface Stats {
   planBreakdown: { free: number; starter: number; growth: number; pro: number; agency: number };
 }
 
-export const UserStatsCards = ({ stats }: { stats: Stats }) => {
-  const cards = [
-    {
-      label: "Total Users",
-      value: stats.total,
-      icon: Users,
-      accent: "text-primary",
-      bgAccent: "bg-primary/10",
-    },
-    {
-      label: "Paid Users",
-      value: stats.paid,
-      icon: Crown,
-      accent: "text-emerald-400",
-      bgAccent: "bg-emerald-500/10",
-    },
-    {
-      label: "Conversion Rate",
-      value: `${stats.conversionRate}%`,
-      icon: TrendingUp,
-      accent: "text-blue-400",
-      bgAccent: "bg-blue-500/10",
-    },
-    {
-      label: "Active Trials",
-      value: stats.trials,
-      icon: Clock,
-      accent: "text-amber-400",
-      bgAccent: "bg-amber-500/10",
-    },
-    {
-      label: "Locked",
-      value: stats.locked,
-      icon: Lock,
-      accent: "text-destructive",
-      bgAccent: "bg-destructive/10",
-    },
-    {
-      label: "Admins",
-      value: stats.admins,
-      icon: Shield,
-      accent: "text-primary",
-      bgAccent: "bg-primary/10",
-    },
-  ];
-
-  return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-      {cards.map((card) => (
-        <Panel
-          key={card.label}
-          className="border-border/50 bg-card/80 backdrop-blur-sm hover:border-border transition-colors"
-        >
-          <PanelBody className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                {card.label}
-              </span>
-              <div className={`p-1.5 rounded-md ${card.bgAccent}`}>
-                <card.icon className={`h-3.5 w-3.5 ${card.accent}`} />
-              </div>
-            </div>
-            <p className="text-2xl font-bold tracking-tight">{card.value}</p>
-          </PanelBody>
-        </Panel>
-      ))}
-    </div>
-  );
-};
+/**
+ * The six numbers at the top of the users screen.
+ *
+ * They were six tiles, three across then two, each with its own icon in its own
+ * tinted square — primary, emerald, blue, amber, red, primary again — so six
+ * unrelated counts opened the page as a colour legend and the brightest marks
+ * on it meant nothing. The room the icons took goes to saying what each number
+ * is, which none of them did.
+ */
+export const UserStatsCards = ({ stats }: { stats: Stats }) => (
+  <MetricStrip
+    columns={3}
+    metrics={[
+      { label: "Total users", value: stats.total, note: "Every account ever created" },
+      { label: "Paid", value: stats.paid, note: "On a plan right now" },
+      { label: "Conversion", value: `${stats.conversionRate}%`, note: "Of all users, on a paid plan" },
+      { label: "Active trials", value: stats.trials, note: "Neither converted nor expired" },
+      { label: "Locked", value: stats.locked, note: "Usually an expired trial" },
+      { label: "Admins", value: stats.admins, note: "Accounts with elevated access" },
+    ]}
+  />
+);

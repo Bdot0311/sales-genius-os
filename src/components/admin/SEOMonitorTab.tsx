@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 import { toast } from "sonner";
-import { RefreshCw, AlertTriangle, CheckCircle2, Play, ExternalLink, Activity } from "lucide-react";
+import { RefreshCw, AlertTriangle, CheckCircle2, Play, ExternalLink } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts";
 
 interface SeoIssue {
@@ -192,9 +192,7 @@ export const SEOMonitorTab = () => {
       {trendData.length > 1 && (
         <Panel>
           <PanelHeader>
-            <PanelTitle className="flex items-center gap-2">
-              <Activity className="h-4 w-4" /> Issue trend
-            </PanelTitle>
+            <PanelTitle>Issue trend</PanelTitle>
             <PanelDescription>Issues found per audit run</PanelDescription>
           </PanelHeader>
           <PanelBody>

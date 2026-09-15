@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
+import { MetricStrip, Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Legend, AreaChart, Area } from "recharts";
-import { TrendingUp, Users, DollarSign, CreditCard, BarChart3, RefreshCw } from "lucide-react";
+import { Users, BarChart3, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
@@ -158,7 +158,7 @@ const AdminAnalytics = () => {
             <BarChart3 className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold">Analytics</h2>
+            <h2 className="text-[0.9375rem] font-semibold tracking-tight text-foreground">Analytics</h2>
             <p className="text-muted-foreground">Real-time insights and metrics</p>
           </div>
         </div>
@@ -182,77 +182,20 @@ const AdminAnalytics = () => {
       </div>
 
       {/* Quick Stats from Real Data */}
-      <div className="grid gap-4 md:grid-cols-5">
-        <Panel>
-          <PanelBody className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-blue-500/10">
-                <Users className="h-6 w-6 text-blue-500" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Users</p>
-                <p className="text-2xl font-bold">{stats.totalUsers}</p>
-              </div>
-            </div>
-          </PanelBody>
-        </Panel>
-
-        <Panel>
-          <PanelBody className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-emerald-500/10">
-                <DollarSign className="h-6 w-6 text-emerald-500" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Monthly Revenue</p>
-                <p className="text-2xl font-bold">${stats.monthlyRevenue.toLocaleString()}</p>
-              </div>
-            </div>
-          </PanelBody>
-        </Panel>
-
-        <Panel>
-          <PanelBody className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-purple-500/10">
-                <CreditCard className="h-6 w-6 text-purple-500" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Active Subs</p>
-                <p className="text-2xl font-bold">{stats.activeSubscriptions}</p>
-              </div>
-            </div>
-          </PanelBody>
-        </Panel>
-
-        <Panel>
-          <PanelBody className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-amber-500/10">
-                <TrendingUp className="h-6 w-6 text-amber-500" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Active Trials</p>
-                <p className="text-2xl font-bold">{stats.activeTrials}</p>
-              </div>
-            </div>
-          </PanelBody>
-        </Panel>
-
-        <Panel>
-          <PanelBody className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-destructive/10">
-                <Users className="h-6 w-6 text-destructive" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Locked</p>
-                <p className="text-2xl font-bold">{stats.lockedAccounts}</p>
-              </div>
-            </div>
-          </PanelBody>
-        </Panel>
-      </div>
+      {/* Five numbers, one strip.
+          These were five bordered, shadowed tiles, each with a 24px icon in a
+          coloured disc — blue, emerald, purple, amber, red — so five unrelated
+          figures opened the page as a colour legend. */}
+      <MetricStrip
+        columns={5}
+        metrics={[
+          { label: "Total users", value: stats.totalUsers, note: "Everyone registered" },
+          { label: "Monthly revenue", value: `$${stats.monthlyRevenue.toLocaleString()}`, note: "Recurring, this month" },
+          { label: "Subscriptions", value: stats.activeSubscriptions, note: "Paying right now" },
+          { label: "Active trials", value: stats.activeTrials, note: "Not yet converted" },
+          { label: "Locked", value: stats.lockedAccounts, note: "Suspended accounts" },
+        ]}
+      />
 
       <Tabs defaultValue={(() => {
         const tab = new URLSearchParams(window.location.search).get("tab");

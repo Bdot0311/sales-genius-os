@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Panel, PanelBody, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
+import { MetricStrip, Panel, PanelBody, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -11,9 +11,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  CheckCircle2, XCircle, AlertTriangle, Info, RefreshCw, Search, UserPlus,
-} from "lucide-react";
+import { CheckCircle2, XCircle, AlertTriangle, Info, RefreshCw, Search } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
@@ -111,11 +109,10 @@ const AdminSignupLogs = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <UserPlus className="h-6 w-6 text-primary" />
-            Signup Diagnostics
+          <h2 className="text-[0.9375rem] font-semibold tracking-tight text-foreground">
+            Signup diagnostics
           </h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="mt-1 text-[0.6875rem] leading-relaxed text-muted-foreground">
             Step-by-step trace of free account provisioning. Live updates via realtime.
           </p>
         </div>
@@ -125,24 +122,16 @@ const AdminSignupLogs = () => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {(["success", "warning", "error", "info"] as Status[]).map((s) => {
-          const Icon = STATUS_META[s].icon;
-          return (
-            <Panel key={s}>
-              <PanelBody className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase">{s}</p>
-                    <p className="text-2xl font-bold">{counts[s]}</p>
-                  </div>
-                  <Icon className="h-6 w-6 text-muted-foreground" />
-                </div>
-              </PanelBody>
-            </Panel>
-          );
-        })}
-      </div>
+      {/* Four counts, one strip. Each was a panel with the status printed in
+          lower case beside an icon that said the same word. */}
+      <MetricStrip
+        metrics={[
+          { label: "Succeeded", value: counts.success, note: "Provisioned with no problems" },
+          { label: "Warnings", value: counts.warning, note: "Completed, but something was off" },
+          { label: "Errors", value: counts.error, note: "A step failed outright" },
+          { label: "Info", value: counts.info, note: "Traces with nothing to act on" },
+        ]}
+      />
 
       <Panel>
         <PanelHeader>

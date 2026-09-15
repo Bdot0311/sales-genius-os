@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { RefreshCw, Send, Mail, CheckCircle2, XCircle, MinusCircle, Play } from "lucide-react";
+import { RefreshCw, Send, CheckCircle2, XCircle, MinusCircle, Play } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { LastCronRun } from "@/components/admin/LastCronRun";
@@ -126,11 +126,10 @@ const AdminReEngagement = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Mail className="h-6 w-6 text-primary" />
+          <h1 className="text-[0.9375rem] font-semibold tracking-tight text-foreground">
             Re-engagement Emails
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="mt-1 text-[0.6875rem] leading-relaxed text-muted-foreground">
             Daily audit log of every re-engagement email attempt. Manually resend to any user.
           </p>
           <div className="mt-2"><LastCronRun jobs={["send-re-engagement-emails-weekly"]} /></div>

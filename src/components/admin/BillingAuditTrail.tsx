@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ScrollText, RefreshCw, ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
+import { RefreshCw, ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
 interface AuditRow {
@@ -84,10 +84,7 @@ export function BillingAuditTrail() {
       <PanelHeader>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <PanelTitle className="flex items-center gap-2">
-              <ScrollText className="h-4 w-4 text-primary" />
-              Billing audit trail
-            </PanelTitle>
+            <PanelTitle>Billing audit trail</PanelTitle>
             <PanelDescription>
               Every Stripe webhook event and every admin action (pause, restore, remove, plan
               change) with timestamps and actor details.

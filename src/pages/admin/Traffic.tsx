@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Copy, Link2, RefreshCw } from "lucide-react";
+import { Copy, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { CHANNELS, DESTINATIONS, buildAllChannelLinks } from "@/lib/utm";
 import { SignupChannelsCard } from "@/components/admin/SignupChannelsCard";
@@ -72,7 +72,7 @@ const AdminTraffic = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Traffic Sources</h2>
+        <h2 className="text-[0.9375rem] font-semibold tracking-tight text-foreground">Traffic Sources</h2>
         <p className="text-muted-foreground">
           First-hand visitor log plus the tagged links to use everywhere you post.
         </p>
@@ -211,9 +211,7 @@ const LinkBuilder = () => {
     <div className="space-y-4">
       <Panel>
         <PanelHeader>
-          <PanelTitle className="flex items-center gap-2">
-            <Link2 className="h-4 w-4" /> Tagged links
-          </PanelTitle>
+          <PanelTitle>Tagged links</PanelTitle>
           <PanelDescription>
             Use these instead of the bare URL. Mobile apps strip referrers, so a tagged link is the
             only way an arrival can be traced back to where you posted it.

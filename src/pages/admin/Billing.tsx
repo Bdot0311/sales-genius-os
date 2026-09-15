@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
-import { Panel, PanelBody, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
+import { MetricStrip, Panel, PanelBody, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -16,16 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  CreditCard,
-  RefreshCw,
-  AlertTriangle,
-  Lock,
-  Unlock,
-  Trash2,
-  CheckCircle2,
-  ExternalLink,
-} from "lucide-react";
+import { RefreshCw, AlertTriangle, Lock, Unlock, Trash2, CheckCircle2, ExternalLink } from "lucide-react";
 import { BillingNotificationSettings } from "@/components/admin/BillingNotificationSettings";
 import { BillingAuditTrail } from "@/components/admin/BillingAuditTrail";
 import { toast } from "sonner";
@@ -157,11 +148,10 @@ export default function AdminBilling() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <CreditCard className="h-6 w-6 text-primary" />
+          <h1 className="text-[0.9375rem] font-semibold tracking-tight text-foreground">
             Billing &amp; Churn
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="mt-1 text-[0.6875rem] leading-relaxed text-muted-foreground">
             Cancellations, failed payments, card authentication requests and chargebacks — with
             controls to pause or remove the account.
           </p>
@@ -180,23 +170,16 @@ export default function AdminBilling() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          { label: "Payment issues", value: stats.failed },
-          { label: "Cancelled", value: stats.cancelled },
-          { label: "Cancelling soon", value: stats.scheduled },
-          { label: "Chargebacks", value: stats.disputes },
-        ].map((s) => (
-          <Panel key={s.label}>
-            <PanelHeader className="pb-2">
-              <PanelTitle className="font-medium text-muted-foreground">{s.label}</PanelTitle>
-            </PanelHeader>
-            <PanelBody>
-              <p className="text-2xl font-bold">{s.value}</p>
-            </PanelBody>
-          </Panel>
-        ))}
-      </div>
+      {/* A label in a header strip over a number in a body is a whole panel
+          spent on one figure, four times across. */}
+      <MetricStrip
+        metrics={[
+          { label: "Payment issues", value: stats.failed, note: "Charges that did not go through" },
+          { label: "Cancelled", value: stats.cancelled, note: "Subscriptions already ended" },
+          { label: "Cancelling soon", value: stats.scheduled, note: "Ending at the period's close" },
+          { label: "Chargebacks", value: stats.disputes, note: "Disputed through the bank" },
+        ]}
+      />
 
       <BillingNotificationSettings />
 

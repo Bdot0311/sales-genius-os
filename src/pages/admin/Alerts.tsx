@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
-import { Panel, PanelBody, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
+import { MetricStrip, Panel, PanelBody, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AlertTriangle, CheckCircle2, RefreshCw, Bell } from "lucide-react";
+import { CheckCircle2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
@@ -112,11 +112,10 @@ export default function AdminAlerts() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Bell className="h-6 w-6 text-primary" />
+          <h1 className="text-[0.9375rem] font-semibold tracking-tight text-foreground">
             System Alerts
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="mt-1 text-[0.6875rem] leading-relaxed text-muted-foreground">
             Stripe webhook failures, plan mapping mismatches, and outreach send-limit issues.
           </p>
         </div>
@@ -126,13 +125,17 @@ export default function AdminAlerts() {
         </Button>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label="Open alerts" value={stats.total} tone="default" />
-        <StatCard label="Webhook failures" value={stats.webhook} tone="critical" />
-        <StatCard label="Plan mismatches" value={stats.mismatch} tone="warning" />
-        <StatCard label="Send-limit hits" value={stats.sendLimit} tone="warning" />
-      </div>
+      {/* One strip. Each of these was a panel holding a label and a number,
+          with a warning triangle appearing beside the label whenever the number
+          was not zero — so the icon said exactly what the number said. */}
+      <MetricStrip
+        metrics={[
+          { label: "Open alerts", value: stats.total, note: "Everything unresolved" },
+          { label: "Webhook failures", value: stats.webhook, note: "Stripe events we did not process" },
+          { label: "Plan mismatches", value: stats.mismatch, note: "Our record disagrees with Stripe" },
+          { label: "Send-limit hits", value: stats.sendLimit, note: "Outreach refused for volume" },
+        ]}
+      />
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
@@ -221,32 +224,3 @@ export default function AdminAlerts() {
   );
 }
 
-function StatCard({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: number;
-  tone: "default" | "warning" | "critical";
-}) {
-  const color =
-    tone === "critical"
-      ? "text-red-400"
-      : tone === "warning"
-      ? "text-yellow-400"
-      : "text-foreground";
-  return (
-    <Panel>
-      <PanelBody className="p-4">
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-muted-foreground uppercase tracking-wide">{label}</p>
-          {value > 0 && tone !== "default" && (
-            <AlertTriangle className={`h-4 w-4 ${color}`} />
-          )}
-        </div>
-        <p className={`text-2xl font-bold mt-2 ${color}`}>{value}</p>
-      </PanelBody>
-    </Panel>
-  );
-}

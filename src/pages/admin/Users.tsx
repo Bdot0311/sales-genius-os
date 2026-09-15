@@ -6,10 +6,7 @@ import { Panel, PanelBody, PanelHeader, PanelTitle } from "@/components/dashboar
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import {
-  UserPlus, Search, RefreshCw, Shield, Users, Clock,
-  Lock, TrendingUp, Crown, AlertTriangle
-} from "lucide-react";
+import { UserPlus, Search, RefreshCw, Users, Lock } from "lucide-react";
 import { UserStatsCards } from "@/components/admin/UserStatsCards";
 import { UserTable } from "@/components/admin/UserTable";
 import { UserActionBar } from "@/components/admin/UserActionBar";
@@ -408,7 +405,7 @@ const AdminUsers = () => {
           <div className="flex items-center justify-between">
             <div>
               <PanelTitle>All Users</PanelTitle>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="mt-1 text-[0.6875rem] leading-relaxed text-muted-foreground">
                 {filteredSubscriptions.length} of {subscriptions.length} users
               </p>
             </div>

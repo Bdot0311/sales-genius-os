@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, AlertTriangle, XCircle, HelpCircle, RefreshCw, ShieldCheck } from "lucide-react";
+import { CheckCircle2, AlertTriangle, XCircle, HelpCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
@@ -102,10 +102,7 @@ export default function SystemHealth() {
 
       <Panel>
         <PanelHeader>
-          <PanelTitle className="flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-primary" />
-            Checks
-          </PanelTitle>
+          <PanelTitle>Checks</PanelTitle>
           <PanelDescription>
             {report
               ? `Last run ${formatDistanceToNow(new Date(report.generated_at), { addSuffix: true })}`
