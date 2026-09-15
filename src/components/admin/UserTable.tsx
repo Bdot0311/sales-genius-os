@@ -116,8 +116,21 @@ export const UserTable = ({
           ) : (
             subscriptions.map((sub) => {
               const admin = isUserAdmin(sub.user_id);
+              const checked = selectedIds.includes(sub.user_id);
               return (
-                <TableRow key={sub.user_id} className="border-border/30 hover:bg-muted/20 transition-colors group">
+                <TableRow
+                  key={sub.user_id}
+                  data-state={checked ? "selected" : undefined}
+                  onClick={() => onToggleSelect(sub.user_id)}
+                  className={`border-border/30 cursor-pointer transition-colors group ${checked ? 'bg-primary/10' : 'hover:bg-muted/20'}`}
+                >
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={() => onToggleSelect(sub.user_id)}
+                      aria-label={`Select ${sub.email}`}
+                    />
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
