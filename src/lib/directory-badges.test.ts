@@ -59,12 +59,18 @@ describe("one list, so the hero and footer cannot disagree", () => {
     expect(FEATURED).toContain("FEATURED_BADGES");
   });
 
-  it("puts them after the CTA, not above it", () => {
+  it("puts them after the CTAs, not above them", () => {
     // A badge row above the primary action competes with it.
-    const cta = HERO.indexOf("Get your free campaign setup");
+    //
+    // This named the primary CTA by its label, so renaming the button broke an
+    // assertion about where a badge row sits. It looks for the buttons
+    // themselves: the free signup and the campaign-setup booking.
+    const signup = HERO.indexOf('href="/auth"');
+    const booking = HERO.indexOf("CAMPAIGN_SETUP_BOOKING_URL}");
     const badges = HERO.indexOf("<FeaturedBadges");
-    expect(cta).toBeGreaterThan(-1);
-    expect(badges).toBeGreaterThan(cta);
+    expect(signup, "hero has a signup CTA").toBeGreaterThan(-1);
+    expect(booking, "hero has a booking CTA").toBeGreaterThan(-1);
+    expect(badges).toBeGreaterThan(Math.max(signup, booking));
   });
 });
 
@@ -72,7 +78,8 @@ describe("one list, so the hero and footer cannot disagree", () => {
  * Several of these are served from hosts with no uptime guarantee — one is a
  * WordPress upload, another a workers.dev subdomain. In the footer a broken
  * badge is invisible. Beside the primary CTA it is a broken-image icon next to
- * "Get your free campaign setup", which costs more trust than the badge earned.
+ * the button a visitor is about to press, which costs more trust than the
+ * badge earned.
  */
 describe("a badge that fails does not damage the hero", () => {
   it("hides itself on error", () => {
