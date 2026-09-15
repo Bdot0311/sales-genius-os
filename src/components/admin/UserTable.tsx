@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Shield, Clock, Lock, Unlock, Trash2, KeyRound, Pencil } from "lucide-react";
+import { Shield, Clock } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import type { UserSubscription } from "@/pages/admin/Users";
 import { useDemoMode } from "@/hooks/use-demo-mode";
@@ -14,14 +13,9 @@ interface UserTableProps {
   subscriptions: UserSubscription[];
   loading: boolean;
   isUserAdmin: (userId: string) => boolean;
-  onUpdateSubscription: (userId: string, plan: 'free' | 'starter' | 'growth' | 'pro' | 'agency') => void;
-  onLockUser: (userId: string) => void;
-  onUnlockUser: (userId: string) => void;
-  onToggleAdmin: (userId: string, isAdmin: boolean) => void;
-  onSetTrial: (user: UserSubscription) => void;
-  onDeleteUser: (user: UserSubscription) => void;
-  onResetPassword: (user: UserSubscription) => void;
-  onEditUser: (user: UserSubscription) => void;
+  selectedIds: string[];
+  onToggleSelect: (userId: string) => void;
+  onToggleSelectAll: () => void;
 }
 
 const getPlanBadgeClass = (plan: string) => {
@@ -51,8 +45,7 @@ const getAccountBadge = (userId: string, accountStatus: string, trialEndDate: st
 type AnswerSummary = { role: string | null; team_size: string | null; current_tooling: string | null };
 
 export const UserTable = ({
-  subscriptions, loading, isUserAdmin,
-  onUpdateSubscription, onLockUser, onUnlockUser, onToggleAdmin, onSetTrial, onDeleteUser, onResetPassword, onEditUser
+  subscriptions, loading, isUserAdmin, selectedIds, onToggleSelect, onToggleSelectAll,
 }: UserTableProps) => {
   const { isDemoMode } = useDemoMode();
   const [answers, setAnswers] = useState<Record<string, AnswerSummary>>({});
@@ -81,18 +74,27 @@ export const UserTable = ({
   }, []);
 
 
+  const allSelected = subscriptions.length > 0 && subscriptions.every((s) => selectedIds.includes(s.user_id));
+  const someSelected = subscriptions.some((s) => selectedIds.includes(s.user_id));
+
   return (
     <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow className="border-border/50 hover:bg-transparent">
+            <TableHead className="w-10">
+              <Checkbox
+                checked={allSelected ? true : someSelected ? "indeterminate" : false}
+                onCheckedChange={onToggleSelectAll}
+                aria-label="Select all users"
+              />
+            </TableHead>
             <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">User</TableHead>
             <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Plan</TableHead>
             <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Account</TableHead>
             <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Joined</TableHead>
             <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Last Login</TableHead>
             <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Leads</TableHead>
-            <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -114,8 +116,21 @@ export const UserTable = ({
           ) : (
             subscriptions.map((sub) => {
               const admin = isUserAdmin(sub.user_id);
+              const checked = selectedIds.includes(sub.user_id);
               return (
-                <TableRow key={sub.user_id} className="border-border/30 hover:bg-muted/20 transition-colors group">
+                <TableRow
+                  key={sub.user_id}
+                  data-state={checked ? "selected" : undefined}
+                  onClick={() => onToggleSelect(sub.user_id)}
+                  className={`border-border/30 cursor-pointer transition-colors group ${checked ? 'bg-primary/10' : 'hover:bg-muted/20'}`}
+                >
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={() => onToggleSelect(sub.user_id)}
+                      aria-label={`Select ${sub.email}`}
+                    />
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
@@ -142,21 +157,7 @@ export const UserTable = ({
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Select
-                      value={sub.plan}
-                      onValueChange={(v) => onUpdateSubscription(sub.user_id, v as any)}
-                    >
-                      <SelectTrigger className={`w-28 h-7 text-xs border ${getPlanBadgeClass(sub.plan)} bg-transparent`}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="free">Free</SelectItem>
-                        <SelectItem value="starter">Starter</SelectItem>
-                        <SelectItem value="growth">Growth</SelectItem>
-                        <SelectItem value="pro">Pro</SelectItem>
-                        <SelectItem value="agency">Agency</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Badge className={`capitalize border ${getPlanBadgeClass(sub.plan)}`}>{sub.plan}</Badge>
                   </TableCell>
                   <TableCell>
                     {getAccountBadge(sub.user_id, sub.account_status, sub.trial_end_date, admin)}
@@ -182,67 +183,6 @@ export const UserTable = ({
                     {(admin || sub.leads_limit >= 99999)
                       ? <span className="text-xs text-primary font-medium">Unlimited</span>
                       : sub.leads_limit.toLocaleString()}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-0.5 justify-end opacity-60 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        size="sm" variant="ghost"
-                        className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-                        onClick={() => onEditUser(sub)}
-                        title="Edit user"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        size="sm" variant="ghost"
-                        className={`h-7 w-7 p-0 ${admin ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-                        onClick={() => onToggleAdmin(sub.user_id, admin)}
-                        title={admin ? 'Remove Admin' : 'Make Admin'}
-                      >
-                        <Shield className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        size="sm" variant="ghost" className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-                        onClick={() => onSetTrial(sub)}
-                        title="Set Trial"
-                      >
-                        <Clock className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        size="sm" variant="ghost" className="h-7 w-7 p-0 text-blue-400 hover:text-blue-300"
-                        onClick={() => onResetPassword(sub)}
-                        title="Send Password Reset Email"
-                      >
-                        <KeyRound className="h-3.5 w-3.5" />
-                      </Button>
-                      {sub.account_status === 'locked' ? (
-                        <Button
-                          size="sm" variant="ghost"
-                          className="h-7 w-7 p-0 text-emerald-400 hover:text-emerald-300"
-                          onClick={() => onUnlockUser(sub.user_id)}
-                          title="Unlock"
-                        >
-                          <Unlock className="h-3.5 w-3.5" />
-                        </Button>
-                      ) : (
-                        <Button
-                          size="sm" variant="ghost"
-                          className="h-7 w-7 p-0 text-amber-400 hover:text-amber-300"
-                          onClick={() => onLockUser(sub.user_id)}
-                          title="Lock"
-                        >
-                          <Lock className="h-3.5 w-3.5" />
-                        </Button>
-                      )}
-                      <Button
-                        size="sm" variant="ghost"
-                        className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                        onClick={() => onDeleteUser(sub)}
-                        title="Delete"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
                   </TableCell>
                 </TableRow>
               );

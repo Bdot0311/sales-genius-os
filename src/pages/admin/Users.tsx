@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { UserStatsCards } from "@/components/admin/UserStatsCards";
 import { UserTable } from "@/components/admin/UserTable";
+import { UserActionBar } from "@/components/admin/UserActionBar";
 import { CreateUserDialog } from "@/components/admin/CreateUserDialog";
 import { DeleteUserDialog } from "@/components/admin/DeleteUserDialog";
 import { TrialDialog } from "@/components/admin/TrialDialog";
@@ -48,6 +49,7 @@ const AdminUsers = () => {
   const [editUserOpen, setEditUserOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserSubscription | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [resyncing, setResyncing] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -236,6 +238,96 @@ const AdminUsers = () => {
     }
   };
 
+  // ---- Selection helpers -------------------------------------------------
+  const selectedUsers = subscriptions.filter((s) => selectedIds.includes(s.user_id));
+  const allSelectedAdmin = selectedUsers.length > 0 && selectedUsers.every((s) => isUserAdmin(s.user_id));
+
+  const toggleSelect = (userId: string) =>
+    setSelectedIds((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+    );
+
+  const toggleSelectAll = () => {
+    const visibleIds = filteredSubscriptions.map((s) => s.user_id);
+    const allOn = visibleIds.every((id) => selectedIds.includes(id));
+    setSelectedIds(allOn ? [] : visibleIds);
+  };
+
+  const runBulk = async (
+    label: string,
+    fn: (user: UserSubscription) => Promise<void>,
+    { clear = true }: { clear?: boolean } = {}
+  ) => {
+    const t = toast.loading(`${label} ${selectedUsers.length} user(s)…`);
+    let ok = 0;
+    let failed = 0;
+    for (const user of selectedUsers) {
+      try {
+        await fn(user);
+        ok++;
+      } catch (e) {
+        console.error(`${label} failed for ${user.email}:`, e);
+        failed++;
+      }
+    }
+    toast.dismiss(t);
+    if (failed === 0) toast.success(`${label}: ${ok} user(s) done`);
+    else toast.error(`${label}: ${ok} done, ${failed} failed`);
+    if (clear) setSelectedIds([]);
+    loadSubscriptions();
+    loadUserRoles();
+  };
+
+  const bulkUpdatePlan = (plan: 'free' | 'starter' | 'growth' | 'pro' | 'agency') =>
+    runBulk('Plan change', async (user) => {
+      const { error } = await supabase.rpc('admin_update_subscription', {
+        _user_id: user.user_id,
+        _plan: plan as any,
+      });
+      if (error) throw error;
+    }, { clear: false });
+
+  const bulkLock = () =>
+    runBulk('Lock', async (user) => {
+      const { error } = await supabase.rpc('admin_lock_user', {
+        _user_id: user.user_id,
+        _reason: 'Locked by admin',
+      });
+      if (error) throw error;
+    }, { clear: false });
+
+  const bulkUnlock = () =>
+    runBulk('Unlock', async (user) => {
+      const { error } = await supabase.rpc('admin_unlock_user', { _user_id: user.user_id });
+      if (error) throw error;
+    }, { clear: false });
+
+  const bulkToggleAdmin = () =>
+    runBulk(allSelectedAdmin ? 'Remove admin' : 'Make admin', async (user) => {
+      const { error } = await supabase.rpc('admin_set_admin', {
+        _user_id: user.user_id,
+        _make_admin: !allSelectedAdmin,
+      });
+      if (error) throw error;
+    }, { clear: false });
+
+  const bulkResetPassword = () =>
+    runBulk('Password reset email', async (user) => {
+      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+        redirectTo: 'https://outreign.io/auth?type=recovery',
+      });
+      if (error) throw error;
+    }, { clear: false });
+
+  const bulkDelete = () =>
+    runBulk('Delete', async (user) => {
+      const { data, error } = await supabase.functions.invoke('admin-delete-user', {
+        body: { user_id: user.user_id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+    });
+
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
@@ -350,20 +442,30 @@ const AdminUsers = () => {
               className="pl-10 bg-muted/30 border-border/50"
             />
           </div>
+          <div className="mt-3">
+            <UserActionBar
+              selected={selectedUsers}
+              allAdmin={allSelectedAdmin}
+              onClear={() => setSelectedIds([])}
+              onUpdatePlan={bulkUpdatePlan}
+              onLock={bulkLock}
+              onUnlock={bulkUnlock}
+              onToggleAdmin={bulkToggleAdmin}
+              onResetPassword={bulkResetPassword}
+              onDelete={bulkDelete}
+              onSetTrial={() => { setSelectedUser(selectedUsers[0]); setTrialDialogOpen(true); }}
+              onEdit={() => { setSelectedUser(selectedUsers[0]); setEditUserOpen(true); }}
+            />
+          </div>
         </PanelHeader>
         <PanelBody className="p-0">
           <UserTable
             subscriptions={filteredSubscriptions}
             loading={loading}
             isUserAdmin={isUserAdmin}
-            onUpdateSubscription={updateSubscription}
-            onLockUser={lockUser}
-            onUnlockUser={unlockUser}
-            onToggleAdmin={toggleAdminStatus}
-            onSetTrial={(user) => { setSelectedUser(user); setTrialDialogOpen(true); }}
-            onDeleteUser={(user) => { setSelectedUser(user); setDeleteUserOpen(true); }}
-            onResetPassword={sendResetPasswordEmail}
-            onEditUser={(user) => { setSelectedUser(user); setEditUserOpen(true); }}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleSelect}
+            onToggleSelectAll={toggleSelectAll}
           />
         </PanelBody>
       </Panel>
