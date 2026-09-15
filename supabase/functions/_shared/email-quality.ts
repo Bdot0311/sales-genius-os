@@ -102,3 +102,90 @@ export function rubricFeedback(rubric: RubricResult): string {
     "Write a new email that fixes these. Do not simply reword the previous one.",
   ].filter(Boolean).join("\n");
 }
+
+/**
+ * The bar the autonomous agent writes to.
+ *
+ * WEAK_SCORE is a floor for a human's draft: below it, a person is told the
+ * email needs work and can go and fix it. The agent has nobody to tell. It
+ * writes, it sends, and the first human to read the copy is the prospect — so
+ * the only place a weak draft can be caught is inside the agent's own loop.
+ *
+ * 100 is 5/5 on all five R.E.P.L.Y. dimensions. It is deliberately the top of
+ * the scale rather than a comfortable 80: the agent is not tired, it can write
+ * the email again, and an attempt that costs a few seconds is cheaper than a
+ * mediocre email spent against a prospect who only gets contacted once.
+ */
+export const AGENT_TARGET_SCORE = 100;
+
+/**
+ * How many times the agent may rewrite before it gives up and holds the draft.
+ *
+ * Every attempt is a generation plus a scoring call, so this is the cost
+ * ceiling as much as the quality one. Four is where the returns flatten in
+ * practice: the rubric's objections are specific, so most of the gain arrives
+ * on the second and third attempt, and an attempt that has not fixed anything
+ * by the fourth is usually blocked by missing facts about the lead rather than
+ * by the writing.
+ */
+export const AGENT_MAX_ATTEMPTS = 4;
+
+export interface Attempt {
+  subject: string;
+  body: string;
+  rubric: RubricResult | null;
+  /** Deterministic findings that would stop a send: blockers and warnings. */
+  blocking: { rule: string; severity: string; why: string; fix: string }[];
+}
+
+/** True when this draft is clean on both checks: 100 on the rubric, nothing blocking. */
+export function isPerfect(a: Attempt): boolean {
+  return (a.rubric?.overall ?? 0) >= AGENT_TARGET_SCORE && a.blocking.length === 0;
+}
+
+/**
+ * Rank two attempts. Higher rubric score wins; ties break on fewer findings.
+ *
+ * A rewrite is not automatically an improvement, and the agent keeps whichever
+ * attempt actually came out better rather than the most recent one.
+ */
+export function better(a: Attempt, b: Attempt | null): boolean {
+  if (!b) return true;
+  const as = a.rubric?.overall ?? 0;
+  const bs = b.rubric?.overall ?? 0;
+  if (as !== bs) return as > bs;
+  return a.blocking.length < b.blocking.length;
+}
+
+/**
+ * Everything wrong with an attempt, as one instruction for the next one.
+ *
+ * Both halves matter and they fail differently. The rubric is a model's opinion
+ * about whether the email earns a reply; the audit is a set of things that are
+ * simply true or false about the text — a banned phrase, an unfilled
+ * placeholder, a company name that does not match the lead row. Telling the
+ * writer only about the first leaves it rewriting good sentences around a
+ * misspelled company name.
+ */
+export function attemptFeedback(a: Attempt): string {
+  const parts: string[] = [];
+  if (a.rubric && a.rubric.overall < AGENT_TARGET_SCORE) {
+    const short = Object.entries(a.rubric.dimensions)
+      .filter(([, d]) => Number(d?.score) < 5)
+      .map(([name, d]) => `- ${name} (${d.score}/5): ${d.justification}`);
+    const fixes = a.rubric.suggestions.slice(0, 3).map((s) => `- "${s.snippet}" → ${s.suggestion}`);
+    parts.push(
+      `A quality rubric scored the previous draft ${a.rubric.overall}/100. It has to reach ${AGENT_TARGET_SCORE}.`,
+      short.length ? `Dimensions below 5 out of 5:\n${short.join("\n")}` : "",
+      fixes.length ? `Specific rewrites it asked for:\n${fixes.join("\n")}` : "",
+    );
+  }
+  if (a.blocking.length) {
+    parts.push(
+      `A rule check found ${a.blocking.length} problem${a.blocking.length === 1 ? "" : "s"} that stop this sending:`,
+      a.blocking.map((f) => `- ${f.rule}: ${f.why} Fix: ${f.fix}`).join("\n"),
+    );
+  }
+  parts.push("Write a new email that fixes all of the above. Do not simply reword the previous one.");
+  return "\n" + parts.filter(Boolean).join("\n");
+}
