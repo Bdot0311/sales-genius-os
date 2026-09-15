@@ -112,10 +112,20 @@ describe("the page scales past five entries", () => {
     expect(PAGE).toContain("unreadAtArrival");
   });
 
-  it("captures the unread count before marking the page read", () => {
-    // Marking it seen first would clear the marks in the same frame the reader
-    // is looking for them.
-    expect(PAGE).toContain("useState(() => unreadCount(seenDate))");
+  it("counts unread from what is published, once, and not from the fallback", () => {
+    // This first pinned the exact line that computed it, which broke as soon as
+    // the count moved from "on mount, from the compiled-in file" to "when the
+    // database answers" — a change that made it more correct. What matters is
+    // that the number is settled once, before markSeen clears the marks the
+    // reader is looking for, and that it is counted against published entries.
+    expect(PAGE).toContain("unreadAtArrival === null && published.length > 0");
+    expect(PAGE).toContain("published.filter((e) => e.date > seenDate).length");
+    expect(PAGE.indexOf("setUnreadAtArrival")).toBeLessThan(PAGE.indexOf("markSeen(latestDate)"));
+  });
+
+  it("marks read against what is on the page, not what is in the bundle", () => {
+    // Stamping the file's date would mark an entry read before it was published.
+    expect(PAGE).toContain("markSeen(latestDate)");
   });
 
   it("uses the dashboard's own surfaces", () => {

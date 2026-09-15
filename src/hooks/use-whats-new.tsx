@@ -28,13 +28,23 @@ export const useWhatsNew = () => {
     };
   }, []);
 
-  const markSeen = useCallback(() => {
+  /**
+   * Mark everything up to `date` read.
+   *
+   * Takes the date rather than assuming the one compiled into the bundle:
+   * entries now come from the database, so the newest published entry is not
+   * necessarily the newest one in the file, and stamping the file's date would
+   * mark an entry read before it existed.
+   */
+  const markSeen = useCallback((date?: string) => {
+    const stamp = date || LATEST_CHANGELOG_DATE;
+    if (!stamp) return;
     try {
-      localStorage.setItem(STORAGE_KEY, LATEST_CHANGELOG_DATE);
+      localStorage.setItem(STORAGE_KEY, stamp);
     } catch {
       /* private browsing — badge simply reappears next visit */
     }
-    setSeenDate(LATEST_CHANGELOG_DATE);
+    setSeenDate((prev) => (stamp > prev ? stamp : prev));
   }, []);
 
   return {
