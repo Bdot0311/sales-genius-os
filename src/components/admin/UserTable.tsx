@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Shield, Clock, Lock, Unlock, Trash2, KeyRound, Pencil } from "lucide-react";
+import { Shield, Clock } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import type { UserSubscription } from "@/pages/admin/Users";
 import { useDemoMode } from "@/hooks/use-demo-mode";
@@ -14,14 +13,9 @@ interface UserTableProps {
   subscriptions: UserSubscription[];
   loading: boolean;
   isUserAdmin: (userId: string) => boolean;
-  onUpdateSubscription: (userId: string, plan: 'free' | 'starter' | 'growth' | 'pro' | 'agency') => void;
-  onLockUser: (userId: string) => void;
-  onUnlockUser: (userId: string) => void;
-  onToggleAdmin: (userId: string, isAdmin: boolean) => void;
-  onSetTrial: (user: UserSubscription) => void;
-  onDeleteUser: (user: UserSubscription) => void;
-  onResetPassword: (user: UserSubscription) => void;
-  onEditUser: (user: UserSubscription) => void;
+  selectedIds: string[];
+  onToggleSelect: (userId: string) => void;
+  onToggleSelectAll: () => void;
 }
 
 const getPlanBadgeClass = (plan: string) => {
