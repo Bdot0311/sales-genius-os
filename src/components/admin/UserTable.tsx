@@ -157,21 +157,7 @@ export const UserTable = ({
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Select
-                      value={sub.plan}
-                      onValueChange={(v) => onUpdateSubscription(sub.user_id, v as any)}
-                    >
-                      <SelectTrigger className={`w-28 h-7 text-xs border ${getPlanBadgeClass(sub.plan)} bg-transparent`}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="free">Free</SelectItem>
-                        <SelectItem value="starter">Starter</SelectItem>
-                        <SelectItem value="growth">Growth</SelectItem>
-                        <SelectItem value="pro">Pro</SelectItem>
-                        <SelectItem value="agency">Agency</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Badge className={`capitalize border ${getPlanBadgeClass(sub.plan)}`}>{sub.plan}</Badge>
                   </TableCell>
                   <TableCell>
                     {getAccountBadge(sub.user_id, sub.account_status, sub.trial_end_date, admin)}
