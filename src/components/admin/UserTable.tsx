@@ -95,7 +95,6 @@ export const UserTable = ({
             <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Joined</TableHead>
             <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Last Login</TableHead>
             <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Leads</TableHead>
-            <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
