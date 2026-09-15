@@ -352,18 +352,22 @@ serve(async (req) => {
       "id, contact_name, contact_email, contact_phone, job_title, seniority, linkedin_url, " +
       "company_name, company_website, company_linkedin, industry, employee_count, company_description, country";
     if (person.contact_email) {
-      const { data } = await supabase.from("leads")
+      const { data, error: leadErr } = await supabase.from("leads")
         .select(leadColumns).eq("user_id", user.id)
         .ilike("contact_email", String(person.contact_email)).limit(1).maybeSingle();
-      existingLead = data ?? null;
+      if (!leadErr && data) {
+        existingLead = data as Record<string, unknown>;
+      }
     }
     if (!existingLead && person.contact_name && person.company_name) {
-      const { data } = await supabase.from("leads")
+      const { data, error: leadErr } = await supabase.from("leads")
         .select(leadColumns).eq("user_id", user.id)
         .ilike("contact_name", String(person.contact_name))
         .ilike("company_name", String(person.company_name))
         .limit(1).maybeSingle();
-      existingLead = data ?? null;
+      if (!leadErr && data) {
+        existingLead = data as Record<string, unknown>;
+      }
     }
 
     return json({
