@@ -74,11 +74,21 @@ export const UserTable = ({
   }, []);
 
 
+  const allSelected = subscriptions.length > 0 && subscriptions.every((s) => selectedIds.includes(s.user_id));
+  const someSelected = subscriptions.some((s) => selectedIds.includes(s.user_id));
+
   return (
     <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow className="border-border/50 hover:bg-transparent">
+            <TableHead className="w-10">
+              <Checkbox
+                checked={allSelected ? true : someSelected ? "indeterminate" : false}
+                onCheckedChange={onToggleSelectAll}
+                aria-label="Select all users"
+              />
+            </TableHead>
             <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">User</TableHead>
             <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Plan</TableHead>
             <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Account</TableHead>
