@@ -45,8 +45,7 @@ const getAccountBadge = (userId: string, accountStatus: string, trialEndDate: st
 type AnswerSummary = { role: string | null; team_size: string | null; current_tooling: string | null };
 
 export const UserTable = ({
-  subscriptions, loading, isUserAdmin,
-  onUpdateSubscription, onLockUser, onUnlockUser, onToggleAdmin, onSetTrial, onDeleteUser, onResetPassword, onEditUser
+  subscriptions, loading, isUserAdmin, selectedIds, onToggleSelect, onToggleSelectAll,
 }: UserTableProps) => {
   const { isDemoMode } = useDemoMode();
   const [answers, setAnswers] = useState<Record<string, AnswerSummary>>({});
