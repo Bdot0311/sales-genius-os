@@ -18,6 +18,7 @@ const footerLinks = {
     { label: "Integrations", href: "/pricing" },
     { label: "Sales Ops Software", href: "/sales-operations-software" },
     { label: "AI SDR Agent", href: "/ai-sdr-agent" },
+    { label: "Cold Email Software", href: "/cold-email-software" },
     { label: "Product Demo", href: "/demo" },
     { label: "Connect to AI Agents", href: "/connect" },
   ],

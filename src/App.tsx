@@ -14,6 +14,7 @@ const PUBLIC_LANDING_PREFIXES = [
   "/", "/pricing", "/demo", "/api-docs", "/api-status", "/request-integration",
   "/privacy", "/terms", "/security", "/help", "/install", "/unsubscribe", "/blog",
   "/sales-operations-software", "/apollo-alternative", "/guides",
+  "/cold-email-software",
   "/vs-apollo", "/vs-instantly", "/vs-lusha", "/vs-zoominfo", "/vs-rocketreach", "/partners",
 ];
 const isPublicLandingPath = (pathname: string) => {
@@ -44,6 +45,7 @@ const PricingPage = lazy(() => import("./pages/PricingPage"));
 const DemoPage = lazy(() => import("./pages/DemoPage"));
 const SalesOperationsSoftware = lazy(() => import("./pages/SalesOperationsSoftware"));
 const AiSdrAgent = lazy(() => import("./pages/AiSdrAgent"));
+const ColdEmailSoftware = lazy(() => import("./pages/ColdEmailSoftware"));
 const ApolloAlternative = lazy(() => import("./pages/ApolloAlternative"));
 const VsApollo = lazy(() => import("./pages/VsApollo"));
 const VsInstantly = lazy(() => import("./pages/VsInstantly"));
@@ -484,6 +486,7 @@ const App = () => {
               <Route path="/pricing" element={<PricingPage />} />
               <Route path="/sales-operations-software" element={<SalesOperationsSoftware />} />
               <Route path="/ai-sdr-agent" element={<AiSdrAgent />} />
+              <Route path="/cold-email-software" element={<ColdEmailSoftware />} />
               <Route path="/apollo-alternative" element={<ApolloAlternative />} />
               <Route path="/vs-apollo" element={<VsApollo />} />
               <Route path="/vs-instantly" element={<VsInstantly />} />

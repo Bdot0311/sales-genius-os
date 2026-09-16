@@ -117,6 +117,15 @@ const ROUTES: RouteMeta[] = [
       "Ranked prospects, verified emails, and an AI SDR agent that works the replies from your Gmail. Free plan included.",
   },
   {
+    path: "/cold-email-software",
+    title: "Cold Email Software That Lands in the Inbox | OutReign",
+    description:
+      "OutReign is cold email software built for replies: ICP scoring picks who to email, SMTP verification keeps you out of spam, and AI drafts every message. Free plan included.",
+    socialTitle: "Cold email software built for replies, not just sends.",
+    socialDescription:
+      "ICP scoring, SMTP-verified emails, and AI-drafted cold email — in one platform. Free plan included.",
+  },
+  {
     path: "/apollo-alternative",
     title: "Why Switch from Apollo | OutReign",
     description:
@@ -342,7 +351,7 @@ function renderSitemap(buildDate: string): string {
   const priorityFor = (path: string): string => {
     if (path === "/") return "1.0";
     if (path === "/pricing" || path.startsWith("/vs-") || path === "/apollo-alternative") return "0.9";
-    if (path === "/blog" || path === "/help" || path === "/sales-operations-software" || path === "/ai-sdr-agent") return "0.8";
+    if (path === "/blog" || path === "/help" || path === "/sales-operations-software" || path === "/ai-sdr-agent" || path === "/cold-email-software") return "0.8";
     if (path.startsWith("/blog/")) return "0.7";
     if (path.startsWith("/help/")) return "0.6";
     return "0.5";
