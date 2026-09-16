@@ -8,4 +8,4 @@
 - [x] Fix mobile dashboard overflow and overlapping action controls
 - [x] Restore the existing Web Push notification settings flow
 
-- [ ] System health issue emails stopped sending — investigate alongside deliverability alert emails
+- [x] System health issue emails stopped sending — fixed: the old queue-based send path no longer existed; alerts now go through the system-health-alert function
