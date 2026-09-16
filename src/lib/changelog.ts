@@ -92,6 +92,29 @@ export const ROADMAP: RoadmapItem[] = [
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-09-16",
+    date: "2026-09-16",
+    title: "Emails your AI agent writes meet a higher bar",
+    summary:
+      "The AI agent now holds every email it drafts to a much stricter quality standard before anything goes near a lead, and drafts that fall short are thrown away rather than retried until something squeaks through.",
+    items: [
+      {
+        tag: "improved",
+        title: "A stricter quality bar on every agent email",
+        description:
+          "Emails written by your AI agent are now scored against a much tougher standard for relevance, tone and length before they can be sent. What reaches your leads should read noticeably sharper.",
+        href: "/dashboard/agent",
+      },
+      {
+        tag: "improved",
+        title: "No more settling for a passable draft",
+        description:
+          "When a draft can't reach the bar, it's discarded and the run stops instead of pushing out a weaker version. Better a shorter run with good emails than a full run with mediocre ones.",
+        href: "/dashboard/agent",
+      },
+    ],
+  },
+  {
     id: "2026-09-15",
     date: "2026-09-15",
     title: "You'll be told when there's something new",
