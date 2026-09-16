@@ -15,6 +15,16 @@ import {
 const RUN = readFileSync("supabase/functions/agent-run/index.ts", "utf8");
 const CHAT = readFileSync("supabase/functions/agent-chat/index.ts", "utf8");
 
+/**
+ * Source with comments removed.
+ *
+ * An assertion that a region does not touch a column has to read the code, not
+ * the prose around it: the comment explaining why the lead is left alone names
+ * the very columns it leaves alone.
+ */
+const code = (text: string) =>
+  text.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/^\s*\/\/.*$/gm, " ");
+
 const dims = (r: number, e: number, p: number, l: number, y: number) => ({
   relevance: { score: r, justification: "j" },
   empathy: { score: e, justification: "j" },
@@ -141,7 +151,9 @@ describe("the autonomous run", () => {
 
   it("writes no draft row on the quality path", () => {
     // The upsert has to sit inside the approval branch, where the copy passed.
-    const qualityBranch = RUN.slice(RUN.indexOf("if (qualityHold) {"), RUN.indexOf("if (approvalMode) {"));
+    const qualityBranch = code(
+      RUN.slice(RUN.indexOf("if (qualityHold) {"), RUN.indexOf("if (approvalMode) {")),
+    );
     expect(qualityBranch).not.toContain("email_drafts");
     expect(RUN.indexOf('from("email_drafts").upsert')).toBeGreaterThan(RUN.indexOf("if (approvalMode) {"));
   });
@@ -199,11 +211,14 @@ describe("a lead the agent cannot write well for does not block the queue", () =
   });
 
   it("leaves the lead itself untouched, so enriching it brings it back", () => {
-    // No status change and no archive: last_contacted_at stays null, and the
+    // No status change and no archive, so the lead stays uncontacted and the
     // agent writes a fresh email once the cooldown passes.
-    const qualityBranch = RUN.slice(RUN.indexOf("if (qualityHold) {"), RUN.indexOf("if (approvalMode) {"));
+    const qualityBranch = code(
+      RUN.slice(RUN.indexOf("if (qualityHold) {"), RUN.indexOf("if (approvalMode) {")),
+    );
     expect(qualityBranch).not.toContain("lead_status");
     expect(qualityBranch).not.toContain("last_contacted_at");
+    expect(qualityBranch).not.toContain(".update(");
   });
 });
 
