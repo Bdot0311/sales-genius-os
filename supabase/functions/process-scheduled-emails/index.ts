@@ -62,6 +62,28 @@ serve(async (req) => {
      * failed. From the product they simply never happened: two emails queued
      * for 9am, one arrives, and nothing anywhere says why the other did not.
      */
+    /**
+     * Mark a send failed, with the reason on the row.
+     *
+     * Every one of the seven ways this function can fail a send used to write
+     * `status = 'failed'` and send the reason to console.error, which lands in
+     * the edge function log. The Sent tab showed a red badge and could not say
+     * why, so the only way to find out was for an operator to go log-diving —
+     * and two of the seven are the user's own Google connection having expired,
+     * which they could fix in a minute if anything told them.
+     *
+     * Reasons are written for the person reading the Sent tab, not for the
+     * developer reading the log. The log line stays as well: it carries the raw
+     * provider text, which is useful and is not something to put in front of a
+     * customer.
+     */
+    const failEmail = async (emailId: string, reason: string) => {
+      await supabase
+        .from("sent_emails")
+        .update({ status: "failed", error_message: reason, failed_at: new Date().toISOString() })
+        .eq("id", emailId);
+    };
+
     const deferrals: Array<{ id: string; to: string; reason: string }> = [];
     const defer = (email: any, reason: string) => {
       console.log(`Deferring ${email.id} to ${email.to_email}: ${reason}`);
@@ -118,10 +140,10 @@ serve(async (req) => {
           .maybeSingle();
         if (optout) {
           console.log(`Recipient ${email.to_email} unsubscribed, skipping ${email.id}`);
-          await supabase
-            .from('sent_emails')
-            .update({ status: 'failed' })
-            .eq('id', email.id);
+          await failEmail(
+            email.id,
+            "This person unsubscribed after the email was queued, so it was not sent.",
+          );
           failed++;
           continue;
         }
@@ -174,10 +196,10 @@ serve(async (req) => {
 
         if (!integration) {
           console.error(`No active integration for user ${email.user_id}`);
-          await supabase
-            .from("sent_emails")
-            .update({ status: "failed" })
-            .eq("id", email.id);
+          await failEmail(
+            email.id,
+            "No Google account is connected, so there was no mailbox to send from. Connect one on the Integrations page and send again.",
+          );
           failed++;
           continue;
         }
@@ -223,10 +245,10 @@ serve(async (req) => {
 
           if (!googleClientId || !googleClientSecret) {
             console.error(`Missing Google OAuth credentials for user ${email.user_id}`);
-            await supabase
-              .from("sent_emails")
-              .update({ status: "failed" })
-              .eq("id", email.id);
+            await failEmail(
+              email.id,
+              "Sending is not configured on our side. Nothing is wrong with your account; this one is ours to fix.",
+            );
             failed++;
             continue;
           }
@@ -259,10 +281,14 @@ serve(async (req) => {
           } else {
             const errText = await tokenResponse.text();
             console.error(`Failed to refresh token for user ${email.user_id}:`, errText);
-            await supabase
-              .from("sent_emails")
-              .update({ status: "failed" })
-              .eq("id", email.id);
+            let code = "";
+            try { code = String(JSON.parse(errText)?.error ?? ""); } catch { code = ""; }
+            await failEmail(
+              email.id,
+              code === "invalid_grant"
+                ? "Google would not renew access to your mailbox. That happens when the connection is revoked, the password changes, or the grant expires. Reconnect Google on the Integrations page and send again."
+                : "Google refused to renew access to your mailbox, so it could not be opened to send. Reconnect Google on the Integrations page and send again.",
+            );
             failed++;
             continue;
           }
@@ -270,10 +296,10 @@ serve(async (req) => {
 
         if (!accessToken) {
           console.error(`No access token for user ${email.user_id}, config keys: ${Object.keys(config).join(", ")}`);
-          await supabase
-            .from("sent_emails")
-            .update({ status: "failed" })
-            .eq("id", email.id);
+          await failEmail(
+            email.id,
+            "Your Google connection has no usable access token. Reconnect Google on the Integrations page and send again.",
+          );
           failed++;
           continue;
         }
@@ -384,18 +410,24 @@ serve(async (req) => {
         } else {
           const errorText = await gmailResponse.text();
           console.error(`Gmail error for email ${email.id}:`, errorText);
-          await supabase
-            .from("sent_emails")
-            .update({ status: "failed" })
-            .eq("id", email.id);
+          let detail = "";
+          try { detail = String(JSON.parse(errorText)?.error?.message ?? ""); } catch { detail = ""; }
+          await failEmail(
+            email.id,
+            gmailResponse.status === 429
+              ? "Gmail rate-limited this mailbox, so the message was not accepted. It usually clears within the hour."
+              : gmailResponse.status === 403
+                ? `Gmail refused to send from this mailbox${detail ? `: ${detail.slice(0, 160)}` : "."} This is usually a permissions or sending-limit problem on the Google account.`
+                : `Gmail rejected the message${detail ? `: ${detail.slice(0, 160)}` : ` (HTTP ${gmailResponse.status})`}.`,
+          );
           failed++;
         }
       } catch (err) {
         console.error(`Error processing email ${email.id}:`, err);
-        await supabase
-          .from("sent_emails")
-          .update({ status: "failed" })
-          .eq("id", email.id);
+        await failEmail(
+          email.id,
+          `The send stopped with an unexpected error: ${(err instanceof Error ? err.message : String(err)).slice(0, 160)}`,
+        );
         failed++;
       }
     }
