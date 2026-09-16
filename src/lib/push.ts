@@ -23,6 +23,11 @@ function arrayBufferToBase64(buffer: ArrayBuffer | null): string {
   return btoa(binary);
 }
 
+function arrayBufferToBase64Url(buffer: ArrayBuffer | null): string {
+  const b64 = arrayBufferToBase64(buffer);
+  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
 export function isPushSupported(): boolean {
   if (typeof window === "undefined") return false;
   // Avoid registering inside the Lovable preview iframe.

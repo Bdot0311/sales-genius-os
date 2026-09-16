@@ -13,7 +13,7 @@ const corsHeaders = {
 
 const SITE = Deno.env.get("APP_URL") ?? "https://outreign.io";
 const SITEMAP_URL = `${SITE}/sitemap.xml`;
-const VAPID_PUBLIC = "BLnZWkSds4tox8rY3fVPQ5ZJ5VQGKjBpJS3tsWp_wTASDBIvLmr_zWkkbKKygDz64EFAPT-uY0uoql7v5_KqVb8";
+const VAPID_PUBLIC = "BMAMGlEpD2D7JcjZfJJSGz-6FYFxOa9ZDgubA56oUVl_K00evvZerDCknZoCStVUNAQ6uXXf3kvMFeLoepJCUFU";
 
 // Lighthouse thresholds — issue raised when score drops below
 const PERF_MIN = 0.7;
