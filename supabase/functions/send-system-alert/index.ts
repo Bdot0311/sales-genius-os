@@ -1,9 +1,10 @@
-// Sends a system-alert email via Resend.
+// Sends a system-alert email through the project's verified sending domain.
 // Invoked by the shared alerts logger for severity >= "error".
 // Billing categories honour the admin-configurable `billing_notifications`
 // setting: an on/off switch, a per-event switch, and a recipient list.
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { sendManagedEmail } from "../_shared/managed-email.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -89,11 +90,6 @@ serve(async (req) => {
     }
     if (recipients.length === 0) recipients = [FALLBACK_EMAIL];
 
-    const resendKey = Deno.env.get("RESEND_API_KEY");
-    if (!resendKey) {
-      console.warn("[SEND-SYSTEM-ALERT] RESEND_API_KEY not set, skipping email");
-      return json({ ok: true, emailed: false, reason: "no_resend_key" });
-    }
 
     const label = BILLING_LABELS[cat] ?? cat;
     const customerEmail = typeof d.email === "string" ? d.email : null;
@@ -138,27 +134,41 @@ serve(async (req) => {
       </div>
     `;
 
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${resendKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: "OutReign Alerts <alerts@notify.bdotindustries.com>",
-        to: recipients,
-        subject,
-        html,
-      }),
-    });
+    // Sent through the project's own verified sending domain. This used to go
+    // through a third-party provider whose key no longer exists in the project,
+    // so every alert was quietly dropped with "no key configured" — the failure
+    // mode of a monitoring system that fails silently is the worst one.
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      serviceKey,
+      { auth: { persistSession: false } },
+    );
 
-    if (!res.ok) {
-      const text = await res.text();
-      console.error("[SEND-SYSTEM-ALERT] Resend error", res.status, text);
-      return json({ ok: false, error: "resend_failed", status: res.status });
+    let emailed = 0;
+    const errors: string[] = [];
+    for (const recipient of recipients) {
+      try {
+        const result = await sendManagedEmail(supabase, {
+          to: recipient,
+          subject,
+          html,
+          text: `${subject}\n\n${String(message ?? "")}`,
+          label: "system-alert",
+          idempotencyKey: `system-alert-${cat}-${severity}-${recipient}-${Date.now()}`.slice(0, 200),
+        });
+        if (result.sent) emailed++;
+        else errors.push(`${recipient}: ${result.reason}`);
+      } catch (err) {
+        errors.push(`${recipient}: ${(err as Error).message}`);
+      }
     }
 
-    return json({ ok: true, emailed: true, recipients: recipients.length });
+    if (emailed === 0) {
+      console.error("[SEND-SYSTEM-ALERT] no alert email delivered", errors);
+      return json({ ok: false, error: "send_failed", details: errors });
+    }
+
+    return json({ ok: true, emailed: true, recipients: emailed, errors });
   } catch (err) {
     console.error("[SEND-SYSTEM-ALERT] Exception", err);
     return json({ ok: false, error: (err as Error).message });

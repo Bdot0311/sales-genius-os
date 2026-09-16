@@ -126,6 +126,13 @@ export const CHANGELOG: ChangelogEntry[] = [
           "An email that couldn't be sent no longer counts as a send in your performance numbers or the Sent tab, and it shows the reason instead of a misleading \"sent\" time — so open, reply and click rates reflect what actually went out.",
         href: "/dashboard/outreach",
       },
+      {
+        tag: "fixed",
+        title: "Push notifications actually reach your phone",
+        description:
+          "Alerts sent to your phone or desktop were being rejected before they arrived, so \"Send test notification\" reported nothing sent. That's fixed. Turn notifications back on once per device under Settings to re-register it.",
+        href: "/dashboard/settings",
+      },
     ],
   },
   {
