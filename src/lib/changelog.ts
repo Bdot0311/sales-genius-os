@@ -121,6 +121,27 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         tag: "fixed",
+        title: "Your agent no longer finishes a run empty-handed",
+        description:
+          "The quality standard was set so high that a genuinely good email could still be thrown out, and some runs reached nobody at all. Strong drafts now go out, and only truly weak ones are held back.",
+        href: "/dashboard/agent",
+      },
+      {
+        tag: "fixed",
+        title: "Failed sends stay visible in the Sent tab",
+        description:
+          "Emails that failed could slip off the end of the list on busy accounts, so you never saw the reason. They now sit in order with everything else.",
+        href: "/dashboard/outreach",
+      },
+      {
+        tag: "fixed",
+        title: "Notifications come back on their own",
+        description:
+          "After a security update to how notifications are signed, devices that already had alerts turned on went quiet. They now re-register themselves the next time you open OutReign.",
+        href: "/dashboard/settings",
+      },
+      {
+        tag: "fixed",
         title: "Failed sends no longer drag down your stats",
         description:
           "An email that couldn't be sent no longer counts as a send in your performance numbers or the Sent tab, and it shows the reason instead of a misleading \"sent\" time — so open, reply and click rates reflect what actually went out.",
