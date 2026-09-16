@@ -13,7 +13,7 @@ const corsHeaders = {
 };
 
 const FALLBACK_EMAIL =
-  Deno.env.get("NOTIFICATION_EMAIL") || "support@bdotindustries.com";
+  Deno.env.get("NOTIFICATION_EMAIL") || "brandon@bdotindustries.com";
 
 const BILLING_LABELS: Record<string, string> = {
   billing_cancellation: "Subscription cancelled",
