@@ -35,6 +35,7 @@ import {
   Target,
   Workflow,
 } from "lucide-react";
+import { countsAsSent } from "@/lib/counted-as-sent";
 
 type SentEmail = {
   id: string;
@@ -298,7 +299,7 @@ export const EmailPerformanceStats = () => {
 
 
 
-  const sent = useMemo(() => emails.filter((e) => e.status === "sent" || !!e.sent_at), [emails]);
+  const sent = useMemo(() => emails.filter(countsAsSent), [emails]);
 
   /**
    * Emails a mailbox provider fetched but no person is known to have opened.
