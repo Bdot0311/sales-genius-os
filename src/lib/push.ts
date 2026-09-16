@@ -162,3 +162,27 @@ export async function unsubscribeFromPush(): Promise<void> {
   } catch {}
   await supabase.from("push_subscriptions").delete().eq("endpoint", endpoint);
 }
+
+/**
+ * Silently repair a subscription that was made with an older signing key.
+ *
+ * Rotating the VAPID key invalidates every subscription created under the old
+ * one, and the push service rejects each send — the device just stops getting
+ * anything. The recovery used to live only in the Settings toggle, so people who
+ * already had notifications on had to go and re-enable them by hand. This runs
+ * on app load instead: it never prompts, never enables anything, and only acts
+ * when permission is already granted and the stored key no longer matches.
+ */
+export async function refreshPushSubscription(): Promise<void> {
+  if (!isPushSupported()) return;
+  if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+  try {
+    const existing = await getCurrentSubscription();
+    if (!existing) return;
+    const current = arrayBufferToBase64Url(existing.options?.applicationServerKey ?? null);
+    if (!current || current === VAPID_PUBLIC_KEY) return;
+    await subscribeToPush();
+  } catch {
+    // A failed silent repair must never surface to the user; Settings still works.
+  }
+}
