@@ -120,6 +120,11 @@ async function gmailSend(token: string, from: string, to: string, subject: strin
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  // Cron/service role, or a signed-in user pressing "run warmup now".
+  // Anonymous callers can no longer trigger real Gmail sends.
+  const authFail = await requireInternalOrUser(req);
+  if (authFail) return authFail;
+
   try {
     const supabase = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
     const today = new Date().toISOString().slice(0, 10);
