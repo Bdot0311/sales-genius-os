@@ -2,7 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export const VAPID_PUBLIC_KEY =
-  "BLnZWkSds4tox8rY3fVPQ5ZJ5VQGKjBpJS3tsWp_wTASDBIvLmr_zWkkbKKygDz64EFAPT-uY0uoql7v5_KqVb8";
+  "BMAMGlEpD2D7JcjZfJJSGz-6FYFxOa9ZDgubA56oUVl_K00evvZerDCknZoCStVUNAQ6uXXf3kvMFeLoepJCUFU";
 
 const SW_PATH = "/push-sw.js";
 
@@ -98,6 +98,24 @@ export async function subscribeToPush(): Promise<PushSubscription> {
 
 
   let subscription = await reg.pushManager.getSubscription();
+
+  // A subscription is bound to the key it was created with. Reusing one that
+  // was made with a different (older) key means every send is rejected by the
+  // push service and the device silently receives nothing — so drop it and
+  // subscribe again whenever the key no longer matches.
+  if (subscription) {
+    const current = arrayBufferToBase64Url(subscription.options?.applicationServerKey ?? null);
+    if (current && current !== VAPID_PUBLIC_KEY) {
+      try {
+        await supabase.from("push_subscriptions").delete().eq("endpoint", subscription.endpoint);
+      } catch {}
+      try {
+        await subscription.unsubscribe();
+      } catch {}
+      subscription = null;
+    }
+  }
+
   if (!subscription) {
     subscription = await reg.pushManager.subscribe({
       userVisibleOnly: true,
