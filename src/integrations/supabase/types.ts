@@ -4113,6 +4113,8 @@ export type Database = {
           created_at: string | null
           demo_seed: boolean
           enrollment_id: string | null
+          error_message: string | null
+          failed_at: string | null
           gmail_message_id: string | null
           gmail_thread_id: string | null
           id: string
@@ -4142,6 +4144,8 @@ export type Database = {
           created_at?: string | null
           demo_seed?: boolean
           enrollment_id?: string | null
+          error_message?: string | null
+          failed_at?: string | null
           gmail_message_id?: string | null
           gmail_thread_id?: string | null
           id?: string
@@ -4171,6 +4175,8 @@ export type Database = {
           created_at?: string | null
           demo_seed?: boolean
           enrollment_id?: string | null
+          error_message?: string | null
+          failed_at?: string | null
           gmail_message_id?: string | null
           gmail_thread_id?: string | null
           id?: string
