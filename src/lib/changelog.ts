@@ -112,6 +112,13 @@ export const CHANGELOG: ChangelogEntry[] = [
           "When a draft can't reach the bar, it's discarded and the run stops instead of pushing out a weaker version. Better a shorter run with good emails than a full run with mediocre ones.",
         href: "/dashboard/agent",
       },
+      {
+        tag: "improved",
+        title: "Failed sends now say why",
+        description:
+          "When an email can't be sent, the Sent tab now tells you the reason right on the row — including when it's your own Google connection that needs reconnecting, so you can fix it yourself in a minute.",
+        href: "/dashboard/outreach",
+      },
     ],
   },
   {
