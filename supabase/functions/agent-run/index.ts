@@ -9,6 +9,7 @@ import {
   attemptFeedback,
   better,
   isPerfect,
+  isSendable,
   isWeak,
   scoreEmail,
   type Attempt,

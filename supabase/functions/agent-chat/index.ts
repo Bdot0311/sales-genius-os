@@ -6,6 +6,7 @@ import {
   AGENT_TARGET_SCORE,
   attemptFeedback,
   isPerfect,
+  isSendable,
   isWeak,
   scoreEmail,
   type Attempt,
