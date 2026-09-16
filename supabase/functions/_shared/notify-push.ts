@@ -5,7 +5,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import webpush from "https://esm.sh/web-push@3.6.7";
 
 const VAPID_PUBLIC =
-  "BLnZWkSds4tox8rY3fVPQ5ZJ5VQGKjBpJS3tsWp_wTASDBIvLmr_zWkkbKKygDz64EFAPT-uY0uoql7v5_KqVb8";
+  "BMAMGlEpD2D7JcjZfJJSGz-6FYFxOa9ZDgubA56oUVl_K00evvZerDCknZoCStVUNAQ6uXXf3kvMFeLoepJCUFU";
 
 export interface PushPayload {
   title: string;
