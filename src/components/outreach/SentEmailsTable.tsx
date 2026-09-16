@@ -93,7 +93,10 @@ export const SentEmailsTable = ({ onDeleted }: { onDeleted?: () => void }) => {
           scheduled_at, error_message, failed_at, lead_id, gmail_message_id,
           leads ( contact_name, company_name )
         `)
-        .order("sent_at", { ascending: false, nullsFirst: false })
+        // Ordered by when the row was written, not by sent_at: a failed send has
+        // no sent_at, and ordering on it pushed every failure past the 200-row
+        // window so the reason it failed could never be read.
+        .order("created_at", { ascending: false })
         .limit(200);
 
 
