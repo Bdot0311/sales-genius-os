@@ -119,6 +119,13 @@ export const CHANGELOG: ChangelogEntry[] = [
           "When an email can't be sent, the Sent tab now tells you the reason right on the row — including when it's your own Google connection that needs reconnecting, so you can fix it yourself in a minute.",
         href: "/dashboard/outreach",
       },
+      {
+        tag: "fixed",
+        title: "Failed sends no longer drag down your stats",
+        description:
+          "An email that couldn't be sent no longer counts as a send in your performance numbers or the Sent tab, and it shows the reason instead of a misleading \"sent\" time — so open, reply and click rates reflect what actually went out.",
+        href: "/dashboard/outreach",
+      },
     ],
   },
   {
