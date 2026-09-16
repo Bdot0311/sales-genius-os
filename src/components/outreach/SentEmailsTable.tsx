@@ -30,6 +30,8 @@ interface SentEmail {
   status: string;
   sent_at: string | null;
   scheduled_at: string | null;
+  error_message: string | null;
+  failed_at: string | null;
   lead_id: string | null;
   gmail_message_id: string | null;
   leads?: { contact_name: string; company_name: string } | null;
@@ -40,7 +42,11 @@ type SortDir = "asc" | "desc";
 
 // A queued email has no send time yet. Fall back to when it is due so the row
 // neither renders as 1970 nor floats to the top of the list.
-const effectiveDate = (email: SentEmail) => email.sent_at || email.scheduled_at || null;
+// A failed send has no sent_at, so ordering and the timestamp column both used
+// to fall through to scheduled_at — which made a failure read "in about 21
+// hours", as though it were still on its way.
+const effectiveDate = (email: SentEmail) =>
+  email.sent_at || email.failed_at || email.scheduled_at || null;
 
 
 
@@ -84,7 +90,7 @@ export const SentEmailsTable = ({ onDeleted }: { onDeleted?: () => void }) => {
         .from("sent_emails")
         .select(`
           id, to_email, subject, body_html, body_text, status, sent_at,
-          scheduled_at, lead_id, gmail_message_id,
+          scheduled_at, error_message, failed_at, lead_id, gmail_message_id,
           leads ( contact_name, company_name )
         `)
         .order("sent_at", { ascending: false, nullsFirst: false })
@@ -323,14 +329,25 @@ export const SentEmailsTable = ({ onDeleted }: { onDeleted?: () => void }) => {
                 </TableCell>
                 <TableCell>
                   <span className="truncate max-w-[220px] block">{email.subject}</span>
+                  {/* The reason sits under the subject rather than in its own
+                      column: it is a sentence, it only exists on failures, and
+                      a column that is empty on every other row costs width on
+                      a phone to say nothing. */}
+                  {email.status === "failed" && email.error_message && (
+                    <span className="mt-1 block max-w-[46ch] text-[0.6875rem] leading-relaxed text-destructive">
+                      {email.error_message}
+                    </span>
+                  )}
                 </TableCell>
                 <TableCell>{getStatusBadge(email.status)}</TableCell>
                 <TableCell className="text-muted-foreground whitespace-nowrap">
                   {email.sent_at
                     ? formatDistanceToNow(new Date(email.sent_at), { addSuffix: true })
-                    : email.scheduled_at
-                      ? `in ${formatDistanceToNow(new Date(email.scheduled_at))}`
-                      : "—"}
+                    : email.failed_at
+                      ? `failed ${formatDistanceToNow(new Date(email.failed_at), { addSuffix: true })}`
+                      : email.scheduled_at
+                        ? `in ${formatDistanceToNow(new Date(email.scheduled_at))}`
+                        : "—"}
                 </TableCell>
 
                 <TableCell onClick={(e) => e.stopPropagation()}>
