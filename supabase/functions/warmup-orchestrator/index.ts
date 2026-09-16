@@ -15,11 +15,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders, requireInternalOrUser } from "../_shared/internal-auth.ts";
 
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GMAIL_API = "https://gmail.googleapis.com/gmail/v1/users/me";
@@ -123,6 +119,11 @@ async function gmailSend(token: string, from: string, to: string, subject: strin
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  // Cron/service role, or a signed-in user pressing "run warmup now".
+  // Anonymous callers can no longer trigger real Gmail sends.
+  const authFail = await requireInternalOrUser(req);
+  if (authFail) return authFail;
 
   try {
     const supabase = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");

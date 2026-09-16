@@ -22,3 +22,33 @@ export function requireServiceRole(req: Request): Response | null {
   return null;
 }
 
+export function isInternalCaller(req: Request): boolean {
+  return requireServiceRole(req) === null;
+}
+
+// For internal jobs that a signed-in user may also trigger manually from the
+// app (e.g. "run warmup now"). Anonymous callers are always rejected.
+export async function requireInternalOrUser(req: Request): Promise<Response | null> {
+  if (isInternalCaller(req)) return null;
+
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+  const url = Deno.env.get("SUPABASE_URL") ?? "";
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+
+  if (token && url && anonKey) {
+    const res = await fetch(`${url}/auth/v1/user`, {
+      headers: { Authorization: `Bearer ${token}`, apikey: anonKey },
+    });
+    if (res.ok) {
+      const user = await res.json().catch(() => null);
+      if (user?.id) return null;
+    }
+  }
+
+  return new Response(JSON.stringify({ error: "Authentication required" }), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    status: 401,
+  });
+}
+

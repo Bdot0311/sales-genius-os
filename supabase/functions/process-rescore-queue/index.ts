@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
 import { DEFAULT_RUBRIC, RubricWeights, scoreLead, scoreUpdate, SignalEventInput } from "../_shared/lead-scoring.ts";
+import { requireServiceRole } from "../_shared/internal-auth.ts";
 
 // Drains the rescore_queue. Called by pg_cron (trigger_rescore_queue). Scores
 // each queued lead with the deterministic engine and writes the result. Uses
@@ -14,6 +15,9 @@ const corsHeaders = {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const authFail = requireServiceRole(req);
+  if (authFail) return authFail;
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
