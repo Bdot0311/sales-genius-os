@@ -106,6 +106,8 @@ project_id = "ghgfjnepvxvxrncmskys"
 
   [functions.parse-lead-query]
     verify_jwt = true
+  [functions.system-health-alert]
+    verify_jwt = false
   [functions.preview-transactional-email]
     verify_jwt = false
   [functions.process-scheduled-emails]
