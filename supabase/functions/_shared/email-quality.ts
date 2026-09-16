@@ -144,6 +144,24 @@ export function isPerfect(a: Attempt): boolean {
 }
 
 /**
+ * The bar a draft has to clear to actually go out.
+ *
+ * AGENT_TARGET_SCORE is what the agent *writes toward* — it keeps rewriting
+ * while short of a perfect card. But a perfect 5/5 on all five dimensions with
+ * zero warnings is rare, and treating anything less as unsendable meant the
+ * agent could spend a whole day's quota rewriting and deliver nothing at all.
+ * 80 is 4/5 across the rubric, and only true blockers (never soft warnings such
+ * as word count) stop a send.
+ */
+export const AGENT_SEND_SCORE = 80;
+
+export function isSendable(a: Attempt): boolean {
+  const scored = a.rubric?.overall ?? 0;
+  const blockers = a.blocking.filter((f) => f.severity === "blocker");
+  return scored >= AGENT_SEND_SCORE && blockers.length === 0;
+}
+
+/**
  * Rank two attempts. Higher rubric score wins; ties break on fewer findings.
  *
  * A rewrite is not automatically an improvement, and the agent keeps whichever

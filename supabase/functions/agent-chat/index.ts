@@ -6,6 +6,7 @@ import {
   AGENT_TARGET_SCORE,
   attemptFeedback,
   isPerfect,
+  isSendable,
   isWeak,
   scoreEmail,
   type Attempt,
@@ -1495,9 +1496,9 @@ serve(async (req) => {
             },
           };
         }
-        // Out of rewrites and still short of the bar. Do not send it
-        // autonomously; the user decides whether this one is good enough.
-        forceApproval = true;
+        // Out of rewrites. A draft that is good enough to send still goes; only
+        // one that is genuinely below the sending bar waits on the user.
+        if (!isSendable(attempt)) forceApproval = true;
       } else if (modelAuthored && !rubric && (isWeak(rubric) || blocking.length > 0)) {
         // No rubric available on this plan. The rule audit still applies.
         forceApproval = true;

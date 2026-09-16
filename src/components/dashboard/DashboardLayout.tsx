@@ -44,6 +44,7 @@ import { useLiveCrmIndicators } from "@/hooks/use-live-crm-indicators";
 import { useDemoMode } from "@/hooks/use-demo-mode";
 import { useOnboardingGate } from "@/hooks/use-onboarding-gate";
 import { ensureSession, startSessionKeeper } from "@/lib/session-keeper";
+import { refreshPushSubscription } from "@/lib/push";
 import { ServiceStatusBanner } from "@/components/dashboard/ServiceStatusBanner";
 import { WhatsNewButton } from "@/components/dashboard/WhatsNewButton";
 
@@ -117,6 +118,10 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   useEffect(() => {
     let cancelled = false;
     startSessionKeeper();
+
+    // Devices that already had notifications on re-register themselves after a
+    // signing-key change, instead of going quiet until someone visits Settings.
+    void refreshPushSubscription();
 
     // Never bounce to /auth on a merely-expired access token: give the refresh
     // token a real chance first (backgrounded PWAs come back with stale tokens).

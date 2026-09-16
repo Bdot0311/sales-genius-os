@@ -9,6 +9,7 @@ import {
   attemptFeedback,
   better,
   isPerfect,
+  isSendable,
   isWeak,
   scoreEmail,
   type Attempt,
@@ -941,7 +942,10 @@ ${playbookSystemRules()}`;
               };
 
               const scored = rubric !== null;
-              const qualityHold = scored ? !isPerfect(best) : isWeak(rubric) || best.blocking.length > 0;
+              // The loop above writes toward a perfect card; sending only needs
+              // a genuinely good one. Holding on anything less than perfect meant
+              // the agent could rewrite all day and reach nobody.
+              const qualityHold = scored ? !isSendable(best) : isWeak(rubric) || best.blocking.length > 0;
               if (qualityHold) {
                 console.log(
                   `[agent-run] quality hold for ${to} after ${attempts} attempt(s): ` +
