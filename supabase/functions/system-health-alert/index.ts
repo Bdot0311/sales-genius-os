@@ -16,7 +16,7 @@ const corsHeaders = {
 }
 
 const MIN_INTERVAL_MS = 6 * 60 * 60 * 1000
-const FALLBACK_RECIPIENT = 'support@bdotindustries.com'
+const FALLBACK_RECIPIENT = 'brandon@bdotindustries.com'
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
