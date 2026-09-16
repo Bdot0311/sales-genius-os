@@ -154,6 +154,13 @@ export const CHANGELOG: ChangelogEntry[] = [
           "Alerts sent to your phone or desktop were being rejected before they arrived, so \"Send test notification\" reported nothing sent. That's fixed. Turn notifications back on once per device under Settings to re-register it.",
         href: "/dashboard/settings",
       },
+      {
+        tag: "new",
+        title: "A page all about our cold email software",
+        description:
+          "There's now a dedicated page explaining how OutReign handles cold email end to end — picking who to email with ICP scoring, keeping you out of spam with verified addresses, and drafting every message for you.",
+        href: "/cold-email-software",
+      },
     ],
   },
   {
