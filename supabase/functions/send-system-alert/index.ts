@@ -1,4 +1,4 @@
-// Sends a system-alert email via Resend.
+// Sends a system-alert email through the project's verified sending domain.
 // Invoked by the shared alerts logger for severity >= "error".
 // Billing categories honour the admin-configurable `billing_notifications`
 // setting: an on/off switch, a per-event switch, and a recipient list.
