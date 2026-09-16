@@ -89,11 +89,6 @@ serve(async (req) => {
     }
     if (recipients.length === 0) recipients = [FALLBACK_EMAIL];
 
-    const resendKey = Deno.env.get("RESEND_API_KEY");
-    if (!resendKey) {
-      console.warn("[SEND-SYSTEM-ALERT] RESEND_API_KEY not set, skipping email");
-      return json({ ok: true, emailed: false, reason: "no_resend_key" });
-    }
 
     const label = BILLING_LABELS[cat] ?? cat;
     const customerEmail = typeof d.email === "string" ? d.email : null;
