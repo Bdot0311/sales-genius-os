@@ -72,7 +72,6 @@ const ColdEmailSoftware = () => {
         title="Cold Email Software That Lands in the Inbox | OutReign"
         description="OutReign is cold email software built for replies: ICP scoring picks who to email, SMTP verification keeps you out of spam, and AI drafts every message. Free plan included."
         socialTitle="Cold email software built for replies, not just sends."
-        socialDescription="ICP scoring, SMTP-verified emails, and AI-drafted cold email — in one platform. Free plan included."
         keywords="cold email software, cold email tool, cold outreach software, b2b cold email, cold email automation, email outreach software, cold email platform"
       />
       <BreadcrumbSchema items={[
