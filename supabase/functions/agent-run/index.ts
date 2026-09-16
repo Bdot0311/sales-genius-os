@@ -704,12 +704,52 @@ const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
         let remainingOutreach = Math.max(0, dailyCap - (sentToday ?? 0));
 
         if (remainingOutreach > 0) {
-          const { data: pendingLeads, error: pendingLeadsError } = await adminClient
+          /*
+            Leads the agent could not write a good enough email for recently.
+
+            Nothing marks a lead as attempted unless an email actually sends,
+            and the candidate query takes the highest ICP scores first. So a
+            lead the agent cannot reach the bar for is picked again on the next
+            run, and the one after that — burning four generations and four
+            scoring calls every time, and, because it holds a slot at the top of
+            the order, keeping every lead behind it from ever being tried.
+
+            A week is long enough that the retry costs little, and short enough
+            that enriching the lead gets it back into the queue without anyone
+            having to know this rule exists.
+          */
+          const COOLDOWN_DAYS = 7;
+          const { data: recentQualitySkips } = await adminClient
+            .from("agent_actions")
+            .select("metadata")
+            .eq("user_id", user.id)
+            .eq("action_type", "skipped")
+            .gte("created_at", new Date(Date.now() - COOLDOWN_DAYS * 24 * 60 * 60 * 1000).toISOString())
+            .limit(500);
+
+          const coolingOff = [
+            ...new Set(
+              (recentQualitySkips ?? [])
+                .map((r) => r.metadata as Record<string, unknown> | null)
+                .filter((m) => m?.reason === "quality")
+                .map((m) => String(m?.lead_id ?? ""))
+                .filter(Boolean),
+            ),
+          ];
+
+          let pendingQuery = adminClient
             .from("leads")
             .select("id, contact_name, contact_email, company_name, job_title, industry, signals")
             .eq("user_id", user.id)
             .not("contact_email", "is", null)
-            .is("last_contacted_at", null)
+            .is("last_contacted_at", null);
+
+          // An empty list would render as `in.()`, which PostgREST rejects.
+          if (coolingOff.length > 0) {
+            pendingQuery = pendingQuery.not("id", "in", `(${coolingOff.join(",")})`);
+          }
+
+          const { data: pendingLeads, error: pendingLeadsError } = await pendingQuery
             .order("icp_score", { ascending: false, nullsFirst: false })
             .limit(remainingOutreach);
 
@@ -911,7 +951,45 @@ ${playbookSystemRules()}`;
                 console.log(`[agent-run] quality pass for ${to} after ${attempts} attempt(s): ${rubric?.overall ?? "unscored"}/100`);
               }
 
-              if (approvalMode || qualityHold) {
+              // A draft that could not be written well enough is thrown away,
+              // not filed.
+              //
+              // Holding it put copy the agent had already judged unsendable
+              // into the same Drafts tab as work waiting on approval, so the
+              // tab stopped meaning "ready to go" and became a queue of things
+              // to triage. There is nothing to salvage in it either: four
+              // attempts with the rubric's own objections fed back is a better
+              // rewrite than a person editing the fourth one by hand.
+              //
+              // The lead is untouched. last_contacted_at stays null, so once
+              // the cooldown below expires — or once the lead has more to say
+              // about it — the agent writes a fresh email rather than
+              // resurrecting this one.
+              if (qualityHold) {
+                await logAction({
+                  user_id: user.id,
+                  action_type: "skipped",
+                  status: "skipped",
+                  prospect_email: to,
+                  subject,
+                  description:
+                    `Skipped ${lead.contact_name ?? to} at ${lead.company_name ?? "their company"} — ` +
+                    `after ${attempts} attempt${attempts === 1 ? "" : "s"} the best draft scored ` +
+                    `${rubric?.overall ?? "unscored"}/100` +
+                    `${best.blocking.length ? ` with ${best.blocking.length} rule problem${best.blocking.length === 1 ? "" : "s"}` : ""}` +
+                    `, so nothing was sent or saved. Enriching this lead usually fixes it.`,
+                  metadata: {
+                    phase: "outreach",
+                    reason: "quality",
+                    lead_id: lead.id,
+                    quality,
+                  },
+                });
+                remainingOutreach--;
+                continue;
+              }
+
+              if (approvalMode) {
                 // Save a draft, not an approval.
                 //
                 // agent-run has no conversation to confirm in, so its pending
@@ -947,15 +1025,12 @@ ${playbookSystemRules()}`;
                   prospect_email: to,
                   subject,
                   reply_content: body,
-                  description: qualityHold
-                    ? `Drafted a first-touch email to ${lead.contact_name ?? to} at ${lead.company_name ?? "their company"} but held it: after ${attempts} attempt${attempts === 1 ? "" : "s"} it scored ${rubric?.overall ?? "unscored"}/100${best.blocking.length ? ` with ${best.blocking.length} rule problem${best.blocking.length === 1 ? "" : "s"}` : ""}, so it needs an edit before it goes`
-                    : `Drafted a first-touch email to ${lead.contact_name ?? to} at ${lead.company_name ?? "their company"} — saved to your drafts${leadSenderEmail ? `, to send from ${leadSenderEmail}` : ""}`,
+                  description: `Drafted a first-touch email to ${lead.contact_name ?? to} at ${lead.company_name ?? "their company"}, scoring ${quality.score ?? "unscored"}/100 — saved to your drafts${leadSenderEmail ? `, to send from ${leadSenderEmail}` : ""}`,
                   metadata: {
                     phase: "outreach",
                     lead_id: lead.id,
                     sender_email: leadSenderEmail,
                     quality,
-                    held_for_quality: qualityHold,
                   },
                 });
                 outreachDrafted++;
