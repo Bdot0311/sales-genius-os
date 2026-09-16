@@ -3,7 +3,18 @@ import { UNTRUSTED_CONTENT_RULE, fence } from "../_shared/untrusted.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
 import { captureServerEvent } from "../_shared/posthog.ts";
-import { isWeak, rubricFeedback, scoreEmail } from "../_shared/email-quality.ts";
+import {
+  AGENT_MAX_ATTEMPTS,
+  AGENT_TARGET_SCORE,
+  attemptFeedback,
+  better,
+  isPerfect,
+  isWeak,
+  scoreEmail,
+  type Attempt,
+  type RubricDimension,
+} from "../_shared/email-quality.ts";
+import { auditEmail } from "../_shared/email-audit.ts";
 import { findPlaceholders, hasPlaceholder, bannedPhrasesBlock, realValue } from "../_shared/email-rules.ts";
 // The autonomous agent writes email the same way every other path does, and
 // was the one path that loaded none of the house rules — see _shared/email-skills.ts.
@@ -806,13 +817,18 @@ ${playbookSystemRules()}`;
                 continue;
               }
 
-              // Quality gate. The rubric existed and scored well, but nothing on
-              // this path ever called it, so the agent sent unscored email to
-              // real prospects. A weak draft gets one rewrite informed by the
-              // rubric's own objections; if it is still weak it is held for a
-              // human rather than sent or silently dropped.
+              // Quality gate. Outreach Studio shows a person their score and
+              // lets them edit until it is green. The agent has nobody to show
+              // it to, so the loop that a person performs by hand has to happen
+              // here: write, score, read the objections, write it again, until
+              // the rubric is 5/5 on every dimension and the rule audit is
+              // clean. It stops at AGENT_MAX_ATTEMPTS and keeps the best.
               //
-              // A null score means no verdict was available (the rubric is
+              // A draft that never gets there is held for a human rather than
+              // sent. That is the whole point of the bar: an agent allowed to
+              // send its fourth-best attempt has no bar at all.
+              //
+              // A null rubric score means no verdict was available (it is
               // plan-gated to growth and above), and never blocks a send.
               // An unfilled merge token must never reach a prospect. Unlike a weak
               // score this is not a judgement call, so it skips outright rather
@@ -831,32 +847,68 @@ ${playbookSystemRules()}`;
                 continue;
               }
 
-              let rubric = await scoreEmail(supabaseUrl, authHeader, anonKey, { subject, body });
-              if (isWeak(rubric)) {
+              /** Score one draft on both checks: the model rubric and the rule audit. */
+              const assess = async (subj: string, bod: string): Promise<Attempt> => {
+                const rubric = await scoreEmail(supabaseUrl, authHeader, anonKey, { subject: subj, body: bod });
+                const blocking = auditEmail({
+                  subject: subj,
+                  body: bod,
+                  position: 1,
+                  lead: { company: lead.company_name, contactName: lead.contact_name },
+                })
+                  // Notes are observations, not reasons to rewrite. Blockers and
+                  // warnings are both things a person would fix before sending.
+                  .filter((f) => f.severity !== "note")
+                  .map((f) => ({ rule: f.rule, severity: f.severity, why: f.why, fix: f.fix }));
+                return { subject: subj, body: bod, rubric, blocking };
+              };
+
+              let best = await assess(subject, body);
+              let attempts = 1;
+              while (!isPerfect(best) && attempts < AGENT_MAX_ATTEMPTS) {
+                attempts++;
                 const retryRaw = await callGemini(
-                  outreachPrompt + rubricFeedback(rubric!),
+                  outreachPrompt + attemptFeedback(best),
                   outreachSystemPrompt,
-                );
-                const retryTouches = parseTouches(retryRaw);
-                const rt = retryTouches[0];
-                if (rt?.subject && rt?.body) {
-                  const retryRubric = await scoreEmail(supabaseUrl, authHeader, anonKey, {
-                    subject: rt.subject,
-                    body: rt.body,
-                  });
-                  // Keep whichever attempt actually scored better; a rewrite is
-                  // not automatically an improvement.
-                  if ((retryRubric?.overall ?? 0) > (rubric?.overall ?? 0)) {
-                    subject = rt.subject;
-                    body = rt.body;
-                    touches[0] = rt;
-                    rubric = retryRubric;
-                  }
+                ).catch(() => null);
+                const rt = retryRaw ? parseTouches(retryRaw)[0] : null;
+                if (!rt?.subject || !rt?.body) break;
+                const candidate = await assess(rt.subject, rt.body);
+                if (better(candidate, best)) {
+                  best = candidate;
+                  touches[0] = rt;
                 }
               }
-              const qualityHold = isWeak(rubric);
+              subject = best.subject;
+              body = best.body;
+              const rubric = best.rubric;
+
+              // Held unless it is clean on both checks. The exception is an
+              // account with no rubric available at all, where holding every
+              // email would stop the agent working rather than improve it — for
+              // those the original floor still applies.
+              // Carried onto every action this draft produces, so the score is
+              // visible where the work is rather than only in a server log.
+              const quality = {
+                score: rubric?.overall ?? null,
+                dimensions: rubric
+                  ? Object.fromEntries(
+                      Object.entries(rubric.dimensions).map(([k, d]) => [k, (d as RubricDimension).score]),
+                    )
+                  : null,
+                attempts,
+                blocking: best.blocking.map((f) => f.rule),
+              };
+
+              const scored = rubric !== null;
+              const qualityHold = scored ? !isPerfect(best) : isWeak(rubric) || best.blocking.length > 0;
               if (qualityHold) {
-                console.log(`[agent-run] quality hold for ${to}: ${rubric?.overall}/100 weakest=${rubric?.weakest}`);
+                console.log(
+                  `[agent-run] quality hold for ${to} after ${attempts} attempt(s): ` +
+                  `${rubric?.overall ?? "unscored"}/100, ${best.blocking.length} blocking`,
+                );
+              } else {
+                console.log(`[agent-run] quality pass for ${to} after ${attempts} attempt(s): ${rubric?.overall ?? "unscored"}/100`);
               }
 
               if (approvalMode || qualityHold) {
@@ -895,8 +947,16 @@ ${playbookSystemRules()}`;
                   prospect_email: to,
                   subject,
                   reply_content: body,
-                  description: `Drafted a first-touch email to ${lead.contact_name ?? to} at ${lead.company_name ?? "their company"} — saved to your drafts${leadSenderEmail ? `, to send from ${leadSenderEmail}` : ""}`,
-                  metadata: { phase: "outreach", lead_id: lead.id, sender_email: leadSenderEmail },
+                  description: qualityHold
+                    ? `Drafted a first-touch email to ${lead.contact_name ?? to} at ${lead.company_name ?? "their company"} but held it: after ${attempts} attempt${attempts === 1 ? "" : "s"} it scored ${rubric?.overall ?? "unscored"}/100${best.blocking.length ? ` with ${best.blocking.length} rule problem${best.blocking.length === 1 ? "" : "s"}` : ""}, so it needs an edit before it goes`
+                    : `Drafted a first-touch email to ${lead.contact_name ?? to} at ${lead.company_name ?? "their company"} — saved to your drafts${leadSenderEmail ? `, to send from ${leadSenderEmail}` : ""}`,
+                  metadata: {
+                    phase: "outreach",
+                    lead_id: lead.id,
+                    sender_email: leadSenderEmail,
+                    quality,
+                    held_for_quality: qualityHold,
+                  },
                 });
                 outreachDrafted++;
                 remainingOutreach--;
@@ -951,12 +1011,16 @@ ${playbookSystemRules()}`;
                 prospect_email: to,
                 subject,
                 reply_content: body,
-                description: `Touch 1 of 4 sent to ${lead.company_name ?? to}${scheduled ? " — follow-ups queued for day 3, 7 and 14 (they stop automatically on reply)" : ""}`,
+                description: `Touch 1 of 4 sent to ${lead.company_name ?? to}${quality.score !== null ? `, scoring ${quality.score}/100` : ""}${scheduled ? " — follow-ups queued for day 3, 7 and 14 (they stop automatically on reply)" : ""}`,
                 metadata: {
                   phase: "outreach",
                   lead_id: lead.id,
                   playbook: "cold_email_engine_4_touch",
                   follow_ups_scheduled: scheduled,
+                  // What it scored and how many rewrites it took to get there.
+                  // A send that needed four attempts is worth knowing about even
+                  // though it passed.
+                  quality,
                 },
               });
 

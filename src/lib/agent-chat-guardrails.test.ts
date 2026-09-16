@@ -44,7 +44,12 @@ describe("agent-chat quality gate", () => {
   it("bounds the rewrite loop instead of retrying forever", () => {
     // A model that cannot lift the score would otherwise be told to try again
     // every turn, never sending and never stopping.
-    expect(AGENT_CHAT).toContain("rewriteAsked");
+    //
+    // This named the variable holding the count, so raising the limit from one
+    // rewrite to several broke an assertion about termination. What matters is
+    // that the number of rewrites is compared against a ceiling, and that
+    // running out hands the draft to a person.
+    expect(AGENT_CHAT).toMatch(/<\s*AGENT_MAX_ATTEMPTS|AGENT_MAX_ATTEMPTS\s*[-)]/);
     expect(AGENT_CHAT).toContain("forceApproval = true");
   });
 

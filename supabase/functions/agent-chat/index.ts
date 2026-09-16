@@ -1,7 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { playbookEnforcementRules } from "../_shared/cold-email-playbook.ts";
-import { isWeak, rubricFeedback, scoreEmail } from "../_shared/email-quality.ts";
+import {
+  AGENT_MAX_ATTEMPTS,
+  AGENT_TARGET_SCORE,
+  attemptFeedback,
+  isPerfect,
+  isWeak,
+  scoreEmail,
+  type Attempt,
+} from "../_shared/email-quality.ts";
 import { signOffStartIndex } from "../_shared/email-rules.ts";
 import { findPlaceholders, hasPlaceholder, realValue } from "../_shared/email-rules.ts";
 import { asFnResult } from "../_shared/fn-result.ts";
@@ -807,7 +815,9 @@ serve(async (req) => {
   // One rewrite per recipient: without a bound, a model that cannot lift the
   // score would be told to try again forever, burning tokens on every turn and
   // never sending anything.
-  const rewriteAsked = new Set<string>();
+  // How many rewrites each draft has already been sent back for. A set only
+  // ever allowed one, which meant the second attempt shipped however it scored.
+  const rewriteRounds = new Map<string, number>();
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -1421,7 +1431,7 @@ serve(async (req) => {
        */
       allowDuplicate?: boolean;
     }): Promise<{ sent: boolean; summary: Record<string, unknown>; result?: any }> => {
-      const { leadId, to, subject, body, mailbox, toolName, modelAuthored } = opts;
+      const { leadId, to, subject, body, mailbox, toolName, modelAuthored, contactName, companyName } = opts;
       if (!subject || !body) return { sent: false, summary: { error: "Subject and body are required" } };
 
       // Quality gate. Drafts made by draft_outreach come from generate-email,
@@ -1453,21 +1463,43 @@ serve(async (req) => {
       const rubric = modelAuthored
         ? await scoreEmail(supabaseUrl, authHeader, anonKey, { subject, body })
         : null;
-      if (isWeak(rubric)) {
+
+      // The same bar agent-run writes to, for the same reason: nothing the
+      // agent sends gets read by a person first. The rule audit runs alongside
+      // the rubric, because a banned phrase or a misspelled company name is not
+      // something a good score forgives.
+      const blocking = modelAuthored
+        ? auditEmail({ subject, body, position: 1, lead: { company: companyName, contactName } })
+            .filter((f) => f.severity !== "note")
+            .map((f) => ({ rule: f.rule, severity: f.severity, why: f.why, fix: f.fix }))
+        : [];
+      const attempt: Attempt = { subject, body, rubric, blocking };
+
+      if (modelAuthored && rubric && !isPerfect(attempt)) {
         const attemptKey = `${leadId ?? to}`;
-        if (!rewriteAsked.has(attemptKey)) {
-          rewriteAsked.add(attemptKey);
+        const round = rewriteRounds.get(attemptKey) ?? 0;
+        if (round < AGENT_MAX_ATTEMPTS - 1) {
+          rewriteRounds.set(attemptKey, round + 1);
           return {
             sent: false,
             summary: {
               needs_rewrite: true,
-              score: rubric!.overall,
-              message: `This draft scored ${rubric!.overall}/100, below the bar for sending. Rewrite it addressing the points below, then call this tool again with the new subject and body.`,
-              feedback: rubricFeedback(rubric!),
+              score: rubric.overall,
+              attempt: round + 1,
+              of: AGENT_MAX_ATTEMPTS,
+              message:
+                `This draft scored ${rubric.overall}/100 and has to reach ${AGENT_TARGET_SCORE} before it can send` +
+                `${blocking.length ? `, and a rule check found ${blocking.length} problem${blocking.length === 1 ? "" : "s"}` : ""}. ` +
+                `Rewrite it addressing the points below, then call this tool again with the new subject and body.`,
+              feedback: attemptFeedback(attempt),
             },
           };
         }
-        // Already rewritten once and still weak. Do not send it autonomously.
+        // Out of rewrites and still short of the bar. Do not send it
+        // autonomously; the user decides whether this one is good enough.
+        forceApproval = true;
+      } else if (modelAuthored && !rubric && (isWeak(rubric) || blocking.length > 0)) {
+        // No rubric available on this plan. The rule audit still applies.
         forceApproval = true;
       }
 
