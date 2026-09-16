@@ -622,8 +622,29 @@ ${unsubscribeFooterHtml}
       if (!gmailResponse.ok) {
         const error = await gmailResponse.text();
         console.error('Gmail API error:', gmailResponse.status, error);
-        
-        // Store failed email in sent_emails table
+
+        // Gmail's body is a JSON blob; the message inside it is the only part
+        // worth putting in front of a customer, and only when it exists.
+        let detail = '';
+        try { detail = String(JSON.parse(error)?.error?.message ?? ''); } catch { detail = ''; }
+        const reason =
+          gmailResponse.status === 401
+            ? 'Google would not accept access to your mailbox, so the message was not sent. Reconnect Google on the Integrations page and send again.'
+            : gmailResponse.status === 429
+              ? 'Gmail rate-limited this mailbox, so the message was not accepted. It usually clears within the hour.'
+              : gmailResponse.status === 403
+                ? `Gmail refused to send from this mailbox${detail ? `: ${detail.slice(0, 160)}` : '.'} This is usually a permissions or sending-limit problem on the Google account.`
+                : `Gmail rejected the message${detail ? `: ${detail.slice(0, 160)}` : ` (HTTP ${gmailResponse.status})`}.`;
+
+        // Store failed email in sent_emails table.
+        //
+        // failed_at, not sent_at. The column defaults to now(), so it has to
+        // be nulled explicitly; this row used to claim a send time for a
+        // message Gmail never accepted. That made one failure count twice —
+        // once as a failure, once as a send. The Sent tab read "sent 3
+        // minutes ago" under a red Failed badge, and both metric surfaces
+        // treat any row carrying sent_at as a send, so every failure inflated
+        // the send total and diluted the rates measured against it.
         await supabase.from('sent_emails').insert({
           user_id: user.id,
           lead_id: leadId || null,
@@ -634,11 +655,13 @@ ${unsubscribeFooterHtml}
           body_html: trackedHtmlBody,
           body_text: body,
           status: 'failed',
-          sent_at: new Date().toISOString(),
+          sent_at: null,
+          failed_at: new Date().toISOString(),
+          error_message: reason,
           tracking_pixel_id: trackingPixelId,
           sending_account_id: sendingAccountId,
         });
-        
+
         if (gmailResponse.status === 401) {
           return new Response(
             JSON.stringify({ error: 'Gmail authentication failed. Please reconnect your Gmail account.' }),

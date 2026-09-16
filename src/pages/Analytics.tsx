@@ -24,6 +24,7 @@ import type { LiveStatus } from "@/hooks/use-deliverability-realtime";
 
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { countsAsSent } from "@/lib/counted-as-sent";
 
 type LeadRow = {
   id: string; created_at: string; company_name: string | null; contact_name: string | null;
@@ -186,7 +187,7 @@ const Analytics = () => {
     const weighted = openDeals.reduce((s, d) => s + (Number(d.value) || 0) * ((d.probability ?? 0) / 100), 0);
     const totalValue = deals.reduce((s, d) => s + (Number(d.value) || 0), 0);
 
-    const sent = emails.filter((e) => e.sent_at || e.status === "sent");
+    const sent = emails.filter(countsAsSent);
     const opened = sent.filter((e) => e.opened_at).length;
     const replied = sent.filter((e) => e.replied_at).length;
     const clicked = sent.filter((e) => e.clicked_at).length;
