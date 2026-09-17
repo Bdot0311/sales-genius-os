@@ -17,7 +17,7 @@ credentials.
     "documentation_uri": "https://outreign.io/auth.md",
     "authorization_uri": "https://ghgfjnepvxvxrncmskys.supabase.co/auth/v1/oauth/authorize",
     "token_uri": "https://ghgfjnepvxvxrncmskys.supabase.co/auth/v1/oauth/token",
-    "revocation_uri": "https://outreign.io/dashboard/settings",
+    "revocation_uri": "https://outreign.io/settings",
     "claim_uri": "https://outreign.io/connect",
     "identity_types": ["human_delegated"],
     "credential_types": ["oauth2_access_token"],

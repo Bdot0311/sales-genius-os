@@ -138,7 +138,7 @@ export const CHANGELOG: ChangelogEntry[] = [
         title: "Notifications come back on their own",
         description:
           "After a security update to how notifications are signed, devices that already had alerts turned on went quiet. They now re-register themselves the next time you open OutReign.",
-        href: "/dashboard/settings",
+        href: "/settings?tab=notifications",
       },
       {
         tag: "fixed",
@@ -152,7 +152,7 @@ export const CHANGELOG: ChangelogEntry[] = [
         title: "Push notifications actually reach your phone",
         description:
           "Alerts sent to your phone or desktop were being rejected before they arrived, so \"Send test notification\" reported nothing sent. That's fixed. Turn notifications back on once per device under Settings to re-register it.",
-        href: "/dashboard/settings",
+        href: "/settings?tab=notifications",
       },
       {
         tag: "new",

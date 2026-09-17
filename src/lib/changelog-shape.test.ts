@@ -40,7 +40,30 @@ describe("entries are releases, not branches", () => {
     const linked = all.filter((i) => i.href);
     expect(linked.length / all.length).toBeGreaterThan(0.3);
     for (const item of linked) {
-      expect(item.href, item.title).toMatch(/^\/dashboard(\/|$)/);
+      expect(item.href, item.title).toMatch(/^\//);
+    }
+  });
+
+  it("every link lands on a route that exists", () => {
+    // This used to require a /dashboard prefix, which stood in for "somewhere
+    // in the product" while every destination happened to live there. It let
+    // two items point at /dashboard/settings — a path with no route, so both
+    // landed on Not Found, and both were the notification items whose whole
+    // purpose was to send someone to Settings. It then failed a legitimate
+    // link to a public page. Checking the route table catches the dead link
+    // and permits the real one.
+    const routes = new Set(
+      [...readFileSync("src/App.tsx", "utf8").matchAll(/path="([^"]*)"/g)].map((m) => m[1]),
+    );
+    const patterns = [...routes]
+      .filter((r) => r.includes(":") || r.endsWith("/*"))
+      .map((r) => new RegExp(`^${r.replace(/\/\*$/, "(/.*)?").replace(/:[^/]+/g, "[^/]+")}$`));
+
+    for (const item of CHANGELOG.flatMap((e) => e.items)) {
+      if (!item.href) continue;
+      const path = item.href.split(/[?#]/)[0];
+      const resolves = routes.has(path) || patterns.some((rx) => rx.test(path));
+      expect(resolves, `${item.title} → ${item.href}`).toBe(true);
     }
   });
 });
