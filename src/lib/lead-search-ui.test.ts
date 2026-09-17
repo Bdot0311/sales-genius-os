@@ -60,10 +60,14 @@ describe("one search, one loading state", () => {
     expect(CMD).not.toContain("Searching B2B data sources");
   });
 
-  it("the results region shows skeletons in the shape of results", () => {
-    expect(PAGE).toContain("Searching for leads");
-    expect(PAGE).toContain("<Skeleton");
-    // a spinner in a void is what the skeletons replaced
+  it("the results region shows placeholders in the shape of results", () => {
+    // The loading state moved into SearchingResults, which reads the criteria
+    // back as well; the rows in the results' shape are still what holds the
+    // layout. A spinner in a void is what they replaced.
+    const waiting = readFileSync("src/components/dashboard/SearchingResults.tsx", "utf8");
+    expect(waiting).toContain('aria-label="Searching for leads"');
+    expect(waiting).toContain("h-9 w-9 shrink-0 rounded-full");
+    expect(PAGE).toContain("<SearchingResults");
     expect(PAGE).not.toContain("Searching B2B data sources");
   });
 

@@ -128,6 +128,19 @@ export async function subscribeToPush(): Promise<PushSubscription> {
     });
   }
 
+  await storeSubscription(subscription);
+
+  return subscription;
+}
+
+/**
+ * Write a browser subscription to the row the server sends from.
+ *
+ * Two halves have to agree for a push to arrive: the browser's subscription
+ * and a `push_subscriptions` row carrying its endpoint and keys. Only the
+ * second one is what the send function reads.
+ */
+export async function storeSubscription(subscription: PushSubscription): Promise<void> {
   const json = subscription.toJSON();
   const p256dh = json.keys?.p256dh ?? arrayBufferToBase64(subscription.getKey("p256dh"));
   const auth = json.keys?.auth ?? arrayBufferToBase64(subscription.getKey("auth"));
@@ -149,8 +162,59 @@ export async function subscribeToPush(): Promise<PushSubscription> {
       { onConflict: "endpoint" }
     );
   if (error) throw error;
+}
 
-  return subscription;
+/**
+ * Whether this signed-in user has a row for that endpoint.
+ *
+ * RLS scopes the select to the caller, so a row belonging to another account on
+ * the same device reads as absent here — which is correct: the send function
+ * looks up by user, and that row would never be sent to.
+ */
+export async function isRegisteredOnServer(endpoint: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("push_subscriptions")
+    .select("id")
+    .eq("endpoint", endpoint)
+    .maybeSingle();
+  if (error) return false;
+  return Boolean(data);
+}
+
+/**
+ * What this device's notification state actually is, repairing it where it can.
+ *
+ * Settings used to decide this from the browser subscription alone, and the two
+ * halves drift apart for ordinary reasons: the send function prunes a row the
+ * push service reported gone, a signed-out session takes the row with it, an
+ * upsert failed once. The browser keeps its subscription through all of it, so
+ * the toggle went on reading "This device is registered for notifications"
+ * while every send went to nobody — and a test notification came back "sent to
+ * 0 device(s)" with a success tick next to it.
+ *
+ * When the browser half is intact and only the row is missing, nothing needs
+ * asking: the endpoint and keys are right here, so write the row and carry on.
+ * That is why this is called on load and not only from the toggle.
+ */
+export async function getDeviceStatus(): Promise<{
+  subscription: PushSubscription | null;
+  registered: boolean;
+}> {
+  const subscription = await getCurrentSubscription();
+  if (!subscription) return { subscription: null, registered: false };
+
+  if (await isRegisteredOnServer(subscription.endpoint)) {
+    return { subscription, registered: true };
+  }
+
+  try {
+    await storeSubscription(subscription);
+    return { subscription, registered: true };
+  } catch {
+    // Signed out, or the write was refused. Report it honestly rather than
+    // letting the switch claim a registration that does not exist.
+    return { subscription, registered: false };
+  }
 }
 
 export async function unsubscribeFromPush(): Promise<void> {
@@ -164,7 +228,7 @@ export async function unsubscribeFromPush(): Promise<void> {
 }
 
 /**
- * Silently repair a subscription that was made with an older signing key.
+ * Silently repair this device's notification setup on app load.
  *
  * Rotating the VAPID key invalidates every subscription created under the old
  * one, and the push service rejects each send — the device just stops getting
@@ -180,8 +244,14 @@ export async function refreshPushSubscription(): Promise<void> {
     const existing = await getCurrentSubscription();
     if (!existing) return;
     const current = arrayBufferToBase64Url(existing.options?.applicationServerKey ?? null);
-    if (!current || current === VAPID_PUBLIC_KEY) return;
-    await subscribeToPush();
+    if (current && current !== VAPID_PUBLIC_KEY) {
+      await subscribeToPush();
+      return;
+    }
+    // The key is fine, so the subscription is fine — but the row the server
+    // sends from may have gone anyway (pruned as stale, lost with a session, an
+    // upsert that failed once). getDeviceStatus writes it back if so.
+    await getDeviceStatus();
   } catch {
     // A failed silent repair must never surface to the user; Settings still works.
   }

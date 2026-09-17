@@ -136,7 +136,25 @@ describe("the autonomous run", () => {
   });
 
   it("holds anything short of the bar instead of sending it", () => {
-    expect(RUN).toContain("const qualityHold = scored ? !isPerfect(best)");
+    // Pinned on the shape rather than on which predicate names the bar. The
+    // score the agent rewrites toward and the score a draft has to clear to go
+    // out are two separate decisions, and they have already diverged once:
+    // naming one of them here turned a deliberate change into a red suite.
+    expect(RUN).toMatch(
+      /const qualityHold = scored \? !is\w+\(best\) : isWeak\(rubric\) \|\| best\.blocking\.length > 0;/,
+    );
+  });
+
+  it("keeps the rewrite target and the send bar as two separate numbers", () => {
+    // AGENT_TARGET_SCORE is what the loop writes toward; AGENT_SEND_SCORE is
+    // what a draft has to clear to leave. Holding every send to a perfect card
+    // meant the agent could spend a day's quota rewriting and reach nobody.
+    const QUALITY = readFileSync("supabase/functions/_shared/email-quality.ts", "utf8");
+    expect(QUALITY).toContain("export const AGENT_TARGET_SCORE = 100;");
+    expect(QUALITY).toContain("export const AGENT_SEND_SCORE = 80;");
+    expect(QUALITY).toContain("scored >= AGENT_SEND_SCORE");
+    // Only real blockers stop a send; soft warnings never do.
+    expect(QUALITY).toContain('a.blocking.filter((f) => f.severity === "blocker")');
   });
 
   it("throws a failed draft away rather than filing it", () => {
