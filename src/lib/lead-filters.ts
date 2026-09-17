@@ -173,3 +173,46 @@ export function normalizeDomain(input: string): string | null {
 export function isValidDomain(input: string): boolean {
   return normalizeDomain(input) !== null;
 }
+
+/**
+ * The search criteria, in the words a person would use.
+ *
+ * A lead search is one upstream call that can run for several seconds, and the
+ * wait used to be five identical grey rows: nothing to read, nothing to check,
+ * no way to tell a slow search from a stuck one. The filters are already known
+ * on this side before the request leaves, and they are the most useful thing
+ * there is to show — they are the parser's reading of the sentence that was
+ * typed, so seeing "Role: Founders" and no industry is how someone finds out
+ * their query was understood too broadly, while it is still running.
+ *
+ * Plural fields carry every value and the singular field carries the first of
+ * them, so reading the plural where it exists avoids listing the first twice.
+ */
+export function describeFilters(
+  filters: ExternalLeadFilters,
+): Array<{ label: string; values: string[] }> {
+  const pick = (many?: string[], one?: string) => {
+    const list = many?.length ? many : one ? [one] : [];
+    return list.map((v) => v.trim()).filter(Boolean);
+  };
+
+  const excluded = [
+    ...(filters.exclude_titles ?? []),
+    ...(filters.exclude_industries ?? []),
+    ...(filters.exclude_keywords ?? []),
+  ]
+    .map((v) => v.trim())
+    .filter(Boolean);
+
+  const rows: Array<{ label: string; values: string[] }> = [
+    { label: "Role", values: pick(filters.job_titles, filters.job_title) },
+    { label: "Seniority", values: pick(filters.seniority_levels, filters.seniority) },
+    { label: "Industry", values: pick(filters.industries, filters.industry) },
+    { label: "Location", values: pick(filters.countries, filters.country) },
+    { label: "Company size", values: pick(undefined, filters.company_size) },
+    { label: "Keywords", values: pick(filters.keywords) },
+    { label: "Excluding", values: excluded },
+  ];
+
+  return rows.filter((row) => row.values.length > 0);
+}

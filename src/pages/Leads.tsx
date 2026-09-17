@@ -7,8 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AddLeadDialog } from "@/components/dashboard/AddLeadDialog";
 import { ImportLeadsDialog } from "@/components/dashboard/ImportLeadsDialog";
 import { ExternalLeadsTable } from "@/components/dashboard/ExternalLeadsTable";
+import { SearchingResults } from "@/components/dashboard/SearchingResults";
 import { AILeadCommand } from "@/components/dashboard/AILeadCommand";
-import { Skeleton } from "@/components/ui/skeleton";
 import { DomainICPBuilder } from "@/components/dashboard/DomainICPBuilder";
 import { TargetCompanies } from "@/components/dashboard/TargetCompanies";
 import { FindPerson } from "@/components/dashboard/FindPerson";
@@ -535,23 +535,12 @@ const Leads = () => {
             )}
             <PanelBody>
               {externalLoading ? (
-                /* Rows in the shape the results will take, so the page does not
-                   reflow when they land and the wait reads as progress rather
-                   than as nothing happening. The command box above no longer
-                   reports this: it was saying the same sentence at the same
-                   time, so one search produced two spinners. */
-                <div className="space-y-2" role="status" aria-label="Searching for leads">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="flex items-center gap-3 rounded-lg border border-border/40 p-3">
-                      <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
-                      <div className="min-w-0 flex-1 space-y-2">
-                        <Skeleton className="h-3.5 w-[42%]" />
-                        <Skeleton className="h-3 w-[65%]" />
-                      </div>
-                      <Skeleton className="hidden h-8 w-16 shrink-0 rounded-md sm:block" />
-                    </div>
-                  ))}
-                </div>
+                /* The criteria the search is running with, then rows in the
+                   shape the results will take so the page does not reflow when
+                   they land. The command box above does not report this: it was
+                   saying the same sentence at the same time, so one search
+                   produced two spinners. */
+                <SearchingResults filters={externalFilters} />
               ) : externalLeads.length > 0 ? (
                 <div className="space-y-4">
                   {disclosure.relaxed.length > 0 && (

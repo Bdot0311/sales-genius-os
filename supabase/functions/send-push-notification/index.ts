@@ -68,7 +68,18 @@ Deno.serve(async (req) => {
       .eq("user_id", targetUserId);
     if (subErr) return json(200, { success: false, error: subErr.message });
     if (!subs || subs.length === 0) {
-      return json(200, { success: true, sent: 0, message: "No subscriptions" });
+      // Zero devices and zero deliveries are different failures and need
+      // different answers. Settings used to render either one as a green
+      // "Test sent to 0 device(s)", which is the single most misleading thing
+      // this function could say: it tells someone notifications work at the
+      // exact moment they do not.
+      return json(200, {
+        success: true,
+        sent: 0,
+        failed: 0,
+        reason:
+          "No device is registered for notifications on this account. Turn the switch off and on again on the device you want alerts on.",
+      });
     }
 
     const payload = JSON.stringify({
@@ -81,6 +92,7 @@ Deno.serve(async (req) => {
 
     let sent = 0;
     const stale: string[] = [];
+    const statuses: number[] = [];
     await Promise.all(
       subs.map(async (s) => {
         try {
@@ -91,6 +103,7 @@ Deno.serve(async (req) => {
           sent++;
         } catch (err) {
           const status = (err as { statusCode?: number }).statusCode;
+          if (typeof status === "number") statuses.push(status);
           if (status === 404 || status === 410) stale.push(s.id);
           console.error("push send failed", status, (err as Error).message);
         }
@@ -101,7 +114,27 @@ Deno.serve(async (req) => {
       await admin.from("push_subscriptions").delete().in("id", stale);
     }
 
-    return json(200, { success: true, sent, removed_stale: stale.length });
+    const failed = subs.length - sent;
+
+    // Only when nothing at all arrived. A partial send is not worth explaining:
+    // the notification is on the phone the person is holding.
+    let reason: string | undefined;
+    if (sent === 0) {
+      if (stale.length === subs.length) {
+        reason =
+          "This device's registration had expired, so it has been removed. Turn the switch off and on again to register it fresh.";
+      } else if (statuses.some((st) => st === 401 || st === 403)) {
+        reason =
+          "The push service refused this device's registration. Turn the switch off and on again to register it fresh.";
+      } else {
+        const st = statuses[0];
+        reason = st
+          ? `The push service could not deliver to this device (HTTP ${st}).`
+          : "The push service could not deliver to this device.";
+      }
+    }
+
+    return json(200, { success: true, sent, failed, removed_stale: stale.length, reason });
   } catch (e) {
     console.error("send-push-notification error", e);
     return json(200, { success: false, error: (e as Error).message });

@@ -6,7 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  getCurrentSubscription,
+  getDeviceStatus,
   isPushSupported,
   subscribeToPush,
   unsubscribeFromPush,
@@ -34,7 +34,11 @@ export default function NotificationsTab() {
     setInPreview(isPreviewEnvironment());
     setSupported(isPushSupported());
     if (typeof Notification !== "undefined") setPermission(Notification.permission);
-    void getCurrentSubscription().then((subscription) => setSubscribed(Boolean(subscription)));
+    // The browser's own subscription is not the answer: it survives the server
+    // row being pruned, and reading it alone is what made this switch sit on
+    // while every notification went to nobody. getDeviceStatus checks the row
+    // the sender actually reads, and writes it back when only that half is gone.
+    void getDeviceStatus().then(({ registered }) => setSubscribed(registered));
   }, []);
 
   const toggle = async (next: boolean) => {
@@ -51,8 +55,8 @@ export default function NotificationsTab() {
       toast.error((e as Error).message || "Failed to update notifications");
     } finally {
       // Always re-read the real device state so the switch can never lie.
-      const current = await getCurrentSubscription().catch(() => null);
-      setSubscribed(Boolean(current));
+      const current = await getDeviceStatus().catch(() => ({ registered: false }));
+      setSubscribed(current.registered);
       if (typeof Notification !== "undefined") setPermission(Notification.permission);
       setLoading(false);
     }
@@ -69,12 +73,36 @@ export default function NotificationsTab() {
         },
       });
       if (error) throw error;
-      const result = data as { success?: boolean; sent?: number; error?: string };
-      if (result?.success) {
-        toast.success(`Test sent to ${result.sent ?? 0} device(s)`);
-      } else {
+      const result = data as {
+        success?: boolean;
+        sent?: number;
+        failed?: number;
+        reason?: string;
+        error?: string;
+      };
+      if (!result?.success) {
         toast.error(result?.error || "Failed to send test notification");
+        return;
       }
+      // Reaching nothing is a failure, whatever the HTTP call did. This used to
+      // report "Test sent to 0 device(s)" behind a success tick, which is the
+      // one message that tells someone their notifications work when they do
+      // not. The server says which of the two zeroes it was; re-reading the
+      // device also repairs a missing row on the spot, so the next tap works.
+      if ((result.sent ?? 0) === 0) {
+        const { registered } = await getDeviceStatus().catch(() => ({ registered: false }));
+        toast.error(
+          result.reason ||
+            (registered
+              ? "No notification reached this device. Try the test again."
+              : "This device is not registered. Turn the switch off and on again."),
+        );
+        setSubscribed(registered);
+        return;
+      }
+      toast.success(
+        result.sent === 1 ? "Test sent to this device" : `Test sent to ${result.sent} devices`,
+      );
     } catch (e) {
       toast.error((e as Error).message || "Failed to send test notification");
     } finally {
