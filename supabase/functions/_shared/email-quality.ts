@@ -144,14 +144,20 @@ export function isPerfect(a: Attempt): boolean {
 }
 
 /**
- * The bar a draft has to clear to actually go out.
+ * The floor below which a draft has to wait on a person.
  *
- * AGENT_TARGET_SCORE is what the agent *writes toward* — it keeps rewriting
- * while short of a perfect card. But a perfect 5/5 on all five dimensions with
- * zero warnings is rare, and treating anything less as unsendable meant the
- * agent could spend a whole day's quota rewriting and deliver nothing at all.
- * 80 is 4/5 across the rubric, and only true blockers (never soft warnings such
- * as word count) stop a send.
+ * Not the autonomous send bar. Nothing goes out on its own below
+ * AGENT_TARGET_SCORE — a perfect card — because the product is sold on replies
+ * rather than volume, and an email that scores 84 and gets ignored spends the
+ * one first impression that address will ever give us. agent-run holds
+ * anything short of perfect and cools the lead off.
+ *
+ * This is the separate question agent-chat asks: the agent has run out of
+ * rewrites and is about to hand a draft back in a conversation, where a person
+ * is looking at it and can edit it. A draft at 4/5 across the rubric is worth
+ * offering for approval; below that it is not worth their time either, so it
+ * is forced into the approval path rather than presented as ready. Only true
+ * blockers count here, never soft warnings such as word count.
  */
 export const AGENT_SEND_SCORE = 80;
 

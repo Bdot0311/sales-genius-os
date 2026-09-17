@@ -145,16 +145,32 @@ describe("the autonomous run", () => {
     );
   });
 
-  it("keeps the rewrite target and the send bar as two separate numbers", () => {
-    // AGENT_TARGET_SCORE is what the loop writes toward; AGENT_SEND_SCORE is
-    // what a draft has to clear to leave. Holding every send to a perfect card
-    // meant the agent could spend a day's quota rewriting and reach nobody.
+  it("sends nothing autonomously below the score it writes toward", () => {
+    // The product is sold on replies, not volume: an email that scores 84 and
+    // gets ignored spends the one first impression that address will ever give
+    // us. So the bar the loop rewrites toward and the bar a send has to clear
+    // are the same bar. Read as a pair rather than by predicate name, so a
+    // rename stays free and a lowered bar does not.
+    const loop = RUN.match(/while \(!(\w+)\(best\) && attempts < AGENT_MAX_ATTEMPTS\)/);
+    const gate = RUN.match(/const qualityHold = scored \? !(\w+)\(best\)/);
+    expect(loop?.[1], "the rewrite loop's predicate").toBeTruthy();
+    expect(gate?.[1], "the send gate's predicate").toBe(loop?.[1]);
+  });
+
+  it("keeps the lower chat floor out of the autonomous path", () => {
+    // Two different questions. AGENT_TARGET_SCORE is what may go out with
+    // nobody looking; AGENT_SEND_SCORE is the floor below which a chat draft
+    // has to wait on the person who is looking at it and can edit it.
     const QUALITY = readFileSync("supabase/functions/_shared/email-quality.ts", "utf8");
     expect(QUALITY).toContain("export const AGENT_TARGET_SCORE = 100;");
     expect(QUALITY).toContain("export const AGENT_SEND_SCORE = 80;");
-    expect(QUALITY).toContain("scored >= AGENT_SEND_SCORE");
-    // Only real blockers stop a send; soft warnings never do.
+    // Only real blockers force approval; soft warnings never do.
     expect(QUALITY).toContain('a.blocking.filter((f) => f.severity === "blocker")');
+    expect(CHAT).toContain("isSendable(attempt)");
+    // Read past the comments: the one explaining why agent-run no longer sends
+    // at the lower bar has to be free to name it.
+    expect(code(RUN)).not.toContain("isSendable");
+    expect(code(RUN)).not.toContain("AGENT_SEND_SCORE");
   });
 
   it("throws a failed draft away rather than filing it", () => {
