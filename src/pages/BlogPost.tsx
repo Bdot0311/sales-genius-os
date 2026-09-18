@@ -2,6 +2,7 @@ import { useParams, Link, Navigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { SEOHead, BreadcrumbSchema, ArticleSchema } from "@/components/seo";
 import { useBlogPost } from "@/hooks/useBlogPosts";
+import { relatedPosts } from "@/lib/related-posts";
 import { lazy, Suspense } from "react";
 import { ArrowLeft } from "lucide-react";
 
@@ -193,6 +194,9 @@ function renderInline(text: string): React.ReactNode {
 const BlogPost = () => {
   const { slug } = useParams<{ slug: string }>();
   const post = useBlogPost(slug);
+  // Computed from the static index, so it is in the markup a crawler reads
+  // rather than appearing after a fetch.
+  const related = relatedPosts(slug ?? "");
 
   if (post === undefined) {
     return (
@@ -290,6 +294,51 @@ const BlogPost = () => {
               Get started free →
             </a>
           </div>
+
+          {/* Where to go next.
+              Every article used to end here, with one link back to the index.
+              A reader who finished had nowhere to go and a crawler following
+              one in found a leaf — sixteen articles that were sixteen islands,
+              none of them passing any authority to the others. */}
+          {related.length > 0 && (
+            <section className="mt-20" aria-labelledby="related-heading">
+              <h2
+                id="related-heading"
+                className="text-[10px] uppercase tracking-widest mb-6 font-medium"
+                style={{ color: "hsl(0 0% 100% / 0.4)" }}
+              >
+                Keep reading
+              </h2>
+              <ul className="space-y-px">
+                {related.map((item) => (
+                  <li key={item.slug}>
+                    <Link
+                      to={`/blog/${item.slug}`}
+                      className="group block rounded-lg px-4 py-4 -mx-4 transition-colors duration-150 hover:bg-white/[0.03]"
+                    >
+                      <p
+                        className="text-[10px] uppercase tracking-widest mb-1.5 font-medium text-primary"
+                      >
+                        {item.category} · {item.readingTime}
+                      </p>
+                      <p
+                        className="text-base font-medium leading-snug"
+                        style={{ color: "hsl(0 0% 95%)" }}
+                      >
+                        {item.title}
+                      </p>
+                      <p
+                        className="mt-1 text-sm font-light leading-relaxed line-clamp-2"
+                        style={{ color: "hsl(0 0% 100% / 0.5)" }}
+                      >
+                        {item.description}
+                      </p>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </main>
 
         <Suspense fallback={null}>
