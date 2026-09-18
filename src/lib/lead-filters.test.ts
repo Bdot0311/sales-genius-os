@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { buildExternalFilters, normalizeCompanySizeBucket } from "./lead-filters";
+import {
+  buildExternalFilters,
+  describeFilters,
+  normalizeCompanySizeBucket,
+  parseRequestedCount,
+} from "./lead-filters";
+import { readFileSync } from "node:fs";
 
 describe("normalizeCompanySizeBucket", () => {
   // The parser is an LLM and returns whatever the user typed. Sizes outside the
@@ -145,5 +151,72 @@ describe("broadening is opt-in", () => {
     const icp = { jobTitles: ["Founder"], industries: ["computer software"] };
 
     expect(buildExternalFilters(icp, 25).relax).toBeUndefined();
+  });
+});
+
+/**
+ * How many a search returns used to come from a "Show: 10" dropdown beside the
+ * pager, and the sentence lost to it: parse-lead-query reads a limit out of
+ * "find me 25 founders", buildExternalFilters overwrote it, and ten came back.
+ * Asking for a number and being given a different one is the kind of small lie
+ * that costs trust in everything else on the page.
+ */
+describe("the count comes from the sentence", () => {
+  it("reads a number someone actually asked for", () => {
+    expect(parseRequestedCount("find me 25 founders in fintech")).toBe(25);
+    expect(parseRequestedCount("give me 50 leads")).toBe(50);
+    expect(parseRequestedCount("Top 30 CEOs at US SaaS companies")).toBe(30);
+    expect(parseRequestedCount("I want 12 prospects")).toBe(12);
+    expect(parseRequestedCount("show me 5 of them")).toBe(5);
+    expect(parseRequestedCount("Find 15 CTOs")).toBe(15);
+  });
+
+  it("leaves the numbers that are not a count alone", () => {
+    // A lead query is full of these, and reading the wrong one spends the
+    // user's credits on the wrong search. This is the real query from the
+    // screenshot that started this.
+    expect(
+      parseRequestedCount(
+        "Find Founders and CEOs at US-based B2B SaaS companies with 1-10 employees, " +
+          "founded 2019-2024, excluding SDR, BDR, AE, agencies, stealth, over 15 employees",
+      ),
+    ).toBeNull();
+    for (const q of [
+      "SaaS companies with 50 employees",
+      "companies founded 2019-2024",
+      "firms with under 20 people",
+      "startups between 11-50 people",
+      "companies over 15 employees",
+      "CEOs at companies up to 200 people",
+      "founders in the UK",
+      "",
+    ]) {
+      expect(parseRequestedCount(q), q).toBeNull();
+    }
+  });
+
+  it("asks the provider for no more than a page can hold", () => {
+    expect(parseRequestedCount("give me 500 leads")).toBe(100);
+    expect(parseRequestedCount("0 leads")).toBeNull();
+  });
+
+  it("lets the sentence win over the parser and the default", () => {
+    expect(buildExternalFilters({}, 10, "find me 25 founders").limit).toBe(25);
+    expect(buildExternalFilters({ limit: 40 }, 10, "give me 15 leads").limit).toBe(15);
+    // Nothing in the sentence: the parser's reading, then the default.
+    expect(buildExternalFilters({ limit: 40 }, 10, "founders in the UK").limit).toBe(40);
+    expect(buildExternalFilters({}, 25, "founders in the UK").limit).toBe(25);
+  });
+
+  it("reads the number back while the search is still running", () => {
+    expect(describeFilters({ limit: 25 })[0]).toEqual({ label: "How many", values: ["25"] });
+  });
+
+  it("has no dropdown left to disagree with the sentence", () => {
+    const page = readFileSync("src/pages/Leads.tsx", "utf8");
+    expect(page).not.toContain("Show:");
+    expect(page).not.toContain("<SelectItem");
+    // The pager still has to ask for the same number on page 2.
+    expect(page).toContain("setPageSize(newFilters.limit ?? pageSize)");
   });
 });

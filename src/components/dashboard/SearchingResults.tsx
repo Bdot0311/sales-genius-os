@@ -4,26 +4,35 @@ import { describeFilters } from "@/lib/lead-filters";
 import { cn } from "@/lib/utils";
 
 /**
- * How many candidate marks the field carries, and how wide the wave is.
+ * The field is an explicit grid rather than an auto-filling one.
  *
- * The wave period is a count of marks rather than a column count: the grid
- * auto-fills, so nothing here knows how many columns a given screen produced.
- * A period that does not divide the row length is what makes the pass read as a
- * diagonal sweep across the field instead of a row of blinking lights, and it
- * lands differently on every screen width, which is the point.
+ * With auto-fill nothing on this side knows how many columns a screen produced,
+ * so a mark's delay could not be tied to where it actually sits. The pass and
+ * the lighting then ran on separate clocks and the result read as two unrelated
+ * animations happening near each other. A fixed column count means a mark's
+ * delay is its horizontal position, the pass crosses in exactly one cycle, and
+ * a mark lights because the edge reached it.
  */
-const MARKS = 156;
-const WAVE = 23;
-const WAVE_MS = 2400;
+const COLUMNS = 24;
+const ROWS = 12;
+const MARKS = COLUMNS * ROWS;
+const CYCLE_MS = 3200;
 
 /**
  * Which marks the pass keeps.
  *
  * Deterministic, so a mark does not change its mind between renders, and
  * sparse, because that is the shape of the thing being drawn: most of a
- * population is not your customer.
+ * population is not your customer. Coprime with the column count, so the kept
+ * ones scatter instead of forming a stripe.
  */
-const isKept = (i: number) => (i * 7) % 11 === 0;
+const isKept = (i: number) => (i * 7) % 29 === 0;
+
+/**
+ * Three sizes, assigned deterministically. A field of identical marks reads as
+ * a table; an uneven one reads as a crowd.
+ */
+const sizeOf = (i: number) => [5, 6, 7][(i * 13) % 3];
 
 const elapsedLabel = (seconds: number) =>
   seconds < 60 ? `${seconds}s` : `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
@@ -31,10 +40,9 @@ const elapsedLabel = (seconds: number) =>
 /**
  * The wait between asking for leads and getting them.
  *
- * It was five identical grey rows, then four. Both were the same idea — draw
- * the results before they exist — and that idea is what every other tool in
- * this category does, down to the pulse rate. It also says nothing: a slow
- * search looks exactly like a stuck one.
+ * It was placeholder rows: draw the results before they exist, which is what
+ * every other tool in this category does, down to the pulse rate. It said
+ * nothing, and a slow search looked exactly like a stuck one.
  *
  * The search is a single upstream call, so there are no intermediate stages to
  * report and no percentage that would not be invented. But there is a true
@@ -42,16 +50,14 @@ const elapsedLabel = (seconds: number) =>
  * population is being narrowed to the few people who match a sentence someone
  * typed. Nobody draws that. Everybody draws a spinner.
  *
- * So the field is the population, the pass travelling across it is the search,
- * and the marks that stand up and hold are the ones it keeps. It asserts no
- * count, no percentage and no stage — every number on this screen is real, and
- * the animation is texture over a true shape rather than a progress bar
- * pretending to know something.
+ * So the field is the population, the edge travelling across it is the search,
+ * and a mark it keeps lifts out of the plane with a bloom while the rest fall
+ * away. The far rows sit dimmer and smaller than the near ones, so the field
+ * reads as depth rather than as a heatmap.
  *
- * Above it, the criteria: the parser's reading of the sentence that was typed,
- * known on this side before the request leaves. That is how someone catches a
- * query that came out broader than they meant while it is still running, rather
- * than after the credit is spent. The clock counts real elapsed time.
+ * It asserts no count, no percentage and no stage — every number on this screen
+ * is real, and the motion is texture over a true shape rather than a progress
+ * bar pretending to know something.
  */
 export const SearchingResults = ({ filters }: { filters: ExternalLeadFilters }) => {
   const criteria = describeFilters(filters);
@@ -89,28 +95,47 @@ export const SearchingResults = ({ filters }: { filters: ExternalLeadFilters }) 
 
       {/* The population, and the pass going through it. */}
       <div
-        className="relative mt-5 min-h-[8.5rem] overflow-hidden rounded-lg border border-border/40 bg-background/40 p-3"
+        className="relative mt-5 overflow-hidden rounded-lg border border-border/40 bg-[radial-gradient(120%_100%_at_50%_120%,hsl(var(--primary)/0.07),transparent_70%)] px-3 py-4"
         aria-hidden
       >
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(0.5rem,1fr))] gap-x-1.5 gap-y-2">
-          {Array.from({ length: MARKS }).map((_, i) => (
-            <span
-              key={i}
-              className={cn(
-                "h-2.5 w-full origin-bottom rounded-[1px]",
-                isKept(i)
-                  ? "bg-primary animate-sift-lock"
-                  : "bg-muted-foreground animate-sift-dim",
-                "motion-reduce:animate-none motion-reduce:opacity-25",
-              )}
-              style={{ animationDelay: `${((i % WAVE) / WAVE) * WAVE_MS}ms` }}
-            />
-          ))}
+        <div
+          className="relative grid grid-cols-[repeat(24,minmax(0,1fr))] items-end gap-x-1 gap-y-2"
+          style={{ perspective: "600px" }}
+        >
+          {Array.from({ length: MARKS }).map((_, i) => {
+            const column = i % COLUMNS;
+            const row = Math.floor(i / COLUMNS);
+            const size = sizeOf(i);
+            return (
+              <span
+                key={i}
+                className={cn(
+                  "w-full justify-self-center rounded-[1.5px]",
+                  isKept(i)
+                    ? "bg-primary animate-sift-lock"
+                    : "bg-muted-foreground animate-sift-dim",
+                  "motion-reduce:animate-none motion-reduce:opacity-20",
+                )}
+                style={{
+                  height: `${size}px`,
+                  // The delay is the mark's horizontal position, so the edge
+                  // reaching it and it lighting are the same event. The row
+                  // offset keeps the wavefront from being a perfectly straight
+                  // vertical line.
+                  animationDelay: `${((column + row * 0.35) / COLUMNS) * CYCLE_MS}ms`,
+                  // Far rows sit back: dimmer, so the field has depth instead of
+                  // reading as a flat table of cells.
+                  opacity: 0.45 + (row / ROWS) * 0.55,
+                }}
+              />
+            );
+          })}
         </div>
 
-        {/* The pass itself, travelling over the field rather than under it. */}
+        {/* The pass: a bright leading edge with a long wake behind it, crossing
+            in exactly one cycle so a mark lights as the edge arrives. */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="h-full w-16 bg-[linear-gradient(90deg,transparent,hsl(var(--primary)/0.14),transparent)] animate-sweep motion-reduce:hidden" />
+          <div className="h-full w-[9%] bg-[linear-gradient(90deg,transparent_0%,hsl(var(--primary)/0.04)_45%,hsl(var(--primary)/0.18)_82%,hsl(var(--primary)/0.7)_97%,transparent_100%)] animate-sweep motion-reduce:hidden" />
         </div>
       </div>
 
