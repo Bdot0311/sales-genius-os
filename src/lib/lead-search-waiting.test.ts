@@ -51,8 +51,17 @@ describe("the wait says what the search is doing", () => {
   });
 
   it("shows nothing rather than empty labels when a search carries no criteria", () => {
-    expect(describeFilters({ limit: 25, page: 1 })).toEqual([]);
+    // `limit` used to stand in for "not a criterion" here. It is one of the
+    // rows now — the count comes from the sentence, so it is read back with
+    // everything else — which leaves `page` to make the point.
+    expect(describeFilters({ page: 1 })).toEqual([]);
     expect(describeFilters({ job_title: "   ", countries: [] })).toEqual([]);
+  });
+
+  it("reads the count back as its own row, not as a criterion to match on", () => {
+    expect(describeFilters({ limit: 25, page: 1 })).toEqual([
+      { label: "How many", values: ["25"] },
+    ]);
   });
 
   it("puts the waiting state in one component instead of inline rows", () => {
