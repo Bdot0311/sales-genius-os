@@ -2,11 +2,7 @@
 // and inserts it into blog_posts. Triggered by pg_cron biweekly.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { aiFetch } from "../_shared/ai-provider.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders, requireServiceRole } from "../_shared/internal-auth.ts";
 
 const slugify = (s: string) =>
   s
