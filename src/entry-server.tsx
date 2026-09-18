@@ -1,6 +1,7 @@
 import { Suspense, type ComponentType } from "react";
 import { renderToString } from "react-dom/server";
 import { StaticRouter } from "react-router-dom/server";
+import { Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Index from "./pages/Index";
 import ColdEmailSoftware from "./pages/ColdEmailSoftware";
@@ -16,6 +17,8 @@ import PricingPage from "./pages/PricingPage";
 import Partners from "./pages/Partners";
 import Security from "./pages/Security";
 import Accessibility from "./pages/Accessibility";
+import AlternativeTo from "./pages/AlternativeTo";
+import { COMPETITORS } from "./data/competitors";
 
 // Mirrors src/App.tsx's PageLoader so the Suspense boundary the client mounts
 // around the routed page has an identical fallback here.
@@ -44,22 +47,44 @@ const PageLoader = () => (
  * prerendering it would bake one visitor's state into a file served to
  * everyone.
  */
-const PAGES: Record<string, ComponentType> = {
-  "/": Index,
-  "/cold-email-software": ColdEmailSoftware,
-  "/ai-sdr-agent": AiSdrAgent,
-  "/sales-operations-software": SalesOperationsSoftware,
-  "/apollo-alternative": ApolloAlternative,
-  "/vs-apollo": VsApollo,
-  "/vs-instantly": VsInstantly,
-  "/vs-lusha": VsLusha,
-  "/vs-zoominfo": VsZoomInfo,
-  "/vs-rocketreach": VsRocketReach,
-  "/pricing": PricingPage,
-  "/partners": Partners,
-  "/security": Security,
-  "/accessibility": Accessibility,
+/**
+ * `pattern` is the route path React Router matches against, which is only
+ * different from the URL when the page reads a param. AlternativeTo calls
+ * useParams(), and a component rendered directly under StaticRouter has no
+ * matched route to take params from — it would have seen an empty slug, fallen
+ * through to its redirect, and every one of these pages would have prerendered
+ * to nothing.
+ */
+type Prerenderable = { Component: ComponentType; pattern?: string };
+
+const PAGES: Record<string, Prerenderable> = {
+  "/": { Component: Index },
+  "/cold-email-software": { Component: ColdEmailSoftware },
+  "/ai-sdr-agent": { Component: AiSdrAgent },
+  "/sales-operations-software": { Component: SalesOperationsSoftware },
+  "/apollo-alternative": { Component: ApolloAlternative },
+  "/vs-apollo": { Component: VsApollo },
+  "/vs-instantly": { Component: VsInstantly },
+  "/vs-lusha": { Component: VsLusha },
+  "/vs-zoominfo": { Component: VsZoomInfo },
+  "/vs-rocketreach": { Component: VsRocketReach },
+  "/pricing": { Component: PricingPage },
+  "/partners": { Component: Partners },
+  "/security": { Component: Security },
+  "/accessibility": { Component: Accessibility },
 };
+
+/**
+ * The alternative pages render from one template and differ only by the slug in
+ * the URL, so they go in the same map rather than getting their own branch.
+ * StaticRouter supplies the param, exactly as BrowserRouter does on the client.
+ */
+for (const tool of COMPETITORS) {
+  PAGES[`/alternatives/${tool.slug}`] = {
+    Component: AlternativeTo,
+    pattern: "/alternatives/:slug",
+  };
+}
 
 /** The paths scripts/prerender.mjs walks. */
 export const prerenderablePaths: string[] = Object.keys(PAGES);
@@ -80,14 +105,20 @@ export const prerenderablePaths: string[] = Object.keys(PAGES);
  * per route by vite-plugin-seo-routes.
  */
 export function render(url = "/"): string {
-  const Page = PAGES[url];
-  if (!Page) return "";
+  const entry = PAGES[url];
+  if (!entry) return "";
+  const { Component, pattern } = entry;
   const queryClient = new QueryClient();
   return renderToString(
     <QueryClientProvider client={queryClient}>
       <StaticRouter location={url}>
         <Suspense fallback={<PageLoader />}>
-          <Page />
+          {/* Routes/Route emit no DOM of their own, so the hydration target is
+              still exactly the page's output — but the match gives useParams()
+              something to read. */}
+          <Routes>
+            <Route path={pattern ?? url} element={<Component />} />
+          </Routes>
         </Suspense>
       </StaticRouter>
     </QueryClientProvider>,

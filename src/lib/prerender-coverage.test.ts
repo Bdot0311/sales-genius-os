@@ -1,22 +1,42 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
+import { COMPETITORS } from "@/data/competitors";
 
 const ENTRY = readFileSync("src/entry-server.tsx", "utf8");
 const PLUGIN = readFileSync("vite-plugin-seo-routes.ts", "utf8");
 const SCRIPT = readFileSync("scripts/prerender.mjs", "utf8");
 const ROBOTS = readFileSync("public/robots.txt", "utf8");
 
-/** The paths in entry-server's PAGES map. */
+/**
+ * The paths in entry-server's PAGES map.
+ *
+ * The alternative pages are added to it in a loop rather than written out, so
+ * reading the literal block alone would leave eight pages unchecked by
+ * everything below.
+ */
 const prerendered = (() => {
   const block = ENTRY.slice(
     ENTRY.indexOf("const PAGES"),
     ENTRY.indexOf("export const prerenderablePaths"),
   );
-  return [...block.matchAll(/"([^"]+)":/g)].map((m) => m[1]);
+  const literal = [...block.matchAll(/"([^"]+)":/g)].map((m) => m[1]);
+  const generated = ENTRY.includes("PAGES[`/alternatives/${tool.slug}`]")
+    ? COMPETITORS.map((tool) => `/alternatives/${tool.slug}`)
+    : [];
+  return [...literal, ...generated];
 })();
 
-/** Every path the SEO plugin emits a per-route HTML file and a sitemap entry for. */
-const routed = new Set([...PLUGIN.matchAll(/path: "([^"]+)"/g)].map((m) => m[1]));
+/**
+ * Every path the SEO plugin emits a per-route HTML file and a sitemap entry
+ * for. The alternative pages are built from a template literal over the same
+ * competitor table, so they are reconstructed here rather than scraped.
+ */
+const routed = new Set([
+  ...[...PLUGIN.matchAll(/path: "([^"]+)"/g)].map((m) => m[1]),
+  ...(PLUGIN.includes("path: `/alternatives/${tool.slug}`")
+    ? COMPETITORS.map((tool) => `/alternatives/${tool.slug}`)
+    : []),
+]);
 
 /**
  * Only the homepage was rendered to static HTML. Every other public page
@@ -45,6 +65,23 @@ describe("the pages a crawler can read without running JavaScript", () => {
     ]) {
       expect(prerendered, path).toContain(path);
     }
+  });
+
+  it("covers every alternative page, which are the highest-intent of the lot", () => {
+    // "{tool} alternative" is searched by someone who has already decided to
+    // leave. Shipping those as an empty shell to the crawlers that answer that
+    // question would waste the whole point of having them.
+    for (const tool of COMPETITORS) {
+      expect(prerendered, tool.slug).toContain(`/alternatives/${tool.slug}`);
+    }
+  });
+
+  it("gives a page that reads a route param something to read it from", () => {
+    // A component rendered directly under StaticRouter has no matched route, so
+    // useParams() returns nothing. AlternativeTo would have seen an empty slug,
+    // fallen through to its redirect, and prerendered to nothing at all.
+    expect(ENTRY).toContain('pattern: "/alternatives/:slug"');
+    expect(ENTRY).toContain("<Route path={pattern ?? url}");
   });
 
   it("only prerenders a path the plugin actually emits a file for", () => {
