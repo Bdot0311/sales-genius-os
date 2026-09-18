@@ -1,20 +1,34 @@
-// Build-time homepage prerender.
+// Build-time prerender for every public marketing page.
 //
 // Runs after `vite build` (client) and `vite build --ssr` (server bundle).
-// Renders <Index/> to static HTML and injects it into #root in dist/index.html
-// so the hero paints from HTML on first byte instead of waiting for the JS
-// bundle to mount. src/main.tsx hydrateRoot()s over the marked container.
+// Renders each page in src/entry-server's PAGES map to static HTML and injects
+// it into #root in that page's dist HTML, so the content paints from HTML on
+// first byte instead of waiting for the JS bundle to mount. src/main.tsx
+// hydrateRoot()s over any container marked data-prerendered.
 //
-// Failure is non-fatal to the artifact: if anything goes wrong we leave
-// dist/index.html exactly as `vite build` produced it (SPA still works) and
-// exit non-zero so CI surfaces the regression.
+// This used to do the homepage alone. Every other page shipped a head, a
+// hidden link index and an empty div — fine for Googlebot, which executes
+// JavaScript and comes back, and useless to the nine AI crawlers robots.txt
+// invites by name, which mostly do not. They were being welcomed to pages with
+// no prose on them.
+//
+// Failure is non-fatal to the artifact: a page that will not render is left
+// exactly as `vite build` produced it (the SPA still serves it) and the run
+// exits non-zero so CI surfaces the regression rather than silently shipping
+// an empty page.
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import path from "node:path";
 
 const ROOT = process.cwd();
-const DIST_INDEX = path.join(ROOT, "dist", "index.html");
+const DIST = path.join(ROOT, "dist");
+const DIST_INDEX = path.join(DIST, "index.html");
 const SSR_ENTRY = path.join(ROOT, ".ssr-dist", "entry-server.js");
+
+// vite-plugin-seo-routes emits "/foo" as dist/foo/index.html and the homepage
+// as dist/index.html.
+const distFileFor = (route) =>
+  route === "/" ? DIST_INDEX : path.join(DIST, route.replace(/^\//, ""), "index.html");
 
 // The Supabase client sets `storage: localStorage` at module load, and other
 // browser globals may be touched by transitive imports. Stub them BEFORE the
@@ -54,50 +68,104 @@ if (!existsSync(DIST_INDEX)) {
   process.exit(1);
 }
 
-const { render } = await import(pathToFileURL(SSR_ENTRY).href);
-let appHtml = render("/");
+const { render, prerenderablePaths } = await import(pathToFileURL(SSR_ENTRY).href);
 
-// React 19 hoists <link>/<title>/<meta> to <head> on the client (e.g. the
-// <link rel="preload"> it auto-generates for the Navbar logo's
-// fetchPriority="high" <img>), so those never stay in the client's #root.
-// renderToString can't hoist and emits them inline, which would mismatch the
-// client tree — strip them. JSON-LD (<script type="application/ld+json">) is
-// NOT hoisted: React keeps it inline at the component's position, so it must
-// stay in the server markup to match. The head metadata is already baked into
-// index.html by vite-plugin-seo-routes.
-appHtml = appHtml
-  .replace(/<link\b[^>]*>/gi, "")
-  .replace(/<title\b[^>]*>[\s\S]*?<\/title>/gi, "")
-  .replace(/<meta\b[^>]*>/gi, "");
-
-if (!appHtml || appHtml.length < 500) {
-  console.error(`[prerender] Rendered homepage markup is suspiciously small (${appHtml?.length ?? 0} bytes). Aborting without changes.`);
+if (!Array.isArray(prerenderablePaths) || prerenderablePaths.length === 0) {
+  console.error("[prerender] entry-server exported no prerenderablePaths. Aborting without changes.");
   process.exit(1);
 }
 
-let html = readFileSync(DIST_INDEX, "utf8");
+/**
+ * React 19 hoists <link>/<title>/<meta> to <head> on the client (e.g. the
+ * <link rel="preload"> it auto-generates for the Navbar logo's
+ * fetchPriority="high" <img>), so those never stay in the client's #root.
+ * renderToString can't hoist and emits them inline, which would mismatch the
+ * client tree — strip them. JSON-LD (<script type="application/ld+json">) is
+ * NOT hoisted: React keeps it inline at the component's position, so it must
+ * stay in the server markup to match. The head metadata is already baked into
+ * each page's HTML by vite-plugin-seo-routes.
+ */
+const stripHoisted = (markup) =>
+  markup
+    .replace(/<link\b[^>]*>/gi, "")
+    .replace(/<title\b[^>]*>[\s\S]*?<\/title>/gi, "")
+    .replace(/<meta\b[^>]*>/gi, "");
 
-// vite-plugin-seo-routes rewrites the homepage #root to
+// The plugin rewrites each page's #root to
 // `<div id="root"><nav …site index…></nav></div>`. That nav has no nested
 // <div>, so the first </div> after the marker is the container's own close.
 const rootRe = /<div id="root">([\s\S]*?)<\/div>/;
-const match = html.match(rootRe);
-if (!match) {
-  console.error('[prerender] Could not locate <div id="root">…</div> in dist/index.html. Aborting without changes.');
-  process.exit(1);
-}
-const linkIndex = match[1].trim();
-if (!/aria-label="Site index"/.test(linkIndex)) {
-  console.error('[prerender] #root did not contain the expected crawler link-index; the container may have nested <div>s that break the match. Aborting without changes.');
-  process.exit(1);
+
+const failures = [];
+let done = 0;
+
+for (const route of prerenderablePaths) {
+  const file = distFileFor(route);
+  if (!existsSync(file)) {
+    failures.push(`${route}: ${path.relative(ROOT, file)} missing`);
+    continue;
+  }
+
+  let appHtml;
+  try {
+    appHtml = stripHoisted(render(route));
+  } catch (err) {
+    failures.push(`${route}: render threw — ${err?.message ?? err}`);
+    continue;
+  }
+
+  // A page that renders almost nothing is a page whose tree did not mount the
+  // way it does in the browser. Shipping that would replace real markup with a
+  // stub, so it is left alone and reported.
+  if (!appHtml || appHtml.length < 500) {
+    failures.push(`${route}: rendered ${appHtml?.length ?? 0} bytes, expected at least 500`);
+    continue;
+  }
+
+  const html = readFileSync(file, "utf8");
+  const match = html.match(rootRe);
+  if (!match) {
+    failures.push(`${route}: could not locate <div id="root">…</div>`);
+    continue;
+  }
+  const linkIndex = match[1].trim();
+  if (!/aria-label="Site index"/.test(linkIndex)) {
+    failures.push(`${route}: #root did not contain the expected crawler link-index`);
+    continue;
+  }
+
+  // Keep the crawler link-index the plugin seeded, but move it OUT of #root to
+  // a sibling before it. React never touches it (so it stays for crawlers) and
+  // it no longer participates in hydration. The page goes inside #root, marked
+  // so main.tsx hydrates rather than re-renders from scratch.
+  writeFileSync(
+    file,
+    html.replace(rootRe, `${linkIndex}<div id="root" data-prerendered="true">${appHtml}</div>`),
+    "utf8",
+  );
+  done++;
+  console.log(`[prerender] ${route} → ${path.relative(ROOT, file)} (${appHtml.length} bytes)`);
 }
 
-// Keep the crawler link-index the plugin seeded, but move it OUT of #root to a
-// sibling before it. React never touches it (so it stays for crawlers) and it
-// no longer participates in hydration. The hero goes inside #root, marked so
-// main.tsx hydrates rather than re-renders from scratch.
-const replacement = `${linkIndex}<div id="root" data-prerendered="true">${appHtml}</div>`;
-html = html.replace(rootRe, replacement);
+console.log(`[prerender] Prerendered ${done}/${prerenderablePaths.length} pages.`);
 
-writeFileSync(DIST_INDEX, html, "utf8");
-console.log(`[prerender] Injected prerendered homepage into dist/index.html (${appHtml.length} bytes of hero markup).`);
+if (failures.length) {
+  console.error(`[prerender] ${failures.length} page(s) left as the SPA shell:`);
+  for (const f of failures) console.error(`  - ${f}`);
+}
+
+/**
+ * Only the homepage can fail the build.
+ *
+ * That was the contract before this walked more than one page, and widening it
+ * would mean any of thirteen pages could break a deploy over markup that is
+ * an improvement when it works and a no-op when it does not: a page that fails
+ * here is left exactly as `vite build` produced it, which is what it shipped as
+ * yesterday. Losing a deploy is a worse outcome than losing a prerender, so the
+ * others report loudly and the run still succeeds.
+ */
+const homepageFailed = failures.some((f) => f.startsWith("/:"));
+if (homepageFailed) {
+  console.error("[prerender] The homepage did not prerender. Failing the build.");
+  process.exit(1);
+}
