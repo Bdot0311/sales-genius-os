@@ -84,8 +84,16 @@ describe("the pages a crawler can read without running JavaScript", () => {
     // outcome than losing a prerender, so only the homepage — whose prerender
     // was already a build requirement — is allowed to fail the build.
     expect(SCRIPT).toContain('failures.some((f) => f.startsWith("/:"))');
+  });
+
+  it("does fail the build when nothing prerendered at all", () => {
+    // "Fails soft" and "silently does nothing" are one bad refactor apart. If
+    // the SSR bundle stops exporting a working render, every page fails the
+    // same way at once and a green build would go on shipping empty shells,
+    // with the evidence buried in a deploy log nobody reads.
+    expect(SCRIPT).toContain("if (done === 0) {");
     const afterLoop = SCRIPT.slice(SCRIPT.indexOf("console.log(`[prerender] Prerendered"));
-    expect(afterLoop.match(/process\.exit\(1\)/g) ?? []).toHaveLength(1);
+    expect(afterLoop.match(/process\.exit\(1\)/g) ?? []).toHaveLength(2);
   });
 
   it("keeps the crawler link index outside the hydration root", () => {

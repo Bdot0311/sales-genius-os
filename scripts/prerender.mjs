@@ -155,17 +155,29 @@ if (failures.length) {
 }
 
 /**
- * Only the homepage can fail the build.
+ * One page failing is tolerated. Everything failing is not.
  *
- * That was the contract before this walked more than one page, and widening it
- * would mean any of thirteen pages could break a deploy over markup that is
- * an improvement when it works and a no-op when it does not: a page that fails
- * here is left exactly as `vite build` produced it, which is what it shipped as
- * yesterday. Losing a deploy is a worse outcome than losing a prerender, so the
- * others report loudly and the run still succeeds.
+ * A page that fails here is left exactly as `vite build` produced it, which is
+ * what it shipped as before any of this — an improvement lost, not a
+ * regression — and losing a deploy over that is the worse outcome. So a single
+ * page reports and the build carries on.
+ *
+ * But "fails soft" and "silently does nothing" are one bad refactor apart. If
+ * the SSR bundle stops exporting a working render, or the plugin changes where
+ * it writes files, every page fails the same way at once and a green build
+ * would go on shipping empty shells to the AI crawlers this exists for, with
+ * the evidence buried in a deploy log nobody reads. That is systemic, so that
+ * is fatal.
+ *
+ * The homepage is fatal on its own because it was already a build requirement
+ * before this walked more than one page.
  */
 const homepageFailed = failures.some((f) => f.startsWith("/:"));
 if (homepageFailed) {
   console.error("[prerender] The homepage did not prerender. Failing the build.");
+  process.exit(1);
+}
+if (done === 0) {
+  console.error("[prerender] No page prerendered at all. Failing the build.");
   process.exit(1);
 }
