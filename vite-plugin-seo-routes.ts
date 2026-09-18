@@ -1,7 +1,9 @@
 import type { Plugin } from "vite";
+import { readFileSync } from "node:fs";
 import { blogPosts } from "./src/data/blog-posts";
 import { helpArticles, helpCategories } from "./src/components/help/helpArticles";
 import { COMPETITORS } from "./src/data/competitors";
+import { blogDbSnapshot, type BlogDbPost } from "./src/data/blog-db-snapshot";
 
 /**
  * Build-time per-route head injection.
@@ -221,43 +223,126 @@ const clampDescription = (text: string, max = 158): string => {
   return `${(lastSpace > 40 ? cut.slice(0, lastSpace) : cut).replace(/[.,;:]$/, "")}…`;
 };
 
+/**
+ * Every published article, database rows first.
+ *
+ * Most articles are published by the scheduled generator straight into the
+ * blog_posts table, so for months the build only knew about the 16 seeded
+ * files: the other 18 URLs existed but appeared in no sitemap and in no static
+ * link index, which is exactly the "Discovered - currently not indexed" state
+ * Search Console reported them in. The plugin now reads the live table at build
+ * time (see refreshBlogPosts) and falls back to the committed snapshot, so a
+ * build without network access still covers every article.
+ */
+let BLOG_POSTS: BlogDbPost[] = (() => {
+  const seen = new Set(blogDbSnapshot.map((p) => p.slug));
+  return [
+    ...blogDbSnapshot,
+    ...blogPosts
+      .filter((p) => !seen.has(p.slug))
+      .map((p) => ({
+        slug: p.slug,
+        title: p.title,
+        description: p.description,
+        publishedAt: p.publishedAt,
+      })),
+  ];
+})();
+
+/** Read a build-time env value from the process or, failing that, from .env. */
+function buildEnv(name: string): string | undefined {
+  if (process.env[name]) return process.env[name];
+  try {
+    const line = readFileSync(".env", "utf8")
+      .split("\n")
+      .find((l) => l.startsWith(`${name}=`));
+    return line?.slice(name.length + 1).trim().replace(/^"|"$/g, "") || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Pull the live article list at build time; keep the snapshot on any failure. */
+async function refreshBlogPosts(log: (message: string) => void): Promise<void> {
+  const url = buildEnv("VITE_SUPABASE_URL");
+  const key = buildEnv("VITE_SUPABASE_PUBLISHABLE_KEY");
+  if (!url || !key) return;
+  try {
+    const response = await fetch(
+      `${url}/rest/v1/blog_posts?select=slug,title,description,published_at&order=published_at.desc`,
+      { headers: { apikey: key, Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(10_000) },
+    );
+    if (!response.ok) {
+      log(`seo-routes: blog_posts fetch failed [${response.status}]; using snapshot`);
+      return;
+    }
+    const rows = (await response.json()) as Array<{
+      slug: string;
+      title: string;
+      description: string;
+      published_at: string;
+    }>;
+    if (!Array.isArray(rows) || rows.length === 0) return;
+    const live: BlogDbPost[] = rows.map((p) => ({
+      slug: p.slug,
+      title: p.title,
+      description: p.description,
+      publishedAt: String(p.published_at).slice(0, 10),
+    }));
+    const seen = new Set(live.map((p) => p.slug));
+    BLOG_POSTS = [
+      ...live,
+      ...BLOG_POSTS.filter((p) => !seen.has(p.slug)),
+    ];
+    CONTENT_ROUTES = contentRoutes();
+    ALL_ROUTES = [...ROUTES, ...CONTENT_ROUTES];
+    log(`seo-routes: ${live.length} articles read from the database`);
+  } catch (error) {
+    log(`seo-routes: blog_posts unreachable (${String(error)}); using snapshot`);
+  }
+}
+
 // Content routes, generated from the data the app renders so the two cannot
 // drift. Titles mirror the pattern each page's SEOHead uses.
-const CONTENT_ROUTES: RouteMeta[] = [
-  {
-    path: "/blog",
-    title: "OutReign Blog — B2B Outbound, ICP and Lead Generation Guides",
-    description:
-      "Practical guides on building an ICP, scoring leads, finding verified B2B contacts and running cold email that gets replies.",
-  },
-  ...blogPosts.map((post) => ({
-    path: `/blog/${post.slug}`,
-    title: `${post.title} | OutReign`,
-    description: clampDescription(post.description),
-  })),
-  ...helpCategories.map((category) => ({
-    path: `/help/category/${category.id}`,
-    title: `${category.title} — OutReign Help Center`,
-    description: clampDescription(category.description),
-  })),
-  ...helpArticles.map((article) => ({
-    path: `/help/article/${article.slug}`,
-    title: `${article.title} — OutReign Help Center`,
-    description: clampDescription(article.description),
-  })),
-  // One page per tool people search to replace. Generated from the same table
-  // the pages render from, so a new competitor gets a head, a sitemap entry and
-  // a place in the crawler link index without anything else being edited.
-  ...COMPETITORS.map((tool) => ({
-    path: `/alternatives/${tool.slug}`,
-    title: `${tool.name} Alternative | OutReign`,
-    description: clampDescription(
-      `${tool.intent}. OutReign finds the prospects, scores them against your ICP, writes the email and handles the reply. Free to start.`,
-    ),
-  })),
-];
+function contentRoutes(): RouteMeta[] {
+  return [
+    {
+      path: "/blog",
+      title: "OutReign Blog — B2B Outbound, ICP and Lead Generation Guides",
+      description:
+        "Practical guides on building an ICP, scoring leads, finding verified B2B contacts and running cold email that gets replies.",
+    },
+    ...BLOG_POSTS.map((post) => ({
+      path: `/blog/${post.slug}`,
+      title: `${post.title} | OutReign`,
+      description: clampDescription(post.description),
+    })),
+    ...helpCategories.map((category) => ({
+      path: `/help/category/${category.id}`,
+      title: `${category.title} — OutReign Help Center`,
+      description: clampDescription(category.description),
+    })),
+    ...helpArticles.map((article) => ({
+      path: `/help/article/${article.slug}`,
+      title: `${article.title} — OutReign Help Center`,
+      description: clampDescription(article.description),
+    })),
+    // One page per tool people search to replace. Generated from the same table
+    // the pages render from, so a new competitor gets a head, a sitemap entry and
+    // a place in the crawler link index without anything else being edited.
+    ...COMPETITORS.map((tool) => ({
+      path: `/alternatives/${tool.slug}`,
+      title: `${tool.name} Alternative | OutReign`,
+      description: clampDescription(
+        `${tool.intent}. OutReign finds the prospects, scores them against your ICP, writes the email and handles the reply. Free to start.`,
+      ),
+    })),
+  ];
+}
 
-const ALL_ROUTES: RouteMeta[] = [...ROUTES, ...CONTENT_ROUTES];
+let CONTENT_ROUTES: RouteMeta[] = contentRoutes();
+
+let ALL_ROUTES: RouteMeta[] = [...ROUTES, ...CONTENT_ROUTES];
 
 const escapeHtml = (value: string): string =>
   value
@@ -363,7 +448,7 @@ function renderRouteHtml(baseHtml: string, meta: RouteMeta): string {
  * the content itself.
  */
 function renderSitemap(buildDate: string): string {
-  const blogDates = new Map(blogPosts.map((p) => [`/blog/${p.slug}`, p.publishedAt]));
+  const blogDates = new Map(BLOG_POSTS.map((p) => [`/blog/${p.slug}`, p.publishedAt]));
 
   const priorityFor = (path: string): string => {
     if (path === "/") return "1.0";
@@ -411,6 +496,9 @@ export function seoRoutesPlugin(): Plugin {
     name: "outreign-seo-routes",
     apply: "build",
     enforce: "post",
+    async buildStart() {
+      await refreshBlogPosts((message) => this.info(message));
+    },
     generateBundle(_options, bundle) {
       const indexAsset = bundle["index.html"];
       if (!indexAsset || indexAsset.type !== "asset" || typeof indexAsset.source !== "string") {
