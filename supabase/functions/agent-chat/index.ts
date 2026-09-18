@@ -1496,8 +1496,11 @@ serve(async (req) => {
             },
           };
         }
-        // Out of rewrites. A draft that is good enough to send still goes; only
-        // one that is genuinely below the sending bar waits on the user.
+        // Out of rewrites, in a conversation, with a person looking at the
+        // draft and able to edit it. Worth offering for approval at 4/5 across
+        // the rubric; below that it is not worth their time either. This is a
+        // lower bar than agent-run's, which sends nothing autonomously short of
+        // a perfect card — there, nobody is looking.
         if (!isSendable(attempt)) forceApproval = true;
       } else if (modelAuthored && !rubric && (isWeak(rubric) || blocking.length > 0)) {
         // No rubric available on this plan. The rule audit still applies.

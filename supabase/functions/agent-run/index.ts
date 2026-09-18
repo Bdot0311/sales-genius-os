@@ -9,7 +9,6 @@ import {
   attemptFeedback,
   better,
   isPerfect,
-  isSendable,
   isWeak,
   scoreEmail,
   type Attempt,
@@ -942,10 +941,24 @@ ${playbookSystemRules()}`;
               };
 
               const scored = rubric !== null;
-              // The loop above writes toward a perfect card; sending only needs
-              // a genuinely good one. Holding on anything less than perfect meant
-              // the agent could rewrite all day and reach nobody.
-              const qualityHold = scored ? !isSendable(best) : isWeak(rubric) || best.blocking.length > 0;
+              /**
+               * Nothing leaves autonomously below a perfect card.
+               *
+               * This briefly sent at AGENT_SEND_SCORE instead, to stop the
+               * agent rewriting all day and reaching nobody. The product is
+               * positioned on replies rather than volume, so the opposite
+               * trade is the right one: an email that scores 84 and gets
+               * ignored costs more than an email never sent, because it spends
+               * the one first impression that address will ever give us.
+               *
+               * The starvation that motivated the lower bar is handled instead
+               * of tolerated. A lead the agent cannot write a perfect email to
+               * is skipped and cooled off for COOLDOWN_DAYS, so the run moves
+               * to the next lead rather than spending the quota re-attempting
+               * the same one — and it comes back once enrichment has given the
+               * agent something more to work with.
+               */
+              const qualityHold = scored ? !isPerfect(best) : isWeak(rubric) || best.blocking.length > 0;
               if (qualityHold) {
                 console.log(
                   `[agent-run] quality hold for ${to} after ${attempts} attempt(s): ` +
