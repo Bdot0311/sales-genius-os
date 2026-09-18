@@ -342,21 +342,31 @@ const useJwtSanityCheck = (pathname: string) => {
         // Only force sign-out when we successfully decoded and confirmed `sub`
         // is missing. If decoding itself failed, do NOT wipe a potentially
         // valid session — let the server-side getUser() check below decide.
-        if (!hasSub && !decodeFailed) {
+        const recover = async () => {
           try { await supabase.auth.signOut(); } catch { /* noop */ }
           try {
             Object.keys(localStorage)
               .filter(k => k.startsWith('sb-') && k.endsWith('-auth-token'))
               .forEach(k => localStorage.removeItem(k));
           } catch { /* noop */ }
+          // Other hooks (admin role, credits, maintenance) may already be
+          // holding the rejected session. Reloading once is the only reliable
+          // way to get every one of them back onto a clean anon state instead
+          // of leaving the user on empty, erroring screens.
+          try { window.location.reload(); } catch { /* noop */ }
+        };
+
+        if (!hasSub && !decodeFailed) {
+          await recover();
           return;
         }
         // Token has a sub — confirm the server accepts it. If not (bad_jwt),
         // clear the stale session rather than looping into permission errors.
         const { error } = await supabase.auth.getUser();
         if (error && /jwt|claim|sub/i.test(error.message || '')) {
-          try { await supabase.auth.signOut(); } catch { /* noop */ }
+          await recover();
         }
+
       } catch { /* noop */ }
     })();
   }, [pathname]);

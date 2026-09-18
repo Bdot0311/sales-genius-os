@@ -6174,6 +6174,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: undefined
       }
+      internal_job_key: { Args: never; Returns: string }
       is_demo_mode: { Args: { _user_id: string }; Returns: boolean }
       lock_expired_trials: { Args: never; Returns: undefined }
       log_security_event: {

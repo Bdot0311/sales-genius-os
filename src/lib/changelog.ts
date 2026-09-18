@@ -92,6 +92,29 @@ export const ROADMAP: RoadmapItem[] = [
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-09-18",
+    date: "2026-09-18",
+    title: "Deliverability alerts and warm-up are running again",
+    summary:
+      "The scheduled checks behind your sender health had stopped running, and a small number of people were being logged out unexpectedly. Both are fixed.",
+    items: [
+      {
+        tag: "fixed",
+        title: "Sender reputation, warm-up and alert emails resume on schedule",
+        description:
+          "Daily reputation scoring, warm-up sends, alert emails and lead re-scoring after an ICP change had quietly stopped running. They are back on their normal schedule, so your deliverability numbers are current again.",
+        href: "/dashboard/deliverability",
+      },
+      {
+        tag: "fixed",
+        title: "No more surprise sign-outs",
+        description:
+          "If your saved login was no longer valid, some pages loaded empty or errored instead of simply asking you to sign in again. Now the app clears the stale login cleanly and takes you straight back to the sign-in screen.",
+      },
+    ],
+  },
+  {
+
     id: "2026-09-16",
     date: "2026-09-16",
     title: "Emails your AI agent writes meet a higher bar",
