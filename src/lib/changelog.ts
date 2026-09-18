@@ -118,6 +118,13 @@ export const CHANGELOG: ChangelogEntry[] = [
           "If the agent started a job and its reply was cut short, it now picks up right where it left off and finishes the work — and when it searches for leads, you can see the search happening as it runs.",
         href: "/dashboard/agent",
       },
+      {
+        tag: "improved",
+        title: "Every guide on the blog is now findable in search",
+        description:
+          "Only the earliest articles were listed for search engines, so newer guides could sit unfound for weeks. All 34 articles are now submitted to Google with their real publish dates, and new ones are added automatically the day they go up.",
+        href: "/blog",
+      },
     ],
   },
   {
