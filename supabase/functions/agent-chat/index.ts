@@ -15,7 +15,12 @@ import { signOffStartIndex } from "../_shared/email-rules.ts";
 import { findPlaceholders, hasPlaceholder, realValue } from "../_shared/email-rules.ts";
 import { asFnResult } from "../_shared/fn-result.ts";
 import { UNTRUSTED_CONTENT_RULE, fence, fenceRecords } from "../_shared/untrusted.ts";
-import { correctionFor, emptyTurnWarning, unbackedClaims } from "../_shared/claim-check.ts";
+import {
+  correctionFor,
+  emptyTurnWarning,
+  statedIntentWithoutAction,
+  unbackedClaims,
+} from "../_shared/claim-check.ts";
 import { capacityFor, shortfallWarning } from "../_shared/send-capacity.ts";
 import { decideSend, previewText } from "../_shared/send-confirmation.ts";
 import { userConfirmedSend } from "../_shared/user-confirmation.ts";
@@ -3678,21 +3683,33 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
         // it cannot. Once, because a model that will not act on the second ask
         // will not act on the fifth, and looping burns the user's budget to
         // arrive at the same place.
-        if (
-          !retriedEmptyTurn &&
-          emptyTurnWarning(finalText, toolEvents) &&
-          step < 7 &&
-          !outOfTime()
-        ) {
+        //
+        // The same turn fails the other way round too, and more often: the
+        // model answers "Redrafting Den clean now, then sending all 4. One
+        // moment.", calls nothing, and stops. No past-tense marker to catch,
+        // so the check above never sees it — and the user sits watching a
+        // promise, then has to send another message to restart work the agent
+        // already said it was doing.
+        const claimedDone = emptyTurnWarning(finalText, toolEvents);
+        const promisedWork = claimedDone ? "" : statedIntentWithoutAction(finalText, toolEvents);
+        if (!retriedEmptyTurn && (claimedDone || promisedWork) && step < 7 && !outOfTime()) {
           retriedEmptyTurn = true;
-          console.warn("[agent-chat] empty turn claimed completion — asking once for the work");
+          console.warn(
+            promisedWork
+              ? "[agent-chat] turn promised work and called nothing — continuing it once"
+              : "[agent-chat] empty turn claimed completion — asking once for the work",
+          );
           messages.push({
             role: "user",
-            content:
-              "[system check, not from the user] Your reply says the work is done, but you called no tool that changes anything, so nothing happened. " +
-              "If the user asked you to do something, call the tool that does it now. " +
-              "If you cannot — the build is not scoped for it, a record is missing, a limit is in the way — say that plainly in one or two sentences. " +
-              "Do not restate the summary you just wrote, and do not describe the work as complete.",
+            content: promisedWork
+              ? "[system check, not from the user] You said you were starting that work, and then the turn ended without calling any tool, so nothing happened and the user is still waiting. " +
+                "Do it now: call the tool that does it. " +
+                "If you cannot — a record is missing, a limit is in the way, or you need the user to decide something — say exactly that in one or two sentences instead. " +
+                "Do not say you are about to start, and do not promise it again."
+              : "[system check, not from the user] Your reply says the work is done, but you called no tool that changes anything, so nothing happened. " +
+                "If the user asked you to do something, call the tool that does it now. " +
+                "If you cannot — the build is not scoped for it, a record is missing, a limit is in the way — say that plainly in one or two sentences. " +
+                "Do not restate the summary you just wrote, and do not describe the work as complete.",
           });
           continue;
         }

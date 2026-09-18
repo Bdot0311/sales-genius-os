@@ -1,6 +1,6 @@
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowUpRight, Loader2, Search } from "lucide-react";
+import { ArrowUp, ArrowUpRight, Loader2 } from "lucide-react";
 
 interface AILeadCommandProps {
   /**
@@ -107,7 +107,7 @@ const pickExamples = () => {
 export const AILeadCommand = ({ onSearch, isSearching }: AILeadCommandProps) => {
   const [command, setCommand] = useState("");
   const [examples] = useState(pickExamples);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   // `isSearching` only goes true once the search request is actually made, and
   // the handler spends a few seconds parsing the query first. Without this the
   // box is enabled for that whole window and a second Enter buys a second
@@ -115,6 +115,16 @@ export const AILeadCommand = ({ onSearch, isSearching }: AILeadCommandProps) => 
   const dispatching = useRef(false);
   const [busy, setBusy] = useState(false);
   const disabled = busy || isSearching;
+
+  // Grow to fit what has been typed, up to the max-height the class sets, then
+  // scroll. Measured from scrollHeight after a reset, because a textarea will
+  // not shrink on its own once it has grown.
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+  }, [command]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,35 +142,53 @@ export const AILeadCommand = ({ onSearch, isSearching }: AILeadCommandProps) => 
   return (
     <div>
       <form onSubmit={handleSubmit}>
-        {/* The submit sits inside the field.
-            Below it, full width, it was a violet slab the size of the input —
-            the largest and loudest object on a phone screen, and greyed out
-            most of the time because the field starts empty. Inset and compact,
-            it is a control on the field rather than a banner under it. */}
-        <div className="relative">
-          <Search
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70"
-            aria-hidden
-          />
-          <input
+        {/* A composer, not a search field.
+            A single-line input asks for a keyword. What this actually wants is
+            a sentence — a role, a kind of company, somewhere they are, and
+            usually a couple of exclusions — and a one-line box that scrolls
+            sideways hides most of it while you are still writing it. This grows
+            with what you type, up to a point, so the whole request stays on
+            screen. Enter searches, Shift + Enter starts a line, which is what
+            anyone who has typed into a chat box already expects. */}
+        <div className="relative rounded-xl border border-border/50 bg-background/60 transition-colors focus-within:border-primary/60 focus-within:bg-background/80">
+          <textarea
             ref={inputRef}
-            type="text"
+            rows={1}
             value={command}
             onChange={(e) => setCommand(e.target.value)}
-            placeholder="Founders at fintech companies in the UK"
+            onKeyDown={(e) => {
+              // Enter sends. Shift + Enter is a newline. isComposing keeps an
+              // IME's own Enter from firing a search mid-word.
+              if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                e.preventDefault();
+                void handleSubmit(e);
+              }
+            }}
+            placeholder="Founders at fintech companies in the UK, 11-50 people, not agencies"
             aria-label="Describe the leads you are looking for"
-            // 16px on mobile, or iOS zooms the page on focus.
-            className="h-12 w-full rounded-lg border border-border/40 bg-background/50 pl-9 pr-[5.5rem] text-base text-foreground outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-primary/50 focus:bg-background/80 disabled:opacity-60 sm:text-sm"
+            // 16px on mobile, or iOS zooms the page on focus. The bottom
+            // padding is the row the controls sit in.
+            className="block max-h-40 w-full resize-none bg-transparent px-3.5 pb-11 pt-3.5 text-base leading-relaxed text-foreground outline-none placeholder:text-muted-foreground/45 disabled:opacity-60 sm:text-sm"
             disabled={disabled}
           />
-          <Button
-            type="submit"
-            disabled={!command.trim() || disabled}
-            className="absolute right-1.5 top-1/2 h-9 -translate-y-1/2 gap-1.5 px-3 text-xs font-medium"
-          >
-            {disabled ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
-            {disabled ? "Searching" : "Search"}
-          </Button>
+          <div className="pointer-events-none absolute inset-x-2 bottom-2 flex items-center justify-between gap-3">
+            <span className="hidden truncate pl-1.5 text-[0.6875rem] text-muted-foreground/55 sm:block">
+              Enter to search, Shift + Enter for a new line
+            </span>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={!command.trim() || disabled}
+              className="pointer-events-auto ml-auto h-8 gap-1.5 rounded-lg px-3 text-xs font-medium"
+            >
+              {disabled ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+              ) : (
+                <ArrowUp className="h-3.5 w-3.5" aria-hidden />
+              )}
+              {disabled ? "Searching" : "Search"}
+            </Button>
+          </div>
         </div>
         <p className="mt-2 text-[0.6875rem] leading-relaxed text-muted-foreground/70">
           Plain English: the role, the kind of company, and where they are.

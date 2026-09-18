@@ -5,6 +5,7 @@ import {
   anyMutationSucceeded,
   correctionFor,
   emptyTurnWarning,
+  statedIntentWithoutAction,
   unbackedClaims,
   type ToolEventLike,
 } from "../../supabase/functions/_shared/claim-check.ts";
@@ -216,5 +217,90 @@ describe("a completion claim on a turn that changed nothing", () => {
     const failed = [{ name: "send_drafts", label: "Send failed", status: "error" }];
     expect(anyMutationSucceeded(failed)).toBe(false);
     expect(emptyTurnWarning("✅ Done.", failed)).toContain("changed anything");
+  });
+});
+
+/**
+ * The stall: "Redrafting Den clean now, then sending all 4. One moment." —
+ * and then nothing. No tool called, turn over, user waiting on work the agent
+ * already said it was doing, and no way forward but sending another message.
+ *
+ * emptyTurnWarning cannot see it. Every marker it carries is past tense, and
+ * this failure is entirely future tense.
+ */
+describe("a turn that promised work and did none", () => {
+  const nothingRan: ToolEventLike[] = [];
+
+  it("catches the stall that started this", () => {
+    expect(
+      statedIntentWithoutAction("Redrafting Den clean now, then sending all 4.\nOne moment.", nothingRan),
+    ).not.toBe("");
+  });
+
+  it("catches the fillers people write while starting work", () => {
+    for (const text of [
+      "One moment.",
+      "On it.",
+      "Working on it.",
+      "Hang on, pulling those up.",
+      "Give me a second.",
+      "Starting now.",
+      "Sending all four now.",
+    ]) {
+      expect(statedIntentWithoutAction(text, nothingRan), text).not.toBe("");
+    }
+  });
+
+  it("leaves a turn that is waiting on the user alone", () => {
+    // This is the message directly above the stall in the same conversation.
+    // Re-prompting it would talk the agent into sending emails nobody approved,
+    // which is worse than the stall it is trying to fix.
+    for (const text of [
+      'Reply "yes" or "send them" and I\'ll send.',
+      "Want me to send these now?",
+      "Should I schedule them for 9am?",
+      "Let me know once you've connected Gmail and I'll send.",
+      "I can send them once you approve.",
+    ]) {
+      expect(statedIntentWithoutAction(text, nothingRan), text).toBe("");
+    }
+  });
+
+  it("does not mistake a blocker for a stall", () => {
+    // "I'll" on its own is how a model explains what is in the way.
+    for (const text of [
+      "I'll need your Gmail connected before I can send anything.",
+      "That would need a sequence, which this plan does not include.",
+      "Here are the 12 leads I found.",
+    ]) {
+      expect(statedIntentWithoutAction(text, nothingRan), text).toBe("");
+    }
+  });
+
+  it("says nothing when the turn actually did the work", () => {
+    const sent: ToolEventLike[] = [{ name: "send_drafts", label: "Sent", status: "ok" }];
+    expect(statedIntentWithoutAction("Sending all four now. One moment.", sent)).toBe("");
+  });
+});
+
+describe("the chat loop continues a promised turn", () => {
+  const CHAT = readFileSync("supabase/functions/agent-chat/index.ts", "utf8");
+
+  it("checks for a promise as well as for a false completion", () => {
+    expect(CHAT).toContain("statedIntentWithoutAction(finalText, toolEvents)");
+    expect(CHAT).toContain("(claimedDone || promisedWork)");
+  });
+
+  it("still only intervenes once, whichever of the two it was", () => {
+    // A model that will not act on the second ask will not act on the fifth,
+    // and looping burns the user's budget to arrive at the same place.
+    expect(CHAT).toContain("!retriedEmptyTurn &&");
+    expect(CHAT).toContain("retriedEmptyTurn = true");
+  });
+
+  it("tells the model it stalled, not that it lied about finishing", () => {
+    const nudge = CHAT.slice(CHAT.indexOf("content: promisedWork"), CHAT.indexOf("Do not restate"));
+    expect(nudge).toContain("You said you were starting that work");
+    expect(nudge).toContain("do not promise it again");
   });
 });

@@ -60,13 +60,15 @@ describe("one search, one loading state", () => {
     expect(CMD).not.toContain("Searching B2B data sources");
   });
 
-  it("the results region shows placeholders in the shape of results", () => {
+  it("the results region shows the search working, not a spinner", () => {
     // The loading state moved into SearchingResults, which reads the criteria
     // back as well; the rows in the results' shape are still what holds the
     // layout. A spinner in a void is what they replaced.
     const waiting = readFileSync("src/components/dashboard/SearchingResults.tsx", "utf8");
     expect(waiting).toContain('aria-label="Searching for leads"');
-    expect(waiting).toContain("h-9 w-9 shrink-0 rounded-full");
+    // No longer rows in the shape of results: the wait draws the population
+    // being narrowed instead, which is the part of this nobody else shows.
+    expect(waiting).toContain("animate-sift-lock");
     expect(PAGE).toContain("<SearchingResults");
     expect(PAGE).not.toContain("Searching B2B data sources");
   });
@@ -130,9 +132,24 @@ describe("mobile", () => {
   it("the submit is inset in the field, not a full-width slab under it", () => {
     // Stacked below the field it was a violet block the size of the input:
     // the largest object on a phone screen, and greyed out most of the time
-    // because the field starts empty.
-    expect(CMD).toContain("absolute right-1.5 top-1/2");
+    // because the field starts empty. It sits on the composer's own control
+    // row now, which is where a send button belongs.
+    expect(CMD).toMatch(/absolute inset-x-2 bottom-2/);
     expect(CMD).not.toContain("flex flex-col gap-2 sm:flex-row");
+  });
+
+  it("takes a sentence, the way a chat box does", () => {
+    // A role, a kind of company, a place and usually a couple of exclusions
+    // does not fit on one line, and a one-line box hides most of it while it
+    // is still being written.
+    expect(CMD).toContain("<textarea");
+    expect(CMD).toContain("resize-none");
+    // Enter searches, Shift + Enter starts a line.
+    expect(CMD).toMatch(/e\.key === "Enter" && !e\.shiftKey/);
+    // An IME's own Enter must not fire a search mid-word.
+    expect(CMD).toContain("isComposing");
+    // It grows with what is typed rather than scrolling sideways.
+    expect(CMD).toContain("scrollHeight");
   });
 
   it("has a real type scale rather than one size for everything", () => {
