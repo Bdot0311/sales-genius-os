@@ -190,3 +190,36 @@ if (others.length > 0 && othersDone === 0) {
   );
   process.exit(1);
 }
+
+/**
+ * A whole family of pages failing together is systemic too.
+ *
+ * Pages that share a URL prefix usually share a template — /alternatives/* is
+ * eight pages off one component, rendered through one route pattern. If that
+ * pattern is wrong they do not fail one at a time, they all fail at once, and
+ * the checks above still pass because the other fourteen rendered. A green
+ * build would ship eight empty pages aimed at the highest-intent query the
+ * site has.
+ *
+ * So every family of more than one has to get at least one page out.
+ */
+const failedPaths = new Set(failures.map((f) => f.slice(0, f.indexOf(":"))));
+const familyOf = (route) => route.split("/")[1] ?? "";
+const families = new Map();
+for (const route of others) {
+  const family = familyOf(route);
+  const seen = families.get(family) ?? { total: 0, failed: 0 };
+  seen.total++;
+  if (failedPaths.has(route)) seen.failed++;
+  families.set(family, seen);
+}
+const deadFamilies = [...families.entries()]
+  .filter(([, seen]) => seen.total > 1 && seen.failed === seen.total)
+  .map(([family, seen]) => `/${family}/* (${seen.total} pages)`);
+if (deadFamilies.length) {
+  console.error(
+    `[prerender] Every page in ${deadFamilies.join(", ")} failed. ` +
+      "A shared template or route pattern is broken. Failing the build.",
+  );
+  process.exit(1);
+}

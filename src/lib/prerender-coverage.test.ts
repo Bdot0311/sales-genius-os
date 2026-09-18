@@ -123,6 +123,16 @@ describe("the pages a crawler can read without running JavaScript", () => {
     expect(SCRIPT).toContain('failures.some((f) => f.startsWith("/:"))');
   });
 
+  it("does fail the build when a whole family of pages failed together", () => {
+    // /alternatives/* is eight pages off one component through one route
+    // pattern. If that pattern is wrong they do not fail one at a time, they
+    // all fail at once — and the other fourteen still rendering would keep the
+    // build green while eight empty pages shipped at the highest-intent query
+    // the site has.
+    expect(SCRIPT).toContain("const familyOf = (route) => route.split(\"/\")[1]");
+    expect(SCRIPT).toContain("seen.total > 1 && seen.failed === seen.total");
+  });
+
   it("does fail the build when every page but the homepage failed", () => {
     // Counted without the homepage on purpose: the homepage is guarded
     // separately, so a bare "nothing rendered" check could never fire. The
@@ -132,7 +142,8 @@ describe("the pages a crawler can read without running JavaScript", () => {
     expect(SCRIPT).toContain("const othersDone = done - 1;");
     expect(SCRIPT).toContain("others.length > 0 && othersDone === 0");
     const afterLoop = SCRIPT.slice(SCRIPT.indexOf("console.log(`[prerender] Prerendered"));
-    expect(afterLoop.match(/process\.exit\(1\)/g) ?? []).toHaveLength(2);
+    // Homepage, all-others, and a dead family.
+    expect(afterLoop.match(/process\.exit\(1\)/g) ?? []).toHaveLength(3);
   });
 
   it("keeps the crawler link index outside the hydration root", () => {
