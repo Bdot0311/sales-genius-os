@@ -1,6 +1,7 @@
 import type { Plugin } from "vite";
 import { blogPosts } from "./src/data/blog-posts";
 import { helpArticles, helpCategories } from "./src/components/help/helpArticles";
+import { COMPETITORS } from "./src/data/competitors";
 
 /**
  * Build-time per-route head injection.
@@ -244,6 +245,16 @@ const CONTENT_ROUTES: RouteMeta[] = [
     title: `${article.title} — OutReign Help Center`,
     description: clampDescription(article.description),
   })),
+  // One page per tool people search to replace. Generated from the same table
+  // the pages render from, so a new competitor gets a head, a sitemap entry and
+  // a place in the crawler link index without anything else being edited.
+  ...COMPETITORS.map((tool) => ({
+    path: `/alternatives/${tool.slug}`,
+    title: `${tool.name} Alternative | OutReign`,
+    description: clampDescription(
+      `${tool.intent}. OutReign finds the prospects, scores them against your ICP, writes the email and handles the reply. Free to start.`,
+    ),
+  })),
 ];
 
 const ALL_ROUTES: RouteMeta[] = [...ROUTES, ...CONTENT_ROUTES];
@@ -284,6 +295,7 @@ function renderLinkIndex(currentPath: string): string {
 
   const isBlog = (r: RouteMeta) => r.path.startsWith("/blog");
   const isHelp = (r: RouteMeta) => r.path.startsWith("/help");
+  const isAlternative = (r: RouteMeta) => r.path.startsWith("/alternatives/");
 
   return [
     // Visually hidden via inline styles (no stylesheet dependency) so real
@@ -291,6 +303,11 @@ function renderLinkIndex(currentPath: string): string {
     // React bundle land. Crawlers still parse the markup and follow the links.
     '<nav aria-label="Site index" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0">',
     group("Product", ROUTES),
+    // Its own group on purpose. These are content routes but neither blog nor
+    // help, so the two filters below would have dropped them from the index
+    // entirely — a set of pages with no internal links pointing at them, which
+    // is the one thing that would stop them ranking.
+    group("Alternatives", CONTENT_ROUTES.filter(isAlternative)),
     group("Guides and articles", CONTENT_ROUTES.filter(isBlog)),
     group("Help center", CONTENT_ROUTES.filter(isHelp)),
     "</nav>",
@@ -350,7 +367,15 @@ function renderSitemap(buildDate: string): string {
 
   const priorityFor = (path: string): string => {
     if (path === "/") return "1.0";
-    if (path === "/pricing" || path.startsWith("/vs-") || path === "/apollo-alternative") return "0.9";
+    if (
+      path === "/pricing" ||
+      path.startsWith("/vs-") ||
+      path === "/apollo-alternative" ||
+      path.startsWith("/alternatives/")
+    ) {
+      // Commercial intent: someone searching these has already decided to move.
+      return "0.9";
+    }
     if (path === "/blog" || path === "/help" || path === "/sales-operations-software" || path === "/ai-sdr-agent" || path === "/cold-email-software") return "0.8";
     if (path.startsWith("/blog/")) return "0.7";
     if (path.startsWith("/help/")) return "0.6";
