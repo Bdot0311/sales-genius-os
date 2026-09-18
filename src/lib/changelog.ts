@@ -111,6 +111,13 @@ export const CHANGELOG: ChangelogEntry[] = [
         description:
           "If your saved login was no longer valid, some pages loaded empty or errored instead of simply asking you to sign in again. Now the app clears the stale login cleanly and takes you straight back to the sign-in screen.",
       },
+      {
+        tag: "improved",
+        title: "Your AI agent finishes what it starts",
+        description:
+          "If the agent started a job and its reply was cut short, it now picks up right where it left off and finishes the work — and when it searches for leads, you can see the search happening as it runs.",
+        href: "/dashboard/agent",
+      },
     ],
   },
   {
