@@ -66,24 +66,38 @@ describe("the wait says what the search is doing", () => {
   });
 
   it("moves, on animations that exist, and stops when the reader asks it to", () => {
-    expect(TAILWIND).toContain('"shimmer"');
-    expect(TAILWIND).toContain('"sweep"');
-    expect(code(WAITING)).toContain("animate-shimmer");
-    expect(code(WAITING)).toContain("animate-sweep");
+    for (const name of ["sweep", "sift-lock", "sift-dim"]) {
+      expect(TAILWIND, name).toContain(`"${name}"`);
+      expect(code(WAITING), name).toContain(`animate-${name}`);
+    }
     expect(code(WAITING)).toContain("motion-reduce:animate-none");
     expect(code(WAITING)).toContain("motion-reduce:hidden");
   });
 
-  it("writes every width out, because Tailwind cannot see one built at runtime", () => {
-    for (const w of ["w-[38%]", "w-[64%]", "w-[52%]", "w-[43%]", "w-[31%]", "w-[71%]"]) {
-      expect(WAITING).toContain(w);
-    }
+  it("does not redefine an animation the stylesheet already owns", () => {
+    // index.css carries its own .animate-shimmer and a shimmer keyframe. A
+    // second one in the Tailwind config is the same class name from two
+    // sources, decided by cascade order rather than by intent.
+    expect(TAILWIND).not.toContain("shimmer");
+  });
+
+  it("draws the population being narrowed, not the results before they exist", () => {
+    // Rows in the shape of results is what every other tool in the category
+    // does. This draws the thing the search is actually doing.
+    const waiting = code(WAITING);
+    expect(waiting).toContain("const isKept =");
+    expect(waiting).toContain("length: MARKS");
+    // Deterministic, so a mark does not change its mind between renders.
+    expect(waiting).toMatch(/const isKept = \(i: number\) => \(i \* \d+\) % \d+ === 0;/);
   });
 
   it("never sets a delay on an element that runs no animation", () => {
-    // A delay on a static row is dead CSS that reads as intent.
-    const delays = code(WAITING).match(/animationDelay/g) ?? [];
-    const shimmering = code(WAITING).match(/SHIMMER/g) ?? [];
-    expect(delays.length).toBeLessThanOrEqual(shimmering.length);
+    // A delay on a static element is dead CSS that reads as intent.
+    const waiting = code(WAITING);
+    const delays = waiting.match(/animationDelay/g) ?? [];
+    expect(delays.length).toBeGreaterThan(0);
+    // Every delay here belongs to the one element that carries a sift class.
+    const sifted = waiting.match(/animate-sift-(?:lock|dim)/g) ?? [];
+    expect(sifted.length).toBeGreaterThanOrEqual(delays.length);
   });
 });

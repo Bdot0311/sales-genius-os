@@ -190,3 +190,73 @@ export function emptyTurnWarning(text: string, events: ToolEventLike[]): string 
     ? "Nothing ran on this turn — no tool was called at all, so nothing above happened."
     : `Nothing on this turn changed anything. What actually ran: ${ran.join("; ")}.`;
 }
+
+/**
+ * A turn that promises the work instead of reporting it.
+ *
+ * emptyTurnWarning catches a reply that claims the job is *done* when nothing
+ * ran. It cannot catch the opposite failure, which is the one people actually
+ * hit: the model answers "Redrafting Den clean now, then sending all 4. One
+ * moment.", calls no tool, and the turn ends. Nothing is wrong with that
+ * sentence except that it was the last thing the turn did. The user waits,
+ * nothing arrives, and they have to send another message to restart work the
+ * agent already said it was doing.
+ *
+ * Past-tense markers miss it entirely: no "done", no "successfully", no tick.
+ *
+ * The hard part is that a promise is not always a stall. "Reply yes or send
+ * them and I'll send" is the same grammar doing the right thing — handing the
+ * turn back on purpose, waiting for an answer it cannot proceed without. Firing
+ * on that would re-prompt the model to send emails the user has not approved,
+ * which is worse than the stall.
+ *
+ * So the test is a conjunction: something that reads as *acting this second*,
+ * and nothing that reads as *waiting on you*. "One moment" is only ever the
+ * first. "Reply", "let me know", "want me to" and a trailing question mark are
+ * only ever the second.
+ */
+
+/**
+ * Phrases that mean "I am doing it right now".
+ *
+ * Deliberately narrow. Each of these is a filler people write while starting
+ * work, none appears in a reply that is genuinely waiting on an answer, and
+ * none is a way of describing a blocker. "I'll" on its own is not here: "I'll
+ * need your Gmail connected first" is a blocker, not a stall.
+ */
+const ACTING_NOW =
+  /\bone moment\b|\bjust a (?:moment|sec(?:ond)?)\b|\bone sec(?:ond)?\b|\bgive me a (?:sec(?:ond)?|moment|minute)\b|\b(?:hang|hold) on\b|\bstand(?:ing)? by\b|\bon it\b|\bright away\b|\bworking on (?:it|that|these|those)\b|\bstarting (?:now|on it)\b|\bcoming (?:right )?up\b|\bdoing (?:it|that|this) now\b/i;
+
+/**
+ * The same intent in the present progressive, tied to now: "Redrafting Den
+ * clean now", "Sending all four now". A bare "-ing" is far too common to use,
+ * so it has to reach a "now" without crossing a sentence boundary.
+ */
+const ACTING_NOW_PROGRESSIVE = /\b\w+ing\b[^.!?\n]{0,80}\bnow\b/i;
+
+/**
+ * Phrases that mean "your turn".
+ *
+ * A reply carrying any of these is waiting on the user by design, and must
+ * never be re-prompted into acting: that would be the agent talking itself into
+ * a send the user has not approved.
+ */
+const AWAITING_USER =
+  /\breply\b|\blet me know\b|\bconfirm(?:ation)?\b|\bwant me to\b|\bshould i\b|\bshall i\b|\bsay the word\b|\bjust say\b|\byes or no\b|\bapprove\b|\bwaiting (?:on|for) you\b|\bif you'?d like\b|\bonce you\b/i;
+
+/** True when the reply's last non-empty line is a question. */
+function endsAsking(text: string): boolean {
+  const lines = text.trim().split("\n").map((l) => l.trim()).filter(Boolean);
+  return /\?$/.test(lines[lines.length - 1] ?? "");
+}
+
+/**
+ * A turn that stated it was acting, acted on nothing, and is not waiting on
+ * the user. Returns "" when the turn is fine.
+ */
+export function statedIntentWithoutAction(text: string, events: ToolEventLike[]): string {
+  if (!text || anyMutationSucceeded(events)) return "";
+  if (AWAITING_USER.test(text) || endsAsking(text)) return "";
+  if (!ACTING_NOW.test(text) && !ACTING_NOW_PROGRESSIVE.test(text)) return "";
+  return "The turn said it was starting work and then called nothing.";
+}

@@ -4,30 +4,26 @@ import { describeFilters } from "@/lib/lead-filters";
 import { cn } from "@/lib/utils";
 
 /**
- * Placeholder rows, each a different shape.
+ * How many candidate marks the field carries, and how wide the wave is.
  *
- * Written out rather than generated, because Tailwind reads class names out of
- * the source and cannot see one assembled at runtime. Uneven widths are the
- * point: five identically proportioned rows read as a graphic, not as records
- * about to arrive.
+ * The wave period is a count of marks rather than a column count: the grid
+ * auto-fills, so nothing here knows how many columns a given screen produced.
+ * A period that does not divide the row length is what makes the pass read as a
+ * diagonal sweep across the field instead of a row of blinking lights, and it
+ * lands differently on every screen width, which is the point.
  */
-const ROWS: { name: string; detail: string }[] = [
-  { name: "w-[38%]", detail: "w-[64%]" },
-  { name: "w-[52%]", detail: "w-[43%]" },
-  { name: "w-[31%]", detail: "w-[71%]" },
-  { name: "w-[47%]", detail: "w-[56%]" },
-];
+const MARKS = 156;
+const WAVE = 23;
+const WAVE_MS = 2400;
 
 /**
- * A travelling highlight rather than an opacity pulse.
+ * Which marks the pass keeps.
  *
- * `bg-muted` at 4% lightness against a near-black page is a rectangle you can
- * barely see, and `animate-pulse` fades every row in unison, so the whole block
- * reads as one static object breathing. A highlight crossing each row on its
- * own offset reads as work in progress.
+ * Deterministic, so a mark does not change its mind between renders, and
+ * sparse, because that is the shape of the thing being drawn: most of a
+ * population is not your customer.
  */
-const SHIMMER =
-  "rounded bg-[linear-gradient(90deg,hsl(var(--muted))_0%,hsl(var(--muted-foreground)/0.22)_50%,hsl(var(--muted))_100%)] bg-[length:200%_100%] animate-shimmer motion-reduce:animate-none";
+const isKept = (i: number) => (i * 7) % 11 === 0;
 
 const elapsedLabel = (seconds: number) =>
   seconds < 60 ? `${seconds}s` : `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
@@ -35,20 +31,27 @@ const elapsedLabel = (seconds: number) =>
 /**
  * The wait between asking for leads and getting them.
  *
- * It was five identical grey rows. Nothing to read, nothing to check, and no
- * way to tell a slow search from a stuck one — on a phone, where this is most
- * of the screen, it was the longest stretch of the product and the emptiest.
+ * It was five identical grey rows, then four. Both were the same idea — draw
+ * the results before they exist — and that idea is what every other tool in
+ * this category does, down to the pulse rate. It also says nothing: a slow
+ * search looks exactly like a stuck one.
  *
  * The search is a single upstream call, so there are no intermediate stages to
- * report and no percentage that would not be invented. What there is, honestly,
- * is the criteria: the parser's reading of the sentence that was typed, known
- * on this side before the request leaves. Reading it back is how someone
- * catches a query that came out broader than they meant, while it is still
- * running rather than after the credit is spent. The clock counts real elapsed
- * time and claims nothing about what is left.
+ * report and no percentage that would not be invented. But there is a true
+ * thing happening, and it is the interesting part of the product: a very large
+ * population is being narrowed to the few people who match a sentence someone
+ * typed. Nobody draws that. Everybody draws a spinner.
  *
- * The placeholder rows stay underneath, because the results still have to land
- * without the page jumping.
+ * So the field is the population, the pass travelling across it is the search,
+ * and the marks that stand up and hold are the ones it keeps. It asserts no
+ * count, no percentage and no stage — every number on this screen is real, and
+ * the animation is texture over a true shape rather than a progress bar
+ * pretending to know something.
+ *
+ * Above it, the criteria: the parser's reading of the sentence that was typed,
+ * known on this side before the request leaves. That is how someone catches a
+ * query that came out broader than they meant while it is still running, rather
+ * than after the credit is spent. The clock counts real elapsed time.
  */
 export const SearchingResults = ({ filters }: { filters: ExternalLeadFilters }) => {
   const criteria = describeFilters(filters);
@@ -61,19 +64,14 @@ export const SearchingResults = ({ filters }: { filters: ExternalLeadFilters }) 
 
   return (
     <div role="status" aria-label="Searching for leads">
-      {/* Indeterminate on purpose: one upstream call, no progress to report. */}
-      <div className="relative h-px overflow-hidden rounded-full bg-border/40">
-        <div
-          className="absolute inset-y-0 left-0 w-1/4 rounded-full bg-primary animate-sweep motion-reduce:hidden"
-          aria-hidden
-        />
-      </div>
-
-      <div className="mt-4 flex items-baseline justify-between gap-4">
+      <div className="flex items-baseline justify-between gap-4">
         <p className="text-[0.8125rem] font-medium text-foreground">
           {criteria.length > 0 ? "Searching for" : "Searching"}
         </p>
-        <span className="shrink-0 tabular-nums text-[0.6875rem] text-muted-foreground/70" aria-hidden>
+        <span
+          className="shrink-0 tabular-nums text-[0.6875rem] text-muted-foreground/70"
+          aria-hidden
+        >
           {elapsedLabel(seconds)}
         </span>
       </div>
@@ -89,28 +87,38 @@ export const SearchingResults = ({ filters }: { filters: ExternalLeadFilters }) 
         </dl>
       )}
 
-      {seconds >= 15 && (
-        <p className="mt-3 text-[0.6875rem] text-muted-foreground/70">
-          Still going. Broad searches take longer than narrow ones.
-        </p>
-      )}
+      {/* The population, and the pass going through it. */}
+      <div
+        className="relative mt-5 min-h-[8.5rem] overflow-hidden rounded-lg border border-border/40 bg-background/40 p-3"
+        aria-hidden
+      >
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(0.5rem,1fr))] gap-x-1.5 gap-y-2">
+          {Array.from({ length: MARKS }).map((_, i) => (
+            <span
+              key={i}
+              className={cn(
+                "h-2.5 w-full origin-bottom rounded-[1px]",
+                isKept(i)
+                  ? "bg-primary animate-sift-lock"
+                  : "bg-muted-foreground animate-sift-dim",
+                "motion-reduce:animate-none motion-reduce:opacity-25",
+              )}
+              style={{ animationDelay: `${((i % WAVE) / WAVE) * WAVE_MS}ms` }}
+            />
+          ))}
+        </div>
 
-      <div className="mt-5 space-y-2" aria-hidden>
-        {ROWS.map((row, i) => (
-          /* The delay goes on the shimmering elements themselves, never on the
-             row: a delay set on something that runs no animation is dead CSS
-             that reads as intent. Each row starts its pass a beat after the one
-             above, so the block resolves top to bottom. */
-          <div key={row.name} className="flex items-center gap-3 rounded-lg border border-border/40 p-3">
-            <div className={cn("h-9 w-9 shrink-0 rounded-full", SHIMMER)} style={{ animationDelay: `${i * 160}ms` }} />
-            <div className="min-w-0 flex-1 space-y-2">
-              <div className={cn("h-3.5", row.name, SHIMMER)} style={{ animationDelay: `${i * 160}ms` }} />
-              <div className={cn("h-3", row.detail, SHIMMER)} style={{ animationDelay: `${i * 160 + 80}ms` }} />
-            </div>
-            <div className={cn("hidden h-8 w-16 shrink-0 sm:block", SHIMMER)} style={{ animationDelay: `${i * 160}ms` }} />
-          </div>
-        ))}
+        {/* The pass itself, travelling over the field rather than under it. */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="h-full w-16 bg-[linear-gradient(90deg,transparent,hsl(var(--primary)/0.14),transparent)] animate-sweep motion-reduce:hidden" />
+        </div>
       </div>
+
+      <p className="mt-2.5 text-[0.6875rem] text-muted-foreground/70">
+        {seconds >= 15
+          ? "Still narrowing. Broad searches take longer than narrow ones."
+          : "Narrowing to the people who match."}
+      </p>
     </div>
   );
 };

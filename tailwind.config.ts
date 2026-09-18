@@ -84,18 +84,24 @@ export default {
           "0%": { backgroundPosition: "-200% center" },
           "100%": { backgroundPosition: "200% center" },
         },
-        // A highlight travelling across a placeholder row. An opacity pulse is
-        // nearly invisible on this background, and every row pulsing in unison
-        // reads as one static block rather than as rows arriving.
-        "shimmer": {
-          "0%": { backgroundPosition: "200% 0" },
-          "100%": { backgroundPosition: "-200% 0" },
-        },
         // Indeterminate progress: the search is one upstream call, so there is
         // no percentage to show and a bar that pretends to fill would be a lie.
         "sweep": {
           "0%": { transform: "translateX(-100%)" },
           "100%": { transform: "translateX(400%)" },
+        },
+        // A candidate the pass keeps: it stands up and holds, then releases as
+        // the wave moves on.
+        "sift-lock": {
+          "0%, 18%": { opacity: "0.2", transform: "scaleY(0.45)" },
+          "42%, 62%": { opacity: "1", transform: "scaleY(1)" },
+          "100%": { opacity: "0.2", transform: "scaleY(0.45)" },
+        },
+        // One the pass drops: a moment of attention, then gone.
+        "sift-dim": {
+          "0%, 18%": { opacity: "0.18", transform: "scaleY(0.45)" },
+          "42%": { opacity: "0.4", transform: "scaleY(0.7)" },
+          "100%": { opacity: "0.07", transform: "scaleY(0.45)" },
         },
       },
       animation: {
@@ -104,8 +110,9 @@ export default {
         "fade-in": "fade-in 0.5s ease-out",
         "glow-pulse": "glow-pulse 2s ease-in-out infinite",
         "shiny": "shiny 6s linear infinite",
-        "shimmer": "shimmer 1.8s linear infinite",
         "sweep": "sweep 1.6s cubic-bezier(0.22, 1, 0.36, 1) infinite",
+        "sift-lock": "sift-lock 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite",
+        "sift-dim": "sift-dim 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite",
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
