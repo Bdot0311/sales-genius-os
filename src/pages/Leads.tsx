@@ -3,7 +3,6 @@ import { PageHeader } from "@/components/dashboard/PageHeader";
 import { Button } from "@/components/ui/button";
 import { EmptyState, Panel, PanelBody, PanelHeader } from "@/components/dashboard/Panel";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AddLeadDialog } from "@/components/dashboard/AddLeadDialog";
 import { ImportLeadsDialog } from "@/components/dashboard/ImportLeadsDialog";
 import { ExternalLeadsTable } from "@/components/dashboard/ExternalLeadsTable";
@@ -13,7 +12,7 @@ import { DomainICPBuilder } from "@/components/dashboard/DomainICPBuilder";
 import { TargetCompanies } from "@/components/dashboard/TargetCompanies";
 import { FindPerson } from "@/components/dashboard/FindPerson";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { buildExternalFilters, ParsedIcpFilters } from "@/lib/lead-filters";
+import { buildExternalFilters, parseRequestedCount, ParsedIcpFilters } from "@/lib/lead-filters";
 import { Users, RefreshCw, CreditCard, ChevronLeft, ChevronRight } from "lucide-react";
 import { PLAN_CONFIG } from "@/lib/stripe-config";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -65,7 +64,10 @@ const Leads = () => {
   const [externalFilters, setExternalFilters] = useState<ExternalLeadFilters>({});
   const [showExternalLeads, setShowExternalLeads] = useState(false);
   const [aiSearchQuery, setAiSearchQuery] = useState("");
-  const [pageSize, setPageSize] = useState(10);
+  // How many a search returns is said in the sentence ("find me 25 founders"),
+  // not picked from a dropdown next to the pager. This is only the default for
+  // a sentence that does not say, and the size the pager keeps once it does.
+  const [pageSize, setPageSize] = useState(25);
   const [inputTab, setInputTab] = useState("describe");
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -303,6 +305,8 @@ const Leads = () => {
                   // them mandatory and turned valid niche searches into zero.
                   const newFilters = buildExternalFilters(aiFilters, pageSize, query);
 
+                  // Page 2 has to ask for the same number as page 1.
+                  setPageSize(newFilters.limit ?? pageSize);
                   setExternalFilters(newFilters);
                   fetchExternalLeads(newFilters);
                   Analytics.firstSearchRun();
@@ -403,11 +407,10 @@ const Leads = () => {
                     }
                   }
 
-                  const countMatch = lowerQuery.match(/(\d+)\s*(leads?|founders?|ceos?|prospects?|people|contacts?)/i);
-                  if (countMatch) {
-                    newFilters.limit = Math.min(parseInt(countMatch[1]), 100);
-                  }
+                  const requested = parseRequestedCount(query);
+                  if (requested) newFilters.limit = requested;
 
+                  setPageSize(newFilters.limit ?? pageSize);
                   setExternalFilters(newFilters);
                   fetchExternalLeads(newFilters);
                 }
@@ -569,29 +572,6 @@ const Leads = () => {
                       <p className="text-xs sm:text-sm text-muted-foreground">
                         Page {pagination.currentPage} of {pagination.totalPages} ({pagination.totalResults} total)
                       </p>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs sm:text-sm text-muted-foreground">Show:</span>
-                        <Select
-                          value={pageSize.toString()}
-                          onValueChange={(value) => {
-                            const newSize = parseInt(value);
-                            setPageSize(newSize);
-                            if (Object.keys(externalFilters).length > 0) {
-                              fetchExternalLeads({ ...externalFilters, limit: newSize, page: 1 });
-                            }
-                          }}
-                        >
-                          <SelectTrigger className="w-16 h-8 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="10">10</SelectItem>
-                            <SelectItem value="25">25</SelectItem>
-                            <SelectItem value="50">50</SelectItem>
-                            <SelectItem value="100">100</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
                     </div>
                     {pagination.totalPages > 1 && (
                       <div className="flex items-center gap-2">

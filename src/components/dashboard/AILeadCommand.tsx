@@ -164,7 +164,7 @@ export const AILeadCommand = ({ onSearch, isSearching }: AILeadCommandProps) => 
                 void handleSubmit(e);
               }
             }}
-            placeholder="Founders at fintech companies in the UK, 11-50 people, not agencies"
+            placeholder="25 founders at fintech companies in the UK, 11-50 people, not agencies"
             aria-label="Describe the leads you are looking for"
             // 16px on mobile, or iOS zooms the page on focus. The bottom
             // padding is the row the controls sit in.
@@ -191,7 +191,8 @@ export const AILeadCommand = ({ onSearch, isSearching }: AILeadCommandProps) => 
           </div>
         </div>
         <p className="mt-2 text-[0.6875rem] leading-relaxed text-muted-foreground/70">
-          Plain English: the role, the kind of company, and where they are.
+          Plain English: the role, the kind of company, and where they are. Say a
+          number and you get that many.
         </p>
       </form>
 

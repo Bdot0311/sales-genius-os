@@ -87,7 +87,13 @@ export function buildExternalFilters(
   // for a given filter set, and that page does not change because you saved
   // some of it. The agent has always done this; the manual search did not, so
   // it was the surface where the repetition was most obvious.
-  const newFilters: ExternalLeadFilters = { limit: pageSize, exclude_seen: true };
+  // How many, in order of who actually said it: the sentence the user typed,
+  // then the parser's reading of it, then the caller's default. The sentence
+  // used to lose to a dropdown, so "find me 25 founders" returned ten.
+  const requested = originalQuery ? parseRequestedCount(originalQuery) : null;
+  const limit = Math.min(Math.max(requested ?? aiFilters.limit ?? pageSize, 1), 100);
+
+  const newFilters: ExternalLeadFilters = { limit, exclude_seen: true };
   if (originalQuery?.trim()) newFilters.query = originalQuery.trim();
 
   // The provider takes one value per field, so the singular fields carry the
@@ -205,6 +211,10 @@ export function describeFilters(
     .filter(Boolean);
 
   const rows: Array<{ label: string; values: string[] }> = [
+    // Read the count back. It comes from the sentence now rather than from a
+    // dropdown, so showing it is how someone sees their number landed — while
+    // the search is still running, rather than by counting the results.
+    { label: "How many", values: filters.limit ? [String(filters.limit)] : [] },
     { label: "Role", values: pick(filters.job_titles, filters.job_title) },
     { label: "Seniority", values: pick(filters.seniority_levels, filters.seniority) },
     { label: "Industry", values: pick(filters.industries, filters.industry) },
@@ -215,4 +225,58 @@ export function describeFilters(
   ];
 
   return rows.filter((row) => row.values.length > 0);
+}
+
+/**
+ * How many people the sentence asked for.
+ *
+ * The count used to live in a "Show: 10" dropdown next to the pager, and the
+ * sentence was ignored: parse-lead-query returns a limit when someone writes
+ * "find me 25 founders", buildExternalFilters overwrote it with the dropdown's
+ * value, and the search came back with ten. Asking for a number and being given
+ * a different one is the kind of small lie that costs trust in everything else
+ * on the page.
+ *
+ * A lead query is full of numbers that are not the count: "1-10 employees",
+ * "founded 2019-2024", "over 15 employees", "Series A". Reading the wrong one
+ * spends the user's credits on the wrong search, so this is deliberately hard
+ * to trigger:
+ *
+ *  - the number has to be followed by a word that means people, or by "of them"
+ *  - it cannot sit inside a range, which is how sizes and years are written
+ *  - it cannot follow a word that introduces a size or a date
+ *
+ * Everything else is left alone and the default stands.
+ */
+const COUNT_NOUNS =
+  "leads?|founders?|co-?founders?|ceos?|ctos?|cfos?|cmos?|coos?|execs?|executives?|prospects?|contacts?|names?|results?|rows?|of them|of these";
+
+/** Words that make the next number a company size, a year or a funding round. */
+const NOT_A_COUNT_BEFORE =
+  /(?:with|under|over|above|below|up to|at least|at most|fewer than|less than|more than|between|founded|since|from|employing|headcount of|size)\s*$/i;
+
+export function parseRequestedCount(query: string): number | null {
+  if (!query) return null;
+  const re = new RegExp(`(\\d{1,4})\\s*(?:${COUNT_NOUNS})\\b`, "gi");
+
+  for (const match of query.matchAll(re)) {
+    const digits = match[1];
+    const at = match.index ?? 0;
+
+    // Inside a range: "1-10 people", "2019-2024". The hyphen on either side is
+    // what tells a size or a year apart from a request.
+    const before = query.slice(Math.max(0, at - 2), at);
+    const after = query.slice(at + digits.length, at + digits.length + 2);
+    if (/[-–—]\s*$/.test(before) || /^\s*[-–—]\s*\d/.test(after)) continue;
+
+    // Introduced as a size or a date rather than as an amount to return.
+    if (NOT_A_COUNT_BEFORE.test(query.slice(0, at))) continue;
+
+    const n = Number(digits);
+    if (!Number.isFinite(n) || n < 1) continue;
+    // The provider caps a page at 100; asking for more is not an error, it just
+    // gets the most it can give.
+    return Math.min(n, 100);
+  }
+  return null;
 }

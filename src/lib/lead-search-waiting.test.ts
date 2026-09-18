@@ -81,6 +81,18 @@ describe("the wait says what the search is doing", () => {
     expect(TAILWIND).not.toContain("shimmer");
   });
 
+  it("lights a mark because the pass reached it, not on its own clock", () => {
+    // The pass and the marks ran on different durations, so the lighting read
+    // as an animation happening near the sweep rather than caused by it. A
+    // fixed column count is what lets a mark's delay be its position.
+    const durations = [...TAILWIND.matchAll(/"(sweep|sift-lock|sift-dim)": "\1 ([\d.]+)s/g)]
+      .map((m) => m[2]);
+    expect(durations).toHaveLength(3);
+    expect(new Set(durations).size, `durations: ${durations.join(", ")}`).toBe(1);
+    expect(code(WAITING)).toContain("const COLUMNS =");
+    expect(code(WAITING)).toContain("i % COLUMNS");
+  });
+
   it("draws the population being narrowed, not the results before they exist", () => {
     // Rows in the shape of results is what every other tool in the category
     // does. This draws the thing the search is actually doing.
