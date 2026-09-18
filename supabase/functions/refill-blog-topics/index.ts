@@ -3,11 +3,7 @@
 // scoped to OutReign (outbound sales, AI SDR, cold email, ICP, comparisons).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { aiFetch } from "../_shared/ai-provider.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders, requireServiceRole } from "../_shared/internal-auth.ts";
 
 const MIN_UNUSED = 8;     // refill when fewer than this remain unused
 const BATCH_SIZE = 20;    // how many to generate per refill run
