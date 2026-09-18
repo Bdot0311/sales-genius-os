@@ -43,6 +43,20 @@
       "when": 1789716826800,
       "tag": "0005_cron_internal_auth_service_key",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789763257824,
+      "tag": "0006_fix_blog_cron_auth",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1789763357492,
+      "tag": "0007_blog_cron_timeout",
+      "breakpoints": true
     }
   ]
 }

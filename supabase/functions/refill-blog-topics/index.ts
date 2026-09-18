@@ -3,11 +3,7 @@
 // scoped to OutReign (outbound sales, AI SDR, cold email, ICP, comparisons).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { aiFetch } from "../_shared/ai-provider.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders, requireServiceRole } from "../_shared/internal-auth.ts";
 
 const MIN_UNUSED = 8;     // refill when fewer than this remain unused
 const BATCH_SIZE = 20;    // how many to generate per refill run
@@ -30,14 +26,9 @@ Deno.serve(async (req: Request) => {
   const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
-  // Restrict to service-role callers (pg_cron / internal).
-  const bearer = (req.headers.get("Authorization") || "").replace("Bearer ", "");
-  if (!bearer || bearer !== SERVICE_ROLE) {
-    return new Response(
-      JSON.stringify({ success: false, error: "Unauthorized" }),
-      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
-  }
+  // Restrict to internal callers (pg_cron / triggers) or service role.
+  const unauthorized = requireServiceRole(req);
+  if (unauthorized) return unauthorized;
 
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
 

@@ -2,11 +2,7 @@
 // and inserts it into blog_posts. Triggered by pg_cron biweekly.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { aiFetch } from "../_shared/ai-provider.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders, requireServiceRole } from "../_shared/internal-auth.ts";
 
 const slugify = (s: string) =>
   s
@@ -31,15 +27,9 @@ Deno.serve(async (req: Request) => {
   const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
-  // Restrict to service-role callers (pg_cron / internal). Reject anonymous and end-user JWTs.
-  const authHeader = req.headers.get("Authorization") || "";
-  const bearer = authHeader.replace("Bearer ", "");
-  if (!bearer || bearer !== SERVICE_ROLE) {
-    return new Response(
-      JSON.stringify({ success: false, error: "Unauthorized" }),
-      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  }
+  // Restrict to internal callers (pg_cron / triggers) or service role.
+  const unauthorized = requireServiceRole(req);
+  if (unauthorized) return unauthorized;
 
   if (!LOVABLE_API_KEY) {
     return new Response(
