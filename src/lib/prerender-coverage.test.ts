@@ -86,12 +86,14 @@ describe("the pages a crawler can read without running JavaScript", () => {
     expect(SCRIPT).toContain('failures.some((f) => f.startsWith("/:"))');
   });
 
-  it("does fail the build when nothing prerendered at all", () => {
-    // "Fails soft" and "silently does nothing" are one bad refactor apart. If
-    // the SSR bundle stops exporting a working render, every page fails the
-    // same way at once and a green build would go on shipping empty shells,
-    // with the evidence buried in a deploy log nobody reads.
-    expect(SCRIPT).toContain("if (done === 0) {");
+  it("does fail the build when every page but the homepage failed", () => {
+    // Counted without the homepage on purpose: the homepage is guarded
+    // separately, so a bare "nothing rendered" check could never fire. The
+    // systemic case is a broken route map or output path, where the homepage
+    // still renders and all thirteen others stop — which is exactly the state
+    // this set out to fix, and a green build would hide it.
+    expect(SCRIPT).toContain("const othersDone = done - 1;");
+    expect(SCRIPT).toContain("others.length > 0 && othersDone === 0");
     const afterLoop = SCRIPT.slice(SCRIPT.indexOf("console.log(`[prerender] Prerendered"));
     expect(afterLoop.match(/process\.exit\(1\)/g) ?? []).toHaveLength(2);
   });

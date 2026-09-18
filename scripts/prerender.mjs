@@ -155,7 +155,7 @@ if (failures.length) {
 }
 
 /**
- * One page failing is tolerated. Everything failing is not.
+ * One page failing is tolerated. Every page failing is not.
  *
  * A page that fails here is left exactly as `vite build` produced it, which is
  * what it shipped as before any of this — an improvement lost, not a
@@ -163,11 +163,10 @@ if (failures.length) {
  * page reports and the build carries on.
  *
  * But "fails soft" and "silently does nothing" are one bad refactor apart. If
- * the SSR bundle stops exporting a working render, or the plugin changes where
- * it writes files, every page fails the same way at once and a green build
- * would go on shipping empty shells to the AI crawlers this exists for, with
- * the evidence buried in a deploy log nobody reads. That is systemic, so that
- * is fatal.
+ * the route map breaks, or the plugin changes where it writes files, every page
+ * but the homepage fails the same way at once and a green build would go on
+ * shipping empty shells to the AI crawlers this exists for, with the evidence
+ * buried in a deploy log nobody reads. That is systemic, so that is fatal.
  *
  * The homepage is fatal on its own because it was already a build requirement
  * before this walked more than one page.
@@ -177,7 +176,17 @@ if (homepageFailed) {
   console.error("[prerender] The homepage did not prerender. Failing the build.");
   process.exit(1);
 }
-if (done === 0) {
-  console.error("[prerender] No page prerendered at all. Failing the build.");
+// Counted without the homepage on purpose. The homepage is guarded above, so
+// `done` is already 1 by the time we get here and a bare "nothing rendered"
+// check could never fire. The systemic case is the homepage rendering while
+// every other page fails — a broken route map, a changed output path — which
+// is exactly the state this set out to fix.
+const others = prerenderablePaths.filter((r) => r !== "/");
+const othersDone = done - 1;
+if (others.length > 0 && othersDone === 0) {
+  console.error(
+    `[prerender] The homepage rendered but all ${others.length} other pages failed. ` +
+      "That is a broken route map or output path, not one bad page. Failing the build.",
+  );
   process.exit(1);
 }
