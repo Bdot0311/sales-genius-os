@@ -50,10 +50,18 @@ describe("the notification switch tells the truth", () => {
   });
 
   it("says which zero it was, since the two need different fixes", () => {
-    expect(code(FN)).toContain("No device is registered for notifications on this account");
-    expect(code(FN)).toContain("The push service refused this device's registration");
-    expect(code(FN)).toContain("had expired, so it has been removed");
-    expect(code(FN)).toContain("return json(200, { success: true, sent, failed, removed_stale: stale.length, reason });");
+    const fn = code(FN);
+    expect(fn).toContain("No device is registered for notifications on this account");
+    expect(fn).toContain("had expired, so it has been removed");
+    // A refusal is no longer explained from the status: the status cannot say
+    // whether the signature or the device was rejected, so the wording lives
+    // with the classifier that reads the provider's own code.
+    expect(fn).toContain("describePushFailure(");
+    // Whatever shape the response takes, the reason comes back on it. Found
+    // from the success return rather than the last one in the file, which is
+    // the catch block and carries an error instead.
+    const success = fn.slice(fn.indexOf("return json(200, {", fn.indexOf("if (sent === 0)")));
+    expect(success.slice(0, 300)).toMatch(/\breason\b/);
   });
 
   it("explains only a total failure, never a partial send", () => {

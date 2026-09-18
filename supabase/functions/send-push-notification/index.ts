@@ -3,7 +3,8 @@
 // unless an admin passes target_user_id.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import webpush from "https://esm.sh/web-push@3.6.7";
-import { checkVapidKeyPair } from "../_shared/vapid-keypair.ts";
+import { checkVapidKeyPair, checkVapidSubject } from "../_shared/vapid-keypair.ts";
+import { describePushFailure, providerReasonCode } from "../_shared/push-failure.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -55,6 +56,25 @@ Deno.serve(async (req) => {
           keyCheck.problem === "mismatched"
             ? "Notifications are signed with a key that no longer matches the one your device registered under, so the push service rejects every one. Nothing is wrong with your device; this one is ours to fix."
             : "Sending notifications is not configured correctly on our side. Nothing is wrong with your device; this one is ours to fix.",
+      });
+    }
+
+    /**
+     * The subject is the other half of a valid token, and it is a settable
+     * secret. A bare email or a bare domain here is a 403 on every send — the
+     * same status a refused device gives, so it lands on the same dead-end
+     * advice as a mismatched key.
+     */
+    const subjectCheck = checkVapidSubject(VAPID_SUBJECT);
+    if (!subjectCheck.ok) {
+      console.error(`[send-push-notification] ${subjectCheck.detail}`);
+      return json(200, {
+        success: true,
+        sent: 0,
+        failed: 0,
+        vapid_problem: "subject",
+        reason:
+          "Sending notifications is not configured correctly on our side. Nothing is wrong with your device; this one is ours to fix.",
       });
     }
 
@@ -122,6 +142,9 @@ Deno.serve(async (req) => {
     let sent = 0;
     const stale: string[] = [];
     const statuses: number[] = [];
+    // The provider's own short code, which is the only thing that says whose
+    // problem a 401 or 403 is.
+    const codes: string[] = [];
     await Promise.all(
       subs.map(async (s) => {
         try {
@@ -138,6 +161,8 @@ Deno.serve(async (req) => {
           // Google quota rejection). The message alone is usually just the
           // status repeated back.
           const body = (err as { body?: string }).body;
+          const code = providerReasonCode(body);
+          if (code) codes.push(code);
           console.error(
             "push send failed",
             status,
@@ -161,20 +186,22 @@ Deno.serve(async (req) => {
       if (stale.length === subs.length) {
         reason =
           "This device's registration had expired, so it has been removed. Turn the switch off and on again to register it fresh.";
-      } else if (statuses.some((st) => st === 401 || st === 403)) {
-        // The signing key has already been proven to pair with the registered
-        // one above, so a refusal here really is about this device.
-        reason =
-          "The push service refused this device's registration. Turn the switch off and on again to register it fresh.";
       } else {
-        const st = statuses[0];
-        reason = st
-          ? `The push service could not deliver to this device (HTTP ${st}).`
-          : "The push service could not deliver to this device.";
+        // The status alone cannot say whether a refusal is the signature we
+        // made or the device we made it for; the provider's own code can, and
+        // it goes in the sentence so the next report diagnoses itself.
+        reason = describePushFailure(statuses[0] ?? null, codes[0] ?? null);
       }
     }
 
-    return json(200, { success: true, sent, failed, removed_stale: stale.length, reason });
+    return json(200, {
+      success: true,
+      sent,
+      failed,
+      removed_stale: stale.length,
+      provider_code: codes[0],
+      reason,
+    });
   } catch (e) {
     console.error("send-push-notification error", e);
     return json(200, { success: false, error: (e as Error).message });

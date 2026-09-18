@@ -122,3 +122,26 @@ export async function checkVapidKeyPair(
     };
   }
 }
+
+/**
+ * The `sub` claim, which is the other half of a valid VAPID token.
+ *
+ * The spec allows a `mailto:` or an `https:` URI and nothing else, and Apple
+ * enforces it: a bare email address or a bare domain in this secret produces a
+ * 403 BadJwtToken on every send. That is the same status a refused device
+ * gives, so it lands the reader on the same dead-end advice as a mismatched
+ * key — re-register a device that was never the problem. It is a settable
+ * secret, so it is worth checking rather than assuming.
+ */
+export function checkVapidSubject(
+  subject: string,
+): { ok: true } | { ok: false; detail: string } {
+  const value = (subject ?? "").trim();
+  if (!value) return { ok: false, detail: "VAPID_SUBJECT is empty" };
+  if (/^mailto:\S+@\S+\.\S+$/i.test(value)) return { ok: true };
+  if (/^https:\/\/\S+\.\S+/i.test(value)) return { ok: true };
+  return {
+    ok: false,
+    detail: `VAPID_SUBJECT must be a mailto: address or an https: URL, got "${value.slice(0, 60)}"`,
+  };
+}
