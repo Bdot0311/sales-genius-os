@@ -99,6 +99,13 @@ export const CHANGELOG: ChangelogEntry[] = [
       "Ask for an evaluation on any saved lead and you get a straight read on fit, buying intent, priority and the best next step — and your emails are written to match it.",
     items: [
       {
+        tag: "fixed",
+        href: "/dashboard/leads/saved",
+        title: "Lead evaluations open without a refresh loop",
+        description:
+          "Saved Leads now displays evaluation badges normally instead of showing a misleading new-version refresh message.",
+      },
+      {
         tag: "new",
         title: "Fit, intent and priority on your saved leads",
         description:
