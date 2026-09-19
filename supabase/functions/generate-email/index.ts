@@ -49,6 +49,7 @@ import {
   type ResearchQuality,
 } from "../_shared/lead-research.ts";
 import { aiFetch } from "../_shared/ai-provider.ts";
+import { decisionPromptBlock, getSavedDecision } from "../_shared/lead-intelligence.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -1274,6 +1275,21 @@ near-variant of them. A repeat is refused before it can be delivered:
 ${avoidSubjects.map((s: string) => `- ${s}`).join('\n')}`;
     }
 
+    // ─── Email strategy from the decision layer ───────────────────────────────
+    // Bedrock writes the email; the decision layer decides HOW it should be
+    // written (angle, depth, closing ask). Only a saved evaluation is used —
+    // nothing is evaluated here, so generation never waits on another provider,
+    // and an unevaluated lead produces exactly the prompt it did before.
+    let strategyBlock = "";
+    if (lead.id && !isPrecisionEdit) {
+      try {
+        const saved = await getSavedDecision(serviceClient, lead.id);
+        strategyBlock = decisionPromptBlock(saved);
+      } catch (err) {
+        console.error("[generate-email] lead intelligence lookup failed", err);
+      }
+    }
+
     const isFrameworkGoal = FRAMEWORK_GOALS.has(goal);
     // Framework emails use temp 0.5 (as per 3-prompt pipeline spec); precision edits use 0.3
     const temperature = isPrecisionEdit ? 0.3 : (isFrameworkGoal ? (variantNum > 0 ? 0.7 : 0.5) : (variantNum > 0 ? 1.0 : 0.85));
@@ -1288,7 +1304,7 @@ ${avoidSubjects.map((s: string) => `- ${s}`).join('\n')}`;
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: systemPrompt + NO_PLATFORM_BRAND_RULE },
+          { role: "system", content: systemPrompt + NO_PLATFORM_BRAND_RULE + strategyBlock },
           {
             role: "user",
             content: userPrompt + (variantNum > 0

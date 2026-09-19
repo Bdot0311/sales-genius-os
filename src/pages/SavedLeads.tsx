@@ -9,12 +9,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { LeadAssignmentDialog } from "@/components/dashboard/LeadAssignmentDialog";
 import { LeadDetailSheet } from "@/components/dashboard/LeadDetailSheet";
-import { Search, Download, ArrowUpDown, Trash2, UserPlus, LayoutGrid, Table as TableIcon, CheckCircle, Sparkles, AlertCircle, Filter, Gauge } from "lucide-react";
+import { LeadIntelligenceBadge } from "@/components/dashboard/LeadIntelligenceBadge";
+import { useLeadIntelligence } from "@/hooks/use-lead-intelligence";
+import { Search, Download, ArrowUpDown, Trash2, UserPlus, LayoutGrid, Table as TableIcon, CheckCircle, Sparkles, AlertCircle, Filter, Gauge, Brain } from "lucide-react";
 import { IntentScoreBadge } from "@/components/dashboard/IntentScoreBadge";
 import { LeadStageSelect, LEAD_STAGES } from "@/components/dashboard/LeadStageSelect";
 import { LeadTierBadge } from "@/components/dashboard/LeadTierBadge";
 import { Progress } from "@/components/ui/progress";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -121,11 +123,23 @@ const SavedLeads = () => {
   const [filterCompanySize, setFilterCompanySize] = useState<string>("all");
   const [filterSeniority, setFilterSeniority] = useState<string>("all");
   const [filterStage, setFilterStage] = useState<string>("all");
+  const [filterPriority, setFilterPriority] = useState<string>("all");
+  const [filterNextStep, setFilterNextStep] = useState<string>("all");
   const [searchParams, setSearchParams] = useSearchParams();
   const showParam = searchParams.get("show");
   const urlFilter: UrlFilterKey | null =
     showParam && showParam in URL_FILTERS ? (showParam as UrlFilterKey) : null;
   const [updatingStage, setUpdatingStage] = useState<string | null>(null);
+
+  // Lead Intelligence: saved evaluations for the leads on screen, plus the
+  // on-demand evaluate action. Off entirely when the feature flag is off.
+  const leadIds = useMemo(() => leads.map((l) => l.id), [leads]);
+  const {
+    decisions,
+    enabled: intelligenceEnabled,
+    evaluating: evaluatingLeads,
+    evaluate: evaluateLeads,
+  } = useLeadIntelligence(leadIds);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -234,6 +248,8 @@ const SavedLeads = () => {
       if (filterCompanySize !== "all" && lead.company_size !== filterCompanySize) return false;
       if (filterSeniority !== "all" && lead.seniority !== filterSeniority) return false;
       if (filterStage !== "all" && (lead.pipeline_stage || "new") !== filterStage) return false;
+      if (filterPriority !== "all" && decisions[lead.id]?.fields.email_priority?.value !== filterPriority) return false;
+      if (filterNextStep !== "all" && decisions[lead.id]?.fields.send_recommendation?.value !== filterNextStep) return false;
       if (urlFilter && !URL_FILTERS[urlFilter].match(lead)) return false;
       return true;
     })
@@ -645,6 +661,36 @@ const SavedLeads = () => {
                 </SelectContent>
               </Select>
 
+              {intelligenceEnabled && (
+                <>
+                  <Select value={filterPriority} onValueChange={setFilterPriority}>
+                    <SelectTrigger className="w-[160px]">
+                      <Filter className="w-3 h-3 mr-1 text-muted-foreground" />
+                      <SelectValue placeholder="AI priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All AI priorities</SelectItem>
+                      <SelectItem value="high">High priority</SelectItem>
+                      <SelectItem value="medium">Medium priority</SelectItem>
+                      <SelectItem value="low">Low priority</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={filterNextStep} onValueChange={setFilterNextStep}>
+                    <SelectTrigger className="w-[170px]">
+                      <Filter className="w-3 h-3 mr-1 text-muted-foreground" />
+                      <SelectValue placeholder="Next step" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Any next step</SelectItem>
+                      <SelectItem value="send_now">Ready to email</SelectItem>
+                      <SelectItem value="needs_more_research">Research first</SelectItem>
+                      <SelectItem value="do_not_send">Do not email</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </>
+              )}
+
               {uniqueIndustries.length > 0 && (
                 <Select value={filterIndustry} onValueChange={setFilterIndustry}>
                   <SelectTrigger className="w-[150px]">
@@ -715,6 +761,18 @@ const SavedLeads = () => {
                     <Gauge className={`w-4 h-4 mr-2 ${scoring ? "animate-spin" : ""}`} />
                     {scoring ? `Scoring ${scoreProgress.current}/${scoreProgress.total}...` : `Score (${selectedLeads.size})`}
                   </Button>
+                  {intelligenceEnabled && (
+                    <Button
+                      variant="outline"
+                      onClick={() => evaluateLeads(Array.from(selectedLeads).slice(0, 10), { force: true })}
+                      disabled={evaluatingLeads.size > 0}
+                    >
+                      <Brain className={`w-4 h-4 mr-2 ${evaluatingLeads.size > 0 ? "animate-pulse" : ""}`} />
+                      {evaluatingLeads.size > 0
+                        ? "Evaluating..."
+                        : `Evaluate (${Math.min(selectedLeads.size, 10)})`}
+                    </Button>
+                  )}
                   <Button variant="outline" onClick={() => setShowAssignDialog(true)}>
                     <UserPlus className="w-4 h-4 mr-2" />
                     Assign ({selectedLeads.size})
@@ -827,6 +885,7 @@ const SavedLeads = () => {
                       <th className="p-3 text-left text-sm font-medium">Status</th>
                       <th className="p-3 text-left text-sm font-medium">ICP Score</th>
                       <th className="p-3 text-left text-sm font-medium">Intent</th>
+                      {intelligenceEnabled && <th className="p-3 text-left text-sm font-medium">AI</th>}
                       <th className="p-3 text-left text-sm font-medium">Source</th>
                       <th className="p-3 text-left text-sm font-medium">Added</th>
                     </tr>
@@ -892,6 +951,11 @@ const SavedLeads = () => {
                         <td className="p-3" onClick={(e) => e.stopPropagation()}>
                           <IntentScoreBadge lead={lead} />
                         </td>
+                        {intelligenceEnabled && (
+                          <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                            <LeadIntelligenceBadge decision={decisions[lead.id]} />
+                          </td>
+                        )}
                         <td className="p-3">
                           <div className="flex items-center gap-1">
                             <CheckCircle className="w-3 h-3 text-green-500" />
@@ -1037,6 +1101,10 @@ const SavedLeads = () => {
         enrichmentHistory={enrichmentHistory}
         onEnrich={handleEnrichLead}
         isEnriching={isEnriching}
+        showIntelligence={intelligenceEnabled}
+        decision={selectedLead ? decisions[selectedLead.id] : undefined}
+        isEvaluating={selectedLead ? evaluatingLeads.has(selectedLead.id) : false}
+        onEvaluate={selectedLead ? () => evaluateLeads([selectedLead.id], { force: true }) : undefined}
         onSave={async (leadId, updates) => {
           const { error } = await supabase
             .from("leads")

@@ -8,6 +8,8 @@ import { Separator } from "@/components/ui/separator";
 import { Building2, Mail, Phone, Globe, Linkedin, Briefcase, Users, DollarSign, Code, Calendar, Sparkles, Pencil, Save, X, TrendingUp } from "lucide-react";
 import { ICPScoreBreakdown } from "./ICPScoreBreakdown";
 import { IntentScoreBadge } from "./IntentScoreBadge";
+import { LeadIntelligenceSection } from "./LeadIntelligenceSection";
+import type { LeadDecision } from "@/lib/lead-intelligence";
 import { PresenceIndicator } from "@/components/realtime/PresenceIndicator";
 import { format } from "date-fns";
 import { useState } from "react";
@@ -92,6 +94,11 @@ interface LeadDetailSheetProps {
   onEnrich?: () => void;
   isEnriching?: boolean;
   onSave?: (leadId: string, updates: Partial<Lead>) => Promise<void>;
+  /** Lead Intelligence: absent/off means the section is not rendered at all. */
+  showIntelligence?: boolean;
+  decision?: LeadDecision;
+  isEvaluating?: boolean;
+  onEvaluate?: () => void;
 }
 
 type EditableFields = {
@@ -165,6 +172,10 @@ export const LeadDetailSheet = ({
   onEnrich,
   isEnriching = false,
   onSave,
+  showIntelligence = false,
+  decision,
+  isEvaluating = false,
+  onEvaluate,
 }: LeadDetailSheetProps) => {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -433,6 +444,14 @@ export const LeadDetailSheet = ({
               </div>
             </>
           ) : null}
+
+          {showIntelligence && onEvaluate && (
+            <LeadIntelligenceSection
+              decision={decision}
+              evaluating={isEvaluating}
+              onEvaluate={onEvaluate}
+            />
+          )}
 
           {lead.intent_score != null && (
             <>
