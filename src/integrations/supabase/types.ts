@@ -2005,9 +2005,14 @@ export type Database = {
           created_at: string
           error_message: string | null
           id: string
+          last_opened_at: string | null
           message_id: string | null
           metadata: Json | null
+          open_count: number
+          opened_at: string | null
+          pixel_id: string | null
           recipient_email: string
+          reply_to: string | null
           status: string
           template_name: string
         }
@@ -2015,9 +2020,14 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
+          last_opened_at?: string | null
           message_id?: string | null
           metadata?: Json | null
+          open_count?: number
+          opened_at?: string | null
+          pixel_id?: string | null
           recipient_email: string
+          reply_to?: string | null
           status: string
           template_name: string
         }
@@ -2025,9 +2035,14 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
+          last_opened_at?: string | null
           message_id?: string | null
           metadata?: Json | null
+          open_count?: number
+          opened_at?: string | null
+          pixel_id?: string | null
           recipient_email?: string
+          reply_to?: string | null
           status?: string
           template_name?: string
         }
@@ -5806,9 +5821,13 @@ export type Database = {
           created_at: string
           error_message: string
           id: string
+          last_opened_at: string
           message_id: string
           metadata: Json
+          open_count: number
+          opened_at: string
           recipient_email: string
+          reply_to: string
           status: string
           template_name: string
         }[]

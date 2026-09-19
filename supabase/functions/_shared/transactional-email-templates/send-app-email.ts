@@ -9,9 +9,12 @@ import {
   logEmailEvent,
   isRateLimited,
   retryAfterSeconds,
+  trackingPixelUrl,
+  DEFAULT_REPLY_TO,
 } from '../managed-email.ts'
 import { sendTemplateEmail } from './send-email.ts'
 import { TEMPLATES } from './registry.ts'
+
 
 export type SendAppEmailResult =
   | { sent: true }
@@ -50,11 +53,17 @@ export async function sendAppEmail(
     return { sent: false, reason: 'test_domain_skipped' }
   }
 
+  // One pixel id per logical send, minted before the send so the id embedded in
+  // the HTML is the same one stored on the log row a hit is matched against.
+  const pixelId = crypto.randomUUID()
+  const replyTo = options.replyTo ?? DEFAULT_REPLY_TO
+
   const send = () =>
     sendTemplateEmail(templateName, recipient, {
       templateData: options.templateData as Record<string, any> | undefined,
       idempotencyKey: options.idempotencyKey,
-      replyTo: options.replyTo,
+      replyTo,
+      trackingPixelUrl: trackingPixelUrl(pixelId),
     })
 
   const messageId = crypto.randomUUID()
@@ -87,7 +96,10 @@ export async function sendAppEmail(
       template_name: templateName,
       recipient_email: recipient,
       status: 'sent',
+      pixel_id: pixelId,
+      reply_to: replyTo,
     })
+
     return { sent: true }
   } catch (error) {
     const message =

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
+import { AlertCircle, Inbox, Loader2, RefreshCw } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface EmailLog {
@@ -17,7 +17,14 @@ interface EmailLog {
   status: string | null;
   error_message: string | null;
   created_at: string;
+  /** Null until someone actually opens it; prefetches and scanners are filtered out. */
+  opened_at: string | null;
+  last_opened_at: string | null;
+  open_count: number | null;
+  /** The mailbox a reply to this email lands in — the managed sender has none. */
+  reply_to: string | null;
 }
+
 
 const RANGES: Record<string, number> = {
   "24h": 1,
@@ -41,8 +48,10 @@ export function EmailLogsPanel() {
   const [range, setRange] = useState<string>("7d");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [templateFilter, setTemplateFilter] = useState<string>("all");
+  const [engagement, setEngagement] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [loadError, setLoadError] = useState<string | null>(null);
+
 
   const load = async () => {
     setLoading(true);
@@ -81,30 +90,42 @@ export function EmailLogsPanel() {
     return logs.filter((l) => {
       if (statusFilter !== "all" && l.status !== statusFilter) return false;
       if (templateFilter !== "all" && l.template_name !== templateFilter) return false;
+      if (engagement === "opened" && !l.opened_at) return false;
+      if (engagement === "unopened" && (l.opened_at || l.status !== "sent")) return false;
       if (search && !(l.recipient_email || "").toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-  }, [logs, statusFilter, templateFilter, search]);
+  }, [logs, statusFilter, templateFilter, engagement, search]);
 
   const stats = useMemo(() => {
-    const s = { total: filtered.length, sent: 0, failed: 0, suppressed: 0, pending: 0 };
+    const s = { total: filtered.length, sent: 0, failed: 0, suppressed: 0, pending: 0, opened: 0 };
     filtered.forEach((l) => {
       if (l.status === "sent") s.sent++;
       else if (l.status === "dlq" || l.status === "failed" || l.status === "bounced" || l.status === "complained") s.failed++;
       else if (l.status === "suppressed") s.suppressed++;
       else if (l.status === "pending") s.pending++;
+      if (l.opened_at) s.opened++;
     });
     return s;
   }, [filtered]);
+
+  // Replies never come back to the managed sender, so surface the inbox they do
+  // reach rather than leaving it to be guessed.
+  const replyInboxes = useMemo(() => {
+    const s = new Set<string>();
+    logs.forEach((l) => l.reply_to && s.add(l.reply_to));
+    return Array.from(s).sort();
+  }, [logs]);
+
 
   return (
     <Panel>
       <PanelHeader>
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div>
-            <PanelTitle>Email Send Logs</PanelTitle>
+            <PanelTitle>Platform Email</PanelTitle>
             <PanelDescription>
-              All branded transactional and auth emails sent from the platform (deduplicated by message).
+              Every branded transactional and auth email the platform sends, with opens, and the inbox replies land in.
             </PanelDescription>
           </div>
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
@@ -114,13 +135,26 @@ export function EmailLogsPanel() {
         </div>
       </PanelHeader>
       <PanelBody className="space-y-4">
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
           <StatCard label="Total" value={stats.total} />
           <StatCard label="Sent" value={stats.sent} tone="success" />
+          <StatCard label="Opened" value={stats.opened} tone="success" />
           <StatCard label="Pending" value={stats.pending} />
           <StatCard label="Failed" value={stats.failed} tone="danger" />
           <StatCard label="Suppressed" value={stats.suppressed} />
         </div>
+
+        {replyInboxes.length > 0 && (
+          <div className="flex items-start gap-2 rounded-lg border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground">
+            <Inbox className="h-4 w-4 mt-0.5 shrink-0" />
+            <p>
+              Replies to these emails go to{" "}
+              <span className="text-foreground">{replyInboxes.join(", ")}</span> — the sending address itself
+              has no mailbox. Opens exclude provider prefetches and security scanners, so the count is conservative.
+            </p>
+          </div>
+        )}
+
 
         <div className="flex gap-2 flex-wrap">
           <Select value={range} onValueChange={setRange}>
@@ -150,6 +184,15 @@ export function EmailLogsPanel() {
               ))}
             </SelectContent>
           </Select>
+          <Select value={engagement} onValueChange={setEngagement}>
+            <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Opened or not</SelectItem>
+              <SelectItem value="opened">Opened</SelectItem>
+              <SelectItem value="unopened">Sent, not opened</SelectItem>
+            </SelectContent>
+          </Select>
+
           <Input
             placeholder="Filter by recipient…"
             value={search}
@@ -175,20 +218,22 @@ export function EmailLogsPanel() {
                 <TableHead>Template</TableHead>
                 <TableHead>Recipient</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Opened</TableHead>
                 <TableHead>When</TableHead>
                 <TableHead>Error</TableHead>
+
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8">
+                  <TableCell colSpan={6} className="text-center py-8">
                     <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
                   </TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     No emails in this range
                   </TableCell>
                 </TableRow>
@@ -202,9 +247,23 @@ export function EmailLogsPanel() {
                         {log.status || "unknown"}
                       </Badge>
                     </TableCell>
+                    <TableCell className="text-xs whitespace-nowrap">
+                      {log.opened_at ? (
+                        <span
+                          className="text-emerald-400"
+                          title={`${log.open_count ?? 1} open${(log.open_count ?? 1) === 1 ? "" : "s"}`}
+                        >
+                          {formatDistanceToNow(new Date(log.opened_at), { addSuffix: true })}
+                          {(log.open_count ?? 1) > 1 ? ` · ${log.open_count}×` : ""}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
                     <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                       {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
                     </TableCell>
+
                     <TableCell className="text-xs text-destructive max-w-[280px] truncate" title={log.error_message || ""}>
                       {log.error_message || ""}
                     </TableCell>

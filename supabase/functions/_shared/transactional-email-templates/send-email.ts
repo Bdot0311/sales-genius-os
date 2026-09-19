@@ -1,7 +1,9 @@
 import * as React from 'npm:react@18.3.1'
 import { renderAsync } from 'npm:@react-email/components@0.0.22'
 import { EmailAPIError, sendLovableEmail } from 'npm:@lovable.dev/email-js@0.1.0'
+import { appendTrackingPixel } from '../managed-email.ts'
 import { TEMPLATES } from './registry.ts'
+
 
 // Server-only: reads LOVABLE_API_KEY. Import from edge functions only — never
 // expose sending to the browser.
@@ -24,7 +26,10 @@ export interface SendTemplateEmailOptions {
   /** Dedupes retries of the same logical send; defaults to a random UUID (no dedupe). */
   idempotencyKey?: string
   replyTo?: string
+  /** Open-tracking pixel URL embedded in the rendered HTML, when tracking is wanted. */
+  trackingPixelUrl?: string | null
 }
+
 
 /**
  * Renders a registered template and sends it through Lovable's managed email
@@ -73,8 +78,9 @@ export async function sendTemplateEmail(
         from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
         sender_domain: SENDER_DOMAIN,
         subject,
-        html,
+        html: appendTrackingPixel(html, options.trackingPixelUrl ?? null),
         text,
+
         purpose: 'transactional',
         label: templateName,
         idempotency_key: options.idempotencyKey || crypto.randomUUID(),

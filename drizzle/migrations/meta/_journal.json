@@ -64,6 +64,13 @@
       "when": 1789800563592,
       "tag": "0008_grant_deliverability_call_edge_to_cron_owner",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1789844203848,
+      "tag": "0009_app_email_open_tracking",
+      "breakpoints": true
     }
   ]
 }
