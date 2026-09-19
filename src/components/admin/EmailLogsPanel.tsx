@@ -227,13 +227,13 @@ export function EmailLogsPanel() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8">
+                  <TableCell colSpan={6} className="text-center py-8">
                     <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
                   </TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     No emails in this range
                   </TableCell>
                 </TableRow>
@@ -247,9 +247,23 @@ export function EmailLogsPanel() {
                         {log.status || "unknown"}
                       </Badge>
                     </TableCell>
+                    <TableCell className="text-xs whitespace-nowrap">
+                      {log.opened_at ? (
+                        <span
+                          className="text-emerald-400"
+                          title={`${log.open_count ?? 1} open${(log.open_count ?? 1) === 1 ? "" : "s"}`}
+                        >
+                          {formatDistanceToNow(new Date(log.opened_at), { addSuffix: true })}
+                          {(log.open_count ?? 1) > 1 ? ` ·  ${log.open_count}×` : ""}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
                     <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                       {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
                     </TableCell>
+
                     <TableCell className="text-xs text-destructive max-w-[280px] truncate" title={log.error_message || ""}>
                       {log.error_message || ""}
                     </TableCell>
