@@ -48,8 +48,10 @@ export function EmailLogsPanel() {
   const [range, setRange] = useState<string>("7d");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [templateFilter, setTemplateFilter] = useState<string>("all");
+  const [engagement, setEngagement] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [loadError, setLoadError] = useState<string | null>(null);
+
 
   const load = async () => {
     setLoading(true);
