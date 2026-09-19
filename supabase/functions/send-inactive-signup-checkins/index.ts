@@ -1,5 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
-import { corsHeaders } from '../_shared/internal-auth.ts'
+import { corsHeaders, isInternalCaller } from '../_shared/internal-auth.ts'
 import { sendAppEmail } from '../_shared/transactional-email-templates/send-app-email.ts'
 
 const TARGETS = [
@@ -24,17 +24,19 @@ Deno.serve(async (req) => {
   if (!url || !serviceKey) return json(500, { error: 'Server configuration error' })
 
   const admin = createClient(url, serviceKey, { auth: { persistSession: false } })
-  const { data: userData } = await admin.auth.getUser(token)
-  const actor = userData?.user
-  if (!actor) return json(401, { error: 'Unauthorized' })
+  if (!isInternalCaller(req)) {
+    const { data: userData } = await admin.auth.getUser(token)
+    const actor = userData?.user
+    if (!actor) return json(401, { error: 'Unauthorized' })
 
-  const { data: role } = await admin
-    .from('user_roles')
-    .select('role')
-    .eq('user_id', actor.id)
-    .eq('role', 'admin')
-    .maybeSingle()
-  if (!role) return json(403, { error: 'Admin privileges required' })
+    const { data: role } = await admin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', actor.id)
+      .eq('role', 'admin')
+      .maybeSingle()
+    if (!role) return json(403, { error: 'Admin privileges required' })
+  }
 
   const results: Array<Record<string, unknown>> = []
   for (const target of TARGETS) {
