@@ -81,7 +81,7 @@ Opening (trigger) + Assumption + Social proof with numbers + Open-ended question
 ## Outbound Writing Rules
 
 ```
-Emails: 60-90 words target, 50-100 enforced
+Emails: 60-90 words, 50-90 enforced
 No bullets in cold emails
 One CTA only
 

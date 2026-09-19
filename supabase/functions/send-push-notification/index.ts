@@ -52,10 +52,21 @@ Deno.serve(async (req) => {
         sent: 0,
         failed: 0,
         vapid_problem: keyCheck.problem,
+        /**
+         * One cause, one sentence.
+         *
+         * These used to share a message with the subject check below, so the
+         * screen said "not configured correctly on our side" for four
+         * different problems and the operator still had to go log-diving to
+         * learn which. That is the exact round trip this whole check exists to
+         * remove, so each cause now names the part that is wrong.
+         */
         reason:
           keyCheck.problem === "mismatched"
             ? "Notifications are signed with a key that no longer matches the one your device registered under, so the push service rejects every one. Nothing is wrong with your device; this one is ours to fix."
-            : "Sending notifications is not configured correctly on our side. Nothing is wrong with your device; this one is ours to fix.",
+            : keyCheck.problem === "missing"
+              ? "The signing key for notifications is not set on our server, so none can be sent. Nothing is wrong with your device; this one is ours to fix."
+              : "The signing key for notifications is set but not in the format the push services require. Nothing is wrong with your device; this one is ours to fix.",
       });
     }
 
@@ -73,8 +84,11 @@ Deno.serve(async (req) => {
         sent: 0,
         failed: 0,
         vapid_problem: "subject",
+        // Names the subject specifically. Sharing the key check's wording is
+        // what made the last report unreadable: the same sentence for a
+        // missing key and a malformed contact address.
         reason:
-          "Sending notifications is not configured correctly on our side. Nothing is wrong with your device; this one is ours to fix.",
+          "The contact address we sign notifications with is missing or malformed, so the push services reject every one. Nothing is wrong with your device; this one is ours to fix.",
       });
     }
 

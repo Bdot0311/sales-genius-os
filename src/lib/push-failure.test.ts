@@ -93,6 +93,23 @@ describe("the VAPID subject is checked too", () => {
     expect(checkVapidSubject("mailto:nope").ok).toBe(false);
   });
 
+  it("gives every configuration failure its own sentence", () => {
+    // These shared one message — "not configured correctly on our side" — for
+    // a missing key, a malformed key and a bad subject alike. A screenshot of
+    // it could not say which, so the operator still had to go log-diving,
+    // which is the round trip this whole check exists to remove.
+    const fn = code(FN);
+    const messages = [
+      ...fn.matchAll(/"(The signing key[^"]+|The contact address[^"]+|Notifications are signed[^"]+)"/g),
+    ].map((m) => m[1]);
+    expect(messages.length).toBeGreaterThanOrEqual(4);
+    expect(new Set(messages).size, "each cause needs its own wording").toBe(messages.length);
+    // And each still says whose problem it is.
+    for (const message of messages) {
+      expect(message, message.slice(0, 40)).toContain("ours to fix");
+    }
+  });
+
   it("is checked before anything is signed", () => {
     const fn = code(FN);
     expect(fn).toContain("checkVapidSubject(VAPID_SUBJECT)");

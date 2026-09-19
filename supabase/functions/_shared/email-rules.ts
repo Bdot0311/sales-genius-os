@@ -82,7 +82,7 @@ export function bannedPhrasesLine(): string {
  */
 export const IMMUTABLE_EDIT_RULES = `
 IMMUTABLE RULES — these apply regardless of the fix task:
-- Keep the body inside the enforced 50-100 words, aiming for 60-90. Do not lengthen an email that is already inside the band.
+- Keep the body inside the enforced 50-90 words. Do not lengthen an email that is already inside the band.
 - Greeting stays as "Hi [FirstName]," — do not change it
 - Sign-off stays as just the sender's first name on its own line — do not add "Best," or "Thanks,"
 - Do NOT introduce new percentage claims, statistics, or unverified benchmarks
