@@ -17,7 +17,14 @@ interface EmailLog {
   status: string | null;
   error_message: string | null;
   created_at: string;
+  /** Null until someone actually opens it; prefetches and scanners are filtered out. */
+  opened_at: string | null;
+  last_opened_at: string | null;
+  open_count: number | null;
+  /** The mailbox a reply to this email lands in — the managed sender has none. */
+  reply_to: string | null;
 }
+
 
 const RANGES: Record<string, number> = {
   "24h": 1,
