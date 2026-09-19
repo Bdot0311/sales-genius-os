@@ -93,12 +93,8 @@ const PageLoader = () => (
   </div>
 );
 
-const CHUNK_RELOAD_KEY = "__chunk_reload_attempt__";
-const CHUNK_RELOAD_WINDOW_MS = 30_000;
 const isChunkLoadError = (error: unknown) =>
-  /Importing a module script failed|Failed to fetch dynamically imported module|error loading dynamically imported module|ChunkLoadError/i.test(
-    String(error instanceof Error ? error.message : error)
-  );
+  isChunkLoadErrorMessage(String(error instanceof Error ? error.message : error));
 
 class ChunkErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false };
