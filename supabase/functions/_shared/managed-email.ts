@@ -194,7 +194,10 @@ export async function sendManagedEmail(
     template_name: input.label,
     recipient_email: to,
     status: 'sent',
+    pixel_id: pixelId,
+    reply_to: replyTo,
   })
+
 
   return { sent: true, messageId }
 }
