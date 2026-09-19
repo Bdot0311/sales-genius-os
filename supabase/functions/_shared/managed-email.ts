@@ -135,18 +135,22 @@ export async function sendManagedEmail(
     return { sent: false, messageId, reason: 'test_domain_skipped' }
   }
 
+  const pixelId = crypto.randomUUID()
+  const replyTo = input.replyTo ?? DEFAULT_REPLY_TO
+
   const payload = {
     to,
     from: input.from ?? DEFAULT_FROM,
     sender_domain: SENDER_DOMAIN,
     subject: input.subject,
-    html: input.html,
+    html: appendTrackingPixel(input.html, trackingPixelUrl(pixelId)),
     text: input.text ?? input.subject,
     purpose: 'transactional' as const,
     label: input.label,
     idempotency_key: input.idempotencyKey || messageId,
-    reply_to: input.replyTo,
+    reply_to: replyTo,
   }
+
 
   const options = { apiKey, sendUrl: Deno.env.get('LOVABLE_SEND_URL') }
 
