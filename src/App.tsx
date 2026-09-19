@@ -97,11 +97,11 @@ const PageLoader = () => (
 const isChunkLoadError = (error: unknown) =>
   isChunkLoadErrorMessage(String(error instanceof Error ? error.message : error));
 
-class ChunkErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
-  state = { hasError: false };
+class ChunkErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; chunkError: boolean }> {
+  state = { hasError: false, chunkError: false };
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  static getDerivedStateFromError(error: unknown) {
+    return { hasError: true, chunkError: isChunkLoadError(error) };
   }
 
   componentDidCatch(error: unknown, errorInfo: ErrorInfo) {
@@ -116,18 +116,22 @@ class ChunkErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
   render() {
     if (!this.state.hasError) return this.props.children;
 
+    const chunkError = this.state.chunkError;
+
     return (
       <main className="min-h-screen flex items-center justify-center bg-background px-6 text-foreground">
         <div className="max-w-md space-y-4 text-center">
-          <h1 className="text-2xl font-semibold">Refresh required</h1>
-          <p className="text-muted-foreground">A new version is available. Refresh to continue.</p>
+          <h1 className="text-2xl font-semibold">{chunkError ? "Refresh required" : "Something went wrong"}</h1>
+          <p className="text-muted-foreground">
+            {chunkError ? "A new version is available. Refresh to continue." : "This page hit an unexpected problem. Try loading it again."}
+          </p>
           <button
             type="button"
-            onClick={() => window.location.reload()}
-            aria-label="Refresh the page to load the new version"
+            onClick={() => chunkError ? window.location.reload() : this.setState({ hasError: false, chunkError: false })}
+            aria-label={chunkError ? "Refresh the page to load the new version" : "Try loading the page again"}
             className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
-            Refresh
+            {chunkError ? "Refresh" : "Try again"}
           </button>
         </div>
       </main>

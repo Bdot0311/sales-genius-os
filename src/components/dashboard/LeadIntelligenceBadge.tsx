@@ -1,4 +1,4 @@
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   confidenceLabel,
   decisionTone,
@@ -26,24 +26,26 @@ export const LeadIntelligenceBadge = ({ decision }: { decision?: LeadDecision })
   const uncertain = !primary.actionable;
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span
-          className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[11px] font-medium ${decisionTone(key, primary.value)} ${uncertain ? "opacity-60" : ""}`}
-        >
-          {uncertain ? "Not sure" : primary.label}
-        </span>
-      </TooltipTrigger>
-      <TooltipContent className="max-w-xs space-y-1">
-        {fit && <p className="text-xs">{fit.label} · {confidenceLabel(fit.confidence)}</p>}
-        {decision.fields.buying_intent && (
-          <p className="text-xs">{decision.fields.buying_intent.label}</p>
-        )}
-        {next && <p className="text-xs">{next.label}</p>}
-        <p className="text-[11px] text-muted-foreground">
-          Average confidence {formatPercent(decision.average_confidence)}
-        </p>
-      </TooltipContent>
-    </Tooltip>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[11px] font-medium ${decisionTone(key, primary.value)} ${uncertain ? "opacity-60" : ""}`}
+          >
+            {uncertain ? "Not sure" : primary.label}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs space-y-1">
+          {fit && <p className="text-xs">{fit.label} · {confidenceLabel(fit.confidence)}</p>}
+          {decision.fields.buying_intent && (
+            <p className="text-xs">{decision.fields.buying_intent.label}</p>
+          )}
+          {next && <p className="text-xs">{next.label}</p>}
+          <p className="text-[11px] text-muted-foreground">
+            Average confidence {formatPercent(decision.average_confidence)}
+          </p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 };
