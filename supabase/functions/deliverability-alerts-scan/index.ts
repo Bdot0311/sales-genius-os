@@ -5,6 +5,7 @@
 // with the service role.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { notifyDeliverabilityAlert } from "../_shared/notify-events.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 import { sendAppEmail } from "../_shared/transactional-email-templates/send-app-email.ts";
 import { bounceSeverity, complaintSeverity } from "../_shared/deliverability-thresholds.ts";
@@ -76,6 +77,22 @@ serve(async (req) => {
         return;
       }
       raised++;
+
+      /**
+       * Only on the insert, which is the point of the guard above: an active
+       * alert already exists means this problem has been raised before, so the
+       * person has already been told and a nightly scan must not tell them
+       * again. The first night is worth a buzz. The fourteenth is how someone
+       * decides this product cries wolf.
+       *
+       * Severity is not filtered here — an alert reaching this table has
+       * already cleared the bar for existing at all.
+       */
+      await notifyDeliverabilityAlert(params.user_id, {
+        alertType: params.alert_type,
+        title: params.message,
+        detail: domain,
+      });
     }
 
 

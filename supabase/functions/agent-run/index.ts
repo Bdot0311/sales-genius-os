@@ -27,7 +27,7 @@ import {
 } from "../_shared/cold-email-playbook.ts";
 import { aiFetch } from "../_shared/ai-provider.ts";
 import { capToolsToTier, resolveAgentTier } from "../_shared/agent-tier-scope.ts";
-import { notifyUserPush } from "../_shared/notify-push.ts";
+import { notifyAgentRunFinished, notifyMeetingBooked } from "../_shared/notify-events.ts";
 
 
 
@@ -1665,6 +1665,17 @@ Output ONLY the reply body. No subject line or signature.`;
             .update({ agent_thread_status: "meeting_booked" })
             .eq("id", reply.sentEmailId);
 
+          /**
+           * A prospect asked for time. This is the outcome the whole product
+           * exists to produce, and it was the quietest thing in it — recorded
+           * in the agent log, visible only to someone who went looking.
+           */
+          await notifyMeetingBooked(user.id, {
+            // The reply carries an address and nothing else — there is no name
+            // on it, and inventing one would put a wrong name on a lock screen.
+            inviteeEmail: reply.fromEmail,
+          });
+
           await logAction({
             user_id: user.id,
             sent_email_id: reply.sentEmailId,
@@ -1802,12 +1813,7 @@ Output ONLY the reply body. No subject line or signature.`;
     });
 
     if (leadsFound || outreachDrafted || outreachSent || repliesSent || pendingApprovals) {
-      await notifyUserPush(user.id, {
-        title: `${config.agent_name || "Your AI SDR"} finished a run`,
-        body: runSummary,
-        url: "/dashboard/agent",
-        tag: "agent-run",
-      });
+      await notifyAgentRunFinished(user.id, config.agent_name ?? "", runSummary);
     }
 
     await captureServerEvent("agent_run_completed", user.id, {

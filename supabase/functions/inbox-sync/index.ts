@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { notifyRepliesReceived } from "../_shared/notify-events.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -380,6 +381,26 @@ serve(async (req) => {
         })),
       );
       if (threadErr) console.error("reply_threads insert failed:", threadErr.message);
+
+      /**
+       * Tell them, now.
+       *
+       * A reply is the one event in this product that decays: answered within
+       * the hour it is a conversation, answered tomorrow it is a apology. This
+       * was silent, so the only way to find out was to open the app and look.
+       *
+       * Auto-replies are dropped rather than counted. An out-of-office is not
+       * someone waiting on an answer, and being buzzed for one is how a person
+       * learns to turn notifications off — which would cost every other event
+       * here too. One notification for the whole batch, for the same reason.
+       */
+      const human = replies.filter((r) => !r.isAutoReply);
+      if (human.length) {
+        await notifyRepliesReceived(
+          user.id,
+          human.map((r) => ({ fromEmail: r.fromEmail, subject: r.subject })),
+        );
+      }
     }
     for (const [sentEmailId, receivedAt] of Object.entries(earliestReply)) {
       const { error: replyErr } = await adminClient

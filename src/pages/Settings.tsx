@@ -39,6 +39,21 @@ import { SupportAccessCard } from "@/components/settings/SupportAccessCard";
 
 const Settings = () => {
   const [searchParams] = useSearchParams();
+
+  /**
+   * Bring the open tab into view.
+   *
+   * Arriving on ?tab=notifications left the strip scrolled to the start with
+   * the active tab clipped against the right edge — the tab you are on, half
+   * visible, which is what made this look broken rather than scrollable. The
+   * strip has no idea where its selected child is until something tells it.
+   */
+  useEffect(() => {
+    const active = document.querySelector<HTMLElement>(
+      '.settings-tab-list [data-state="active"]',
+    );
+    active?.scrollIntoView({ block: "nearest", inline: "center" });
+  }, [searchParams]);
   const { subscription, loading: subLoading } = useSubscription();
   const { usage, loading: usageLoading } = useLeadsUsage();
   const { manualSync } = useSubscriptionSync();
@@ -265,10 +280,24 @@ const Settings = () => {
             const showGrowthPlus = isAdmin || ['growth', 'pro', 'agency'].includes(subscription?.plan || '');
             const tabBase =
               "min-h-9 w-full justify-start gap-2 whitespace-nowrap rounded-md px-2.5 py-1.5 text-left text-[0.8125rem] font-normal leading-tight text-muted-foreground data-[state=active]:bg-muted/60 data-[state=active]:text-foreground data-[state=active]:shadow-none hover:bg-muted/30 hover:text-foreground lg:min-h-8";
+            /**
+             * A strip you swipe, with the edges saying so.
+             *
+             * The two-column grid was tried and reverted: fifteen destinations
+             * wrapped into a stack eight rows tall above whatever you came to
+             * change. So this stays a strip — but it read as broken, slicing
+             * the first and last label mid-word with nothing to suggest there
+             * was more either side.
+             *
+             * Snapping means it comes to rest with a tab flush to the left
+             * edge instead of halfway through one, and the mask fades the
+             * edges so a cut-off label reads as "more over there" rather than
+             * as a rendering bug.
+             */
             const listCls =
               "settings-tab-list flex h-auto min-h-0 w-max min-w-full gap-1 overflow-visible bg-transparent p-0 lg:w-full lg:flex-col lg:items-stretch";
             return (
-              <div className="-mx-1 overflow-x-auto px-1 pb-1 lg:mx-0 lg:overflow-visible lg:rounded-xl lg:border lg:border-border/50 lg:bg-card lg:p-2 lg:px-2 lg:pb-2">
+              <div className="settings-tab-scroller -mx-1 overflow-x-auto px-1 pb-1 lg:mx-0 lg:overflow-visible lg:rounded-xl lg:border lg:border-border/50 lg:bg-card lg:p-2 lg:px-2 lg:pb-2">
                 <TabsList className={listCls}>
                   <TabsTrigger value="profile" className={tabBase}><User className="h-4 w-4" />Profile</TabsTrigger>
                   <TabsTrigger value="billing" className={tabBase}><Settings2 className="h-4 w-4" />Billing</TabsTrigger>
