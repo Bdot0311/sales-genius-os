@@ -26,11 +26,9 @@ import {
   bedrockProModel,
 } from "./bedrock.ts";
 
-const GOOGLE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
-const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
 const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
-export type AiProvider = "google" | "openai" | "bedrock" | "lovable";
+export type AiProvider = "bedrock" | "lovable";
 
 /** USD per 1M tokens. Unknown models fall back to a mid-range Flash estimate. */
 const PRICING: Record<string, { in: number; out: number }> = {
@@ -45,43 +43,15 @@ const PRICING: Record<string, { in: number; out: number }> = {
 const DEFAULT_PRICE = { in: 0.3, out: 2.5 };
 
 /**
- * Direct Google AI Studio does not serve every id the gateway exposes (preview
- * ids in particular). Map those onto the closest generally-available model so a
- * direct key never dead-ends a feature.
+ * Which account will serve a given gateway model id.
+ * Amazon Bedrock is the only connected AI provider; the Lovable gateway is the
+ * fallback used only when Bedrock is not configured.
  */
-const GOOGLE_MODEL_MAP: Record<string, string> = {
-  "gemini-3-flash-preview": "gemini-2.5-flash",
-  "gemini-3.1-flash-lite": "gemini-2.5-flash-lite",
-  "gemini-3.5-flash": "gemini-2.5-flash",
-  "gemini-3.6-flash": "gemini-2.5-flash",
-  "gemini-3.7-flash": "gemini-2.5-flash",
-  "gemini-3.1-pro-preview": "gemini-2.5-pro",
-};
-
-function googleKey() {
-  return Deno.env.get("GOOGLE_AI_API_KEY") || Deno.env.get("GEMINI_API_KEY") || "";
-}
-function openaiKey() {
-  return Deno.env.get("OPENAI_API_KEY") || "";
-}
-
-/** Which account will serve a given gateway model id, given the configured keys. */
 export function routeFor(model: string): { provider: AiProvider; url: string; model: string; key: string } {
   const gatewayId = model || "google/gemini-2.5-flash";
-  const [vendor, ...rest] = gatewayId.split("/");
+  const [, ...rest] = gatewayId.split("/");
   const bare = rest.join("/") || gatewayId;
 
-  if (vendor === "google" && googleKey()) {
-    return {
-      provider: "google",
-      url: GOOGLE_URL,
-      model: GOOGLE_MODEL_MAP[bare] ?? bare,
-      key: googleKey(),
-    };
-  }
-  if (vendor === "openai" && openaiKey()) {
-    return { provider: "openai", url: OPENAI_URL, model: bare, key: openaiKey() };
-  }
   // Amazon Bedrock, billed on our own AWS account. Bedrock serves none of the
   // gateway model ids, so requested ids collapse onto two tiers: "pro"-class
   // requests get the stronger model, everything else the cheap workhorse.
@@ -97,7 +67,7 @@ export function routeFor(model: string): { provider: AiProvider; url: string; mo
       key: "bedrock",
     };
   }
-  // No direct provider for this vendor — fall back to the platform gateway.
+  // Bedrock unavailable — fall back to the platform gateway.
   return {
     provider: "lovable",
     url: GATEWAY_URL,
@@ -106,9 +76,9 @@ export function routeFor(model: string): { provider: AiProvider; url: string; mo
   };
 }
 
-/** True when at least one direct provider account is configured. */
+/** True when our own AI account (Bedrock) is configured. */
 export function hasDirectProvider(): boolean {
-  return Boolean(googleKey() || openaiKey() || bedrockConfigured());
+  return bedrockConfigured();
 }
 
 function priceOf(model: string, promptTokens: number, completionTokens: number): number {
@@ -226,13 +196,12 @@ export async function aiFetch(
 
   }
 
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (route.provider === "lovable") {
-    headers["Authorization"] = `Bearer ${route.key}`;
-    headers["X-Lovable-AIG-SDK"] = "fetch";
-  } else {
-    headers["Authorization"] = `Bearer ${route.key}`;
-  }
+  // Lovable gateway fallback.
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${route.key}`,
+    "X-Lovable-AIG-SDK": "fetch",
+  };
 
   const res = await fetch(route.url, {
     ...init,
