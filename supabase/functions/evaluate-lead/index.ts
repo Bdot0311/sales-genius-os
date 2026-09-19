@@ -70,7 +70,10 @@ serve(async (req) => {
       .select(LEAD_SELECT)
       .in("id", ids)
       .eq("user_id", user.id);
-    if (leadError) return json({ error: "Could not load those leads." }, 500);
+    if (leadError) {
+      console.error("[evaluate-lead] lead load failed", leadError);
+      return json({ error: "Could not load those leads." }, 500);
+    }
     if (!leads || leads.length === 0) return json({ error: "Those leads could not be found." }, 404);
 
     // Seller context: what they sell, so fit is judged against their business.
