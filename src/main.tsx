@@ -70,6 +70,9 @@ if (rootEl.dataset.prerendered === "true") {
 } else {
   createRoot(rootEl).render(<App />);
 }
+// App mounted successfully — reset the chunk-reload attempt counter so a
+// future stale-chunk error later in the session gets a fresh set of retries.
+window.setTimeout(clearStaleChunkFlag, 5_000);
 
 // Error monitoring is loaded after the first paint so it stays off the LCP
 // critical path. Errors thrown before this resolves are still caught by the
