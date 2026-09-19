@@ -196,13 +196,12 @@ export async function aiFetch(
 
   }
 
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (route.provider === "lovable") {
-    headers["Authorization"] = `Bearer ${route.key}`;
-    headers["X-Lovable-AIG-SDK"] = "fetch";
-  } else {
-    headers["Authorization"] = `Bearer ${route.key}`;
-  }
+  // Lovable gateway fallback.
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${route.key}`,
+    "X-Lovable-AIG-SDK": "fetch",
+  };
 
   const res = await fetch(route.url, {
     ...init,
