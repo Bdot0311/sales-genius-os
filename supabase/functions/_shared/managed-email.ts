@@ -23,13 +23,45 @@ export function isReservedTestRecipient(email: string): boolean {
   return TEST_DOMAINS.includes(domain) || TEST_TLDS.some((tld) => domain.endsWith(tld))
 }
 
+/**
+ * Where replies to platform-sent email land.
+ *
+ * Lovable's managed sender has no mailbox of its own, so a reply to
+ * noreply@notify.outreign.io would vanish. Every app email therefore carries a
+ * Reply-To pointing at a real inbox, and the address used is recorded on the
+ * send row so the admin email panel can say where to look for answers.
+ */
+export const DEFAULT_REPLY_TO = 'brandon@bdotindustries.com'
+
+/**
+ * Open tracking for platform email.
+ *
+ * Managed delivery records sends, bounces, complaints and unsubscribes but
+ * never opens, so each send embeds its own pixel pointing at
+ * track-app-email-open with the row's pixel_id.
+ */
+export function trackingPixelUrl(pixelId: string): string | null {
+  const base = Deno.env.get('SUPABASE_URL')
+  if (!base) return null
+  return `${base}/functions/v1/track-app-email-open?id=${pixelId}`
+}
+
+export function appendTrackingPixel(html: string, url: string | null): string {
+  if (!url) return html
+  const img = `<img src="${url}" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0" />`
+  return html.includes('</body>') ? html.replace('</body>', `${img}</body>`) : html + img
+}
+
 export interface EmailLogRow {
   message_id?: string | null
   template_name: string
   recipient_email: string | null
   status: string
   error_message?: string | null
+  pixel_id?: string | null
+  reply_to?: string | null
 }
+
 
 // deno-lint-ignore no-explicit-any
 export async function logEmailEvent(supabase: any, row: EmailLogRow): Promise<void> {
