@@ -71,6 +71,13 @@
       "when": 1789844203848,
       "tag": "0009_app_email_open_tracking",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789848003265,
+      "tag": "0010_agency_clients_drop_auth_uid_default",
+      "breakpoints": true
     }
   ]
 }
