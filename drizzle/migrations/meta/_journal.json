@@ -57,6 +57,13 @@
       "when": 1789763357492,
       "tag": "0007_blog_cron_timeout",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789800563592,
+      "tag": "0008_grant_deliverability_call_edge_to_cron_owner",
+      "breakpoints": true
     }
   ]
 }
