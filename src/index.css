@@ -205,6 +205,7 @@ All colors MUST be HSL. Using 8px spacing scale.
       white-space: nowrap;
     }
 
+
     /* Keep action rows usable when labels or localized copy run long.
        They share rows rather than each taking one. Stacking every action
        full-width cost a third of a phone screen on any page with three of
@@ -1347,5 +1348,48 @@ All colors MUST be HSL. Using 8px spacing scale.
     min-width: 44px;
     display: inline-flex;
     align-items: center;
+  }
+}
+
+/* Say there is more, at both edges.
+
+   The settings tabs are a strip you swipe until lg, where they become a
+   vertical rail — so this is scoped to just under lg rather than to the phone
+   breakpoint, or every tablet keeps the version that reads as broken.
+
+   A label cut off against a hard edge looks like a rendering bug. Faded, it
+   reads as "more over there", which is true and is the only affordance a strip
+   like this gets on a touch screen with no scrollbar. A mask rather than a
+   gradient overlay, so it works on any background and cannot sit on top of a
+   tab and eat the tap. */
+@media (max-width: 1023.98px) {
+  .settings-tab-scroller {
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      #000 1.25rem,
+      #000 calc(100% - 1.25rem),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      #000 1.25rem,
+      #000 calc(100% - 1.25rem),
+      transparent 100%
+    );
+  }
+
+  .settings-tab-scroller::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Rest with a tab flush to the edge rather than halfway through one.
+     Slicing a label mid-word is what made this read as a rendering bug
+     instead of as something to swipe. */
+  [role="tablist"].settings-tab-list > * {
+    scroll-snap-align: start;
   }
 }
