@@ -123,9 +123,9 @@ export function EmailLogsPanel() {
       <PanelHeader>
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div>
-            <PanelTitle>Email Send Logs</PanelTitle>
+            <PanelTitle>Platform Email</PanelTitle>
             <PanelDescription>
-              All branded transactional and auth emails sent from the platform (deduplicated by message).
+              Every branded transactional and auth email the platform sends, with opens, and the inbox replies land in.
             </PanelDescription>
           </div>
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
@@ -135,13 +135,26 @@ export function EmailLogsPanel() {
         </div>
       </PanelHeader>
       <PanelBody className="space-y-4">
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
           <StatCard label="Total" value={stats.total} />
           <StatCard label="Sent" value={stats.sent} tone="success" />
+          <StatCard label="Opened" value={stats.opened} tone="success" />
           <StatCard label="Pending" value={stats.pending} />
           <StatCard label="Failed" value={stats.failed} tone="danger" />
           <StatCard label="Suppressed" value={stats.suppressed} />
         </div>
+
+        {replyInboxes.length > 0 && (
+          <div className="flex items-start gap-2 rounded-lg border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground">
+            <Inbox className="h-4 w-4 mt-0.5 shrink-0" />
+            <p>
+              Replies to these emails go to{" "}
+              <span className="text-foreground">{replyInboxes.join(", ")}</span> — the sending address itself
+              has no mailbox. Opens exclude provider prefetches and security scanners, so the count is conservative.
+            </p>
+          </div>
+        )}
+
 
         <div className="flex gap-2 flex-wrap">
           <Select value={range} onValueChange={setRange}>
