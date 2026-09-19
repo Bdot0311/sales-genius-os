@@ -494,6 +494,8 @@ const AdminSettings = () => {
 
           {/* Feature Flags */}
           <TabsContent value="features" className="space-y-4">
+            <LeadIntelligencePanel />
+
             <div className="flex justify-between items-center">
               <p className="text-sm text-muted-foreground">
                 Manage feature rollouts and A/B testing
