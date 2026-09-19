@@ -1691,7 +1691,7 @@ serve(async (req) => {
           const { owned } = await ownedLeadIds(requestedIds);
           const { data: rows } = await admin
             .from("lead_decisions")
-            .select("lead_id, decision_fields, status, evaluated_at, safe_to_automate")
+            .select("*")
             .eq("user_id", userId)
             .in("lead_id", owned.length ? owned : ["00000000-0000-0000-0000-000000000000"]);
           const byLead = new Map((rows ?? []).map((r: any) => [r.lead_id, r]));
@@ -1701,8 +1701,22 @@ serve(async (req) => {
             return {
               lead_id: id,
               evaluated_at: row.evaluated_at,
-              safe_to_automate: row.safe_to_automate,
-              decisions: row.decision_fields,
+              icp_fit: row.icp_fit,
+              buying_intent: row.buying_intent,
+              email_priority: row.email_priority,
+              send_recommendation: row.send_recommendation,
+              personalization_depth: row.personalization_depth,
+              subject_strategy: row.subject_strategy,
+              cta_strategy: row.cta_strategy,
+              sequence_length: row.sequence_length,
+              follow_up_timing: row.follow_up_timing,
+              automation_review: row.automation_review,
+              confidence: {
+                icp_fit: row.icp_fit_confidence,
+                buying_intent: row.buying_intent_confidence,
+                email_priority: row.email_priority_confidence,
+                send_recommendation: row.send_recommendation_confidence,
+              },
             };
           });
           const evaluated = out.filter((o: any) => !o.not_evaluated).length;
