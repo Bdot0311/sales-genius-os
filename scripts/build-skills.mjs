@@ -19,7 +19,7 @@
  * Run: node scripts/build-skills.mjs        (writes the module)
  *      node scripts/build-skills.mjs --check (fails if it is stale — CI)
  */
-import { readFileSync, readdirSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, readdirSync, statSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
 const SKILLS_DIR = ".claude/skills";
@@ -56,9 +56,30 @@ function stripFrontmatter(text) {
   return end === -1 ? text : text.slice(text.indexOf("\n", end + 1) + 1);
 }
 
+/**
+ * A skill directory, however it got there.
+ *
+ * `skills add` installs into .agents/skills and symlinks .claude/skills at it,
+ * so a skill installed that way is a symlink rather than a directory and
+ * `isDirectory()` is false for it. Every skill in EMAIL_SKILLS today predates
+ * that and is a real directory, so the allowlist hid the problem: the first
+ * person to add a symlinked skill to that list would have been told it was
+ * missing while looking straight at it.
+ */
+function isSkillDir(entry) {
+  if (entry.isDirectory()) return true;
+  if (!entry.isSymbolicLink()) return false;
+  try {
+    return statSync(join(SKILLS_DIR, entry.name)).isDirectory();
+  } catch {
+    // A symlink with nothing on the other end is not a skill.
+    return false;
+  }
+}
+
 function build() {
   const available = existsSync(SKILLS_DIR)
-    ? readdirSync(SKILLS_DIR, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name)
+    ? readdirSync(SKILLS_DIR, { withFileTypes: true }).filter(isSkillDir).map((e) => e.name)
     : [];
 
   const missing = EMAIL_SKILLS.filter((n) => !available.includes(n));
