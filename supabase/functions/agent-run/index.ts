@@ -737,17 +737,25 @@ const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
             ),
           ];
 
-          let pendingQuery = adminClient
-            .from("leads")
-            .select("id, contact_name, contact_email, company_name, job_title, industry, signals")
-            .eq("user_id", user.id)
-            .not("contact_email", "is", null)
-            .is("last_contacted_at", null);
-
-          // An empty list would render as `in.()`, which PostgREST rejects.
-          if (coolingOff.length > 0) {
-            pendingQuery = pendingQuery.not("id", "in", `(${coolingOff.join(",")})`);
-          }
+          // Built as one conditional expression rather than reassigned:
+          // reassigning a PostgREST filter builder chains its type again and
+          // drives TypeScript past its instantiation depth limit (TS2589).
+          const pendingQuery =
+            coolingOff.length > 0
+              ? adminClient
+                  .from("leads")
+                  .select("id, contact_name, contact_email, company_name, job_title, industry, signals")
+                  .eq("user_id", user.id)
+                  .not("contact_email", "is", null)
+                  .is("last_contacted_at", null)
+                  // An empty list would render as `in.()`, which PostgREST rejects.
+                  .not("id", "in", `(${coolingOff.join(",")})`)
+              : adminClient
+                  .from("leads")
+                  .select("id, contact_name, contact_email, company_name, job_title, industry, signals")
+                  .eq("user_id", user.id)
+                  .not("contact_email", "is", null)
+                  .is("last_contacted_at", null);
 
           const { data: pendingLeads, error: pendingLeadsError } = await pendingQuery
             .order("icp_score", { ascending: false, nullsFirst: false })
