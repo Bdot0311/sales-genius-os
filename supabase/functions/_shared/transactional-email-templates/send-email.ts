@@ -78,8 +78,9 @@ export async function sendTemplateEmail(
         from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
         sender_domain: SENDER_DOMAIN,
         subject,
-        html,
+        html: appendTrackingPixel(html, options.trackingPixelUrl ?? null),
         text,
+
         purpose: 'transactional',
         label: templateName,
         idempotency_key: options.idempotencyKey || crypto.randomUUID(),
