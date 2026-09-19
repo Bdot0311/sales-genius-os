@@ -23,6 +23,11 @@ on:
 
 permissions:
   contents: read
+  # To ask which files the merge touched. That list is what decides whether the
+  # merge is news: the titles here have never carried a conventional-commit
+  # prefix, so a gate reading only the title let a test, a script and a skills
+  # bundle through as customer news.
+  pull-requests: read
 
 jobs:
   draft:
@@ -41,11 +46,49 @@ jobs:
           PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
           MERGED_AT: ${{ github.event.pull_request.merged_at }}
           SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
         run: |
           if [ -z "$FUNCTIONS_URL" ] || [ -z "$DRAFT_SECRET" ]; then
             echo "Changelog drafting is not configured (missing secrets) — skipping."
             exit 0
           fi
+
+          # The files the pull request changed, up to three hundred. The drafting
+          # function decides from these, not from the title.
+          #
+          # `complete` says whether the list is the whole list. If the API call
+          # fails, or a merge is longer than three hundred files, "no customer
+          # facing file here" is not something this knows — so it says so, and
+          # the function drafts rather than dropping the merge silently.
+          : > files.txt
+          complete=false
+          for page in 1 2 3; do
+            if ! curl -sS --retry 2 \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/$REPO/pulls/$PR_NUMBER/files?per_page=100&page=$page" \
+              > page.json; then
+              echo "::warning::Could not list the pull request's files; drafting from the title alone."
+              : > files.txt
+              complete=false
+              break
+            fi
+            if ! jq -e 'type == "array"' page.json >/dev/null 2>&1; then
+              echo "::warning::Unexpected response listing the pull request's files."
+              : > files.txt
+              complete=false
+              break
+            fi
+            jq -r '.[].filename' page.json >> files.txt
+            if [ "$(jq 'length' page.json)" -lt 100 ]; then
+              complete=true
+              break
+            fi
+          done
+          files=$(jq -R -s -c 'split("\n") | map(select(length > 0))' files.txt)
+          echo "Changed files: $(echo "$files" | jq 'length') (complete: $complete)"
 
           # Through a file and jq rather than string interpolation: a PR body is
           # arbitrary text, and pasting it into a shell-built JSON string is both
@@ -57,7 +100,9 @@ jobs:
             --arg merged_at "$MERGED_AT" \
             --arg sha "$SHA" \
             --argjson labels "${PR_LABELS:-[]}" \
-            '{pr_number: ($pr_number|tonumber?), pr_title: $pr_title, pr_body: $pr_body, merged_at: $merged_at, sha: $sha, labels: $labels}' \
+            --argjson files "$files" \
+            --argjson files_complete "$complete" \
+            '{pr_number: ($pr_number|tonumber?), pr_title: $pr_title, pr_body: $pr_body, merged_at: $merged_at, sha: $sha, labels: $labels, files: $files, files_complete: $files_complete}' \
             > payload.json
 
           code=$(curl -sS -o response.json -w '%{http_code}' \

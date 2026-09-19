@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import {
   DRAFT_SYSTEM_PROMPT,
+  classifyPath,
   isWorthAnnouncing,
   mergeItems,
   parseDraft,
@@ -14,6 +15,7 @@ const WORKFLOW = readFileSync(".github/workflows/changelog-draft.yml", "utf8");
 const AUTH = readFileSync("supabase/functions/_shared/changelog-auth.ts", "utf8");
 const HOOK = readFileSync("src/hooks/use-changelog.tsx", "utf8");
 const ADMIN = readFileSync("src/components/admin/ChangelogTab.tsx", "utf8");
+const APP = readFileSync("src/App.tsx", "utf8");
 
 /**
  * Merged pull requests draft their own changelog entry; an admin publishes it.
@@ -44,6 +46,226 @@ describe("not every merge is news", () => {
 
   it("lets real work through", () => {
     expect(isWorthAnnouncing({ title: "Follow-ups send after the first step" }).announce).toBe(true);
+  });
+});
+
+/**
+ * What the gate is judged on.
+ *
+ * The title rules below were the whole gate for a while, and against this
+ * repository they caught almost nothing: nobody here has ever typed a
+ * conventional-commit prefix. Of the thirty merges before this was written,
+ * twenty-eight reached the model — a skills bundle, a prerender script, a
+ * seed-inbox verifier. These are those merges, by the files they changed.
+ */
+describe("the file list decides, not the title", () => {
+  it("calls tests, tooling, CI, docs and generated files internal", () => {
+    for (const path of [
+      "src/lib/lead-filters.test.ts",
+      "supabase/functions/_shared/claim-check.spec.ts",
+      "src/test/setup.ts",
+      "scripts/prerender.mjs",
+      ".github/workflows/changelog-draft.yml",
+      ".agents/skills/list-building/SKILL.md",
+      ".claude/skills/cold-email/SKILL.md",
+      "docs/architecture.md",
+      "README.md",
+      "src/integrations/supabase/types.ts",
+      "src/entry-server.tsx",
+      "src/App.tsx",
+      "package.json",
+      "tsconfig.app.tsbuildinfo",
+      "vite.config.ts",
+      "tailwind.config.ts",
+      ".env.example",
+      "src/vite-env.d.ts",
+    ]) {
+      expect(classifyPath(path), path).toBe("internal");
+    }
+  });
+
+  it("calls the admin panel and this changelog machinery internal", () => {
+    // Brandon is the only admin, and an entry about the screen he publishes
+    // from is an entry about the act of publishing it.
+    expect(classifyPath("src/components/admin/ChangelogTab.tsx")).toBe("internal");
+    expect(classifyPath("src/pages/admin/Settings.tsx")).toBe("internal");
+    expect(classifyPath("src/pages/Admin.tsx")).toBe("internal");
+    expect(classifyPath("src/lib/changelog.ts")).toBe("internal");
+    expect(classifyPath("supabase/functions/draft-changelog/index.ts")).toBe("internal");
+    expect(classifyPath("supabase/functions/_shared/changelog-draft.ts")).toBe("internal");
+  });
+
+  it("calls the public site site, not product", () => {
+    // Real work, but a customer who already signed up did not open What's New
+    // to read that a comparison page exists.
+    for (const path of [
+      "src/pages/VsApollo.tsx",
+      "src/pages/AlternativeTo.tsx",
+      "src/pages/Blog.tsx",
+      "src/pages/PricingPage.tsx",
+      "src/data/competitors.ts",
+      "src/data/blog-posts.ts",
+      "src/components/landing/Hero.tsx",
+      "src/components/seo/FAQSchema.tsx",
+      "src/lib/related-posts.ts",
+      "public/robots.txt",
+      "index.html",
+    ]) {
+      expect(classifyPath(path), path).toBe("site");
+    }
+  });
+
+  it("calls the app behind the login product", () => {
+    for (const path of [
+      "src/pages/Leads.tsx",
+      "src/pages/Settings.tsx",
+      "src/components/dashboard/AILeadCommand.tsx",
+      "src/hooks/use-push.tsx",
+      "src/lib/counted-as-sent.ts",
+      "supabase/functions/send-email/index.ts",
+      "supabase/functions/_shared/email-audit.ts",
+      "supabase/migrations/20260916003000_sent_email_failure_reason.sql",
+      "workers/dmarc-inbound/index.ts",
+      "src/index.css",
+    ]) {
+      expect(classifyPath(path), path).toBe("product");
+    }
+  });
+
+  it("counts the installed app and its notifications as product, not as public files", () => {
+    // These sit in public/ beside the logos, and one of them is what puts a
+    // notification on a phone.
+    expect(classifyPath("public/push-sw.js")).toBe("product");
+    expect(classifyPath("public/manifest.webmanifest")).toBe("product");
+    expect(classifyPath("public/outreign-og.png")).toBe("site");
+  });
+
+  it("skips the merges that used to slip through", () => {
+    const skips: [string, string[]][] = [
+      ["Add signal-sourcer and list-building, and unhide symlinked skills", [
+        ".agents/skills/list-building/SKILL.md",
+        "scripts/build-skills.mjs",
+        "src/lib/skills-bundle.test.ts",
+      ]],
+      ["Let a crawler read the money pages without running JavaScript", [
+        "scripts/prerender.mjs",
+        "src/entry-server.tsx",
+        "src/lib/prerender-coverage.test.ts",
+      ]],
+      ["Add a way to prove the seed inbox is readable before trusting it", [
+        "scripts/verify-seed-inbox.mjs",
+      ]],
+      ["Stop every blog post being a dead end", [
+        "src/lib/related-posts.ts",
+        "src/pages/BlogPost.tsx",
+        "src/lib/related-posts.test.ts",
+      ]],
+    ];
+    for (const [title, files] of skips) {
+      const verdict = isWorthAnnouncing({ title, files, filesComplete: true });
+      expect(verdict.announce, title).toBe(false);
+      expect(verdict.reason, title).toMatch(/nothing a customer uses changed/);
+    }
+  });
+
+  it("announces the merges that changed something a customer uses", () => {
+    const verdict = isWorthAnnouncing({
+      title: "A failed send is not a send",
+      files: [
+        "src/components/outreach/EmailPerformanceStats.tsx",
+        "src/lib/counted-as-sent.ts",
+        "src/pages/Analytics.tsx",
+        "supabase/functions/send-email/index.ts",
+        "src/lib/counted-as-sent.test.ts",
+      ],
+      filesComplete: true,
+    });
+    expect(verdict.announce).toBe(true);
+    // The model is handed these and nothing else, so a merge with one product
+    // file and nine internal ones is written up as the one.
+    expect(verdict.product).not.toContain("src/lib/counted-as-sent.test.ts");
+    expect(verdict.product).toContain("supabase/functions/send-email/index.ts");
+  });
+
+  it("drafts anyway when the file list proves nothing", () => {
+    // No list at all is the answer an older workflow or a failed API call
+    // gives, and a merge is not dropped over it.
+    expect(isWorthAnnouncing({ title: "Follow-ups send after the first step" }).announce).toBe(true);
+    expect(isWorthAnnouncing({ title: "A real change", files: [] }).announce).toBe(true);
+    // A list cut short cannot show absence.
+    expect(
+      isWorthAnnouncing({ title: "A real change", files: ["scripts/x.mjs"], filesComplete: false }).announce,
+    ).toBe(true);
+  });
+
+  it("takes a label as the last word, both ways", () => {
+    const quiet = { title: "Ship the thing", files: ["src/pages/Leads.tsx"], filesComplete: true };
+    expect(isWorthAnnouncing({ ...quiet, labels: ["no-changelog"] }).announce).toBe(false);
+    const loud = { title: "chore: rename the plan", files: ["scripts/x.mjs"], filesComplete: true };
+    expect(isWorthAnnouncing(loud).announce).toBe(false);
+    expect(isWorthAnnouncing({ ...loud, labels: ["announce"] }).announce).toBe(true);
+    expect(isWorthAnnouncing({ ...loud, labels: ["user-facing"] }).announce).toBe(true);
+  });
+
+  it("names why it went quiet, so the workflow log says it", () => {
+    const verdict = isWorthAnnouncing({
+      title: "Tidy the build",
+      files: ["scripts/x.mjs", "src/pages/VsApollo.tsx"],
+      filesComplete: true,
+    });
+    expect(verdict.reason).toBe("nothing a customer uses changed (internal and site only)");
+  });
+});
+
+/**
+ * The page list inside the gate cannot read the router, so this does.
+ *
+ * A page the router puts behind a login is product; anything else the router
+ * serves is the public site. When a new page lands inside the product and the
+ * gate has not been told about it, this fails — which is the right direction
+ * for a list that will go stale, because the alternative is a new feature that
+ * never gets announced.
+ */
+describe("the gate's idea of a page agrees with the router", () => {
+  const SIGNED_IN = [
+    "/dashboard",
+    "/settings",
+    "/integrations",
+    "/onboarding",
+    "/onboarding-status",
+    "/checkout",
+    "/auth",
+    "/install",
+    "/connect",
+    "/help",
+    "/confirmation",
+    "/client-portal",
+    "/.lovable",
+  ];
+
+  const routes = [...APP.matchAll(/<Route\s+path="([^"]+)"\s+element=\{([^}]*(?:\}[^}]*)*?)\}\s*\/>/g)]
+    .map(([, path, element]) => {
+      const names = [...element.matchAll(/<([A-Z][A-Za-z0-9]*)/g)].map((m) => m[1]);
+      const page = names.filter((n) => n !== "MaintenanceGuard" && n !== "Navigate").pop();
+      return { path, page };
+    })
+    .filter((r): r is { path: string; page: string } => Boolean(r.page));
+
+  it("found the routes", () => {
+    // If the regex stops matching, every assertion below passes vacuously.
+    expect(routes.length).toBeGreaterThan(30);
+    expect(routes.some((r) => r.page === "Leads")).toBe(true);
+    expect(routes.some((r) => r.page === "VsApollo")).toBe(true);
+  });
+
+  it("classifies every routed page the way the router mounts it", () => {
+    for (const { path, page } of routes) {
+      if (path.startsWith("/admin")) continue;
+      const file = `src/pages/${page}.tsx`;
+      if (!existsSync(file)) continue;
+      const expected = SIGNED_IN.some((p) => path === p || path.startsWith(`${p}/`)) ? "product" : "site";
+      expect(classifyPath(file), `${path} -> ${file}`).toBe(expected);
+    }
   });
 });
 
@@ -197,6 +419,23 @@ describe("the workflow", () => {
   it("never fails the merge over a failed draft", () => {
     expect(WORKFLOW).toContain("::warning::");
     expect(WORKFLOW).toContain('if [ -z "$FUNCTIONS_URL" ]');
+  });
+
+  it("asks which files the merge touched, and passes them on", () => {
+    expect(WORKFLOW).toContain("pull-requests: read");
+    expect(WORKFLOW).toContain("/files?per_page=100&page=$page");
+    expect(WORKFLOW).toContain("--argjson files ");
+    expect(WORKFLOW).toContain("--argjson files_complete ");
+    expect(FN).toContain("Array.isArray(body.files)");
+    expect(FN).toContain("body.files_complete !== false");
+    expect(FN).toMatch(/isWorthAnnouncing\(\{[^}]*files,[^}]*filesComplete[^}]*\}\)/);
+  });
+
+  it("says the list is incomplete rather than claiming nothing was found", () => {
+    // Absence of a product file in a truncated list is not absence, and a
+    // long merge must not disappear because page four was never asked for.
+    expect(WORKFLOW).toContain("complete=true");
+    expect(WORKFLOW).toMatch(/complete=false\n\s*for page in/);
   });
 });
 
