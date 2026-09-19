@@ -148,6 +148,9 @@ project_id = "ghgfjnepvxvxrncmskys"
     verify_jwt = true
   [functions.track-email-open]
     verify_jwt = false
+  [functions.track-app-email-open]
+    verify_jwt = false
+
   [functions.upload-email-logo]
     verify_jwt = false
   [functions.validate-email]
