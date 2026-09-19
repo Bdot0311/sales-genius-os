@@ -6,6 +6,7 @@ import {
   isWorthAnnouncing,
   mergeItems,
   parseDraft,
+  saidNothingToAnnounce,
   type DraftItem,
 } from "../../supabase/functions/_shared/changelog-draft";
 
@@ -298,6 +299,49 @@ describe("the model's output is not trusted as-is", () => {
     // Too important to depend on the model getting it right every time.
     const mixed = parseDraft('{"title":"T","items":[{"tag":"fixed","title":"A"},{"tag":"billing","title":"B"}]}');
     expect(mixed?.items[0].tag).toBe("billing");
+  });
+});
+
+/**
+ * Declining is not failing.
+ *
+ * Rule 7 tells the model to return no items for a change a customer cannot
+ * observe. The first merge after the file gate shipped was exactly that case,
+ * and the run reported `HTTP 502 {"error":"The model returned nothing usable"}`
+ * with a warning telling whoever read it to write the entry by hand — for an
+ * entry that should not exist. The model had done its job; the function could
+ * not tell that apart from a response that was never JSON.
+ */
+describe("the model declining is reported as a skip, not a failure", () => {
+  it("recognises an empty item list, however the model wrapped it", () => {
+    expect(saidNothingToAnnounce('{"title":"","summary":"","items":[]}')).toBe(true);
+    expect(saidNothingToAnnounce('```json\n{"items": []}\n```')).toBe(true);
+    expect(saidNothingToAnnounce('Sure.\n{"title":"T","summary":"S","items":[]}')).toBe(true);
+  });
+
+  it("does not mistake a broken answer for a deliberate one", () => {
+    // This is the branch that should still be a 502.
+    expect(saidNothingToAnnounce("no json here")).toBe(false);
+    expect(saidNothingToAnnounce("")).toBe(false);
+    expect(saidNothingToAnnounce("{not json")).toBe(false);
+    expect(saidNothingToAnnounce('{"title":"T"}')).toBe(false);
+    expect(saidNothingToAnnounce('{"items":"none"}')).toBe(false);
+  });
+
+  it("never calls a usable draft a decline", () => {
+    const real = '{"title":"T","summary":"S","items":[{"tag":"new","title":"A","description":"d"}]}';
+    expect(saidNothingToAnnounce(real)).toBe(false);
+    expect(parseDraft(real)?.items).toHaveLength(1);
+  });
+
+  it("the function answers 200 with a reason instead of 502", () => {
+    expect(FN).toContain("if (saidNothingToAnnounce(raw))");
+    expect(FN).toContain('reason: "the model found nothing a customer would notice"');
+    // And the 502 is still there for the answer that really is unusable.
+    expect(FN).toContain('return json({ error: "The model returned nothing usable" }, 502);');
+    expect(FN.indexOf("saidNothingToAnnounce(raw)")).toBeLessThan(
+      FN.indexOf('"The model returned nothing usable"'),
+    );
   });
 });
 

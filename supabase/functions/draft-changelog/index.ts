@@ -23,6 +23,7 @@ import {
   isWorthAnnouncing,
   mergeItems,
   parseDraft,
+  saidNothingToAnnounce,
   type DraftItem,
 } from "../_shared/changelog-draft.ts";
 
@@ -108,6 +109,17 @@ serve(async (req) => {
     const raw = completion?.choices?.[0]?.message?.content ?? "";
     const draft = parseDraft(raw);
     if (!draft || draft.items.length === 0) {
+      // Declining is not failing. The prompt tells the model to return no items
+      // for a change a customer cannot observe, and reporting that as a failure
+      // put a warning in the workflow run asking for an entry by hand.
+      if (saidNothingToAnnounce(raw)) {
+        console.log(`[draft-changelog] PR #${prNumber ?? "?"}: the model found nothing to announce`);
+        return json({
+          skipped: true,
+          reason: "the model found nothing a customer would notice",
+          entry_date: entryDate,
+        });
+      }
       console.error("[draft-changelog] unusable model output:", String(raw).slice(0, 300));
       return json({ error: "The model returned nothing usable" }, 502);
     }

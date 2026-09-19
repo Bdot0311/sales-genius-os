@@ -290,6 +290,33 @@ Rules, in order of importance:
 
 Return only the JSON object.`;
 
+/**
+ * Whether the model deliberately declined, rather than failed.
+ *
+ * Rule 7 tells it to return no items for a change a customer cannot observe,
+ * and that is the model doing its job. Without this the two are the same
+ * answer: `parseDraft` returns null for well-formed JSON with an empty items
+ * list and for a response that was never JSON, so declining was reported as
+ * "the model returned nothing usable" — a 502, and a warning in the workflow
+ * run telling whoever reads it to write the entry by hand. The entry should
+ * not exist.
+ */
+export function saidNothingToAnnounce(raw: string): boolean {
+  const text = String(raw ?? "").trim();
+  if (!text) return false;
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  const candidate = fenced ? fenced[1] : text;
+  const start = candidate.indexOf("{");
+  const end = candidate.lastIndexOf("}");
+  if (start === -1 || end <= start) return false;
+  try {
+    const parsed = JSON.parse(candidate.slice(start, end + 1)) as Record<string, unknown>;
+    return Array.isArray(parsed?.items) && parsed.items.length === 0;
+  } catch {
+    return false;
+  }
+}
+
 /** Pull the JSON object out of a model response that may be fenced or chatty. */
 export function parseDraft(raw: string): Draft | null {
   const text = String(raw ?? "").trim();
