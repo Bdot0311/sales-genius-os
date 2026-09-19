@@ -73,7 +73,7 @@ export interface AuditInput {
 
 /** Words per email, from the sequence guide: short enough to reply to in one line. */
 export const MIN_WORDS = 50;
-export const MAX_WORDS = 100;
+export const MAX_WORDS = 90;
 /** Hard ceiling before length alone stops the email being read on a phone. */
 export const HARD_MAX_WORDS = 140;
 

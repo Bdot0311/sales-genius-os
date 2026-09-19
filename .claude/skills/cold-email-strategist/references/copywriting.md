@@ -32,7 +32,7 @@ Read these resources based on the user's question:
 
 ## Core Rules
 
-1. Under 100 words (ideally 50-75)
+1. Under 90 words (ideally 60-90)
 2. More about them than you
 3. Benefits over features
 4. Solve a problem they actually have

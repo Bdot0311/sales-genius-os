@@ -31,7 +31,7 @@ Three things make a cold email NOT boring:
 
 **Bend these at your discretion — copywriting is more art than science. But these are the defaults:**
 
-1. **Under 100 words** (ideally 60–90)
+1. **Under 90 words** (ideally 60–90)
 2. **More about them than you**
 3. **Benefits over features**
 4. **Solve a problem they actually have**

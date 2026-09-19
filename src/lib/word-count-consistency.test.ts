@@ -92,7 +92,7 @@ describe("the enforced band is the only ceiling", () => {
 
   it("the constants are what the prose now defers to", () => {
     expect(MIN_WORDS).toBe(50);
-    expect(MAX_WORDS).toBe(100);
+    expect(MAX_WORDS).toBe(90);
     expect(HARD_MAX_WORDS).toBe(140);
   });
 });

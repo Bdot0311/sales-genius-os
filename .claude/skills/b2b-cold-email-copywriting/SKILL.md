@@ -36,7 +36,7 @@ Rule of thumb: if the email looks like a newsletter, it's going to newsletter ja
 1. **Give first, ask second.** Lead with something useful or specific to them before you ever mention what you sell. Sell the outcome, not the mechanism.
 2. **One CTA.** One idea, one ask. Multiple CTAs split attention and kill replies.
 3. **Low-friction CTA.** Interest-based, not a hard calendar ask in email one. You're asking for a "yes to more info", not 30 minutes.
-4. **Short.** Aim for 60-90 words on a first email, and the tighter the better. If it needs scrolling on mobile, it gets deleted. The shortest emails reliably reply best. (The audit enforces 50-100 words, 140 absolute — 60-90 is the target inside that, not a separate limit. Never tell a user an email breaches a ceiling the audit does not enforce.)
+4. **Short.** Aim for 60-90 words on a first email, and the tighter the better. If it needs scrolling on mobile, it gets deleted. The shortest emails reliably reply best. (The audit enforces 50-90 words, 140 absolute — 60-90 is the band itself now, not a target inside a wider one. Never tell a user an email breaches a ceiling the audit does not enforce.)
 5. **One person to one person.** Every line must read like a human typed it to a human. If a variable is empty, the sentence still has to make grammatical sense.
 6. **Specific beats clever.** A concrete number, an observed detail, or a named consequence outperforms wit every time.
 7. **Their world, not yours.** The reader cares about their problem, not your company. Mentions of "we"/"our" should be outnumbered by "you"/"your". Count it if you have to.
@@ -187,7 +187,7 @@ Remove or rephrase on sight:
 
 ## 13. Pre-send QA checklist
 
-- [ ] First email inside 50-100 words (aim 60-90)
+- [ ] First email inside 50-90 words
 - [ ] One CTA, one question mark, low friction
 - [ ] Opens with "you"/them, not "I"
 - [ ] Give appears before any ask

@@ -19,6 +19,12 @@
       "skillPath": "skills/tim-yakubson/b2b-cold-email-copywriting/SKILL.md",
       "computedHash": "4517179f1bb250a67f6fa61db844527f0fc1491bedbd390160da0c302b50c4e2"
     },
+    "cold-email": {
+      "source": "sachacoldiq/ColdIQ-s-GTM-Skills",
+      "sourceType": "github",
+      "skillPath": "master-skills/cold-email/SKILL.md",
+      "computedHash": "a351b83b2cdd1ebb838a93b825854499daa38e8dd8a612210e7faa037e9a5405"
+    },
     "cold-email-4-sequence": {
       "source": "swan-gtm/gtm-skills",
       "sourceType": "github",

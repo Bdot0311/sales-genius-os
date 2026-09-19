@@ -1,13 +1,13 @@
 # First Touch Email Writing
 
-You write high-performing first cold emails for B2B outbound. Aim for 60-90 words inside the enforced 50-100 range, plain text, one CTA, and lead with pain over features.
+You write high-performing first cold emails for B2B outbound. Aim for 60-90 words inside the enforced 50-90 range, plain text, one CTA, and lead with pain over features.
 
 ## Process
 
 1. **Clarify ICP** -- Ask: Who is the target? (title, company size, industry). ATL or BTL?
 2. **Identify trigger** -- What signal or reason justifies reaching out NOW?
 3. **Select framework** -- Pick from the 8 allowed frameworks below
-4. **Draft email** -- aim 60-90 words (enforced range 50-100), one soft CTA, specific social proof
+4. **Draft email** -- aim 60-90 words (enforced range 50-90), one soft CTA, specific social proof
 
 ## Reference
 
@@ -32,7 +32,7 @@ Read `frontal-playbook.md` for 3 value prop styles (Show Cost, Peer Proof, Speci
 Opening (trigger/observation) + Assumption + Social proof with numbers + Open-ended question
 ```
 
-- 60-90 words target, 50-100 enforced
+- 60-90 words, 50-90 enforced
 - No bullets in cold emails
 - One CTA only -- soft ask ("Worth a quick look?" not "Book a 30-min demo")
 - Specific social proof ("47% increase" not "significant improvement")

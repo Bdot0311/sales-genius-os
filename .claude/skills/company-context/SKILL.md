@@ -135,7 +135,7 @@ agent that writes outreach):**
   teardown?"). Never a calendar link or proposed time on touch 1 (email-only, and
   it asks too much too early).
 - **Their world, not yours:** "you/your" must outnumber "we/our/I" in the body.
-- 50–100 words (aim 60–90), plain text, one question mark, no spam triggers.
+- 50–90 words, plain text, one question mark, no spam triggers.
 - Frameworks to draw from (installed as skills in the repo under `.claude/skills`):
   R.E.P.L.Y., Short-Trigger, Leader Responsibilities, Neutral Insight, plus the
   cold-email-engine playbook. Payoff Bank supplies the only citable stats.
