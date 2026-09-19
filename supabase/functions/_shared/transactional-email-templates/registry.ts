@@ -26,6 +26,8 @@ import { template as campaignSetupAccessRequest } from './campaign-setup-access-
 import { template as deliverabilityAlert } from './deliverability-alert.tsx'
 import { template as churnInterview } from './churn-interview.tsx'
 import { template as customerInterview } from './customer-interview.tsx'
+import { template as inactiveSignupCheckin } from './inactive-signup-checkin.tsx'
+import { template as inactiveTrialCheckin } from './inactive-trial-checkin.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'welcome-email': welcomeEmail,
@@ -45,4 +47,6 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'deliverability-alert': deliverabilityAlert,
   'churn-interview': churnInterview,
   'customer-interview': customerInterview,
+  'inactive-signup-checkin': inactiveSignupCheckin,
+  'inactive-trial-checkin': inactiveTrialCheckin,
 }
