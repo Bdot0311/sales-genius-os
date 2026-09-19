@@ -9,9 +9,12 @@ import {
   logEmailEvent,
   isRateLimited,
   retryAfterSeconds,
+  trackingPixelUrl,
+  DEFAULT_REPLY_TO,
 } from '../managed-email.ts'
 import { sendTemplateEmail } from './send-email.ts'
 import { TEMPLATES } from './registry.ts'
+
 
 export type SendAppEmailResult =
   | { sent: true }
