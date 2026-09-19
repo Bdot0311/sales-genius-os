@@ -80,8 +80,17 @@ describe("the enforced band is the only ceiling", () => {
     // Proof the rule above actually fires, rather than passing vacuously.
     expect(offendingCeilings("- 50-75 words body only. Absolute ceiling 90 words.")).toContain(75);
     expect(offendingCeilings("- Total email body MUST stay under 75 words.")).toContain(75);
-    expect(offendingCeilings("- [ ] First email under 90 words")).toContain(90);
-    expect(offendingCeilings("Emails: 60-90 words maximum")).toContain(90);
+    expect(offendingCeilings("- [ ] First email under 80 words")).toContain(80);
+    expect(offendingCeilings("Emails: 60-80 words maximum")).toContain(80);
+  });
+
+  it("does not treat the band itself as a ceiling below the band", () => {
+    // These two read 90 when MAX_WORDS was 100 and were offenders then. The
+    // band moved to 90, so the same sentences are now the rule rather than a
+    // tighter claim about it — which is the whole reason the constant is
+    // imported here instead of the number being typed in.
+    expect(offendingCeilings("- [ ] First email under 90 words")).toEqual([]);
+    expect(offendingCeilings("Emails: 60-90 words maximum")).toEqual([]);
   });
 
   it("leaves limits on other things alone", () => {
