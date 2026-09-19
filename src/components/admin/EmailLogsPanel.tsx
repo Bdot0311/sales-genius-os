@@ -218,8 +218,10 @@ export function EmailLogsPanel() {
                 <TableHead>Template</TableHead>
                 <TableHead>Recipient</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Opened</TableHead>
                 <TableHead>When</TableHead>
                 <TableHead>Error</TableHead>
+
               </TableRow>
             </TableHeader>
             <TableBody>
