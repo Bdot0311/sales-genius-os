@@ -52,6 +52,41 @@ describe("the signing key is proven before the device is blamed", () => {
     expect(await checkVapidKeyPair(publicKey, "")).toMatchObject({ problem: "missing" });
   });
 
+  it("survives the whitespace a pasted secret carries", async () => {
+    // A secret typed into a dashboard field arrives with whatever the clipboard
+    // had. atob tolerates a stray newline, but CRLF threw outright — so a
+    // correct key read as malformed and sent an operator looking for a problem
+    // that was not in the key.
+    const { publicKey, privateKey } = await freshPair();
+    for (const [label, value] of [
+      ["trailing newline", `${privateKey}\n`],
+      ["surrounding spaces", ` ${privateKey}  `],
+      ["CRLF", `${privateKey}\r\n`],
+    ] as const) {
+      expect(await checkVapidKeyPair(publicKey, value), label).toEqual({ ok: true });
+    }
+    expect(await checkVapidKeyPair(`${publicKey}\n`, privateKey)).toEqual({ ok: true });
+  });
+
+  it("still rejects a key that is genuinely the wrong size, and says so", async () => {
+    const { publicKey } = await freshPair();
+    const result = await checkVapidKeyPair(publicKey, b64u(new Uint8Array(16)));
+    expect(result).toMatchObject({ problem: "malformed" });
+    // The detail names the fault without carrying any of the key.
+    expect((result as { detail: string }).detail).toContain("16 bytes");
+  });
+
+  it("names the fault in the message an operator actually reads", () => {
+    // "not in the format the push services require" alone sends them log-diving
+    // for a length they could have been told.
+    expect(code(FN)).toContain("${keyCheck.detail}");
+  });
+
+  it("trims the secrets before using them", () => {
+    expect(code(FN)).toContain('(Deno.env.get("VAPID_PRIVATE_KEY") ?? "").trim()');
+    expect(code(FN)).toContain('(Deno.env.get("VAPID_SUBJECT") ?? "").trim()');
+  });
+
   it("calls a PEM or a truncated key malformed, which is a different thing to fix", async () => {
     const { publicKey } = await freshPair();
     expect(

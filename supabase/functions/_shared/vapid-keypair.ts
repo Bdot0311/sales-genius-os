@@ -25,7 +25,12 @@ export type VapidProblem = "missing" | "malformed" | "mismatched";
 
 const b64uToBytes = (s: string): Uint8Array | null => {
   try {
-    const padded = s.replace(/-/g, "+").replace(/_/g, "/");
+    // Whitespace is stripped before anything else. atob tolerates it, but the
+    // padding below is computed from the string's length — so a trailing
+    // newline on a pasted secret shifts the padding and decodes a valid key to
+    // the wrong number of bytes, which reads as "malformed" and sends an
+    // operator looking for a problem that is not in the key.
+    const padded = s.replace(/\s+/g, "").replace(/-/g, "+").replace(/_/g, "/");
     const raw = atob(padded + "=".repeat((4 - (padded.length % 4)) % 4));
     const out = new Uint8Array(raw.length);
     for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);

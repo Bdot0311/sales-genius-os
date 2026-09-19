@@ -26,8 +26,16 @@ Deno.serve(async (req) => {
     const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
     const VAPID_PUBLIC = "BMAMGlEpD2D7JcjZfJJSGz-6FYFxOa9ZDgubA56oUVl_K00evvZerDCknZoCStVUNAQ6uXXf3kvMFeLoepJCUFU";
-    const VAPID_PRIVATE = Deno.env.get("VAPID_PRIVATE_KEY")!;
-    const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") || "mailto:support@bdotindustries.com";
+    // Trimmed, because a secret pasted into a dashboard field very often
+    // carries a trailing newline or space — and this file's own base64url
+    // decoder computes its padding from the raw length, so one invisible
+    // character turns a perfectly good 32-byte key into something that decodes
+    // to the wrong size and reports as malformed. That is a configuration
+    // problem the operator cannot see: the value looks right everywhere they
+    // can inspect it.
+    const VAPID_PRIVATE = (Deno.env.get("VAPID_PRIVATE_KEY") ?? "").trim();
+    const VAPID_SUBJECT =
+      (Deno.env.get("VAPID_SUBJECT") ?? "").trim() || "mailto:support@bdotindustries.com";
 
     if (!VAPID_PRIVATE) return json(200, { success: false, error: "VAPID_PRIVATE_KEY not configured" });
 
@@ -66,7 +74,11 @@ Deno.serve(async (req) => {
             ? "Notifications are signed with a key that no longer matches the one your device registered under, so the push service rejects every one. Nothing is wrong with your device; this one is ours to fix."
             : keyCheck.problem === "missing"
               ? "The signing key for notifications is not set on our server, so none can be sent. Nothing is wrong with your device; this one is ours to fix."
-              : "The signing key for notifications is set but not in the format the push services require. Nothing is wrong with your device; this one is ours to fix.",
+              // The detail names the actual fault — "private key is 33 bytes,
+              // expected 32" — which is the difference between an operator
+              // knowing what to fix and going log-diving. It carries a length
+              // and a format, never any of the key itself.
+              : `The signing key for notifications is set but not in the format the push services require (${keyCheck.detail}). Nothing is wrong with your device; this one is ours to fix.`,
       });
     }
 
