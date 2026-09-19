@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { isPostHogEnabled, posthog } from "@/lib/posthog";
 import { capturePageview } from "@/lib/analytics-events";
 import { analytics as heycatch } from "@/lib/heycatch";
+import { isChunkLoadErrorMessage, recoverFromStaleChunk } from "@/lib/chunk-reload";
 
 
 import Index from "./pages/Index";
@@ -109,12 +110,7 @@ class ChunkErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
       return;
     }
 
-    try {
-      const lastReload = Number(sessionStorage.getItem(CHUNK_RELOAD_KEY) || 0);
-      if (Date.now() - lastReload < CHUNK_RELOAD_WINDOW_MS) return;
-      sessionStorage.setItem(CHUNK_RELOAD_KEY, String(Date.now()));
-    } catch {}
-    window.location.reload();
+    recoverFromStaleChunk();
   }
 
   render() {
