@@ -21,7 +21,7 @@ const corsHeaders = {
 };
 
 const LEAD_SELECT =
-  "id, user_id, company_name, contact_name, contact_email, company_website, job_title, department, seniority, industry, company_size, employee_count, annual_revenue, technologies, company_description, notes, signals, signal_type, intent_reasons, recommended_angle, linkedin_url, research_brief, research_confidence, icp_score, intent_score, intent_label, status, pipeline_stage";
+  "id, user_id, company_name, contact_name, contact_email, company_website, job_title, department, seniority, industry, company_size, employee_count, annual_revenue, technologies, company_description, notes, signals, signal_type, intent_reasons, recommended_angle, linkedin_url, research_brief, research_confidence, icp_score, intent_score, intent_label, lead_status, pipeline_stage";
 
 const MAX_LEADS = 10;
 
