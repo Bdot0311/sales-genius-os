@@ -26,7 +26,10 @@ export interface SendTemplateEmailOptions {
   /** Dedupes retries of the same logical send; defaults to a random UUID (no dedupe). */
   idempotencyKey?: string
   replyTo?: string
+  /** Open-tracking pixel URL embedded in the rendered HTML, when tracking is wanted. */
+  trackingPixelUrl?: string | null
 }
+
 
 /**
  * Renders a registered template and sends it through Lovable's managed email
