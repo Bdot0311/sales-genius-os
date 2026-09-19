@@ -92,6 +92,36 @@ export const ROADMAP: RoadmapItem[] = [
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-09-19-lead-intelligence",
+    date: "2026-09-19",
+    title: "Your saved leads can now tell you who to email first",
+    summary:
+      "Ask for an evaluation on any saved lead and you get a straight read on fit, buying intent, priority and the best next step — and your emails are written to match it.",
+    items: [
+      {
+        tag: "new",
+        title: "Fit, intent and priority on your saved leads",
+        description:
+          "Select leads on Saved Leads and hit Evaluate, or open a lead and evaluate it there. You get a clear read on how well they fit your ideal customer, how warm they look, how urgently to reach out and whether to email now or research first — with a confidence level, so a shaky call is never dressed up as a sure thing.",
+        href: "/dashboard/saved-leads",
+      },
+      {
+        tag: "new",
+        title: "Filter down to the leads worth your morning",
+        description:
+          "New filters let you show only high-priority leads, or only the ones ready to be emailed, so you can work the top of the list first instead of scrolling.",
+        href: "/dashboard/saved-leads",
+      },
+      {
+        tag: "improved",
+        title: "Emails written to the strategy for that person",
+        description:
+          "When a lead has been evaluated, your drafts follow the recommended angle: how personal to go, what kind of subject line, and what to ask for at the end. Your AI agent can read the same evaluation when you ask it about a lead.",
+        href: "/dashboard/agent",
+      },
+    ],
+  },
+  {
     id: "2026-09-18",
     date: "2026-09-18",
     title: "Deliverability alerts and warm-up are running again",

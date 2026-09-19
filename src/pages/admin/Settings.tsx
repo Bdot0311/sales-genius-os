@@ -19,6 +19,7 @@ import type { Json } from "@/integrations/supabase/types";
 import { EmailLogsPanel } from "@/components/admin/EmailLogsPanel";
 import { DemoModeCard } from "@/components/admin/DemoModeCard";
 import { ChangelogTab } from "@/components/admin/ChangelogTab";
+import { LeadIntelligencePanel } from "@/components/admin/LeadIntelligencePanel";
 
 
 function debounce<T extends (...args: any[]) => any>(fn: T, ms: number): T {
@@ -309,6 +310,7 @@ const AdminSettings = () => {
             </TabsTrigger>
           </TabsList>
 
+          {/* Decision-layer observability lives with the feature flag that gates it. */}
           {/* Drafts written by merged pull requests, published from here. */}
           <TabsContent value="changelog" className="space-y-4">
             <ChangelogTab />
@@ -492,6 +494,8 @@ const AdminSettings = () => {
 
           {/* Feature Flags */}
           <TabsContent value="features" className="space-y-4">
+            <LeadIntelligencePanel />
+
             <div className="flex justify-between items-center">
               <p className="text-sm text-muted-foreground">
                 Manage feature rollouts and A/B testing
