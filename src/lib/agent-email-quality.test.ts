@@ -241,7 +241,21 @@ describe("a lead the agent cannot write well for does not block the queue", () =
   });
 
   it("never sends PostgREST an empty IN group, which it rejects", () => {
-    expect(RUN).toContain("if (coolingOff.length > 0)");
+    // Pinned as the guarantee, not as one spelling of it. This was an `if`
+    // statement until reassigning a PostgREST filter builder drove TypeScript
+    // past its instantiation depth limit and it became a conditional
+    // expression; both are correct, and an assertion on the keyword failed on
+    // a change that kept the behaviour exactly. What must hold is that the
+    // filter is only ever built with something in the list.
+    const filter = '.not("id", "in", `(${coolingOff.join(",")})`)';
+    const at = RUN.indexOf(filter);
+    expect(at).toBeGreaterThan(-1);
+    // One place builds it, so one guard is enough to cover it.
+    expect(RUN.indexOf(filter, at + 1)).toBe(-1);
+    const guardAt = RUN.lastIndexOf("coolingOff.length > 0", at);
+    expect(guardAt).toBeGreaterThan(-1);
+    // And the guard governs this filter rather than sitting somewhere above it.
+    expect(at - guardAt).toBeLessThan(600);
   });
 
   it("leaves the lead itself untouched, so enriching it brings it back", () => {
