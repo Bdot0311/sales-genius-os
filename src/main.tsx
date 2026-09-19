@@ -1,25 +1,19 @@
 import { createRoot, hydrateRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import {
+  isChunkLoadErrorMessage,
+  recoverFromStaleChunk,
+  clearStaleChunkFlag,
+} from "./lib/chunk-reload";
 
 
 // Self-heal stale chunk references after a redeploy. When a dynamic import
-// fails because the hashed chunk URL no longer exists, force a one-shot
-// reload so the browser fetches the fresh index.html + new chunk hashes.
-const CHUNK_RELOAD_KEY = "__chunk_reload_attempt__";
-const CHUNK_RELOAD_WINDOW_MS = 30_000;
-const isChunkLoadError = (msg: string) =>
-  /Importing a module script failed|Failed to fetch dynamically imported module|error loading dynamically imported module|ChunkLoadError/i.test(
-    msg
-  );
-const tryReload = () => {
-  try {
-    const lastReload = Number(sessionStorage.getItem(CHUNK_RELOAD_KEY) || 0);
-    if (Date.now() - lastReload < CHUNK_RELOAD_WINDOW_MS) return;
-    sessionStorage.setItem(CHUNK_RELOAD_KEY, String(Date.now()));
-  } catch {}
-  location.reload();
-};
+// fails because the hashed chunk URL no longer exists, reload with a
+// cache-busting URL so the browser fetches a fresh index.html + new chunk
+// hashes (see ./lib/chunk-reload).
+const isChunkLoadError = isChunkLoadErrorMessage;
+const tryReload = recoverFromStaleChunk;
 window.addEventListener("vite:preloadError", (e) => {
   e.preventDefault();
   tryReload();
@@ -76,6 +70,9 @@ if (rootEl.dataset.prerendered === "true") {
 } else {
   createRoot(rootEl).render(<App />);
 }
+// App mounted successfully — reset the chunk-reload attempt counter so a
+// future stale-chunk error later in the session gets a fresh set of retries.
+window.setTimeout(clearStaleChunkFlag, 5_000);
 
 // Error monitoring is loaded after the first paint so it stays off the LCP
 // critical path. Errors thrown before this resolves are still caught by the

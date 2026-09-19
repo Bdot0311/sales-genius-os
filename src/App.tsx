@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { isPostHogEnabled, posthog } from "@/lib/posthog";
 import { capturePageview } from "@/lib/analytics-events";
 import { analytics as heycatch } from "@/lib/heycatch";
+import { isChunkLoadErrorMessage, recoverFromStaleChunk } from "@/lib/chunk-reload";
 
 
 import Index from "./pages/Index";
@@ -93,12 +94,8 @@ const PageLoader = () => (
   </div>
 );
 
-const CHUNK_RELOAD_KEY = "__chunk_reload_attempt__";
-const CHUNK_RELOAD_WINDOW_MS = 30_000;
 const isChunkLoadError = (error: unknown) =>
-  /Importing a module script failed|Failed to fetch dynamically imported module|error loading dynamically imported module|ChunkLoadError/i.test(
-    String(error instanceof Error ? error.message : error)
-  );
+  isChunkLoadErrorMessage(String(error instanceof Error ? error.message : error));
 
 class ChunkErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false };
@@ -113,12 +110,7 @@ class ChunkErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
       return;
     }
 
-    try {
-      const lastReload = Number(sessionStorage.getItem(CHUNK_RELOAD_KEY) || 0);
-      if (Date.now() - lastReload < CHUNK_RELOAD_WINDOW_MS) return;
-      sessionStorage.setItem(CHUNK_RELOAD_KEY, String(Date.now()));
-    } catch {}
-    window.location.reload();
+    recoverFromStaleChunk();
   }
 
   render() {
