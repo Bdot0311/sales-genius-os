@@ -99,8 +99,14 @@ describe("the VAPID subject is checked too", () => {
     // it could not say which, so the operator still had to go log-diving,
     // which is the round trip this whole check exists to remove.
     const fn = code(FN);
+    // Matches template literals as well as quoted strings: the malformed-key
+    // message became a template literal so it could name the byte count, and a
+    // regex that only sees double quotes would silently stop counting it —
+    // reporting three distinct messages where there are four.
     const messages = [
-      ...fn.matchAll(/"(The signing key[^"]+|The contact address[^"]+|Notifications are signed[^"]+)"/g),
+      ...fn.matchAll(
+        /["`](The signing key[^"`]+|The contact address[^"`]+|Notifications are signed[^"`]+)["`]/g,
+      ),
     ].map((m) => m[1]);
     expect(messages.length).toBeGreaterThanOrEqual(4);
     expect(new Set(messages).size, "each cause needs its own wording").toBe(messages.length);
