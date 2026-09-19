@@ -112,7 +112,8 @@ serve(async (req) => {
     const results: Record<string, unknown> = {};
     for (const lead of leads) {
       try {
-        const { decision, cached } = await evaluateLeadWithJEV(admin, lead as LeadContext, {
+        const context = { ...(lead as Record<string, unknown>), status: (lead as any).lead_status } as LeadContext;
+        const { decision, cached } = await evaluateLeadWithJEV(admin, context, {
           seller,
           force,
           triggerSource: ids.length > 1 ? "bulk" : "manual",
