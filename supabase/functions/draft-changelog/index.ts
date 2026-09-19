@@ -47,6 +47,10 @@ serve(async (req) => {
     const prTitle = String(body.pr_title ?? "").trim();
     const prBody = String(body.pr_body ?? "").slice(0, 8000);
     const labels: string[] = Array.isArray(body.labels) ? body.labels.map(String) : [];
+    // What the merge touched. A title is a claim about a change; this is the
+    // change, and it is what decides whether the change is news at all.
+    const files: string[] = Array.isArray(body.files) ? body.files.map(String) : [];
+    const filesComplete = body.files_complete !== false;
     const sha = String(body.sha ?? "").slice(0, 40);
     // The release date, in UTC, from when it merged — not when this ran.
     const mergedAt = body.merged_at ? new Date(String(body.merged_at)) : new Date();
@@ -54,11 +58,12 @@ serve(async (req) => {
 
     if (!prTitle) return json({ error: "pr_title is required" }, 400);
 
-    // Not every merge is news. A dependency bump, a test, a refactor and a
-    // changelog change itself are all invisible to a customer, and an entry
-    // about one is worse than no entry.
-    const verdict = isWorthAnnouncing({ title: prTitle, body: prBody, labels });
+    // Not every merge is news. A test, a script, a CI workflow, the skills
+    // bundle, the admin panel and a new marketing page are all things a
+    // customer cannot observe, and an entry about one is worse than no entry.
+    const verdict = isWorthAnnouncing({ title: prTitle, body: prBody, labels, files, filesComplete });
     if (!verdict.announce) {
+      console.log(`[draft-changelog] PR #${prNumber ?? "?"} skipped: ${verdict.reason}`);
       return json({ skipped: true, reason: verdict.reason, entry_date: entryDate });
     }
 
@@ -81,7 +86,13 @@ serve(async (req) => {
           { role: "system", content: DRAFT_SYSTEM_PROMPT },
           {
             role: "user",
-            content: `Pull request #${prNumber ?? "?"}\n\nTitle: ${prTitle}\n\nDescription:\n${prBody || "(none)"}`,
+            content:
+              `Pull request #${prNumber ?? "?"}\n\nTitle: ${prTitle}\n\nDescription:\n${prBody || "(none)"}` +
+              // The files a customer could notice, so a merge that changed one
+              // product file and nine internal ones is written up as the one.
+              (verdict.product.length
+                ? `\n\nCustomer-facing files changed:\n${verdict.product.slice(0, 40).join("\n")}`
+                : ""),
           },
         ],
       }),

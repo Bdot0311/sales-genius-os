@@ -41,6 +41,15 @@ const SILENT_PREFIXES = /^(chore|ci|build|test|refactor|style|docs|revert)(\([^)
 /** An explicit opt-out, for the cases the heuristics get wrong. */
 const SILENT_LABELS = new Set(["no-changelog", "skip-changelog", "internal"]);
 
+/**
+ * An explicit opt-in, which beats every check below it.
+ *
+ * The file rules are deliberately strict, and strict rules are wrong sometimes.
+ * This is the one-label answer for a change that is real news from a path the
+ * rules call quiet, and it is why being strict is safe.
+ */
+const ANNOUNCE_LABELS = new Set(["changelog", "announce", "user-facing", "customer-facing"]);
+
 const SILENT_TITLE_HINTS = [
   /^bump /i,
   /^update (dependencies|deps|lockfile|snapshot)/i,
@@ -50,25 +59,202 @@ const SILENT_TITLE_HINTS = [
   /changelog/i,
 ];
 
-export function isWorthAnnouncing(pr: { title: string; body?: string; labels?: string[] }): {
+/**
+ * Which surface a changed file belongs to.
+ *
+ * The title rules above used to be the whole gate, and against this repository
+ * they catch almost nothing: the conventional-commit vocabulary they match is
+ * one nobody here has ever typed. Of the thirty merges before this was written,
+ * twenty-eight reached the model — among them a skills bundle, a prerender
+ * script, a seed-inbox verifier and a byte count in a diagnostic message, none
+ * of which a customer could observe if they went looking.
+ *
+ * A title is a claim about a change. The files are the change. So the decision
+ * is made from the file list, in three kinds:
+ *
+ *   product  — the app behind the login, and the functions and data that run
+ *              it. The only kind worth announcing.
+ *   site     — the public marketing site, the blog, the legal pages. Real work,
+ *              but a customer who already signed up did not open What's New to
+ *              read that a comparison page exists.
+ *   internal — tests, scripts, CI, docs, config, generated types, the skills
+ *              bundle, the admin panel, and this changelog machinery itself.
+ */
+export type ChangedSurface = "product" | "site" | "internal";
+
+/**
+ * Checked first, so a test beside a product file is still a test and the admin
+ * panel is still internal however it is nested.
+ */
+const INTERNAL_PATHS: RegExp[] = [
+  /\.(test|spec)\.[cm]?[jt]sx?$/i,
+  /^src\/test\//,
+  /^(scripts|docs|drizzle|domain-connect-templates)\//,
+  /^\.(github|claude|agents|husky|vscode)\//,
+  /\.md$/i,
+  /^src\/(entry-server|main|App)\.tsx$/,
+  /^src\/App\.css$/,
+  /^src\/integrations\/supabase\/types\.ts$/,
+  // The router is plumbing: the change a customer notices arrives in the page or
+  // component being routed to, and that file is judged on its own. A redirect
+  // with nothing behind it is the rare case the announce label exists for.
+
+  /^src\/(components|pages)\/admin\//,
+  /^src\/pages\/Admin\.tsx$/,
+  /^src\/lib\/changelog/,
+  /^supabase\/functions\/(draft-changelog\/|_shared\/changelog-)/,
+  /^supabase\/config\.toml$/,
+  /^(package|package-lock|components|deno|skills-lock)\.json$/,
+  /^bun\.lock/,
+  /^tsconfig[^/]*$/,
+  /\.tsbuildinfo$/,
+  /^[^/]*\.config\.[cm]?[jt]s$/,
+  /^(netlify\.toml|vite-plugin-seo-routes\.ts)$/,
+  /^[^/]*\.sql$/,
+  /^\.[^/]*$/,
+  /^(\.lovable|supabase\/\.temp)\//,
+  /\.d\.ts$/,
+];
+
+/**
+ * Checked before the site rules, for the handful of files that live in a public
+ * folder but are the product: the installed app, and the service worker that
+ * delivers a notification to a customer's phone.
+ */
+const PRODUCT_PATHS: RegExp[] = [
+  /^public\/(service-worker|sw|push-sw|firebase-messaging-sw)\.js$/,
+  /^public\/manifest\.webmanifest$/,
+];
+
+/**
+ * The pages behind a login, by component name.
+ *
+ * Listed rather than inferred because the edge function cannot read the router,
+ * and listed as the positive case because a page that is not one of these is a
+ * public page. That is the safe direction for a list that will go stale: a new
+ * marketing page is quiet by default, and a new page inside the product fails
+ * the test that checks this set against the routes in App.tsx until it is added.
+ */
+const PRODUCT_PAGES = new Set([
+  "Accounts",
+  "Agent",
+  "AgentChat",
+  "Analytics",
+  "Auth",
+  "Calendar",
+  "Checkout",
+  "ClientPortal",
+  "Coach",
+  "Confirmation",
+  "Connect",
+  "Dashboard",
+  "DashboardIntegrations",
+  "Deliverability",
+  "HelpCenter",
+  "ICP",
+  "Inbox",
+  "Install",
+  "Leads",
+  "LiveCoaching",
+  "MessageBlocks",
+  "OAuthConsent",
+  "Onboarding",
+  "OnboardingStatus",
+  "Outreach",
+  "Pipeline",
+  "Playbooks",
+  "SavedLeads",
+  "SequenceDetail",
+  "Sequences",
+  "Settings",
+  "WhatsNew",
+]);
+
+const SITE_PATHS: RegExp[] = [
+  /^src\/components\/(landing|seo)\//,
+  /^src\/lib\/(related-posts|blog|seo|sitemap)/,
+  /^src\/components\/(Navbar|Footer|NavLink|Pricing)\.tsx$/,
+  /^src\/data\/(blog|competitors)/,
+  /^public\//,
+  /^index\.html$/,
+];
+
+export function classifyPath(path: string): ChangedSurface {
+  const file = String(path ?? "").trim().replace(/^\.\//, "");
+  if (!file) return "internal";
+
+  for (const pattern of INTERNAL_PATHS) {
+    if (pattern.test(file)) return "internal";
+  }
+
+  const page = file.match(/^src\/pages\/([^/]+)\.tsx$/);
+  if (page) return PRODUCT_PAGES.has(page[1]) ? "product" : "site";
+
+  for (const pattern of PRODUCT_PATHS) {
+    if (pattern.test(file)) return "product";
+  }
+  for (const pattern of SITE_PATHS) {
+    if (pattern.test(file)) return "site";
+  }
+
+  // Everything left is the product: the dashboard components, the hooks and
+  // libraries behind them, the edge functions, the schema, the workers.
+  return "product";
+}
+
+export interface AnnounceVerdict {
   announce: boolean;
   reason?: string;
-} {
-  const title = String(pr.title ?? "").trim();
-  if (!title) return { announce: false, reason: "no title" };
+  /** The changed files a customer could actually notice, for the model to write about. */
+  product: string[];
+}
 
-  for (const label of pr.labels ?? []) {
-    if (SILENT_LABELS.has(String(label).toLowerCase())) {
-      return { announce: false, reason: `labelled ${label}` };
+export function isWorthAnnouncing(pr: {
+  title: string;
+  body?: string;
+  labels?: string[];
+  files?: string[];
+  /**
+   * False when the file list was cut short. Absence of a product file then
+   * proves nothing, so the merge is announced rather than silently dropped.
+   */
+  filesComplete?: boolean;
+}): AnnounceVerdict {
+  const title = String(pr.title ?? "").trim();
+  const files = (pr.files ?? []).map((f) => String(f).trim()).filter(Boolean);
+  const product = files.filter((f) => classifyPath(f) === "product");
+
+  if (!title) return { announce: false, reason: "no title", product };
+
+  const labels = (pr.labels ?? []).map((l) => String(l).toLowerCase().trim());
+  for (const label of labels) {
+    if (SILENT_LABELS.has(label)) {
+      return { announce: false, reason: `labelled ${label}`, product };
     }
   }
+  if (labels.some((l) => ANNOUNCE_LABELS.has(l))) {
+    return { announce: true, product };
+  }
+
   if (SILENT_PREFIXES.test(title)) {
-    return { announce: false, reason: "conventional-commit type that customers never see" };
+    return { announce: false, reason: "conventional-commit type that customers never see", product };
   }
   for (const hint of SILENT_TITLE_HINTS) {
-    if (hint.test(title)) return { announce: false, reason: "housekeeping" };
+    if (hint.test(title)) return { announce: false, reason: "housekeeping", product };
   }
-  return { announce: true };
+
+  if (product.length > 0) return { announce: true, product };
+  // No file list means nothing to judge on — the same answer as before this
+  // check existed, so an older workflow or a failed API call still drafts.
+  if (files.length === 0) return { announce: true, product };
+  if (pr.filesComplete === false) return { announce: true, product };
+
+  const kinds = [...new Set(files.map(classifyPath))].sort();
+  return {
+    announce: false,
+    reason: `nothing a customer uses changed (${kinds.join(" and ")} only)`,
+    product,
+  };
 }
 
 /**
@@ -98,7 +284,7 @@ Rules, in order of importance:
 
 6. Tag honestly. "new" is something that did not exist. "improved" is something that got better. "fixed" is something that was broken. Do not inflate a fix into a feature.
 
-7. If the pull request only changes tests, internal structure, or developer tooling, return {"items": []}.
+7. If the pull request only changes tests, internal structure, or developer tooling, return {"items": []}. When you are given a list of customer-facing files, that list is your evidence: write about what those files changed and nothing else.
 
 8. British or American spelling, follow the PR. No exclamation marks. No "we're excited to". No emoji.
 
