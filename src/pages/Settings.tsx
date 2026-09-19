@@ -294,6 +294,8 @@ const Settings = () => {
              * edges so a cut-off label reads as "more over there" rather than
              * as a rendering bug.
              */
+            const listCls =
+              "settings-tab-list flex h-auto min-h-0 w-max min-w-full gap-1 overflow-visible bg-transparent p-0 lg:w-full lg:flex-col lg:items-stretch";
             return (
               <div className="settings-tab-scroller -mx-1 overflow-x-auto px-1 pb-1 lg:mx-0 lg:overflow-visible lg:rounded-xl lg:border lg:border-border/50 lg:bg-card lg:p-2 lg:px-2 lg:pb-2">
                 <TabsList className={listCls}>
