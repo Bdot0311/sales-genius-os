@@ -184,6 +184,15 @@ export function EmailLogsPanel() {
               ))}
             </SelectContent>
           </Select>
+          <Select value={engagement} onValueChange={setEngagement}>
+            <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Opened or not</SelectItem>
+              <SelectItem value="opened">Opened</SelectItem>
+              <SelectItem value="unopened">Sent, not opened</SelectItem>
+            </SelectContent>
+          </Select>
+
           <Input
             placeholder="Filter by recipient…"
             value={search}
