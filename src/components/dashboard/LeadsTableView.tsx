@@ -5,6 +5,8 @@ import { formatDistanceToNow } from "date-fns";
 import { Globe, CheckCircle, Loader2 } from "lucide-react";
 import { ICPScoreBreakdown } from "./ICPScoreBreakdown";
 import { IntentScoreBadge } from "./IntentScoreBadge";
+import { LeadIntelligenceBadge } from "./LeadIntelligenceBadge";
+import type { LeadDecision } from "@/lib/lead-intelligence";
 
 interface Lead {
   id: string;
@@ -37,6 +39,9 @@ interface LeadsTableViewProps {
   onLeadClick: (lead: Lead) => void;
   onActivateLead?: (leadId: string) => void;
   activatingLead?: string | null;
+  /** Saved evaluations, keyed by lead id. Absent when the layer is off. */
+  decisions?: Record<string, LeadDecision>;
+  showIntelligence?: boolean;
 }
 
 export const LeadsTableView = ({
@@ -47,6 +52,8 @@ export const LeadsTableView = ({
   onLeadClick,
   onActivateLead,
   activatingLead,
+  decisions,
+  showIntelligence = false,
 }: LeadsTableViewProps) => {
   const getScoreColor = (score: number | null) => {
     if (!score) return "secondary";
@@ -72,6 +79,9 @@ export const LeadsTableView = ({
             <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium py-2.5 px-4">Industry</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium py-2.5 px-4">ICP</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium py-2.5 px-4">Intent</TableHead>
+            {showIntelligence && (
+              <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium py-2.5 px-4">AI</TableHead>
+            )}
             <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium py-2.5 px-4">Source</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium py-2.5 px-4">Added</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium py-2.5 px-4 w-32">Action</TableHead>
@@ -124,6 +134,11 @@ export const LeadsTableView = ({
                 <TableCell className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
                   <IntentScoreBadge lead={lead} />
                 </TableCell>
+                {showIntelligence && (
+                  <TableCell className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
+                    <LeadIntelligenceBadge decision={decisions?.[lead.id]} />
+                  </TableCell>
+                )}
                 <TableCell className="py-3 px-4"><span className="text-xs text-muted-foreground">{lead.source || "—"}</span></TableCell>
                 <TableCell className="py-3 px-4 text-xs text-muted-foreground">
                   {formatDistanceToNow(new Date(lead.created_at), { addSuffix: true })}

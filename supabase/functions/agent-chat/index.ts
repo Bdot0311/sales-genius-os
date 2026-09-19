@@ -337,6 +337,18 @@ const TOOLS = [
   {
     type: "function",
     function: {
+      name: "get_lead_intelligence",
+      description: "Read the SAVED AI evaluation (fit, buying intent, priority, recommended next step, email strategy) for up to 10 leads. Read-only: it never runs a new evaluation. Leads with no saved evaluation come back as not_evaluated.",
+      parameters: {
+        type: "object",
+        properties: { lead_ids: { type: "array", items: { type: "string" } } },
+        required: ["lead_ids"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "enrich_leads",
       description:
         "Enrich one or more leads (find work email, job title, company data) using the OutReign Lead Intelligence Network.",
@@ -1672,6 +1684,35 @@ serve(async (req) => {
             detail: data ? `${data.company_name ?? "Lead"}` : "Lead not found",
           });
           return data ?? { error: "Lead not found" };
+        }
+
+        case "get_lead_intelligence": {
+          const requestedIds: string[] = (args.lead_ids ?? []).slice(0, 10).map((x: any) => String(x));
+          const { owned } = await ownedLeadIds(requestedIds);
+          const { data: rows } = await admin
+            .from("lead_decisions")
+            .select("lead_id, decision_fields, status, evaluated_at, safe_to_automate")
+            .eq("user_id", userId)
+            .in("lead_id", owned.length ? owned : ["00000000-0000-0000-0000-000000000000"]);
+          const byLead = new Map((rows ?? []).map((r: any) => [r.lead_id, r]));
+          const out = owned.map((id) => {
+            const row = byLead.get(id);
+            if (!row || row.status !== "ok") return { lead_id: id, not_evaluated: true };
+            return {
+              lead_id: id,
+              evaluated_at: row.evaluated_at,
+              safe_to_automate: row.safe_to_automate,
+              decisions: row.decision_fields,
+            };
+          });
+          const evaluated = out.filter((o: any) => !o.not_evaluated).length;
+          toolEvents.push({
+            name,
+            label: "Read lead intelligence",
+            status: "ok",
+            detail: `${evaluated}/${owned.length} lead(s) have a saved evaluation`,
+          });
+          return { leads: out };
         }
 
         case "enrich_leads": {

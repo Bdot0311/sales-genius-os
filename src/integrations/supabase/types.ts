@@ -2553,6 +2553,179 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_decision_events: {
+        Row: {
+          automation_review: string | null
+          avg_confidence: number | null
+          created_at: string
+          email_priority: string | null
+          error_kind: string | null
+          id: string
+          latency_ms: number | null
+          lead_id: string | null
+          provider: string
+          provider_model: string | null
+          send_recommendation: string | null
+          status: string
+          trigger_source: string | null
+          user_id: string | null
+        }
+        Insert: {
+          automation_review?: string | null
+          avg_confidence?: number | null
+          created_at?: string
+          email_priority?: string | null
+          error_kind?: string | null
+          id?: string
+          latency_ms?: number | null
+          lead_id?: string | null
+          provider?: string
+          provider_model?: string | null
+          send_recommendation?: string | null
+          status: string
+          trigger_source?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          automation_review?: string | null
+          avg_confidence?: number | null
+          created_at?: string
+          email_priority?: string | null
+          error_kind?: string | null
+          id?: string
+          latency_ms?: number | null
+          lead_id?: string | null
+          provider?: string
+          provider_model?: string | null
+          send_recommendation?: string | null
+          status?: string
+          trigger_source?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      lead_decisions: {
+        Row: {
+          automation_review: string | null
+          automation_review_confidence: number | null
+          buying_intent: string | null
+          buying_intent_confidence: number | null
+          campaign_id: string | null
+          created_at: string
+          cta_strategy: string | null
+          cta_strategy_confidence: number | null
+          email_priority: string | null
+          email_priority_confidence: number | null
+          error_message: string | null
+          evaluated_at: string
+          follow_up_timing: string | null
+          follow_up_timing_confidence: number | null
+          icp_fit: string | null
+          icp_fit_confidence: number | null
+          id: string
+          input_fingerprint: string | null
+          input_snapshot: Json | null
+          latency_ms: number | null
+          lead_id: string
+          personalization_depth: string | null
+          personalization_depth_confidence: number | null
+          provider: string
+          provider_model: string | null
+          raw_response: Json | null
+          send_recommendation: string | null
+          send_recommendation_confidence: number | null
+          sequence_length: string | null
+          sequence_length_confidence: number | null
+          status: string
+          subject_strategy: string | null
+          subject_strategy_confidence: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          automation_review?: string | null
+          automation_review_confidence?: number | null
+          buying_intent?: string | null
+          buying_intent_confidence?: number | null
+          campaign_id?: string | null
+          created_at?: string
+          cta_strategy?: string | null
+          cta_strategy_confidence?: number | null
+          email_priority?: string | null
+          email_priority_confidence?: number | null
+          error_message?: string | null
+          evaluated_at?: string
+          follow_up_timing?: string | null
+          follow_up_timing_confidence?: number | null
+          icp_fit?: string | null
+          icp_fit_confidence?: number | null
+          id?: string
+          input_fingerprint?: string | null
+          input_snapshot?: Json | null
+          latency_ms?: number | null
+          lead_id: string
+          personalization_depth?: string | null
+          personalization_depth_confidence?: number | null
+          provider?: string
+          provider_model?: string | null
+          raw_response?: Json | null
+          send_recommendation?: string | null
+          send_recommendation_confidence?: number | null
+          sequence_length?: string | null
+          sequence_length_confidence?: number | null
+          status?: string
+          subject_strategy?: string | null
+          subject_strategy_confidence?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          automation_review?: string | null
+          automation_review_confidence?: number | null
+          buying_intent?: string | null
+          buying_intent_confidence?: number | null
+          campaign_id?: string | null
+          created_at?: string
+          cta_strategy?: string | null
+          cta_strategy_confidence?: number | null
+          email_priority?: string | null
+          email_priority_confidence?: number | null
+          error_message?: string | null
+          evaluated_at?: string
+          follow_up_timing?: string | null
+          follow_up_timing_confidence?: number | null
+          icp_fit?: string | null
+          icp_fit_confidence?: number | null
+          id?: string
+          input_fingerprint?: string | null
+          input_snapshot?: Json | null
+          latency_ms?: number | null
+          lead_id?: string
+          personalization_depth?: string | null
+          personalization_depth_confidence?: number | null
+          provider?: string
+          provider_model?: string | null
+          raw_response?: Json | null
+          send_recommendation?: string | null
+          send_recommendation_confidence?: number | null
+          sequence_length?: string | null
+          sequence_length_confidence?: number | null
+          status?: string
+          subject_strategy?: string | null
+          subject_strategy_confidence?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_decisions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_index: {
         Row: {
           canonical_domain: string | null
@@ -5832,6 +6005,20 @@ export type Database = {
           template_name: string
         }[]
       }
+      admin_get_lead_intelligence_outcomes: {
+        Args: never
+        Returns: {
+          bucket: string
+          dimension: string
+          emails_sent: number
+          leads: number
+          replies: number
+        }[]
+      }
+      admin_get_lead_intelligence_stats: {
+        Args: { _days?: number }
+        Returns: Json
+      }
       admin_get_realtime_status: {
         Args: never
         Returns: {
@@ -6195,6 +6382,7 @@ export type Database = {
       }
       internal_job_key: { Args: never; Returns: string }
       is_demo_mode: { Args: { _user_id: string }; Returns: boolean }
+      lead_intelligence_enabled: { Args: never; Returns: boolean }
       lock_expired_trials: { Args: never; Returns: undefined }
       log_security_event: {
         Args: {

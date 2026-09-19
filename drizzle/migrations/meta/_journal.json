@@ -85,6 +85,20 @@
       "when": 1789857621162,
       "tag": "0011_restrict_policies_to_authenticated_and_email_assets_upload",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1789857898488,
+      "tag": "0012_lead_decisions_intelligence_layer",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1789858265102,
+      "tag": "0013_lead_intelligence_enabled_rpc",
+      "breakpoints": true
     }
   ]
 }
