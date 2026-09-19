@@ -90,21 +90,33 @@ export function EmailLogsPanel() {
     return logs.filter((l) => {
       if (statusFilter !== "all" && l.status !== statusFilter) return false;
       if (templateFilter !== "all" && l.template_name !== templateFilter) return false;
+      if (engagement === "opened" && !l.opened_at) return false;
+      if (engagement === "unopened" && (l.opened_at || l.status !== "sent")) return false;
       if (search && !(l.recipient_email || "").toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-  }, [logs, statusFilter, templateFilter, search]);
+  }, [logs, statusFilter, templateFilter, engagement, search]);
 
   const stats = useMemo(() => {
-    const s = { total: filtered.length, sent: 0, failed: 0, suppressed: 0, pending: 0 };
+    const s = { total: filtered.length, sent: 0, failed: 0, suppressed: 0, pending: 0, opened: 0 };
     filtered.forEach((l) => {
       if (l.status === "sent") s.sent++;
       else if (l.status === "dlq" || l.status === "failed" || l.status === "bounced" || l.status === "complained") s.failed++;
       else if (l.status === "suppressed") s.suppressed++;
       else if (l.status === "pending") s.pending++;
+      if (l.opened_at) s.opened++;
     });
     return s;
   }, [filtered]);
+
+  // Replies never come back to the managed sender, so surface the inbox they do
+  // reach rather than leaving it to be guessed.
+  const replyInboxes = useMemo(() => {
+    const s = new Set<string>();
+    logs.forEach((l) => l.reply_to && s.add(l.reply_to));
+    return Array.from(s).sort();
+  }, [logs]);
+
 
   return (
     <Panel>
