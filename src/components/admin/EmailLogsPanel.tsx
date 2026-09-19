@@ -254,7 +254,7 @@ export function EmailLogsPanel() {
                           title={`${log.open_count ?? 1} open${(log.open_count ?? 1) === 1 ? "" : "s"}`}
                         >
                           {formatDistanceToNow(new Date(log.opened_at), { addSuffix: true })}
-                          {(log.open_count ?? 1) > 1 ? ` ·  ${log.open_count}×` : ""}
+                          {(log.open_count ?? 1) > 1 ? ` · ${log.open_count}×` : ""}
                         </span>
                       ) : (
                         <span className="text-muted-foreground">—</span>
