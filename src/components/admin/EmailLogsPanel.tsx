@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
+import { AlertCircle, Inbox, Loader2, RefreshCw } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface EmailLog {
