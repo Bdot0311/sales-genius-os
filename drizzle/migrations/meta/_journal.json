@@ -113,6 +113,13 @@
       "when": 1789911795331,
       "tag": "0015_billing_lifecycle_auto_downgrade_and_logging",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1789912621573,
+      "tag": "0016_reconcile_stripe_subscriptions_cron",
+      "breakpoints": true
     }
   ]
 }
