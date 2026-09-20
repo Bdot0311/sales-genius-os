@@ -50,12 +50,17 @@ const SEVERITY_BADGE: Record<string, string> = {
 };
 
 const CATEGORY_LABEL: Record<string, string> = {
+  billing_subscription_started: "Subscription started",
   billing_cancellation: "Cancelled",
   billing_cancellation_scheduled: "Cancellation scheduled",
   billing_payment_failed: "Payment failed",
   billing_payment_action_required: "Card authentication needed",
   billing_dispute: "Chargeback",
   billing_subscription_paused: "Subscription paused",
+  billing_auto_paused: "Auto-paused (unpaid)",
+  billing_auto_resumed: "Access restored (paid)",
+  billing_reconciled: "Corrected to match Stripe",
+  billing_trial_ended: "Trial ended",
 };
 
 export default function AdminBilling() {
@@ -89,12 +94,29 @@ export default function AdminBilling() {
     const open = issues.filter((i) => !i.resolved);
     const byCat = (cat: string) => open.filter((i) => i.category === cat).length;
     return {
+      started: byCat("billing_subscription_started"),
       failed: byCat("billing_payment_failed") + byCat("billing_payment_action_required"),
       cancelled: byCat("billing_cancellation"),
       scheduled: byCat("billing_cancellation_scheduled"),
       disputes: byCat("billing_dispute"),
     };
   }, [issues]);
+
+  const [reconciling, setReconciling] = useState(false);
+
+  const reconcile = async () => {
+    setReconciling(true);
+    const { data, error } = await supabase.functions.invoke("reconcile-stripe-subscriptions");
+    setReconciling(false);
+    if (error) return toast.error("Could not check subscriptions against Stripe");
+    const result = data as { corrected?: number } | null;
+    toast.success(
+      result?.corrected
+        ? `${result.corrected} account${result.corrected === 1 ? "" : "s"} corrected to match Stripe`
+        : "Every account already matches Stripe",
+    );
+    load();
+  };
 
   const resolve = async (id: string) => {
     setBusy(id);
@@ -163,6 +185,10 @@ export default function AdminBilling() {
               Show handled
             </Label>
           </div>
+          <Button variant="outline" size="sm" onClick={reconcile} disabled={reconciling}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${reconciling ? "animate-spin" : ""}`} />
+            Check against Stripe
+          </Button>
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
             Refresh
@@ -174,6 +200,7 @@ export default function AdminBilling() {
           spent on one figure, four times across. */}
       <MetricStrip
         metrics={[
+          { label: "New subscriptions", value: stats.started, note: "Signed up and paying" },
           { label: "Payment issues", value: stats.failed, note: "Charges that did not go through" },
           { label: "Cancelled", value: stats.cancelled, note: "Subscriptions already ended" },
           { label: "Cancelling soon", value: stats.scheduled, note: "Ending at the period's close" },

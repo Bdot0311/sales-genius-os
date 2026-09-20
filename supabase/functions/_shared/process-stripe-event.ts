@@ -10,7 +10,7 @@ import { trackBusinessEvent } from "./heycatch.ts";
 import { captureServerEvent } from "./posthog.ts";
 
 
-const PRICE_TO_PLAN: Record<string, { plan: 'starter' | 'growth' | 'pro' | 'agency', credits: number, dailyLimit: number, leadsLimit: number, isYearly: boolean }> = {
+export const PRICE_TO_PLAN: Record<string, { plan: 'starter' | 'growth' | 'pro' | 'agency', credits: number, dailyLimit: number, leadsLimit: number, isYearly: boolean }> = {
   'price_1T8tywFTerosS6hi0fHQuybr': { plan: 'starter', credits: 1000, dailyLimit: 100, leadsLimit: 1000, isYearly: false },
   'price_1T8tyxFTerosS6hiSakB51fA': { plan: 'starter', credits: 12000, dailyLimit: 100, leadsLimit: 1000, isYearly: true },
   'price_1T8tyyFTerosS6hiTsTXkWDa': { plan: 'growth', credits: 2500, dailyLimit: 250, leadsLimit: 2500, isYearly: false },
@@ -25,7 +25,7 @@ const PRICE_TO_PLAN: Record<string, { plan: 'starter' | 'growth' | 'pro' | 'agen
   'price_1SS45HFTerosS6hiQtxsNVL4': { plan: 'pro', credits: 5000, dailyLimit: 500, leadsLimit: 5000, isYearly: false },
 };
 
-const PRODUCT_TO_PLAN: Record<string, 'starter' | 'growth' | 'pro' | 'agency'> = {
+export const PRODUCT_TO_PLAN: Record<string, 'starter' | 'growth' | 'pro' | 'agency'> = {
   'prod_U78FZoAWovU1rX': 'starter', 'prod_U78FC92stOkRxS': 'starter',
   'prod_U78Ff02VQAzrLC': 'growth', 'prod_U78Fk0l7swAukt': 'growth',
   'prod_U78Fs2HpZzcZJc': 'pro', 'prod_U78Fuo9Mg04kz9': 'pro',
@@ -359,6 +359,7 @@ export async function processStripeEvent(
     const periodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
     const result = await applyEvent(supabase, userId, event, {
       plan: planDetails.plan,
+      previous_plan: null,
       status: 'active',
       account_status: 'active',
       stripe_customer_id: customerId,
@@ -369,6 +370,10 @@ export async function processStripeEvent(
       current_period_start: new Date().toISOString(),
       current_period_end: periodEnd,
       credits_reset_at: periodEnd,
+      cancel_at_period_end: false,
+      canceled_at: null,
+      payment_failed_at: null,
+      last_payment_error: null,
     });
     log("checkout.session.completed apply", result);
     await trackBusinessEvent(
@@ -377,10 +382,21 @@ export async function processStripeEvent(
       { plan: planDetails.plan, is_yearly: planDetails.isYearly, stripe_subscription_id: subscriptionId },
       { email: customerEmail, plan: planDetails.plan },
     );
+    // Every subscription start is recorded in Billing & Churn, so the panel
+    // shows the whole lifecycle rather than only the bad news.
+    await logSystemAlert({
+      category: "billing_subscription_started", severity: "info",
+      message: `${customerEmail} started a ${planDetails.plan} subscription${planDetails.isYearly ? ' (yearly)' : ''}`,
+      details: {
+        email: customerEmail, plan: planDetails.plan, is_yearly: planDetails.isYearly,
+        stripe_customer_id: customerId, stripe_subscription_id: subscriptionId,
+      },
+      user_id: userId, related_entity: subscriptionId,
+    });
     return;
   }
 
-  if (event.type === "customer.subscription.updated") {
+  if (event.type === "customer.subscription.updated" || event.type === "customer.subscription.created") {
     const sub = event.data.object as Stripe.Subscription;
     const prev = (event.data.previous_attributes ?? {}) as Partial<Stripe.Subscription>;
     const priceId = sub.items.data[0]?.price?.id || '';
@@ -401,7 +417,9 @@ export async function processStripeEvent(
             ? 'paused'
             : 'cancelled';
     const result = await applyEvent(supabase, userId, event, {
-      plan: planDetails.plan,
+      // A subscription that is no longer paying keeps its plan column only
+      // until the downgrade below runs; entitled ones are set straight away.
+      ...(isEntitled ? { plan: planDetails.plan, previous_plan: null } : {}),
       // Stripe's `trialing` status is fully entitled. Keep the internal billing
       // status active so get_user_plan returns the selected paid tier, while
       // account_status/trial_end_date retain the trial lifecycle for banners
@@ -412,14 +430,31 @@ export async function processStripeEvent(
         ? new Date(sub.trial_end * 1000).toISOString()
         : null,
       stripe_subscription_id: sub.id,
-      search_credits_base: planDetails.credits,
-      leads_limit: planDetails.leadsLimit,
+      ...(isEntitled ? { search_credits_base: planDetails.credits, leads_limit: planDetails.leadsLimit } : {}),
       cancel_at_period_end: !!sub.cancel_at_period_end,
       canceled_at: sub.canceled_at ? new Date(sub.canceled_at * 1000).toISOString() : null,
       current_period_start: new Date(sub.current_period_start * 1000).toISOString(),
       current_period_end: periodEndIso,
     });
     log("subscription.updated apply", result);
+
+    // Entitlements must follow Stripe automatically: once the subscription is
+    // no longer active or trialing, the account returns to the free tier until
+    // it is paid again. Previously the plan column stayed on the paid tier and
+    // had to be corrected by hand.
+    if (!isEntitled) {
+      const { error: downErr } = await supabase.rpc('billing_downgrade_to_free', {
+        _user_id: userId,
+        _reason: `Stripe subscription is ${sub.status} — entitlements returned to the free plan`,
+        _details: {
+          trigger: 'subscription_not_entitled',
+          stripe_status: sub.status,
+          target_email: customer.email,
+          stripe_subscription_id: sub.id,
+        },
+      });
+      if (downErr) log("downgrade to free failed", { error: downErr.message });
+    }
 
     // Churn signal: user just scheduled a cancellation for the end of the period.
     if (sub.cancel_at_period_end && prev.cancel_at_period_end === false) {
@@ -768,8 +803,23 @@ export async function processStripeEvent(
       account_status: 'cancelled',
       cancel_at_period_end: false,
       canceled_at: sub.canceled_at ? new Date(sub.canceled_at * 1000).toISOString() : new Date().toISOString(),
+      stripe_subscription_id: null,
+      trial_end_date: null,
     });
     log("subscription.deleted apply", result);
+
+    // A cancelled subscription drops straight back to the free plan.
+    const { error: downErr } = await supabase.rpc('billing_downgrade_to_free', {
+      _user_id: userId,
+      _reason: 'Subscription cancelled in Stripe — entitlements returned to the free plan',
+      _details: {
+        trigger: 'subscription_deleted',
+        target_email: customer.email,
+        stripe_subscription_id: sub.id,
+        cancellation_reason: (sub.cancellation_details as any)?.reason ?? null,
+      },
+    });
+    if (downErr) log("downgrade to free failed", { error: downErr.message });
     await trackBusinessEvent(
       "subscription_cancelled",
       userId,
