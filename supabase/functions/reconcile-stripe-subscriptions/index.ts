@@ -84,12 +84,17 @@ Deno.serve(async (req) => {
       .or("stripe_subscription_id.not.is.null,plan.neq.free");
     if (error) throw new Error(error.message);
 
+    // Our own team's accounts are granted internally, never through Stripe.
+    const { data: adminRows } = await supabase
+      .from("user_roles").select("user_id").eq("role", "admin");
+    const adminIds = new Set((adminRows ?? []).map((r: { user_id: string }) => r.user_id));
+
     for (const row of (rows ?? []) as SubRow[]) {
       stats.checked++;
       // Admin accounts and manually granted, still-valid trials are ours to set.
       const trialValid = row.account_status === "trial" && !!row.trial_end_date &&
         new Date(row.trial_end_date).getTime() > Date.now();
-      if (row.account_status === "admin") continue;
+      if (row.account_status === "admin" || adminIds.has(row.user_id)) continue;
 
       let email: string | null = null;
       const { data: profile } = await supabase
