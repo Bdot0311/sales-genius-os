@@ -118,6 +118,8 @@ project_id = "ghgfjnepvxvxrncmskys"
     verify_jwt = false
   [functions.retry-stripe-webhooks]
     verify_jwt = false
+  [functions.reconcile-stripe-subscriptions]
+    verify_jwt = false
   [functions.replay-webhook]
     verify_jwt = true
   [functions.reset-password]

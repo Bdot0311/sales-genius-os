@@ -50,12 +50,17 @@ const SEVERITY_BADGE: Record<string, string> = {
 };
 
 const CATEGORY_LABEL: Record<string, string> = {
+  billing_subscription_started: "Subscription started",
   billing_cancellation: "Cancelled",
   billing_cancellation_scheduled: "Cancellation scheduled",
   billing_payment_failed: "Payment failed",
   billing_payment_action_required: "Card authentication needed",
   billing_dispute: "Chargeback",
   billing_subscription_paused: "Subscription paused",
+  billing_auto_paused: "Auto-paused (unpaid)",
+  billing_auto_resumed: "Access restored (paid)",
+  billing_reconciled: "Corrected to match Stripe",
+  billing_trial_ended: "Trial ended",
 };
 
 export default function AdminBilling() {
