@@ -185,6 +185,10 @@ export default function AdminBilling() {
               Show handled
             </Label>
           </div>
+          <Button variant="outline" size="sm" onClick={reconcile} disabled={reconciling}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${reconciling ? "animate-spin" : ""}`} />
+            Check against Stripe
+          </Button>
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
             Refresh
@@ -196,6 +200,7 @@ export default function AdminBilling() {
           spent on one figure, four times across. */}
       <MetricStrip
         metrics={[
+          { label: "New subscriptions", value: stats.started, note: "Signed up and paying" },
           { label: "Payment issues", value: stats.failed, note: "Charges that did not go through" },
           { label: "Cancelled", value: stats.cancelled, note: "Subscriptions already ended" },
           { label: "Cancelling soon", value: stats.scheduled, note: "Ending at the period's close" },
