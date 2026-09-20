@@ -4922,6 +4922,7 @@ export type Database = {
           leads_limit: number
           payment_failed_at: string | null
           plan: Database["public"]["Enums"]["subscription_plan"]
+          previous_plan: Database["public"]["Enums"]["subscription_plan"] | null
           search_credits_addon: number
           search_credits_base: number
           search_credits_remaining: number
@@ -4964,6 +4965,9 @@ export type Database = {
           leads_limit?: number
           payment_failed_at?: string | null
           plan?: Database["public"]["Enums"]["subscription_plan"]
+          previous_plan?:
+            | Database["public"]["Enums"]["subscription_plan"]
+            | null
           search_credits_addon?: number
           search_credits_base?: number
           search_credits_remaining?: number
@@ -5006,6 +5010,9 @@ export type Database = {
           leads_limit?: number
           payment_failed_at?: string | null
           plan?: Database["public"]["Enums"]["subscription_plan"]
+          previous_plan?:
+            | Database["public"]["Enums"]["subscription_plan"]
+            | null
           search_credits_addon?: number
           search_credits_base?: number
           search_credits_remaining?: number
@@ -6167,6 +6174,10 @@ export type Database = {
         Args: { _user_id: string }
         Returns: number
       }
+      billing_downgrade_to_free: {
+        Args: { _details?: Json; _reason: string; _user_id: string }
+        Returns: boolean
+      }
       billing_expire_grace_periods: {
         Args: never
         Returns: {
@@ -6185,6 +6196,10 @@ export type Database = {
       billing_reset_failed_invoice_count: {
         Args: { _user_id: string }
         Returns: undefined
+      }
+      billing_restore_previous_plan: {
+        Args: { _details?: Json; _reason?: string; _user_id: string }
+        Returns: boolean
       }
       billing_start_grace_period: {
         Args: {
