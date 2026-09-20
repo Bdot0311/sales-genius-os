@@ -380,7 +380,7 @@ export async function processStripeEvent(
     return;
   }
 
-  if (event.type === "customer.subscription.updated") {
+  if (event.type === "customer.subscription.updated" || event.type === "customer.subscription.created") {
     const sub = event.data.object as Stripe.Subscription;
     const prev = (event.data.previous_attributes ?? {}) as Partial<Stripe.Subscription>;
     const priceId = sub.items.data[0]?.price?.id || '';
@@ -401,7 +401,9 @@ export async function processStripeEvent(
             ? 'paused'
             : 'cancelled';
     const result = await applyEvent(supabase, userId, event, {
-      plan: planDetails.plan,
+      // A subscription that is no longer paying keeps its plan column only
+      // until the downgrade below runs; entitled ones are set straight away.
+      ...(isEntitled ? { plan: planDetails.plan, previous_plan: null } : {}),
       // Stripe's `trialing` status is fully entitled. Keep the internal billing
       // status active so get_user_plan returns the selected paid tier, while
       // account_status/trial_end_date retain the trial lifecycle for banners
@@ -412,14 +414,31 @@ export async function processStripeEvent(
         ? new Date(sub.trial_end * 1000).toISOString()
         : null,
       stripe_subscription_id: sub.id,
-      search_credits_base: planDetails.credits,
-      leads_limit: planDetails.leadsLimit,
+      ...(isEntitled ? { search_credits_base: planDetails.credits, leads_limit: planDetails.leadsLimit } : {}),
       cancel_at_period_end: !!sub.cancel_at_period_end,
       canceled_at: sub.canceled_at ? new Date(sub.canceled_at * 1000).toISOString() : null,
       current_period_start: new Date(sub.current_period_start * 1000).toISOString(),
       current_period_end: periodEndIso,
     });
     log("subscription.updated apply", result);
+
+    // Entitlements must follow Stripe automatically: once the subscription is
+    // no longer active or trialing, the account returns to the free tier until
+    // it is paid again. Previously the plan column stayed on the paid tier and
+    // had to be corrected by hand.
+    if (!isEntitled) {
+      const { error: downErr } = await supabase.rpc('billing_downgrade_to_free', {
+        _user_id: userId,
+        _reason: `Stripe subscription is ${sub.status} — entitlements returned to the free plan`,
+        _details: {
+          trigger: 'subscription_not_entitled',
+          stripe_status: sub.status,
+          target_email: customer.email,
+          stripe_subscription_id: sub.id,
+        },
+      });
+      if (downErr) log("downgrade to free failed", { error: downErr.message });
+    }
 
     // Churn signal: user just scheduled a cancellation for the end of the period.
     if (sub.cancel_at_period_end && prev.cancel_at_period_end === false) {
