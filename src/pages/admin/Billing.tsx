@@ -94,12 +94,29 @@ export default function AdminBilling() {
     const open = issues.filter((i) => !i.resolved);
     const byCat = (cat: string) => open.filter((i) => i.category === cat).length;
     return {
+      started: byCat("billing_subscription_started"),
       failed: byCat("billing_payment_failed") + byCat("billing_payment_action_required"),
       cancelled: byCat("billing_cancellation"),
       scheduled: byCat("billing_cancellation_scheduled"),
       disputes: byCat("billing_dispute"),
     };
   }, [issues]);
+
+  const [reconciling, setReconciling] = useState(false);
+
+  const reconcile = async () => {
+    setReconciling(true);
+    const { data, error } = await supabase.functions.invoke("reconcile-stripe-subscriptions");
+    setReconciling(false);
+    if (error) return toast.error("Could not check subscriptions against Stripe");
+    const result = data as { corrected?: number } | null;
+    toast.success(
+      result?.corrected
+        ? `${result.corrected} account${result.corrected === 1 ? "" : "s"} corrected to match Stripe`
+        : "Every account already matches Stripe",
+    );
+    load();
+  };
 
   const resolve = async (id: string) => {
     setBusy(id);
