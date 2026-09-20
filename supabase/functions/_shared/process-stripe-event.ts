@@ -359,6 +359,7 @@ export async function processStripeEvent(
     const periodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
     const result = await applyEvent(supabase, userId, event, {
       plan: planDetails.plan,
+      previous_plan: null,
       status: 'active',
       account_status: 'active',
       stripe_customer_id: customerId,
@@ -369,6 +370,10 @@ export async function processStripeEvent(
       current_period_start: new Date().toISOString(),
       current_period_end: periodEnd,
       credits_reset_at: periodEnd,
+      cancel_at_period_end: false,
+      canceled_at: null,
+      payment_failed_at: null,
+      last_payment_error: null,
     });
     log("checkout.session.completed apply", result);
     await trackBusinessEvent(
@@ -377,6 +382,17 @@ export async function processStripeEvent(
       { plan: planDetails.plan, is_yearly: planDetails.isYearly, stripe_subscription_id: subscriptionId },
       { email: customerEmail, plan: planDetails.plan },
     );
+    // Every subscription start is recorded in Billing & Churn, so the panel
+    // shows the whole lifecycle rather than only the bad news.
+    await logSystemAlert({
+      category: "billing_subscription_started", severity: "info",
+      message: `${customerEmail} started a ${planDetails.plan} subscription${planDetails.isYearly ? ' (yearly)' : ''}`,
+      details: {
+        email: customerEmail, plan: planDetails.plan, is_yearly: planDetails.isYearly,
+        stripe_customer_id: customerId, stripe_subscription_id: subscriptionId,
+      },
+      user_id: userId, related_entity: subscriptionId,
+    });
     return;
   }
 
