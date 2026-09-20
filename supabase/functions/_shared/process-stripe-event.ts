@@ -803,8 +803,23 @@ export async function processStripeEvent(
       account_status: 'cancelled',
       cancel_at_period_end: false,
       canceled_at: sub.canceled_at ? new Date(sub.canceled_at * 1000).toISOString() : new Date().toISOString(),
+      stripe_subscription_id: null,
+      trial_end_date: null,
     });
     log("subscription.deleted apply", result);
+
+    // A cancelled subscription drops straight back to the free plan.
+    const { error: downErr } = await supabase.rpc('billing_downgrade_to_free', {
+      _user_id: userId,
+      _reason: 'Subscription cancelled in Stripe — entitlements returned to the free plan',
+      _details: {
+        trigger: 'subscription_deleted',
+        target_email: customer.email,
+        stripe_subscription_id: sub.id,
+        cancellation_reason: (sub.cancellation_details as any)?.reason ?? null,
+      },
+    });
+    if (downErr) log("downgrade to free failed", { error: downErr.message });
     await trackBusinessEvent(
       "subscription_cancelled",
       userId,
