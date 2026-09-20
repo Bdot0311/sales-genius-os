@@ -120,6 +120,13 @@
       "when": 1789912621573,
       "tag": "0016_reconcile_stripe_subscriptions_cron",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1789914202373,
+      "tag": "0017_lock_down_secret_columns_api_keys_integrations_webhooks",
+      "breakpoints": true
     }
   ]
 }
