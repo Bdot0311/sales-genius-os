@@ -99,6 +99,13 @@
       "when": 1789858265102,
       "tag": "0013_lead_intelligence_enabled_rpc",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1789879166940,
+      "tag": "0014_add_insert_validation_scan_gate_leads_and_site_visits",
+      "breakpoints": true
     }
   ]
 }
