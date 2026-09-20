@@ -10,7 +10,7 @@ import { trackBusinessEvent } from "./heycatch.ts";
 import { captureServerEvent } from "./posthog.ts";
 
 
-const PRICE_TO_PLAN: Record<string, { plan: 'starter' | 'growth' | 'pro' | 'agency', credits: number, dailyLimit: number, leadsLimit: number, isYearly: boolean }> = {
+export const PRICE_TO_PLAN: Record<string, { plan: 'starter' | 'growth' | 'pro' | 'agency', credits: number, dailyLimit: number, leadsLimit: number, isYearly: boolean }> = {
   'price_1T8tywFTerosS6hi0fHQuybr': { plan: 'starter', credits: 1000, dailyLimit: 100, leadsLimit: 1000, isYearly: false },
   'price_1T8tyxFTerosS6hiSakB51fA': { plan: 'starter', credits: 12000, dailyLimit: 100, leadsLimit: 1000, isYearly: true },
   'price_1T8tyyFTerosS6hiTsTXkWDa': { plan: 'growth', credits: 2500, dailyLimit: 250, leadsLimit: 2500, isYearly: false },
@@ -25,7 +25,7 @@ const PRICE_TO_PLAN: Record<string, { plan: 'starter' | 'growth' | 'pro' | 'agen
   'price_1SS45HFTerosS6hiQtxsNVL4': { plan: 'pro', credits: 5000, dailyLimit: 500, leadsLimit: 5000, isYearly: false },
 };
 
-const PRODUCT_TO_PLAN: Record<string, 'starter' | 'growth' | 'pro' | 'agency'> = {
+export const PRODUCT_TO_PLAN: Record<string, 'starter' | 'growth' | 'pro' | 'agency'> = {
   'prod_U78FZoAWovU1rX': 'starter', 'prod_U78FC92stOkRxS': 'starter',
   'prod_U78Ff02VQAzrLC': 'growth', 'prod_U78Fk0l7swAukt': 'growth',
   'prod_U78Fs2HpZzcZJc': 'pro', 'prod_U78Fuo9Mg04kz9': 'pro',
