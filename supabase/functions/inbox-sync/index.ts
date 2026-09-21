@@ -527,6 +527,9 @@ serve(async (req) => {
         replies,
         threadsChecked: threads.length,
         newReplies: replies.length,
+        // A throttled sweep is partial, not empty.
+        rateLimitedThreads: throttledThreadIds.length,
+        partial: throttledThreadIds.length > 0,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
