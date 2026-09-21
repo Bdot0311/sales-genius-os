@@ -302,6 +302,11 @@ serve(async (req) => {
       }
     }
 
+    // Threads Gmail throttled us out of, so the caller knows this run was
+    // partial rather than reading "no replies" as "there are none".
+    const throttledThreadIds: string[] = [];
+    let processedCount = 0;
+
     for (const thread of threads) {
       try {
         const integrationId = thread.sending_account_id
@@ -311,17 +316,27 @@ serve(async (req) => {
           (integrationId ? mailboxes[integrationId] : undefined) ?? defaultMailbox;
         if (!mailbox?.token) continue;
 
-        const gmailRes = await fetch(
-          `https://gmail.googleapis.com/gmail/v1/users/me/threads/${thread.gmail_thread_id}?format=full`,
-          { headers: { Authorization: `Bearer ${mailbox.token}` } }
-        );
+        // Pace the calls: a burst of full-thread reads is what trips Gmail's
+        // per-minute cost ceiling.
+        if (processedCount > 0) await sleep(120);
+        processedCount++;
 
-        if (!gmailRes.ok) {
-          if (gmailRes.status === 404) continue;
-          throw new Error(`Gmail API ${gmailRes.status}: ${await gmailRes.text()}`);
+        const fetched = await fetchGmailThread(thread.gmail_thread_id, mailbox.token);
+        if (!fetched.ok) {
+          if (fetched.notFound) continue;
+          if (fetched.rateLimited) {
+            throttledThreadIds.push(thread.gmail_thread_id);
+            console.warn(
+              `Gmail rate limit on thread ${thread.gmail_thread_id}; it will be retried next sweep`
+            );
+            // Give the quota window room to recover before the next thread.
+            await sleep(2_000);
+            continue;
+          }
+          throw new Error(fetched.error || "Gmail thread fetch failed");
         }
 
-        const gmailThread = await gmailRes.json();
+        const gmailThread = fetched.thread;
         const messages: any[] = gmailThread.messages || [];
         const sentAt = new Date(thread.sent_at).getTime();
 
