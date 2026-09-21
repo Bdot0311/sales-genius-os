@@ -743,6 +743,9 @@ const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
     // ────────────────────────────────────────────────────────────────────────
     let outreachSent = 0;
     let outreachDrafted = 0;
+    // Loaded once per run, not once per lead: what this customer sells is what
+    // the evaluation judges fit against.
+    let sellerContext: SellerContext | null = null;
     if (runOutreach && config.can_send_outreach && googleIntegrationId) {
       try {
         const dailyCap = Math.min(Math.max(config.max_daily_new_emails ?? 20, 0), 100);
