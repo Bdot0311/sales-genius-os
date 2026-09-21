@@ -146,6 +146,8 @@ project_id = "ghgfjnepvxvxrncmskys"
     verify_jwt = false
   [functions.stripe-webhook]
     verify_jwt = false
+  [functions.sync-inboxes]
+    verify_jwt = false
   [functions.sync-to-google-calendar]
     verify_jwt = true
   [functions.track-email-open]

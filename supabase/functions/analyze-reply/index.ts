@@ -27,16 +27,34 @@ serve(async (req) => {
       });
     }
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+    const internalSecret = Deno.env.get('INTERNAL_TRIGGER_SECRET') ?? '';
+    const isInternal = !!token && (token === supabaseKey || (!!internalSecret && token === internalSecret));
 
-    const { replyContent, leadId, sentEmailId, conversationHistory, gmailMessageId, isAutoReply } = await req.json();
+    const body = await req.json();
+    const { replyContent, leadId, sentEmailId, conversationHistory, gmailMessageId, isAutoReply } = body;
+
+    // The scheduled inbox sweep classifies replies on behalf of the mailbox
+    // owner, so it authenticates internally and names the user.
+    let user: { id: string } | null = null;
+    if (isInternal) {
+      if (!body.userId) {
+        return new Response(JSON.stringify({ error: 'userId is required for internal calls' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      user = { id: body.userId };
+    } else {
+      const { data: { user: authedUser }, error: authError } = await supabase.auth.getUser(token);
+      if (authError || !authedUser) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      user = { id: authedUser.id };
+    }
 
     if (!replyContent) {
       return new Response(JSON.stringify({ error: 'Reply content is required' }), {
