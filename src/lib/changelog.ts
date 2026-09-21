@@ -92,6 +92,28 @@ export const ROADMAP: RoadmapItem[] = [
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-09-21-replies-and-billing",
+    date: "2026-09-21",
+    title: "Replies now find you",
+    summary:
+      "Replies are picked up automatically, and the billing dashboard now reports subscription and churn totals from the records that actually control customer access.",
+    items: [
+      {
+        tag: "fixed",
+        title: "Replies arrive without opening the inbox",
+        description:
+          "Your connected mailbox is checked automatically every few minutes, so a prospect's reply lands in your inbox, is available to your agent and can notify your phone without you opening the app.",
+        href: "/dashboard/inbox",
+      },
+      {
+        tag: "billing",
+        title: "Billing and churn totals reflect real account changes",
+        description:
+          "New subscriptions, payment issues, completed cancellations, scheduled cancellations and chargebacks now come from billing history and current account status instead of disappearing when an alert is handled.",
+      },
+    ],
+  },
+  {
     id: "2026-09-19-lead-intelligence",
     date: "2026-09-19",
     title: "Your saved leads can now tell you who to email first",

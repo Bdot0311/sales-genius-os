@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 import { MetricStrip, Panel, PanelBody, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
@@ -42,6 +42,22 @@ interface BillingIssue {
   is_locked: boolean | null;
 }
 
+interface BillingSummary {
+  new_subscriptions: number;
+  payment_issues: number;
+  cancelled: number;
+  cancelling_soon: number;
+  chargebacks: number;
+}
+
+const EMPTY_SUMMARY: BillingSummary = {
+  new_subscriptions: 0,
+  payment_issues: 0,
+  cancelled: 0,
+  cancelling_soon: 0,
+  chargebacks: 0,
+};
+
 const SEVERITY_BADGE: Record<string, string> = {
   info: "bg-blue-500/10 text-blue-400 border-blue-500/20",
   warning: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
@@ -66,20 +82,35 @@ const CATEGORY_LABEL: Record<string, string> = {
 export default function AdminBilling() {
   const [issues, setIssues] = useState<BillingIssue[]>([]);
   const [loading, setLoading] = useState(true);
+  const [summary, setSummary] = useState<BillingSummary>(EMPTY_SUMMARY);
   const [includeResolved, setIncludeResolved] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<BillingIssue | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase.rpc("admin_get_billing_issues" as any, {
-      _include_resolved: includeResolved,
-    });
-    if (error) {
+    const [issuesResult, summaryResult] = await Promise.all([
+      supabase.rpc("admin_get_billing_issues" as any, { _include_resolved: includeResolved }),
+      supabase.rpc("admin_get_billing_summary" as any),
+    ]);
+    if (issuesResult.error) {
       toast.error("Failed to load billing issues");
-      console.error(error);
+      console.error(issuesResult.error);
     } else {
-      setIssues((data as unknown as BillingIssue[]) ?? []);
+      setIssues((issuesResult.data as unknown as BillingIssue[]) ?? []);
+    }
+    if (summaryResult.error) {
+      toast.error("Failed to load billing totals");
+      console.error(summaryResult.error);
+    } else {
+      const row = (summaryResult.data as unknown as BillingSummary[] | null)?.[0];
+      setSummary(row ? {
+        new_subscriptions: Number(row.new_subscriptions ?? 0),
+        payment_issues: Number(row.payment_issues ?? 0),
+        cancelled: Number(row.cancelled ?? 0),
+        cancelling_soon: Number(row.cancelling_soon ?? 0),
+        chargebacks: Number(row.chargebacks ?? 0),
+      } : EMPTY_SUMMARY);
     }
     setLoading(false);
   }, [includeResolved]);
@@ -89,18 +120,6 @@ export default function AdminBilling() {
   }, [load]);
 
   useAutoRefresh(load, 60_000);
-
-  const stats = useMemo(() => {
-    const open = issues.filter((i) => !i.resolved);
-    const byCat = (cat: string) => open.filter((i) => i.category === cat).length;
-    return {
-      started: byCat("billing_subscription_started"),
-      failed: byCat("billing_payment_failed") + byCat("billing_payment_action_required"),
-      cancelled: byCat("billing_cancellation"),
-      scheduled: byCat("billing_cancellation_scheduled"),
-      disputes: byCat("billing_dispute"),
-    };
-  }, [issues]);
 
   const [reconciling, setReconciling] = useState(false);
 
@@ -200,11 +219,11 @@ export default function AdminBilling() {
           spent on one figure, four times across. */}
       <MetricStrip
         metrics={[
-          { label: "New subscriptions", value: stats.started, note: "Signed up and paying" },
-          { label: "Payment issues", value: stats.failed, note: "Charges that did not go through" },
-          { label: "Cancelled", value: stats.cancelled, note: "Subscriptions already ended" },
-          { label: "Cancelling soon", value: stats.scheduled, note: "Ending at the period's close" },
-          { label: "Chargebacks", value: stats.disputes, note: "Disputed through the bank" },
+          { label: "New subscriptions", value: summary.new_subscriptions, note: "Completed subscription checkouts" },
+          { label: "Payment issues", value: summary.payment_issues, note: "Accounts needing payment attention" },
+          { label: "Cancelled", value: summary.cancelled, note: "Subscriptions already ended" },
+          { label: "Cancelling soon", value: summary.cancelling_soon, note: "Ending at the period's close" },
+          { label: "Chargebacks", value: summary.chargebacks, note: "Disputed through the bank" },
         ]}
       />
 
