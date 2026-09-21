@@ -75,7 +75,28 @@ const PAGES: Record<string, Prerenderable> = {
   "/partners": { Component: Partners },
   "/security": { Component: Security },
   "/accessibility": { Component: Accessibility },
+  // Help centre and the integration request page shipped as an empty #root, so
+  // Google crawled them, found no prose and left them out of the index
+  // ("Crawled - currently not indexed"). They are presentational: HelpCenter
+  // reads only route params, RequestIntegration only touches the backend on
+  // submit, so both render fully here.
+  "/help": { Component: HelpCenter },
+  "/request-integration": { Component: RequestIntegration },
 };
+
+for (const category of helpCategories) {
+  PAGES[`/help/category/${category.id}`] = {
+    Component: HelpCenter,
+    pattern: "/help/category/:category",
+  };
+}
+
+for (const article of helpArticles) {
+  PAGES[`/help/article/${article.slug}`] = {
+    Component: HelpCenter,
+    pattern: "/help/article/:slug",
+  };
+}
 
 /**
  * The alternative pages render from one template and differ only by the slug in
