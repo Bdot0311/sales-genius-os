@@ -15,7 +15,7 @@ interface ReEngagementEmailProps {
 }
 
 const ReEngagementEmail = ({ name, daysInactive, neverSignedIn }: ReEngagementEmailProps) => (
-  <Html lang="one" dir="ltr">
+  <Html lang="en" dir="ltr">
     <Head />
     <Preview>Where did we drop the ball? Reply and get a free month on us.</Preview>
     <Body style={main}>
