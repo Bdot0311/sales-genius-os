@@ -22,6 +22,41 @@ function decodeBase64Url(encoded: string): string {
   }
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Gmail charges quota units per call and enforces a per-user-per-minute cost
+ * ceiling. A tight loop over hundreds of `format=full` threads blew straight
+ * through it: every throttled thread was dropped and the run still reported
+ * success, so a real reply could sit in Gmail unseen. Space the calls out and
+ * retry a throttled one with backoff instead of losing it.
+ */
+async function fetchGmailThread(
+  threadId: string,
+  token: string
+): Promise<{ ok: true; thread: any } | { ok: false; notFound?: boolean; rateLimited?: boolean; error?: string }> {
+  let delay = 1_000;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const res = await fetch(
+      `https://gmail.googleapis.com/gmail/v1/users/me/threads/${threadId}?format=full`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (res.ok) return { ok: true, thread: await res.json() };
+    if (res.status === 404) return { ok: false, notFound: true };
+
+    const body = await res.text();
+    const throttled =
+      res.status === 429 ||
+      (res.status === 403 && /rateLimitExceeded|userRateLimitExceeded|Quota exceeded/i.test(body));
+    if (!throttled) return { ok: false, error: `Gmail API ${res.status}: ${body}` };
+
+    if (attempt === 3) return { ok: false, rateLimited: true, error: `Gmail API ${res.status}: ${body}` };
+    await sleep(delay + Math.floor(Math.random() * 400));
+    delay *= 2;
+  }
+  return { ok: false, rateLimited: true };
+}
+
 function extractBody(payload: any): string {
   if (!payload) return "";
 
