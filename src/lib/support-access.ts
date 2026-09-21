@@ -22,10 +22,33 @@
  * scope was missing looks identical to a customer with no data.
  */
 
-/** The scope covering campaign-building assets: sequences, drafts, ICP, agent. */
-export const SCOPE_CAMPAIGN_ASSETS = "campaign_assets";
+/**
+ * Scopes are granular on purpose.
+ *
+ * There used to be one "campaign_assets" scope, and a customer who ticked it
+ * to get a sequence built also handed over their ICP and their agent settings
+ * in the same breath. Each area is its own consent now, so a grant only opens
+ * what the customer actually agreed to.
+ */
+/** Sequences, their steps, message blocks and saved drafts. */
+export const SCOPE_SEQUENCES = "sequences";
+/** Who they're going after: the ICP profile. */
+export const SCOPE_TARGETING = "targeting";
+/** The AI agent's configuration. */
+export const SCOPE_AGENT = "agent";
 /** The scope covering the customer's lead records. */
 export const SCOPE_LEADS = "leads";
+
+/** Every scope a customer can consent to, in the order we show them. */
+export const SUPPORT_SCOPES = [SCOPE_SEQUENCES, SCOPE_TARGETING, SCOPE_AGENT, SCOPE_LEADS] as const;
+
+/** What each scope means, in the customer's words. */
+export const SCOPE_LABELS: Record<string, string> = {
+  [SCOPE_SEQUENCES]: "Your sequences, message blocks and drafts",
+  [SCOPE_TARGETING]: "Your ideal customer profile",
+  [SCOPE_AGENT]: "Your AI agent settings",
+  [SCOPE_LEADS]: "Your saved leads",
+};
 
 export interface GrantLike {
   scopes?: string[] | null;
