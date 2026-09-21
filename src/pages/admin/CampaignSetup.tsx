@@ -54,6 +54,8 @@ const AdminCampaignSetup = () => {
   const [grants, setGrants] = useState<Grant[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
+  /** Which request is expanded to show what the visitor told us. */
+  const [openRequestId, setOpenRequestId] = useState<string | null>(null);
   /** Which granted account is expanded for setup work. */
   const [openGrantId, setOpenGrantId] = useState<string | null>(null);
   const [outEmail, setOutEmail] = useState("");
