@@ -147,20 +147,17 @@ serve(async (req) => {
     }
 
     // ---- Cron / bulk eligibility sweep ----
-    const inactiveBefore = new Date(Date.now() - INACTIVE_DAYS * 86400_000).toISOString();
     // "Already sent/attempted today" cooldown — start of current UTC day
     const startOfUtcDay = new Date();
     startOfUtcDay.setUTCHours(0, 0, 0, 0);
     const cooldownSince = startOfUtcDay.toISOString();
 
+    // Candidates come from auth.users, not profiles.last_sign_in_at.
+    // That column is only written when someone signs in with a password, so
+    // every OAuth and restored-session account read as NULL and was filtered
+    // out — which is why the same handful of people got this email every day.
     const { data: candidates, error } = await supabase
-      .from('profiles')
-      .select('id, email, full_name, last_sign_in_at')
-      .not('email', 'is', null)
-      .not('last_sign_in_at', 'is', null)
-      .lt('last_sign_in_at', inactiveBefore)
-      .order('last_sign_in_at', { ascending: true })
-      .limit(MAX_PER_RUN * 3);
+      .rpc('reengagement_candidates', { p_inactive_days: INACTIVE_DAYS, p_limit: MAX_PER_RUN * 3 });
 
     if (error) throw error;
     log('Candidates fetched', { count: candidates?.length ?? 0 });
