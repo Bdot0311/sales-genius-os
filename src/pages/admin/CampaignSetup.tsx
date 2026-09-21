@@ -349,9 +349,40 @@ const AdminCampaignSetup = () => {
                     const g = r.user_id ? grants.find((x) => x.user_id === r.user_id && isActive(x)) : undefined;
                     const target = r.user_id ?? undefined;
                     const email = r.contact_email ?? (r.user_id ? profiles[r.user_id]?.email : null) ?? undefined;
+                    const meta = (r.metadata ?? {}) as Record<string, unknown>;
+                    const detail = (key: string) => {
+                      const v = meta[key];
+                      return typeof v === "string" && v.trim() ? v.trim() : null;
+                    };
+                    const details: Array<[string, string]> = [
+                      ["Company", detail("company")],
+                      ["Website", detail("website")],
+                      ["Ideal customer", detail("audience")],
+                      ["Goal", detail("goal")],
+                      ["Page", detail("path")],
+                      ["Came from", detail("referrer")],
+                    ].filter((x): x is [string, string] => !!x[1]);
+                    const expanded = openRequestId === r.id;
                     return (
-                      <TableRow key={r.id}>
-                        <TableCell className="font-medium">{who(r)}</TableCell>
+                      <Fragment key={r.id}>
+                      <TableRow>
+                        <TableCell className="font-medium">
+                          <div className="space-y-1">
+                            <div>{who(r)}</div>
+                            {details.length > 0 ? (
+                              <button
+                                type="button"
+                                className="flex items-center gap-1 text-[11px] text-primary hover:underline"
+                                onClick={() => setOpenRequestId(expanded ? null : r.id)}
+                              >
+                                {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                                {expanded ? "Hide details" : `Details (${details.length})`}
+                              </button>
+                            ) : (
+                              <p className="text-[11px] text-muted-foreground">Click only — no answers submitted</p>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <Badge variant="outline" className="text-[10px] capitalize">
                             {r.direction}
