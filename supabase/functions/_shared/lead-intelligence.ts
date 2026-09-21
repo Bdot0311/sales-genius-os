@@ -690,3 +690,121 @@ export function decisionPromptBlock(decision: LeadDecision | null): string {
   if (!lines.length) return "";
   return `\n\nEMAIL STRATEGY for this prospect (decided by the lead evaluation layer — follow it):\n${lines.join("\n")}`;
 }
+
+// ─── Draft-time decisions (used by every email-writing surface) ──────────────
+
+/** Everything the decision layer needs about a lead, in one select. */
+export const DECISION_LEAD_SELECT =
+  "id, user_id, company_name, contact_name, contact_email, company_website, job_title, department, seniority, industry, company_size, employee_count, annual_revenue, technologies, company_description, notes, signals, signal_type, intent_reasons, recommended_angle, research_brief, research_confidence, icp_score, intent_score, intent_label, lead_status, pipeline_stage";
+
+/** What the seller sells, so fit is judged against their business. Never throws. */
+export async function loadSellerContext(supabase: Supa, userId: string): Promise<SellerContext> {
+  const seller: SellerContext = {};
+  try {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("business_description")
+      .eq("id", userId)
+      .maybeSingle();
+    if (profile?.business_description) seller.business_description = profile.business_description;
+
+    const { data: icp } = await supabase
+      .from("icp_profiles")
+      .select(
+        "name, industries, target_titles, seniority_levels, departments, company_size_min, company_size_max, value_proposition, pain_points, disqualifiers",
+      )
+      .eq("user_id", userId)
+      .limit(1)
+      .maybeSingle();
+    if (icp) {
+      const list = (label: string, v: unknown) =>
+        Array.isArray(v) && v.length ? `${label}: ${v.slice(0, 10).join(", ")}` : null;
+      const size = icp.company_size_min || icp.company_size_max
+        ? `headcount: ${icp.company_size_min ?? "?"}-${icp.company_size_max ?? "?"}`
+        : null;
+      seller.icp_summary = [
+        icp.name,
+        list("industries", icp.industries),
+        list("target titles", icp.target_titles),
+        list("seniority", icp.seniority_levels),
+        list("departments", icp.departments),
+        size,
+        icp.value_proposition ? `value proposition: ${icp.value_proposition}` : null,
+        list("pain points", icp.pain_points),
+        list("disqualifiers", icp.disqualifiers),
+      ].filter(Boolean).join("; ") || null;
+    }
+  } catch (err) {
+    console.warn("[lead-intelligence] seller context unavailable", err instanceof Error ? err.message : err);
+  }
+  return seller;
+}
+
+/**
+ * The decision a writing surface should follow for this lead.
+ *
+ * Prefers a saved, still-fresh evaluation. When there is none — the common case
+ * for a lead the agent just found — it evaluates once here rather than writing
+ * the email blind, then caches it like any other evaluation. Still on demand:
+ * something a person or their agent asked for, never a sweep.
+ *
+ * Never throws and never blocks writing: any failure returns null and the
+ * prompt is exactly what it would have been without the decision layer.
+ */
+export async function decisionForDrafting(
+  supabase: Supa,
+  leadId: string,
+  userId: string,
+  options: { seller?: SellerContext; campaignId?: string | null } = {},
+): Promise<LeadDecision | null> {
+  try {
+    const saved = await getSavedDecision(supabase, leadId);
+    if (saved) {
+      // Fresh against the lead as it stands now? Then reuse it.
+      const { data: row } = await supabase
+        .from("lead_decisions")
+        .select("evaluated_at, input_fingerprint")
+        .eq("lead_id", leadId)
+        .maybeSingle();
+      const { data: lead } = await supabase
+        .from("leads")
+        .select(DECISION_LEAD_SELECT)
+        .eq("id", leadId)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (!lead) return saved;
+      const seller = options.seller ?? (await loadSellerContext(supabase, userId));
+      const context = { ...(lead as Record<string, unknown>), status: (lead as any).lead_status } as LeadContext;
+      const fingerprint = await fingerprintLead(context, seller);
+      if (row && isDecisionFresh(row, fingerprint)) return saved;
+      const { decision } = await evaluateLeadWithJEV(supabase, context, {
+        seller,
+        triggerSource: "campaign",
+        campaignId: options.campaignId ?? null,
+      });
+      return decision.status === "ok" ? decision : saved;
+    }
+
+    if (!jevConfigured() || !(await leadIntelligenceEnabled(supabase))) return null;
+
+    const { data: lead } = await supabase
+      .from("leads")
+      .select(DECISION_LEAD_SELECT)
+      .eq("id", leadId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!lead) return null;
+
+    const seller = options.seller ?? (await loadSellerContext(supabase, userId));
+    const context = { ...(lead as Record<string, unknown>), status: (lead as any).lead_status } as LeadContext;
+    const { decision } = await evaluateLeadWithJEV(supabase, context, {
+      seller,
+      triggerSource: "campaign",
+      campaignId: options.campaignId ?? null,
+    });
+    return decision.status === "ok" ? decision : null;
+  } catch (err) {
+    console.error("[lead-intelligence] draft-time decision failed", err instanceof Error ? err.message : err);
+    return null;
+  }
+}

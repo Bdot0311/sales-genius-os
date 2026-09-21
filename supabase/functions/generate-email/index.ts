@@ -49,7 +49,7 @@ import {
   type ResearchQuality,
 } from "../_shared/lead-research.ts";
 import { aiFetch } from "../_shared/ai-provider.ts";
-import { decisionPromptBlock, getSavedDecision } from "../_shared/lead-intelligence.ts";
+import { decisionForDrafting, decisionPromptBlock } from "../_shared/lead-intelligence.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -1277,14 +1277,15 @@ ${avoidSubjects.map((s: string) => `- ${s}`).join('\n')}`;
 
     // ─── Email strategy from the decision layer ───────────────────────────────
     // Bedrock writes the email; the decision layer decides HOW it should be
-    // written (angle, depth, closing ask). Only a saved evaluation is used —
-    // nothing is evaluated here, so generation never waits on another provider,
-    // and an unevaluated lead produces exactly the prompt it did before.
+    // written (angle, depth, closing ask). A saved evaluation is reused; a lead
+    // that has never been evaluated is evaluated once here, so an email the
+    // agent writes for a brand-new lead is still strategy-led. Failure is
+    // silent: the prompt falls back to exactly what it was before.
     let strategyBlock = "";
     if (lead.id && !isPrecisionEdit) {
       try {
-        const saved = await getSavedDecision(serviceClient, lead.id);
-        strategyBlock = decisionPromptBlock(saved);
+        const decision = await decisionForDrafting(serviceClient, lead.id, user.id);
+        strategyBlock = decisionPromptBlock(decision);
       } catch (err) {
         console.error("[generate-email] lead intelligence lookup failed", err);
       }
