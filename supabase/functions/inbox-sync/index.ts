@@ -22,6 +22,41 @@ function decodeBase64Url(encoded: string): string {
   }
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Gmail charges quota units per call and enforces a per-user-per-minute cost
+ * ceiling. A tight loop over hundreds of `format=full` threads blew straight
+ * through it: every throttled thread was dropped and the run still reported
+ * success, so a real reply could sit in Gmail unseen. Space the calls out and
+ * retry a throttled one with backoff instead of losing it.
+ */
+async function fetchGmailThread(
+  threadId: string,
+  token: string
+): Promise<{ ok: true; thread: any } | { ok: false; notFound?: boolean; rateLimited?: boolean; error?: string }> {
+  let delay = 1_000;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const res = await fetch(
+      `https://gmail.googleapis.com/gmail/v1/users/me/threads/${threadId}?format=full`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (res.ok) return { ok: true, thread: await res.json() };
+    if (res.status === 404) return { ok: false, notFound: true };
+
+    const body = await res.text();
+    const throttled =
+      res.status === 429 ||
+      (res.status === 403 && /rateLimitExceeded|userRateLimitExceeded|Quota exceeded/i.test(body));
+    if (!throttled) return { ok: false, error: `Gmail API ${res.status}: ${body}` };
+
+    if (attempt === 3) return { ok: false, rateLimited: true, error: `Gmail API ${res.status}: ${body}` };
+    await sleep(delay + Math.floor(Math.random() * 400));
+    delay *= 2;
+  }
+  return { ok: false, rateLimited: true };
+}
+
 function extractBody(payload: any): string {
   if (!payload) return "";
 
@@ -267,6 +302,11 @@ serve(async (req) => {
       }
     }
 
+    // Threads Gmail throttled us out of, so the caller knows this run was
+    // partial rather than reading "no replies" as "there are none".
+    const throttledThreadIds: string[] = [];
+    let processedCount = 0;
+
     for (const thread of threads) {
       try {
         const integrationId = thread.sending_account_id
@@ -276,17 +316,27 @@ serve(async (req) => {
           (integrationId ? mailboxes[integrationId] : undefined) ?? defaultMailbox;
         if (!mailbox?.token) continue;
 
-        const gmailRes = await fetch(
-          `https://gmail.googleapis.com/gmail/v1/users/me/threads/${thread.gmail_thread_id}?format=full`,
-          { headers: { Authorization: `Bearer ${mailbox.token}` } }
-        );
+        // Pace the calls: a burst of full-thread reads is what trips Gmail's
+        // per-minute cost ceiling.
+        if (processedCount > 0) await sleep(120);
+        processedCount++;
 
-        if (!gmailRes.ok) {
-          if (gmailRes.status === 404) continue;
-          throw new Error(`Gmail API ${gmailRes.status}: ${await gmailRes.text()}`);
+        const fetched = await fetchGmailThread(thread.gmail_thread_id, mailbox.token);
+        if (!fetched.ok) {
+          if (fetched.notFound) continue;
+          if (fetched.rateLimited) {
+            throttledThreadIds.push(thread.gmail_thread_id);
+            console.warn(
+              `Gmail rate limit on thread ${thread.gmail_thread_id}; it will be retried next sweep`
+            );
+            // Give the quota window room to recover before the next thread.
+            await sleep(2_000);
+            continue;
+          }
+          throw new Error(fetched.error || "Gmail thread fetch failed");
         }
 
-        const gmailThread = await gmailRes.json();
+        const gmailThread = fetched.thread;
         const messages: any[] = gmailThread.messages || [];
         const sentAt = new Date(thread.sent_at).getTime();
 
@@ -477,6 +527,9 @@ serve(async (req) => {
         replies,
         threadsChecked: threads.length,
         newReplies: replies.length,
+        // A throttled sweep is partial, not empty.
+        rateLimitedThreads: throttledThreadIds.length,
+        partial: throttledThreadIds.length > 0,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

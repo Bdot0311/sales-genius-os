@@ -169,6 +169,13 @@
       "when": 1790026276787,
       "tag": "0023_blog_posts_opinly_source_and_sync_cron",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1790030565698,
+      "tag": "0024_support_grant_validate_new_scopes",
+      "breakpoints": true
     }
   ]
 }
