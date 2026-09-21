@@ -49,7 +49,14 @@ export const HelpArticle = ({ article }: HelpArticleProps) => {
         const safe = /^https?:\/\//i.test(url) ? escapeAttr(url) : '#';
         return `<a href="${safe}" target="_blank" rel="noopener noreferrer" style="color:hsl(261 75% 65%);text-decoration:underline">${label}</a>`;
       });
-    const clean = DOMPurify.sanitize(result, { ALLOWED_TAGS: ['strong', 'code', 'a'], ALLOWED_ATTR: ['href', 'target', 'rel', 'style'] });
+    // DOMPurify needs a real DOM, so it is a no-op function during the
+    // build-time prerender. The markup here is built from bundled article text
+    // with the URL already escaped, so falling back to it keeps these pages
+    // rendering as static HTML instead of erroring out to an empty page.
+    const clean =
+      typeof DOMPurify.sanitize === "function"
+        ? DOMPurify.sanitize(result, { ALLOWED_TAGS: ['strong', 'code', 'a'], ALLOWED_ATTR: ['href', 'target', 'rel', 'style'] })
+        : result;
     return <span dangerouslySetInnerHTML={{ __html: clean }} />;
   };
 
