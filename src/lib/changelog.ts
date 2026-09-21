@@ -118,6 +118,13 @@ export const CHANGELOG: ChangelogEntry[] = [
           "When your plan changes, your monthly search allowance now changes with it. Accounts that were still showing the free allowance after upgrading have been corrected, and anything already used is kept.",
         href: "/dashboard/leads",
       },
+      {
+        tag: "fixed",
+        title: "Cleaner enrichment history on your leads",
+        description:
+          "Each enrichment now shows as one entry instead of two, and a run that found some details is labelled \"Partly enriched\" rather than \"Failed\".",
+        href: "/dashboard/leads",
+      },
     ],
   },
   {

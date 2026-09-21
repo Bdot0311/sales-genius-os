@@ -492,8 +492,27 @@ export const LeadDetailSheet = ({
                   {enrichmentHistory.map((entry) => (
                     <div key={entry.id} className="text-sm border rounded-lg p-3 space-y-2">
                       <div className="flex items-center justify-between">
-                        <Badge variant={entry.status === 'success' ? 'default' : entry.status === 'no_match' ? 'secondary' : 'destructive'}>
-                          {entry.status === 'success' ? '✓ Enriched' : entry.status === 'no_match' ? 'No Match' : 'Failed'}
+                        {/* A run that added some fields is not a failure. Only a
+                            run that genuinely errored reads as red; anything
+                            partial or unmatched reads as neutral. */}
+                        <Badge
+                          variant={
+                            entry.status === 'success'
+                              ? 'default'
+                              : entry.status === 'failed' || entry.status === 'error'
+                                ? 'destructive'
+                                : 'secondary'
+                          }
+                        >
+                          {entry.status === 'success'
+                            ? '✓ Enriched'
+                            : entry.status === 'partial'
+                              ? 'Partly enriched'
+                              : entry.status === 'no_match'
+                                ? 'No Match'
+                                : entry.status === 'failed' || entry.status === 'error'
+                                  ? 'Failed'
+                                  : 'Recorded'}
                         </Badge>
                         <span className="text-xs text-muted-foreground">{format(new Date(entry.enriched_at), 'PPp')}</span>
                       </div>
