@@ -448,13 +448,15 @@ serve(async (req) => {
         try {
           const res = await fetch(`${supabaseUrl}/functions/v1/analyze-reply`, {
             method: "POST",
-            headers: { Authorization: authHeader, "Content-Type": "application/json" },
+            headers: { Authorization: analyzeAuthHeader, "Content-Type": "application/json" },
             body: JSON.stringify({
               replyContent: r.bodyText,
               sentEmailId: r.sentEmailId,
               gmailMessageId: r.gmailMessageId,
+              leadId: r.leadId,
               // Determined from the mail headers, which the model cannot see.
               isAutoReply: r.isAutoReply,
+              userId: isInternal ? user.id : undefined,
             }),
           });
           if (!res.ok) console.error(`analyze-reply ${res.status}: ${await res.text()}`);
