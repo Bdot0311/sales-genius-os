@@ -10,9 +10,11 @@ const APP_URL = Deno.env.get("APP_URL") ?? "https://outreign.io"
 interface ReEngagementEmailProps {
   name?: string
   daysInactive?: number
+  /** True when the account has never been signed in to at all. */
+  neverSignedIn?: boolean
 }
 
-const ReEngagementEmail = ({ name, daysInactive }: ReEngagementEmailProps) => (
+const ReEngagementEmail = ({ name, daysInactive, neverSignedIn }: ReEngagementEmailProps) => (
   <Html lang="en" dir="ltr">
     <Head />
     <Preview>Where did we drop the ball? Reply and get a free month on us.</Preview>
@@ -25,9 +27,13 @@ const ReEngagementEmail = ({ name, daysInactive }: ReEngagementEmailProps) => (
           {name ? `${name}, where did we go wrong?` : 'Where did we go wrong?'}
         </Heading>
         <Text style={text}>
-          {daysInactive
-            ? `It's been about ${daysInactive} days since you last signed in to ${SITE_NAME}, and I'd rather hear the honest reason than guess.`
-            : `It's been a while since you last signed in to ${SITE_NAME}, and I'd rather hear the honest reason than guess.`}
+          {neverSignedIn
+            ? (daysInactive
+                ? `You signed up for ${SITE_NAME} about ${daysInactive} days ago but never opened it, and I'd rather hear the honest reason than guess.`
+                : `You signed up for ${SITE_NAME} but never opened it, and I'd rather hear the honest reason than guess.`)
+            : (daysInactive
+                ? `It's been about ${daysInactive} days since you last signed in to ${SITE_NAME}, and I'd rather hear the honest reason than guess.`
+                : `It's been a while since you last signed in to ${SITE_NAME}, and I'd rather hear the honest reason than guess.`)}
         </Text>
         <Text style={text}>
           Would you mind replying with a few words on any of these? Even one‑liners help us do better:

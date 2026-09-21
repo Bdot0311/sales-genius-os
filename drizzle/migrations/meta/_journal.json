@@ -155,6 +155,13 @@
       "when": 1790020373334,
       "tag": "0021_granular_support_scopes_and_system_events_authenticated",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1790025526990,
+      "tag": "0022_reengagement_candidates_from_auth_truth",
+      "breakpoints": true
     }
   ]
 }

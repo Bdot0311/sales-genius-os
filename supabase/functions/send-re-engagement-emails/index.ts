@@ -87,15 +87,25 @@ serve(async (req) => {
     await supabase.from('re_engagement_log').insert(entry);
   };
 
-  const sendOne = async (user: { id: string; email: string; full_name: string | null; last_sign_in_at: string | null }, opts: { manual: boolean; reason: string }) => {
-    const daysInactive = user.last_sign_in_at
-      ? Math.floor((Date.now() - new Date(user.last_sign_in_at).getTime()) / 86400_000)
-      : null;
+  const sendOne = async (
+    user: { id: string; email: string; full_name: string | null; last_sign_in_at: string | null; created_at?: string | null; never_signed_in?: boolean; days_inactive?: number | null },
+    opts: { manual: boolean; reason: string },
+  ) => {
+    // An account that never opened the app has no sign-in to count from, so the
+    // clock runs from signup instead — and the email must not claim they were
+    // last seen a while ago, because they were never seen at all.
+    const neverSignedIn = user.never_signed_in ?? !user.last_sign_in_at;
+    const since = user.last_sign_in_at ?? user.created_at ?? null;
+    const daysInactive = typeof user.days_inactive === 'number'
+      ? user.days_inactive
+      : since
+        ? Math.floor((Date.now() - new Date(since).getTime()) / 86400_000)
+        : null;
     const firstName = user.full_name ? String(user.full_name).split(' ')[0] : undefined;
 
     const sendRes = await sendAppEmail(supabase, TEMPLATE_NAME, user.email, {
       idempotencyKey: `reengage-${user.id}-${new Date().toISOString().slice(0, 10)}${opts.manual ? '-manual' : ''}`,
-      templateData: { name: firstName, daysInactive: daysInactive ?? undefined },
+      templateData: { name: firstName, daysInactive: daysInactive ?? undefined, neverSignedIn },
     });
     const sendErr = sendRes.sent ? null : { message: sendRes.error ?? sendRes.reason };
     const wasSuppressed = !sendRes.sent && sendRes.reason === 'recipient_suppressed';
@@ -137,20 +147,17 @@ serve(async (req) => {
     }
 
     // ---- Cron / bulk eligibility sweep ----
-    const inactiveBefore = new Date(Date.now() - INACTIVE_DAYS * 86400_000).toISOString();
     // "Already sent/attempted today" cooldown — start of current UTC day
     const startOfUtcDay = new Date();
     startOfUtcDay.setUTCHours(0, 0, 0, 0);
     const cooldownSince = startOfUtcDay.toISOString();
 
+    // Candidates come from auth.users, not profiles.last_sign_in_at.
+    // That column is only written when someone signs in with a password, so
+    // every OAuth and restored-session account read as NULL and was filtered
+    // out — which is why the same handful of people got this email every day.
     const { data: candidates, error } = await supabase
-      .from('profiles')
-      .select('id, email, full_name, last_sign_in_at')
-      .not('email', 'is', null)
-      .not('last_sign_in_at', 'is', null)
-      .lt('last_sign_in_at', inactiveBefore)
-      .order('last_sign_in_at', { ascending: true })
-      .limit(MAX_PER_RUN * 3);
+      .rpc('reengagement_candidates', { p_inactive_days: INACTIVE_DAYS, p_limit: MAX_PER_RUN * 3 });
 
     if (error) throw error;
     log('Candidates fetched', { count: candidates?.length ?? 0 });
@@ -176,9 +183,7 @@ serve(async (req) => {
           user_id: user.id,
           recipient_email: user.email,
           last_sign_in_at: user.last_sign_in_at,
-          days_inactive: user.last_sign_in_at
-            ? Math.floor((Date.now() - new Date(user.last_sign_in_at).getTime()) / 86400_000)
-            : null,
+          days_inactive: user.days_inactive ?? null,
           eligibility_reason: 'recipient_suppressed',
           status: 'skipped',
           error_message: null,
@@ -203,9 +208,7 @@ serve(async (req) => {
           user_id: user.id,
           recipient_email: user.email,
           last_sign_in_at: user.last_sign_in_at,
-          days_inactive: user.last_sign_in_at
-            ? Math.floor((Date.now() - new Date(user.last_sign_in_at).getTime()) / 86400_000)
-            : null,
+          days_inactive: user.days_inactive ?? null,
           eligibility_reason: 'already_sent_today',
           status: 'skipped',
           triggered_manually: false,
@@ -214,7 +217,10 @@ serve(async (req) => {
         continue;
       }
 
-      const result = await sendOne(user as any, { manual: false, reason: 'no_signin_today' });
+      const result = await sendOne(user as any, {
+        manual: false,
+        reason: user.never_signed_in ? 'never_signed_in' : 'no_signin_today',
+      });
       if (result.ok) sent++;
       else if (result.suppressed) skipped++;
       else errors.push(`${user.email}: ${result.error}`);
