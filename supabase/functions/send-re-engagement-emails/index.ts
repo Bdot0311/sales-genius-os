@@ -183,9 +183,7 @@ serve(async (req) => {
           user_id: user.id,
           recipient_email: user.email,
           last_sign_in_at: user.last_sign_in_at,
-          days_inactive: user.last_sign_in_at
-            ? Math.floor((Date.now() - new Date(user.last_sign_in_at).getTime()) / 86400_000)
-            : null,
+          days_inactive: user.days_inactive ?? null,
           eligibility_reason: 'recipient_suppressed',
           status: 'skipped',
           error_message: null,
