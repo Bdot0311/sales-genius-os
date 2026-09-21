@@ -429,6 +429,21 @@ const AdminCampaignSetup = () => {
                           )}
                         </TableCell>
                       </TableRow>
+                      {expanded && (
+                        <TableRow>
+                          <TableCell colSpan={7} className="bg-muted/30">
+                            <dl className="grid gap-2 sm:grid-cols-2">
+                              {details.map(([label, value]) => (
+                                <div key={label}>
+                                  <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</dt>
+                                  <dd className="text-sm break-words">{value}</dd>
+                                </div>
+                              ))}
+                            </dl>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      </Fragment>
                     );
                   })}
                 </TableBody>
