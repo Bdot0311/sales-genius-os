@@ -121,7 +121,12 @@ serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, serviceKey);
 
-    let payload: { testEmail?: string; includeOwnReplies?: boolean; analyzeReplies?: boolean } = {};
+    let payload: {
+      testEmail?: string;
+      includeOwnReplies?: boolean;
+      analyzeReplies?: boolean;
+      userId?: string;
+    } = {};
     try {
       payload = await req.json();
     } catch {
@@ -132,15 +137,39 @@ serve(async (req) => {
       ? (payload.testEmail ?? "").trim().toLowerCase()
       : "";
 
-    const { data: { user }, error: authError } = await adminClient.auth.getUser(
-      authHeader.replace("Bearer ", "")
-    );
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    /**
+     * Two callers, one body of logic.
+     *
+     * Until now this only ran with a signed-in user's token, which meant a
+     * reply was only ever discovered while someone had the inbox open. The
+     * scheduled sweeper (sync-inboxes) authenticates as the service role or
+     * with the vault trigger secret and names the user it is syncing.
+     */
+    const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
+    const internalSecret = Deno.env.get("INTERNAL_TRIGGER_SECRET") ?? "";
+    const isInternal =
+      !!bearer && (bearer === serviceKey || (!!internalSecret && bearer === internalSecret));
+
+    let user: { id: string } | null = null;
+    if (isInternal) {
+      if (!payload.userId) {
+        return new Response(JSON.stringify({ error: "userId is required for internal calls" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      user = { id: payload.userId };
+    } else {
+      const { data: { user: authedUser }, error: authError } = await adminClient.auth.getUser(bearer);
+      if (authError || !authedUser) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      user = { id: authedUser.id };
     }
+    const analyzeAuthHeader = isInternal ? `Bearer ${serviceKey}` : authHeader;
 
     // Enumerate ALL active Google mailboxes — users may connect more than one.
     const { data: integrations, error: integrationError } = await adminClient
