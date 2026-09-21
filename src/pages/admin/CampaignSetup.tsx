@@ -23,6 +23,10 @@ interface SetupRequest {
   direction: string;
   access_requested_at: string | null;
   access_request_count: number;
+  /** What the visitor told us, and where the click came from. Logged all
+   *  along, just never shown — the table read as "Anonymous visitor" with
+   *  nothing to act on. */
+  metadata: Record<string, unknown> | null;
 }
 
 interface Grant {
@@ -50,6 +54,8 @@ const AdminCampaignSetup = () => {
   const [grants, setGrants] = useState<Grant[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
+  /** Which request is expanded to show what the visitor told us. */
+  const [openRequestId, setOpenRequestId] = useState<string | null>(null);
   /** Which granted account is expanded for setup work. */
   const [openGrantId, setOpenGrantId] = useState<string | null>(null);
   const [outEmail, setOutEmail] = useState("");
@@ -62,7 +68,7 @@ const AdminCampaignSetup = () => {
       supabase
         .from("campaign_setup_requests")
         .select(
-          "id, user_id, source, plan, created_at, contact_email, contact_name, status, direction, access_requested_at, access_request_count",
+          "id, user_id, source, plan, created_at, contact_email, contact_name, status, direction, access_requested_at, access_request_count, metadata",
         )
         .order("created_at", { ascending: false })
         .limit(200),
@@ -343,9 +349,40 @@ const AdminCampaignSetup = () => {
                     const g = r.user_id ? grants.find((x) => x.user_id === r.user_id && isActive(x)) : undefined;
                     const target = r.user_id ?? undefined;
                     const email = r.contact_email ?? (r.user_id ? profiles[r.user_id]?.email : null) ?? undefined;
+                    const meta = (r.metadata ?? {}) as Record<string, unknown>;
+                    const detail = (key: string) => {
+                      const v = meta[key];
+                      return typeof v === "string" && v.trim() ? v.trim() : null;
+                    };
+                    const details: Array<[string, string]> = [
+                      ["Company", detail("company")],
+                      ["Website", detail("website")],
+                      ["Ideal customer", detail("audience")],
+                      ["Goal", detail("goal")],
+                      ["Page", detail("path")],
+                      ["Came from", detail("referrer")],
+                    ].filter((x): x is [string, string] => !!x[1]);
+                    const expanded = openRequestId === r.id;
                     return (
-                      <TableRow key={r.id}>
-                        <TableCell className="font-medium">{who(r)}</TableCell>
+                      <Fragment key={r.id}>
+                      <TableRow>
+                        <TableCell className="font-medium">
+                          <div className="space-y-1">
+                            <div>{who(r)}</div>
+                            {details.length > 0 ? (
+                              <button
+                                type="button"
+                                className="flex items-center gap-1 text-[11px] text-primary hover:underline"
+                                onClick={() => setOpenRequestId(expanded ? null : r.id)}
+                              >
+                                {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                                {expanded ? "Hide details" : `Details (${details.length})`}
+                              </button>
+                            ) : (
+                              <p className="text-[11px] text-muted-foreground">Click only — no answers submitted</p>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <Badge variant="outline" className="text-[10px] capitalize">
                             {r.direction}
@@ -392,6 +429,21 @@ const AdminCampaignSetup = () => {
                           )}
                         </TableCell>
                       </TableRow>
+                      {expanded && (
+                        <TableRow>
+                          <TableCell colSpan={7} className="bg-muted/30">
+                            <dl className="grid gap-2 sm:grid-cols-2">
+                              {details.map(([label, value]) => (
+                                <div key={label}>
+                                  <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</dt>
+                                  <dd className="text-sm break-words">{value}</dd>
+                                </div>
+                              ))}
+                            </dl>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      </Fragment>
                     );
                   })}
                 </TableBody>
