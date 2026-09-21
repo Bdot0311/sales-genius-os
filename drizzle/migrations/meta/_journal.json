@@ -127,6 +127,13 @@
       "when": 1789914202373,
       "tag": "0017_lock_down_secret_columns_api_keys_integrations_webhooks",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1790015260332,
+      "tag": "0018_admin_billing_summary_from_authoritative_records",
+      "breakpoints": true
     }
   ]
 }

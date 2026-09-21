@@ -5975,6 +5975,16 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_get_billing_summary: {
+        Args: never
+        Returns: {
+          cancelled: number
+          cancelling_soon: number
+          chargebacks: number
+          new_subscriptions: number
+          payment_issues: number
+        }[]
+      }
       admin_get_cron_runs: {
         Args: { jobnames: string[] }
         Returns: {
