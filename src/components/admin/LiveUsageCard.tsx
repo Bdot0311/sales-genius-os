@@ -97,7 +97,15 @@ export const LiveUsageCard = () => {
         </div>
 
         {online.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nobody is in the app right now.</p>
+          <div className="space-y-1">
+            <p className="text-sm text-muted-foreground">Nobody is in the app right now.</p>
+            {/* Otherwise this reads as "nobody uses the product" when you are
+                looking at it yourself from the editor preview. */}
+            <p className="text-xs text-muted-foreground">
+              Counts only the published app — your own preview sessions are left out, and history starts from when live
+              usage was switched on.
+            </p>
+          </div>
         ) : (
           <div className="space-y-2">
             {online.map((u) => (
