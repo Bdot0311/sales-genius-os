@@ -535,24 +535,32 @@ export function useExternalLeads() {
         }
       }
 
-      // Step 6: Record enrichment history
-      await supabase.from('enrichment_history').insert({
-        user_id: userId,
-        lead_id: savedLead.id,
-        fields_enriched: enrichedFieldsPresent({
-          company_name: lead.company_name,
-          contact_name: lead.contact_name,
-          contact_email: email ?? foundEmail,
-          contact_phone: foundPhone,
-          industry: lead.industry,
-          company_size: lead.company_size,
-          job_title: lead.job_title,
-          linkedin_url: lead.linkedin_url,
-          icp_score: lead.scores.icp_score,
-        }),
-        source: 'OutReign',
-        status: email || foundEmail ? 'success' : 'partial',
-      });
+      // Step 6: Enrichment history.
+      //
+      // enrich-lead writes its own row for every run, so writing one here too
+      // put two entries in the lead's history for a single "Enrich & Save" —
+      // one listing what enrichment actually added, one re-listing every field
+      // the lead already had. Only log from here when enrichment never ran,
+      // which is the one case the server could not record.
+      if (enrichmentFailed) {
+        await supabase.from('enrichment_history').insert({
+          user_id: userId,
+          lead_id: savedLead.id,
+          fields_enriched: enrichedFieldsPresent({
+            company_name: lead.company_name,
+            contact_name: lead.contact_name,
+            contact_email: email,
+            industry: lead.industry,
+            company_size: lead.company_size,
+            job_title: lead.job_title,
+            linkedin_url: lead.linkedin_url,
+            icp_score: lead.scores.icp_score,
+          }),
+          source: 'OutReign',
+          status: 'failed',
+          error_message: 'Enrichment could not be completed for this lead.',
+        });
+      }
 
       toast(saveToast({
         hadEmail: !!email,
