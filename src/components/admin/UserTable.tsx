@@ -181,6 +181,12 @@ export const UserTable = ({
                       const act = activity?.[sub.user_id];
                       const lastActive = act?.last_active_at ? new Date(act.last_active_at) : null;
                       const online = lastActive ? Date.now() - lastActive.getTime() < 2 * 60 * 1000 : false;
+                      // Live tracking only knows about visits since it was
+                      // switched on, so an account that has signed in and got
+                      // through onboarding was reading "Never opened app".
+                      // Fall back to the sign-in we do know about, and keep
+                      // "never" for accounts that genuinely never signed in.
+                      const signedIn = sub.last_sign_in_at ? new Date(sub.last_sign_in_at) : null;
                       return (
                         <div className="space-y-0.5">
                           {online ? (
@@ -192,17 +198,18 @@ export const UserTable = ({
                             <span title={format(lastActive, 'PPpp')}>
                               {formatDistanceToNow(lastActive, { addSuffix: true })}
                             </span>
+                          ) : signedIn ? (
+                            <span title={format(signedIn, 'PPpp')}>
+                              {formatDistanceToNow(signedIn, { addSuffix: true })}
+                            </span>
                           ) : (
-                            <span className="text-muted-foreground text-xs">Never opened app</span>
+                            <span className="text-muted-foreground text-xs">Never signed in</span>
                           )}
-                          {act && act.minutes_7d > 0 && (
+                          {act && act.minutes_7d > 0 ? (
                             <p className="text-[10px] text-muted-foreground">{act.minutes_7d}m in last 7d</p>
-                          )}
-                          {sub.last_sign_in_at && (
-                            <p className="text-[10px] text-muted-foreground">
-                              signed in {formatDistanceToNow(new Date(sub.last_sign_in_at), { addSuffix: true })}
-                            </p>
-                          )}
+                          ) : signedIn ? (
+                            <p className="text-[10px] text-muted-foreground">from last sign-in</p>
+                          ) : null}
                         </div>
                       );
                     })()}
