@@ -6547,6 +6547,18 @@ export type Database = {
         }
         Returns: undefined
       }
+      reengagement_candidates: {
+        Args: { p_inactive_days?: number; p_limit?: number }
+        Returns: {
+          created_at: string
+          days_inactive: number
+          email: string
+          full_name: string
+          id: string
+          last_sign_in_at: string
+          never_signed_in: boolean
+        }[]
+      }
       reset_daily_email_counters: { Args: never; Returns: undefined }
       seed_objection_entries: {
         Args: { p_user_id: string }
