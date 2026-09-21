@@ -238,7 +238,11 @@ serve(async (req) => {
       .not("gmail_thread_id", "is", null)
       .eq("agent_thread_status", "active")
       .gte("sent_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
-      .limit(50);
+      // Newest first, and enough of them. An unordered limit of 50 against 130
+      // live threads silently skipped most of the mailbox, which is how a real
+      // reply could sit in Gmail while every sync reported zero.
+      .order("sent_at", { ascending: false })
+      .limit(300);
 
     if (threadsError) throw new Error(`Failed to fetch active threads: ${threadsError.message}`);
 
