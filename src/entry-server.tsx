@@ -18,6 +18,9 @@ import Partners from "./pages/Partners";
 import Security from "./pages/Security";
 import Accessibility from "./pages/Accessibility";
 import AlternativeTo from "./pages/AlternativeTo";
+import HelpCenter from "./pages/HelpCenter";
+import RequestIntegration from "./pages/RequestIntegration";
+import { helpArticles, helpCategories } from "./components/help/helpArticles";
 import { COMPETITORS } from "./data/competitors";
 
 // Mirrors src/App.tsx's PageLoader so the Suspense boundary the client mounts
