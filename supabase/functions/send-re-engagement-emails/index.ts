@@ -87,15 +87,25 @@ serve(async (req) => {
     await supabase.from('re_engagement_log').insert(entry);
   };
 
-  const sendOne = async (user: { id: string; email: string; full_name: string | null; last_sign_in_at: string | null }, opts: { manual: boolean; reason: string }) => {
-    const daysInactive = user.last_sign_in_at
-      ? Math.floor((Date.now() - new Date(user.last_sign_in_at).getTime()) / 86400_000)
-      : null;
+  const sendOne = async (
+    user: { id: string; email: string; full_name: string | null; last_sign_in_at: string | null; created_at?: string | null; never_signed_in?: boolean; days_inactive?: number | null },
+    opts: { manual: boolean; reason: string },
+  ) => {
+    // An account that never opened the app has no sign-in to count from, so the
+    // clock runs from signup instead — and the email must not claim they were
+    // last seen a while ago, because they were never seen at all.
+    const neverSignedIn = user.never_signed_in ?? !user.last_sign_in_at;
+    const since = user.last_sign_in_at ?? user.created_at ?? null;
+    const daysInactive = typeof user.days_inactive === 'number'
+      ? user.days_inactive
+      : since
+        ? Math.floor((Date.now() - new Date(since).getTime()) / 86400_000)
+        : null;
     const firstName = user.full_name ? String(user.full_name).split(' ')[0] : undefined;
 
     const sendRes = await sendAppEmail(supabase, TEMPLATE_NAME, user.email, {
       idempotencyKey: `reengage-${user.id}-${new Date().toISOString().slice(0, 10)}${opts.manual ? '-manual' : ''}`,
-      templateData: { name: firstName, daysInactive: daysInactive ?? undefined },
+      templateData: { name: firstName, daysInactive: daysInactive ?? undefined, neverSignedIn },
     });
     const sendErr = sendRes.sent ? null : { message: sendRes.error ?? sendRes.reason };
     const wasSuppressed = !sendRes.sent && sendRes.reason === 'recipient_suppressed';
