@@ -111,6 +111,13 @@ export const CHANGELOG: ChangelogEntry[] = [
         description:
           "New subscriptions, payment issues, completed cancellations, scheduled cancellations and chargebacks now come from billing history and current account status instead of disappearing when an alert is handled.",
       },
+      {
+        tag: "billing",
+        title: "Your search allowance matches your plan",
+        description:
+          "When your plan changes, your monthly search allowance now changes with it. Accounts that were still showing the free allowance after upgrading have been corrected, and anything already used is kept.",
+        href: "/dashboard/leads",
+      },
     ],
   },
   {
