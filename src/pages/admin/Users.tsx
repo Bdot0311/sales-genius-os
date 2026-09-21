@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { UserPlus, Search, RefreshCw, Users, Lock } from "lucide-react";
 import { UserStatsCards } from "@/components/admin/UserStatsCards";
-import { UserTable } from "@/components/admin/UserTable";
+import { UserTable, type UserActivitySummary } from "@/components/admin/UserTable";
+import { LiveUsageCard } from "@/components/admin/LiveUsageCard";
 import { UserActionBar } from "@/components/admin/UserActionBar";
 import { CreateUserDialog } from "@/components/admin/CreateUserDialog";
 import { DeleteUserDialog } from "@/components/admin/DeleteUserDialog";
@@ -49,6 +50,7 @@ const AdminUsers = () => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [resyncing, setResyncing] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [activity, setActivity] = useState<Record<string, UserActivitySummary>>({});
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -86,6 +88,8 @@ const AdminUsers = () => {
   useEffect(() => {
     loadSubscriptions();
     loadUserRoles();
+    loadActivity();
+
 
     const profilesChannel = supabase
       .channel('admin-profiles-realtime')
@@ -106,7 +110,7 @@ const AdminUsers = () => {
     };
   }, []);
 
-  useAutoRefresh(() => { loadSubscriptions(); loadUserRoles(); }, 60_000);
+  useAutoRefresh(() => { loadSubscriptions(); loadUserRoles(); loadActivity(); }, 60_000);
 
   const loadSubscriptions = async () => {
     try {
@@ -123,6 +127,26 @@ const AdminUsers = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Real usage per person: last active, time in app, visits.
+  const loadActivity = async () => {
+    const { data, error } = await supabase.rpc('admin_list_user_activity_summary');
+    if (error) {
+      console.error('activity summary', error);
+      return;
+    }
+    const map: Record<string, UserActivitySummary> = {};
+    for (const row of (data ?? []) as any[]) {
+      map[row.user_id] = {
+        last_active_at: row.last_active_at,
+        minutes_7d: row.minutes_7d ?? 0,
+        sessions_30d: row.sessions_30d ?? 0,
+        page_views_30d: row.page_views_30d ?? 0,
+        top_paths: row.top_paths ?? [],
+      };
+    }
+    setActivity(map);
   };
 
   const loadUserRoles = async () => {
@@ -330,6 +354,9 @@ const AdminUsers = () => {
       {/* Stats Cards */}
       <UserStatsCards stats={stats} />
 
+      {/* Who is actually using the product right now */}
+      <LiveUsageCard />
+
       {/* Plan Distribution Bar */}
       <Panel className="border-border/50 bg-card/80 backdrop-blur-sm">
         <PanelHeader className="pb-3">
@@ -463,6 +490,7 @@ const AdminUsers = () => {
             selectedIds={selectedIds}
             onToggleSelect={toggleSelect}
             onToggleSelectAll={toggleSelectAll}
+            activity={activity}
           />
         </PanelBody>
       </Panel>

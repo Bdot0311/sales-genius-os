@@ -39,8 +39,16 @@ const COLORS: Record<string, string> = {
   login: "text-muted-foreground",
 };
 
+interface PageVisit {
+  viewed_at: string;
+  path: string;
+  duration_seconds: number | null;
+  session_id: string;
+}
+
 export function UserTimelineDrawer({ userId, email, open, onOpenChange }: Props) {
   const [events, setEvents] = useState<TimelineEvent[]>([]);
+  const [visits, setVisits] = useState<PageVisit[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -50,6 +58,10 @@ export function UserTimelineDrawer({ userId, email, open, onOpenChange }: Props)
       if (error) console.error(error);
       setEvents((data ?? []) as TimelineEvent[]);
       setLoading(false);
+    });
+    supabase.rpc("admin_get_user_activity", { _user_id: userId }).then(({ data, error }) => {
+      if (error) console.error(error);
+      setVisits((data ?? []) as unknown as PageVisit[]);
     });
   }, [open, userId]);
 
@@ -63,6 +75,25 @@ export function UserTimelineDrawer({ userId, email, open, onOpenChange }: Props)
           </SheetTitle>
           <SheetDescription>{email ?? userId}</SheetDescription>
         </SheetHeader>
+
+        {visits.length > 0 && (
+          <div className="mt-6">
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">
+              Recent pages used
+            </p>
+            <div className="rounded-lg border border-border/50 divide-y divide-border/40">
+              {visits.slice(0, 25).map((v, i) => (
+                <div key={i} className="flex items-center justify-between gap-3 px-3 py-2 text-xs">
+                  <span className="truncate font-mono">{v.path}</span>
+                  <span className="text-muted-foreground whitespace-nowrap">
+                    {format(new Date(v.viewed_at), "MMM d · h:mm a")}
+                    {v.duration_seconds ? ` · ${v.duration_seconds}s` : ""}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="mt-6">
           {loading ? (

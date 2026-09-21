@@ -141,6 +141,13 @@
       "when": 1790017051648,
       "tag": "0019_plan_credit_allowance_sync",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1790018868725,
+      "tag": "0020_user_activity_tracking",
+      "breakpoints": true
     }
   ]
 }
