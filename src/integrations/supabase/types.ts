@@ -5395,6 +5395,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_activity_sessions: {
+        Row: {
+          id: string
+          is_mobile: boolean
+          last_seen_at: string
+          page_views: number
+          path: string | null
+          session_id: string
+          started_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          is_mobile?: boolean
+          last_seen_at?: string
+          page_views?: number
+          path?: string | null
+          session_id: string
+          started_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          is_mobile?: boolean
+          last_seen_at?: string
+          page_views?: number
+          path?: string | null
+          session_id?: string
+          started_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_email_templates: {
         Row: {
           created_at: string
@@ -5428,6 +5464,33 @@ export type Database = {
           trigger_context?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_page_views: {
+        Row: {
+          duration_seconds: number | null
+          id: string
+          path: string
+          session_id: string
+          user_id: string
+          viewed_at: string
+        }
+        Insert: {
+          duration_seconds?: number | null
+          id?: string
+          path: string
+          session_id: string
+          user_id: string
+          viewed_at?: string
+        }
+        Update: {
+          duration_seconds?: number | null
+          id?: string
+          path?: string
+          session_id?: string
+          user_id?: string
+          viewed_at?: string
         }
         Relationships: []
       }
@@ -6036,6 +6099,7 @@ export type Database = {
         Args: { _days?: number }
         Returns: Json
       }
+      admin_get_live_usage: { Args: never; Returns: Json }
       admin_get_realtime_status: {
         Args: never
         Returns: {
@@ -6051,6 +6115,15 @@ export type Database = {
           channel: string
           last_signup: string
           signups: number
+        }[]
+      }
+      admin_get_user_activity: {
+        Args: { _user_id: string }
+        Returns: {
+          duration_seconds: number
+          path: string
+          session_id: string
+          viewed_at: string
         }[]
       }
       admin_get_user_timeline: {
@@ -6104,6 +6177,17 @@ export type Database = {
           monthly_prospect_volume: string
           role: string
           team_size: string
+          user_id: string
+        }[]
+      }
+      admin_list_user_activity_summary: {
+        Args: never
+        Returns: {
+          last_active_at: string
+          minutes_7d: number
+          page_views_30d: number
+          sessions_30d: number
+          top_paths: string[]
           user_id: string
         }[]
       }
@@ -6240,6 +6324,7 @@ export type Database = {
       }
       cleanup_expired_cache: { Args: never; Returns: undefined }
       cleanup_rl_buckets: { Args: never; Returns: undefined }
+      cleanup_user_activity: { Args: never; Returns: undefined }
       consume_rate_limit: {
         Args: { _key: string; _max: number; _window_seconds: number }
         Returns: boolean

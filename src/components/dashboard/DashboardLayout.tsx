@@ -41,6 +41,7 @@ import { useAdmin } from "@/hooks/use-admin";
 import { useWhiteLabel } from "@/hooks/use-white-label";
 import { useSearchCredits } from "@/hooks/use-search-credits";
 import { useLiveCrmIndicators } from "@/hooks/use-live-crm-indicators";
+import { useUsageHeartbeat } from "@/hooks/use-usage-heartbeat";
 import { useDemoMode } from "@/hooks/use-demo-mode";
 import { useOnboardingGate } from "@/hooks/use-onboarding-gate";
 import { ensureSession, startSessionKeeper } from "@/lib/session-keeper";
@@ -99,6 +100,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const { settings: whiteLabelSettings } = useWhiteLabel();
   const { credits } = useSearchCredits();
   useLiveCrmIndicators();
+  useUsageHeartbeat();
   const { isDemoMode } = useDemoMode();
   const { loading: gateLoading, needsOnboarding } = useOnboardingGate();
 

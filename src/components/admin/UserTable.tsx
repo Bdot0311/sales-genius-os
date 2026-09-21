@@ -9,6 +9,14 @@ import type { UserSubscription } from "@/pages/admin/Users";
 import { useDemoMode } from "@/hooks/use-demo-mode";
 import { maybeMask } from "@/lib/demo-mask";
 
+export interface UserActivitySummary {
+  last_active_at: string | null;
+  minutes_7d: number;
+  sessions_30d: number;
+  page_views_30d: number;
+  top_paths: string[];
+}
+
 interface UserTableProps {
   subscriptions: UserSubscription[];
   loading: boolean;
@@ -16,6 +24,7 @@ interface UserTableProps {
   selectedIds: string[];
   onToggleSelect: (userId: string) => void;
   onToggleSelectAll: () => void;
+  activity?: Record<string, UserActivitySummary>;
 }
 
 const getPlanBadgeClass = (plan: string) => {
@@ -45,7 +54,7 @@ const getAccountBadge = (userId: string, accountStatus: string, trialEndDate: st
 type AnswerSummary = { role: string | null; team_size: string | null; current_tooling: string | null };
 
 export const UserTable = ({
-  subscriptions, loading, isUserAdmin, selectedIds, onToggleSelect, onToggleSelectAll,
+  subscriptions, loading, isUserAdmin, selectedIds, onToggleSelect, onToggleSelectAll, activity,
 }: UserTableProps) => {
   const { isDemoMode } = useDemoMode();
   const [answers, setAnswers] = useState<Record<string, AnswerSummary>>({});
@@ -93,7 +102,7 @@ export const UserTable = ({
             <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Plan</TableHead>
             <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Account</TableHead>
             <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Joined</TableHead>
-            <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Last Login</TableHead>
+            <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Last Active</TableHead>
             <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Leads</TableHead>
           </TableRow>
         </TableHeader>
@@ -168,16 +177,35 @@ export const UserTable = ({
                       : <span className="text-muted-foreground">—</span>}
                   </TableCell>
                   <TableCell className="text-sm tabular-nums whitespace-nowrap">
-                    {sub.last_sign_in_at ? (
-                      <span
-                        className="text-emerald-400"
-                        title={format(new Date(sub.last_sign_in_at), 'PPpp')}
-                      >
-                        {formatDistanceToNow(new Date(sub.last_sign_in_at), { addSuffix: true })}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground text-xs">Never recorded</span>
-                    )}
+                    {(() => {
+                      const act = activity?.[sub.user_id];
+                      const lastActive = act?.last_active_at ? new Date(act.last_active_at) : null;
+                      const online = lastActive ? Date.now() - lastActive.getTime() < 2 * 60 * 1000 : false;
+                      return (
+                        <div className="space-y-0.5">
+                          {online ? (
+                            <span className="flex items-center gap-1.5 text-emerald-400">
+                              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                              Active now
+                            </span>
+                          ) : lastActive ? (
+                            <span title={format(lastActive, 'PPpp')}>
+                              {formatDistanceToNow(lastActive, { addSuffix: true })}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">Never opened app</span>
+                          )}
+                          {act && act.minutes_7d > 0 && (
+                            <p className="text-[10px] text-muted-foreground">{act.minutes_7d}m in last 7d</p>
+                          )}
+                          {sub.last_sign_in_at && (
+                            <p className="text-[10px] text-muted-foreground">
+                              signed in {formatDistanceToNow(new Date(sub.last_sign_in_at), { addSuffix: true })}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell className="text-sm tabular-nums">
                     {(admin || sub.leads_limit >= 99999)
