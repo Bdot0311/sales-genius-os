@@ -28,6 +28,13 @@ import {
 import { aiFetch } from "../_shared/ai-provider.ts";
 import { capToolsToTier, resolveAgentTier } from "../_shared/agent-tier-scope.ts";
 import { notifyAgentRunFinished, notifyMeetingBooked } from "../_shared/notify-events.ts";
+import { briefToPromptBlock, isResearchFresh, type LeadResearchBrief } from "../_shared/lead-research.ts";
+import {
+  decisionForDrafting,
+  decisionPromptBlock,
+  loadSellerContext,
+  type SellerContext,
+} from "../_shared/lead-intelligence.ts";
 
 
 
@@ -35,6 +42,51 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+/**
+ * The prospect's own website, read and summarized, for the agent's drafts.
+ *
+ * Outreach Studio has always written against this brief (generate-email scrapes
+ * and caches it); the autonomous agent wrote from the lead row alone, which is
+ * why its emails read thinner than the ones a person generates. Same brief,
+ * same cache, same 14-day freshness rule. Failure is silent — a draft without
+ * research is still a draft, it just makes no site-specific claims.
+ */
+async function researchBlockForLead(
+  admin: any,
+  supabaseUrl: string,
+  authHeader: string,
+  anonKey: string,
+  leadId: string,
+): Promise<string> {
+  try {
+    const { data: row } = await admin
+      .from("leads")
+      .select("research_brief, research_sources, research_confidence, researched_at, updated_at, enriched_at")
+      .eq("id", leadId)
+      .maybeSingle();
+
+    if (row && isResearchFresh(row as Record<string, unknown>)) {
+      return briefToPromptBlock(
+        row.research_brief as LeadResearchBrief,
+        (row.research_sources as string[]) ?? [],
+      );
+    }
+
+    const res = await fetch(`${supabaseUrl}/functions/v1/research-lead`, {
+      method: "POST",
+      headers: { Authorization: authHeader, apikey: anonKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ leadId }),
+      signal: AbortSignal.timeout(60_000),
+    });
+    const rj = await res.json().catch(() => ({}));
+    if (rj?.brief) return briefToPromptBlock(rj.brief as LeadResearchBrief, Array.isArray(rj.sources) ? rj.sources : []);
+    if (rj?.error) console.warn("[agent-run] research skipped:", rj.error_code || rj.error);
+  } catch (err) {
+    console.warn("[agent-run] research step failed:", err instanceof Error ? err.message : err);
+  }
+  return "";
+}
 
 async function callGemini(prompt: string, systemPrompt: string): Promise<string> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -823,6 +875,22 @@ ${cfgValuePropsText}
 ${icpContext}
 
 ${playbookSystemRules()}`;
+              // Research the prospect's site and read the decision layer before
+              // writing, exactly as Outreach Studio does: Bedrock writes, the
+              // brief supplies the facts, the evaluation supplies the angle.
+              const leadResearchBlock = await researchBlockForLead(
+                adminClient,
+                supabaseUrl,
+                authHeader,
+                anonKey,
+                lead.id,
+              );
+              if (!sellerContext) sellerContext = await loadSellerContext(adminClient, user.id);
+              const leadDecision = await decisionForDrafting(adminClient, lead.id, user.id, {
+                seller: sellerContext,
+              });
+              const leadStrategyBlock = decisionPromptBlock(leadDecision);
+
               const outreachPrompt = buildTouchPrompt({
                 firstName,
                 jobTitle: lead.job_title,
@@ -834,7 +902,10 @@ ${playbookSystemRules()}`;
                 valueProps: cfgValuePropsText,
               });
 
-              const raw = await callGemini(outreachPrompt, outreachSystemPrompt);
+              const raw = await callGemini(
+                `${outreachPrompt}${leadResearchBlock}`,
+                `${outreachSystemPrompt}${leadStrategyBlock}`,
+              );
               const touches = parseTouches(raw);
               let subject = touches[0]?.subject ?? "";
               let body = touches[0]?.body ?? "";
