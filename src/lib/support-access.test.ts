@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import {
-  SCOPE_CAMPAIGN_ASSETS,
+  SCOPE_AGENT,
   SCOPE_LEADS,
+  SCOPE_SEQUENCES,
+  SCOPE_TARGETING,
   expiresInWords,
   grantCovers,
   isGrantActive,
@@ -11,7 +13,7 @@ import {
 
 const NOW = new Date("2026-09-04T12:00:00Z");
 const live = {
-  scopes: [SCOPE_CAMPAIGN_ASSETS, SCOPE_LEADS],
+  scopes: [SCOPE_SEQUENCES, SCOPE_TARGETING, SCOPE_AGENT, SCOPE_LEADS],
   granted_at: "2026-09-04T00:00:00Z",
   expires_at: "2026-09-18T00:00:00Z",
   revoked_at: null,
@@ -69,13 +71,16 @@ describe("a grant is usable only when the database would agree", () => {
 
 describe("scopes are checked, not assumed", () => {
   it("covers what the grant lists", () => {
-    expect(grantCovers(live, SCOPE_CAMPAIGN_ASSETS, NOW)).toBe(true);
+    expect(grantCovers(live, SCOPE_SEQUENCES, NOW)).toBe(true);
     expect(grantCovers(live, SCOPE_LEADS, NOW)).toBe(true);
   });
 
   it("does not cover a scope the grant omits", () => {
-    const assetsOnly = { ...live, scopes: [SCOPE_CAMPAIGN_ASSETS] };
-    expect(grantCovers(assetsOnly, SCOPE_LEADS, NOW)).toBe(false);
+    const sequencesOnly = { ...live, scopes: [SCOPE_SEQUENCES] };
+    expect(grantCovers(sequencesOnly, SCOPE_LEADS, NOW)).toBe(false);
+    // Sequences alone must not drag the ICP and the agent along with it.
+    expect(grantCovers(sequencesOnly, SCOPE_TARGETING, NOW)).toBe(false);
+    expect(grantCovers(sequencesOnly, SCOPE_AGENT, NOW)).toBe(false);
   });
 
   it("covers nothing once the grant is dead, whatever it listed", () => {
@@ -86,15 +91,23 @@ describe("scopes are checked, not assumed", () => {
 describe("the panel says which answer it is showing", () => {
   it("opens both sections for a full grant", () => {
     const s = sectionsFor(live, NOW);
-    expect(s).toEqual({ campaignAssets: true, leads: true, blockedReason: null });
+    expect(s).toEqual({
+      sequences: true,
+      targeting: true,
+      agent: true,
+      leads: true,
+      blockedReason: null,
+    });
   });
 
   it("distinguishes 'not covered' from 'they have none'", () => {
     // A section that silently comes back empty because the scope was missing
     // looks identical to a customer with no data, and the team would go on to
     // build against nothing.
-    const s = sectionsFor({ ...live, scopes: [SCOPE_CAMPAIGN_ASSETS] }, NOW);
-    expect(s.campaignAssets).toBe(true);
+    const s = sectionsFor({ ...live, scopes: [SCOPE_SEQUENCES] }, NOW);
+    expect(s.sequences).toBe(true);
+    expect(s.targeting).toBe(false);
+    expect(s.agent).toBe(false);
     expect(s.leads).toBe(false);
     expect(s.blockedReason).toBeNull();
   });
