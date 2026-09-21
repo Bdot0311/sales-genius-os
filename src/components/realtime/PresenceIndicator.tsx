@@ -45,9 +45,9 @@ export const PresenceIndicator = ({ recordKey, editing = false, className = "" }
             <TooltipTrigger asChild>
               <div className="relative">
                 <Avatar className="h-6 w-6 ring-2 ring-background">
-                  {u.avatar_url && <AvatarImage src={u.avatar_url} alt={u.email} />}
+                  {u.avatar_url && <AvatarImage src={u.avatar_url} alt={u.name} />}
                   <AvatarFallback className="text-[10px] bg-primary/15 text-primary">
-                    {initials(u.name || u.email)}
+                    {initials(u.name)}
                   </AvatarFallback>
                 </Avatar>
                 {u.editing && (
@@ -58,7 +58,7 @@ export const PresenceIndicator = ({ recordKey, editing = false, className = "" }
               </div>
             </TooltipTrigger>
             <TooltipContent side="bottom" className="text-xs">
-              <div>{u.name || u.email}</div>
+              <div>{u.name}</div>
               <div className="text-muted-foreground">{u.editing ? "Editing now" : "Viewing"}</div>
             </TooltipContent>
           </Tooltip>
