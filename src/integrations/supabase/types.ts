@@ -6434,6 +6434,10 @@ export type Database = {
       }
       next_month_start_utc: { Args: never; Returns: string }
       pick_sending_account: { Args: { p_user_id: string }; Returns: string }
+      plan_search_credits: {
+        Args: { _plan: Database["public"]["Enums"]["subscription_plan"] }
+        Returns: number
+      }
       recompute_activation: { Args: { _user_id: string }; Returns: undefined }
       record_ai_usage: {
         Args: {

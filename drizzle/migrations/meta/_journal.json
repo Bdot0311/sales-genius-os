@@ -134,6 +134,13 @@
       "when": 1790015260332,
       "tag": "0018_admin_billing_summary_from_authoritative_records",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1790017051648,
+      "tag": "0019_plan_credit_allowance_sync",
+      "breakpoints": true
     }
   ]
 }
