@@ -162,6 +162,13 @@
       "when": 1790025526990,
       "tag": "0022_reengagement_candidates_from_auth_truth",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1790026276787,
+      "tag": "0023_blog_posts_opinly_source_and_sync_cron",
+      "breakpoints": true
     }
   ]
 }
