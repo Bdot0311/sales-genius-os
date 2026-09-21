@@ -148,6 +148,13 @@
       "when": 1790018868725,
       "tag": "0020_user_activity_tracking",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1790020373334,
+      "tag": "0021_granular_support_scopes_and_system_events_authenticated",
+      "breakpoints": true
     }
   ]
 }
