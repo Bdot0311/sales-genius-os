@@ -23,6 +23,10 @@ interface SetupRequest {
   direction: string;
   access_requested_at: string | null;
   access_request_count: number;
+  /** What the visitor told us, and where the click came from. Logged all
+   *  along, just never shown — the table read as "Anonymous visitor" with
+   *  nothing to act on. */
+  metadata: Record<string, unknown> | null;
 }
 
 interface Grant {
@@ -62,7 +66,7 @@ const AdminCampaignSetup = () => {
       supabase
         .from("campaign_setup_requests")
         .select(
-          "id, user_id, source, plan, created_at, contact_email, contact_name, status, direction, access_requested_at, access_request_count",
+          "id, user_id, source, plan, created_at, contact_email, contact_name, status, direction, access_requested_at, access_request_count, metadata",
         )
         .order("created_at", { ascending: false })
         .limit(200),
