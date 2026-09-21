@@ -217,7 +217,10 @@ serve(async (req) => {
         continue;
       }
 
-      const result = await sendOne(user as any, { manual: false, reason: 'no_signin_today' });
+      const result = await sendOne(user as any, {
+        manual: false,
+        reason: user.never_signed_in ? 'never_signed_in' : 'no_signin_today',
+      });
       if (result.ok) sent++;
       else if (result.suppressed) skipped++;
       else errors.push(`${user.email}: ${result.error}`);
