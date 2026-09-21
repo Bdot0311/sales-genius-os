@@ -22,10 +22,33 @@
  * scope was missing looks identical to a customer with no data.
  */
 
-/** The scope covering campaign-building assets: sequences, drafts, ICP, agent. */
-export const SCOPE_CAMPAIGN_ASSETS = "campaign_assets";
+/**
+ * Scopes are granular on purpose.
+ *
+ * There used to be one "campaign_assets" scope, and a customer who ticked it
+ * to get a sequence built also handed over their ICP and their agent settings
+ * in the same breath. Each area is its own consent now, so a grant only opens
+ * what the customer actually agreed to.
+ */
+/** Sequences, their steps, message blocks and saved drafts. */
+export const SCOPE_SEQUENCES = "sequences";
+/** Who they're going after: the ICP profile. */
+export const SCOPE_TARGETING = "targeting";
+/** The AI agent's configuration. */
+export const SCOPE_AGENT = "agent";
 /** The scope covering the customer's lead records. */
 export const SCOPE_LEADS = "leads";
+
+/** Every scope a customer can consent to, in the order we show them. */
+export const SUPPORT_SCOPES = [SCOPE_SEQUENCES, SCOPE_TARGETING, SCOPE_AGENT, SCOPE_LEADS] as const;
+
+/** What each scope means, in the customer's words. */
+export const SCOPE_LABELS: Record<string, string> = {
+  [SCOPE_SEQUENCES]: "Your sequences, message blocks and drafts",
+  [SCOPE_TARGETING]: "Your ideal customer profile",
+  [SCOPE_AGENT]: "Your AI agent settings",
+  [SCOPE_LEADS]: "Your saved leads",
+};
 
 export interface GrantLike {
   scopes?: string[] | null;
@@ -74,7 +97,9 @@ export function expiresInWords(expiresAt: string | null | undefined, now: Date =
  * ask the customer for more.
  */
 export interface SectionAvailability {
-  campaignAssets: boolean;
+  sequences: boolean;
+  targeting: boolean;
+  agent: boolean;
   leads: boolean;
   /** Non-empty when nothing at all is reachable. */
   blockedReason: string | null;
@@ -83,7 +108,9 @@ export interface SectionAvailability {
 export function sectionsFor(grant: GrantLike, now: Date = new Date()): SectionAvailability {
   if (!isGrantActive(grant, now)) {
     return {
-      campaignAssets: false,
+      sequences: false,
+      targeting: false,
+      agent: false,
       leads: false,
       blockedReason: grant.revoked_at
         ? "This customer revoked access."
@@ -92,13 +119,17 @@ export function sectionsFor(grant: GrantLike, now: Date = new Date()): SectionAv
         : "This grant has expired. Ask the customer to grant it again.",
     };
   }
-  const campaignAssets = grantCovers(grant, SCOPE_CAMPAIGN_ASSETS, now);
+  const sequences = grantCovers(grant, SCOPE_SEQUENCES, now);
+  const targeting = grantCovers(grant, SCOPE_TARGETING, now);
+  const agent = grantCovers(grant, SCOPE_AGENT, now);
   const leads = grantCovers(grant, SCOPE_LEADS, now);
   return {
-    campaignAssets,
+    sequences,
+    targeting,
+    agent,
     leads,
     blockedReason:
-      campaignAssets || leads
+      sequences || targeting || agent || leads
         ? null
         : "This grant carries no scopes we can act on. Ask the customer to grant it again.",
   };

@@ -9,8 +9,6 @@ import {
 } from "@/components/ui/table";
 import { Loader2, ExternalLink, Plus } from "lucide-react";
 import {
-  SCOPE_CAMPAIGN_ASSETS,
-  SCOPE_LEADS,
   expiresInWords,
   sectionsFor,
   type GrantLike,
@@ -59,7 +57,7 @@ export function SupportAccessWorkspace({
     setLoading(true);
     try {
       const [seqRes, draftRes, leadRes, icpRes, agentRes] = await Promise.all([
-        sections.campaignAssets
+        sections.sequences
           ? supabase
               .from("email_sequences")
               .select("id, name, status, created_at")
@@ -67,7 +65,7 @@ export function SupportAccessWorkspace({
               .order("created_at", { ascending: false })
               .limit(50)
           : Promise.resolve({ data: [] }),
-        sections.campaignAssets
+        sections.sequences
           ? supabase
               .from("email_drafts")
               .select("id", { count: "exact", head: true })
@@ -79,10 +77,10 @@ export function SupportAccessWorkspace({
               .select("id", { count: "exact", head: true })
               .eq("user_id", grant.user_id)
           : Promise.resolve({ count: 0 }),
-        sections.campaignAssets
+        sections.targeting
           ? supabase.from("icp_profiles").select("id").eq("user_id", grant.user_id).limit(1)
           : Promise.resolve({ data: [] }),
-        sections.campaignAssets
+        sections.agent
           ? supabase.from("agent_configs").select("id").eq("user_id", grant.user_id).limit(1)
           : Promise.resolve({ data: [] }),
       ]);
@@ -116,7 +114,7 @@ export function SupportAccessWorkspace({
     } finally {
       setLoading(false);
     }
-  }, [grant.user_id, sections.campaignAssets, sections.leads]);
+  }, [grant.user_id, sections.sequences, sections.targeting, sections.agent, sections.leads]);
 
   useEffect(() => {
     void load();
@@ -156,22 +154,37 @@ export function SupportAccessWorkspace({
             Leads not covered by this grant
           </Badge>
         )}
-        {!sections.campaignAssets && (
+        {!sections.sequences && (
           <Badge variant="outline" className="text-[10px]">
-            Campaign assets not covered by this grant
+            Sequences not covered by this grant
+          </Badge>
+        )}
+        {!sections.targeting && (
+          <Badge variant="outline" className="text-[10px]">
+            Ideal customer profile not covered
+          </Badge>
+        )}
+        {!sections.agent && (
+          <Badge variant="outline" className="text-[10px]">
+            Agent settings not covered
           </Badge>
         )}
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { label: "Sequences", value: data?.sequences.length ?? 0, shown: sections.campaignAssets },
-          { label: "Saved drafts", value: data?.drafts ?? 0, shown: sections.campaignAssets },
+          { label: "Sequences", value: data?.sequences.length ?? 0, shown: sections.sequences },
+          { label: "Saved drafts", value: data?.drafts ?? 0, shown: sections.sequences },
           { label: "Leads", value: data?.leads ?? 0, shown: sections.leads },
           {
-            label: "ICP / agent",
-            value: `${data?.hasIcp ? "ICP" : "no ICP"} · ${data?.hasAgent ? "agent" : "no agent"}`,
-            shown: sections.campaignAssets,
+            label: "ICP",
+            value: data?.hasIcp ? "set up" : "not set up",
+            shown: sections.targeting,
+          },
+          {
+            label: "Agent",
+            value: data?.hasAgent ? "set up" : "not set up",
+            shown: sections.agent,
           },
         ]
           .filter((s) => s.shown)
@@ -183,7 +196,7 @@ export function SupportAccessWorkspace({
           ))}
       </div>
 
-      {sections.campaignAssets && (
+      {sections.sequences && (
         <div>
           <div className="mb-2 flex items-center justify-between">
             <h4 className="text-sm font-medium">Their sequences</h4>

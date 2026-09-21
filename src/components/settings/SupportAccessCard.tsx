@@ -18,6 +18,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { CalendarClock, KeyRound, Loader2, ShieldCheck, ShieldOff } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { SCOPE_LABELS, SUPPORT_SCOPES, SCOPE_SEQUENCES } from "@/lib/support-access";
 
 interface Grant {
   id: string;
@@ -35,16 +37,16 @@ interface AccessEvent {
   created_at: string;
 }
 
-const SCOPE_LABELS: Record<string, string> = {
-  campaign_assets: "Sequences, message blocks, drafts, ICP and agent settings",
-  leads: "Your saved leads",
-};
+// Consent is per area now: granting a sequence build no longer hands over the
+// ICP and the agent settings along with it.
 
 export const SupportAccessCard = () => {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [grant, setGrant] = useState<Grant | null>(null);
   const [events, setEvents] = useState<AccessEvent[]>([]);
+  /** Starts at the one area setup actually needs; the rest are opt-in. */
+  const [chosen, setChosen] = useState<string[]>([SCOPE_SEQUENCES]);
 
   const load = useCallback(async () => {
     const {
@@ -90,9 +92,14 @@ export const SupportAccessCard = () => {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Not signed in");
 
+      if (chosen.length === 0) {
+        toast.error("Pick at least one thing we're allowed to work on");
+        return;
+      }
+
       const { error } = await supabase.from("support_access_grants").insert({
         user_id: user.id,
-        scopes: ["campaign_assets", "leads"],
+        scopes: chosen,
       });
       if (error) throw error;
       toast.success("Access granted for 14 days — you can revoke it anytime");
@@ -195,14 +202,31 @@ export const SupportAccessCard = () => {
               )}
             </div>
 
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Choose what we're allowed to work on</p>
+              {SUPPORT_SCOPES.map((scope) => (
+                <label key={scope} className="flex items-start gap-2 text-sm text-muted-foreground">
+                  <Checkbox
+                    checked={chosen.includes(scope)}
+                    onCheckedChange={(v) =>
+                      setChosen((prev) =>
+                        v === true ? [...new Set([...prev, scope])] : prev.filter((s) => s !== scope),
+                      )
+                    }
+                  />
+                  <span>{SCOPE_LABELS[scope]}</span>
+                </label>
+              ))}
+            </div>
+
             <ul className="text-sm text-muted-foreground space-y-1">
               <li>• Grants last 14 days, then expire on their own</li>
               <li>• We end access as soon as your setup is finished</li>
-              <li>• Covers campaigns and leads only — never your password, billing or mailbox login</li>
+              <li>• Only what you tick above — never your password, billing or mailbox login</li>
               <li>• Every action we take is recorded below</li>
             </ul>
 
-            <Button onClick={handleGrant} disabled={busy} className="gap-1.5">
+            <Button onClick={handleGrant} disabled={busy || chosen.length === 0} className="gap-1.5">
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
               Grant campaign setup access (14 days)
             </Button>
