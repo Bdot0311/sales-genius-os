@@ -97,7 +97,9 @@ export function expiresInWords(expiresAt: string | null | undefined, now: Date =
  * ask the customer for more.
  */
 export interface SectionAvailability {
-  campaignAssets: boolean;
+  sequences: boolean;
+  targeting: boolean;
+  agent: boolean;
   leads: boolean;
   /** Non-empty when nothing at all is reachable. */
   blockedReason: string | null;
@@ -106,7 +108,9 @@ export interface SectionAvailability {
 export function sectionsFor(grant: GrantLike, now: Date = new Date()): SectionAvailability {
   if (!isGrantActive(grant, now)) {
     return {
-      campaignAssets: false,
+      sequences: false,
+      targeting: false,
+      agent: false,
       leads: false,
       blockedReason: grant.revoked_at
         ? "This customer revoked access."
@@ -115,13 +119,17 @@ export function sectionsFor(grant: GrantLike, now: Date = new Date()): SectionAv
         : "This grant has expired. Ask the customer to grant it again.",
     };
   }
-  const campaignAssets = grantCovers(grant, SCOPE_CAMPAIGN_ASSETS, now);
+  const sequences = grantCovers(grant, SCOPE_SEQUENCES, now);
+  const targeting = grantCovers(grant, SCOPE_TARGETING, now);
+  const agent = grantCovers(grant, SCOPE_AGENT, now);
   const leads = grantCovers(grant, SCOPE_LEADS, now);
   return {
-    campaignAssets,
+    sequences,
+    targeting,
+    agent,
     leads,
     blockedReason:
-      campaignAssets || leads
+      sequences || targeting || agent || leads
         ? null
         : "This grant carries no scopes we can act on. Ask the customer to grant it again.",
   };
