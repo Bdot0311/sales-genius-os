@@ -208,7 +208,9 @@ describe("the layer cannot act", () => {
 
   it("keeps its credentials on the server", () => {
     // The key is read in the edge function only; nothing under src/ names it.
-    expect(PROVIDER).toContain('Deno.env.get("TYPESAFE_API_KEY")');
+    expect(PROVIDER).toContain('"TYPESAFE_API_KEY"');
+    // Read at call time, so the key is never captured at module load.
+    expect(code(PROVIDER)).toMatch(/const apiKey = \(\): string =>/);
     const clientSide = readFileSync("src/lib/lead-intelligence.ts", "utf8");
     expect(clientSide).not.toContain("TYPESAFE");
     expect(clientSide).not.toContain("api.typesafe.ai");
