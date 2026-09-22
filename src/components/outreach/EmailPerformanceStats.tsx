@@ -138,21 +138,30 @@ export const EmailPerformanceStats = () => {
   const load = useCallback(async () => {
     const since = new Date(Date.now() - days * 86_400_000).toISOString();
     try {
+      // Owner-scoped on purpose: row security returns the same rows either way,
+      // but without the filter the database has to test every row in the table
+      // rather than seeking straight to this account's.
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { setLoading(false); return; }
+      const uid = session.user.id;
+
       const [e, r, d, t, s, m, o] = await Promise.all([
         supabase
           .from("sent_emails")
           .select(
             "id, subject, to_email, status, sent_at, created_at, opened_at, replied_at, clicked_at, template_id, sequence_id, sequence_step, sending_account_id, lead_id",
           )
+          .eq("user_id", uid)
           .gte("created_at", since)
           .order("created_at", { ascending: false })
           .limit(5000),
         supabase
           .from("reply_analysis")
           .select("id, intent_classification, intent_score, requires_human_action, created_at, sent_email_id")
+          .eq("user_id", uid)
           .gte("created_at", since)
           .limit(2000),
-        supabase.from("deals").select("id, stage, value, created_at").gte("created_at", since).limit(2000),
+        supabase.from("deals").select("id, stage, value, created_at").eq("user_id", uid).gte("created_at", since).limit(2000),
         supabase.from("email_templates").select("id, name"),
         supabase.from("email_sequences").select("id, name"),
         supabase.from("sending_accounts").select("id, email, status, reputation_score"),
