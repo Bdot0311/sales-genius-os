@@ -60,7 +60,8 @@ const SEARCH_PRIMER = [
 ] as const;
 
 const Leads = () => {
-  const [leads, setLeads] = useState<any[]>([]);
+  const [leadCount, setLeadCount] = useState(0);
+  const recountTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [externalFilters, setExternalFilters] = useState<ExternalLeadFilters>({});
   const [showExternalLeads, setShowExternalLeads] = useState(false);
   const [aiSearchQuery, setAiSearchQuery] = useState("");
@@ -99,18 +100,26 @@ const Leads = () => {
 
 
 
+  /**
+   * Only the saved-leads badge count is needed here.
+   *
+   * This used to pull every readable lead row, unscoped and unordered by owner,
+   * which made the database evaluate row security across the whole table — the
+   * single slowest query in the product (around 700ms a call) and it re-ran on
+   * every lead change anywhere, so a CSV import fired hundreds of them.
+   */
   const fetchLeads = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const { data, error } = await supabase
+      const { count, error } = await supabase
         .from("leads")
-        .select("id")
-        .order("created_at", { ascending: false });
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", session.user.id);
 
       if (error) throw error;
-      setLeads(data || []);
+      setLeadCount(count ?? 0);
     } catch (error: any) {
       console.error("Error loading leads:", error);
     }
@@ -120,10 +129,15 @@ const Leads = () => {
     fetchLeads();
   }, []);
 
+  // Imports and bulk saves arrive as a burst of row events; recount once the
+  // burst settles instead of once per row.
   useRealtimeTable({
     channel: "leads-page",
     table: "leads",
-    onChange: () => fetchLeads(),
+    onChange: () => {
+      if (recountTimer.current) clearTimeout(recountTimer.current);
+      recountTimer.current = setTimeout(() => fetchLeads(), 1500);
+    },
   });
 
   // Run a search from a confirmed ICP produced by the "Analyze your website" tab.
@@ -211,7 +225,7 @@ const Leads = () => {
             <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard/leads/saved')}>
               <Users className="w-4 h-4 mr-2" />
               Saved
-              {leads.length > 0 && <Badge variant="secondary" className="ml-2">{leads.length}</Badge>}
+              {leadCount > 0 && <Badge variant="secondary" className="ml-2">{leadCount}</Badge>}
             </Button>
             <ImportLeadsDialog onImportComplete={fetchLeads} triggerVariant="outline" />
             <AddLeadDialog onLeadAdded={fetchLeads} triggerVariant="outline" />
