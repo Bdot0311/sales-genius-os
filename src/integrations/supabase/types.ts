@@ -526,6 +526,128 @@ export type Database = {
           },
         ]
       }
+      agent_job_items: {
+        Row: {
+          attempts: number
+          claimed_at: string | null
+          created_at: string
+          draft_id: string | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          job_id: string
+          lead_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          claimed_at?: string | null
+          created_at?: string
+          draft_id?: string | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          job_id: string
+          lead_id: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          claimed_at?: string | null
+          created_at?: string
+          draft_id?: string | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          job_id?: string
+          lead_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_job_items_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "agent_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_job_items_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_jobs: {
+        Row: {
+          agent_config_id: string | null
+          autonomy: string
+          created_at: string
+          done: number
+          failed: number
+          feedback: string | null
+          finished_at: string | null
+          goal: string
+          id: string
+          kind: string
+          reported_at: string | null
+          request_text: string | null
+          status: string
+          thread_id: string | null
+          total: number
+          user_id: string
+        }
+        Insert: {
+          agent_config_id?: string | null
+          autonomy?: string
+          created_at?: string
+          done?: number
+          failed?: number
+          feedback?: string | null
+          finished_at?: string | null
+          goal?: string
+          id?: string
+          kind?: string
+          reported_at?: string | null
+          request_text?: string | null
+          status?: string
+          thread_id?: string | null
+          total?: number
+          user_id: string
+        }
+        Update: {
+          agent_config_id?: string | null
+          autonomy?: string
+          created_at?: string
+          done?: number
+          failed?: number
+          feedback?: string | null
+          finished_at?: string | null
+          goal?: string
+          id?: string
+          kind?: string
+          reported_at?: string | null
+          request_text?: string | null
+          status?: string
+          thread_id?: string | null
+          total?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_jobs_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "agent_chat_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_step_metrics: {
         Row: {
           agent_config_id: string | null
@@ -6306,6 +6428,28 @@ export type Database = {
       }
       check_ai_gateway_usage_alert: { Args: never; Returns: undefined }
       check_expiring_api_keys: { Args: never; Returns: undefined }
+      claim_agent_job_items: {
+        Args: { p_limit?: number }
+        Returns: {
+          attempts: number
+          claimed_at: string | null
+          created_at: string
+          draft_id: string | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          job_id: string
+          lead_id: string
+          status: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "agent_job_items"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       claim_stripe_webhook_event: {
         Args: {
           _event_id: string
@@ -6559,6 +6703,7 @@ export type Database = {
           never_signed_in: boolean
         }[]
       }
+      release_stale_agent_job_items: { Args: never; Returns: number }
       reset_daily_email_counters: { Args: never; Returns: undefined }
       seed_objection_entries: {
         Args: { p_user_id: string }
@@ -6572,6 +6717,7 @@ export type Database = {
         Args: { _signed_up: string; _uid: string }
         Returns: undefined
       }
+      trigger_agent_jobs: { Args: never; Returns: undefined }
       trigger_rescore_queue: { Args: never; Returns: undefined }
       webhook_has_secret: { Args: { _webhook_id: string }; Returns: boolean }
       webhook_secret_masked: { Args: { _webhook_id: string }; Returns: string }
