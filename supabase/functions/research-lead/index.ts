@@ -346,18 +346,44 @@ serve(async (req) => {
       );
     }
 
-    const homepage = await fetchPage(origin);
-    if (homepage === null) {
-      return new Response(
-        JSON.stringify({
-          error: `We couldn't reach ${host}. The email will use the lead's existing data instead.`,
-          error_code: "unreachable",
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
+    // ─── External web research, run alongside the site read ──────────────────
+    //
+    // The company's own pages say the same thing to every visitor and almost
+    // never carry a date. Independent sources do, which is what lets an
+    // observation be dated — and a site we cannot read at all no longer ends
+    // the research, because the outside world still has material on them.
+    const webPromise: Promise<{ results: ParallelResult[]; sessionId: string | null; error: string | null }> =
+      parallelConfigured()
+        ? parallelSearch({
+          objective:
+            `Recent, dated developments at the company ${lead.company_name || host} (website ${host}): funding, ` +
+            `acquisitions, product launches, partnerships, leadership hires, expansion or hiring pushes. ` +
+            `Used to open a relevant cold email, so timing and a citable source matter more than background.`,
+          queries: leadResearchQueries(String(lead.company_name ?? ""), host),
+          maxResults: 8,
+          timeoutMs: 20_000,
+        })
+        : Promise.resolve({ results: [], sessionId: null, error: "not_configured" });
 
-    const pages: { url: string; html: string }[] = [{ url: origin, html: homepage }];
+    const homepage = await fetchPage(origin);
+    const pages: { url: string; html: string }[] = [];
+    if (homepage === null) {
+      const fallbackWeb = await webPromise;
+      if (!fallbackWeb.results.length) {
+        return new Response(
+          JSON.stringify({
+            error: `We couldn't reach ${host}. The email will use the lead's existing data instead.`,
+            error_code: "unreachable",
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      console.log(
+        `[research-lead] ${host} unreachable — researching from ${fallbackWeb.results.length} external sources`,
+      );
+    } else {
+      pages.push({ url: origin, html: homepage });
+    }
 
     // ─── Which other pages to read ───────────────────────────────────────────
     //
