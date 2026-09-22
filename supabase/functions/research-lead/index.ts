@@ -6,6 +6,13 @@ import { AI_CREDITS_USER_MESSAGE, isAiCreditError, reportAiCreditsExhausted } fr
 import { toSignalFacts, type SignalEventRow } from "../_shared/signal-facts.ts";
 import { coldiqConfigured, coldiqFetchPages } from "../_shared/coldiq.ts";
 import {
+  leadResearchQueries,
+  parallelConfigured,
+  parallelPromptBlock,
+  parallelSearch,
+  type ParallelResult,
+} from "../_shared/parallel.ts";
+import {
   briefToPromptBlock,
   isResearchFresh,
   normalizeOccurred,
@@ -139,6 +146,7 @@ ABSOLUTE RULES:
 - DATE EVERY OBSERVATION YOU CAN. "occurred" is the date the PAGE states for that fact — a press-release date, "November 2025", a changelog entry, a copyright year on a dated announcement. Use "YYYY-MM-DD", "YYYY-MM" or "YYYY".
 - If the page gives no date for a fact, fall back to that page's own last-changed date when one is supplied in a PAGE CHANGE DATES block, and only for a fact you read on that exact page. Otherwise "occurred" MUST be "". Never estimate one, never use today's date, never infer a date from context. A website is a standing document: an acquisition announced last November still sits on the About page today, and a rep who reads it as news writes an email the prospect knows is wrong.
 - A page's last-changed date bounds how recent the fact can be, it does not prove the fact is that new. Use it as the date; never write "they announced this last week" on the strength of it alone.
+- An EXTERNAL WEB RESEARCH block, when present, holds excerpts from independent sources with their URLs and publish dates. Treat it as read material exactly like the website text: an observation from it must cite that source URL, and may carry that source's publish date as "occurred". It is usually the only genuinely dated material available, so prefer it for hooks that trade on timing. Still never state anything the excerpts do not say.
 - OPEN ROLES ARE THE STRONGEST MATERIAL ON A COMPANY'S OWN SITE. If a careers or jobs page was read, name the actual roles they are hiring for. What a company is staffing for says what it is building before any marketing page does, it is specific enough that no other company shares it, and job listings are dated. Treat a list of open roles as an observation, not as background.
 
 Return ONLY a valid JSON object (no prose, no code fences) with exactly these fields:
@@ -338,18 +346,44 @@ serve(async (req) => {
       );
     }
 
-    const homepage = await fetchPage(origin);
-    if (homepage === null) {
-      return new Response(
-        JSON.stringify({
-          error: `We couldn't reach ${host}. The email will use the lead's existing data instead.`,
-          error_code: "unreachable",
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
+    // ─── External web research, run alongside the site read ──────────────────
+    //
+    // The company's own pages say the same thing to every visitor and almost
+    // never carry a date. Independent sources do, which is what lets an
+    // observation be dated — and a site we cannot read at all no longer ends
+    // the research, because the outside world still has material on them.
+    const webPromise: Promise<{ results: ParallelResult[]; sessionId: string | null; error: string | null }> =
+      parallelConfigured()
+        ? parallelSearch({
+          objective:
+            `Recent, dated developments at the company ${lead.company_name || host} (website ${host}): funding, ` +
+            `acquisitions, product launches, partnerships, leadership hires, expansion or hiring pushes. ` +
+            `Used to open a relevant cold email, so timing and a citable source matter more than background.`,
+          queries: leadResearchQueries(String(lead.company_name ?? ""), host),
+          maxResults: 8,
+          timeoutMs: 20_000,
+        })
+        : Promise.resolve({ results: [], sessionId: null, error: "not_configured" });
 
-    const pages: { url: string; html: string }[] = [{ url: origin, html: homepage }];
+    const homepage = await fetchPage(origin);
+    const pages: { url: string; html: string }[] = [];
+    if (homepage === null) {
+      const fallbackWeb = await webPromise;
+      if (!fallbackWeb.results.length) {
+        return new Response(
+          JSON.stringify({
+            error: `We couldn't reach ${host}. The email will use the lead's existing data instead.`,
+            error_code: "unreachable",
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      console.log(
+        `[research-lead] ${host} unreachable — researching from ${fallbackWeb.results.length} external sources`,
+      );
+    } else {
+      pages.push({ url: origin, html: homepage });
+    }
 
     // ─── Which other pages to read ───────────────────────────────────────────
     //
@@ -470,7 +504,12 @@ serve(async (req) => {
     // what lets an observation carry an `occurred` when the page copy states no
     // date — which is most pages.
     const dateBlock = lastmodNote(readWithDates);
-    let siteText = `${dateBlock ? `${dateBlock}\n\n` : ""}${metaParts.join("\n\n")}\n\n${chunks.join("\n\n")}`.trim();
+    const web = await webPromise;
+    const webBlock = parallelPromptBlock(web.results);
+    if (web.results.length) {
+      console.log(`[research-lead] ${host}: ${web.results.length} external web sources`);
+    }
+    let siteText = `${dateBlock ? `${dateBlock}\n\n` : ""}${webBlock ? `${webBlock}\n\n` : ""}${metaParts.join("\n\n")}\n\n${chunks.join("\n\n")}`.trim();
     if (siteText.length > MAX_TEXT_CHARS) siteText = siteText.slice(0, MAX_TEXT_CHARS);
     if (!siteText) {
       return new Response(
@@ -569,7 +608,9 @@ serve(async (req) => {
       }
     }
 
-    const sources = pages.map((p) => p.url);
+    // External sources are citable material like any page we read, so they
+    // count toward the brief's sources and its completeness score.
+    const sources = [...pages.map((p) => p.url), ...web.results.map((r) => r.url)];
 
     // Signal facts are merged in rather than asked for. They are verified
     // events with dates and citable sources, so routing them through a
