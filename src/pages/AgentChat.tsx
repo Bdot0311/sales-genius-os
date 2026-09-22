@@ -15,6 +15,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { useAgentJob } from "@/hooks/use-agent-job";
+import { AgentJobCard } from "@/components/agent/AgentJobCard";
 import { toast } from "sonner";
 import {
   Plus,
@@ -96,6 +98,9 @@ const AgentChat = () => {
   // True while the server still has a run in flight for this thread, even if
   // this tab wasn't the one that started it.
   const [runActive, setRunActive] = useState(false);
+  // A batch too long for one turn runs in the background; the rows are the
+  // progress. See docs/AGENT_BATCH_QUEUE.md.
+  const { job: batchJob, cancel: cancelBatch } = useAgentJob(threadId);
 
 
   // What the agent has actually finished this run, read from the rows
@@ -699,6 +704,10 @@ const AgentChat = () => {
                     </div>
                   </div>
                 ),
+              )}
+
+              {batchJob && (
+                <AgentJobCard job={batchJob} onCancel={cancelBatch} />
               )}
 
               {(sending || runActive) && (
