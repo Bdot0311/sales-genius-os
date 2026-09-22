@@ -17,6 +17,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAgentJob } from "@/hooks/use-agent-job";
 import { AgentJobCard } from "@/components/agent/AgentJobCard";
+import { RESUME_MESSAGE, canResume } from "@/lib/agent-resume";
 import { toast } from "sonner";
 import {
   Plus,
@@ -29,6 +30,7 @@ import {
   ArrowLeft,
   Square,
   ChevronDown,
+  Play,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -101,6 +103,9 @@ const AgentChat = () => {
   // A batch too long for one turn runs in the background; the rows are the
   // progress. See docs/AGENT_BATCH_QUEUE.md.
   const { job: batchJob, cancel: cancelBatch } = useAgentJob(threadId);
+  // Derived from the conversation rather than held in state, so the offer to
+  // continue survives a reload and a second tab. See lib/agent-resume.ts.
+  const resumable = canResume(messages);
 
 
   // What the agent has actually finished this run, read from the rows
@@ -708,6 +713,27 @@ const AgentChat = () => {
 
               {batchJob && (
                 <AgentJobCard job={batchJob} onCancel={cancelBatch} />
+              )}
+
+              {resumable && !sending && !runActive && !batchJob && (
+                // A six-pass ceiling is not a failure, but it should cost one
+                // tap rather than the user remembering and retyping the job.
+                //
+                // Not while a batch is already draining, though: the queue is
+                // working through exactly what "keep going" would start a second
+                // run to do, and both drafting the same leads is the duplicate
+                // this phase exists to avoid.
+                <div className="flex justify-center">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5"
+                    onClick={() => handleSend(RESUME_MESSAGE)}
+                  >
+                    <Play className="w-3.5 h-3.5" />
+                    Keep going
+                  </Button>
+                </div>
               )}
 
               {(sending || runActive) && (

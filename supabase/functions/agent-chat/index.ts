@@ -4249,6 +4249,9 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
       message: saved,
       toolEvents,
       truncated: willContinue,
+      // The client reads this off the conversation too, so a reload keeps the
+      // offer. Returning it saves the first render waiting for the message.
+      stoppedShort,
       runStatus: willContinue ? "running" : "idle",
       completedMutationKeys: [...completedMutationKeys],
     });
