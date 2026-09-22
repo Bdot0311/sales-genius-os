@@ -36,15 +36,28 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
+    // An expired or missing session is a normal thing to hit on a phone that
+    // was left open. Report it as a readable message instead of a bare non-2xx,
+    // which the UI could only surface as "Edge Function returned a non-2xx
+    // status code".
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return json({ error: "Not signed in" }, 401);
+    const sessionExpired = {
+      error: "Your session expired. Sign in again to evaluate leads.",
+      signed_out: true,
+    };
+    if (!authHeader) return json(sessionExpired, 200);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ??
+      Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? "";
+    const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: { user }, error: authError } = await userClient.auth.getUser();
-    if (authError || !user) return json({ error: "Not signed in" }, 401);
+    if (authError || !user) {
+      console.error("[evaluate-lead] auth rejected", authError?.message ?? "no user");
+      return json(sessionExpired, 200);
+    }
 
     const admin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
@@ -61,7 +74,7 @@ serve(async (req) => {
       : typeof body?.leadId === "string"
         ? [body.leadId]
         : [];
-    if (ids.length === 0) return json({ error: "No leads were selected." }, 400);
+    if (ids.length === 0) return json({ error: "No leads were selected." }, 200);
     const force = body?.force === true;
 
     // Ownership is enforced here, not trusted from the client.
@@ -72,9 +85,9 @@ serve(async (req) => {
       .eq("user_id", user.id);
     if (leadError) {
       console.error("[evaluate-lead] lead load failed", leadError);
-      return json({ error: "Could not load those leads." }, 500);
+      return json({ error: "Could not load those leads." }, 200);
     }
-    if (!leads || leads.length === 0) return json({ error: "Those leads could not be found." }, 404);
+    if (!leads || leads.length === 0) return json({ error: "Those leads could not be found." }, 200);
 
     // Seller context: what they sell, so fit is judged against their business.
     const seller: SellerContext = {};
