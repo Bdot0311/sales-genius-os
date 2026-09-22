@@ -46,8 +46,19 @@ export interface JevResponse {
   usage?: { input_tokens?: number; output_tokens?: number };
 }
 
+/**
+ * The API key, read without assuming a Deno host.
+ *
+ * This module is imported by the test suite, which runs under Node, and a bare
+ * `Deno` there is a compile error in the app's TypeScript program — which is
+ * why no other shared module a test imports references the global either.
+ */
+const apiKey = (): string =>
+  (globalThis as { Deno?: { env?: { get?: (k: string) => string | undefined } } })
+    .Deno?.env?.get?.("TYPESAFE_API_KEY") ?? "";
+
 export function jevConfigured(): boolean {
-  return Boolean(Deno.env.get("TYPESAFE_API_KEY"));
+  return Boolean(apiKey());
 }
 
 /**
@@ -58,7 +69,7 @@ export async function askJev(
   state: string,
   questions: Record<string, JevChoiceQuestion>,
 ): Promise<{ response: JevResponse; latencyMs: number }> {
-  const key = Deno.env.get("TYPESAFE_API_KEY");
+  const key = apiKey();
   if (!key) throw new JevError("not_configured", "Lead Intelligence is not configured");
 
   const started = Date.now();
