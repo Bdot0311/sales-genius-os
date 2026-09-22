@@ -5,6 +5,10 @@ const SRC = readFileSync(
   new URL("../../supabase/functions/agent-chat/index.ts", import.meta.url),
   "utf8",
 );
+const DRAFT_ONE = readFileSync(
+  new URL("../../supabase/functions/_shared/draft-one.ts", import.meta.url),
+  "utf8",
+);
 
 /**
  * The AI SDR repeated work and misreported what it had done. Four linked
@@ -16,12 +20,18 @@ describe("duplicate email to the same prospect", () => {
     // draft_outreach(["a","b"]) then draft_outreach(["b","c"]) left b holding
     // two drafts. The per-request guard misses it: its key is the whole
     // argument object, so any change to the id list is a different key.
-    const draftCase = SRC.slice(SRC.indexOf('case "draft_outreach"'), SRC.indexOf('case "draft_sequence"'));
-    const del = draftCase.indexOf('.from("email_drafts")\n                .delete()');
-    const ins = draftCase.indexOf('.from("email_drafts")\n                .insert(');
+    //
+    // The save moved to _shared/draft-one.ts when the queue worker needed the
+    // same draft path, so the rule is pinned where it now lives — and pinned to
+    // the order the rule is, rather than to one spelling of the two calls.
+    const save = DRAFT_ONE.slice(DRAFT_ONE.indexOf("export async function saveDraft"));
+    const del = save.indexOf(".delete()");
+    const ins = save.indexOf(".insert(");
     expect(del, "delete-before-insert missing").toBeGreaterThan(-1);
     expect(ins).toBeGreaterThan(del);
-    expect(draftCase).toContain('.eq("lead_id", lead.id)');
+    expect(save.slice(0, ins)).toContain('.eq("lead_id", fields.leadId)');
+    // And the inline path still goes through it rather than writing its own.
+    expect(SRC).toContain("draftForLead(");
   });
 
   it("dedupes per lead when send_drafts is called with no arguments", () => {

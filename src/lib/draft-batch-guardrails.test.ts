@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
+import { fallbackSubject } from "../../supabase/functions/_shared/draft-one";
 import {
   BANNED_PHRASES,
   enforceSignOff,
@@ -248,13 +249,21 @@ describe("agent-chat subject fallback", () => {
     new URL("../../supabase/functions/_shared/email-rules.ts", import.meta.url),
     "utf8",
   );
+  const DRAFT_ONE = readFileSync(
+    new URL("../../supabase/functions/_shared/draft-one.ts", import.meta.url),
+    "utf8",
+  );
 
   it("does not put a placeholder company name in the subject line", () => {
     // "Quick question — Unknown" was queued against real prospects. The list of
     // stand-in values lives in _shared/email-rules.ts behind realValue(); this
     // asserts the subject fallback actually goes through it, and that the list
     // still covers what providers write.
-    expect(SRC).toMatch(/realValue\(lead\.company_name\)/);
+    // The fallback moved to _shared/draft-one.ts with the rest of the draft
+    // path, which means it can be run rather than grepped for.
+    expect(fallbackSubject("Unknown", [])).toBe("Quick question");
+    expect(fallbackSubject("Acme", [])).toBe("Quick question — Acme");
+    expect(DRAFT_ONE).toMatch(/realValue\(companyName\)/);
     expect(RULES_SRC).toMatch(/unknown\|n\\\/\?a/i);
     expect(RULES_SRC).toMatch(/\bnone\b/i);
     expect(RULES_SRC).toMatch(/\bnull\b/i);

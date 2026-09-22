@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
+import { fallbackSubject } from "../../supabase/functions/_shared/draft-one";
 import {
   DUPLICATE_WINDOW_DAYS,
   duplicateGuidanceFor,
@@ -9,6 +10,7 @@ import {
 } from "../../supabase/functions/_shared/duplicate-send.ts";
 
 const AGENT = readFileSync("supabase/functions/agent-chat/index.ts", "utf8");
+const DRAFT_ONE = readFileSync("supabase/functions/_shared/draft-one.ts", "utf8");
 const GEN = readFileSync("supabase/functions/generate-email/index.ts", "utf8");
 const SEND = readFileSync("supabase/functions/send-email/index.ts", "utf8");
 
@@ -136,19 +138,33 @@ describe("a redraft cannot land on a subject the recipient already has", () => {
   });
 
   it("the agent looks them up and passes them", () => {
+    // The lookup moved into _shared/draft-one.ts when the queue worker needed
+    // the same draft path. Pinned to both halves of the guarantee: somebody
+    // reads the sent history, and the result reaches the generator.
+    expect(DRAFT_ONE).toContain('.from("sent_emails")');
+    expect(DRAFT_ONE).toContain("avoidSubjects");
+    // And the inline path still asks for them rather than passing an empty list.
     const branch = AGENT.slice(
       AGENT.indexOf('case "draft_outreach"'),
-      AGENT.indexOf('case "draft_outreach"') + 12000,
+      AGENT.indexOf('case "draft_sequence"'),
     );
-    expect(branch).toContain('.from("sent_emails")');
-    expect(branch).toContain("avoidSubjects");
+    expect(branch).toContain("sentSubjectsFor(admin, userId, ids)");
+    expect(branch).toContain("sentSubjects.get(id) ?? []");
   });
 
   it("the deterministic fallback subject varies once it has been used", () => {
     // "Quick question — Acme" is the same string every time it is generated,
     // so a redraft reproduced a subject the guard had already refused.
-    const branch = AGENT.slice(AGENT.indexOf("const base = `Quick question"));
-    expect(branch.slice(0, 900)).toContain("taken.has(base.toLowerCase())");
+    //
+    // Now that it is a function rather than a block inside a closure, this runs
+    // it instead of reading it: the second call must not return the first one.
+    const first = fallbackSubject("Acme", []);
+    const second = fallbackSubject("Acme", [first]);
+    expect(first).toBe("Quick question — Acme");
+    expect(second).not.toBe(first);
+    expect(second.toLowerCase()).toContain("acme");
+    // A third, with both spent, still moves.
+    expect(fallbackSubject("Acme", [first, second])).not.toBe(second);
   });
 });
 
