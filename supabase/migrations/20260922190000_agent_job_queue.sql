@@ -60,6 +60,12 @@ CREATE INDEX IF NOT EXISTS idx_agent_jobs_open
   ON public.agent_jobs(status, created_at) WHERE status IN ('queued', 'running');
 CREATE INDEX IF NOT EXISTS idx_agent_jobs_thread ON public.agent_jobs(thread_id, created_at DESC);
 
+-- PostgREST grants: the app reads its own jobs; all writes are service role.
+GRANT SELECT, UPDATE ON public.agent_jobs TO authenticated;
+GRANT SELECT ON public.agent_job_items TO authenticated;
+GRANT ALL ON public.agent_jobs TO service_role;
+GRANT ALL ON public.agent_job_items TO service_role;
+
 ALTER TABLE public.agent_jobs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.agent_job_items ENABLE ROW LEVEL SECURITY;
 
@@ -166,8 +172,13 @@ BEGIN
   IF pending_ct = 0 THEN RETURN; END IF;
 
   SELECT setting_value->>'supabase_url' INTO config_url FROM admin_settings WHERE setting_key = 'supabase_config';
-  SELECT setting_value->>'supabase_anon_key' INTO config_key FROM admin_settings WHERE setting_key = 'supabase_config';
-  IF config_url IS NULL THEN RETURN; END IF;
+  -- process-agent-jobs is internal-only: the anon key is rejected, so the drain
+  -- signs with the vault-backed internal job key, like trigger_rescore_queue.
+  config_key := public.internal_job_key();
+  IF config_url IS NULL OR config_key IS NULL THEN
+    RAISE WARNING 'trigger_agent_jobs: edge credentials missing; skipped';
+    RETURN;
+  END IF;
 
   PERFORM net.http_post(
     url := config_url || '/functions/v1/process-agent-jobs',
