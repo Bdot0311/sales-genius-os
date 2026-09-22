@@ -6,6 +6,13 @@ import { AI_CREDITS_USER_MESSAGE, isAiCreditError, reportAiCreditsExhausted } fr
 import { toSignalFacts, type SignalEventRow } from "../_shared/signal-facts.ts";
 import { coldiqConfigured, coldiqFetchPages } from "../_shared/coldiq.ts";
 import {
+  leadResearchQueries,
+  parallelConfigured,
+  parallelPromptBlock,
+  parallelSearch,
+  type ParallelResult,
+} from "../_shared/parallel.ts";
+import {
   briefToPromptBlock,
   isResearchFresh,
   normalizeOccurred,
@@ -139,6 +146,7 @@ ABSOLUTE RULES:
 - DATE EVERY OBSERVATION YOU CAN. "occurred" is the date the PAGE states for that fact — a press-release date, "November 2025", a changelog entry, a copyright year on a dated announcement. Use "YYYY-MM-DD", "YYYY-MM" or "YYYY".
 - If the page gives no date for a fact, fall back to that page's own last-changed date when one is supplied in a PAGE CHANGE DATES block, and only for a fact you read on that exact page. Otherwise "occurred" MUST be "". Never estimate one, never use today's date, never infer a date from context. A website is a standing document: an acquisition announced last November still sits on the About page today, and a rep who reads it as news writes an email the prospect knows is wrong.
 - A page's last-changed date bounds how recent the fact can be, it does not prove the fact is that new. Use it as the date; never write "they announced this last week" on the strength of it alone.
+- An EXTERNAL WEB RESEARCH block, when present, holds excerpts from independent sources with their URLs and publish dates. Treat it as read material exactly like the website text: an observation from it must cite that source URL, and may carry that source's publish date as "occurred". It is usually the only genuinely dated material available, so prefer it for hooks that trade on timing. Still never state anything the excerpts do not say.
 - OPEN ROLES ARE THE STRONGEST MATERIAL ON A COMPANY'S OWN SITE. If a careers or jobs page was read, name the actual roles they are hiring for. What a company is staffing for says what it is building before any marketing page does, it is specific enough that no other company shares it, and job listings are dated. Treat a list of open roles as an observation, not as background.
 
 Return ONLY a valid JSON object (no prose, no code fences) with exactly these fields:
