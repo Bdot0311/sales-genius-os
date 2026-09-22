@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Brain, Loader2, RefreshCw } from "lucide-react";
+import { Loader2, RefreshCw } from "lucide-react";
 
 /**
  * Admin-only observability for the decision layer: how often it is asked, how

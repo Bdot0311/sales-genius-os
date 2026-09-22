@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Panel, PanelBody, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNowStrict } from "date-fns";
-import { Radio } from "lucide-react";
 import { useDemoMode } from "@/hooks/use-demo-mode";
 import { maybeMask } from "@/lib/demo-mask";
 
