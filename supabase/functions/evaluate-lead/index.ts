@@ -36,15 +36,28 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
+    // An expired or missing session is a normal thing to hit on a phone that
+    // was left open. Report it as a readable message instead of a bare non-2xx,
+    // which the UI could only surface as "Edge Function returned a non-2xx
+    // status code".
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return json({ error: "Not signed in" }, 401);
+    const sessionExpired = {
+      error: "Your session expired. Sign in again to evaluate leads.",
+      signed_out: true,
+    };
+    if (!authHeader) return json(sessionExpired, 200);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ??
+      Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? "";
+    const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: { user }, error: authError } = await userClient.auth.getUser();
-    if (authError || !user) return json({ error: "Not signed in" }, 401);
+    if (authError || !user) {
+      console.error("[evaluate-lead] auth rejected", authError?.message ?? "no user");
+      return json(sessionExpired, 200);
+    }
 
     const admin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
