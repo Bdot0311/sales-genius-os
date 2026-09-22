@@ -96,27 +96,21 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: "2026-09-21",
     title: "Replies now find you",
     summary:
-      "Replies are picked up automatically, and the billing dashboard now reports subscription and churn totals from the records that actually control customer access.",
+      "Your monthly search allowance now follows your plan, and replies are picked up from your mailbox without you opening the app.",
     items: [
-      {
-        tag: "fixed",
-        title: "Replies arrive without opening the inbox",
-        description:
-          "Your connected mailbox is checked automatically every few minutes, so a prospect's reply lands in your inbox, is available to your agent and can notify your phone without you opening the app.",
-        href: "/dashboard/inbox",
-      },
-      {
-        tag: "billing",
-        title: "Billing and churn totals reflect real account changes",
-        description:
-          "New subscriptions, payment issues, completed cancellations, scheduled cancellations and chargebacks now come from billing history and current account status instead of disappearing when an alert is handled.",
-      },
       {
         tag: "billing",
         title: "Your search allowance matches your plan",
         description:
           "When your plan changes, your monthly search allowance now changes with it. Accounts that were still showing the free allowance after upgrading have been corrected, and anything already used is kept.",
         href: "/dashboard/leads",
+      },
+      {
+        tag: "fixed",
+        title: "Replies arrive without opening the inbox",
+        description:
+          "Your connected mailbox is checked automatically every few minutes, so a prospect's reply lands in your inbox, is available to your agent and can notify your phone without you opening the app.",
+        href: "/dashboard/inbox",
       },
       {
         tag: "fixed",
@@ -130,7 +124,7 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     id: "2026-09-19-lead-intelligence",
     date: "2026-09-19",
-    title: "Your saved leads can now tell you who to email first",
+    title: "Saved leads now tell you who to email first",
     summary:
       "Ask for an evaluation on any saved lead and you get a straight read on fit, buying intent, priority and the best next step — and your emails are written to match it.",
     items: [
@@ -146,14 +140,14 @@ export const CHANGELOG: ChangelogEntry[] = [
         title: "Fit, intent and priority on your saved leads",
         description:
           "Select leads on Saved Leads and hit Evaluate, or open a lead and evaluate it there. You get a clear read on how well they fit your ideal customer, how warm they look, how urgently to reach out and whether to email now or research first — with a confidence level, so a shaky call is never dressed up as a sure thing.",
-        href: "/dashboard/saved-leads",
+        href: "/dashboard/leads/saved",
       },
       {
         tag: "new",
         title: "Filter down to the leads worth your morning",
         description:
           "New filters let you show only high-priority leads, or only the ones ready to be emailed, so you can work the top of the list first instead of scrolling.",
-        href: "/dashboard/saved-leads",
+        href: "/dashboard/leads/saved",
       },
       {
         tag: "improved",

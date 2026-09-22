@@ -99,7 +99,6 @@ export function LeadIntelligencePanel() {
       <PanelHeader className="flex flex-row items-start justify-between gap-2">
         <div>
           <PanelTitle className="flex items-center gap-2">
-            <Brain className="h-4 w-4" />
             Lead intelligence (debug)
           </PanelTitle>
           <PanelDescription>

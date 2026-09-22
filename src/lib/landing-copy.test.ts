@@ -253,14 +253,17 @@ describe("no AI tells in shipped landing copy", () => {
   const SURFACES = [...ALL, { file: "Index.tsx", text: readFileSync("src/pages/Index.tsx", "utf8") }];
 
   it("uses no em dashes outside simulated app chrome", () => {
-    // What survives is a separator inside mock product UI ("OutReign — AI SDR
-    // · Activity Feed"), where a dash names a pane rather than punctuating a
-    // sentence.
+    // What survives is a separator rather than punctuation: inside mock product
+    // UI ("OutReign — AI SDR · Activity Feed"), where a dash names a pane, and
+    // in a page title ("AI SDR & B2B Outbound Platform — OutReign"), where it
+    // divides the page from the brand. The brand side was only exempt on the
+    // left, so writing the same title the other way round failed a rule about
+    // em dashes in sentences on a line that is not a sentence.
     const offenders: string[] = [];
     for (const { file, text } of SURFACES) {
       proseLines(text).forEach((l, i) => {
         if (!l.includes("—")) return;
-        if (/OutReign —|AI Draft —/.test(l)) return;
+        if (/OutReign —|— OutReign|AI Draft —/.test(l)) return;
         offenders.push(`${file}:${i + 1}: ${l.trim().slice(0, 70)}`);
       });
     }

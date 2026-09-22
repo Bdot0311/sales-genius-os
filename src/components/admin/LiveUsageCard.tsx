@@ -75,7 +75,6 @@ export const LiveUsageCard = () => {
     <Panel>
       <PanelHeader className="flex-row items-center justify-between">
         <PanelTitle className="flex items-center gap-2">
-          <Radio className="h-4 w-4 text-emerald-400" />
           Live usage
         </PanelTitle>
         <Badge className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">

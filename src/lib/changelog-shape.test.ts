@@ -80,16 +80,32 @@ describe("billing changes are called billing changes", () => {
     expect(billing.length).toBeGreaterThan(0);
   });
 
-  it("the charge is stated in the first item of its entry", () => {
-    const entry = CHANGELOG.find((e) => e.items.some((i) => i.tag === "billing"))!;
-    expect(entry.items[0].tag).toBe("billing");
-    expect(entry.items[0].description).toMatch(/credit is spent|costs one credit/i);
+  it("the charge leads every entry that contains one", () => {
+    // Both of these used to read the FIRST billing item in the whole file and
+    // match its exact phrasing — "credit is spent", "nothing is found". That
+    // is one entry's wording wearing a rule's clothes: it passed for as long
+    // as no newer billing item existed, and the day one landed above it the
+    // rule failed on copy that was perfectly correct. What must hold is the
+    // rule the top of changelog.ts states, on every entry that has one.
+    const entries = CHANGELOG.filter((e) => e.items.some((i) => i.tag === "billing"));
+    expect(entries.length).toBeGreaterThan(0);
+    for (const entry of entries) {
+      expect(entry.items[0].tag, entry.id).toBe("billing");
+    }
   });
 
   it("says what stays free, not only what now costs", () => {
-    const billing = CHANGELOG.flatMap((e) => e.items).find((i) => i.tag === "billing")!;
-    expect(billing.description).toMatch(/free/i);
-    expect(billing.description).toMatch(/nothing is found|no credit/i);
+    const billing = CHANGELOG.flatMap((e) => e.items).filter((i) => i.tag === "billing");
+    for (const item of billing) {
+      // Names the charge in the customer's terms, not "your credits update".
+      expect(item.description, `${item.title}: names the charge`).toMatch(
+        /\b(credits?|costs?|charged?|allowance|price|billed|plan)\b/i,
+      );
+      // And names what is not taken, which is the half that gets dropped.
+      expect(item.description, `${item.title}: names what is not taken`).toMatch(
+        /\b(free|no credit|not charged|nothing is found|already used is kept|unchanged)\b/i,
+      );
+    }
   });
 
   it("the page gives billing its own weight", () => {
