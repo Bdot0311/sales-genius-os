@@ -74,7 +74,7 @@ serve(async (req) => {
       : typeof body?.leadId === "string"
         ? [body.leadId]
         : [];
-    if (ids.length === 0) return json({ error: "No leads were selected." }, 400);
+    if (ids.length === 0) return json({ error: "No leads were selected." }, 200);
     const force = body?.force === true;
 
     // Ownership is enforced here, not trusted from the client.
@@ -85,9 +85,9 @@ serve(async (req) => {
       .eq("user_id", user.id);
     if (leadError) {
       console.error("[evaluate-lead] lead load failed", leadError);
-      return json({ error: "Could not load those leads." }, 500);
+      return json({ error: "Could not load those leads." }, 200);
     }
-    if (!leads || leads.length === 0) return json({ error: "Those leads could not be found." }, 404);
+    if (!leads || leads.length === 0) return json({ error: "Those leads could not be found." }, 200);
 
     // Seller context: what they sell, so fit is judged against their business.
     const seller: SellerContext = {};
