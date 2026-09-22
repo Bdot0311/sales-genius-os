@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { playbookEnforcementRules } from "../_shared/cold-email-playbook.ts";
+import { draftForLead, sentSubjectsFor } from "../_shared/draft-one.ts";
 import {
   AGENT_MAX_ATTEMPTS,
   AGENT_TARGET_SCORE,
@@ -1853,15 +1854,89 @@ serve(async (req) => {
           const rawGoal = String(args.goal ?? "").trim().toLowerCase();
           const goal = VALID_GOALS.includes(rawGoal) ? rawGoal : "introduction";
 
-          const ids: string[] = (
-            Array.isArray(args.lead_ids) && args.lead_ids.length
-              ? args.lead_ids
-              : [args.lead_id]
-          )
-            .filter(Boolean)
-            .map((x: any) => String(x))
-            .slice(0, 20);
-          if (ids.length === 0) return { error: "lead_id or lead_ids is required" };
+          const requested: string[] = [
+            ...new Set(
+              (Array.isArray(args.lead_ids) && args.lead_ids.length
+                ? args.lead_ids
+                : [args.lead_id]
+              )
+                .filter(Boolean)
+                .map((x: any) => String(x)),
+            ),
+          ];
+          if (requested.length === 0) return { error: "lead_id or lead_ids is required" };
+
+          /**
+           * More than this many leads goes to the queue.
+           *
+           * The old code took `.slice(0, 20)` and said nothing, so asking for
+           * seventy-nine drafts quietly produced twenty. Above the threshold the
+           * work is enqueued and a worker does it, which is the whole point of
+           * docs/AGENT_BATCH_QUEUE.md: a turn that finishes inside its budget
+           * whatever the batch size.
+           *
+           * Decided here rather than asked for in the prompt. A rule the model
+           * has to remember is a rule that gets forgotten on the turn it matters.
+           */
+          const INLINE_DRAFT_LIMIT = 12;
+          const ids = requested.slice(0, INLINE_DRAFT_LIMIT);
+          const overflow = requested.slice(INLINE_DRAFT_LIMIT);
+
+          /*
+           * The rest go to the queue, and they go before the inline drafts are
+           * written rather than after.
+           *
+           * If this turn dies partway — the phone backgrounds, the platform
+           * kills the pass — the queued work is already durable. Enqueuing
+           * afterwards would lose exactly the part that was too big to do here.
+           */
+          let queuedJobId: string | null = null;
+          if (overflow.length > 0) {
+            const { data: job, error: jobError } = await admin
+              .from("agent_jobs")
+              .insert({
+                user_id: userId,
+                thread_id: threadId,
+                agent_config_id: requestedAgentId,
+                kind: "draft",
+                request_text: userMessage.slice(0, 500),
+                autonomy: (thread as any).autonomy ?? "approval",
+                goal,
+                feedback: feedback || null,
+                status: "queued",
+                total: overflow.length,
+              })
+              .select("id")
+              .single();
+
+            if (jobError || !job) {
+              console.error("[agent-chat] could not queue the batch:", jobError?.message);
+            } else {
+              queuedJobId = String((job as any).id);
+              const { error: itemsError } = await admin.from("agent_job_items").insert(
+                overflow.map((leadId) => ({
+                  job_id: queuedJobId,
+                  user_id: userId,
+                  lead_id: leadId,
+                  status: "pending",
+                })),
+              );
+              if (itemsError) {
+                console.error("[agent-chat] could not queue the items:", itemsError.message);
+                // A job with no items would sit at 0 of N forever and read as
+                // stuck. Better that it never existed.
+                await admin.from("agent_jobs").delete().eq("id", queuedJobId);
+                queuedJobId = null;
+              } else {
+                toolEvents.push({
+                  name,
+                  label: "Queued the rest",
+                  status: "ok",
+                  detail: `${overflow.length} more lead(s) queued — they draft in the background and appear as they finish.`,
+                });
+              }
+            }
+          }
 
           // Sender + offer context the UI path already sends — the agent path
           // used to drop these, which made its emails noticeably more generic.
@@ -1910,122 +1985,33 @@ serve(async (req) => {
           // the generator had no way of knowing, so it reproduced the same
           // subject every time it was asked to try again. Fetched once for the
           // whole batch rather than per lead.
-          const { data: alreadySent } = await admin
-            .from("sent_emails")
-            .select("lead_id, subject")
-            .eq("user_id", userId)
-            .in("lead_id", ids)
-            .in("status", ["sent", "delivered", "opened", "clicked", "replied"])
-            .order("sent_at", { ascending: false })
-            .limit(200);
-          const sentSubjects = new Map<string, string[]>();
-          for (const row of (alreadySent ?? []) as Record<string, unknown>[]) {
-            const key = String(row.lead_id ?? "");
-            const subj = String(row.subject ?? "").trim();
-            if (!key || !subj) continue;
-            const list = sentSubjects.get(key) ?? [];
-            if (!list.includes(subj) && list.length < 10) list.push(subj);
-            sentSubjects.set(key, list);
-          }
+          const sentSubjects = await sentSubjectsFor(admin, userId, ids);
 
-          const genOne = async (id: string) => {
-            const lead = await loadLead(id);
-            if (!lead) return { lead_id: id, error: "Lead not found" };
-            // generate-email runs (or reuses) the per-lead website research brief
-            // internally, so drafts are grounded in real findings.
-            const avoidSubjects = sentSubjects.get(id) ?? [];
-            let r = await invokeFn("generate-email", { lead, ...basePayload, avoidSubjects });
-            // one retry on upstream rate limiting
-            if (!r?.email && /rate limit/i.test(JSON.stringify(r?.error ?? ""))) {
-              await new Promise((res) => setTimeout(res, 2500));
-              r = await invokeFn("generate-email", { lead, ...basePayload, avoidSubjects });
-            }
-            const raw: string = typeof r?.email === "string" ? r.email : "";
-            let subject = "";
-            let body = raw;
-            const subjMatch = raw.match(/^\s*subject\s*:\s*(.+)\s*(?:\n|$)/i);
-            if (subjMatch) {
-              subject = subjMatch[1].trim();
-              body = raw.slice(subjMatch[0].length).trim();
-            }
-            if (!subject) {
-              // Providers write "Unknown" / "N/A" into company_name rather than
-              // leaving it null, and the fallback took it literally: real
-              // prospects were queued under the subject "Quick question —
-              // Unknown". A bare "Quick question" is the honest version.
-              //
-              // It also has to be a subject this person has not already had.
-              // The fallback is deterministic per lead, so a redraft produced
-              // the identical subject, which the send path refuses as a repeat
-              // — a draft that could never be sent, generated over and over.
-              const usable = realValue(lead.company_name) ?? "";
-              const base = `Quick question${usable ? ` — ${usable}` : ""}`;
-              const taken = new Set(avoidSubjects.map((x: string) => x.trim().toLowerCase()));
-              if (!taken.has(base.toLowerCase())) {
-                subject = base;
-              } else {
-                const alts = [
-                  `following up${usable ? ` — ${usable}` : ""}`,
-                  `one more thought${usable ? ` for ${usable}` : ""}`,
-                  `different angle${usable ? ` — ${usable}` : ""}`,
-                ];
-                subject = alts.find((a) => !taken.has(a.toLowerCase())) ??
-                  `${base} (${new Date().toISOString().slice(0, 10)})`;
-              }
-            }
-
-            let draftId: string | null = null;
-            if (raw) {
-              // Replace this lead's pending draft rather than adding another.
-              //
-              // Two overlapping draft_outreach calls — ["a","b"] then ["b","c"] —
-              // used to leave lead b holding two drafts, and send_drafts with no
-              // arguments sends every pending draft, so b received two emails.
-              // The per-request mutation guard does not catch it: its key is the
-              // whole argument object, so any change to the id list is a
-              // different key.
-              //
-              // A redraft is the user asking for a better version of the same
-              // email, never a second email to the same person.
-              await admin
-                .from("email_drafts")
-                .delete()
-                .eq("user_id", userId)
-                .eq("lead_id", lead.id);
-
-              const { data: savedDraft } = await admin
-                .from("email_drafts")
-                .insert({
-                  user_id: userId,
-                  lead_id: lead.id,
-                  subject,
-                  body,
-                  tone: config?.tone ?? "professional",
-                  trigger_context: `AI SDR chat — ${goal}`,
-                })
-                .select("id")
-                .single();
-              draftId = savedDraft?.id ?? null;
-            }
-
-            return {
-              lead_id: id,
-              draft_id: draftId,
-              company: lead.company_name ?? null,
-              contact: lead.contact_name ?? null,
-              contact_email: lead.contact_email ?? null,
-              subject: raw ? subject : null,
-              body: raw ? body : null,
-              email: r?.email ?? null,
-              research: r?.research ?? null,
-              skills_used: Array.isArray(r?.skills_used) ? r.skills_used : [],
-              style_warnings: Array.isArray(r?.style_warnings) ? r.style_warnings : [],
-              name_warnings: Array.isArray(r?.name_warnings) ? r.name_warnings : [],
-              name_repairs: Array.isArray(r?.name_repairs) ? r.name_repairs : [],
-              error: r?.email ? undefined : (r?.error ?? "Draft failed"),
-            };
+          const draftSettings = {
+            goal,
+            tone: config?.tone ?? "professional",
+            senderName: basePayload.senderName,
+            senderEmail: basePayload.senderEmail,
+            senderCompany: basePayload.senderCompany,
+            businessDescription: basePayload.businessDescription,
+            ...(feedback
+              ? { customInstruction: basePayload.customInstruction as string, variantNum: 1 }
+              : {}),
+            triggerContext: `AI SDR chat — ${goal}`,
           };
 
+          // One draft path, shared with the queue worker. See _shared/draft-one.ts:
+          // two copies of this is how the batch run and the inline run drift.
+          const genOne = async (id: string) => {
+            const lead = await loadLead(id);
+            if (!lead) return { lead_id: id, error: "Lead not found" } as any;
+            return await draftForLead(
+              { admin, userId, invokeFn },
+              lead as any,
+              draftSettings,
+              sentSubjects.get(id) ?? [],
+            );
+          };
 
           const { results: drafts, skipped } = await mapLimit(ids, 3, genOne);
 
@@ -2134,7 +2120,7 @@ serve(async (req) => {
             detail:
               ids.length === 1
                 ? (drafts[0]?.company ?? "lead")
-                : `${okCount}/${ids.length} drafted${skipped.length ? ` (${skipped.length} left — ask me to continue)` : ""}`,
+                : `${okCount}/${ids.length} drafted${skipped.length ? ` (${skipped.length} left — ask me to continue)` : ""}${overflow.length ? `, ${overflow.length} queued` : ""}`,
 
             drafts: drafts
               .filter((d) => d.draft_id && d.body)
@@ -2158,6 +2144,20 @@ serve(async (req) => {
                 : ""),
             skipped_lead_ids: skipped,
             drafts: drafts.map(({ body: _b, ...rest }) => rest),
+            // Without this the model reports twelve drafts as the whole job and
+            // the user believes the other sixty-seven were never asked for.
+            ...(queuedJobId
+              ? {
+                  queued: {
+                    job_id: queuedJobId,
+                    count: overflow.length,
+                    note:
+                      `${overflow.length} further lead(s) are queued and drafting in the background. ` +
+                      "Tell the user the count plainly, that the drafts appear as they finish, and that they can cancel the batch from the chat. " +
+                      "Do not call draft_outreach again for those leads: the queue already has them, and drafting them here would write each draft twice.",
+                  },
+                }
+              : {}),
           };
 
         }

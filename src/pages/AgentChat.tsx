@@ -15,6 +15,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { useAgentJob } from "@/hooks/use-agent-job";
+import { AgentJobCard } from "@/components/agent/AgentJobCard";
 import { RESUME_MESSAGE, canResume } from "@/lib/agent-resume";
 import { toast } from "sonner";
 import {
@@ -98,6 +100,9 @@ const AgentChat = () => {
   // True while the server still has a run in flight for this thread, even if
   // this tab wasn't the one that started it.
   const [runActive, setRunActive] = useState(false);
+  // A batch too long for one turn runs in the background; the rows are the
+  // progress. See docs/AGENT_BATCH_QUEUE.md.
+  const { job: batchJob, cancel: cancelBatch } = useAgentJob(threadId);
   // Derived from the conversation rather than held in state, so the offer to
   // continue survives a reload and a second tab. See lib/agent-resume.ts.
   const resumable = canResume(messages);
@@ -706,9 +711,18 @@ const AgentChat = () => {
                 ),
               )}
 
-              {resumable && !sending && !runActive && (
+              {batchJob && (
+                <AgentJobCard job={batchJob} onCancel={cancelBatch} />
+              )}
+
+              {resumable && !sending && !runActive && !batchJob && (
                 // A six-pass ceiling is not a failure, but it should cost one
                 // tap rather than the user remembering and retyping the job.
+                //
+                // Not while a batch is already draining, though: the queue is
+                // working through exactly what "keep going" would start a second
+                // run to do, and both drafting the same leads is the duplicate
+                // this phase exists to avoid.
                 <div className="flex justify-center">
                   <Button
                     size="sm"
