@@ -608,7 +608,9 @@ serve(async (req) => {
       }
     }
 
-    const sources = pages.map((p) => p.url);
+    // External sources are citable material like any page we read, so they
+    // count toward the brief's sources and its completeness score.
+    const sources = [...pages.map((p) => p.url), ...web.results.map((r) => r.url)];
 
     // Signal facts are merged in rather than asked for. They are verified
     // events with dates and citable sources, so routing them through a
