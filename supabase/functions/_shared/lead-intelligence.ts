@@ -422,6 +422,40 @@ type Supa = {
   from: (t: string) => any;
 };
 
+/**
+ * How much say the decision layer has right now.
+ *
+ *   off     nothing is evaluated and nothing reaches generation. Exactly the
+ *           behaviour the product had before this layer existed.
+ *   shadow  leads are evaluated and the result is saved, but generation never
+ *           sees it. This is the safe rollout: the decisions can be compared
+ *           against what the emails actually did before they are given any
+ *           influence.
+ *   assist  the decision reaches Bedrock as strategy context. Today's ON.
+ *
+ * The feature flag stays the master switch, so turning it off is still one
+ * click and still means off. JEV_MODE only chooses between shadow and assist
+ * while the flag is on; it cannot switch the layer on by itself.
+ */
+export type LeadIntelligenceMode = "off" | "shadow" | "assist";
+
+/**
+ * An edge-function env var, read without assuming a Deno host.
+ *
+ * This module is imported by the test suite, which runs under Node. A bare
+ * `Deno.env.get` would throw there on import of the calling function, and the
+ * point of the tests is to exercise this logic rather than mock around it.
+ */
+const envVar = (name: string): string =>
+  (globalThis as { Deno?: { env?: { get?: (k: string) => string | undefined } } })
+    .Deno?.env?.get?.(name) ?? "";
+
+export async function leadIntelligenceMode(supabase: Supa): Promise<LeadIntelligenceMode> {
+  if (!(await leadIntelligenceEnabled(supabase))) return "off";
+  const raw = envVar("JEV_MODE").trim().toLowerCase();
+  return raw === "shadow" ? "shadow" : "assist";
+}
+
 /** Is the feature switched on for the whole workspace? */
 export async function leadIntelligenceEnabled(supabase: Supa): Promise<boolean> {
   try {
@@ -752,6 +786,25 @@ export async function loadSellerContext(supabase: Supa, userId: string): Promise
  * prompt is exactly what it would have been without the decision layer.
  */
 export async function decisionForDrafting(
+  supabase: Supa,
+  leadId: string,
+  userId: string,
+  options: { seller?: SellerContext; campaignId?: string | null } = {},
+): Promise<LeadDecision | null> {
+  const mode = await leadIntelligenceMode(supabase);
+  // Off means off. This used to read a saved decision before the flag was ever
+  // consulted, so switching the feature off left every previously evaluated
+  // lead still steering its own email — the one thing the flag is for.
+  if (mode === "off") return null;
+
+  const decision = await resolveDecisionForDrafting(supabase, leadId, userId, options);
+  // Shadow evaluates and saves, and hands generation nothing. resolve() has
+  // already persisted whatever it worked out, so the comparison data is being
+  // collected while the emails are still written exactly as they are today.
+  return mode === "shadow" ? null : decision;
+}
+
+async function resolveDecisionForDrafting(
   supabase: Supa,
   leadId: string,
   userId: string,
