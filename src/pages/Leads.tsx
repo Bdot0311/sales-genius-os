@@ -60,7 +60,8 @@ const SEARCH_PRIMER = [
 ] as const;
 
 const Leads = () => {
-  const [leads, setLeads] = useState<any[]>([]);
+  const [leadCount, setLeadCount] = useState(0);
+  const recountTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [externalFilters, setExternalFilters] = useState<ExternalLeadFilters>({});
   const [showExternalLeads, setShowExternalLeads] = useState(false);
   const [aiSearchQuery, setAiSearchQuery] = useState("");
