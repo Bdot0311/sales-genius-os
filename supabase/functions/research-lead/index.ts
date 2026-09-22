@@ -362,6 +362,9 @@ serve(async (req) => {
           queries: leadResearchQueries(String(lead.company_name ?? ""), host),
           maxResults: 8,
           timeoutMs: 20_000,
+          // Their own site is read directly a few lines below; these slots are
+          // for coverage they did not write themselves.
+          excludeDomains: [host.replace(/^www\./, "")],
         })
         : Promise.resolve({ results: [], sessionId: null, error: "not_configured" });
 

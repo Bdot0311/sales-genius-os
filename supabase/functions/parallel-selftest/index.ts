@@ -6,6 +6,7 @@ Deno.serve(async () => {
     objective: "Recent dated developments at the company Stripe (website stripe.com): funding, launches, hires.",
     queries: leadResearchQueries("Stripe", "stripe.com"),
     maxResults: 5,
+    excludeDomains: ["stripe.com"],
   });
   return Response.json({
     configured: parallelConfigured(),
