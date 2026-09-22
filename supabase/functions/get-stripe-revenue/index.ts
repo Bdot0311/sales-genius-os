@@ -80,8 +80,23 @@ serve(async (req) => {
     if (!authHeader) throw new Error('No authorization header provided');
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
+
+    // Token verification must go through the public API key client. The
+    // service-role client's auth endpoint can answer with an HTML error page,
+    // which used to surface as "Unexpected token '<'".
+    const authClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? Deno.env.get('SUPABASE_PUBLISHABLE_KEY') ?? '',
+      { auth: { persistSession: false } }
+    );
+
+    const { data: userData, error: userError } = await authClient.auth.getUser(token);
+    if (userError || !userData?.user) {
+      return new Response(
+        JSON.stringify({ error: 'Your session expired. Sign in again to see revenue.' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
+      );
+    }
     
     const user = userData.user;
     if (!user) throw new Error('User not authenticated');
