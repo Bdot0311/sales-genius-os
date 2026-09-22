@@ -63,12 +63,41 @@ export function useLeadIntelligence(leadIds: string[] = []) {
 
     setEvaluating((prev) => new Set([...prev, ...targets]));
     try {
+      // A stale access token is the common failure here (a tab or phone left
+      // open). Refresh it first so the customer never sees a raw failure.
+      const { data: session } = await supabase.auth.getSession();
+      if (!session?.session) {
+        toast({
+          title: "Sign in again",
+          description: "Your session expired. Sign in again to evaluate leads.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke("evaluate-lead", {
         body: { leadIds: targets, force: options.force === true },
       });
-      if (error) throw error;
+      if (error) {
+        // Surface whatever the backend said rather than "non-2xx status code".
+        let message = "Try again in a moment.";
+        try {
+          const body = await (error as any)?.context?.json?.();
+          if (body?.error) message = body.error;
+        } catch { /* keep the fallback */ }
+        toast({ title: "Could not evaluate", description: message, variant: "destructive" });
+        return;
+      }
       if (data?.disabled) {
         setEnabled(false);
+        return;
+      }
+      if (data?.signed_out) {
+        toast({
+          title: "Sign in again",
+          description: data.error,
+          variant: "destructive",
+        });
         return;
       }
       if (data?.error) {
