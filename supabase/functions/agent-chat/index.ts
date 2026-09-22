@@ -394,7 +394,7 @@ const TOOLS = [
     function: {
       name: "draft_outreach",
       description:
-        "Draft first-touch cold emails following the OutReign cold email playbook. Pass lead_ids to draft for several leads in ONE call (preferred — never call this tool repeatedly in parallel). Does not send anything. THIS IS ALSO HOW YOU REDRAFT: to revise an email the user is unhappy with, call this again for the same lead with `feedback` describing what to change. It replaces that lead's draft. Never rewrite email copy yourself in the chat — copy you write by hand is not checked against the playbook, the banned-phrase list, or the proof rules, and it will read like generic marketing.",
+        "Draft first-touch cold emails following the OutReign cold email playbook. Pass EVERY lead id in ONE call, however many there are — the overflow is queued and drafted in the background, and splitting the list yourself is what stops that happening. Does not send anything. THIS IS ALSO HOW YOU REDRAFT: to revise an email the user is unhappy with, call this again for the same lead with `feedback` describing what to change. It replaces that lead's draft. Never rewrite email copy yourself in the chat — copy you write by hand is not checked against the playbook, the banned-phrase list, or the proof rules, and it will read like generic marketing.",
       parameters: {
         type: "object",
         properties: {
@@ -402,7 +402,8 @@ const TOOLS = [
           lead_ids: {
             type: "array",
             items: { type: "string" },
-            description: "Up to 20 lead ids to draft for in one call",
+            description:
+              "Every lead id to draft for, in ONE call. Do not split a large list into batches of ten or twenty — pass all of them. The first twelve are drafted while the user watches and the rest are queued and drafted in the background automatically, so a list of seventy-nine is one call, not eight.",
           },
           goal: {
             type: "string",

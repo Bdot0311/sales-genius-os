@@ -9,8 +9,18 @@
 // Called by pg_cron (trigger_agent_jobs) every minute. Service-role; not a
 // user-facing endpoint.
 //
-// It drafts and it never sends. That is the phase boundary, and it is what
-// makes the blast radius of a bug here a drafts folder to clear.
+// It drafts, and in a job the user marked autonomous it hands the draft to the
+// outbox. It never sends: send-email authenticates from a user's JWT and this
+// worker holds the service role, and the cron sender talks to Gmail directly
+// through four hundred lines of token refresh, bounce handling and cap checks.
+// A third send path for the highest-stakes code in the product is the opposite
+// of what this queue was for, so the worker writes a sent_emails row at status
+// "scheduled" exactly as schedule_drafts does, and process-scheduled-emails
+// remains the only thing that sends — with every cap it already enforces.
+//
+// In approval mode it stops at the draft, which is the finished behaviour:
+// agent-run does the same, because pending work belongs in the Drafts tab
+// where a person can find it rather than in a queue only the agent can see.
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
 import { requireServiceRole } from "../_shared/internal-auth.ts";
@@ -30,6 +40,102 @@ const json = (body: unknown, status = 200) =>
 // The drain runs every minute, so a pass that overruns would overlap the next
 // one. Stop with time to write results rather than being killed mid-item.
 const BUDGET_MS = 100_000;
+
+/**
+ * Hand one finished draft to the outbox.
+ *
+ * Writes the same row schedule_drafts writes — status "scheduled", no sent_at,
+ * a sending account — and lets process-scheduled-emails do the sending. That
+ * function already refuses on the user's daily cap, the user's monthly cap, a
+ * paused mailbox and the mailbox's own daily cap, and leaves the row scheduled
+ * when it does, so those ceilings stay in exactly one place.
+ *
+ * Returns null whenever it cannot schedule safely. The draft is already saved,
+ * so the worst case is a draft the user sends themselves — never a send this
+ * function was not sure about.
+ */
+async function scheduleDraft(
+  admin: any,
+  job: Record<string, any>,
+  lead: Record<string, unknown>,
+  draft: { subject: string | null; body: string | null },
+): Promise<{ id: string; scheduledAt: string } | null> {
+  const to = String((lead as any).contact_email ?? "").trim();
+  if (!to || !draft.subject || !draft.body) return null;
+
+  // How many this job has already put in the outbox, counted from the rows.
+  // Several passes and several workers contribute to one job, so a counter only
+  // one of them updates is a counter that drifts.
+  const { count } = await admin
+    .from("agent_job_items")
+    .select("id", { count: "exact", head: true })
+    .eq("job_id", job.id)
+    .not("scheduled_email_id", "is", null);
+  const alreadyScheduled = count ?? 0;
+
+  // The ceiling is the size of the batch the user actually asked for. A job can
+  // never put more in the outbox than it was asked to draft, whatever else goes
+  // wrong — and it needs no column of its own to say so.
+  const cap = Number(job.total ?? 0);
+  if (cap > 0 && alreadyScheduled >= cap) {
+    console.log(`[process-agent-jobs] job ${job.id} has scheduled its whole batch (${cap})`);
+    return null;
+  }
+
+  // A mailbox that can actually send. No mailbox means no schedule: a row with
+  // no sending account would sit in the outbox failing rather than waiting.
+  const { data: mailboxes } = await admin
+    .from("sending_accounts")
+    .select("id, integration_id, email, status")
+    .eq("user_id", job.user_id)
+    .eq("status", "active")
+    .order("created_at", { ascending: true })
+    .limit(1);
+  const mailbox = (mailboxes ?? [])[0];
+  if (!mailbox?.integration_id || !mailbox?.email) return null;
+
+  // Never a second outbox row for the same lead. The send path has its own
+  // duplicate guard; this stops the row being written at all.
+  const { data: already } = await admin
+    .from("sent_emails")
+    .select("id")
+    .eq("user_id", job.user_id)
+    .eq("lead_id", (lead as any).id)
+    .eq("status", "scheduled")
+    .maybeSingle();
+  if (already) return null;
+
+  // Staggered rather than all at once, so a batch does not arrive as a burst
+  // from one domain. Two minutes apart, from a minute out.
+  const scheduledAt = new Date(Date.now() + 60_000 + alreadyScheduled * 120_000).toISOString();
+
+  const { data: row, error } = await admin
+    .from("sent_emails")
+    .insert({
+      user_id: job.user_id,
+      lead_id: (lead as any).id,
+      to_email: to,
+      subject: draft.subject,
+      body_html: String(draft.body).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>"),
+      body_text: draft.body,
+      status: "scheduled",
+      scheduled_at: scheduledAt,
+      // sent_at defaults to now(), and a row that has not been sent must not
+      // be stamped with a send time: it reads everywhere — the sent list, the
+      // monthly usage count — as already delivered.
+      sent_at: null,
+      sending_account_id: mailbox.id,
+    })
+    .select("id")
+    .single();
+
+  if (error || !row) {
+    console.error("[process-agent-jobs] could not schedule:", error?.message);
+    return null;
+  }
+
+  return { id: String(row.id), scheduledAt };
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -86,7 +192,7 @@ serve(async (req) => {
     const jobIds = [...new Set(items.map((i) => String(i.job_id)))];
     const { data: jobRows } = await admin
       .from("agent_jobs")
-      .select("id, user_id, status, goal, feedback, agent_config_id, thread_id, total, done, failed")
+      .select("id, user_id, status, goal, feedback, agent_config_id, thread_id, total, done, failed, autonomy")
       .in("id", jobIds);
     const jobs = new Map((jobRows ?? []).map((j: any) => [String(j.id), j]));
 
@@ -186,8 +292,22 @@ serve(async (req) => {
         );
 
         if (result.draft_id) {
+          // Autonomous jobs hand the draft to the outbox. Approval jobs stop
+          // here, and the draft is the deliverable.
+          const outbox = job.autonomy === "autonomous"
+            ? await scheduleDraft(admin, job, lead as Record<string, unknown>, result)
+            : null;
+
           await admin.from("agent_job_items")
-            .update({ status: "done", draft_id: result.draft_id, error: null, finished_at: new Date().toISOString() })
+            .update({
+              status: "done",
+              draft_id: result.draft_id,
+              error: null,
+              finished_at: new Date().toISOString(),
+              ...(outbox
+                ? { scheduled_email_id: outbox.id, scheduled_at: outbox.scheduledAt }
+                : {}),
+            })
             .eq("id", item.id);
           processed++;
         } else {

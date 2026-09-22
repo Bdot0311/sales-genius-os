@@ -89,10 +89,72 @@ describe("what a browser may write", () => {
 });
 
 describe("the worker", () => {
-  it("drafts and never sends, which is the phase boundary", () => {
+  it("never sends, it schedules", () => {
+    // send-email authenticates from a user's JWT and this worker holds the
+    // service role; the cron sender drives Gmail directly through four hundred
+    // lines of token refresh, bounce handling and cap checks. A third send path
+    // for the highest-stakes code in the product is what this avoids.
     expect(code(WORKER)).not.toContain("send-email");
     expect(code(WORKER)).not.toContain("send_drafts");
-    expect(WORKER).toContain("It drafts and it never sends");
+    expect(code(WORKER)).not.toContain("gmail.googleapis.com");
+    expect(code(WORKER)).toContain('status: "scheduled"');
+  });
+
+  it("schedules only for a job the user marked autonomous", () => {
+    // Approval mode stops at the draft, which is the finished behaviour:
+    // agent-run does the same, because pending work belongs in the Drafts tab.
+    expect(code(WORKER)).toMatch(/job\.autonomy === "autonomous"\s*\n?\s*\?\s*await scheduleDraft/);
+  });
+
+  it("writes the same outbox row the chat scheduler writes", () => {
+    const fn = code(WORKER).slice(code(WORKER).indexOf("async function scheduleDraft"));
+    for (const field of ["user_id", "lead_id", "to_email", "subject", "body_html", "body_text", "scheduled_at", "sending_account_id"]) {
+      expect(fn, field).toContain(`${field}:`);
+    }
+    // A row that has not been sent must not be stamped with a send time: it
+    // reads everywhere — the sent list, the monthly usage count — as delivered.
+    expect(fn).toContain("sent_at: null");
+  });
+
+  it("refuses to schedule rather than guessing", () => {
+    const fn = code(WORKER).slice(code(WORKER).indexOf("async function scheduleDraft"));
+    // No address, no subject, no body, no active mailbox: the draft is already
+    // saved, so the worst case is one the user sends themselves.
+    expect(fn).toContain("if (!to || !draft.subject || !draft.body) return null;");
+    expect(fn).toContain('.eq("status", "active")');
+    expect(fn).toContain("if (!mailbox?.integration_id || !mailbox?.email) return null;");
+  });
+
+  it("cannot put more in the outbox than the batch it was given", () => {
+    const fn = code(WORKER).slice(code(WORKER).indexOf("async function scheduleDraft"));
+    expect(fn).toContain("const cap = Number(job.total ?? 0);");
+    expect(fn).toContain("alreadyScheduled >= cap");
+    // Counted from the rows, because several passes contribute to one job.
+    expect(fn).toContain('.not("scheduled_email_id", "is", null)');
+  });
+
+  it("never queues a second outbox row for the same lead", () => {
+    const fn = code(WORKER).slice(code(WORKER).indexOf("async function scheduleDraft"));
+    const guard = fn.slice(0, fn.indexOf(".insert("));
+    expect(guard).toContain('.from("sent_emails")');
+    expect(guard).toContain('.eq("status", "scheduled")');
+    expect(guard).toContain("if (already) return null;");
+  });
+
+  it("staggers the batch instead of releasing it as a burst", () => {
+    const fn = code(WORKER).slice(code(WORKER).indexOf("async function scheduleDraft"));
+    expect(fn).toMatch(/Date\.now\(\) \+ 60_000 \+ alreadyScheduled \* 120_000/);
+  });
+
+  it("leaves every daily cap where it already lives", () => {
+    // process-scheduled-emails refuses on the user's daily cap, the user's
+    // monthly cap, a paused mailbox and the mailbox's own daily cap, and leaves
+    // the row scheduled when it does. Re-checking them here would be a second
+    // copy of four ceilings.
+    const SENDER = readFileSync("supabase/functions/process-scheduled-emails/index.ts", "utf8");
+    expect(SENDER).toContain('.eq("status", "scheduled")');
+    expect(code(WORKER)).not.toContain("daily_email_limit");
+    expect(code(WORKER)).not.toContain("capacityFor");
   });
 
   it("checks for a cancel before every item, not once per pass", () => {
