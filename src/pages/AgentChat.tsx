@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { RESUME_MESSAGE, canResume } from "@/lib/agent-resume";
 import { toast } from "sonner";
 import {
   Plus,
@@ -27,6 +28,7 @@ import {
   ArrowLeft,
   Square,
   ChevronDown,
+  Play,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -96,6 +98,9 @@ const AgentChat = () => {
   // True while the server still has a run in flight for this thread, even if
   // this tab wasn't the one that started it.
   const [runActive, setRunActive] = useState(false);
+  // Derived from the conversation rather than held in state, so the offer to
+  // continue survives a reload and a second tab. See lib/agent-resume.ts.
+  const resumable = canResume(messages);
 
 
   // What the agent has actually finished this run, read from the rows
@@ -699,6 +704,22 @@ const AgentChat = () => {
                     </div>
                   </div>
                 ),
+              )}
+
+              {resumable && !sending && !runActive && (
+                // A six-pass ceiling is not a failure, but it should cost one
+                // tap rather than the user remembering and retyping the job.
+                <div className="flex justify-center">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5"
+                    onClick={() => handleSend(RESUME_MESSAGE)}
+                  >
+                    <Play className="w-3.5 h-3.5" />
+                    Keep going
+                  </Button>
+                </div>
               )}
 
               {(sending || runActive) && (
