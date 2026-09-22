@@ -719,7 +719,13 @@ const TOOLS = [
           days: { type: "number", description: "Look back this many days (default 30, max 180)" },
           awaiting_reply: {
             type: "boolean",
-            description: "Only emails that have had no reply yet — the follow-up candidates",
+            description:
+              "Only emails that have had no reply yet AND have been sitting unanswered long enough to count as silence — the real follow-up candidates. Someone emailed this morning has not failed to reply; they have not had the chance.",
+          },
+          quiet_for_days: {
+            type: "number",
+            description:
+              "With awaiting_reply, how long an email must have gone unanswered to count (default 3, min 1, max 60).",
           },
           include_body: { type: "boolean", description: "Include the full sent body (default true)" },
           limit: { type: "number", description: "Default 20, max 50" },
@@ -836,6 +842,17 @@ serve(async (req) => {
   // How many rewrites each draft has already been sent back for. A set only
   // ever allowed one, which meant the second attempt shipped however it scored.
   const rewriteRounds = new Map<string, number>();
+
+  /**
+   * Gives the thread's run claim back.
+   *
+   * Set once the claim is taken, and called from the catch at the end. Without
+   * it an unexpected error left the thread marked "running" until the
+   * twenty-minute staleness window expired, and every message sent in between
+   * was refused with "this conversation already has a run in progress" — which
+   * is what being made to send the same job twice looks like from the outside.
+   */
+  let releaseRunClaim: (() => Promise<void>) | null = null;
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -1116,6 +1133,14 @@ serve(async (req) => {
       }
     }
 
+    releaseRunClaim = async () => {
+      await admin
+        .from("agent_chat_threads")
+        .update({ run_status: "idle", run_pass: 0 })
+        .eq("id", threadId)
+        .eq("run_started_at", runStartedAt);
+    };
+
     if (!autoContinue) {
       await admin.from("agent_chat_messages").insert({
         thread_id: threadId,
@@ -1271,6 +1296,13 @@ serve(async (req) => {
      * of the turn names that wrong move explicitly.
      */
     const duplicateRefusals: { to: string; subject: string; previouslySentAt: string | null }[] = [];
+    /**
+     * Whether the user asked for drafts to be thrown away in this message.
+     *
+     * The duplicate guard in delete_drafts must never stand between someone and
+     * their own "delete those drafts".
+     */
+    const userAskedToDelete = /\b(delete|remove|clear|discard|throw away|bin)\b/i.test(userMessage);
     /**
      * Sends that were refused, and why.
      *
@@ -2207,6 +2239,23 @@ serve(async (req) => {
         }
 
         case "delete_drafts": {
+          // A duplicate refusal is not a draft problem, and deleting the draft
+          // does not clear it: the block lives on the sent history. The system
+          // prompt has said so in plain words for a while and the model still
+          // answers "blocked \u2014 deleting and redrafting", which burns a pass,
+          // destroys work the user can still use, and arrives back at the same
+          // refusal. Prose was the wrong place for it, so the tool refuses.
+          if (duplicateRefusals.length > 0 && !userAskedToDelete) {
+            return {
+              error: "redraft_will_not_help",
+              note:
+                `${duplicateRefusals.length} send(s) this turn were refused because that person already received that exact subject. ` +
+                "Deleting these drafts changes nothing \u2014 the block is on what was already sent, not on the draft. " +
+                "Do not delete and do not redraft for this reason. Tell the user who already got what and when, then offer exactly two things: " +
+                "a follow-up on a genuinely new angle with a new subject (draft_outreach with feedback describing the angle), " +
+                "or sending the same email again on purpose (the send tool with allow_duplicate: true, only after they say so in their own words).",
+            };
+          }
           const draftIds = (Array.isArray(args.draft_ids) ? args.draft_ids : [])
             .filter(Boolean)
             .map((x: any) => String(x));
@@ -3050,7 +3099,17 @@ serve(async (req) => {
             .limit(limit);
           if (args.lead_id) q = q.eq("lead_id", String(args.lead_id));
           if (args.email) q = q.ilike("to_email", `%${String(args.email)}%`);
-          if (args.awaiting_reply === true) q = q.is("replied_at", null);
+          if (args.awaiting_reply === true) {
+            // "No response" is a claim about elapsed time, not just a null
+            // column. Without the quiet period every email sent in the last
+            // hour came back as a follow-up candidate, and the agent, asked to
+            // follow up with everyone who had not responded, wrote second
+            // emails to people who had been contacted that morning.
+            const quietDays = Math.min(Math.max(Number(args.quiet_for_days ?? 3) || 3, 1), 60);
+            q = q
+              .is("replied_at", null)
+              .lte("sent_at", new Date(Date.now() - quietDays * 86_400_000).toISOString());
+          }
           const { data, error } = await q;
           if (error) return { error: error.message };
           const rows = data ?? [];
@@ -3095,7 +3154,10 @@ serve(async (req) => {
               };
             }),
             note:
-              "This is what already went out. Use get_email_thread for the full conversation, and reference the real earlier wording in any follow-up instead of guessing.",
+              "This is what already went out. Use get_email_thread for the full conversation, and reference the real earlier wording in any follow-up instead of guessing." +
+              (args.awaiting_reply === true
+                ? ` These are only the emails unanswered for at least ${Math.min(Math.max(Number(args.quiet_for_days ?? 3) || 3, 1), 60)} day(s). Anyone contacted more recently is deliberately not here and must not be followed up yet.`
+                : ""),
           };
         }
 
@@ -3885,6 +3947,45 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
       if (cancelled) break;
     }
 
+
+    /**
+     * How far a single request is allowed to chain.
+     *
+     * Named rather than inlined because the message the user reads when it is
+     * reached has to quote the same number.
+     */
+    const MAX_RUN_PASSES = 6;
+    // `truncated` tells the client to auto-continue this turn instead of making
+    // the user type "continue" after every long batch.
+    const normalizedRequest = userMessage.toLowerCase();
+    const requestedDeleteTools = [
+      /\b(delete|remove|clear|discard)\b[\s\S]*\b(saved\s+)?leads?\b/.test(normalizedRequest) ? "delete_leads" : null,
+      /\b(delete|remove|clear|discard)\b[\s\S]*\bdrafts?\b/.test(normalizedRequest) ? "delete_drafts" : null,
+    ].filter((name): name is string => Boolean(name));
+    const completedToolNames = new Set(
+      [...completedMutationKeys].map((key) => key.slice(0, key.indexOf(":"))),
+    );
+    const deletionRequestComplete =
+      requestedDeleteTools.length > 0 && requestedDeleteTools.every((name) => completedToolNames.has(name));
+
+    const willContinue =
+      ranOutOfTime && !cancelled && !deletionRequestComplete && runPass < MAX_RUN_PASSES;
+
+    /**
+     * Out of time, and not coming back on its own.
+     *
+     * This used to be indistinguishable from the case that does continue: the
+     * turn appended "Still more to do here — continuing…" whenever it ran out
+     * of time, and the decision about whether anything would in fact continue
+     * was taken seventy lines further down. On the last pass the user was told
+     * the work was carrying on when it was not, so they waited, and then sent
+     * the same job again.
+     */
+    const stoppedShort = ranOutOfTime && !willContinue && !cancelled && !deletionRequestComplete;
+    const stoppedShortNote =
+      `That is as far as I can carry one request in a single run (${MAX_RUN_PASSES} passes). ` +
+      "Everything above is saved and nothing was lost. Tell me to keep going and I'll pick up from exactly here.";
+
     if (cancelled) {
       await admin
         .from("agent_chat_threads")
@@ -3897,14 +3998,18 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
       finalText = failureNote
         ? failureNote
         : ranOutOfTime
-          ? "Big batch — the work above is saved. Picking up where I left off…"
+          ? willContinue
+            ? "Big batch — the work above is saved. Picking up where I left off…"
+            : stoppedShortNote
           : toolEvents.length
             ? "I finished the actions above. Tell me what you'd like next."
             : "I couldn't complete that. Try rephrasing what you'd like me to do.";
     } else if (failureNote) {
       finalText += `\n\n${failureNote}`;
-    } else if (ranOutOfTime) {
+    } else if (willContinue) {
       finalText += "\n\nStill more to do here — continuing…";
+    } else if (stoppedShort) {
+      finalText += `\n\n${stoppedShortNote}`;
     }
 
     // The model is not the only witness to its own actions.
@@ -4066,21 +4171,7 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
       approvals_requested: toolEvents.filter((t) => !!t.approval_id).length,
     });
 
-    // `truncated` tells the client to auto-continue this turn instead of making
-    // the user type "continue" after every long batch.
-    const normalizedRequest = userMessage.toLowerCase();
-    const requestedDeleteTools = [
-      /\b(delete|remove|clear|discard)\b[\s\S]*\b(saved\s+)?leads?\b/.test(normalizedRequest) ? "delete_leads" : null,
-      /\b(delete|remove|clear|discard)\b[\s\S]*\bdrafts?\b/.test(normalizedRequest) ? "delete_drafts" : null,
-    ].filter((name): name is string => Boolean(name));
-    const completedToolNames = new Set(
-      [...completedMutationKeys].map((key) => key.slice(0, key.indexOf(":"))),
-    );
-    const deletionRequestComplete =
-      requestedDeleteTools.length > 0 && requestedDeleteTools.every((name) => completedToolNames.has(name));
 
-    const willContinue =
-      ranOutOfTime && !cancelled && !deletionRequestComplete && runPass < 6;
 
     if (willContinue) {
       // Keep the batch moving on the server. The continuation is fired as a
@@ -4120,9 +4211,26 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
         })
         .catch(async (e) => {
           console.error("agent-chat continuation error", e);
+          // Say so. The turn that fired this continuation already told the user
+          // it was carrying on, and this path used to flip the thread to idle
+          // and write nothing — so the chat stopped mid-batch, under a message
+          // promising more, with no way to tell that anything had gone wrong.
+          try {
+            await admin.from("agent_chat_messages").insert({
+              thread_id: threadId,
+              user_id: userId,
+              role: "assistant",
+              content:
+                "I lost the thread of that batch partway through — everything above is saved, " +
+                "but the rest did not run. Tell me to keep going and I'll pick up from here.",
+              tool_events: [],
+            });
+          } catch (noteError) {
+            console.error("agent-chat could not record the continuation failure", noteError);
+          }
           await admin
             .from("agent_chat_threads")
-            .update({ run_status: "idle" })
+            .update({ run_status: "idle", run_pass: 0 })
             .eq("id", threadId)
             .eq("run_started_at", runStartedAt);
         });
@@ -4149,6 +4257,12 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
 
   } catch (error) {
     console.error("agent-chat error", error);
+    // The run must not stay claimed by a turn that has already died.
+    try {
+      await releaseRunClaim?.();
+    } catch (releaseError) {
+      console.error("agent-chat could not release the run claim", releaseError);
+    }
     return json({ error: "The agent hit an unexpected error." }, 500);
   }
 });
