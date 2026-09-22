@@ -504,7 +504,12 @@ serve(async (req) => {
     // what lets an observation carry an `occurred` when the page copy states no
     // date — which is most pages.
     const dateBlock = lastmodNote(readWithDates);
-    let siteText = `${dateBlock ? `${dateBlock}\n\n` : ""}${metaParts.join("\n\n")}\n\n${chunks.join("\n\n")}`.trim();
+    const web = await webPromise;
+    const webBlock = parallelPromptBlock(web.results);
+    if (web.results.length) {
+      console.log(`[research-lead] ${host}: ${web.results.length} external web sources`);
+    }
+    let siteText = `${dateBlock ? `${dateBlock}\n\n` : ""}${webBlock ? `${webBlock}\n\n` : ""}${metaParts.join("\n\n")}\n\n${chunks.join("\n\n")}`.trim();
     if (siteText.length > MAX_TEXT_CHARS) siteText = siteText.slice(0, MAX_TEXT_CHARS);
     if (!siteText) {
       return new Response(
