@@ -61,9 +61,9 @@ interface RouteMeta {
 const ROUTES: RouteMeta[] = [
   {
     path: "/",
-    title: "OutReign — B2B Outbound Platform: Leads, Emails & AI SDR",
+    title: "AI SDR & B2B Outbound Platform — OutReign",
     description:
-      "OutReign is the B2B outbound platform that replaces prospecting tool sprawl. Find ranked leads with verified emails, draft personalized outreach, and manage replies — AI SDR included.",
+      "Automate your B2B sales development: find ranked leads with verified emails, send personalized outreach, and let an AI SDR handle the follow-ups and replies. Start free.",
     socialTitle: "B2B outbound, without the tool sprawl.",
     socialDescription:
       "Find ranked prospects, verify emails, and let AI handle replies from Gmail.",
