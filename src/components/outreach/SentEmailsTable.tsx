@@ -86,6 +86,9 @@ export const SentEmailsTable = ({ onDeleted }: { onDeleted?: () => void }) => {
 
   const loadSentEmails = async () => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { setLoading(false); return; }
+
       const { data, error } = await supabase
         .from("sent_emails")
         .select(`
@@ -93,6 +96,9 @@ export const SentEmailsTable = ({ onDeleted }: { onDeleted?: () => void }) => {
           scheduled_at, error_message, failed_at, lead_id, gmail_message_id,
           leads ( contact_name, company_name )
         `)
+        // Scoped to the owner so the index does the work: without this the
+        // database checked row security across every send in the table.
+        .eq("user_id", session.user.id)
         // Ordered by when the row was written, not by sent_at: a failed send has
         // no sent_at, and ordering on it pushed every failure past the 200-row
         // window so the reason it failed could never be read.

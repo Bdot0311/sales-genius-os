@@ -225,7 +225,7 @@ const Leads = () => {
             <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard/leads/saved')}>
               <Users className="w-4 h-4 mr-2" />
               Saved
-              {leads.length > 0 && <Badge variant="secondary" className="ml-2">{leads.length}</Badge>}
+              {leadCount > 0 && <Badge variant="secondary" className="ml-2">{leadCount}</Badge>}
             </Button>
             <ImportLeadsDialog onImportComplete={fetchLeads} triggerVariant="outline" />
             <AddLeadDialog onLeadAdded={fetchLeads} triggerVariant="outline" />
