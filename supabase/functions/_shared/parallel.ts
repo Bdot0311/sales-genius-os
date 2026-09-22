@@ -37,8 +37,6 @@ export interface ParallelSearchOptions {
   maxCharsTotal?: number;
   /** turbo | fast | basic | advanced. Defaults to "basic" for latency. */
   mode?: "turbo" | "fast" | "basic" | "advanced";
-  /** Only return material published on or after this date (YYYY-MM-DD). */
-  publishedAfter?: string;
   timeoutMs?: number;
   /** Ties several calls in one research run together for better context. */
   sessionId?: string | null;
@@ -66,12 +64,7 @@ export async function parallelSearch(
         mode: opts.mode ?? "basic",
         max_chars_total: opts.maxCharsTotal ?? 6_000,
         ...(opts.sessionId ? { session_id: opts.sessionId } : {}),
-        advanced_settings: {
-          max_results: opts.maxResults ?? 8,
-          ...(opts.publishedAfter
-            ? { source_policy: { include_domains: [], exclude_domains: [] } }
-            : {}),
-        },
+        advanced_settings: { max_results: opts.maxResults ?? 8 },
       }),
     });
 
