@@ -537,6 +537,8 @@ export type Database = {
           id: string
           job_id: string
           lead_id: string
+          scheduled_at: string | null
+          scheduled_email_id: string | null
           status: string
           user_id: string
         }
@@ -550,6 +552,8 @@ export type Database = {
           id?: string
           job_id: string
           lead_id: string
+          scheduled_at?: string | null
+          scheduled_email_id?: string | null
           status?: string
           user_id: string
         }
@@ -563,6 +567,8 @@ export type Database = {
           id?: string
           job_id?: string
           lead_id?: string
+          scheduled_at?: string | null
+          scheduled_email_id?: string | null
           status?: string
           user_id?: string
         }
@@ -6440,6 +6446,8 @@ export type Database = {
           id: string
           job_id: string
           lead_id: string
+          scheduled_at: string | null
+          scheduled_email_id: string | null
           status: string
           user_id: string
         }[]

@@ -176,6 +176,13 @@
       "when": 1790030565698,
       "tag": "0024_support_grant_validate_new_scopes",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1790108173568,
+      "tag": "0025_agent_job_scheduling",
+      "breakpoints": true
     }
   ]
 }
