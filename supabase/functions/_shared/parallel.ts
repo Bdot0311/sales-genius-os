@@ -37,6 +37,12 @@ export interface ParallelSearchOptions {
   maxCharsTotal?: number;
   /** turbo | fast | basic | advanced. Defaults to "basic" for latency. */
   mode?: "turbo" | "fast" | "basic" | "advanced";
+  /**
+   * Domains to keep out of the results. The lead's own site belongs here: we
+   * read it directly and in full, so spending result slots on it crowds out the
+   * independent, dated coverage this call exists to find.
+   */
+  excludeDomains?: string[];
   timeoutMs?: number;
   /** Ties several calls in one research run together for better context. */
   sessionId?: string | null;
@@ -64,7 +70,12 @@ export async function parallelSearch(
         mode: opts.mode ?? "basic",
         max_chars_total: opts.maxCharsTotal ?? 6_000,
         ...(opts.sessionId ? { session_id: opts.sessionId } : {}),
-        advanced_settings: { max_results: opts.maxResults ?? 8 },
+        advanced_settings: {
+          max_results: opts.maxResults ?? 8,
+          ...(opts.excludeDomains?.length
+            ? { source_policy: { exclude_domains: opts.excludeDomains.slice(0, 20) } }
+            : {}),
+        },
       }),
     });
 
