@@ -4264,7 +4264,7 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
               role: "assistant",
               content:
                 "I lost the thread of that batch partway through — everything above is saved, " +
-                "but the rest did not run. Tell me to keep going and I'll pick up from here.",
+                "but the rest did not run. Tell me to keep going and I'll pick up from exactly here.",
               tool_events: [],
             });
           } catch (noteError) {
