@@ -95,6 +95,29 @@ type ToolEvent = {
 };
 
 
+/**
+ * What this build of agent-chat can do, for the deploy probe above.
+ *
+ * Add a marker in the same change that adds the behaviour, and add its
+ * assertion to agent-build-probe.test.ts. A marker whose code is not here is a
+ * lie told to whoever is trying to work out why a fix has not taken effect.
+ */
+const AGENT_CHAT_BUILD = [
+  // #243: a turn that promised work and called nothing gets one more chance.
+  "continues-a-promised-turn",
+  // #254: the run claim is released when a turn throws, the continuation note
+  // follows the decision rather than preceding it, and "no response" means
+  // silence rather than a null column.
+  "releases-run-claim-on-error",
+  "says-when-it-stops-short",
+  "quiet-period-on-awaiting-reply",
+  "refuses-delete-and-redraft",
+  // #257: a batch bigger than the inline limit is queued rather than truncated.
+  "queues-overflow-batches",
+  // #259: the model is told to pass every lead id in one call.
+  "asks-for-the-whole-list",
+] as const;
+
 const LEAD_FIELDS =
   "id, company_name, contact_name, contact_email, job_title, industry, company_website, linkedin_url, lead_status, pipeline_stage, icp_score, intent_score, intent_label, signal_score, signals, notes, last_contacted_at, created_at";
 
@@ -873,6 +896,24 @@ serve(async (req) => {
     const threadId = String(payload.threadId ?? "");
     let requestedAgentId = typeof payload.agentId === "string" ? payload.agentId : null;
     const action = String(payload.action ?? "chat");
+
+    /*
+     * Which build is actually deployed.
+     *
+     * Merging is not deploying here: edge functions ship through Lovable, so a
+     * fix can sit on main for hours while the running function is older. That
+     * has been diagnosed the slow way more than once — most recently a chat
+     * that said "continuing…" and then stopped, which the merged code cannot
+     * do, because it only says that when it has already decided to continue.
+     *
+     * Each marker is named beside the behaviour it describes and asserted
+     * against the source by a test, so this cannot drift into claiming a
+     * feature the deployed file does not have.
+     */
+    if (action === "build") {
+      return json({ build: AGENT_CHAT_BUILD });
+    }
+
     if (!threadId) return json({ error: "Missing threadId" }, 400);
 
     // The user's IANA timezone (sent by the client). Everything the model sees or

@@ -1,0 +1,114 @@
+import { useCallback, useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Panel, PanelBody, PanelHeader, PanelTitle, PanelDescription } from "@/components/dashboard/Panel";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Loader2 } from "lucide-react";
+
+/**
+ * What the deployed agent-chat can actually do.
+ *
+ * Merging is not deploying: edge functions ship through Lovable, so a fix can
+ * sit on main for hours while the running function is older. Working that out
+ * by reading chat transcripts is slow and guessy, and it has been done more
+ * than once. The function reports its own markers; this shows them.
+ *
+ * Absence is the useful signal. A marker missing from this list is a change
+ * that is merged and not running.
+ */
+const EXPECTED: { marker: string; what: string }[] = [
+  { marker: "continues-a-promised-turn", what: "Finishes a turn that said it was starting work" },
+  { marker: "releases-run-claim-on-error", what: "A failed turn stops locking the conversation" },
+  { marker: "says-when-it-stops-short", what: "Says it has stopped instead of claiming it is continuing" },
+  { marker: "quiet-period-on-awaiting-reply", what: "\"No response\" means silence, not a null column" },
+  { marker: "refuses-delete-and-redraft", what: "Refuses to delete drafts over a duplicate block" },
+  { marker: "queues-overflow-batches", what: "Queues a batch bigger than the inline limit" },
+  { marker: "asks-for-the-whole-list", what: "Takes every lead in one call instead of tens" },
+];
+
+export const AgentBuildCard = () => {
+  const [markers, setMarkers] = useState<string[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const check = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error: err } = await supabase.functions.invoke("agent-chat", {
+        body: { action: "build" },
+      });
+      if (err) throw err;
+      const build = (data as { build?: string[] } | null)?.build;
+      // An older deployment has no build branch at all, so it falls through to
+      // the missing-threadId error. That answer is itself the answer.
+      setMarkers(Array.isArray(build) ? build : []);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not reach agent-chat");
+      setMarkers(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void check();
+  }, [check]);
+
+  const missing = markers ? EXPECTED.filter((e) => !markers.includes(e.marker)) : [];
+
+  return (
+    <Panel>
+      <PanelHeader>
+        <PanelTitle>Deployed agent build</PanelTitle>
+        <PanelDescription>
+          What the running agent-chat can do, asked of the function itself. Anything listed as
+          not deployed is merged and waiting on a redeploy.
+        </PanelDescription>
+      </PanelHeader>
+      <PanelBody className="space-y-3">
+        {loading && (
+          <p className="text-sm text-muted-foreground flex items-center gap-2">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Asking the function…
+          </p>
+        )}
+
+        {error && <p className="text-sm text-destructive">{error}</p>}
+
+        {markers && markers.length === 0 && !loading && (
+          <p className="text-sm text-amber-400">
+            This deployment does not report a build at all, so it predates the probe. Everything
+            below is waiting on a redeploy of agent-chat.
+          </p>
+        )}
+
+        {markers && (
+          <ul className="space-y-1.5">
+            {EXPECTED.map(({ marker, what }) => {
+              const live = markers.includes(marker);
+              return (
+                <li key={marker} className="flex items-start justify-between gap-3 text-sm">
+                  <span className={live ? "" : "text-muted-foreground"}>{what}</span>
+                  <Badge variant={live ? "secondary" : "outline"} className="shrink-0">
+                    {live ? "deployed" : "not deployed"}
+                  </Badge>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
+        {markers && missing.length > 0 && (
+          <p className="text-xs text-muted-foreground">
+            {missing.length} change{missing.length === 1 ? "" : "s"} merged and not running. Redeploy
+            agent-chat from Lovable.
+          </p>
+        )}
+
+        <Button size="sm" variant="outline" onClick={check} disabled={loading}>
+          Check again
+        </Button>
+      </PanelBody>
+    </Panel>
+  );
+};

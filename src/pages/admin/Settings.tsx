@@ -20,6 +20,7 @@ import { EmailLogsPanel } from "@/components/admin/EmailLogsPanel";
 import { DemoModeCard } from "@/components/admin/DemoModeCard";
 import { ChangelogTab } from "@/components/admin/ChangelogTab";
 import { LeadIntelligencePanel } from "@/components/admin/LeadIntelligencePanel";
+import { AgentBuildCard } from "@/components/admin/AgentBuildCard";
 
 
 function debounce<T extends (...args: any[]) => any>(fn: T, ms: number): T {
@@ -494,6 +495,8 @@ const AdminSettings = () => {
 
           {/* Feature Flags */}
           <TabsContent value="features" className="space-y-4">
+            <AgentBuildCard />
+
             <LeadIntelligencePanel />
 
             <div className="flex justify-between items-center">
