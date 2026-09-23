@@ -86,6 +86,24 @@ describe("the deploy probe answers honestly", () => {
     expect(SETTINGS).toContain("<AgentBuildCard />");
   });
 
+  it("reports which mode the decision layer is actually in", () => {
+    // Evaluations and failures read the same in shadow as in assist, so the one
+    // thing that says whether those decisions reach the email was the one thing
+    // nothing could check. It is an edge-function env var, so only the function
+    // can answer it.
+    expect(CODE).toContain("leadIntelligence = await leadIntelligenceMode(admin)");
+    expect(CODE).toContain("return json({ build: AGENT_CHAT_BUILD, leadIntelligence })");
+    for (const mode of ["off", "shadow", "assist"]) {
+      expect(CARD, mode).toContain(`${mode}: {`);
+    }
+  });
+
+  it("treats a mode it cannot read as the dangerous one", () => {
+    // Failing closed here would mean showing "off" for a layer that is live.
+    expect(CODE).toContain('leadIntelligence = "unknown"');
+    expect(CARD).toContain("Treat this as assist until you know otherwise");
+  });
+
   it("treats a deployment with no build branch as the answer, not an error", () => {
     // An older function falls through to the missing-threadId error, and that
     // is itself informative: nothing below it is running.
