@@ -26,7 +26,38 @@ const EXPECTED: { marker: string; what: string }[] = [
   { marker: "asks-for-the-whole-list", what: "Takes every lead in one call instead of tens" },
 ];
 
+/**
+ * What each mode means for the emails going out, in one line each.
+ *
+ * The panel below this one shows evaluations and failures, which read the same
+ * in shadow as in assist. This is the line that says whether those decisions
+ * reach the email.
+ */
+const MODES: Record<string, { label: string; what: string; tone: string }> = {
+  off: {
+    label: "off",
+    what: "Nothing is evaluated and nothing reaches the emails.",
+    tone: "text-muted-foreground",
+  },
+  shadow: {
+    label: "shadow",
+    what: "Leads are evaluated and saved. Emails are written exactly as they would be without it.",
+    tone: "text-sky-400",
+  },
+  assist: {
+    label: "assist",
+    what: "Decisions reach the email generator as strategy. This is live, not a rehearsal.",
+    tone: "text-amber-400",
+  },
+  unknown: {
+    label: "unknown",
+    what: "The function could not read its own mode. Treat this as assist until you know otherwise.",
+    tone: "text-destructive",
+  },
+};
+
 export const AgentBuildCard = () => {
+  const [mode, setMode] = useState<string | null>(null);
   const [markers, setMarkers] = useState<string[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -39,13 +70,16 @@ export const AgentBuildCard = () => {
         body: { action: "build" },
       });
       if (err) throw err;
-      const build = (data as { build?: string[] } | null)?.build;
+      const body = data as { build?: string[]; leadIntelligence?: string } | null;
+      const build = body?.build;
+      setMode(typeof body?.leadIntelligence === "string" ? body.leadIntelligence : null);
       // An older deployment has no build branch at all, so it falls through to
       // the missing-threadId error. That answer is itself the answer.
       setMarkers(Array.isArray(build) ? build : []);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not reach agent-chat");
       setMarkers(null);
+      setMode(null);
     } finally {
       setLoading(false);
     }
@@ -80,6 +114,15 @@ export const AgentBuildCard = () => {
             This deployment does not report a build at all, so it predates the probe. Everything
             below is waiting on a redeploy of agent-chat.
           </p>
+        )}
+
+        {mode && MODES[mode] && (
+          <div className="rounded-md border border-border/60 bg-background/40 p-2.5">
+            <p className="text-sm">
+              Lead intelligence: <span className={MODES[mode].tone}>{MODES[mode].label}</span>
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">{MODES[mode].what}</p>
+          </div>
         )}
 
         {markers && (

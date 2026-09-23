@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { playbookEnforcementRules } from "../_shared/cold-email-playbook.ts";
 import { draftForLead, sentSubjectsFor } from "../_shared/draft-one.ts";
+import { leadIntelligenceMode } from "../_shared/lead-intelligence.ts";
 import {
   AGENT_MAX_ATTEMPTS,
   AGENT_TARGET_SCORE,
@@ -911,7 +912,21 @@ serve(async (req) => {
      * feature the deployed file does not have.
      */
     if (action === "build") {
-      return json({ build: AGENT_CHAT_BUILD });
+      /*
+       * The decision layer's mode belongs here rather than in the admin panel's
+       * own queries, because it is an edge-function environment variable: the
+       * database cannot see it, and nothing in the UI could report it. The
+       * panel below this one shows evaluations and failures, which are equally
+       * true in shadow and in assist — so the one thing that says whether those
+       * decisions reach the email was the one thing nobody could check.
+       */
+      let leadIntelligence: string;
+      try {
+        leadIntelligence = await leadIntelligenceMode(admin);
+      } catch {
+        leadIntelligence = "unknown";
+      }
+      return json({ build: AGENT_CHAT_BUILD, leadIntelligence });
     }
 
     if (!threadId) return json({ error: "Missing threadId" }, 400);
