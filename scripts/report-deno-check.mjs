@@ -68,11 +68,15 @@ try {
   out = `${err.stdout ?? ""}${err.stderr ?? ""}`;
 }
 
-// Deno prints "error: TS2448 [ERROR]: ..." followed by a file:// location.
+// Deno prints "TS1192 [ERROR]: ..." followed by a file:// location, wrapped in
+// ANSI colour codes. Those codes are why the first parse found nothing: the
+// escape sequence ends in a word character, so \bTS\d+\b had no boundary to
+// match against and a run that found three real errors reported none.
+const stripAnsi = (s) => s.replace(/\u001b\[[0-9;]*m/g, "");
 const byCode = new Map();
 const byFile = new Map();
 let currentCode = null;
-for (const line of out.split("\n")) {
+for (const line of stripAnsi(out).split("\n")) {
   const code = line.match(/\bTS(\d+)\b/)?.[0];
   if (code && /error/i.test(line)) {
     currentCode = code;

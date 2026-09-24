@@ -66,6 +66,39 @@ describe("the check that would have caught it", () => {
  * types, which is most of the code. Deno can. Before that becomes a blocking
  * job, the number it would block on has to be known.
  */
+/**
+ * The first complete Deno check of the edge functions found three errors, all
+ * the same one: @types/web-push declares no default export, and three files
+ * imported it as a default. Three errors across 255 files, one cause.
+ */
+describe("web-push is imported as the types declare it", () => {
+  const PUSH_FILES = [
+    "supabase/functions/_shared/notify-push.ts",
+    "supabase/functions/send-push-notification/index.ts",
+    "supabase/functions/run-seo-audit/index.ts",
+  ];
+
+  it("takes the namespace, with a default fallback", () => {
+    for (const file of PUSH_FILES) {
+      const src = readFileSync(file, "utf8");
+      expect(src, file).not.toMatch(/^import webpush from/m);
+      expect(src, file).toContain("import * as webpushModule");
+      // Whichever esm.sh actually provides is the module, so the object at
+      // runtime is the one a default import resolved to. This is the live push
+      // path and it had just been made to work.
+      expect(src, file).toContain(".default ?? webpushModule");
+    }
+  });
+
+  it("leaves every call site untouched", () => {
+    for (const file of PUSH_FILES) {
+      const src = readFileSync(file, "utf8");
+      expect(src, file).toMatch(/webpush\.setVapidDetails\(/);
+      expect(src, file).toMatch(/webpush\.sendNotification\(/);
+    }
+  });
+});
+
 describe("the report that measures what the partial check misses", () => {
   const REPORT = readFileSync("scripts/report-deno-check.mjs", "utf8");
 
@@ -118,6 +151,14 @@ describe("the report that measures what the partial check misses", () => {
   it("says so plainly when Deno is not installed", () => {
     // Which is the case in the sandbox this was written in.
     expect(REPORT).toContain('err.code === "ENOENT"');
+  });
+
+  it("strips the colour codes before parsing", () => {
+    // Deno wraps the code as "\u001b[1mTS1192 \u001b[0m[ERROR]". The escape
+    // sequence ends in a word character, so \bTS\d+\b had no boundary and a
+    // run that found three real errors reported none of them.
+    expect(REPORT).toContain("stripAnsi");
+    expect(REPORT).toContain("stripAnsi(out)");
   });
 
   it("honours deno.json's exclusions", () => {
