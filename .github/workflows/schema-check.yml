@@ -30,6 +30,29 @@ jobs:
       - name: Check DB column references against generated types
         run: node scripts/check-schema-refs.mjs
 
+  # The edge functions are the other half of the product, and nothing else here
+  # sees them: they are Deno and are not in the app's tsconfig program, so
+  # `tsc -b` compiles none of them.
+  #
+  # They were checked by hand with a grep for TS1xxx — syntax only — and
+  # everything else was discarded as import noise. A block that read `feedback`
+  # before its `const` was declared shipped that way; tsc had reported it as
+  # TS2448 every time, and the grep threw it away. Deployed, it threw on every
+  # draft of more than twelve leads, which is exactly the path the queue exists
+  # for, and the failure read as the agent misbehaving rather than a bug with a
+  # line number.
+  edge-functions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run npm ci --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
+      - name: Check edge functions for runtime-fatal type errors
+        run: node scripts/check-edge-functions.mjs
+
   # A typecheck that actually checks something.
   #
   # tsconfig.json has "files": [] and defers to project references, so the
