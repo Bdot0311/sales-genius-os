@@ -2,7 +2,12 @@
 // Auth: requires a logged-in user. Sends to the caller's own subscriptions
 // unless an admin passes target_user_id.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import webpush from "https://esm.sh/web-push@3.6.7";
+// Taken as a namespace with a default fallback, because @types/web-push
+// declares no default export while esm.sh's build may or may not provide one.
+// Whichever exists is the module, so this is the same object at runtime that a
+// default import resolved to — which matters: this is the live push path.
+import * as webpushModule from "https://esm.sh/web-push@3.6.7";
+const webpush = (webpushModule as unknown as { default?: typeof webpushModule }).default ?? webpushModule;
 import { checkVapidKeyPair, checkVapidSubject } from "../_shared/vapid-keypair.ts";
 import { describePushFailure, providerReasonCode } from "../_shared/push-failure.ts";
 
