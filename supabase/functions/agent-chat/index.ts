@@ -1939,6 +1939,21 @@ serve(async (req) => {
           const ids = requested.slice(0, INLINE_DRAFT_LIMIT);
           const overflow = requested.slice(INLINE_DRAFT_LIMIT);
 
+          // Sender + offer context the UI path already sends — the agent path
+          // used to drop these, which made its emails noticeably more generic.
+          const businessDescription = [
+            config?.company_context ?? "",
+            (config?.value_props ?? []).join("; "),
+          ].filter(Boolean).join(" — ").slice(0, 600);
+
+          // A redraft is the user rejecting the email they were shown, so it has
+          // to come back structurally different rather than reworded. feedback
+          // reaches generate-email as customInstruction, and variantNum pushes
+          // the skill router to a different framework — regenerating with the
+          // same inputs mostly reproduces the same email, which reads to the
+          // user as the request having been ignored.
+          const feedback = String(args.feedback ?? "").trim().slice(0, 2000);
+
           /*
            * The rest go to the queue, and they go before the inline drafts are
            * written rather than after.
@@ -1994,21 +2009,6 @@ serve(async (req) => {
               }
             }
           }
-
-          // Sender + offer context the UI path already sends — the agent path
-          // used to drop these, which made its emails noticeably more generic.
-          const businessDescription = [
-            config?.company_context ?? "",
-            (config?.value_props ?? []).join("; "),
-          ].filter(Boolean).join(" — ").slice(0, 600);
-
-          // A redraft is the user rejecting the email they were shown, so it has
-          // to come back structurally different rather than reworded. feedback
-          // reaches generate-email as customInstruction, and variantNum pushes
-          // the skill router to a different framework — regenerating with the
-          // same inputs mostly reproduces the same email, which reads to the
-          // user as the request having been ignored.
-          const feedback = String(args.feedback ?? "").trim().slice(0, 2000);
 
           // Outreach Studio has always fallen back to the connected mailbox
           // address when the profile carries no name; the agent did not, and
