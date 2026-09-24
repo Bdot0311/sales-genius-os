@@ -24,6 +24,9 @@ const EXPECTED: { marker: string; what: string }[] = [
   { marker: "refuses-delete-and-redraft", what: "Refuses to delete drafts over a duplicate block" },
   { marker: "queues-overflow-batches", what: "Queues a batch bigger than the inline limit" },
   { marker: "asks-for-the-whole-list", what: "Takes every lead in one call instead of tens" },
+  { marker: "skips-leads-that-have-drafts", what: "Skips leads that already have a draft instead of overwriting them" },
+  { marker: "sizes-inline-batch-to-budget", what: "Queues the batch when the turn has no time left, rather than starting drafts it will cut off" },
+  { marker: "reports-real-draft-totals", what: "Reports the drafts table's own count, not one the model added up" },
 ];
 
 /**

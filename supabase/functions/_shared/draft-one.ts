@@ -122,6 +122,40 @@ export async function saveDraft(
 }
 
 /**
+ * Which of these leads already hold a saved draft.
+ *
+ * Nothing in the system knew this, and that is the whole reason a request to
+ * draft eighty-two leads produced twenty drafts however many times it was run.
+ * list_leads orders by created_at and has no idea what has been written, so
+ * every pass handed the drafter the same head of the same list; saveDraft
+ * below replaces a lead's draft rather than adding one, so each pass overwrote
+ * the previous pass's work and the folder never grew past a single batch.
+ *
+ * Read in chunks because a batch here is the whole account, and a PostgREST
+ * `in` list goes into the URL.
+ */
+export async function leadsWithDrafts(
+  admin: any,
+  userId: string,
+  leadIds: string[],
+): Promise<Set<string>> {
+  const out = new Set<string>();
+  if (leadIds.length === 0) return out;
+  for (let i = 0; i < leadIds.length; i += 100) {
+    const { data } = await admin
+      .from("email_drafts")
+      .select("lead_id")
+      .eq("user_id", userId)
+      .in("lead_id", leadIds.slice(i, i + 100));
+    for (const row of (data ?? []) as Record<string, unknown>[]) {
+      const id = String(row.lead_id ?? "");
+      if (id) out.add(id);
+    }
+  }
+  return out;
+}
+
+/**
  * The subjects this person has already received, so a redraft does not land on
  * one of them and get refused at the send step after being written and shown.
  */
