@@ -97,6 +97,15 @@ describe("the report that measures what the partial check misses", () => {
     expect(REPORT).toContain("so this checked nothing");
   });
 
+  it("shows the end of the output, not the start", () => {
+    // Deno prints a download line per dependency before it reports anything,
+    // so the head is always a wall of URLs and the reason it stopped is last.
+    // Printing the first forty lines told me nothing, twice.
+    expect(REPORT).toContain("lines.slice(-30)");
+    expect(REPORT).toContain("Error lines:");
+    expect(REPORT).toContain("Deno exited");
+  });
+
   it("does not let Deno install the app's dependency tree", () => {
     // deno.json sets nodeModulesDir "auto" for the app. Without this flag
     // `deno check` reads package.json and installs Radix, Sentry, Stripe and

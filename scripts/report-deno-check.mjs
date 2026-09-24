@@ -42,6 +42,7 @@ const walk = (dir) => {
 walk(ROOT);
 
 let out = "";
+let exitStatus = 0;
 try {
   // --node-modules-dir=none is the difference between measuring and hanging.
   //
@@ -63,6 +64,7 @@ try {
     console.log("  This runs in CI, where setup-deno provides it.");
     process.exit(0);
   }
+  exitStatus = err.status ?? null;
   out = `${err.stdout ?? ""}${err.stderr ?? ""}`;
 }
 
@@ -94,11 +96,23 @@ if (total === 0) {
   // worth seeing rather than reporting a reassuring zero.
   const trimmed = out.trim();
   if (trimmed) {
-    console.log("No TS error codes parsed, so this checked nothing. Raw output:\n");
-    console.log(trimmed.split("\n").slice(0, 40).join("\n"));
+    const lines = trimmed.split("\n");
+    // Not the first forty. Deno prints a download per dependency before it
+    // reports anything, so the head of the output is always a wall of URLs and
+    // the reason it stopped is at the very end — which is how the first two
+    // runs of this job told me nothing twice.
+    const errors = lines.filter((l) => /^\s*error/i.test(l) || /\bTS\d+\b/.test(l));
+    console.log(`Deno exited ${exitStatus ?? "abnormally"} without reporting type errors.\n`);
+    if (errors.length) {
+      console.log("Error lines:\n");
+      console.log(errors.slice(0, 30).join("\n"));
+      console.log("");
+    }
+    console.log("Last 30 lines:\n");
+    console.log(lines.slice(-30).join("\n"));
     console.log(
-      "\nA wall of registry downloads here means Deno is installing package.json " +
-      "rather than checking. A module resolution error means an import it could not fetch.",
+      "\nA wall of registry downloads means it was still resolving, not checking. " +
+      "A module error names the import it could not fetch.",
     );
   } else {
     console.log("✓ No type errors.");
