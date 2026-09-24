@@ -60,3 +60,46 @@ describe("the check that would have caught it", () => {
     expect(WORKFLOW).toContain("node scripts/check-edge-functions.mjs");
   });
 });
+
+/**
+ * The partial check cannot see anything that depends on a remote module's real
+ * types, which is most of the code. Deno can. Before that becomes a blocking
+ * job, the number it would block on has to be known.
+ */
+describe("the report that measures what the partial check misses", () => {
+  const REPORT = readFileSync("scripts/report-deno-check.mjs", "utf8");
+
+  it("never fails the build", () => {
+    // Turning CI red before anyone has read the counts would decide the size of
+    // the cleanup by accident.
+    expect(WORKFLOW).toContain("edge-functions-deno-report:");
+    const job = WORKFLOW.slice(WORKFLOW.indexOf("edge-functions-deno-report:"));
+    expect(job.slice(0, job.indexOf("steps:"))).toContain("continue-on-error: true");
+    expect(REPORT).not.toContain("process.exit(1)");
+  });
+
+  it("uses a Deno that can fetch the imports", () => {
+    expect(WORKFLOW).toContain("denoland/setup-deno");
+    expect(REPORT).toContain('execFileSync("deno", ["check"');
+  });
+
+  it("groups the count by kind and by file, rather than dumping errors", () => {
+    // A wall of 133 lines is not a decision; "how many, of what kind" is.
+    expect(REPORT).toContain("by kind — biggest first");
+    expect(REPORT).toContain("The ten carrying most");
+  });
+
+  it("does not report a reassuring zero when Deno failed early", () => {
+    expect(REPORT).toContain("No TS error codes parsed");
+  });
+
+  it("says so plainly when Deno is not installed", () => {
+    // Which is the case in the sandbox this was written in.
+    expect(REPORT).toContain('err.code === "ENOENT"');
+  });
+
+  it("honours deno.json's exclusions", () => {
+    // supabase/functions/mcp/index.ts is excluded there for a reason.
+    expect(REPORT).toContain("denoConfig.exclude");
+  });
+});

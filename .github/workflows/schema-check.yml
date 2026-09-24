@@ -53,6 +53,32 @@ jobs:
       - name: Check edge functions for runtime-fatal type errors
         run: node scripts/check-edge-functions.mjs
 
+  # How big is the gap the job above cannot see?
+  #
+  # edge-functions runs tsc with --noResolve, because CI has no Deno there and
+  # cannot fetch the https:// imports. That catches what is fatal whatever the
+  # imports resolve to — a use-before-declaration deploys green and throws, and
+  # one did — and misses everything that depends on a remote module's real
+  # types, which is most of the code in 231 files nothing has ever checked.
+  #
+  # Deno can fetch them. This reports what it finds, grouped by kind, and never
+  # fails: the counts are the size of a cleanup, and turning CI red before
+  # anyone has read them would decide that by accident. It becomes blocking
+  # when the number is known and the cleanup is done.
+  edge-functions-deno-report:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Report what a real Deno check finds
+        run: node scripts/report-deno-check.mjs
+
   # A typecheck that actually checks something.
   #
   # tsconfig.json has "files": [] and defers to project references, so the
