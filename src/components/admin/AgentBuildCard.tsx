@@ -69,7 +69,24 @@ export const AgentBuildCard = () => {
       const { data, error: err } = await supabase.functions.invoke("agent-chat", {
         body: { action: "build" },
       });
-      if (err) throw err;
+      if (err) {
+        // supabase-js turns any non-2xx into a generic error; the real body is
+        // on err.context. An older deployment has no build branch and answers
+        // 400 "Missing threadId" — that is the answer, not a failure.
+        const ctx = (err as { context?: { status?: number; json?: () => Promise<unknown> } }).context;
+        let body: { error?: string } | null = null;
+        try {
+          body = (await ctx?.json?.()) as { error?: string } | null;
+        } catch {
+          body = null;
+        }
+        if (ctx?.status === 400 && body?.error === "Missing threadId") {
+          setMode(null);
+          setMarkers([]);
+          return;
+        }
+        throw new Error(body?.error || (ctx?.status ? `agent-chat returned ${ctx.status}` : err.message));
+      }
       const body = data as { build?: string[]; leadIntelligence?: string } | null;
       const build = body?.build;
       setMode(typeof body?.leadIntelligence === "string" ? body.leadIntelligence : null);
