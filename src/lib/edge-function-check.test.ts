@@ -102,13 +102,22 @@ describe("web-push is imported as the types declare it", () => {
 describe("the report that measures what the partial check misses", () => {
   const REPORT = readFileSync("scripts/report-deno-check.mjs", "utf8");
 
-  it("never fails the build", () => {
-    // Turning CI red before anyone has read the counts would decide the size of
-    // the cleanup by accident.
-    expect(WORKFLOW).toContain("edge-functions-deno-report:");
-    const job = WORKFLOW.slice(WORKFLOW.indexOf("edge-functions-deno-report:"));
-    expect(job.slice(0, job.indexOf("steps:"))).toContain("continue-on-error: true");
-    expect(REPORT).not.toContain("process.exit(1)");
+  it("blocks, now that the cleanup turned out to be three lines", () => {
+    // It ran report-only first so the size of the cleanup decided whether it
+    // blocks, rather than the other way round. The answer was three errors with
+    // one cause, so there was nothing to weigh.
+    expect(WORKFLOW).toContain("edge-functions-deno:");
+    const job = WORKFLOW.slice(WORKFLOW.indexOf("edge-functions-deno:"));
+    expect(job.slice(0, job.indexOf("steps:"))).not.toContain("continue-on-error");
+    expect(REPORT).toContain("process.exit(1)");
+  });
+
+  it("treats checking nothing as a failure, not a pass", () => {
+    // Three runs of this reported no errors while checking no files. A green
+    // tick for 255 unchecked files is the worst output it could produce.
+    const empty = REPORT.slice(REPORT.indexOf("const trimmed = out.trim()"));
+    expect(empty).toContain("which is a failure rather than a pass");
+    expect(empty.indexOf("process.exit(1)")).toBeLessThan(empty.indexOf('"✓ No type errors."'));
   });
 
   it("uses a Deno that can fetch the imports", () => {

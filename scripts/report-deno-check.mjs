@@ -13,8 +13,15 @@
  * and of what kind. That number decides whether a proper check goes into CI
  * this week or after a cleanup, so it is worth measuring before choosing.
  *
- * It never fails the build. Turning it red before anyone has seen the number
- * would be deciding the answer by accident.
+ * It ran report-only first, because the size of the cleanup should decide
+ * whether it blocks rather than the other way round. The answer was three
+ * errors with one cause — @types/web-push declares no default export and three
+ * files imported it as one — so there was no cleanup to weigh, and it blocks.
+ *
+ * The one cost: this needs esm.sh and deno.land reachable, so an outage there
+ * turns CI red on a change that is fine. The fast offline check next to it
+ * (check-edge-functions.mjs) still catches the runtime-fatal classes when that
+ * happens, and removing `deno-check` from the workflow is a one-line revert.
  */
 import { execFileSync } from "node:child_process";
 import { readFileSync, readdirSync, statSync } from "node:fs";
@@ -114,13 +121,14 @@ if (total === 0) {
     }
     console.log("Last 30 lines:\n");
     console.log(lines.slice(-30).join("\n"));
-    console.log(
+    console.error(
       "\nA wall of registry downloads means it was still resolving, not checking. " +
-      "A module error names the import it could not fetch.",
+      "A module error names the import it could not fetch. Either way this " +
+      "checked nothing, which is a failure rather than a pass.",
     );
-  } else {
-    console.log("✓ No type errors.");
+    process.exit(1);
   }
+  console.log("✓ No type errors.");
   process.exit(0);
 }
 
@@ -134,7 +142,9 @@ for (const [file, count] of [...byFile].sort((a, b) => b[1] - a[1]).slice(0, 10)
   console.log(`  ${String(count).padStart(5)}  ${file}`);
 }
 
-console.log(
-  "\nReport only — this job does not fail. The counts above are the size of the " +
-  "cleanup a blocking Deno check would require.",
+console.error(
+  "\nThese are real: Deno resolved every import and type-checked against them. " +
+  "This is the check that would have caught the use-before-declaration that " +
+  "shipped and stopped the batch queue ever running.",
 );
+process.exit(1);

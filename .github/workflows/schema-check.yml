@@ -53,7 +53,7 @@ jobs:
       - name: Check edge functions for runtime-fatal type errors
         run: node scripts/check-edge-functions.mjs
 
-  # How big is the gap the job above cannot see?
+  # The gap the job above cannot see, closed.
   #
   # edge-functions runs tsc with --noResolve, because CI has no Deno there and
   # cannot fetch the https:// imports. That catches what is fatal whatever the
@@ -61,13 +61,18 @@ jobs:
   # one did — and misses everything that depends on a remote module's real
   # types, which is most of the code in 231 files nothing has ever checked.
   #
-  # Deno can fetch them. This reports what it finds, grouped by kind, and never
-  # fails: the counts are the size of a cleanup, and turning CI red before
-  # anyone has read them would decide that by accident. It becomes blocking
-  # when the number is known and the cleanup is done.
-  edge-functions-deno-report:
+  # Deno can fetch them. It ran report-only first, because the size of the
+  # cleanup should decide whether it blocks rather than the other way round.
+  # The answer was three errors with one cause — @types/web-push declares no
+  # default export and three files imported it as one — so there was nothing to
+  # weigh and it blocks.
+  #
+  # The cost: this needs esm.sh and deno.land reachable, so an outage there
+  # turns CI red on a change that is fine. edge-functions above still catches
+  # the runtime-fatal classes offline when that happens, and deleting this job
+  # is a one-line revert.
+  edge-functions-deno:
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: denoland/setup-deno@v2
@@ -76,7 +81,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Report what a real Deno check finds
+      - name: Type-check the edge functions with Deno
         run: node scripts/report-deno-check.mjs
 
   # A typecheck that actually checks something.
