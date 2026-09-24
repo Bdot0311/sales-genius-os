@@ -24,7 +24,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
 import { requireServiceRole } from "../_shared/internal-auth.ts";
-import { draftForLead, sentSubjectsFor } from "../_shared/draft-one.ts";
+import { draftForLead, leadsWithDrafts, sentSubjectsFor } from "../_shared/draft-one.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -206,6 +206,9 @@ serve(async (req) => {
 
     let processed = 0;
     let failed = 0;
+    // Items whose lead already had a draft. Settled, not failed — the work was
+    // done, just not by this item.
+    let skipped = 0;
     const touchedJobs = new Set<string>();
 
     for (const item of items) {
@@ -255,6 +258,27 @@ serve(async (req) => {
             .eq("id", item.id);
           failed++;
           continue;
+        }
+
+        /*
+         * A lead that picked up a draft since it was queued is left alone.
+         *
+         * draftForLead replaces a lead's draft rather than adding one, so a
+         * worker running over a lead the user has already had drafted — queued
+         * twice before the enqueue was deduplicated, or drafted inline on a
+         * later turn — pays for a generation and hands back the same count.
+         * A redraft job is the exception: rewriting is what it was queued for.
+         */
+        if (!job.feedback) {
+          const have = await leadsWithDrafts(admin, job.user_id, [String(item.lead_id)]);
+          if (have.has(String(item.lead_id))) {
+            await admin
+              .from("agent_job_items")
+              .update({ status: "skipped", error: "already drafted", finished_at: new Date().toISOString() })
+              .eq("id", item.id);
+            skipped++;
+            continue;
+          }
         }
 
         const { data: settingsRow } = await admin
@@ -359,7 +383,7 @@ serve(async (req) => {
         .eq("id", jobId);
     }
 
-    return json({ processed, failed, claimed: items.length });
+    return json({ processed, failed, skipped, claimed: items.length });
   } catch (error) {
     console.error("[process-agent-jobs] error:", error instanceof Error ? error.message : error);
     return json({ error: "The worker hit an unexpected error." }, 500);

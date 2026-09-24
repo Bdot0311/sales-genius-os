@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { playbookEnforcementRules } from "../_shared/cold-email-playbook.ts";
-import { draftForLead, sentSubjectsFor } from "../_shared/draft-one.ts";
+import { draftForLead, leadsWithDrafts, sentSubjectsFor } from "../_shared/draft-one.ts";
 import { leadIntelligenceMode } from "../_shared/lead-intelligence.ts";
 import {
   AGENT_MAX_ATTEMPTS,
@@ -117,6 +117,12 @@ const AGENT_CHAT_BUILD = [
   "queues-overflow-batches",
   // #259: the model is told to pass every lead id in one call.
   "asks-for-the-whole-list",
+  // #264: drafting knows what it has already written, sizes the inline batch
+  // to the time actually left, and reports the drafts table rather than a count
+  // the model worked out for itself.
+  "skips-leads-that-have-drafts",
+  "sizes-inline-batch-to-budget",
+  "reports-real-draft-totals",
 ] as const;
 
 const LEAD_FIELDS =
@@ -343,6 +349,11 @@ const TOOLS = [
             type: "boolean",
             description: "Only leads missing a contact email or job title",
           },
+          without_draft: {
+            type: "boolean",
+            description:
+              "Only leads that do not already have a saved draft. USE THIS WHENEVER YOU ARE DRAFTING FOR A GROUP — it is the only way to get the leads still outstanding. Without it you get the same leads back every time and redraft work that is already done. The reply also carries remaining_without_draft: the real size of what is left, which is the number to quote to the user.",
+          },
           limit: { type: "number", description: "Default 25, max 100" },
         },
       },
@@ -438,6 +449,11 @@ const TOOLS = [
             type: "string",
             description:
               "What to change, when redrafting. Pass the user's own words (e.g. 'too salesy, cut the product pitch'). Forces a structurally different email rather than a reword of the same one.",
+          },
+          redraft: {
+            type: "boolean",
+            description:
+              "Rewrite leads that already have a draft. Off by default: a lead with a draft is skipped, because writing its draft again replaces the one that is there and leaves the user with no more drafts than before. Only set this when the user asked for these emails to be rewritten.",
           },
         },
         required: [],
@@ -1372,6 +1388,24 @@ serve(async (req) => {
      * summary.
      */
     const sendFailures: string[] = [];
+    /*
+     * What drafting actually did this turn, counted where it happened.
+     *
+     * The model was announcing "43 drafted, 39 remaining" on a turn whose
+     * drafts folder held twenty and never moved. It was not lying about a
+     * tool result — it was adding up its own previous sentences, because no
+     * tool result ever told it the total. These are the totals, and they are
+     * put above the reply rather than left for it to summarise.
+     */
+    const draftTally = { written: 0, queued: 0, skippedAlreadyDrafted: 0, failed: 0 };
+    /*
+     * A drafting call that produced nothing stops the rest of the turn.
+     *
+     * The observed turn ran draft_outreach twice after the budget was gone;
+     * both returned 0/12 and both spent twelve generate-email round trips
+     * getting there. Twenty-four generations, no drafts, no reason shown.
+     */
+    let draftingProducedNothing = false;
     // Step timing telemetry (Agent > Performance tab reads this).
     const turnId = crypto.randomUUID();
     const turnStartedAt = Date.now();
@@ -1750,17 +1784,57 @@ serve(async (req) => {
           }
           if (args.needs_enrichment) q = q.is("contact_email", null);
           const limit = Math.min(Math.max(Number(args.limit) || 25, 1), 100);
+
+          /*
+           * Which of these already have a draft.
+           *
+           * This listing is what the drafter is fed, and it used to be ordered
+           * by created_at and nothing else — so a request to draft for eighty-two
+           * leads got the same twelve at the top on every pass, for as many
+           * passes as anyone was willing to sit through. The draft write replaces
+           * a lead's existing draft rather than adding one, so the folder stayed
+           * at twelve while the agent reported forty-three.
+           *
+           * has_draft rides on every row and without_draft filters by it, so the
+           * answer comes from the drafts table instead of from the model's memory
+           * of what it thinks it did earlier in the conversation.
+           */
+          const wantsUndrafted = args.without_draft === true;
+          // Scan wider than the page when filtering, or a page of already-drafted
+          // leads comes back empty and reads as "nothing left to do".
+          const scanLimit = wantsUndrafted ? 500 : limit;
           const { data, error } = await q
             .order("created_at", { ascending: false })
-            .limit(limit);
+            .limit(scanLimit);
           if (error) return { error: error.message };
+
+          const rows = (data ?? []) as Record<string, unknown>[];
+          const drafted = await leadsWithDrafts(admin, userId, rows.map((r) => String(r.id)));
+          const annotated = rows.map((r) => ({ ...r, has_draft: drafted.has(String(r.id)) }));
+          const pool = wantsUndrafted ? annotated.filter((r) => !r.has_draft) : annotated;
+          const leads = pool.slice(0, limit);
+          const outstanding = annotated.filter((r) => !r.has_draft).length;
+
           toolEvents.push({
             name,
             label: "Looked up leads",
             status: "ok",
-            detail: `${data?.length ?? 0} lead(s) matched`,
+            detail: `${leads.length} lead(s) matched${
+              wantsUndrafted
+                ? ` — ${outstanding} still without a draft`
+                : outstanding < annotated.length
+                  ? ` (${outstanding} without a draft)`
+                  : ""
+            }`,
           });
-          return { count: data?.length ?? 0, leads: data ?? [] };
+          return {
+            count: leads.length,
+            // The figure to quote. The model was subtracting its own running
+            // tally from the total and announcing the result as fact.
+            remaining_without_draft: outstanding,
+            truncated: pool.length > leads.length,
+            leads,
+          };
         }
 
         case "get_lead": {
@@ -1936,8 +2010,6 @@ serve(async (req) => {
            * has to remember is a rule that gets forgotten on the turn it matters.
            */
           const INLINE_DRAFT_LIMIT = 12;
-          const ids = requested.slice(0, INLINE_DRAFT_LIMIT);
-          const overflow = requested.slice(INLINE_DRAFT_LIMIT);
 
           // Sender + offer context the UI path already sends — the agent path
           // used to drop these, which made its emails noticeably more generic.
@@ -1954,6 +2026,103 @@ serve(async (req) => {
           // user as the request having been ignored.
           const feedback = String(args.feedback ?? "").trim().slice(0, 2000);
 
+          if (draftingProducedNothing) {
+            return {
+              error: "drafting_already_failed_this_turn",
+              note:
+                "An earlier draft_outreach call this turn produced nothing, and calling it again will " +
+                "produce nothing too. Do not call it a third time. Tell the user what the failure was " +
+                "and stop.",
+            };
+          }
+
+          /*
+           * Leads that already have a draft are not drafted again.
+           *
+           * saveDraft replaces a lead's draft rather than adding one, so
+           * redrafting a lead the folder already holds is a write that leaves
+           * the count exactly where it was. That is the whole of "did so much
+           * work and only 20 was drafted": four passes over the same twelve
+           * leads, each one overwriting the last, the total pinned at one
+           * batch while the reply counted upwards.
+           *
+           * Decided here rather than asked for in the prompt, for the same
+           * reason the queue threshold is: a rule the model has to remember is
+           * a rule that gets forgotten on the turn it matters. A redraft is
+           * still a redraft — feedback, or an explicit redraft flag, means the
+           * user asked for this lead's email to be rewritten, and that is the
+           * one case where overwriting is the point.
+           */
+          const isRedraft = feedback.length > 0 || args.redraft === true;
+          let pending = requested;
+          if (!isRedraft) {
+            const have = await leadsWithDrafts(admin, userId, requested);
+            const already = requested.filter((id) => have.has(id));
+            pending = requested.filter((id) => !have.has(id));
+            if (already.length > 0) {
+              draftTally.skippedAlreadyDrafted += already.length;
+              toolEvents.push({
+                name,
+                label: "Already drafted",
+                status: "ok",
+                detail:
+                  `${already.length} of these ${already.length === 1 ? "lead" : "leads"} already had a draft, so ${already.length === 1 ? "it was" : "they were"} left alone. ` +
+                  `Ask me to redraft if you want ${already.length === 1 ? "it" : "them"} rewritten.`,
+              });
+            }
+            if (pending.length === 0) {
+              return {
+                error: "every_lead_already_drafted",
+                already_drafted: already.length,
+                note:
+                  "Every lead in that list already has a saved draft, so nothing was written and nothing " +
+                  "needed to be. Do not call this again with the same ids. To find leads that still need " +
+                  "drafting, call list_leads with without_draft: true — its remaining_without_draft is the " +
+                  "real number outstanding. To rewrite these, call again with feedback saying what to change.",
+              };
+            }
+          }
+
+          /*
+           * How many of these this turn can actually finish.
+           *
+           * Every draft is a website-research pass and a generation, and the
+           * turn budget is shared with everything the model already did before
+           * reaching this call. The observed failure was twelve drafts started
+           * on the eighth tool call of a turn: each generate-email fetch was
+           * given whatever was left of the budget as its abort timeout, every
+           * one of the twelve was cut off, and the tool reported "0/12 drafted"
+           * with no reason and no work saved.
+           *
+           * So the inline batch is sized against the clock rather than a
+           * constant. The estimate is deliberately conservative and both ways
+           * of being wrong are safe: too low and the work goes to the queue,
+           * which is where a batch this size belongs anyway; too high and
+           * mapLimit's own budget check stops and reports the remainder. What
+           * is no longer possible is starting twelve generations that cannot
+           * finish.
+           */
+          const PER_WAVE_MS = 22_000;
+          const DRAFT_CONCURRENCY = 3;
+          const RESERVE_MS = 15_000;
+          const affordableWaves = Math.floor((timeLeft() - RESERVE_MS) / PER_WAVE_MS);
+          const inlineLimit = Math.max(
+            0,
+            Math.min(INLINE_DRAFT_LIMIT, affordableWaves * DRAFT_CONCURRENCY),
+          );
+          const ids = pending.slice(0, inlineLimit);
+          const overflow = pending.slice(inlineLimit);
+          if (inlineLimit === 0 && overflow.length > 0) {
+            toolEvents.push({
+              name,
+              label: "Queued instead of drafting here",
+              status: "ok",
+              detail:
+                `Not enough time left in this turn to write a draft properly, so all ${overflow.length} ` +
+                `went to the background queue rather than being started and cut off.`,
+            });
+          }
+
           /*
            * The rest go to the queue, and they go before the inline drafts are
            * written rather than after.
@@ -1963,7 +2132,32 @@ serve(async (req) => {
            * afterwards would lose exactly the part that was too big to do here.
            */
           let queuedJobId: string | null = null;
-          if (overflow.length > 0) {
+          /*
+           * Leads already waiting in the queue are not queued a second time.
+           *
+           * The same repetition that produced the same twelve inline drafts
+           * produced the same eight queued items behind them, twice in one
+           * turn. A worker that drafts a lead twice writes one draft and
+           * charges for two generations.
+           */
+          const { data: pendingItems } = await admin
+            .from("agent_job_items")
+            .select("lead_id")
+            .eq("user_id", userId)
+            .eq("status", "pending");
+          const alreadyQueued = new Set(
+            ((pendingItems ?? []) as Record<string, unknown>[]).map((r) => String(r.lead_id ?? "")),
+          );
+          const toQueue = overflow.filter((id) => !alreadyQueued.has(id));
+          if (overflow.length > toQueue.length) {
+            toolEvents.push({
+              name,
+              label: "Already queued",
+              status: "ok",
+              detail: `${overflow.length - toQueue.length} of these were already waiting in the queue.`,
+            });
+          }
+          if (toQueue.length > 0) {
             const { data: job, error: jobError } = await admin
               .from("agent_jobs")
               .insert({
@@ -1976,7 +2170,7 @@ serve(async (req) => {
                 goal,
                 feedback: feedback || null,
                 status: "queued",
-                total: overflow.length,
+                total: toQueue.length,
               })
               .select("id")
               .single();
@@ -1986,7 +2180,7 @@ serve(async (req) => {
             } else {
               queuedJobId = String((job as any).id);
               const { error: itemsError } = await admin.from("agent_job_items").insert(
-                overflow.map((leadId) => ({
+                toQueue.map((leadId) => ({
                   job_id: queuedJobId,
                   user_id: userId,
                   lead_id: leadId,
@@ -2000,11 +2194,12 @@ serve(async (req) => {
                 await admin.from("agent_jobs").delete().eq("id", queuedJobId);
                 queuedJobId = null;
               } else {
+                draftTally.queued += toQueue.length;
                 toolEvents.push({
                   name,
                   label: "Queued the rest",
                   status: "ok",
-                  detail: `${overflow.length} more lead(s) queued — they draft in the background and appear as they finish.`,
+                  detail: `${toQueue.length} more lead(s) queued — they draft in the background and appear as they finish.`,
                 });
               }
             }
@@ -2070,7 +2265,7 @@ serve(async (req) => {
             );
           };
 
-          const { results: drafts, skipped } = await mapLimit(ids, 3, genOne);
+          const { results: drafts, skipped } = await mapLimit(ids, DRAFT_CONCURRENCY, genOne);
 
 
           const okCount = drafts.filter((d) => d.email).length;
@@ -2170,14 +2365,39 @@ serve(async (req) => {
               detail: skillsUsed.join(", "),
             });
           }
+          /*
+           * Why they failed, said out loud.
+           *
+           * "0/12 drafted" was the entire report. The reason for each failure
+           * was sitting on the result the whole time — draftForLead sets
+           * `error` to whatever generate-email came back with — and the event
+           * threw it away, so a run that burned twenty-four generations across
+           * two calls told nobody anything. Hours went into working out from
+           * screenshots what one line of this would have said.
+           */
+          const failureReasons = [
+            ...new Set(
+              drafts
+                .filter((d: any) => !d.email)
+                .map((d: any) => String(d.error ?? "Draft failed").slice(0, 160)),
+            ),
+          ] as string[];
+          draftTally.written += okCount;
+          draftTally.failed += drafts.length - okCount;
+          if (okCount === 0 && ids.length > 0) draftingProducedNothing = true;
+
           toolEvents.push({
             name,
             label: "Drafted emails",
             status: okCount === 0 ? "error" : "ok",
             detail:
-              ids.length === 1
+              ids.length === 1 && okCount === 1
                 ? (drafts[0]?.company ?? "lead")
-                : `${okCount}/${ids.length} drafted${skipped.length ? ` (${skipped.length} left — ask me to continue)` : ""}${overflow.length ? `, ${overflow.length} queued` : ""}`,
+                : `${okCount}/${ids.length} drafted${skipped.length ? ` (${skipped.length} left — ask me to continue)` : ""}${overflow.length ? `, ${overflow.length} queued` : ""}${
+                  okCount === 0 && failureReasons.length
+                    ? ` — ${failureReasons.slice(0, 2).join("; ")}`
+                    : ""
+                }`,
 
             drafts: drafts
               .filter((d) => d.draft_id && d.body)
@@ -2192,6 +2412,29 @@ serve(async (req) => {
                 research: (d as any).research ?? null,
               })),
           });
+          /*
+           * A call that wrote nothing says so, and says stop.
+           *
+           * The model treated "0/12 drafted, 8 queued" as partial progress,
+           * added the eight to a running total it was keeping itself, and
+           * announced twenty-eight drafts on a turn that produced none.
+           */
+          if (okCount === 0 && ids.length > 0) {
+            return {
+              error: "nothing_was_drafted",
+              attempted: ids.length,
+              reasons: failureReasons,
+              queued: draftTally.queued,
+              note:
+                `Not one of the ${ids.length} drafts was written. ${
+                  failureReasons.length ? `The generator returned: ${failureReasons.join("; ")}. ` : ""
+                }` +
+                "Nothing is saved for these leads. Do NOT call draft_outreach again this turn and do NOT " +
+                "count these, or anything queued, as drafted — queued means a background worker has not " +
+                "written them yet. Tell the user plainly that this many failed and why, and stop.",
+            };
+          }
+
           return {
             goal,
             note:
@@ -2199,6 +2442,14 @@ serve(async (req) => {
               (skipped.length
                 ? ` ${skipped.length} lead(s) were not drafted because this turn ran out of time — tell the user to reply "continue" and you'll draft the rest.`
                 : ""),
+            // Counting is not the model's job. It was adding tool results to
+            // its own earlier sentences and reporting the sum as fact.
+            drafted_this_call: okCount,
+            drafts_written_this_turn: draftTally.written,
+            note_on_counting:
+              "drafted_this_call is the only number of drafts this call produced. Queued leads are NOT " +
+              "drafted. Never add up counts across calls yourself — call list_leads with without_draft: " +
+              "true and quote its remaining_without_draft.",
             skipped_lead_ids: skipped,
             drafts: drafts.map(({ body: _b, ...rest }) => rest),
             // Without this the model reports twelve drafts as the whole job and
@@ -2207,9 +2458,9 @@ serve(async (req) => {
               ? {
                   queued: {
                     job_id: queuedJobId,
-                    count: overflow.length,
+                    count: toQueue.length,
                     note:
-                      `${overflow.length} further lead(s) are queued and drafting in the background. ` +
+                      `${toQueue.length} further lead(s) are queued and NOT yet drafted. ` +
                       "Tell the user the count plainly, that the drafts appear as they finish, and that they can cancel the batch from the chat. " +
                       "Do not call draft_outreach again for those leads: the queue already has them, and drafting them here would write each draft twice.",
                   },
@@ -3570,6 +3821,9 @@ CALENDAR (never compute a weekday-to-date mapping yourself, read it here): ${upc
 
 HOW TO WORK
 - When the user says something like "I just searched some leads, take it from here", find the relevant leads with list_leads first, then chain the work: enrich -> score -> draft -> send/queue. Do not ask permission for read-only or drafting steps; just do them and report back.
+- DRAFTING FOR A GROUP ("draft all my no-response leads", "follow up with everyone who never replied"): call list_leads with without_draft: true, then pass EVERY id it returns to draft_outreach in ONE call. Without that flag you get the same leads back on every pass and redraft work that is already done — which is how a request for eighty-two drafts produced twenty. draft_outreach skips any lead that already has a draft regardless, so a repeat call is wasted, not additive.
+- NEVER COUNT DRAFTS YOURSELF. Do not add this call's result to something you said earlier and report the sum, and do not subtract your running total from the list size to get a "remaining" figure. Queued is not drafted. The only two numbers you may quote are drafted_this_call from draft_outreach and remaining_without_draft from list_leads with without_draft: true. If you want a current total, call list_leads and read it — it costs one call and it is the number the user sees in their drafts folder.
+- When a tool comes back with an error, say what the error was and stop. Do not call it again with the same arguments, and do not describe the attempt as progress.
 - Do several tool calls in a row when needed. Prefer batching lead ids over one-at-a-time calls. For drafting, ALWAYS pass every lead id in a single draft_outreach call via lead_ids — never fire many parallel draft_outreach calls, that trips the rate limiter.
 - NEVER write, rewrite or "improve" email copy yourself in the chat. Every email the user sees must come from draft_outreach, which runs the playbook, the banned-phrase list, the proof rules and the quality rubric. When the user dislikes a draft ("redraft this", "too salesy", "make it shorter"), call draft_outreach again for that lead with feedback set to what they said — it replaces the draft. Copy you compose by hand is checked by nothing and reads like generic marketing, which is the single most common complaint about this product.
 - NEVER invent proof. No case studies, no "one company saw a significant increase", no anonymized customer stories, no metrics — not even vague ones — unless the exact proof was given to you in the lead data or by the user. An invented result is worse than no result.
@@ -4130,6 +4384,42 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
     if (emptyTurn) {
       finalText = `⚠️ ${emptyTurn}\n\n${finalText}`;
       console.warn("[agent-chat] flagged a completion claim on a turn that changed nothing");
+    }
+
+    /*
+     * The drafts total, from the drafts table.
+     *
+     * Everything above checks the reply against the tool events. This checks
+     * it against the database, which is the only thing that settles it: the
+     * user opened Outreach Studio, saw twenty drafts, and had just been told
+     * forty-three. Both the agent and its own event log said forty-three,
+     * because the same twelve leads had been drafted four times and each pass
+     * replaced the last.
+     *
+     * So when a turn drafts at all, the count comes from email_drafts and
+     * goes above the reply, where nothing can summarise it away.
+     */
+    const draftTouched =
+      draftTally.written + draftTally.queued + draftTally.skippedAlreadyDrafted + draftTally.failed;
+    if (draftTouched > 0) {
+      const { count: draftsNow } = await admin
+        .from("email_drafts")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId);
+      const parts = [`wrote ${draftTally.written}`];
+      if (draftTally.skippedAlreadyDrafted > 0) {
+        parts.push(`left ${draftTally.skippedAlreadyDrafted} that already had one alone`);
+      }
+      if (draftTally.failed > 0) parts.push(`${draftTally.failed} failed`);
+      if (draftTally.queued > 0) {
+        parts.push(`queued ${draftTally.queued} to be written in the background`);
+      }
+      finalText =
+        `📝 Your drafts folder holds ${draftsNow ?? 0}. This turn ${parts.join(", ")}.\n\n${finalText}`;
+      console.log(
+        `[agent-chat] draft tally written=${draftTally.written} queued=${draftTally.queued} ` +
+          `skipped=${draftTally.skippedAlreadyDrafted} failed=${draftTally.failed} total=${draftsNow ?? 0}`,
+      );
     }
 
     // Repeats are surfaced before anything else, because the reply above them

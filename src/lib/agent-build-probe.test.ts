@@ -53,6 +53,10 @@ describe("the deploy probe answers honestly", () => {
       "queues-overflow-batches": "const INLINE_DRAFT_LIMIT = 12;",
       // #259
       "asks-for-the-whole-list": "Every lead id to draft for, in ONE call",
+      // #264
+      "skips-leads-that-have-drafts": "every_lead_already_drafted",
+      "sizes-inline-batch-to-budget": "const affordableWaves =",
+      "reports-real-draft-totals": "Your drafts folder holds",
     };
     for (const marker of markers) {
       const proof = evidence[marker];
@@ -71,6 +75,9 @@ describe("the deploy probe answers honestly", () => {
       "refuses-delete-and-redraft",
       "queues-overflow-batches",
       "asks-for-the-whole-list",
+      "skips-leads-that-have-drafts",
+      "sizes-inline-batch-to-budget",
+      "reports-real-draft-totals",
     ];
     expect([...markers].sort()).toEqual([...evidenceKeys].sort());
   });
