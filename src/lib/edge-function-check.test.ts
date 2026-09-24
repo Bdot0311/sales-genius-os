@@ -27,7 +27,9 @@ describe("the enqueue reads nothing before it exists", () => {
     // Moving the block must not lose why it was early: a turn that dies
     // part-way through drafting has to keep the batch.
     const tool = AGENT.slice(AGENT.indexOf('case "draft_outreach"'), AGENT.indexOf('case "draft_sequence"'));
-    expect(tool.indexOf('.from("agent_jobs")')).toBeLessThan(tool.indexOf("await mapLimit(ids, 3, genOne)"));
+    const drafting = tool.search(/await mapLimit\(ids, \w+, genOne\)/);
+    expect(drafting).toBeGreaterThan(-1);
+    expect(tool.indexOf('.from("agent_jobs")')).toBeLessThan(drafting);
   });
 });
 

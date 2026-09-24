@@ -250,7 +250,10 @@ describe("one draft path, not two", () => {
 describe("handing a batch over", () => {
   it("does the first few inline and queues the rest", () => {
     expect(code(AGENT)).toContain("const INLINE_DRAFT_LIMIT = 12;");
-    expect(code(AGENT)).toContain("requested.slice(INLINE_DRAFT_LIMIT)");
+    // The inline count is capped by that limit and clipped again by the time
+    // the turn has left; whatever is over the line is queued, not dropped.
+    expect(code(AGENT)).toContain("Math.min(INLINE_DRAFT_LIMIT, affordableWaves * DRAFT_CONCURRENCY)");
+    expect(code(AGENT)).toContain("const overflow = pending.slice(inlineLimit);");
   });
 
   it("stopped silently truncating the request", () => {
@@ -260,7 +263,12 @@ describe("handing a batch over", () => {
 
   it("queues before drafting inline, so a dying turn keeps the batch", () => {
     const tool = code(AGENT).slice(code(AGENT).indexOf('case "draft_outreach"'));
-    expect(tool.indexOf('.from("agent_jobs")')).toBeLessThan(tool.indexOf("await mapLimit(ids, 3, genOne)"));
+    // Matched on shape, not on the concurrency literal: the invariant is the
+    // order of the two blocks, and pinning the number broke this test the day
+    // the number became a named constant.
+    const drafting = tool.search(/await mapLimit\(ids, \w+, genOne\)/);
+    expect(drafting).toBeGreaterThan(-1);
+    expect(tool.indexOf('.from("agent_jobs")')).toBeLessThan(drafting);
   });
 
   it("never leaves a job with no items behind", () => {
