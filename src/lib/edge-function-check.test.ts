@@ -94,7 +94,7 @@ describe("the report that measures what the partial check misses", () => {
     // The first run proved why: Deno spent the whole step installing
     // package.json and checked nothing, and a zero there would have read as a
     // clean bill of health for 255 unchecked files.
-    expect(REPORT).toContain("so this checked nothing");
+    expect(REPORT).toContain("without reporting type errors");
   });
 
   it("shows the end of the output, not the start", () => {
