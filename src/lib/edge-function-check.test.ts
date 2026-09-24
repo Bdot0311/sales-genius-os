@@ -91,6 +91,19 @@ describe("the report that measures what the partial check misses", () => {
 
   it("does not report a reassuring zero when Deno failed early", () => {
     expect(REPORT).toContain("No TS error codes parsed");
+    // The first run proved why: Deno spent the whole step installing
+    // package.json and checked nothing, and a zero there would have read as a
+    // clean bill of health for 255 unchecked files.
+    expect(REPORT).toContain("so this checked nothing");
+  });
+
+  it("does not let Deno install the app's dependency tree", () => {
+    // deno.json sets nodeModulesDir "auto" for the app. Without this flag
+    // `deno check` reads package.json and installs Radix, Sentry, Stripe and
+    // TanStack — none of which any edge function imports — before checking a
+    // single line. The seven files using npm: specifiers pin their own
+    // versions and need no node_modules directory.
+    expect(REPORT).toContain("--node-modules-dir=none");
   });
 
   it("says so plainly when Deno is not installed", () => {

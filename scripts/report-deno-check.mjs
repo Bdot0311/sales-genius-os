@@ -43,7 +43,16 @@ walk(ROOT);
 
 let out = "";
 try {
-  execFileSync("deno", ["check", "--no-lock", ...files], {
+  // --node-modules-dir=none is the difference between measuring and hanging.
+  //
+  // deno.json sets nodeModulesDir "auto" for the app, so `deno check` read
+  // package.json and began installing the entire React tree — Radix, Sentry,
+  // Stripe, TanStack — none of which any edge function imports. The first run
+  // spent its whole step downloading and checked nothing.
+  //
+  // The seven files that use npm: specifiers pin their own versions and
+  // resolve without a node_modules directory at all.
+  execFileSync("deno", ["check", "--no-lock", "--node-modules-dir=none", ...files], {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
     maxBuffer: 64 * 1024 * 1024,
@@ -85,8 +94,12 @@ if (total === 0) {
   // worth seeing rather than reporting a reassuring zero.
   const trimmed = out.trim();
   if (trimmed) {
-    console.log("No TS error codes parsed. Raw output, in case it failed before checking:\n");
+    console.log("No TS error codes parsed, so this checked nothing. Raw output:\n");
     console.log(trimmed.split("\n").slice(0, 40).join("\n"));
+    console.log(
+      "\nA wall of registry downloads here means Deno is installing package.json " +
+      "rather than checking. A module resolution error means an import it could not fetch.",
+    );
   } else {
     console.log("✓ No type errors.");
   }
