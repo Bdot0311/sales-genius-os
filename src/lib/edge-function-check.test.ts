@@ -90,11 +90,11 @@ describe("the report that measures what the partial check misses", () => {
   });
 
   it("does not report a reassuring zero when Deno failed early", () => {
-    expect(REPORT).toContain("No TS error codes parsed");
+    expect(REPORT).toContain("without reporting type errors");
     // The first run proved why: Deno spent the whole step installing
     // package.json and checked nothing, and a zero there would have read as a
     // clean bill of health for 255 unchecked files.
-    expect(REPORT).toContain("without reporting type errors");
+    expect(REPORT).toContain("A wall of registry downloads");
   });
 
   it("shows the end of the output, not the start", () => {
