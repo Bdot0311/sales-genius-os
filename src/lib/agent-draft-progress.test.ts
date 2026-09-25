@@ -253,8 +253,11 @@ describe("the queue worker does not redo drafts either", () => {
     expect(WCODE).toContain("return json({ processed, failed, skipped, claimed: items.length });");
   });
 
-  it("still rewrites when the job is a redraft", () => {
-    expect(WCODE).toContain("if (!job.feedback) {");
+  it("still rewrites when the job is a redraft, and only guards drafting", () => {
+    // Narrowed when the queue gained other kinds: the question "does this lead
+    // already have a draft" is irrelevant to an enrich, and skipping on it
+    // would silently drop that work.
+    expect(WCODE).toContain('if (job.kind === "draft" && !job.feedback) {');
   });
 
   it("uses a status the table allows", () => {

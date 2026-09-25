@@ -47,6 +47,7 @@ import { useOnboardingGate } from "@/hooks/use-onboarding-gate";
 import { ensureSession, startSessionKeeper } from "@/lib/session-keeper";
 import { refreshPushSubscription } from "@/lib/push";
 import { ServiceStatusBanner } from "@/components/dashboard/ServiceStatusBanner";
+import { BackgroundWorkBar } from "@/components/dashboard/BackgroundWorkBar";
 import { WhatsNewButton } from "@/components/dashboard/WhatsNewButton";
 
 
@@ -498,6 +499,9 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
         {/* Live service status, only while something is actually wrong */}
         <ServiceStatusBanner />
+
+        {/* Work still running, wherever in the app it was started */}
+        <BackgroundWorkBar />
 
         {/* Page content */}
         <main className="dashboard-page-gutters min-w-0 overflow-x-hidden px-4 sm:px-6 lg:px-8 py-4 sm:py-6">{children}</main>

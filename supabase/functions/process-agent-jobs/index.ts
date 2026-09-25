@@ -54,6 +54,59 @@ const BUDGET_MS = 100_000;
  * so the worst case is a draft the user sends themselves — never a send this
  * function was not sure about.
  */
+/**
+ * One search, run where it cannot be navigated away from.
+ *
+ * This is the only kind of work in the product that genuinely lost something.
+ * Enriching and scoring write the lead row, so leaving the page cost the
+ * progress bar and nothing else. A search's results lived in the HTTP response
+ * and in React state until someone pressed Save — fetch-external-leads reads
+ * the leads table to exclude people already seen and never writes to it — so
+ * closing the tab threw away work that had been paid for in credits.
+ *
+ * The results are written back onto the item rather than into `leads`. Saving
+ * is the user's decision and auto-saving a background search would fill their
+ * list with people they never chose; what this fixes is losing the results
+ * before they get to choose.
+ */
+async function runSearchItem(
+  admin: any,
+  invokeFn: (name: string, body: unknown) => Promise<any>,
+  job: Record<string, unknown>,
+  item: Record<string, unknown>,
+): Promise<{ ok: boolean; error?: string }> {
+  const payload = (item.payload ?? {}) as Record<string, unknown>;
+  const filters = (payload.filters ?? payload.query ?? {}) as Record<string, unknown>;
+  if (!filters || Object.keys(filters).length === 0) {
+    return { ok: false, error: "Search item has no query" };
+  }
+
+  // job_id is how the owner is established on the other side — see
+  // fetch-external-leads: search has no lead row to read it from.
+  const r = await invokeFn("fetch-external-leads", { ...filters, job_id: job.id });
+  // The provider reports a dry well and a broken key the same way at the
+  // transport layer, so `error` in the body is the only reliable signal.
+  if (r?.error) return { ok: false, error: String(r.error).slice(0, 300) };
+
+  const leads = Array.isArray(r?.leads) ? r.leads : [];
+  await admin
+    .from("agent_job_items")
+    .update({
+      payload: {
+        ...payload,
+        results: leads,
+        total: Number(r?.total ?? leads.length),
+        completed_at: new Date().toISOString(),
+      },
+    })
+    .eq("id", item.id);
+
+  // A search that legitimately found nobody is a finished search, not a failed
+  // one. Reporting it as failed would send the user hunting for a fault in a
+  // query that simply has no matches.
+  return { ok: true };
+}
+
 async function scheduleDraft(
   admin: any,
   job: Record<string, any>,
@@ -245,6 +298,26 @@ serve(async (req) => {
       }
 
       try {
+        /*
+         * Work that is not about one lead.
+         *
+         * Drafting, enriching, scoring and researching are all "do this to that
+         * lead" and share everything below. A search has no lead to load —
+         * finding them is the work — so it is handled on its own and returns
+         * before the lead lookup rather than threading a null through it.
+         */
+        if (job.kind === "search") {
+          const outcome = await runSearchItem(admin, invokeFn, job, item);
+          await admin.from("agent_job_items").update({
+            status: outcome.ok ? "done" : "failed",
+            error: outcome.error ?? null,
+            finished_at: new Date().toISOString(),
+          }).eq("id", item.id);
+          if (outcome.ok) processed++;
+          else failed++;
+          continue;
+        }
+
         const { data: lead } = await admin
           .from("leads")
           .select("*")
@@ -269,7 +342,7 @@ serve(async (req) => {
          * later turn — pays for a generation and hands back the same count.
          * A redraft job is the exception: rewriting is what it was queued for.
          */
-        if (!job.feedback) {
+        if (job.kind === "draft" && !job.feedback) {
           const have = await leadsWithDrafts(admin, job.user_id, [String(item.lead_id)]);
           if (have.has(String(item.lead_id))) {
             await admin
@@ -279,6 +352,42 @@ serve(async (req) => {
             skipped++;
             continue;
           }
+        }
+
+        /*
+         * Enrich, score and research: one call each, on the lead already
+         * loaded and already authorised above.
+         *
+         * These were loops in the browser. The requests all completed — nothing
+         * in the app aborts one — but the progress lived in component state, so
+         * navigating away lost the count and coming back showed an idle page
+         * over work that had finished. Through the queue the count is a row and
+         * the shell can read it from anywhere.
+         *
+         * Everything below this point is drafting's own: the agent config, the
+         * sender profile, the mailbox, the subject history. None of it applies
+         * here, which is why the branch is before it rather than inside it.
+         */
+        const LEAD_FUNCTION: Record<string, string> = {
+          enrich: "enrich-lead",
+          score: "score-lead",
+          research: "research-lead",
+        };
+        const leadFunction = LEAD_FUNCTION[String(job.kind)];
+        if (leadFunction) {
+          const r = await invokeFn(leadFunction, { leadId: item.lead_id, lead_id: item.lead_id, lead });
+          // The generator reports failure in the body with a 200, so a missing
+          // error is not the same as success — each of these writes the lead
+          // row, and `error` is how they say they did not.
+          const failedHere = !!r?.error;
+          await admin.from("agent_job_items").update({
+            status: failedHere ? "failed" : "done",
+            error: failedHere ? String(r.error).slice(0, 300) : null,
+            finished_at: new Date().toISOString(),
+          }).eq("id", item.id);
+          if (failedHere) failed++;
+          else processed++;
+          continue;
         }
 
         const { data: settingsRow } = await admin

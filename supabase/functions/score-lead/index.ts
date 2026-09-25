@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { ownerOf, resolveCaller } from "../_shared/internal-auth.ts";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -377,14 +379,29 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    /*
+     * The batch worker holds the service role and is not a user. See
+     * resolveCaller: one implementation of that decision, shared, because four
+     * copies of a security check means the one that drifts is unread.
+     */
+    const caller = await resolveCaller(req);
+    if (!caller.ok) return caller.response;
 
     const body = await req.json();
+
+    const adminClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    );
+    // An internal caller says which lead; the database says whose it is.
+    const userId = caller.internal
+      ? await ownerOf(adminClient, 'leads', String(body?.leadId ?? ''), caller)
+      : caller.userId;
+    if (!userId) {
+      return new Response(JSON.stringify({ error: 'Lead not found or unauthorized' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     if (body.leadId) {
       const supabaseService = createClient(
@@ -396,7 +413,7 @@ serve(async (req) => {
         .from('leads')
         .select('*')
         .eq('id', body.leadId)
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .single();
 
       if (leadError || !lead) {
@@ -448,7 +465,7 @@ serve(async (req) => {
           signal_layers:      result.signal_layers,
         })
         .eq('id', body.leadId)
-        .eq('user_id', user.id);
+        .eq('user_id', userId);
 
       return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
