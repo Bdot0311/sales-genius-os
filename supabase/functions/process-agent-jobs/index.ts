@@ -294,6 +294,26 @@ serve(async (req) => {
 
         const avoid = await sentSubjectsFor(admin, job.user_id, [String(item.lead_id)]);
 
+        /*
+         * The sender's own mailbox, exactly as the inline path resolves it.
+         *
+         * This passed senderEmail: "" — and generate-email, given no name and
+         * no address, tells the model the sender is called "Sender", which is
+         * where "[Sender Name]" placeholders in finished drafts came from. The
+         * inline tool fixed that by falling back to the connected mailbox; the
+         * worker never got the same fix, so a queued draft and an inline draft
+         * for the same lead were not the same email.
+         */
+        const { data: mailboxes } = await admin
+          .from("sending_accounts")
+          .select("email, integration_id")
+          .eq("user_id", job.user_id)
+          .order("created_at", { ascending: true });
+        const senderEmail = String(
+          ((mailboxes ?? []) as Record<string, unknown>[])
+            .find((a) => a.integration_id && a.email)?.email ?? "",
+        );
+
         const result = await draftForLead(
           { admin, userId: job.user_id, invokeFn },
           lead as any,
@@ -301,7 +321,7 @@ serve(async (req) => {
             goal: String(job.goal ?? "introduction"),
             tone: String((settingsRow as any)?.tone ?? "professional"),
             senderName: String((profile as any)?.full_name ?? ""),
-            senderEmail: "",
+            senderEmail,
             senderCompany: String(
               (profile as any)?.company_name ?? (settingsRow as any)?.company_context ?? "",
             ),

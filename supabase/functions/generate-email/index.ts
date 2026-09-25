@@ -39,6 +39,7 @@ import {
   stripPlatformBrand,
 } from "../_shared/email-rules.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { isInternalCaller } from "../_shared/internal-auth.ts";
 import {
   freshObservationDates,
   briefToPromptBlock,
@@ -655,11 +656,39 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    // Service role, needed before the auth block below so an internal caller's
+    // lead can be looked up. Reused further down for research caching.
+    const adminClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    /*
+     * The batch worker is not a user, and auth.getUser() was the whole reason
+     * the queue never produced a draft.
+     *
+     * process-agent-jobs holds the service role — it has no user JWT to pass,
+     * because nobody is sitting in front of it. Every queued item called this
+     * function, got 401 here, and was recorded as failed: "24 of 103, 24
+     * failed", then "48 of 103, 48 failed". A hundred per cent, every run,
+     * since the queue was built.
+     *
+     * So an internal caller is allowed through — but it does NOT get to say
+     * who it is acting for. The owner is read from the lead row below, so the
+     * only thing a caller chooses is which lead, and the database decides
+     * whose it is. A forged user_id in the body cannot exist because the body
+     * is never asked.
+     */
+    const internal = isInternalCaller(req);
+    let userId = '';
+    if (!internal) {
+      const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+      if (authError || !user) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      userId = user.id;
     }
 
     const requestData = await req.json();
@@ -721,18 +750,6 @@ serve(async (req) => {
       }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // The company in the signature is ALWAYS the sender's own. It is never
-    // defaulted to the platform's brand — a user reported drafts signed
-    // "Founder, OutReign" because of exactly that fallback. When the caller
-    // sends none, we look up this user's own profile, and if that is empty too
-    // the draft is signed with the sender's name alone.
-    let resolvedSenderCompany = senderCompany;
-    if (!resolvedSenderCompany) {
-      const { data: prof } = await supabaseClient
-        .from('profiles').select('company_name').eq('id', user.id).maybeSingle();
-      resolvedSenderCompany = (prof?.company_name ?? '').trim().slice(0, 100);
-    }
-
     const validationErrors = validateEmailInputs({ lead, tone, goal });
     if (validationErrors.length > 0) {
       return new Response(JSON.stringify({ error: validationErrors.join(', ') }), {
@@ -740,22 +757,47 @@ serve(async (req) => {
       });
     }
 
-    const { data: leadData, error: leadError } = await supabaseClient
+    /*
+     * Who this lead belongs to, answered by the database.
+     *
+     * This moved above the profile lookup because it is now what establishes
+     * the user for an internal caller, and the profile lookup needs that id.
+     * For a signed-in caller it is the same authorisation check it always
+     * was: the lead must be theirs.
+     */
+    const ownerClient = internal ? adminClient : supabaseClient;
+    const { data: leadData, error: leadError } = await ownerClient
       .from('leads').select('id, user_id').eq('id', lead.id).single();
-    if (leadError || !leadData || leadData.user_id !== user.id) {
+    if (leadError || !leadData || (!internal && leadData.user_id !== userId)) {
       return new Response(JSON.stringify({ error: 'Lead not found or unauthorized' }), {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+    if (internal) userId = String(leadData.user_id ?? '');
+    if (!userId) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // The company in the signature is ALWAYS the sender's own. It is never
+    // defaulted to the platform's brand — a user reported drafts signed
+    // "Founder, OutReign" because of exactly that fallback. When the caller
+    // sends none, we look up this user's own profile, and if that is empty too
+    // the draft is signed with the sender's name alone.
+    let resolvedSenderCompany = senderCompany;
+    if (!resolvedSenderCompany) {
+      const { data: prof } = await ownerClient
+        .from('profiles').select('company_name').eq('id', userId).maybeSingle();
+      resolvedSenderCompany = (prof?.company_name ?? '').trim().slice(0, 100);
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    // Service-role client for caching research results
-    const serviceClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    // Service-role client for caching research results. Created above, because
+    // resolving an internal caller's lead owner needs it first.
+    const serviceClient = adminClient;
 
     // ─── Lead Research (web-grounded) ──────────────────────────────────────────
     // Pulls 3–5 verifiable, citation-backed facts about the lead's company so the
@@ -1284,7 +1326,7 @@ ${avoidSubjects.map((s: string) => `- ${s}`).join('\n')}`;
     let strategyBlock = "";
     if (lead.id && !isPrecisionEdit) {
       try {
-        const decision = await decisionForDrafting(serviceClient, lead.id, user.id);
+        const decision = await decisionForDrafting(serviceClient, lead.id, userId);
         strategyBlock = decisionPromptBlock(decision);
       } catch (err) {
         console.error("[generate-email] lead intelligence lookup failed", err);
