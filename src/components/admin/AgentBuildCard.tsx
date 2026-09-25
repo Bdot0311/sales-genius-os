@@ -27,6 +27,8 @@ const EXPECTED: { marker: string; what: string }[] = [
   { marker: "skips-leads-that-have-drafts", what: "Skips leads that already have a draft instead of overwriting them" },
   { marker: "sizes-inline-batch-to-budget", what: "Queues the batch when the turn has no time left, rather than starting drafts it will cut off" },
   { marker: "reports-real-draft-totals", what: "Reports the drafts table's own count, not one the model added up" },
+  { marker: "finishes-the-whole-outstanding-set", what: "Queues any lead the model skipped, so a batch of 82 finishes as 82" },
+  { marker: "one-batch-job-per-turn", what: "One progress card for the whole batch instead of one per tool call" },
 ];
 
 /**

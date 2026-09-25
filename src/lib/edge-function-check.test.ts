@@ -17,7 +17,10 @@ describe("the enqueue reads nothing before it exists", () => {
   it("declares feedback before the queue uses it", () => {
     const tool = AGENT.slice(AGENT.indexOf('case "draft_outreach"'), AGENT.indexOf('case "draft_sequence"'));
     const declared = tool.indexOf("const feedback = String(args.feedback");
-    const used = tool.indexOf("feedback: feedback || null");
+    // The enqueue takes it as an argument now; the read is what matters, not
+    // the shape of it. This is the regression that deployed green and threw on
+    // every batch over twelve, so it stays pinned to the first read of all.
+    const used = tool.search(/\bfeedback \|\| null\b/);
     expect(declared).toBeGreaterThan(-1);
     expect(used).toBeGreaterThan(-1);
     expect(declared).toBeLessThan(used);

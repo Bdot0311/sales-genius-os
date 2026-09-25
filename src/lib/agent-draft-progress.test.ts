@@ -111,12 +111,14 @@ describe("a lead that has a draft is not drafted again", () => {
   });
 
   it("does not queue a lead that is already waiting in the queue", () => {
+    // The dedupe lives in queueForDrafting now, so the sweep gets it too —
+    // it runs over the whole outstanding set and most of it is already queued.
     expect(CODE).toContain('.eq("status", "pending")');
-    expect(CODE).toContain("const toQueue = overflow.filter((id) => !alreadyQueued.has(id));");
-    // The job's total and its items must come from the deduplicated list, or
-    // the progress card counts work no worker will ever do.
-    expect(CODE).toContain("total: toQueue.length,");
+    expect(CODE).toContain("const toQueue = fresh.filter((id) => !alreadyQueued.has(id));");
+    // The items written and the total reported both come from the deduplicated
+    // list, or the card counts work no worker will ever do.
     expect(CODE).toContain("toQueue.map((leadId) => ({");
+    expect(CODE).toContain("draftTally.queued += toQueue.length;");
   });
 });
 
@@ -136,7 +138,12 @@ describe("list_leads can say what is left", () => {
 
   it("returns the outstanding count as a number, not a thing to work out", () => {
     expect(CODE).toContain("remaining_without_draft: outstanding,");
-    expect(CODE).toContain("allIds.filter((id) => !draftedAll.has(id)).length");
+    expect(CODE).toContain("const undraftedIds = rowIds.filter((id) => !drafted.has(id));");
+    // The count covers the whole account, not the page that was fetched: on a
+    // bigger account a figure taken from a 500-row scan under-reports the
+    // backlog and reads as nearly done.
+    expect(CODE).toContain("const allUndrafted = allIds.length > 0");
+    expect(CODE).toContain("const outstanding = Math.max(undraftedIds.length, allUndrafted.length);");
   });
 });
 
@@ -256,5 +263,124 @@ describe("the queue worker does not redo drafts either", () => {
       "utf8",
     );
     expect(MIGRATION).toContain("'pending', 'claimed', 'done', 'failed', 'skipped'");
+  });
+});
+
+/**
+ * Eighty-two asked for, fifty-four attempted, and "ready to send when you say go".
+ *
+ * The run after the first fix deployed. draft_outreach behaved correctly on
+ * every call it got — the leads it was handed had no drafts, the batch went to
+ * the queue when the turn had no time. What it was handed was the problem: the
+ * model split the eighty-two into twelve, twelve, ten, ten, ten, stopped at
+ * fifty-four, and reported the batch complete. Twenty-eight people were never
+ * drafted for and nothing in the system noticed.
+ *
+ * The instruction to pass every id in one call was already there. This is what
+ * happens instead of writing it again.
+ */
+describe("the turn finishes the set it was given", () => {
+  it("remembers which leads the model said still need drafting", () => {
+    // list_leads with without_draft is the model declaring the set it is about
+    // to work through, so that is the set the turn is held to.
+    // From the rows, not from the annotated copy: spreading a
+    // Record<string, unknown> drops the index signature, so the spread's type
+    // is `{ has_draft: boolean }` and reading .id off it does not compile.
+    // Deno's full typecheck caught that; the offline one structurally cannot.
+    expect(CODE).toContain("const rowIds = rows.map((r) => String(r.id));");
+    // The full undrafted set, not the page — the sweep is only as complete as
+    // the set it is given.
+    expect(CODE).toContain("outstandingPool = allUndrafted;");
+    expect(CODE).not.toContain("outstandingPool = pool.map(");
+  });
+
+  it("queues whatever the model left out, after it has finished", () => {
+    expect(CODE).toContain("const missed = outstandingPool.filter((id) => !handledLeadIds.has(id));");
+    expect(CODE).toContain("await queueForDrafting(sweeping, outstandingGoal, outstandingFeedback)");
+    expect(AGENT).toContain('label: "Queued the leads it skipped"');
+  });
+
+  it("bounds what one sentence can commit someone to, and says so", () => {
+    // The pool is the whole matching account now. Twenty thousand undrafted
+    // leads must not become twenty thousand generations off one turn — and a
+    // quiet truncation is what produced the twenty-draft ceiling to begin with.
+    expect(CODE).toContain("const SWEEP_LIMIT = 500;");
+    expect(CODE).toContain("const sweeping = missed.slice(0, SWEEP_LIMIT);");
+    expect(CODE).toContain("const beyondLimit = missed.length - sweeping.length;");
+    expect(AGENT).toContain("more are still without a draft");
+  });
+
+  it("only sweeps a set this turn actually drafted from", () => {
+    // Otherwise asking "how many leads still need drafts?" queues all of them.
+    expect(CODE).toContain("const drewFromPool = outstandingPool.some((id) => handledLeadIds.has(id));");
+    expect(CODE).toMatch(/if \(outstandingPool\.length > 0 && drewFromPool\)/);
+  });
+
+  it("counts a lead as handled when it was really drafted", () => {
+    // draft_id, not the attempt: a generation that failed leaves the lead
+    // outstanding, which is what the sweep is for.
+    expect(CODE).toContain("for (const d of drafts) if (d.draft_id) handledLeadIds.add(String(d.lead_id));");
+  });
+
+  it("sweeps before the total is reported, so the number includes it", () => {
+    const sweep = CODE.indexOf("const drewFromPool =");
+    const total = CODE.indexOf("const draftTouched =");
+    expect(sweep).toBeGreaterThan(-1);
+    expect(total).toBeGreaterThan(-1);
+    expect(sweep).toBeLessThan(total);
+  });
+});
+
+describe("one batch job for the turn, not one per call", () => {
+  it("opens the job once and appends to it", () => {
+    expect(CODE).toContain("let batchJobId: string | null = null;");
+    expect(CODE).toContain("if (!batchJobId) {");
+    // Five calls used to mean five jobs, and the card counted one of them.
+    expect(CODE).not.toMatch(/let queuedJobId: string \| null = null;/);
+  });
+
+  it("keeps the job's total equal to the rows behind it", () => {
+    // The card renders total. A number that only counted the latest call is
+    // how "0 of 6" appeared on a batch of eighty-two.
+    expect(CODE).toMatch(
+      /count: itemCount[\s\S]{0,200}\.from\("agent_jobs"\)\.update\(\{ total: itemCount \?\? 0 \}\)/,
+    );
+    expect(CODE).toContain("total: 0,");
+  });
+
+  it("never queues a lead this turn already handled", () => {
+    expect(CODE).toContain("const fresh = leadIds.filter((id) => !handledLeadIds.has(id));");
+    expect(CODE).toContain("const toQueue = fresh.filter((id) => !alreadyQueued.has(id));");
+    expect(CODE).toContain("for (const id of toQueue) handledLeadIds.add(id);");
+  });
+
+  it("only deletes the job when the failure left it empty", () => {
+    // It is shared now. Dropping it on one failed insert would throw away
+    // every batch queued earlier in the same turn.
+    expect(CODE).toMatch(/if \(!count\) \{\s*await admin\.from\("agent_jobs"\)\.delete\(\)/);
+  });
+
+  it("says nothing about drafting when nothing was meant to draft here", () => {
+    // Four "0/0 drafted" warnings in a row, on a turn where the queueing did
+    // exactly what it should.
+    expect(CODE).toContain('if (ids.length > 0) toolEvents.push({');
+  });
+});
+
+describe("the progress card counts every open batch", () => {
+  const HOOK = readFileSync("src/hooks/use-agent-job.tsx", "utf8");
+
+  it("sums the thread's open jobs instead of taking the newest", () => {
+    expect(code(HOOK)).not.toContain(".limit(1)");
+    expect(code(HOOK)).toContain('total: rows.reduce((n, r) => n + (r.total ?? 0), 0),');
+    expect(code(HOOK)).toContain('done: rows.reduce((n, r) => n + (r.done ?? 0), 0),');
+  });
+
+  it("cancel stops all of them, not just the one it named", () => {
+    expect(code(HOOK)).toContain('.in("id", job.ids ?? [job.id]);');
+  });
+
+  it("reads as running while any of them is", () => {
+    expect(code(HOOK)).toContain('rows.some((r) => r.status === "running") ? "running" : rows[0].status');
   });
 });

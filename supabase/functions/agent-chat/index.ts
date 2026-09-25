@@ -123,6 +123,9 @@ const AGENT_CHAT_BUILD = [
   "skips-leads-that-have-drafts",
   "sizes-inline-batch-to-budget",
   "reports-real-draft-totals",
+  // #265: the turn finishes the set it was given, however the model slices it.
+  "finishes-the-whole-outstanding-set",
+  "one-batch-job-per-turn",
 ] as const;
 
 const LEAD_FIELDS =
@@ -1406,6 +1409,139 @@ serve(async (req) => {
      * getting there. Twenty-four generations, no drafts, no reason shown.
      */
     let draftingProducedNothing = false;
+
+    /*
+     * One queue job for the whole turn, and one place that fills it.
+     *
+     * The model was told to pass every lead id in one call and it split eighty-
+     * two into twelve, twelve, ten, ten, ten — five calls, five separate jobs,
+     * and twenty-eight leads it simply never got to. The progress card read
+     * "0 of 6" because it counts a job, and there were five of them.
+     *
+     * So the job belongs to the turn, not to the call. Every draft_outreach
+     * call appends to the same one, and the sweep at the end of the turn
+     * appends whatever the model missed. How the model chooses to slice the
+     * list stops mattering.
+     */
+    let batchJobId: string | null = null;
+    /** Drafted inline or queued this turn — never queued twice. */
+    const handledLeadIds = new Set<string>();
+    /*
+     * Every lead still without a draft, as list_leads last reported it.
+     *
+     * without_draft is the model saying "give me the ones still outstanding,
+     * I am about to draft them", so this is the set the turn is responsible
+     * for finishing. The sweep below holds it to that.
+     */
+    let outstandingPool: string[] = [];
+    let outstandingGoal = "introduction";
+    let outstandingFeedback: string | null = null;
+
+    /**
+     * Put leads on the queue, creating the turn's job the first time.
+     *
+     * Returns how many were actually added: already-pending leads and ones
+     * this turn has already handled are dropped, because a worker that drafts
+     * a lead twice writes one draft and pays for two generations.
+     */
+    const queueForDrafting = async (
+      leadIds: string[],
+      goal: string,
+      feedback: string | null,
+    ): Promise<{ queued: number; alreadyPending: number }> => {
+      const fresh = leadIds.filter((id) => !handledLeadIds.has(id));
+      if (fresh.length === 0) return { queued: 0, alreadyPending: leadIds.length };
+
+      const { data: pendingItems } = await admin
+        .from("agent_job_items")
+        .select("lead_id, job_id")
+        .eq("user_id", userId)
+        .eq("status", "pending");
+      /*
+       * Only items of a job a worker will still claim.
+       *
+       * A cancelled batch leaves its items pending forever, and counting those
+       * as "already queued" blocks those leads from ever being drafted again —
+       * from here and from the sweep, which is why the check lives in the one
+       * helper rather than at the call site it arrived at.
+       */
+      const pendingRows = (pendingItems ?? []) as Record<string, unknown>[];
+      const jobIds = [...new Set(pendingRows.map((r) => String(r.job_id ?? "")).filter(Boolean))];
+      const liveJobs = new Set<string>();
+      if (jobIds.length > 0) {
+        const { data: jobs } = await admin
+          .from("agent_jobs")
+          .select("id")
+          .in("id", jobIds)
+          .in("status", ["queued", "running"]);
+        for (const j of (jobs ?? []) as Record<string, unknown>[]) liveJobs.add(String(j.id));
+      }
+      const alreadyQueued = new Set(
+        pendingRows
+          .filter((r) => liveJobs.has(String(r.job_id ?? "")))
+          .map((r) => String(r.lead_id ?? "")),
+      );
+      const toQueue = fresh.filter((id) => !alreadyQueued.has(id));
+      const alreadyPending = leadIds.length - toQueue.length;
+      if (toQueue.length === 0) return { queued: 0, alreadyPending };
+
+      if (!batchJobId) {
+        const { data: job, error: jobError } = await admin
+          .from("agent_jobs")
+          .insert({
+            user_id: userId,
+            thread_id: threadId,
+            agent_config_id: requestedAgentId,
+            kind: "draft",
+            request_text: userMessage.slice(0, 500),
+            autonomy: (thread as any).autonomy ?? "approval",
+            goal,
+            feedback: feedback || null,
+            status: "queued",
+            total: 0,
+          })
+          .select("id")
+          .single();
+        if (jobError || !job) {
+          console.error("[agent-chat] could not open the batch job:", jobError?.message);
+          return { queued: 0, alreadyPending };
+        }
+        batchJobId = String((job as { id: unknown }).id);
+      }
+
+      const { error: itemsError } = await admin.from("agent_job_items").insert(
+        toQueue.map((leadId) => ({
+          job_id: batchJobId,
+          user_id: userId,
+          lead_id: leadId,
+          status: "pending",
+        })),
+      );
+      if (itemsError) {
+        console.error("[agent-chat] could not queue the items:", itemsError.message);
+        // A job with no items sits at 0 of N forever and reads as stuck.
+        const { count } = await admin
+          .from("agent_job_items")
+          .select("id", { count: "exact", head: true })
+          .eq("job_id", batchJobId);
+        if (!count) {
+          await admin.from("agent_jobs").delete().eq("id", batchJobId);
+          batchJobId = null;
+        }
+        return { queued: 0, alreadyPending };
+      }
+
+      for (const id of toQueue) handledLeadIds.add(id);
+      draftTally.queued += toQueue.length;
+      // The card counts this, so it has to be the batch and not the call.
+      const { count: itemCount } = await admin
+        .from("agent_job_items")
+        .select("id", { count: "exact", head: true })
+        .eq("job_id", batchJobId);
+      await admin.from("agent_jobs").update({ total: itemCount ?? 0 }).eq("id", batchJobId);
+      return { queued: toQueue.length, alreadyPending };
+    };
+
     // Step timing telemetry (Agent > Performance tab reads this).
     const turnId = crypto.randomUUID();
     const turnStartedAt = Date.now();
@@ -1799,13 +1935,27 @@ serve(async (req) => {
           if (error) return { error: error.message };
 
           const rows = (data ?? []) as Record<string, unknown>[];
-          const drafted = await leadsWithDrafts(admin, userId, rows.map((r) => String(r.id)));
+          // Ids come off the rows, never off the annotated copy: spreading a
+          // Record<string, unknown> drops the index signature, so the spread's
+          // type is `{ has_draft: boolean }` and reading .id from it does not
+          // compile. Keeping them here is also the clearer way to say it.
+          const rowIds = rows.map((r) => String(r.id));
+          const drafted = await leadsWithDrafts(admin, userId, rowIds);
+          const undraftedIds = rowIds.filter((id) => !drafted.has(id));
           const annotated = rows.map((r) => ({ ...r, has_draft: drafted.has(String(r.id)) }));
           const pool = wantsUndrafted ? annotated.filter((r) => !r.has_draft) : annotated;
           const leads = pool.slice(0, limit);
 
-          // The figure the model is told to quote must cover every matching
-          // lead, not just the page fetched above.
+          /*
+           * The outstanding figure covers every matching lead, not the page.
+           *
+           * main paged the whole account for this, and it is the number the
+           * model is told to quote — a count taken from a 500-row scan would
+           * under-report the backlog on a bigger account and read as "nearly
+           * done". Kept, and the sweep below now works from the same full set
+           * rather than from the page, which makes it strictly better than the
+           * version it replaced.
+           */
           const allIds: string[] = [];
           for (let from = 0; from < 20000; from += 1000) {
             const { data: idRows, error: idErr } = await applyFilters(
@@ -1820,10 +1970,17 @@ serve(async (req) => {
           }
           const draftedAll =
             allIds.length > rows.length ? await leadsWithDrafts(admin, userId, allIds) : drafted;
-          const outstanding = Math.max(
-            annotated.filter((r) => !r.has_draft).length,
-            allIds.filter((id) => !draftedAll.has(id)).length,
-          );
+          const allUndrafted = allIds.length > 0
+            ? allIds.filter((id) => !draftedAll.has(id))
+            : undraftedIds;
+          const outstanding = Math.max(undraftedIds.length, allUndrafted.length);
+          if (wantsUndrafted) {
+            // The set this turn is now responsible for finishing. See the sweep
+            // at the end of the turn: the model asked which leads still need
+            // drafting, so all of them get drafted or queued whatever it does
+            // with the ids next.
+            outstandingPool = allUndrafted;
+          }
 
           toolEvents.push({
             name,
@@ -2141,94 +2298,25 @@ serve(async (req) => {
            * kills the pass — the queued work is already durable. Enqueuing
            * afterwards would lose exactly the part that was too big to do here.
            */
-          let queuedJobId: string | null = null;
-          /*
-           * Leads already waiting in the queue are not queued a second time.
-           *
-           * The same repetition that produced the same twelve inline drafts
-           * produced the same eight queued items behind them, twice in one
-           * turn. A worker that drafts a lead twice writes one draft and
-           * charges for two generations.
-           */
-          const { data: pendingItems } = await admin
-            .from("agent_job_items")
-            .select("lead_id, job_id")
-            .eq("user_id", userId)
-            .eq("status", "pending");
-          // Only items of a job a worker will still claim. A cancelled batch
-          // leaves its items pending forever; counting them would block those
-          // leads from ever being drafted again.
-          const pendingRows = (pendingItems ?? []) as Record<string, unknown>[];
-          const jobIds = [...new Set(pendingRows.map((r) => String(r.job_id ?? "")).filter(Boolean))];
-          const liveJobs = new Set<string>();
-          if (jobIds.length > 0) {
-            const { data: jobs } = await admin
-              .from("agent_jobs")
-              .select("id")
-              .in("id", jobIds)
-              .in("status", ["queued", "running"]);
-            for (const j of (jobs ?? []) as Record<string, unknown>[]) liveJobs.add(String(j.id));
-          }
-          const alreadyQueued = new Set(
-            pendingRows
-              .filter((r) => liveJobs.has(String(r.job_id ?? "")))
-              .map((r) => String(r.lead_id ?? "")),
-          );
-          const toQueue = overflow.filter((id) => !alreadyQueued.has(id));
-          if (overflow.length > toQueue.length) {
+          const { queued: queuedCount, alreadyPending } = overflow.length > 0
+            ? await queueForDrafting(overflow, goal, feedback || null)
+            : { queued: 0, alreadyPending: 0 };
+          const queuedJobId = batchJobId;
+          if (alreadyPending > 0) {
             toolEvents.push({
               name,
               label: "Already queued",
               status: "ok",
-              detail: `${overflow.length - toQueue.length} of these were already waiting in the queue.`,
+              detail: `${alreadyPending} of these were already waiting in the queue.`,
             });
           }
-          if (toQueue.length > 0) {
-            const { data: job, error: jobError } = await admin
-              .from("agent_jobs")
-              .insert({
-                user_id: userId,
-                thread_id: threadId,
-                agent_config_id: requestedAgentId,
-                kind: "draft",
-                request_text: userMessage.slice(0, 500),
-                autonomy: (thread as any).autonomy ?? "approval",
-                goal,
-                feedback: feedback || null,
-                status: "queued",
-                total: toQueue.length,
-              })
-              .select("id")
-              .single();
-
-            if (jobError || !job) {
-              console.error("[agent-chat] could not queue the batch:", jobError?.message);
-            } else {
-              queuedJobId = String((job as any).id);
-              const { error: itemsError } = await admin.from("agent_job_items").insert(
-                toQueue.map((leadId) => ({
-                  job_id: queuedJobId,
-                  user_id: userId,
-                  lead_id: leadId,
-                  status: "pending",
-                })),
-              );
-              if (itemsError) {
-                console.error("[agent-chat] could not queue the items:", itemsError.message);
-                // A job with no items would sit at 0 of N forever and read as
-                // stuck. Better that it never existed.
-                await admin.from("agent_jobs").delete().eq("id", queuedJobId);
-                queuedJobId = null;
-              } else {
-                draftTally.queued += toQueue.length;
-                toolEvents.push({
-                  name,
-                  label: "Queued the rest",
-                  status: "ok",
-                  detail: `${toQueue.length} more lead(s) queued — they draft in the background and appear as they finish.`,
-                });
-              }
-            }
+          if (queuedCount > 0) {
+            toolEvents.push({
+              name,
+              label: "Queued the rest",
+              status: "ok",
+              detail: `${queuedCount} more lead(s) queued — they draft in the background and appear as they finish.`,
+            });
           }
 
           // Outreach Studio has always fallen back to the connected mailbox
@@ -2411,8 +2499,15 @@ serve(async (req) => {
           draftTally.written += okCount;
           draftTally.failed += drafts.length - okCount;
           if (okCount === 0 && ids.length > 0) draftingProducedNothing = true;
+          for (const d of drafts) if (d.draft_id) handledLeadIds.add(String(d.lead_id));
+          outstandingGoal = goal;
+          outstandingFeedback = feedback || null;
 
-          toolEvents.push({
+          // Nothing was drafted here because nothing was meant to be — the
+           // whole batch went to the queue. "0/0 drafted" under a warning
+           // triangle reads as a failure, and there were four of them in a row
+           // on a turn where the queueing worked exactly as intended.
+          if (ids.length > 0) toolEvents.push({
             name,
             label: "Drafted emails",
             status: okCount === 0 ? "error" : "ok",
@@ -2484,9 +2579,9 @@ serve(async (req) => {
               ? {
                   queued: {
                     job_id: queuedJobId,
-                    count: toQueue.length,
+                    count: queuedCount,
                     note:
-                      `${toQueue.length} further lead(s) are queued and NOT yet drafted. ` +
+                      `${queuedCount} further lead(s) are queued and NOT yet drafted. ` +
                       "Tell the user the count plainly, that the drafts appear as they finish, and that they can cancel the batch from the chat. " +
                       "Do not call draft_outreach again for those leads: the queue already has them, and drafting them here would write each draft twice.",
                   },
@@ -4410,6 +4505,66 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
     if (emptyTurn) {
       finalText = `⚠️ ${emptyTurn}\n\n${finalText}`;
       console.warn("[agent-chat] flagged a completion claim on a turn that changed nothing");
+    }
+
+    /*
+     * Finish the job the turn was given.
+     *
+     * "It must be able to do all the work it is asked of in one sitting." The
+     * model was told to pass all eighty-two lead ids in one call, and it passed
+     * twelve, then twelve, then ten, ten, ten — fifty-four of eighty-two, and
+     * then said the batch was complete and offered to send. Twenty-eight people
+     * were never drafted for and nothing in the system noticed.
+     *
+     * Instructions did not hold and a second instruction would not either. So
+     * the turn closes the gap itself: list_leads with without_draft is the
+     * model declaring which leads still need drafting, and anything in that set
+     * this turn neither wrote nor queued is queued here. Whether the model
+     * splits the list, miscounts it, or stops early stops being able to lose
+     * anybody.
+     *
+     * Only ever queued, never sent, and only what the model itself just asked
+     * for — the cost of overreaching is a draft nobody wanted, sitting in a
+     * folder, not an email to a prospect.
+     */
+    const drewFromPool = outstandingPool.some((id) => handledLeadIds.has(id));
+    if (outstandingPool.length > 0 && drewFromPool) {
+      const missed = outstandingPool.filter((id) => !handledLeadIds.has(id));
+      /*
+       * A bound on what one sentence can commit someone to.
+       *
+       * outstandingPool is now the whole matching account rather than a page,
+       * which is what makes the sweep complete — and on an account with twenty
+       * thousand undrafted leads, "follow up with everyone" would otherwise
+       * queue twenty thousand generations off one turn. Five hundred is far
+       * above any batch seen here and still finite.
+       *
+       * Truncating quietly is what produced the original twenty-draft ceiling,
+       * so this does the opposite: the event says how many were left and how
+       * to get them.
+       */
+      const SWEEP_LIMIT = 500;
+      const sweeping = missed.slice(0, SWEEP_LIMIT);
+      const beyondLimit = missed.length - sweeping.length;
+      if (sweeping.length > 0) {
+        const { queued } = await queueForDrafting(sweeping, outstandingGoal, outstandingFeedback);
+        if (queued > 0) {
+          toolEvents.push({
+            name: "draft_outreach",
+            label: "Queued the leads it skipped",
+            status: "ok",
+            detail:
+              `${queued} lead(s) from the ${outstandingPool.length} you asked about were not drafted or ` +
+              `queued by the steps above, so they were added to the batch.` +
+              (beyondLimit > 0
+                ? ` ${beyondLimit} more are still without a draft — say "keep going" and I'll queue the next ${SWEEP_LIMIT}.`
+                : " The whole set is accounted for."),
+          });
+          console.warn(
+            `[agent-chat] sweep queued ${queued} lead(s) the model left out of ${outstandingPool.length}`,
+          );
+        }
+      }
     }
 
     /*

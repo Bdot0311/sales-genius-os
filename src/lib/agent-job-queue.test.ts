@@ -272,9 +272,14 @@ describe("handing a batch over", () => {
   });
 
   it("never leaves a job with no items behind", () => {
-    const tool = code(AGENT).slice(code(AGENT).indexOf('case "draft_outreach"'));
-    expect(tool).toContain("itemsError");
-    expect(tool).toMatch(/from\("agent_jobs"\)\.delete\(\)\.eq\("id", queuedJobId\)/);
+    // The enqueue moved to queueForDrafting, shared by every draft_outreach
+    // call in the turn and by the sweep that finishes what they missed.
+    const helper = code(AGENT).slice(code(AGENT).indexOf("const queueForDrafting = async ("));
+    expect(helper).toContain("itemsError");
+    expect(helper).toMatch(/from\("agent_jobs"\)\.delete\(\)\.eq\("id", batchJobId\)/);
+    // And only when the failure left it empty: it is shared, so dropping it on
+    // one failed insert would throw away every batch queued before it.
+    expect(helper).toMatch(/if \(!count\) \{/);
   });
 
   it("tells the model the queue already has those leads", () => {
@@ -287,8 +292,8 @@ describe("handing a batch over", () => {
   it("carries the autonomy in force when the user asked", () => {
     // The work runs later; the answer to "was this allowed to send" must be the
     // one from when they asked, not from whatever the toggle says at 11pm.
-    const tool = code(AGENT).slice(code(AGENT).indexOf('case "draft_outreach"'));
-    expect(tool).toMatch(/autonomy: \(thread as any\)\.autonomy/);
+    const helper = code(AGENT).slice(code(AGENT).indexOf("const queueForDrafting = async ("));
+    expect(helper).toMatch(/autonomy: \(thread as any\)\.autonomy/);
     expect(MIGRATION).toContain("autonomy           text NOT NULL DEFAULT 'approval'");
   });
 });
