@@ -38,17 +38,23 @@ import { useAdmin } from "@/hooks/use-admin";
 import { SupportAccessCard } from "@/components/settings/SupportAccessCard";
 
 const Settings = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") ?? "profile";
 
   /**
-   * Bring the open tab into view.
+   * Bring the open tab into view — mobile only.
    *
    * Arriving on ?tab=notifications left the strip scrolled to the start with
    * the active tab clipped against the right edge — the tab you are on, half
    * visible, which is what made this look broken rather than scrollable. The
    * strip has no idea where its selected child is until something tells it.
+   *
+   * On desktop the list is a vertical sidebar that already fits, and running
+   * this scrolls the whole window so the list slides up under the sticky
+   * header — the "tabs overlap the page title" bug. Hence the width guard.
    */
   useEffect(() => {
+    if (window.matchMedia("(min-width: 1024px)").matches) return;
     const active = document.querySelector<HTMLElement>(
       '.settings-tab-list [data-state="active"]',
     );
@@ -271,7 +277,10 @@ const Settings = () => {
       <PageHeader title="Settings" description="Account, preferences, and billing" />
       <div className="w-full min-w-0 px-4 py-4 sm:px-6 sm:py-6 space-y-4 sm:space-y-6 max-w-[1400px] mx-auto">
         <Tabs
-          defaultValue={searchParams.get("tab") ?? "profile"}
+          value={activeTab}
+          onValueChange={(v) =>
+            setSearchParams(v === "profile" ? {} : { tab: v }, { replace: true })
+          }
           className="flex flex-col gap-4 lg:grid lg:grid-cols-[13rem_minmax(0,1fr)] lg:items-start lg:gap-6"
         >
           {(() => {
