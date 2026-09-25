@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { ownerOf, resolveCaller } from "../_shared/internal-auth.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
 import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
 import { rateLimit, rateLimitResponse } from "../_shared/rate-limit.ts";
@@ -266,23 +267,33 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-
-    // Demo mode: simulate instead of hitting providers or spending credits
-    if (user && await isDemoMode(supabase, user.id)) {
-      return demoResponse({ message: 'Research simulated in demo mode — no credits spent.' }, corsHeaders);
-    }
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: "Invalid user token" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    /*
+     * The batch worker holds the service role and is not a user. See
+     * resolveCaller: one implementation, shared, so the copy that drifts
+     * cannot exist.
+     */
+    const caller = await resolveCaller(req);
+    if (!caller.ok) return caller.response;
 
     const body = await req.json().catch(() => ({} as Record<string, unknown>));
     const leadId = typeof body.leadId === "string" ? body.leadId : "";
     const force = body.force === true;
+
+    // An internal caller says which lead; the database says whose it is.
+    const userId = caller.internal
+      ? await ownerOf(supabase, "leads", leadId, caller)
+      : caller.userId;
+    if (!userId) {
+      return new Response(JSON.stringify({ error: "Lead not found or unauthorized" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Demo mode: simulate instead of hitting providers or spending credits
+    if (await isDemoMode(supabase, userId)) {
+      return demoResponse({ message: 'Research simulated in demo mode — no credits spent.' }, corsHeaders);
+    }
     if (!leadId) {
       return new Response(JSON.stringify({ error: "leadId is required", error_code: "bad_request" }), {
         status: 400,
@@ -295,7 +306,7 @@ serve(async (req) => {
       .select(LEAD_SELECT)
       .eq("id", leadId)
       .maybeSingle();
-    if (leadError || !lead || lead.user_id !== user.id) {
+    if (leadError || !lead || lead.user_id !== userId) {
       return new Response(JSON.stringify({ error: "Lead not found or unauthorized" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -322,7 +333,7 @@ serve(async (req) => {
 
 
     // Scraping + a model call is expensive: cap per user per day.
-    const rl = await rateLimit(`research-lead:${user.id}`, 300, 86_400);
+    const rl = await rateLimit(`research-lead:${userId}`, 300, 86_400);
     if (!rl.allowed) return rateLimitResponse(rl.retryAfter, corsHeaders);
 
     const host = resolveLeadDomain(lead as Record<string, unknown>);
@@ -569,7 +580,7 @@ serve(async (req) => {
       .from("signal_events")
       .select("signal_type, occurred_at, source, metadata")
       .eq("lead_id", leadId)
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .order("occurred_at", { ascending: false })
       .limit(25);
 
@@ -713,7 +724,7 @@ serve(async (req) => {
         researched_at: researchedAt,
       })
       .eq("id", leadId)
-      .eq("user_id", user.id);
+      .eq("user_id", userId);
     if (writeError) {
       console.error("[research-lead] failed to persist brief:", writeError.message);
     }

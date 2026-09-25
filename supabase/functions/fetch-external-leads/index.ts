@@ -1,4 +1,5 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { ownerOf, resolveCaller } from '../_shared/internal-auth.ts';
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getPlanSearchLimits } from "../_shared/plan-limits.ts";
@@ -657,12 +658,28 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     supabase = createClient(supabaseUrl, supabaseKey);
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    
-    if (userError || !user) {
+    /*
+     * The batch worker holds the service role and is not a user.
+     *
+     * Search is the one kind here with no row of the user's to derive the owner
+     * from — finding people IS the work. So the worker names the job it is
+     * running, and the owner is read off agent_jobs. Same rule as everywhere
+     * else: the caller says which record, the database says whose it is, and no
+     * body is ever read for a user id. That matters more here than anywhere,
+     * because this one spends the user's search credits.
+     */
+    const caller = await resolveCaller(req);
+    if (!caller.ok) return caller.response;
+    const jobId = typeof (filters as Record<string, unknown>)?.job_id === 'string'
+      ? String((filters as Record<string, unknown>).job_id)
+      : '';
+    const userId = caller.internal
+      ? await ownerOf(supabase, 'agent_jobs', jobId, caller)
+      : caller.userId;
+    if (!userId) {
       throw new Error('Invalid user token');
     }
+    const user = { id: userId };
 
     // The stated ICP, loaded once and used to score every result in this
     // search. Without it the ICP score was a generic seniority table that gave

@@ -5,6 +5,8 @@ import { COLDIQ_CREDITS_ERROR, coldiqConfigured, coldiqFindEmail } from "../_sha
 import { isPersonLinkedIn, normalizeDomain, realValue } from "../_shared/email-rules.ts";
 import { verifyEmail, type CacheClient, type VerificationStatus } from "../_shared/email-verify.ts";
 
+import { ownerOf, resolveCaller } from "../_shared/internal-auth.ts";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -115,22 +117,38 @@ serve(async (req) => {
     const railwayBaseUrl = Deno.env.get('RAILWAY_LEADS_API_URL');
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    /*
+     * The batch worker holds the service role and is not a user.
+     *
+     * auth.getUser() on a service key returns nothing, so calling this from the
+     * queue would fail every item — which is exactly what generate-email did,
+     * silently, for as long as the queue existed. resolveCaller is the one
+     * implementation of that decision; an internal caller is trusted but does
+     * not get to say who it is acting for, so the owner comes from the lead row.
+     */
+    const caller = await resolveCaller(req);
+    if (!caller.ok) return caller.response;
+    const userId = caller.internal
+      ? await ownerOf(supabase, 'leads', String(leadId), caller)
+      : caller.userId;
+    if (!userId) {
+      return new Response(JSON.stringify({ error: 'Lead not found or unauthorized' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // Demo mode: simulate instead of hitting providers or spending credits
-    if (user && await isDemoMode(supabase, user.id)) {
+    if (await isDemoMode(supabase, userId)) {
       return demoResponse({ message: 'Enrichment simulated in demo mode — no credits spent.' }, corsHeaders);
     }
-    if (userError || !user) throw new Error('Invalid user token');
 
-    console.log('Enriching lead for user:', user.id,
+    console.log('Enriching lead for user:', userId,
       `| credits: ${chargeForEnrichment() ? 'charged' : 'free (absorbed)'}`);
 
     const { data: adminRole } = await supabase
       .from('user_roles')
       .select('role')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .eq('role', 'admin')
       .maybeSingle();
     const isAdmin = adminRole?.role === 'admin';
@@ -148,7 +166,7 @@ serve(async (req) => {
       const { data: subscription } = await supabase
         .from('subscriptions')
         .select('plan, status, search_credits_remaining')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .maybeSingle();
 
       if (!isAdmin && (!subscription || subscription.plan === 'free')) {
@@ -182,14 +200,14 @@ serve(async (req) => {
         const { error: deductError } = await supabase
           .from('subscriptions')
           .update({ search_credits_remaining: nextRemaining })
-          .eq('user_id', user.id);
+          .eq('user_id', userId);
         if (deductError) {
           console.error('Enrich credit deduction failed:', deductError);
           throw new Error('Failed to reserve credit for enrichment');
         }
         creditWasDeducted = true;
         await supabase.from('search_transactions').insert({
-          user_id: user.id,
+          user_id: userId,
           type: 'usage',
           amount: -1,
           balance_after: nextRemaining,
@@ -205,16 +223,16 @@ serve(async (req) => {
         const { data: sub } = await supabase
           .from('subscriptions')
           .select('search_credits_remaining')
-          .eq('user_id', user.id)
+          .eq('user_id', userId)
           .maybeSingle();
         if (!sub) return;
         const restored = (sub.search_credits_remaining || 0) + 1;
         await supabase
           .from('subscriptions')
           .update({ search_credits_remaining: restored })
-          .eq('user_id', user.id);
+          .eq('user_id', userId);
         await supabase.from('search_transactions').insert({
-          user_id: user.id,
+          user_id: userId,
           type: 'refund',
           amount: 1,
           balance_after: restored,
@@ -229,7 +247,7 @@ serve(async (req) => {
       .from('leads')
       .select('*')
       .eq('id', leadId)
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single();
 
     if (leadError || !lead) {
@@ -290,7 +308,7 @@ serve(async (req) => {
     // Who is enriching — same reason as in fetch-external-leads. Authorization
     // is one service key for everyone, so without this the backend attributes
     // every reveal to this function's egress address rather than to a person.
-    enrichHeaders['X-Customer-ID'] = user.id;
+    enrichHeaders['X-Customer-ID'] = userId;
 
     let railwayData: any = null;
     try {
@@ -515,7 +533,7 @@ serve(async (req) => {
       .from('leads')
       .update(enrichmentData)
       .eq('id', leadId)
-      .eq('user_id', user.id);
+      .eq('user_id', userId);
 
     if (updateError) throw updateError;
 
@@ -527,7 +545,7 @@ serve(async (req) => {
         .from('leads')
         .update({ country: countryToStore })
         .eq('id', leadId)
-        .eq('user_id', user.id);
+        .eq('user_id', userId);
       if (countryErr) console.warn('country write skipped (column may not exist yet):', countryErr.message);
     }
 
@@ -652,7 +670,7 @@ serve(async (req) => {
 
     await supabase.from('enrichment_history').insert({
       lead_id: leadId,
-      user_id: user.id,
+      user_id: userId,
       fields_enriched: enrichedFields,
       source: 'railway',
       status: enrichedFields.length > 0 ? 'success' : 'no_match',
