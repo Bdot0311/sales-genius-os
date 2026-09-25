@@ -615,6 +615,39 @@ serve(async (req) => {
     // count toward the brief's sources and its completeness score.
     const sources = [...pages.map((p) => p.url), ...web.results.map((r) => r.url)];
 
+    /*
+     * Say when the outside half of the research did not run.
+     *
+     * Without PARALLEL_API_KEY, parallelConfigured() is false, web.results is
+     * empty, and everything downstream still succeeds: a brief is written, it
+     * is saved, and every source on it is a page off the prospect's own site.
+     * That is indistinguishable, from the outside, from a lead the web simply
+     * has nothing on — which is how a search ran with every source link opening
+     * the lead's own website and nothing said why.
+     *
+     * The company's own pages say the same thing to every visitor and almost
+     * never carry a date, so this is not a cosmetic gap: it is the half that
+     * makes an observation datable, and the half a cold open trades on.
+     */
+    const externalResearch: {
+      ran: boolean;
+      sources: number;
+      reason: string | null;
+      note: string | null;
+    } = {
+      ran: web.error === null,
+      sources: web.results.length,
+      reason: web.error,
+      note: web.error === "not_configured"
+        ? "External web research is switched off — PARALLEL_API_KEY is not set on this project. " +
+          "Briefs are being written from the prospect's own website alone, so every source link " +
+          "points back at their site and nothing here is dated by an independent source."
+        : web.error
+          ? `External web research failed (${web.error}); this brief is from the prospect's own site alone.`
+          : null,
+    };
+    if (externalResearch.note) console.warn(`[research-lead] ${host}: ${externalResearch.note}`);
+
     // Signal facts are merged in rather than asked for. They are verified
     // events with dates and citable sources, so routing them through a
     // generator could only lose or soften them — and the model has already
@@ -698,6 +731,7 @@ serve(async (req) => {
       JSON.stringify({
         brief,
         sources,
+        external_research: externalResearch,
         confidence: brief.confidence,
         quality,
         researched_at: researchedAt,

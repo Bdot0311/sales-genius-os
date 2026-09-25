@@ -2132,11 +2132,33 @@ serve(async (req) => {
               quality_label: r?.quality?.label ?? r?.brief?.quality?.label ?? null,
               safe_to_personalize: r?.quality?.safe_to_personalize ?? r?.brief?.quality?.safe_to_personalize ?? null,
               gaps: r?.quality?.gaps ?? r?.brief?.quality?.gaps ?? [],
+              external_research: r?.external_research ?? null,
               error: r?.brief ? undefined : (r?.error ?? "Research failed"),
             };
           });
           const okCount = results.filter((r: any) => !r.error).length;
           const thinCount = results.filter((r: any) => !r.error && r.safe_to_personalize === false).length;
+
+          /*
+           * Say it out loud when only the prospect's own site was read.
+           *
+           * research-lead degrades quietly without PARALLEL_API_KEY: a brief is
+           * still written and saved, and every source on it points back at the
+           * lead's own website. Reported as "researched from their website",
+           * which is true, it reads as the research having worked. The half
+           * that makes an observation datable is the half that is missing.
+           */
+          const externalOff = results.find(
+            (r: any) => r.external_research && r.external_research.ran === false,
+          ) as any;
+          if (externalOff?.external_research?.note) {
+            toolEvents.push({
+              name,
+              label: "Only their own website was read",
+              status: "error",
+              detail: String(externalOff.external_research.note),
+            });
+          }
           toolEvents.push({
             name,
             label: "Researched leads",
