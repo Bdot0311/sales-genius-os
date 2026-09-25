@@ -111,6 +111,13 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         tag: "fixed",
+        title: "Settings tabs sit where they should",
+        description:
+          "On a wide screen the Settings tab list no longer overlaps the page heading, and the tab you open is the tab that's highlighted.",
+        href: "/settings",
+      },
+      {
+        tag: "fixed",
         title: "Cancelled batches can be redrafted",
         description:
           "If you cancel a background drafting batch, asking your agent to draft those leads again now works.",
