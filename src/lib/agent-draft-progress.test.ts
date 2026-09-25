@@ -136,7 +136,7 @@ describe("list_leads can say what is left", () => {
 
   it("returns the outstanding count as a number, not a thing to work out", () => {
     expect(CODE).toContain("remaining_without_draft: outstanding,");
-    expect(CODE).toContain("const outstanding = annotated.filter((r) => !r.has_draft).length;");
+    expect(CODE).toContain("allIds.filter((id) => !draftedAll.has(id)).length");
   });
 });
 
