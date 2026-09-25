@@ -115,6 +115,13 @@ export const CHANGELOG: ChangelogEntry[] = [
         description:
           "If you cancel a background drafting batch, asking your agent to draft those leads again now works.",
       },
+      {
+        tag: "improved",
+        title: "Select and delete drafts in bulk",
+        description:
+          "The Drafts list now has row checkboxes and Select all, so you can clear several saved drafts at once.",
+        href: "/dashboard/outreach",
+      },
     ],
   },
   {
