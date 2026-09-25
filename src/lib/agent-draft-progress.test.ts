@@ -138,7 +138,8 @@ describe("list_leads can say what is left", () => {
 
   it("returns the outstanding count as a number, not a thing to work out", () => {
     expect(CODE).toContain("remaining_without_draft: outstanding,");
-    expect(CODE).toContain("const outstanding = annotated.filter((r) => !r.has_draft).length;");
+    expect(CODE).toContain("const undraftedIds = rowIds.filter((id) => !drafted.has(id));");
+    expect(CODE).toContain("const outstanding = undraftedIds.length;");
   });
 });
 
@@ -278,8 +279,13 @@ describe("the turn finishes the set it was given", () => {
   it("remembers which leads the model said still need drafting", () => {
     // list_leads with without_draft is the model declaring the set it is about
     // to work through, so that is the set the turn is held to.
-    expect(CODE).toContain("outstandingPool = pool.map((r) => String(r.id));");
-    expect(CODE).toMatch(/if \(wantsUndrafted\) \{\s*outstandingPool/);
+    // From the rows, not from the annotated copy: spreading a
+    // Record<string, unknown> drops the index signature, so the spread's type
+    // is `{ has_draft: boolean }` and reading .id off it does not compile.
+    // Deno's full typecheck caught that; the offline one structurally cannot.
+    expect(CODE).toContain("const rowIds = rows.map((r) => String(r.id));");
+    expect(CODE).toContain("outstandingPool = undraftedIds;");
+    expect(CODE).not.toContain("outstandingPool = pool.map(");
   });
 
   it("queues whatever the model left out, after it has finished", () => {

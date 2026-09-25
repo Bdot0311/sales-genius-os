@@ -1924,17 +1924,23 @@ serve(async (req) => {
           if (error) return { error: error.message };
 
           const rows = (data ?? []) as Record<string, unknown>[];
-          const drafted = await leadsWithDrafts(admin, userId, rows.map((r) => String(r.id)));
+          // Ids come off the rows, never off the annotated copy: spreading a
+          // Record<string, unknown> drops the index signature, so the spread's
+          // type is `{ has_draft: boolean }` and reading .id from it does not
+          // compile. Keeping them here is also the clearer way to say it.
+          const rowIds = rows.map((r) => String(r.id));
+          const drafted = await leadsWithDrafts(admin, userId, rowIds);
+          const undraftedIds = rowIds.filter((id) => !drafted.has(id));
           const annotated = rows.map((r) => ({ ...r, has_draft: drafted.has(String(r.id)) }));
           const pool = wantsUndrafted ? annotated.filter((r) => !r.has_draft) : annotated;
           const leads = pool.slice(0, limit);
-          const outstanding = annotated.filter((r) => !r.has_draft).length;
+          const outstanding = undraftedIds.length;
           if (wantsUndrafted) {
             // The set this turn is now responsible for finishing. See the sweep
             // at the end of the turn: the model asked which leads still need
             // drafting, so all of them get drafted or queued whatever it does
             // with the ids next.
-            outstandingPool = pool.map((r) => String(r.id));
+            outstandingPool = undraftedIds;
           }
 
           toolEvents.push({
