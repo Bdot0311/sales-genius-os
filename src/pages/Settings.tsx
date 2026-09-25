@@ -38,17 +38,23 @@ import { useAdmin } from "@/hooks/use-admin";
 import { SupportAccessCard } from "@/components/settings/SupportAccessCard";
 
 const Settings = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") ?? "profile";
 
   /**
-   * Bring the open tab into view.
+   * Bring the open tab into view — mobile only.
    *
    * Arriving on ?tab=notifications left the strip scrolled to the start with
    * the active tab clipped against the right edge — the tab you are on, half
    * visible, which is what made this look broken rather than scrollable. The
    * strip has no idea where its selected child is until something tells it.
+   *
+   * On desktop the list is a vertical sidebar that already fits, and running
+   * this scrolls the whole window so the list slides up under the sticky
+   * header — the "tabs overlap the page title" bug. Hence the width guard.
    */
   useEffect(() => {
+    if (window.matchMedia("(min-width: 1024px)").matches) return;
     const active = document.querySelector<HTMLElement>(
       '.settings-tab-list [data-state="active"]',
     );
@@ -271,7 +277,10 @@ const Settings = () => {
       <PageHeader title="Settings" description="Account, preferences, and billing" />
       <div className="w-full min-w-0 px-4 py-4 sm:px-6 sm:py-6 space-y-4 sm:space-y-6 max-w-[1400px] mx-auto">
         <Tabs
-          defaultValue={searchParams.get("tab") ?? "profile"}
+          value={activeTab}
+          onValueChange={(v) =>
+            setSearchParams(v === "profile" ? {} : { tab: v }, { replace: true })
+          }
           className="flex flex-col gap-4 lg:grid lg:grid-cols-[13rem_minmax(0,1fr)] lg:items-start lg:gap-6"
         >
           {(() => {
@@ -294,8 +303,13 @@ const Settings = () => {
              * edges so a cut-off label reads as "more over there" rather than
              * as a rendering bug.
              */
+            // The base TabsList carries sm:h-10 sm:justify-center. On a tall
+            // vertical list that pins the height to one row and centers the
+            // overflow, so tabs spilled equally above and below — half of
+            // them rendered over the page header. The ! overrides win where
+            // plain classes lose to the sm: variants in cascade order.
             const listCls =
-              "settings-tab-list flex h-auto min-h-0 w-max min-w-full gap-1 overflow-visible bg-transparent p-0 lg:w-full lg:flex-col lg:items-stretch";
+              "settings-tab-list flex h-auto min-h-0 w-max min-w-full gap-1 overflow-visible bg-transparent p-0 sm:!h-auto sm:!justify-start lg:w-full lg:flex-col lg:items-stretch";
             return (
               <div className="settings-tab-scroller -mx-1 overflow-x-auto px-1 pb-1 lg:mx-0 lg:overflow-visible lg:rounded-xl lg:border lg:border-border/50 lg:bg-card lg:p-2 lg:px-2 lg:pb-2">
                 <TabsList className={listCls}>
