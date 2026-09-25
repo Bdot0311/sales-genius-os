@@ -1773,32 +1773,22 @@ serve(async (req) => {
 
       switch (name) {
         case "list_leads": {
-          let q = admin.from("leads").select(LEAD_FIELDS).eq("user_id", userId);
-          if (args.pipeline_stage) q = q.eq("pipeline_stage", args.pipeline_stage);
-          if (typeof args.min_icp_score === "number") q = q.gte("icp_score", args.min_icp_score);
-          if (args.query) {
-            const term = String(args.query).replace(/[%,]/g, "");
-            q = q.or(
-              `company_name.ilike.%${term}%,contact_name.ilike.%${term}%,contact_email.ilike.%${term}%`,
-            );
-          }
-          if (args.needs_enrichment) q = q.is("contact_email", null);
+          const applyFilters = (base: any) => {
+            let b = base.eq("user_id", userId);
+            if (args.pipeline_stage) b = b.eq("pipeline_stage", args.pipeline_stage);
+            if (typeof args.min_icp_score === "number") b = b.gte("icp_score", args.min_icp_score);
+            if (args.query) {
+              const term = String(args.query).replace(/[%,]/g, "");
+              b = b.or(
+                `company_name.ilike.%${term}%,contact_name.ilike.%${term}%,contact_email.ilike.%${term}%`,
+              );
+            }
+            if (args.needs_enrichment) b = b.is("contact_email", null);
+            return b;
+          };
+          const q = applyFilters(admin.from("leads").select(LEAD_FIELDS));
           const limit = Math.min(Math.max(Number(args.limit) || 25, 1), 100);
 
-          /*
-           * Which of these already have a draft.
-           *
-           * This listing is what the drafter is fed, and it used to be ordered
-           * by created_at and nothing else — so a request to draft for eighty-two
-           * leads got the same twelve at the top on every pass, for as many
-           * passes as anyone was willing to sit through. The draft write replaces
-           * a lead's existing draft rather than adding one, so the folder stayed
-           * at twelve while the agent reported forty-three.
-           *
-           * has_draft rides on every row and without_draft filters by it, so the
-           * answer comes from the drafts table instead of from the model's memory
-           * of what it thinks it did earlier in the conversation.
-           */
           const wantsUndrafted = args.without_draft === true;
           // Scan wider than the page when filtering, or a page of already-drafted
           // leads comes back empty and reads as "nothing left to do".
@@ -1813,7 +1803,27 @@ serve(async (req) => {
           const annotated = rows.map((r) => ({ ...r, has_draft: drafted.has(String(r.id)) }));
           const pool = wantsUndrafted ? annotated.filter((r) => !r.has_draft) : annotated;
           const leads = pool.slice(0, limit);
-          const outstanding = annotated.filter((r) => !r.has_draft).length;
+
+          // The figure the model is told to quote must cover every matching
+          // lead, not just the page fetched above.
+          const allIds: string[] = [];
+          for (let from = 0; from < 20000; from += 1000) {
+            const { data: idRows, error: idErr } = await applyFilters(
+              admin.from("leads").select("id"),
+            )
+              .order("created_at", { ascending: false })
+              .range(from, from + 999);
+            if (idErr) break;
+            const batch = (idRows ?? []) as Record<string, unknown>[];
+            for (const r of batch) allIds.push(String(r.id));
+            if (batch.length < 1000) break;
+          }
+          const draftedAll =
+            allIds.length > rows.length ? await leadsWithDrafts(admin, userId, allIds) : drafted;
+          const outstanding = Math.max(
+            annotated.filter((r) => !r.has_draft).length,
+            allIds.filter((id) => !draftedAll.has(id)).length,
+          );
 
           toolEvents.push({
             name,
@@ -2142,11 +2152,27 @@ serve(async (req) => {
            */
           const { data: pendingItems } = await admin
             .from("agent_job_items")
-            .select("lead_id")
+            .select("lead_id, job_id")
             .eq("user_id", userId)
             .eq("status", "pending");
+          // Only items of a job a worker will still claim. A cancelled batch
+          // leaves its items pending forever; counting them would block those
+          // leads from ever being drafted again.
+          const pendingRows = (pendingItems ?? []) as Record<string, unknown>[];
+          const jobIds = [...new Set(pendingRows.map((r) => String(r.job_id ?? "")).filter(Boolean))];
+          const liveJobs = new Set<string>();
+          if (jobIds.length > 0) {
+            const { data: jobs } = await admin
+              .from("agent_jobs")
+              .select("id")
+              .in("id", jobIds)
+              .in("status", ["queued", "running"]);
+            for (const j of (jobs ?? []) as Record<string, unknown>[]) liveJobs.add(String(j.id));
+          }
           const alreadyQueued = new Set(
-            ((pendingItems ?? []) as Record<string, unknown>[]).map((r) => String(r.lead_id ?? "")),
+            pendingRows
+              .filter((r) => liveJobs.has(String(r.job_id ?? "")))
+              .map((r) => String(r.lead_id ?? "")),
           );
           const toQueue = overflow.filter((id) => !alreadyQueued.has(id));
           if (overflow.length > toQueue.length) {

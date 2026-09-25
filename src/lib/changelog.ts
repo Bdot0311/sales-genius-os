@@ -92,6 +92,32 @@ export const ROADMAP: RoadmapItem[] = [
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-09-25-stay-signed-in",
+    date: "2026-09-25",
+    title: "You stay signed in",
+    summary: "Coming back to the app no longer signs you out, and your agent's drafting counts are accurate.",
+    items: [
+      {
+        tag: "fixed",
+        title: "No more surprise sign-outs",
+        description:
+          "Returning to OutReign after switching apps or locking your phone no longer sends you back to the login page.",
+      },
+      {
+        tag: "fixed",
+        title: "Accurate \"left to draft\" count",
+        description:
+          "When your agent tells you how many leads still need a draft, that number now covers your whole list.",
+      },
+      {
+        tag: "fixed",
+        title: "Cancelled batches can be redrafted",
+        description:
+          "If you cancel a background drafting batch, asking your agent to draft those leads again now works.",
+      },
+    ],
+  },
+  {
     id: "2026-09-21-replies-and-billing",
     date: "2026-09-21",
     title: "Replies now find you",
