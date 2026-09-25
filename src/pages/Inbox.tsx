@@ -423,18 +423,32 @@ const Inbox = () => {
                     className="h-9 border-border/50 bg-background pl-8 text-base sm:h-8 sm:text-xs"
                   />
                 </div>
-                <div className="-mx-1 mt-2 flex gap-0.5 overflow-x-auto px-1">
+                {/* A real tablist, not a row of buttons that looks like one.
+                    app CSS already gives [role="tablist"] scrollbar-width:none
+                    and hides the webkit scrollbar; without the role this strip
+                    missed that rule, and on a platform that always shows
+                    scrollbars the native track was drawn straight over an
+                    11px-tall row — the labels ended up behind it. The role is
+                    also what makes the arrow keys and a screen reader work,
+                    which a div of buttons never did. */}
+                <div
+                  role="tablist"
+                  aria-label="Filter conversations"
+                  className="-mx-1 mt-2 flex gap-0.5 overflow-x-auto px-1 pb-0.5"
+                >
                   {FOLDERS.map((f) => {
                     const active = folder === f.value;
                     return (
                       <button
                         key={f.value}
+                        role="tab"
+                        aria-selected={active}
                         onClick={() => setFolder(f.value)}
                         /* A filled primary pill for the current folder made the
                            loudest thing on the page a statement of where you
                            already are. The mark is now the smallest one that
                            still reads. */
-                        className={`flex shrink-0 items-baseline gap-1.5 whitespace-nowrap rounded-md px-2 py-1 text-[0.6875rem] transition-colors ${
+                        className={`flex shrink-0 items-baseline gap-1.5 whitespace-nowrap rounded-md px-2 py-1.5 text-xs transition-colors ${
                           active
                             ? "bg-muted/60 font-medium text-foreground"
                             : "text-muted-foreground hover:text-foreground"

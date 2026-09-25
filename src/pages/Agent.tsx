@@ -443,8 +443,14 @@ const Agent = () => {
 
         <Tabs value={tab} onValueChange={setTab} className="space-y-4">
           {/* Scrollable at narrow widths: six triggers do not fit on a phone,
-              and a TabsList that does not scroll simply hides the last two. */}
-          <div className="-mx-1 overflow-x-auto px-1">
+              and a TabsList that does not scroll simply hides the last two.
+
+              scrollbar-hide goes on the wrapper because the wrapper is what
+              scrolls. The app's [role="tablist"] rule suppresses the scrollbar,
+              but that role is on the TabsList inside, which does not scroll —
+              so on a platform that always shows scrollbars the native track was
+              drawn under the tabs regardless. */}
+          <div className="-mx-1 overflow-x-auto px-1 scrollbar-hide">
             <TabsList className="inline-flex w-auto border border-border/50 bg-muted/30">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="inbox">Inbox</TabsTrigger>
