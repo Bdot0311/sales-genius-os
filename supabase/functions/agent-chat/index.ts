@@ -1454,11 +1454,32 @@ serve(async (req) => {
 
       const { data: pendingItems } = await admin
         .from("agent_job_items")
-        .select("lead_id")
+        .select("lead_id, job_id")
         .eq("user_id", userId)
         .eq("status", "pending");
+      /*
+       * Only items of a job a worker will still claim.
+       *
+       * A cancelled batch leaves its items pending forever, and counting those
+       * as "already queued" blocks those leads from ever being drafted again —
+       * from here and from the sweep, which is why the check lives in the one
+       * helper rather than at the call site it arrived at.
+       */
+      const pendingRows = (pendingItems ?? []) as Record<string, unknown>[];
+      const jobIds = [...new Set(pendingRows.map((r) => String(r.job_id ?? "")).filter(Boolean))];
+      const liveJobs = new Set<string>();
+      if (jobIds.length > 0) {
+        const { data: jobs } = await admin
+          .from("agent_jobs")
+          .select("id")
+          .in("id", jobIds)
+          .in("status", ["queued", "running"]);
+        for (const j of (jobs ?? []) as Record<string, unknown>[]) liveJobs.add(String(j.id));
+      }
       const alreadyQueued = new Set(
-        ((pendingItems ?? []) as Record<string, unknown>[]).map((r) => String(r.lead_id ?? "")),
+        pendingRows
+          .filter((r) => liveJobs.has(String(r.job_id ?? "")))
+          .map((r) => String(r.lead_id ?? "")),
       );
       const toQueue = fresh.filter((id) => !alreadyQueued.has(id));
       const alreadyPending = leadIds.length - toQueue.length;
@@ -1888,32 +1909,22 @@ serve(async (req) => {
 
       switch (name) {
         case "list_leads": {
-          let q = admin.from("leads").select(LEAD_FIELDS).eq("user_id", userId);
-          if (args.pipeline_stage) q = q.eq("pipeline_stage", args.pipeline_stage);
-          if (typeof args.min_icp_score === "number") q = q.gte("icp_score", args.min_icp_score);
-          if (args.query) {
-            const term = String(args.query).replace(/[%,]/g, "");
-            q = q.or(
-              `company_name.ilike.%${term}%,contact_name.ilike.%${term}%,contact_email.ilike.%${term}%`,
-            );
-          }
-          if (args.needs_enrichment) q = q.is("contact_email", null);
+          const applyFilters = (base: any) => {
+            let b = base.eq("user_id", userId);
+            if (args.pipeline_stage) b = b.eq("pipeline_stage", args.pipeline_stage);
+            if (typeof args.min_icp_score === "number") b = b.gte("icp_score", args.min_icp_score);
+            if (args.query) {
+              const term = String(args.query).replace(/[%,]/g, "");
+              b = b.or(
+                `company_name.ilike.%${term}%,contact_name.ilike.%${term}%,contact_email.ilike.%${term}%`,
+              );
+            }
+            if (args.needs_enrichment) b = b.is("contact_email", null);
+            return b;
+          };
+          const q = applyFilters(admin.from("leads").select(LEAD_FIELDS));
           const limit = Math.min(Math.max(Number(args.limit) || 25, 1), 100);
 
-          /*
-           * Which of these already have a draft.
-           *
-           * This listing is what the drafter is fed, and it used to be ordered
-           * by created_at and nothing else — so a request to draft for eighty-two
-           * leads got the same twelve at the top on every pass, for as many
-           * passes as anyone was willing to sit through. The draft write replaces
-           * a lead's existing draft rather than adding one, so the folder stayed
-           * at twelve while the agent reported forty-three.
-           *
-           * has_draft rides on every row and without_draft filters by it, so the
-           * answer comes from the drafts table instead of from the model's memory
-           * of what it thinks it did earlier in the conversation.
-           */
           const wantsUndrafted = args.without_draft === true;
           // Scan wider than the page when filtering, or a page of already-drafted
           // leads comes back empty and reads as "nothing left to do".
@@ -1934,13 +1945,41 @@ serve(async (req) => {
           const annotated = rows.map((r) => ({ ...r, has_draft: drafted.has(String(r.id)) }));
           const pool = wantsUndrafted ? annotated.filter((r) => !r.has_draft) : annotated;
           const leads = pool.slice(0, limit);
-          const outstanding = undraftedIds.length;
+
+          /*
+           * The outstanding figure covers every matching lead, not the page.
+           *
+           * main paged the whole account for this, and it is the number the
+           * model is told to quote — a count taken from a 500-row scan would
+           * under-report the backlog on a bigger account and read as "nearly
+           * done". Kept, and the sweep below now works from the same full set
+           * rather than from the page, which makes it strictly better than the
+           * version it replaced.
+           */
+          const allIds: string[] = [];
+          for (let from = 0; from < 20000; from += 1000) {
+            const { data: idRows, error: idErr } = await applyFilters(
+              admin.from("leads").select("id"),
+            )
+              .order("created_at", { ascending: false })
+              .range(from, from + 999);
+            if (idErr) break;
+            const batch = (idRows ?? []) as Record<string, unknown>[];
+            for (const r of batch) allIds.push(String(r.id));
+            if (batch.length < 1000) break;
+          }
+          const draftedAll =
+            allIds.length > rows.length ? await leadsWithDrafts(admin, userId, allIds) : drafted;
+          const allUndrafted = allIds.length > 0
+            ? allIds.filter((id) => !draftedAll.has(id))
+            : undraftedIds;
+          const outstanding = Math.max(undraftedIds.length, allUndrafted.length);
           if (wantsUndrafted) {
             // The set this turn is now responsible for finishing. See the sweep
             // at the end of the turn: the model asked which leads still need
             // drafting, so all of them get drafted or queued whatever it does
             // with the ids next.
-            outstandingPool = undraftedIds;
+            outstandingPool = allUndrafted;
           }
 
           toolEvents.push({
@@ -4491,8 +4530,24 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
     const drewFromPool = outstandingPool.some((id) => handledLeadIds.has(id));
     if (outstandingPool.length > 0 && drewFromPool) {
       const missed = outstandingPool.filter((id) => !handledLeadIds.has(id));
-      if (missed.length > 0) {
-        const { queued } = await queueForDrafting(missed, outstandingGoal, outstandingFeedback);
+      /*
+       * A bound on what one sentence can commit someone to.
+       *
+       * outstandingPool is now the whole matching account rather than a page,
+       * which is what makes the sweep complete — and on an account with twenty
+       * thousand undrafted leads, "follow up with everyone" would otherwise
+       * queue twenty thousand generations off one turn. Five hundred is far
+       * above any batch seen here and still finite.
+       *
+       * Truncating quietly is what produced the original twenty-draft ceiling,
+       * so this does the opposite: the event says how many were left and how
+       * to get them.
+       */
+      const SWEEP_LIMIT = 500;
+      const sweeping = missed.slice(0, SWEEP_LIMIT);
+      const beyondLimit = missed.length - sweeping.length;
+      if (sweeping.length > 0) {
+        const { queued } = await queueForDrafting(sweeping, outstandingGoal, outstandingFeedback);
         if (queued > 0) {
           toolEvents.push({
             name: "draft_outreach",
@@ -4500,7 +4555,10 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
             status: "ok",
             detail:
               `${queued} lead(s) from the ${outstandingPool.length} you asked about were not drafted or ` +
-              `queued by the steps above, so they were added to the batch. The whole set is accounted for.`,
+              `queued by the steps above, so they were added to the batch.` +
+              (beyondLimit > 0
+                ? ` ${beyondLimit} more are still without a draft — say "keep going" and I'll queue the next ${SWEEP_LIMIT}.`
+                : " The whole set is accounted for."),
           });
           console.warn(
             `[agent-chat] sweep queued ${queued} lead(s) the model left out of ${outstandingPool.length}`,

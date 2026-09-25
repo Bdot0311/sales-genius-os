@@ -139,7 +139,11 @@ describe("list_leads can say what is left", () => {
   it("returns the outstanding count as a number, not a thing to work out", () => {
     expect(CODE).toContain("remaining_without_draft: outstanding,");
     expect(CODE).toContain("const undraftedIds = rowIds.filter((id) => !drafted.has(id));");
-    expect(CODE).toContain("const outstanding = undraftedIds.length;");
+    // The count covers the whole account, not the page that was fetched: on a
+    // bigger account a figure taken from a 500-row scan under-reports the
+    // backlog and reads as nearly done.
+    expect(CODE).toContain("const allUndrafted = allIds.length > 0");
+    expect(CODE).toContain("const outstanding = Math.max(undraftedIds.length, allUndrafted.length);");
   });
 });
 
@@ -284,14 +288,26 @@ describe("the turn finishes the set it was given", () => {
     // is `{ has_draft: boolean }` and reading .id off it does not compile.
     // Deno's full typecheck caught that; the offline one structurally cannot.
     expect(CODE).toContain("const rowIds = rows.map((r) => String(r.id));");
-    expect(CODE).toContain("outstandingPool = undraftedIds;");
+    // The full undrafted set, not the page — the sweep is only as complete as
+    // the set it is given.
+    expect(CODE).toContain("outstandingPool = allUndrafted;");
     expect(CODE).not.toContain("outstandingPool = pool.map(");
   });
 
   it("queues whatever the model left out, after it has finished", () => {
     expect(CODE).toContain("const missed = outstandingPool.filter((id) => !handledLeadIds.has(id));");
-    expect(CODE).toContain("await queueForDrafting(missed, outstandingGoal, outstandingFeedback)");
+    expect(CODE).toContain("await queueForDrafting(sweeping, outstandingGoal, outstandingFeedback)");
     expect(AGENT).toContain('label: "Queued the leads it skipped"');
+  });
+
+  it("bounds what one sentence can commit someone to, and says so", () => {
+    // The pool is the whole matching account now. Twenty thousand undrafted
+    // leads must not become twenty thousand generations off one turn — and a
+    // quiet truncation is what produced the twenty-draft ceiling to begin with.
+    expect(CODE).toContain("const SWEEP_LIMIT = 500;");
+    expect(CODE).toContain("const sweeping = missed.slice(0, SWEEP_LIMIT);");
+    expect(CODE).toContain("const beyondLimit = missed.length - sweeping.length;");
+    expect(AGENT).toContain("more are still without a draft");
   });
 
   it("only sweeps a set this turn actually drafted from", () => {

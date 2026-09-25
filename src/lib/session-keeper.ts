@@ -7,36 +7,58 @@ import { supabase } from "@/integrations/supabase/client";
 // refresh token is still perfectly valid.
 //
 // ensureSession() gives the refresh a real chance (with retries + backoff) and
-// only reports "signed out" when the refresh token itself is rejected. The
-// keeper pauses/resumes the SDK's refresh loop around visibility changes so a
-// resumed app immediately renews its token.
+// only reports "signed out" when the refresh token itself is rejected. Calls
+// are serialised: visibilitychange/focus/pageshow/online fire together on
+// resume, and parallel refreshes race a rotating refresh token — the loser
+// presents a spent/partial token and is rejected, which used to sign people out.
 
 const FATAL_REFRESH = /refresh[_ ]token|invalid|revoked|expired token|not found|already used/i;
 
-export async function ensureSession(attempts = 3) {
+let inFlight: Promise<Awaited<ReturnType<typeof runEnsure>>> | null = null;
+
+async function runEnsure(attempts: number) {
   const { data: { session } } = await supabase.auth.getSession();
   if (session) return session;
 
+  let fatalSeen = false;
   for (let i = 0; i < attempts; i++) {
     const { data, error } = await supabase.auth.refreshSession();
     if (data?.session) return data.session;
-    // A genuinely dead refresh token means the user really is signed out.
-    if (error && FATAL_REFRESH.test(error.message || "") && navigator.onLine) return null;
-    // Otherwise it's most likely a transient network/offline failure — wait.
+    if (error && FATAL_REFRESH.test(error.message || "") && navigator.onLine) {
+      // Another refresh (other tab, SDK auto-refresh) may have rotated the
+      // token under us. Re-read storage once before believing it.
+      const { data: again } = await supabase.auth.getSession();
+      if (again.session) return again.session;
+      if (fatalSeen) return null;
+      fatalSeen = true;
+    }
     await new Promise((r) => setTimeout(r, 600 * (i + 1)));
   }
   return null;
 }
 
+export function ensureSession(attempts = 3) {
+  if (!inFlight) {
+    inFlight = runEnsure(attempts).finally(() => { inFlight = null; });
+  }
+  return inFlight;
+}
+
 let started = false;
+let resumeTimer: ReturnType<typeof setTimeout> | null = null;
 
 export function startSessionKeeper() {
   if (started || typeof document === "undefined") return;
   started = true;
 
   const resume = () => {
-    try { supabase.auth.startAutoRefresh(); } catch { /* noop */ }
-    void ensureSession();
+    // Coalesce the burst of resume events into one refresh.
+    if (resumeTimer) clearTimeout(resumeTimer);
+    resumeTimer = setTimeout(() => {
+      resumeTimer = null;
+      try { supabase.auth.startAutoRefresh(); } catch { /* noop */ }
+      void ensureSession();
+    }, 250);
   };
 
   document.addEventListener("visibilitychange", () => {
