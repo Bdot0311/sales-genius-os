@@ -57,6 +57,9 @@ describe("the deploy probe answers honestly", () => {
       "skips-leads-that-have-drafts": "every_lead_already_drafted",
       "sizes-inline-batch-to-budget": "const affordableWaves =",
       "reports-real-draft-totals": "Your drafts folder holds",
+      // #265
+      "finishes-the-whole-outstanding-set": "Queued the leads it skipped",
+      "one-batch-job-per-turn": "const queueForDrafting = async (",
     };
     for (const marker of markers) {
       const proof = evidence[marker];
@@ -78,6 +81,8 @@ describe("the deploy probe answers honestly", () => {
       "skips-leads-that-have-drafts",
       "sizes-inline-batch-to-budget",
       "reports-real-draft-totals",
+      "finishes-the-whole-outstanding-set",
+      "one-batch-job-per-turn",
     ];
     expect([...markers].sort()).toEqual([...evidenceKeys].sort());
   });
