@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Mail, Pause, Play, Loader2 } from "lucide-react";
-import { reputationDisplay, MIN_VOLUME_FOR_SCORE } from "@/lib/reputation";
+import { reputationDisplay, scoreBreakdown, MIN_VOLUME_FOR_SCORE, type ScoreBreakdown } from "@/lib/reputation";
 import { useUpdateAccount, useToggleWarmup } from "@/hooks/use-deliverability";
 import { ReputationTrend } from "./ReputationTrend";
 import { SendingControlsDialog } from "./SendingControlsDialog";
@@ -105,6 +105,8 @@ const AccountCard = ({ account, snapshots, stats }: {
           )}
         </div>
 
+        {stats && <ScoreLedger breakdown={scoreBreakdown(stats, score)} />}
+
         {score === null && (
           <div className="space-y-1.5">
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
@@ -171,5 +173,68 @@ const AccountCard = ({ account, snapshots, stats }: {
         </div>
       </PanelBody>
     </Panel>
+  );
+};
+
+/**
+ * What the score is made of.
+ *
+ * The card reported a number and, three lines away in smaller type, the bounce
+ * rate that produced it -- with nothing saying the second caused the first. Read
+ * next to a warmup panel showing 100% inbox placement, "50 Fair" looked like the
+ * page contradicting itself, when the two were answering different questions.
+ *
+ * A ledger rather than a chart: there are at most three entries, they are
+ * subtractions, and they add up to the deficit. Anything more graphical would
+ * decorate three numbers that are already legible.
+ */
+export const ScoreLedger = ({ breakdown }: { breakdown: ScoreBreakdown | null }) => {
+  // Null means the score could not be reconstructed, so its causes are not
+  // known well enough to name. Saying nothing beats naming the wrong one.
+  if (!breakdown) return null;
+
+  const { deductions, total, floored } = breakdown;
+
+  if (deductions.length === 0) {
+    return (
+      <p className="border-t border-border/30 pt-3 text-[0.6875rem] leading-relaxed text-muted-foreground">
+        Nothing is costing this mailbox points.
+      </p>
+    );
+  }
+
+  const bounced = deductions.some((d) => d.key === "bounces");
+
+  return (
+    <div className="space-y-2 border-t border-border/30 pt-3">
+      <p className="text-[0.625rem] font-medium uppercase tracking-[0.1em] text-muted-foreground/60">
+        {floored ? `Cost more than ${total} points` : `Cost ${total} points`}
+      </p>
+
+      <ul className="space-y-2">
+        {deductions.map((d) => (
+          <li key={d.key} className="grid grid-cols-[2.25rem_minmax(0,1fr)] gap-x-3">
+            {/* The figure leads: it is the part that differs between rows, and
+                aligning the minus signs lets the column be read as a sum. */}
+            <span className="tabular-nums text-right text-[0.8125rem] font-semibold text-destructive">
+              &minus;{d.points}
+            </span>
+            <span className="min-w-0">
+              <span className="block text-[0.75rem] text-foreground/85">{d.label}</span>
+              <span className="block text-[0.6875rem] leading-relaxed text-muted-foreground">
+                {d.detail}
+                {d.capped && " · capped, the rate is past what the score can track"}
+              </span>
+            </span>
+          </li>
+        ))}
+      </ul>
+
+      <p className="text-[0.6875rem] leading-relaxed text-muted-foreground/80">
+        {bounced
+          ? "Inbox placement is scored separately. Bounced mail was never accepted, so it never had a folder to land in."
+          : "Inbox placement is scored separately and does not move this number."}
+      </p>
+    </div>
   );
 };
