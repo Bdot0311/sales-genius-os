@@ -35,7 +35,7 @@ export const BackgroundWorkBar = () => {
         </span>
       )}
       <Link
-        to="/dashboard/ai-agent"
+        to="/dashboard/agent/chat"
         className="underline underline-offset-2 text-muted-foreground hover:text-foreground"
       >
         Open the agent
