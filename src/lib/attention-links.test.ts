@@ -36,14 +36,19 @@ describe("needs attention opens the rows it counted", () => {
     expect(SAVED).toContain('"no-email"');
     expect(SAVED).toContain('"never-contacted"');
     expect(SAVED).toContain("useSearchParams");
-    expect(SAVED).toContain("urlFilter && !URL_FILTERS[urlFilter].match(lead)");
+    // The list is filtered by the database now, so this reads as a narrowing
+    // of the page rather than a rejection inside one big client-side filter.
+    expect(SAVED).toContain("URL_FILTERS[urlFilter].match(lead)");
   });
 
   it("says the list is filtered, and gives it back", () => {
     // A page silently showing a subset is one the reader will act on as if it
     // were their whole list.
     expect(SAVED).toContain("Show all");
-    expect(SAVED).toContain("out of {leads.length}");
+    // totalLeads, not leads.length: the count comes from the database's own
+    // total over the filtered set. leads.length was the size of whatever had
+    // been loaded into memory, which stopped at twenty thousand.
+    expect(SAVED).toContain("out of {totalLeads}");
   });
 });
 

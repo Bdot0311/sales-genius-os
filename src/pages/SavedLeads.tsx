@@ -9,12 +9,25 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { LeadAssignmentDialog } from "@/components/dashboard/LeadAssignmentDialog";
 import { LeadDetailSheet } from "@/components/dashboard/LeadDetailSheet";
-import { LeadIntelligenceBadge } from "@/components/dashboard/LeadIntelligenceBadge";
+import {
+  EMPTY_FILTERS,
+  activeFilterCount,
+  hasActiveFilters,
+  useLeadFacets,
+  useSavedLeads,
+  type SavedLeadFilters,
+} from "@/hooks/use-saved-leads";
+import {
+  EnrichmentGap,
+  FitBar,
+  IntentScore,
+  NextStep,
+  PriorityMark,
+  TierMark,
+} from "@/components/leads/LeadSignals";
 import { useLeadIntelligence } from "@/hooks/use-lead-intelligence";
-import { Search, Download, ArrowUpDown, Trash2, UserPlus, LayoutGrid, Table as TableIcon, CheckCircle, Sparkles, AlertCircle, Filter, Gauge, Brain } from "lucide-react";
-import { IntentScoreBadge } from "@/components/dashboard/IntentScoreBadge";
+import { Search, Download, ArrowUpDown, Trash2, UserPlus, LayoutGrid, Table as TableIcon, Sparkles, Filter, Gauge, Brain } from "lucide-react";
 import { LeadStageSelect, LEAD_STAGES } from "@/components/dashboard/LeadStageSelect";
-import { LeadTierBadge } from "@/components/dashboard/LeadTierBadge";
 import { Progress } from "@/components/ui/progress";
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -83,28 +96,9 @@ const URL_FILTERS = {
 
 type UrlFilterKey = keyof typeof URL_FILTERS;
 
-const getEnrichmentBadge = (lead: Lead) => {
-  const isEnriched = lead.enrichment_status === 'enriched' || lead.enrichment_status === 'success' || !!lead.enriched_at;
-  if (isEnriched) {
-    return (
-      <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs gap-1">
-        <CheckCircle className="w-3 h-3" />
-        Enriched
-      </Badge>
-    );
-  }
-  return (
-    <Badge variant="outline" className="text-xs gap-1 text-muted-foreground border-muted-foreground/30">
-      <AlertCircle className="w-3 h-3" />
-      Not Enriched
-    </Badge>
-  );
-};
 
 const SavedLeads = () => {
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(0);
   const [sortField, setSortField] = useState<SortField>("tier");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
@@ -118,13 +112,21 @@ const SavedLeads = () => {
   const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0, succeeded: 0, failed: 0, skipped: 0 });
   const [scoring, setScoring] = useState(false);
   const [scoreProgress, setScoreProgress] = useState({ current: 0, total: 0 });
-  const [filterIntentLabel, setFilterIntentLabel] = useState<string>("all");
-  const [filterIndustry, setFilterIndustry] = useState<string>("all");
-  const [filterCompanySize, setFilterCompanySize] = useState<string>("all");
-  const [filterSeniority, setFilterSeniority] = useState<string>("all");
-  const [filterStage, setFilterStage] = useState<string>("all");
-  const [filterPriority, setFilterPriority] = useState<string>("all");
-  const [filterNextStep, setFilterNextStep] = useState<string>("all");
+  /*
+   * One object, because it is one query now.
+   *
+   * Seven separate useStates were seven separate reasons to refetch, and the
+   * filtering happened in the browser over whatever had loaded. The database
+   * does it, so the filters travel together.
+   */
+  const [filters, setFilters] = useState<SavedLeadFilters>(EMPTY_FILTERS);
+  const setFilter = (key: keyof SavedLeadFilters, value: string) => {
+    setFilters((f) => ({ ...f, [key]: value }));
+    // Any change to what is being asked for starts at the beginning. Staying
+    // on page 4 of a narrower result set shows an empty page that reads as
+    // "no matches".
+    setPage(0);
+  };
   const [searchParams, setSearchParams] = useSearchParams();
   const showParam = searchParams.get("show");
   const urlFilter: UrlFilterKey | null =
@@ -133,7 +135,27 @@ const SavedLeads = () => {
 
   // Lead Intelligence: saved evaluations for the leads on screen, plus the
   // on-demand evaluate action. Off entirely when the feature flag is off.
-  const leadIds = useMemo(() => leads.map((l) => l.id), [leads]);
+  const PAGE_SIZE = 50;
+  /*
+   * The list, filtered and sorted by the database.
+   *
+   * This replaces a loop that pulled leads a thousand at a time with
+   * select("*") — every column, research briefs and notes included — up to
+   * twenty thousand rows into memory, then filtered them in a useMemo. Lead
+   * 20,001 did not exist and nothing said so.
+   */
+  const {
+    rows: pageLeads,
+    total: totalLeads,
+    loading,
+    error: loadError,
+    refresh: refreshLeads,
+    patchRow,
+    fetchAllMatching,
+  } = useSavedLeads<Lead>(filters, { field: sortField, desc: sortOrder === "desc" }, page, PAGE_SIZE);
+  const { facets } = useLeadFacets();
+
+  const leadIds = useMemo(() => pageLeads.map((l) => l.id), [pageLeads]);
   const {
     decisions,
     enabled: intelligenceEnabled,
@@ -143,42 +165,7 @@ const SavedLeads = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const fetchLeads = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      // Page through everything: a single request is capped, which used to hide
-      // older leads once a big import pushed the list past 1000 rows.
-      const pageSize = 1000;
-      let all: any[] = [];
-      for (let page = 0; ; page++) {
-        const { data, error } = await supabase
-          .from("leads")
-          .select("*")
-          .eq("user_id", session.user.id)
-          .order("created_at", { ascending: false })
-          .range(page * pageSize, page * pageSize + pageSize - 1);
-
-        if (error) throw error;
-        all = all.concat(data || []);
-        if (!data || data.length < pageSize || page >= 19) break;
-      }
-      setLeads(all);
-
-    } catch (error: any) {
-      toast({
-        title: "Error loading leads",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchLeads();
 
     // Labels advance automatically when outreach happens (sent / replied), so
     // keep the list in sync live instead of waiting for a manual refresh.
@@ -195,13 +182,9 @@ const SavedLeads = () => {
           (payload: any) => {
             const n = payload.new || {};
             if (!n.id) return;
-            setLeads((prev) =>
-              prev.map((l) =>
-                l.id === n.id && (l.pipeline_stage || "new") !== (n.pipeline_stage || "new")
-                  ? { ...l, pipeline_stage: n.pipeline_stage }
-                  : l
-              )
-            );
+            // Patch in place: the row is on screen, and refetching the page
+            // to learn one field would scroll the list under the user.
+            patchRow(String(n.id), { pipeline_stage: n.pipeline_stage } as Partial<Lead>);
           }
         )
         .subscribe();
@@ -229,71 +212,61 @@ const SavedLeads = () => {
     }
   };
 
-  const uniqueIndustries = Array.from(new Set(leads.map((l) => l.industry).filter(Boolean))) as string[];
-  const uniqueSeniorities = Array.from(new Set(leads.map((l) => l.seniority).filter(Boolean))) as string[];
-  const uniqueCompanySizes = Array.from(
-    new Set(leads.map((l) => l.company_size).filter(Boolean))
-  ) as string[];
+  /*
+   * The dropdown options, asked of the whole account.
+   *
+   * These were built from the rows in memory, so the Industries list changed
+   * depending on which page you happened to be on: a control quietly lying
+   * about its own options.
+   */
+  const uniqueIndustries = facets.industries;
+  const uniqueSeniorities = facets.seniorities;
+  const uniqueCompanySizes = facets.company_sizes;
 
-  const filteredAndSortedLeads = leads
-    .filter((lead) => {
-      const q = searchQuery.toLowerCase();
-      const matchesSearch =
-        lead.company_name.toLowerCase().includes(q) ||
-        lead.contact_name.toLowerCase().includes(q) ||
-        (lead.contact_email?.toLowerCase().includes(q) ?? false);
-      if (!matchesSearch) return false;
-      if (filterIntentLabel !== "all" && lead.intent_label !== filterIntentLabel) return false;
-      if (filterIndustry !== "all" && lead.industry !== filterIndustry) return false;
-      if (filterCompanySize !== "all" && lead.company_size !== filterCompanySize) return false;
-      if (filterSeniority !== "all" && lead.seniority !== filterSeniority) return false;
-      if (filterStage !== "all" && (lead.pipeline_stage || "new") !== filterStage) return false;
-      if (filterPriority !== "all" && decisions[lead.id]?.fields.email_priority?.value !== filterPriority) return false;
-      if (filterNextStep !== "all" && decisions[lead.id]?.fields.send_recommendation?.value !== filterNextStep) return false;
-      if (urlFilter && !URL_FILTERS[urlFilter].match(lead)) return false;
-      return true;
-    })
-    .sort((a, b) => {
-      let comparison = 0;
-      switch (sortField) {
-        case "tier": {
-          // Sort by tier (A > B > C > unscored), then by intent recency, then intent score.
-          const rank: Record<string, number> = { A: 3, B: 2, C: 1 };
-          comparison = (rank[a.tier || ""] || 0) - (rank[b.tier || ""] || 0);
-          if (comparison === 0) {
-            const da = a.signal_date ? new Date(a.signal_date).getTime() : 0;
-            const db = b.signal_date ? new Date(b.signal_date).getTime() : 0;
-            comparison = da - db;
-            if (comparison === 0) comparison = (a.intent_score || 0) - (b.intent_score || 0);
-          }
-          break;
-        }
-        case "created_at":
-          comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-          break;
-        case "icp_score":
-          comparison = (a.icp_score || 0) - (b.icp_score || 0);
-          break;
-        case "intent_score":
-          comparison = (a.intent_score || 0) - (b.intent_score || 0);
-          break;
-        case "company_name":
-          comparison = a.company_name.localeCompare(b.company_name);
-          break;
-        case "company_size": {
-          const sizeOrder: Record<string, number> = {
-            "1-10": 1, "11-50": 2, "51-200": 3, "201-500": 4, "501-1000": 5, "1000+": 6,
-          };
-          comparison = (sizeOrder[a.company_size || ""] || 0) - (sizeOrder[b.company_size || ""] || 0);
-          break;
-        }
-      }
-      return sortOrder === "asc" ? comparison : -comparison;
-    });
+  /*
+   * The rows on this page, already filtered and sorted by the database.
+   *
+   * What stood here was a .filter() and .sort() over everything in memory.
+   * It could only ever narrow what had loaded, so "Hot" meant "hot among the
+   * rows that happened to be here" and the result read as the whole account.
+   *
+   * URL_FILTERS stays client-side deliberately: it narrows the current page
+   * for a link from the overview ("leads with no email"), and those are small
+   * sets by nature. If one grows, it belongs in the function.
+   */
+  const filteredAndSortedLeads = urlFilter
+    ? pageLeads.filter((lead) => URL_FILTERS[urlFilter].match(lead))
+    : pageLeads;
 
   const unscoredLeadIds = filteredAndSortedLeads.filter((l) => !l.tier).map((l) => l.id);
 
-  const handleExport = (leadsToExport = filteredAndSortedLeads) => {
+  const [exporting, setExporting] = useState(false);
+
+  /*
+   * Export everything the filters match, not the page you can see.
+   *
+   * This took the array in memory, which was the whole list back when the
+   * whole list was in memory. Paged server-side, the same code would export
+   * fifty rows and call it "Export All" — the silent truncation this change
+   * exists to remove, in the one place a user would carry it into a
+   * spreadsheet and never know.
+   */
+  const handleExportAll = async () => {
+    setExporting(true);
+    try {
+      handleExport(await fetchAllMatching());
+    } catch (e: any) {
+      toast({
+        title: "Export failed",
+        description: e?.message ?? "Could not read the full list.",
+        variant: "destructive",
+      });
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleExport = (leadsToExport: Lead[]) => {
     const csv = [
       // Phone Type is the column that makes the phone column actionable: it is
       // how you filter an export down to the numbers you can message.
@@ -316,6 +289,15 @@ const SavedLeads = () => {
     });
   };
 
+  /*
+   * Select all means this page.
+   *
+   * With the list paged, "all" could mean the fifty on screen or the ten
+   * thousand behind them, and the two are very different when the next click
+   * is Delete. It selects what is visible, and the label beside it says so,
+   * because a checkbox that silently means ten thousand rows is a footgun
+   * rather than a convenience.
+   */
   const toggleSelectAll = () => {
     if (selectedLeads.size === filteredAndSortedLeads.length) {
       setSelectedLeads(new Set());
@@ -354,7 +336,7 @@ const SavedLeads = () => {
       
       setSelectedLeads(new Set());
       setShowDeleteDialog(false);
-      fetchLeads();
+      void refreshLeads();
     } catch (error: any) {
       toast({
         title: "Error deleting leads",
@@ -404,7 +386,7 @@ const SavedLeads = () => {
       }
 
       // Refresh leads and enrichment history
-      await fetchLeads();
+      await refreshLeads();
       await fetchEnrichmentHistory(selectedLead.id);
 
       // Update the selected lead in state with fresh data
@@ -456,7 +438,7 @@ const SavedLeads = () => {
     }
     
     setBulkProgress({ current: leadIds.length, total: leadIds.length, succeeded, failed, skipped });
-    await fetchLeads();
+    await refreshLeads();
     
     const parts: string[] = [];
     if (succeeded) parts.push(`${succeeded} enriched`);
@@ -518,7 +500,7 @@ const SavedLeads = () => {
         failed++;
       }
     }
-    await fetchLeads();
+    await refreshLeads();
     setScoring(false);
     setSelectedLeads(new Set());
     if (ok === 0 && failed > 0) {
@@ -537,16 +519,16 @@ const SavedLeads = () => {
   };
 
   const handleStageChange = async (leadId: string, stage: string) => {
-    const previous = leads.find((l) => l.id === leadId)?.pipeline_stage || "new";
+    const previous = pageLeads.find((l) => l.id === leadId)?.pipeline_stage || "new";
     setUpdatingStage(leadId);
-    setLeads((prev) => prev.map((l) => (l.id === leadId ? { ...l, pipeline_stage: stage } : l)));
+    patchRow(leadId, { pipeline_stage: stage } as Partial<Lead>);
     const { error } = await supabase
       .from("leads")
       .update({ pipeline_stage: stage } as any)
       .eq("id", leadId);
     setUpdatingStage(null);
     if (error) {
-      setLeads((prev) => prev.map((l) => (l.id === leadId ? { ...l, pipeline_stage: previous } : l)));
+      patchRow(leadId, { pipeline_stage: previous } as Partial<Lead>);
       toast({ title: "Could not update label", description: error.message, variant: "destructive" });
       return;
     }
@@ -556,15 +538,6 @@ const SavedLeads = () => {
     });
   };
 
-  const getScoreBadge = (score?: number | null) => {
-    if (!score) return null;
-    let color = "bg-muted text-muted-foreground";
-    if (score >= 80) color = "bg-green-500/20 text-green-400";
-    else if (score >= 60) color = "bg-yellow-500/20 text-yellow-400";
-    else if (score >= 40) color = "bg-orange-500/20 text-orange-400";
-    else color = "bg-red-500/20 text-red-400";
-    return <Badge className={`${color} text-xs`}>{score}% ICP</Badge>;
-  };
 
   return (
     <DashboardLayout>
@@ -585,7 +558,7 @@ const SavedLeads = () => {
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/50 bg-muted/20 px-4 py-2.5">
             <p className="text-[0.6875rem] text-muted-foreground">
               Showing <span className="text-foreground">{filteredAndSortedLeads.length}</span>{" "}
-              {URL_FILTERS[urlFilter].label} out of {leads.length}.
+              {URL_FILTERS[urlFilter].label} out of {totalLeads}.
             </p>
             <Button
               variant="ghost"
@@ -604,18 +577,44 @@ const SavedLeads = () => {
         <Panel>
           <PanelHeader>
             <PanelTitle>
-              {urlFilter ? "Matching leads" : "All Leads"} ({filteredAndSortedLeads.length})
+              {/* The real total, not the length of the page. This said 50 on
+                  an account of ten thousand. */}
+              {urlFilter || hasActiveFilters(filters) ? "Matching leads" : "All leads"} ({totalLeads})
             </PanelTitle>
             <PanelDescription>All leads are pre-enriched with company and contact data</PanelDescription>
           </PanelHeader>
           <PanelBody className="space-y-4">
-            <div className="flex gap-2 flex-wrap">
+            {/* The controls sit above the data and were the same visual weight
+                as it, so seven dropdowns competed with the rows for attention
+                every time the page was read. They stay visible, because hiding
+                them behind a Filters button is worse, but they stop shouting.
+                What is actually applied is the thing worth seeing. */}
+            {(hasActiveFilters(filters) || urlFilter) && (
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-muted-foreground">
+                  {activeFilterCount(filters) + (urlFilter ? 1 : 0)} filter
+                  {activeFilterCount(filters) + (urlFilter ? 1 : 0) === 1 ? "" : "s"} applied
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilters(EMPTY_FILTERS);
+                    setPage(0);
+                    if (urlFilter) setSearchParams({});
+                  }}
+                  className="text-primary underline-offset-2 hover:underline"
+                >
+                  Clear
+                </button>
+              </div>
+            )}
+            <div className="flex gap-2 flex-wrap [&_button[role=combobox]]:h-8 [&_button[role=combobox]]:text-xs [&_button[role=combobox]]:text-muted-foreground">
               <div className="relative flex-1 min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   placeholder="Search leads..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  value={filters.search}
+                  onChange={(e) => setFilter("search", e.target.value)}
                   className="pl-10"
                 />
               </div>
@@ -634,7 +633,7 @@ const SavedLeads = () => {
                 </SelectContent>
               </Select>
 
-              <Select value={filterIntentLabel} onValueChange={setFilterIntentLabel}>
+              <Select value={filters.intentLabel} onValueChange={(v) => setFilter("intentLabel", v)}>
                 <SelectTrigger className="w-[140px]">
                   <Filter className="w-3 h-3 mr-1 text-muted-foreground" />
                   <SelectValue placeholder="Intent" />
@@ -648,7 +647,7 @@ const SavedLeads = () => {
                 </SelectContent>
               </Select>
 
-              <Select value={filterStage} onValueChange={setFilterStage}>
+              <Select value={filters.stage} onValueChange={(v) => setFilter("stage", v)}>
                 <SelectTrigger className="w-[160px]">
                   <Filter className="w-3 h-3 mr-1 text-muted-foreground" />
                   <SelectValue placeholder="Label" />
@@ -663,7 +662,7 @@ const SavedLeads = () => {
 
               {intelligenceEnabled && (
                 <>
-                  <Select value={filterPriority} onValueChange={setFilterPriority}>
+                  <Select value={filters.priority} onValueChange={(v) => setFilter("priority", v)}>
                     <SelectTrigger className="w-[160px]">
                       <Filter className="w-3 h-3 mr-1 text-muted-foreground" />
                       <SelectValue placeholder="AI priority" />
@@ -676,7 +675,7 @@ const SavedLeads = () => {
                     </SelectContent>
                   </Select>
 
-                  <Select value={filterNextStep} onValueChange={setFilterNextStep}>
+                  <Select value={filters.nextStep} onValueChange={(v) => setFilter("nextStep", v)}>
                     <SelectTrigger className="w-[170px]">
                       <Filter className="w-3 h-3 mr-1 text-muted-foreground" />
                       <SelectValue placeholder="Next step" />
@@ -692,7 +691,7 @@ const SavedLeads = () => {
               )}
 
               {uniqueIndustries.length > 0 && (
-                <Select value={filterIndustry} onValueChange={setFilterIndustry}>
+                <Select value={filters.industry} onValueChange={(v) => setFilter("industry", v)}>
                   <SelectTrigger className="w-[150px]">
                     <SelectValue placeholder="Industry" />
                   </SelectTrigger>
@@ -706,7 +705,7 @@ const SavedLeads = () => {
               )}
 
               {uniqueCompanySizes.length > 0 && (
-                <Select value={filterCompanySize} onValueChange={setFilterCompanySize}>
+                <Select value={filters.companySize} onValueChange={(v) => setFilter("companySize", v)}>
                   <SelectTrigger className="w-[140px]">
                     <SelectValue placeholder="Size" />
                   </SelectTrigger>
@@ -720,7 +719,7 @@ const SavedLeads = () => {
               )}
 
               {uniqueSeniorities.length > 0 && (
-                <Select value={filterSeniority} onValueChange={setFilterSeniority}>
+                <Select value={filters.seniority} onValueChange={(v) => setFilter("seniority", v)}>
                   <SelectTrigger className="w-[140px]">
                     <SelectValue placeholder="Seniority" />
                   </SelectTrigger>
@@ -800,9 +799,11 @@ const SavedLeads = () => {
               )}
 
               {selectedLeads.size === 0 && (
-                <Button variant="outline" onClick={() => handleExport()}>
+                <Button variant="outline" onClick={() => void handleExportAll()} disabled={exporting}>
                   <Download className="w-4 h-4 mr-2" />
-                  Export All
+                  {/* It says All and it means all: the export pages the query
+                      rather than writing out the rows on screen. */}
+                  {exporting ? "Exporting…" : hasActiveFilters(filters) ? `Export ${totalLeads}` : "Export All"}
                 </Button>
               )}
 
@@ -849,23 +850,66 @@ const SavedLeads = () => {
               </div>
             )}
 
-            {loading ? (
-              <div className="text-center py-12 text-muted-foreground">
-                Loading leads...
+            {loadError ? (
+              /* An error that says what happened and offers the one action
+                 that helps. "Loading leads..." forever was the old answer. */
+              <div className="py-12 text-center">
+                <p className="mb-1 text-sm text-foreground">Could not load your leads.</p>
+                <p className="mb-4 font-mono text-xs text-muted-foreground">{loadError}</p>
+                <Button variant="outline" size="sm" onClick={() => void refreshLeads()}>
+                  Try again
+                </Button>
+              </div>
+            ) : loading ? (
+              /* Skeleton rows at the real row height, so the page does not
+                 jump when they are replaced. A spinner in the middle of
+                 content tells you nothing about what is arriving. */
+              <div className="space-y-px" aria-busy="true" aria-label="Loading leads">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-3 border-t border-border/40 px-3 py-2">
+                    <div className="h-3.5 w-3.5 shrink-0 rounded-sm bg-foreground/[0.06]" />
+                    <div className="h-3 w-4 shrink-0 rounded bg-foreground/[0.06]" />
+                    <div className="min-w-0 flex-1 space-y-1.5">
+                      <div className="h-3 w-40 rounded bg-foreground/[0.06]" />
+                      <div className="h-2.5 w-56 rounded bg-foreground/[0.04]" />
+                    </div>
+                    <div className="h-1 w-12 shrink-0 rounded-full bg-foreground/[0.06]" />
+                    <div className="h-3 w-8 shrink-0 rounded bg-foreground/[0.06]" />
+                  </div>
+                ))}
               </div>
             ) : filteredAndSortedLeads.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground mb-4">
-                  {searchQuery 
-                    ? "No leads found matching your search" 
-                    : "No saved leads yet. Search for leads and enrich them to add to your list!"}
-                </p>
-                {!searchQuery && (
-                  <Button onClick={() => navigate('/dashboard/leads')}>
-                    Find New Leads
+              /* Two different nothings.
+                 "No leads" and "none match these filters" looked identical,
+                 which turned a filter mistake into "the product lost my
+                 leads". The second one offers the way back. */
+              hasActiveFilters(filters) || urlFilter ? (
+                <div className="py-12 text-center">
+                  <p className="mb-1 text-sm text-foreground">No leads match these filters.</p>
+                  <p className="mb-4 text-xs text-muted-foreground">
+                    You have {facets.total} saved {facets.total === 1 ? "lead" : "leads"}.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setFilters(EMPTY_FILTERS);
+                      setPage(0);
+                      if (urlFilter) setSearchParams({});
+                    }}
+                  >
+                    Clear filters
                   </Button>
-                )}
-              </div>
+                </div>
+              ) : (
+                <div className="py-12 text-center">
+                  <p className="mb-1 text-sm text-foreground">No saved leads yet.</p>
+                  <p className="mb-4 text-xs text-muted-foreground">
+                    Leads you find and save land here, enriched and scored.
+                  </p>
+                  <Button onClick={() => navigate("/dashboard/leads")}>Find leads</Button>
+                </div>
+              )
             ) : viewMode === "table" ? (
               <div className="border rounded-lg overflow-x-auto">
                 <table className="w-full min-w-[900px]">
@@ -877,17 +921,27 @@ const SavedLeads = () => {
                           onCheckedChange={toggleSelectAll}
                         />
                       </th>
-                      <th className="p-3 text-left text-sm font-medium">Tier</th>
-                      <th className="p-3 text-left text-sm font-medium">Contact</th>
-                      <th className="p-3 text-left text-sm font-medium">Company</th>
-                      <th className="p-3 text-left text-sm font-medium">Industry</th>
-                      <th className="p-3 text-left text-sm font-medium">Label</th>
-                      <th className="p-3 text-left text-sm font-medium">Status</th>
-                      <th className="p-3 text-left text-sm font-medium">ICP Score</th>
-                      <th className="p-3 text-left text-sm font-medium">Intent</th>
-                      {intelligenceEnabled && <th className="p-3 text-left text-sm font-medium">AI</th>}
-                      <th className="p-3 text-left text-sm font-medium">Source</th>
-                      <th className="p-3 text-left text-sm font-medium">Added</th>
+                      {/* Headers are quieter than the data under them. They are
+                          read once; the rows are read every time. */}
+                      <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Tier</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Contact</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Company</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Industry</th>
+                      {/* "Label" said nothing about what it held. It is the
+                          pipeline stage, so it says so. */}
+                      <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Stage</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Fit</th>
+                      {/* Numbers align right so a column of them compares
+                          vertically without being read one at a time. */}
+                      <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground">Intent</th>
+                      {intelligenceEnabled && (
+                        <>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Priority</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Next step</th>
+                        </>
+                      )}
+                      <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Source</th>
+                      <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground">Added</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -903,14 +957,16 @@ const SavedLeads = () => {
                             onCheckedChange={() => toggleSelectLead(lead.id)}
                           />
                         </td>
-                        <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                        {/* Tier: a grade, so a letterform. It leads the row
+                            like a rank rather than sitting in a chip. */}
+                        <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
                           {lead.tier ? (
-                            <LeadTierBadge lead={lead} />
+                            <TierMark tier={lead.tier} />
                           ) : (
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                              className="h-6 px-1.5 text-xs text-muted-foreground hover:text-foreground"
                               onClick={() => handleScoreLeads([lead.id])}
                               disabled={scoring}
                             >
@@ -919,50 +975,79 @@ const SavedLeads = () => {
                             </Button>
                           )}
                         </td>
-                        <td className="p-3">
-                          <div>
-                            <p className="font-medium">{lead.contact_name}</p>
-                            <p className="text-xs text-muted-foreground">{lead.contact_email}</p>
-                            {lead.job_title && <p className="text-xs text-muted-foreground">{lead.job_title}</p>}
+                        {/* Identity is the anchor: strongest weight on the
+                            page, because everything else is an attribute of
+                            this person. Enrichment appears only when it is
+                            missing, which is the only time it says anything. */}
+                        <td className="px-3 py-2">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium text-foreground">{lead.contact_name}</p>
+                            <p className="truncate text-xs text-muted-foreground">
+                              {lead.contact_email || <span className="text-muted-foreground/40">no email</span>}
+                            </p>
+                            <div className="flex items-center gap-1.5">
+                              {lead.job_title && (
+                                <span className="truncate text-xs text-muted-foreground/70">{lead.job_title}</span>
+                              )}
+                              <EnrichmentGap status={lead.enrichment_status} />
+                            </div>
                           </div>
                         </td>
-                        <td className="p-3">
-                          <div>
-                            <p className="font-medium">{lead.company_name}</p>
-                            {lead.company_size && <p className="text-xs text-muted-foreground">{lead.company_size} employees</p>}
+                        <td className="px-3 py-2">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm text-foreground/90">{lead.company_name}</p>
+                            {lead.company_size && (
+                              <p className="truncate text-xs text-muted-foreground/70">{lead.company_size}</p>
+                            )}
                           </div>
                         </td>
-                        <td className="p-3">
-                          {lead.industry && <Badge variant="outline">{lead.industry}</Badge>}
+                        {/* Industry is a category, not a status. A badge told
+                            the eye it was one more thing to decode. */}
+                        <td className="px-3 py-2">
+                          <span className="line-clamp-1 text-xs text-muted-foreground" title={lead.industry ?? undefined}>
+                            {lead.industry || <span className="text-muted-foreground/30">&ndash;</span>}
+                          </span>
                         </td>
-                        <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                        <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
                           <LeadStageSelect
                             value={lead.pipeline_stage}
                             onChange={(stage) => handleStageChange(lead.id, stage)}
                             disabled={updatingStage === lead.id}
                           />
                         </td>
-                        <td className="p-3">
-                          {getEnrichmentBadge(lead)}
+                        {/* Fit: a proportion, so a bar. Aligned in a column it
+                            answers "how does this one compare" without reading
+                            a single number. */}
+                        <td className="px-3 py-2">
+                          <FitBar score={lead.icp_score} />
                         </td>
-                        <td className="p-3">
-                          {getScoreBadge(lead.icp_score)}
-                        </td>
-                        <td className="p-3" onClick={(e) => e.stopPropagation()}>
-                          <IntentScoreBadge lead={lead} />
+                        {/* Intent: a score, so figures, right-aligned and
+                            tabular. The heat word only above the threshold,
+                            where it earns its space. */}
+                        <td className="px-3 py-2 text-right">
+                          <IntentScore score={lead.intent_score} label={lead.intent_label} />
                         </td>
                         {intelligenceEnabled && (
-                          <td className="p-3" onClick={(e) => e.stopPropagation()}>
-                            <LeadIntelligenceBadge decision={decisions[lead.id]} />
-                          </td>
+                          <>
+                            {/* Priority: an ordinal, so a level. Height reads
+                                faster than a word and does not widen the row by
+                                the length of the longest label. */}
+                            <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
+                              <PriorityMark priority={decisions[lead.id]?.fields.email_priority?.value} />
+                            </td>
+                            {/* Next step: a recommendation, so a sentence.
+                                It was filterable but never shown. */}
+                            <td className="px-3 py-2 max-w-[10rem]">
+                              <NextStep step={decisions[lead.id]?.fields.send_recommendation?.value} />
+                            </td>
+                          </>
                         )}
-                        <td className="p-3">
-                          <div className="flex items-center gap-1">
-                            <CheckCircle className="w-3 h-3 text-green-500" />
-                            <span className="text-sm text-muted-foreground">{lead.source || 'Manual'}</span>
-                          </div>
+                        {/* The green tick appeared on every row, so it marked
+                            nothing. The source is the information. */}
+                        <td className="px-3 py-2">
+                          <span className="text-xs text-muted-foreground">{lead.source || "Manual"}</span>
                         </td>
-                        <td className="p-3 text-sm text-muted-foreground">
+                        <td className="px-3 py-2 text-right font-mono text-xs tabular-nums text-muted-foreground/70">
                           {new Date(lead.created_at).toLocaleDateString()}
                         </td>
                       </tr>
@@ -978,7 +1063,13 @@ const SavedLeads = () => {
                     onCheckedChange={toggleSelectAll}
                   />
                   <span className="text-sm text-muted-foreground">
-                    {selectedLeads.size > 0 ? `${selectedLeads.size} selected` : "Select all"}
+                    {/* Names the number, because "all" is ambiguous once the
+                        list is paged and the next click might be Delete. */}
+                    {selectedLeads.size > 0
+                      ? `${selectedLeads.size} selected`
+                      : totalLeads > filteredAndSortedLeads.length
+                        ? `Select these ${filteredAndSortedLeads.length}`
+                        : "Select all"}
                   </span>
                 </div>
                 
@@ -999,14 +1090,17 @@ const SavedLeads = () => {
                         <div className="space-y-1 flex-1">
                           <div className="flex items-center gap-3 flex-wrap">
                             <h3 className="font-semibold text-lg">{lead.contact_name}</h3>
+                            {/* Same five encodings as the table. The card view
+                                had its own badge vocabulary, so switching
+                                between the two meant relearning the page. */}
                             <span onClick={(e) => e.stopPropagation()}>
                               {lead.tier ? (
-                                <LeadTierBadge lead={lead} />
+                                <TierMark tier={lead.tier} />
                               ) : (
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                                  className="h-6 px-1.5 text-xs text-muted-foreground hover:text-foreground"
                                   onClick={() => handleScoreLeads([lead.id])}
                                   disabled={scoring}
                                 >
@@ -1015,11 +1109,16 @@ const SavedLeads = () => {
                                 </Button>
                               )}
                             </span>
-                            {getScoreBadge(lead.icp_score)}
+                            <FitBar score={lead.icp_score} />
                             <span onClick={(e) => e.stopPropagation()}>
-                              <IntentScoreBadge lead={lead} />
+                              <IntentScore score={lead.intent_score} label={lead.intent_label} />
                             </span>
-                            {getEnrichmentBadge(lead)}
+                            {intelligenceEnabled && (
+                              <span onClick={(e) => e.stopPropagation()}>
+                                <PriorityMark priority={decisions[lead.id]?.fields.email_priority?.value} />
+                              </span>
+                            )}
+                            <EnrichmentGap status={lead.enrichment_status} />
                             <span onClick={(e) => e.stopPropagation()}>
                               <LeadStageSelect
                                 value={lead.pipeline_stage}
@@ -1065,6 +1164,40 @@ const SavedLeads = () => {
                     </PanelBody>
                   </Panel>
                 ))}
+              </div>
+            )}
+
+            {/* Paging, because there are now more rows than a page.
+                The list used to hold everything it had loaded, so there was
+                nothing to page: it just stopped at twenty thousand and said
+                nothing. The range and the total are both spelled out, so the
+                end of the list is a fact rather than something you infer from
+                a button going grey. */}
+            {!loading && !loadError && totalLeads > PAGE_SIZE && (
+              <div className="flex items-center justify-between gap-3 border-t border-border/50 px-1 pt-3 text-xs text-muted-foreground">
+                <span className="font-mono tabular-nums">
+                  {page * PAGE_SIZE + 1}&ndash;{Math.min((page + 1) * PAGE_SIZE, totalLeads)} of {totalLeads}
+                </span>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2"
+                    disabled={page === 0}
+                    onClick={() => setPage((n) => Math.max(0, n - 1))}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2"
+                    disabled={(page + 1) * PAGE_SIZE >= totalLeads}
+                    onClick={() => setPage((n) => n + 1)}
+                  >
+                    Next
+                  </Button>
+                </div>
               </div>
             )}
           </PanelBody>
@@ -1115,7 +1248,7 @@ const SavedLeads = () => {
             throw error;
           }
           toast({ title: "Lead updated", description: "Your changes have been saved." });
-          await fetchLeads();
+          await refreshLeads();
           const { data: updatedLead } = await supabase.from("leads").select("*").eq("id", leadId).single();
           if (updatedLead) setSelectedLead(updatedLead as Lead);
         }}
