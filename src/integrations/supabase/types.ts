@@ -6713,6 +6713,54 @@ export type Database = {
       }
       release_stale_agent_job_items: { Args: never; Returns: number }
       reset_daily_email_counters: { Args: never; Returns: undefined }
+      saved_lead_facets: { Args: never; Returns: Json }
+      search_saved_leads: {
+        Args: {
+          p_company_size?: string
+          p_desc?: boolean
+          p_industry?: string
+          p_intent_label?: string
+          p_limit?: number
+          p_next_step?: string
+          p_offset?: number
+          p_priority?: string
+          p_search?: string
+          p_seniority?: string
+          p_sort?: string
+          p_stage?: string
+        }
+        Returns: {
+          company_name: string
+          company_size: string
+          company_website: string
+          contact_email: string
+          contact_name: string
+          contact_phone: string
+          contact_phone_type: string
+          created_at: string
+          department: string
+          enriched_at: string
+          enrichment_status: string
+          fit_score: number
+          icp_score: number
+          id: string
+          industry: string
+          intent_label: string
+          intent_score: number
+          job_title: string
+          last_contacted_at: string
+          linkedin_url: string
+          pipeline_stage: string
+          recommended_angle: string
+          seniority: string
+          signal_date: string
+          source: string
+          tier: string
+          total_count: number
+          updated_at: string
+          user_id: string
+        }[]
+      }
       seed_objection_entries: {
         Args: { p_user_id: string }
         Returns: undefined
