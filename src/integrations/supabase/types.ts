@@ -6726,6 +6726,7 @@ export type Database = {
           p_priority?: string
           p_search?: string
           p_seniority?: string
+          p_show?: string
           p_sort?: string
           p_stage?: string
         }

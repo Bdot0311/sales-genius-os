@@ -92,6 +92,26 @@ export const ROADMAP: RoadmapItem[] = [
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-09-26-saved-leads-filters",
+    date: "2026-09-26",
+    title: "Dashboard lead counts open the right leads",
+    summary: "Clicking \"no email\" or \"never contacted\" on the dashboard now shows every matching lead.",
+    items: [
+      {
+        tag: "fixed",
+        title: "Every matching lead, not just the first page",
+        description:
+          "The Saved Leads view opened from the dashboard now lists, counts and exports all of those leads across your whole account.",
+      },
+      {
+        tag: "fixed",
+        title: "Deleting a full page keeps you in your list",
+        description:
+          "Deleting every lead on a later page now takes you back to the last page that still has leads.",
+      },
+    ],
+  },
+  {
     id: "2026-09-25-stay-signed-in",
     date: "2026-09-25",
     title: "You stay signed in",
