@@ -101,6 +101,12 @@ export interface CacheClient {
  * high-volume call).
  */
 function providerName(): string | null {
+  if (railwayVerifyUrl()) return "railway";
+  return directProviderName();
+}
+
+/** A vendor this function talks to itself, with no waterfall behind it. */
+function directProviderName(): string | null {
   const explicitKey = Deno.env.get("EMAIL_VERIFIER_API_KEY");
   if (explicitKey) {
     return (Deno.env.get("EMAIL_VERIFIER_PROVIDER") || "reoon").toLowerCase();
@@ -109,9 +115,47 @@ function providerName(): string | null {
   return null;
 }
 
-/** The key for whichever provider providerName() resolved to. */
+/** The key for whichever provider providerName() resolved to. Railway needs
+ *  none: the vendor keys live in that service, which is the point of it. */
 function providerKey(): string | null {
   return Deno.env.get("EMAIL_VERIFIER_API_KEY") || Deno.env.get("COLDIQ_API_KEY") || null;
+}
+
+/**
+ * Railway's /verify, which runs the salesos waterfall: ColdIQ, then Fiber,
+ * ContactOut and Findymail, each asked only when the one before it could not
+ * answer.
+ *
+ * It outranks a direct vendor key deliberately. This module used to go to
+ * ColdIQ itself, which meant pausing ColdIQ turned mailbox verification off
+ * entirely — every address degraded to the free DNS gate, which proves a
+ * domain accepts mail and never proves a mailbox exists. Three other verifiers
+ * were configured and answering in that service the whole time; nothing here
+ * asked them. Preferring the waterfall is what stops one vendor's billing
+ * decision from silently disarming the check.
+ *
+ * A direct key stays useful as the layer beneath: it answers when Railway
+ * itself cannot be reached, which the waterfall cannot do for itself.
+ */
+function railwayVerifyUrl(): string | null {
+  const base = Deno.env.get("RAILWAY_LEADS_API_URL");
+  if (!base) return null;
+  // The same base URL is configured for search in some deployments with a
+  // path already on it, so strip a trailing verb before appending ours.
+  return base.replace(/\/+$/, "").replace(/\/(search|docs|health|verify|enrich)$/, "") + "/verify";
+}
+
+function railwayHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  };
+  const key = Deno.env.get("RAILWAY_API_KEY");
+  if (key) {
+    headers["Authorization"] = `Bearer ${key}`;
+    headers["X-API-Key"] = key;
+  }
+  return headers;
 }
 
 /** True when a paid mailbox check is available. Callers use this to tell
@@ -277,11 +321,16 @@ function interpret(provider: string, body: unknown): VerificationResult {
   const raw = String(obj.status ?? obj.result ?? obj.state ?? obj.email_status ?? "")
     .toLowerCase().replace(/[\s-]+/g, "_");
 
-  const isSafe = obj.is_safe_to_send === true || obj.safe_to_send === true;
+  const isSafe = obj.is_safe_to_send === true || obj.safe_to_send === true
+    || obj.sendable === true;
   const isCatchAll = obj.is_catch_all === true || obj.catch_all === true;
-  const isRole = obj.is_role_account === true || obj.role === true;
+  // `role_based` and `disposable` are the waterfall's spellings; Fiber reports
+  // both and ContactOut reports disposable, and neither name appears in the
+  // direct vendors' vocabularies.
+  const isRole = obj.is_role_account === true || obj.role === true
+    || obj.role_based === true;
 
-  if (obj.is_disposable === true) {
+  if (obj.is_disposable === true || obj.disposable === true) {
     return { status: "invalid", verified: false, reason: "Disposable email domain", source: provider };
   }
 
@@ -318,6 +367,10 @@ function interpret(provider: string, body: unknown): VerificationResult {
 
     case "risky":
     case "unknown":
+    // The waterfall's word for "no provider was in a position to answer" —
+    // ColdIQ unconfigured, or nothing to check. A normal answer, not an
+    // unrecognised one, so it must not trip the warning below.
+    case "unverified":
     case "spamtrap":
     case "spam_trap":
     case "abuse":
@@ -342,8 +395,8 @@ function interpret(provider: string, body: unknown): VerificationResult {
 
 /** Layer 2. Rents an SMTP handshake. Returns `unknown` on any provider failure
  *  so an outage degrades to "unproven" rather than to false rejections. */
-async function callProvider(email: string): Promise<VerificationResult> {
-  const provider = providerName()!;
+async function callProvider(email: string, forceProvider?: string): Promise<VerificationResult> {
+  const provider = forceProvider ?? providerName()!;
   const key = providerKey()!;
   // Skip a call the vendor will reject for billing reasons anyway.
   if (provider === "coldiq" && coldiqCreditsExhausted()) {
@@ -355,7 +408,26 @@ async function callProvider(email: string): Promise<VerificationResult> {
   try {
     let res: Response;
 
-    if (provider === "coldiq") {
+    if (provider === "railway") {
+      res = await fetch(railwayVerifyUrl()!, {
+        method: "POST",
+        headers: railwayHeaders(),
+        body: JSON.stringify({ email }),
+        signal: ctrl.signal,
+      });
+      if (res.ok) {
+        // Answers are keyed by address, so read ours by name rather than by
+        // position. A missing key means the service did not answer for it,
+        // which is unproven, not clean.
+        const payload = await res.json().catch(() => null);
+        const row = (payload as { results?: Record<string, unknown> } | null)
+          ?.results?.[email.trim().toLowerCase()];
+        if (!row) {
+          return { status: "unknown", verified: null, reason: "Verification did not complete", source: provider };
+        }
+        return interpret(provider, row);
+      }
+    } else if (provider === "coldiq") {
       // Shape confirmed against the ColdIQ OpenAPI spec: the address goes in a
       // nested `input` object, not at the top level. A flat {email} is rejected.
       res = await fetch(coldiqVerifyUrl(), {
@@ -397,6 +469,31 @@ async function callProvider(email: string): Promise<VerificationResult> {
   }
 }
 
+/**
+ * Ask the waterfall, then a direct vendor if the waterfall could not answer.
+ *
+ * Railway runs four verifiers behind one call, but it is still one network hop
+ * that can be unreachable, and when it is, every address it was asked about
+ * comes back unproven. A direct vendor key is the layer under it: slower to
+ * reach for, and the only thing that can answer when that service is down.
+ *
+ * Only an inconclusive answer is retried. A verdict the waterfall actually
+ * reached is never second-guessed by a cheaper opinion, which is the same rule
+ * the waterfall applies internally.
+ */
+async function callProviderWithFallback(email: string): Promise<VerificationResult> {
+  const first = await callProvider(email);
+  if (first.status !== "unknown") return first;
+
+  const backup = providerName() === "railway" ? directProviderName() : null;
+  if (!backup) return first;
+
+  const second = await callProvider(email, backup);
+  // Keep the fallback's answer only if it is one — otherwise the first
+  // verdict's reason is the more useful of the two identical unknowns.
+  return second.status === "unknown" ? first : second;
+}
+
 /** Verify one address. Cached across searches and across users. */
 export async function verifyEmail(supabase: CacheClient, rawEmail: string): Promise<VerificationResult> {
   const email = (rawEmail ?? "").trim().toLowerCase();
@@ -429,7 +526,7 @@ export async function verifyEmail(supabase: CacheClient, rawEmail: string): Prom
     };
   }
 
-  const paid = await callProvider(email);
+  const paid = await callProviderWithFallback(email);
 
   // A provider confirming the mailbox does not cancel the fact that it is a
   // shared one. Vendors disagree about which prefixes count as role accounts,
@@ -446,6 +543,70 @@ export async function verifyEmail(supabase: CacheClient, rawEmail: string): Prom
     await cacheSet(supabase, cacheKey, resolved, CACHE_TTL_SECONDS);
   }
   return resolved;
+}
+
+/** Railway's ceiling on one /verify request. The cap is that service's. */
+const RAILWAY_BATCH_SIZE = 100;
+
+/**
+ * Verify many addresses through the waterfall in as few requests as possible.
+ *
+ * Same reason as the ColdIQ bulk path below: a hundred-lead search would
+ * otherwise be a hundred round trips, each one a chance to hit the deadline.
+ *
+ * Answers come back keyed by address, so each verdict is read by name. The
+ * ColdIQ path underneath has to handle an array coming back short and shifting
+ * every verdict onto the wrong address; there is no such case here, and that
+ * is the reason the endpoint answers in a map.
+ *
+ * Returns only what the service answered for. A missing address is left for
+ * the caller to treat as unresolved rather than invented as clean.
+ */
+async function verifyBatchViaRailway(emails: string[]): Promise<Map<string, VerificationResult>> {
+  const out = new Map<string, VerificationResult>();
+  const url = railwayVerifyUrl();
+  if (!url) return out;
+
+  for (let i = 0; i < emails.length; i += RAILWAY_BATCH_SIZE) {
+    const chunk = emails.slice(i, i + RAILWAY_BATCH_SIZE);
+    const ctrl = new AbortController();
+    // The waterfall may ask up to four vendors per address before it answers,
+    // so a batch is given more room than a single call gets.
+    const timer = setTimeout(() => ctrl.abort(), PROVIDER_TIMEOUT_MS * 8);
+
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: railwayHeaders(),
+        body: JSON.stringify({ emails: chunk }),
+        signal: ctrl.signal,
+      });
+
+      if (!res.ok) {
+        const detail = (await res.text().catch(() => "")).slice(0, 300);
+        console.error(`[email-verify] railway bulk returned ${res.status}:`, detail);
+        continue; // leave this chunk unresolved rather than condemning it
+      }
+
+      const payload = await res.json();
+      logVerdictShape("railway-bulk", payload, unwrapVerdict(payload));
+
+      const rows = (payload as { results?: Record<string, unknown> } | null)?.results;
+      if (!rows || typeof rows !== "object") continue;
+
+      for (const email of chunk) {
+        const row = rows[email];
+        if (row === undefined || row === null) continue;
+        out.set(email, interpret("railway", row));
+      }
+    } catch (e) {
+      console.error("[email-verify] railway bulk request failed:", (e as Error).message);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  return out;
 }
 
 /** ColdIQ's synchronous verb takes up to 50 addresses per call, run in
@@ -539,10 +700,11 @@ export async function verifyEmails(
 
   const queue = [...new Set(emails.map((e) => (e ?? "").trim().toLowerCase()).filter(Boolean))];
 
-  // ColdIQ verifies up to 50 addresses per request, so resolve everything that
-  // needs no request at all first, then send what is left in one or two calls
-  // rather than one call per address.
-  if (providerName() === "coldiq" && queue.length > 1) {
+  // Both bulk-capable providers take many addresses per request, so resolve
+  // everything that needs no request at all first, then send what is left in
+  // one or two calls rather than one call per address.
+  const bulkProvider = providerName();
+  if ((bulkProvider === "railway" || bulkProvider === "coldiq") && queue.length > 1) {
     const needsProvider: string[] = [];
     const freeVerdicts = new Map<string, VerificationResult>();
 
@@ -566,20 +728,43 @@ export async function verifyEmails(
       needsProvider.push(email);
     }
 
-    const verdicts = await verifyBatchViaColdIq(needsProvider);
+    const verdicts = bulkProvider === "railway"
+      ? await verifyBatchViaRailway(needsProvider)
+      : await verifyBatchViaColdIq(needsProvider);
+
+    // The waterfall is one network hop, and a hop that fails takes the whole
+    // batch with it — which is the search path, the one whose unverified sends
+    // produced the bounces. So a direct vendor, where one is configured, gets
+    // asked for what came back unanswered. Bounded by the same deadline: an
+    // address still unresolved when time runs out is reported unproven.
+    const backup = bulkProvider === "railway" ? directProviderName() : null;
+    if (backup) {
+      const unanswered = needsProvider.filter((e) => !verdicts.has(e));
+      let cursor = 0;
+      const retry = async () => {
+        while (cursor < unanswered.length && Date.now() < deadline) {
+          const email = unanswered[cursor++];
+          const verdict = await callProvider(email, backup);
+          if (verdict.status !== "unknown") verdicts.set(email, verdict);
+        }
+      };
+      await Promise.all(
+        Array.from({ length: Math.min(concurrency, unanswered.length) }, retry),
+      );
+    }
 
     for (const email of needsProvider) {
       const paid = verdicts.get(email);
       const free = freeVerdicts.get(email);
 
       if (!paid) {
-        // The provider did not answer for this address. Fall back to whatever
-        // the free gate concluded rather than reporting it as checked.
+        // Nobody answered for this address. Fall back to whatever the free gate
+        // concluded rather than reporting it as checked.
         results.set(email, free ?? {
           status: "unknown",
           verified: null,
           reason: "Verification did not complete",
-          source: "coldiq",
+          source: bulkProvider,
         });
         continue;
       }
