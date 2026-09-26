@@ -152,7 +152,14 @@ const SavedLeads = () => {
     refresh: refreshLeads,
     patchRow,
     fetchAllMatching,
-  } = useSavedLeads<Lead>(filters, { field: sortField, desc: sortOrder === "desc" }, page, PAGE_SIZE);
+  } = useSavedLeads<Lead>(
+    filters,
+    { field: sortField, desc: sortOrder === "desc" },
+    page,
+    PAGE_SIZE,
+    urlFilter,
+    setPage,
+  );
   const { facets } = useLeadFacets();
 
   const leadIds = useMemo(() => pageLeads.map((l) => l.id), [pageLeads]);
@@ -234,9 +241,9 @@ const SavedLeads = () => {
    * for a link from the overview ("leads with no email"), and those are small
    * sets by nature. If one grows, it belongs in the function.
    */
-  const filteredAndSortedLeads = urlFilter
-    ? pageLeads.filter((lead) => URL_FILTERS[urlFilter].match(lead))
-    : pageLeads;
+  // The URL filter is applied by the database, so paging, totals and export
+  // all cover the whole account, not just the rows on screen.
+  const filteredAndSortedLeads = pageLeads;
 
   const unscoredLeadIds = filteredAndSortedLeads.filter((l) => !l.tier).map((l) => l.id);
 

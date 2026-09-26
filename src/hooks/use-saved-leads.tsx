@@ -72,6 +72,8 @@ export const useSavedLeads = <T,>(
   sort: { field: string; desc: boolean },
   page: number,
   pageSize: number,
+  show: string | null = null,
+  onPageOutOfRange?: (lastPage: number) => void,
 ) => {
   const [state, setState] = useState<SavedLeadsPage<T>>({
     rows: [],
@@ -100,6 +102,7 @@ export const useSavedLeads = <T,>(
       p_desc: sort.desc,
       p_limit: pageSize,
       p_offset: page * pageSize,
+      p_show: show,
     } as never);
 
     if (id !== requestId.current) return;
@@ -109,6 +112,28 @@ export const useSavedLeads = <T,>(
       return;
     }
     const rows = (data as unknown as (T & { total_count: number })[]) ?? [];
+    // An empty page past the first (e.g. after deleting everything on it)
+    // does not mean zero leads. Ask for the real total and step back.
+    if (rows.length === 0 && page > 0 && onPageOutOfRange) {
+      const { data: probe } = await supabase.rpc("search_saved_leads" as never, {
+        p_search: filters.search.trim() || null,
+        p_intent_label: orNull(filters.intentLabel),
+        p_industry: orNull(filters.industry),
+        p_company_size: orNull(filters.companySize),
+        p_seniority: orNull(filters.seniority),
+        p_stage: orNull(filters.stage),
+        p_priority: orNull(filters.priority),
+        p_next_step: orNull(filters.nextStep),
+        p_limit: 1,
+        p_offset: 0,
+        p_show: show,
+      } as never);
+      if (id !== requestId.current) return;
+      const probeRows = (probe as unknown as { total_count: number }[]) ?? [];
+      const trueTotal = probeRows.length ? Number(probeRows[0].total_count ?? 0) : 0;
+      onPageOutOfRange(Math.max(0, Math.ceil(trueTotal / pageSize) - 1));
+      return;
+    }
     setState({
       rows,
       // The window count rides on every row, so an empty page legitimately
@@ -117,7 +142,7 @@ export const useSavedLeads = <T,>(
       loading: false,
       error: null,
     });
-  }, [filters, sort.field, sort.desc, page, pageSize]);
+  }, [filters, sort.field, sort.desc, page, pageSize, show, onPageOutOfRange]);
 
   useEffect(() => {
     void load();
@@ -165,6 +190,7 @@ export const useSavedLeads = <T,>(
         p_desc: sort.desc,
         p_limit: size,
         p_offset: offset,
+        p_show: show,
       } as never);
       if (error) throw new Error(error.message);
       const batch = (data as unknown as T[]) ?? [];
@@ -172,7 +198,7 @@ export const useSavedLeads = <T,>(
       if (batch.length < size) break;
     }
     return out;
-  }, [filters, sort.field, sort.desc]);
+  }, [filters, sort.field, sort.desc, show]);
 
   return { ...state, refresh: load, patchRow, fetchAllMatching };
 };
