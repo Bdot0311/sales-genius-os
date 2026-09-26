@@ -193,6 +193,33 @@ serve(async (req) => {
         continue;
       }
 
+      // Permanent stop: once an address has been suppressed or a send to it has
+      // failed (anything other than a temporary rate limit), never email it again.
+      // Repeated sends to dead/blocked addresses hurt sender reputation.
+      const addr = user.email.trim().toLowerCase();
+      const [{ data: priorBad }, { data: priorLogBad }] = await Promise.all([
+        supabase
+          .from('re_engagement_log')
+          .select('status, eligibility_reason, error_message')
+          .ilike('recipient_email', addr)
+          .or('status.eq.failed,eligibility_reason.eq.recipient_suppressed,eligibility_reason.eq.previously_failed_or_suppressed')
+          .limit(20),
+        supabase
+          .from('email_send_log')
+          .select('status')
+          .ilike('recipient_email', addr)
+          .in('status', ['failed', 'bounced', 'complained', 'suppressed', 'dlq', 'rejected'])
+          .limit(1),
+      ]);
+      const hardFailure = (priorBad ?? []).some((r: any) =>
+        r.status !== 'failed' || !/rate|429|too many/i.test(String(r.error_message ?? '')),
+      ) || (priorLogBad ?? []).length > 0;
+
+      if (hardFailure) {
+        skipped++;
+        continue;
+      }
+
       const { data: recent } = await supabase
         .from('email_send_log')
         .select('id')
