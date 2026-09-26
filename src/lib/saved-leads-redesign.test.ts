@@ -112,7 +112,9 @@ describe("the column that said the same thing on every row", () => {
 describe("it survives the size the account will actually reach", () => {
   it("the database filters, sorts and pages", () => {
     expect(MIGRATION).toContain("CREATE OR REPLACE FUNCTION public.search_saved_leads");
-    expect(P).toContain("useSavedLeads<Lead>(filters,");
+    // Matched on shape rather than on one line of it: the argument list has
+    // already been wrapped once, and a reformat is not a regression.
+    expect(P).toMatch(/useSavedLeads<Lead>\(\s*filters,/);
     // The loop that pulled twenty thousand rows into memory is gone.
     expect(PAGE).not.toContain('.select("*")\n          .eq("user_id", session.user.id)');
     expect(PAGE).not.toContain("page >= 19");

@@ -36,9 +36,12 @@ describe("needs attention opens the rows it counted", () => {
     expect(SAVED).toContain('"no-email"');
     expect(SAVED).toContain('"never-contacted"');
     expect(SAVED).toContain("useSearchParams");
-    // The list is filtered by the database now, so this reads as a narrowing
-    // of the page rather than a rejection inside one big client-side filter.
-    expect(SAVED).toContain("URL_FILTERS[urlFilter].match(lead)");
+    // The URL filter is the database's job now, passed as p_show rather than
+    // applied to the rows that happened to load. That is what makes the count,
+    // the paging and the export cover the account instead of the page, so pin
+    // that it is handed to the query and not re-narrowed after it.
+    expect(SAVED).toMatch(/useSavedLeads<Lead>\([\s\S]{0,200}urlFilter,/);
+    expect(SAVED).not.toContain("URL_FILTERS[urlFilter].match(lead)");
   });
 
   it("says the list is filtered, and gives it back", () => {
