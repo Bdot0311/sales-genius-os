@@ -132,6 +132,9 @@ const SavedLeads = () => {
   const urlFilter: UrlFilterKey | null =
     showParam && showParam in URL_FILTERS ? (showParam as UrlFilterKey) : null;
   const [updatingStage, setUpdatingStage] = useState<string | null>(null);
+  useEffect(() => {
+    setPage(0);
+  }, [urlFilter]);
 
   // Lead Intelligence: saved evaluations for the leads on screen, plus the
   // on-demand evaluate action. Off entirely when the feature flag is off.
@@ -237,7 +240,7 @@ const SavedLeads = () => {
    * It could only ever narrow what had loaded, so "Hot" meant "hot among the
    * rows that happened to be here" and the result read as the whole account.
    *
-   * URL_FILTERS stays client-side deliberately: it narrows the current page
+   * URL_FILTERS is passed to the database too (p_show). Previously it narrowed the current page
    * for a link from the overview ("leads with no email"), and those are small
    * sets by nature. If one grows, it belongs in the function.
    */
@@ -810,7 +813,7 @@ const SavedLeads = () => {
                   <Download className="w-4 h-4 mr-2" />
                   {/* It says All and it means all: the export pages the query
                       rather than writing out the rows on screen. */}
-                  {exporting ? "Exporting…" : hasActiveFilters(filters) ? `Export ${totalLeads}` : "Export All"}
+                  {exporting ? "Exporting…" : hasActiveFilters(filters) || urlFilter ? `Export ${totalLeads}` : "Export All"}
                 </Button>
               )}
 
