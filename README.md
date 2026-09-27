@@ -71,3 +71,18 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+
+## Project documentation
+
+These live in [`docs/`](docs/) and were not linked from anywhere until now.
+
+| Page | What it covers |
+|---|---|
+| [ENVIRONMENT.md](docs/ENVIRONMENT.md) | Every secret the product reads, what reads it, and what silently degrades when it is missing |
+| [DELIVERABILITY.md](docs/DELIVERABILITY.md) | Sender reputation, warmup, placement, and the thresholds behind the scores |
+| [BACKGROUND_WORK.md](docs/BACKGROUND_WORK.md) | How long-running jobs survive navigation |
+| [AGENT_BATCH_QUEUE.md](docs/AGENT_BATCH_QUEUE.md) | The job queue behind bulk drafting, enrichment and scoring |
+| [AGENT_DISCOVERY_EDGE.md](docs/AGENT_DISCOVERY_EDGE.md) | How the agent finds leads |
+| [PLAYBOOK_SELECTION.md](docs/PLAYBOOK_SELECTION.md) | Which outreach playbook the agent picks, and why |
+| [INBOX_SYNC_SCHEDULE.md](docs/INBOX_SYNC_SCHEDULE.md) | Reply detection and when it runs |
+| [SAVED_LEADS_BRIEF.md](docs/SAVED_LEADS_BRIEF.md) | The design brief behind the Saved Leads list |
