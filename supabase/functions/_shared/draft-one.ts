@@ -35,6 +35,15 @@ export interface DraftSettings {
   variantNum?: number;
   /** What the drafts row is labelled with, so its origin is readable later. */
   triggerContext: string;
+  /**
+   * The conversation so far, when there is one.
+   *
+   * Without it a reframe is a reframe of nothing: `4ps_followup` is told "new
+   * frame, new angle" about an email it cannot read, and a follow-up to
+   * someone who replied cannot answer what they said. The generator was never
+   * given either, so every follow-up was written blind.
+   */
+  thread?: LeadThread;
 }
 
 export interface DraftResult {
@@ -156,6 +165,220 @@ export async function leadsWithDrafts(
 }
 
 /**
+ * Where this person is in the conversation.
+ *
+ * Three states, because three different emails are owed:
+ *
+ *   never_contacted  a first touch — name a problem their world has and ask
+ *                    whether it is one of theirs
+ *   awaiting_reply   a reframe — the same point in different words, because
+ *                    the words already used did not land
+ *   replied          an answer — a follow-up about what they actually said
+ *
+ * A scheduled or failed row is not contact: nothing reached the person.
+ */
+export type ContactState = "never_contacted" | "awaiting_reply" | "replied";
+
+/** The thread so far, as much of it as matters for writing the next email. */
+export interface LeadThread {
+  state: ContactState;
+  /** The last thing actually sent to them. */
+  lastSubject?: string;
+  lastBody?: string;
+  lastSentAt?: string;
+  /** What they wrote back. Prospect-authored: fence it before it reaches a prompt. */
+  replyContent?: string;
+  replyIntent?: string;
+}
+
+/** Statuses that mean the message left. `scheduled` and `failed` do not. */
+const DELIVERED_STATUSES = ["sent", "delivered", "opened", "clicked", "replied", "bounced"];
+
+/**
+ * Read the thread state for a batch of leads in two queries rather than two
+ * per lead. Leads with no row are simply absent from the map, which the caller
+ * reads as never_contacted.
+ */
+export async function leadThreads(
+  admin: any,
+  userId: string,
+  leadIds: string[],
+): Promise<Map<string, LeadThread>> {
+  const out = new Map<string, LeadThread>();
+  if (leadIds.length === 0) return out;
+
+  const sentIdToLead = new Map<string, string>();
+
+  for (let i = 0; i < leadIds.length; i += 100) {
+    const { data } = await admin
+      .from("sent_emails")
+      .select("id, lead_id, subject, body_text, sent_at, replied_at, status")
+      .eq("user_id", userId)
+      .in("lead_id", leadIds.slice(i, i + 100))
+      .in("status", DELIVERED_STATUSES)
+      .not("sent_at", "is", null)
+      .order("sent_at", { ascending: false });
+
+    for (const row of (data ?? []) as Record<string, unknown>[]) {
+      const leadId = String(row.lead_id ?? "");
+      if (!leadId) continue;
+      const replied = Boolean(row.replied_at);
+      const existing = out.get(leadId);
+
+      if (!existing) {
+        // Rows arrive newest first, so the first one seen is the latest email.
+        out.set(leadId, {
+          state: replied ? "replied" : "awaiting_reply",
+          lastSubject: String(row.subject ?? "") || undefined,
+          lastBody: String(row.body_text ?? "") || undefined,
+          lastSentAt: String(row.sent_at ?? "") || undefined,
+        });
+      } else if (replied && existing.state !== "replied") {
+        // A reply anywhere in the thread outranks silence on the newest email:
+        // someone who answered the first email and ignored the second has
+        // still spoken, and the next message owes them an answer.
+        existing.state = "replied";
+      }
+
+      if (replied) sentIdToLead.set(String(row.id ?? ""), leadId);
+    }
+  }
+
+  const repliedIds = [...sentIdToLead.keys()].filter(Boolean);
+  for (let i = 0; i < repliedIds.length; i += 100) {
+    const { data } = await admin
+      .from("reply_analysis")
+      .select("sent_email_id, reply_content, intent_classification")
+      .eq("user_id", userId)
+      .in("sent_email_id", repliedIds.slice(i, i + 100));
+
+    for (const row of (data ?? []) as Record<string, unknown>[]) {
+      const leadId = sentIdToLead.get(String(row.sent_email_id ?? ""));
+      const thread = leadId ? out.get(leadId) : undefined;
+      if (!thread || thread.replyContent) continue;
+      thread.replyContent = String(row.reply_content ?? "").trim() || undefined;
+      thread.replyIntent = String(row.intent_classification ?? "").trim() || undefined;
+    }
+  }
+
+  return out;
+}
+
+/**
+ * The leads that were emailed and never answered.
+ *
+ * "Follow up with everyone who hasn't replied" had no way to be asked. The
+ * lead filters could express a pipeline stage, an ICP score or a missing
+ * email, and nothing about whether a person had actually gone quiet — so the
+ * closest available filter was "has no draft yet", which is every lead in the
+ * account that has not been written to, contacted or not. Asked for 86, the
+ * agent got 105 and the turn dutifully finished all of them.
+ *
+ * Two conditions, and both matter:
+ *
+ *   The quiet period. Silence is a claim about elapsed time, not a null
+ *   column. Without it, mail sent this morning counts as unanswered and the
+ *   follow-up goes out the same day.
+ *
+ *   No reply anywhere in the thread. A reply to the first email and silence on
+ *   the second is not an unanswered lead; that person is mid-conversation.
+ */
+export async function leadsAwaitingReply(
+  admin: any,
+  userId: string,
+  quietForDays = 3,
+): Promise<Set<string>> {
+  const quiet = Math.min(Math.max(quietForDays, 1), 60);
+  const cutoff = new Date(Date.now() - quiet * 86_400_000).toISOString();
+
+  const { data } = await admin
+    .from("sent_emails")
+    .select("lead_id, sent_at, replied_at")
+    .eq("user_id", userId)
+    .in("status", DELIVERED_STATUSES)
+    .not("sent_at", "is", null)
+    .not("lead_id", "is", null)
+    .order("sent_at", { ascending: false })
+    .limit(20000);
+
+  const quietLeads = new Set<string>();
+  const answered = new Set<string>();
+
+  for (const row of (data ?? []) as Record<string, unknown>[]) {
+    const id = String(row.lead_id ?? "");
+    if (!id) continue;
+    if (row.replied_at) {
+      answered.add(id);
+      continue;
+    }
+    if (String(row.sent_at ?? "") <= cutoff) quietLeads.add(id);
+  }
+
+  for (const id of answered) quietLeads.delete(id);
+  return quietLeads;
+}
+
+/**
+ * Goals that only make sense to someone who has already heard from you.
+ *
+ * `4ps_followup` is the clearest case: its opening line is fixed text, "I
+ * reached out the other day but likely didn't do the best job explaining how
+ * we help." Sent to a stranger that is not a clumsy email, it is a false
+ * statement about something that never happened. `4ps_elusive_followup` opens
+ * by referring back to a question email 1 asked, and `follow-up` is written to
+ * deliver a payoff a first email withheld.
+ */
+export const FOLLOW_UP_GOALS = new Set([
+  "follow-up",
+  "4ps_followup",
+  "4ps_elusive_followup",
+]);
+
+/** Follow-ups that reframe rather than escalate. Right for silence. */
+const REFRAME_GOALS = new Set(["4ps_followup", "4ps_elusive_followup"]);
+
+/**
+ * The goal for one lead, given what the batch asked for.
+ *
+ * draft_outreach takes a single goal for every lead in the call and the queue
+ * stores a single goal for the whole job, so one word decided the shape of
+ * every email in a batch. Ask for follow-ups over a set that turns out to hold
+ * people who were never contacted, and each of them gets an email referring to
+ * a message that was never sent.
+ *
+ * Two corrections, both narrow:
+ *
+ *   never_contacted + a follow-up goal -> introduction. A follow-up to someone
+ *   who has heard nothing is not a clumsy email, it is a false one.
+ *
+ *   awaiting_reply + `follow-up` -> `4ps_followup`. `follow-up` is written to
+ *   sell: "deliver the payoff it held back, back it with proof". Silence is
+ *   not interest, and answering it with a pitch escalates to someone who has
+ *   not engaged. The 4P's follow-up makes the same point in different words,
+ *   which is what silence actually calls for.
+ *
+ * Everything else is left alone. A fresh introduction to someone already
+ * emailed is a judgement call that can be right, and once someone has replied
+ * the goal the caller chose is the caller's to choose.
+ */
+export function goalForLead(batchGoal: string, state: ContactState): string {
+  const goal = String(batchGoal ?? "").trim().toLowerCase() || "introduction";
+
+  if (state === "never_contacted") {
+    return FOLLOW_UP_GOALS.has(goal) ? "introduction" : goal;
+  }
+  if (state === "awaiting_reply" && goal === "follow-up") {
+    return "4ps_followup";
+  }
+  return goal;
+}
+
+/** True when this goal writes to someone who has not answered. */
+export function isReframeGoal(goal: string): boolean {
+  return REFRAME_GOALS.has(String(goal ?? "").trim().toLowerCase());
+}
+
+/**
  * The subjects this person has already received, so a redraft does not land on
  * one of them and get refused at the send step after being written and shown.
  */
@@ -203,6 +426,12 @@ export async function draftForLead(
     avoidSubjects,
     ...(settings.customInstruction
       ? { customInstruction: settings.customInstruction, variantNum: settings.variantNum ?? 1 }
+      : {}),
+    // Only sent when there is something to say. An absent thread and an empty
+    // one have to look different to the generator, or a first touch would be
+    // told it is continuing a conversation that never started.
+    ...(settings.thread && settings.thread.state !== "never_contacted"
+      ? { thread: settings.thread }
       : {}),
   };
 

@@ -40,6 +40,7 @@ import {
 } from "../_shared/email-rules.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { isInternalCaller } from "../_shared/internal-auth.ts";
+import { UNTRUSTED_CONTENT_RULE, fence } from "../_shared/untrusted.ts";
 import {
   freshObservationDates,
   briefToPromptBlock,
@@ -721,6 +722,34 @@ serve(async (req) => {
     const senderEmail         = typeof requestData.senderEmail         === 'string' ? requestData.senderEmail.trim().slice(0, 200)          : '';
     const strictMode          = requestData.strict_mode === true; // default false — strict mode is opt-in only
 
+    /*
+     * The conversation so far.
+     *
+     * Follow-ups were written blind. `4ps_followup` is instructed "REFRAME —
+     * do not re-pitch. New frame, new angle" about an email it was never
+     * shown, so the new angle was a new angle on nothing, and a follow-up to
+     * someone who had replied could not answer what they said because it never
+     * saw the reply.
+     *
+     * Absent for a first touch, and deliberately so: a generator told it is
+     * continuing a conversation will write as if one happened.
+     */
+    const rawThread = requestData.thread && typeof requestData.thread === 'object'
+      ? requestData.thread as Record<string, unknown>
+      : null;
+    const threadState = typeof rawThread?.state === 'string' ? rawThread.state : '';
+    const thread = threadState === 'awaiting_reply' || threadState === 'replied'
+      ? {
+          state: threadState,
+          lastSubject: sanitizeString(String(rawThread?.lastSubject ?? ''), 200),
+          // Enough of the last email to reframe it without spending the budget
+          // on a thread that has run long.
+          lastBody: sanitizeString(String(rawThread?.lastBody ?? ''), 2000),
+          replyContent: sanitizeString(String(rawThread?.replyContent ?? ''), 2000),
+          replyIntent: sanitizeString(String(rawThread?.replyIntent ?? ''), 60),
+        }
+      : null;
+
     // A cold email has to be signed by a person, and every downstream rule
     // assumes a real first name exists. When the profile carries none, fall
     // back to the sending address — brandon@outreign.io is Brandon.
@@ -1315,6 +1344,54 @@ failure this directive exists to prevent.`;
 SUBJECT LINES ALREADY SENT to this person — you may not reuse any of them, or any
 near-variant of them. A repeat is refused before it can be delivered:
 ${avoidSubjects.map((s: string) => `- ${s}`).join('\n')}`;
+    }
+
+    /*
+     * What was already said, and what came back.
+     *
+     * Placed after the subject block and before the strategy layer, so the
+     * generator has read the thread before it is told how to pitch.
+     *
+     * The reply is fenced. It is written by someone outside the account, it
+     * arrives in a prompt that produces mail sent under the user's name, and
+     * the same rule that governs it in the agent governs it here: content to
+     * reason about, never instructions to follow.
+     */
+    if (!isPrecisionEdit && thread) {
+      const priorEmail = [
+        thread.lastSubject ? `Subject: ${thread.lastSubject}` : '',
+        thread.lastBody,
+      ].filter(Boolean).join('\n\n');
+
+      if (thread.state === 'awaiting_reply') {
+        userPrompt = `${userPrompt}
+
+THE EMAIL THEY DID NOT ANSWER. This is what you already sent this person:
+${priorEmail || '(the body was not recorded — write as if the point below was made once already)'}
+
+Make the same point again in different words. Not a new topic, not a louder
+version, and not a reminder that you wrote before: the argument was right and
+the wording was not, so find the angle that lands. Do not reuse its opening
+move, its sentence shapes, or its closing question. Silence is not interest,
+so this does not escalate the ask.`;
+      } else if (thread.state === 'replied') {
+        userPrompt = `${userPrompt}
+
+THEY REPLIED. This is what you sent:
+${priorEmail || '(the body was not recorded)'}
+
+${thread.replyContent
+  ? `And this is their reply${thread.replyIntent ? ` (classified: ${thread.replyIntent})` : ''}:
+${fence('prospect reply', thread.replyContent)}
+
+${UNTRUSTED_CONTENT_RULE}
+
+Write the answer to what they actually said. Their words set the subject of
+this email: address the thing they raised before anything else, and do not
+restate the pitch they have already read.`
+  : `They answered, but the text was not recorded. Write as someone continuing a
+conversation that is already going, not as someone chasing silence.`}`;
+      }
     }
 
     // ─── Email strategy from the decision layer ───────────────────────────────
