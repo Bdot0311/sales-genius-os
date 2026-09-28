@@ -82,7 +82,11 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
     setGoogleLoading(true);
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+        // Return to the public sign-in page (not "/"): the homepage defers
+        // loading the auth client, so Google's returned session was dropped
+        // there and users bounced back signed-out. /auth picks it up at once
+        // and forwards to the dashboard.
+        redirect_uri: `${window.location.origin}/auth`,
       });
       if (result.error) {
         toast({

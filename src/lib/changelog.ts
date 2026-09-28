@@ -92,6 +92,20 @@ export const ROADMAP: RoadmapItem[] = [
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-09-28-google-sign-in",
+    date: "2026-09-28",
+    title: "Signing in with Google works again",
+    summary: "Choosing your Google account now takes you straight into your dashboard.",
+    items: [
+      {
+        tag: "fixed",
+        title: "Google sign-in keeps you signed in",
+        description:
+          "After picking a Google account you were sometimes sent back to the homepage still signed out. You now land in your dashboard.",
+      },
+    ],
+  },
+  {
     id: "2026-09-26-saved-leads-filters",
     date: "2026-09-26",
     title: "Dashboard lead counts open the right leads",
