@@ -563,12 +563,17 @@ const SavedLeads = () => {
 
         {/* Say the list is filtered, and give it back.
             A page that silently shows a subset is a page the reader will read
-            as their whole list and act on as if it were. */}
+            as their whole list and act on as if it were.
+
+            totalLeads is the full count matching this filter — the database
+            applies it server-side — so the banner quotes it directly. Quoting
+            the rows on screen instead read "Showing 50 ... out of 230" when
+            all 230 matched, understating the work the number describes. */}
         {urlFilter && (
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/50 bg-muted/20 px-4 py-2.5">
             <p className="text-[0.6875rem] text-muted-foreground">
-              Showing <span className="text-foreground">{filteredAndSortedLeads.length}</span>{" "}
-              {URL_FILTERS[urlFilter].label} out of {totalLeads}.
+              You have <span className="text-foreground">{totalLeads.toLocaleString()}</span>{" "}
+              {URL_FILTERS[urlFilter].label}.
             </p>
             <Button
               variant="ghost"
