@@ -211,6 +211,13 @@
       "when": 1790465260002,
       "tag": "0029_saved_leads_show_filter",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1790779950979,
+      "tag": "0030_generalize_agent_jobs",
+      "breakpoints": true
     }
   ]
 }
