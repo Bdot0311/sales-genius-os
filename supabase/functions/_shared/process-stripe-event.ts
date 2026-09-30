@@ -405,7 +405,8 @@ export async function processStripeEvent(
     const userId = await findUserId(supabase, customer.email);
     if (!userId) throw new Error(`user not found for ${customer.email}`);
     const planDetails = PRICE_TO_PLAN[priceId] || PRICE_TO_PLAN['price_1SmM2hFTerosS6hiiDXBDIxl'];
-    const periodEndIso = new Date(sub.current_period_end * 1000).toISOString();
+    const { startSec: periodStartSec, endSec: periodEndSec } = getSubscriptionPeriod(sub);
+    const periodEndIso = toIsoUnix(periodEndSec);
     const isEntitled = sub.status === 'active' || sub.status === 'trialing';
     const accountStatus = sub.status === 'trialing'
       ? 'trial'
@@ -433,7 +434,7 @@ export async function processStripeEvent(
       ...(isEntitled ? { search_credits_base: planDetails.credits, leads_limit: planDetails.leadsLimit } : {}),
       cancel_at_period_end: !!sub.cancel_at_period_end,
       canceled_at: sub.canceled_at ? new Date(sub.canceled_at * 1000).toISOString() : null,
-      current_period_start: new Date(sub.current_period_start * 1000).toISOString(),
+      current_period_start: toIsoUnix(periodStartSec),
       current_period_end: periodEndIso,
     });
     log("subscription.updated apply", result);
@@ -765,9 +766,14 @@ export async function processStripeEvent(
       account_status: 'active',
       payment_failed_at: null,
       last_payment_error: null,
-      credits_reset_at: new Date(sub.current_period_end * 1000).toISOString(),
-      current_period_start: new Date(sub.current_period_start * 1000).toISOString(),
-      current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
+      ...(() => {
+        const p = getSubscriptionPeriod(sub);
+        return {
+          credits_reset_at: toIsoUnix(p.endSec),
+          current_period_start: toIsoUnix(p.startSec),
+          current_period_end: toIsoUnix(p.endSec),
+        };
+      })(),
     });
     await resetDunningState(supabase, userId);
 
