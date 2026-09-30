@@ -48,10 +48,25 @@ describe("needs attention opens the rows it counted", () => {
     // A page silently showing a subset is one the reader will act on as if it
     // were their whole list.
     expect(SAVED).toContain("Show all");
-    // totalLeads, not leads.length: the count comes from the database's own
-    // total over the filtered set. leads.length was the size of whatever had
-    // been loaded into memory, which stopped at twenty thousand.
-    expect(SAVED).toContain("out of {totalLeads}");
+    /*
+     * The count is the database's total over the filtered set, and nothing
+     * else appears beside it.
+     *
+     * This pinned the sentence "out of {totalLeads}" and broke on a change
+     * that improved it. That wording came from when the URL filter narrowed
+     * the rows in memory, so quoting both numbers was meaningful. Once the
+     * filter moved into the query, the first number became the page size and
+     * the banner read "Showing 50 ... out of 230" with all 230 matching --
+     * understating the very thing it was describing.
+     *
+     * So the rule, not the phrasing: the total is quoted, and the rows on
+     * screen are not offered next to it as if they were a second fact about
+     * the account.
+     */
+    const banner = SAVED.split("{urlFilter && (")[1].split("</div>")[0];
+    expect(banner).toContain("totalLeads");
+    expect(banner).not.toContain("filteredAndSortedLeads.length");
+    expect(banner).not.toContain("leads.length");
   });
 });
 
