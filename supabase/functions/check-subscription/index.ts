@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { getSubscriptionPeriod, toIsoUnix } from "../_shared/stripe-period.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -193,7 +194,10 @@ serve(async (req) => {
     if (hasActiveSub) {
       const subscription = entitledSubscription;
       if (!subscription) throw new Error('Entitled subscription could not be resolved');
-      subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
+      // In Stripe API 2025-08-27.basil the period lives on items, not the
+      // subscription object; fall back for older payloads.
+      const period = getSubscriptionPeriod(subscription as unknown as Stripe.Subscription);
+      subscriptionEnd = toIsoUnix(period.endSec);
       stripeSubscriptionId = subscription.id;
       
       logStep('Found active subscription', { 
