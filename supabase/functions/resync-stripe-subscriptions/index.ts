@@ -4,6 +4,7 @@
 
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { getSubscriptionPeriod, toIsoUnix } from "../_shared/stripe-period.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -153,8 +154,9 @@ Deno.serve(async (req) => {
               stats.created_users++;
             }
 
-            const periodStart = new Date((sub.current_period_start ?? Date.now() / 1000) * 1000).toISOString();
-            const periodEnd = new Date((sub.current_period_end ?? Date.now() / 1000 + 30 * 86400) * 1000).toISOString();
+            const period = getSubscriptionPeriod(sub);
+            const periodStart = toIsoUnix(period.startSec);
+            const periodEnd = toIsoUnix(period.endSec);
 
             // Preserve existing remaining credits if they're greater than the
             // base allotment (don't wipe out rollover/top-ups during a resync).
