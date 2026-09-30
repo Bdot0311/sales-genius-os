@@ -24,7 +24,13 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
 import { requireServiceRole } from "../_shared/internal-auth.ts";
-import { draftForLead, leadsWithDrafts, sentSubjectsFor } from "../_shared/draft-one.ts";
+import {
+  draftForLead,
+  goalForLead,
+  leadThreads,
+  leadsWithDrafts,
+  sentSubjectsFor,
+} from "../_shared/draft-one.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -423,11 +429,27 @@ serve(async (req) => {
             .find((a) => a.integration_id && a.email)?.email ?? "",
         );
 
+        /*
+         * The job carries one goal for every item in it, which is how a batch
+         * queued as follow-ups reached people who had never been contacted.
+         * Resolved per item here rather than at enqueue time, so a job queued
+         * before this existed is corrected when it runs, and so a reply that
+         * lands while the batch is still draining changes the email that
+         * person gets.
+         */
+        const thread = (await leadThreads(admin, job.user_id, [String(item.lead_id)]))
+          .get(String(item.lead_id));
+        const itemGoal = goalForLead(
+          String(job.goal ?? "introduction"),
+          thread?.state ?? "never_contacted",
+        );
+
         const result = await draftForLead(
           { admin, userId: job.user_id, invokeFn },
           lead as any,
           {
-            goal: String(job.goal ?? "introduction"),
+            goal: itemGoal,
+            thread,
             tone: String((settingsRow as any)?.tone ?? "professional"),
             senderName: String((profile as any)?.full_name ?? ""),
             senderEmail,
@@ -439,7 +461,7 @@ serve(async (req) => {
               ((settingsRow as any)?.value_props ?? []).join("; "),
             ].filter(Boolean).join(" — ").slice(0, 600),
             ...(job.feedback ? { customInstruction: String(job.feedback), variantNum: 1 } : {}),
-            triggerContext: "AI SDR batch",
+            triggerContext: `AI SDR batch — ${itemGoal}`,
           },
           avoid.get(String(item.lead_id)) ?? [],
         );

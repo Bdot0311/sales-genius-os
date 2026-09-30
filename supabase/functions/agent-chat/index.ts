@@ -1,7 +1,16 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { playbookEnforcementRules } from "../_shared/cold-email-playbook.ts";
-import { draftForLead, leadsWithDrafts, sentSubjectsFor } from "../_shared/draft-one.ts";
+import {
+  FOLLOW_UP_GOALS,
+  draftForLead,
+  goalForLead,
+  leadThreads,
+  leadsAwaitingReply,
+  leadsWithDrafts,
+  sentSubjectsFor,
+  type ContactState,
+} from "../_shared/draft-one.ts";
 import { leadIntelligenceMode } from "../_shared/lead-intelligence.ts";
 import {
   AGENT_MAX_ATTEMPTS,
@@ -130,6 +139,15 @@ const AGENT_CHAT_BUILD = [
 
 const LEAD_FIELDS =
   "id, company_name, contact_name, contact_email, job_title, industry, company_website, linkedin_url, lead_status, pipeline_stage, icp_score, intent_score, intent_label, signal_score, signals, notes, last_contacted_at, created_at";
+
+/**
+ * A uuid no row can carry, for a filter whose matching set is empty.
+ *
+ * `.in("id", [])` is rejected by PostgREST, and skipping the filter instead
+ * would silently widen the query to every lead — which is the exact failure
+ * this filter exists to stop.
+ */
+const NO_MATCH_ID = "00000000-0000-0000-0000-000000000000";
 
 const PIPELINE_STAGES = [
   "new", "contacted", "no_response", "replied", "bounced",
@@ -351,6 +369,16 @@ const TOOLS = [
           needs_enrichment: {
             type: "boolean",
             description: "Only leads missing a contact email or job title",
+          },
+          awaiting_reply: {
+            type: "boolean",
+            description:
+              "Only leads that were emailed and never replied, and whose last email went out at least quiet_for_days ago. THIS IS WHAT 'no-response leads', 'people who never replied' and 'everyone I haven't heard back from' MEAN — use it whenever the user scopes a request that way, and combine it with without_draft when drafting for them. Without it you get leads that have never been contacted at all, and they get follow-ups to emails that were never sent.",
+          },
+          quiet_for_days: {
+            type: "number",
+            description:
+              "How long a lead must have been silent to count as no-response. Default 3, max 60. Only used with awaiting_reply.",
           },
           without_draft: {
             type: "boolean",
@@ -1909,6 +1937,25 @@ serve(async (req) => {
 
       switch (name) {
         case "list_leads": {
+          /*
+           * "Everyone who hasn't replied", as a filter.
+           *
+           * Resolved before the query rather than inside it: silence lives in
+           * sent_emails, not on the lead, and it is a fact about the whole
+           * thread — a reply to the first email and nothing on the second is
+           * not an unanswered lead. Computed once and applied to every query
+           * below, so the page, the outstanding count and the set the turn
+           * commits to finishing all mean the same thing.
+           */
+          const wantsAwaitingReply = args.awaiting_reply === true;
+          const awaitingIds = wantsAwaitingReply
+            ? [...await leadsAwaitingReply(
+                admin,
+                userId,
+                typeof args.quiet_for_days === "number" ? args.quiet_for_days : 3,
+              )]
+            : null;
+
           const applyFilters = (base: any) => {
             let b = base.eq("user_id", userId);
             if (args.pipeline_stage) b = b.eq("pipeline_stage", args.pipeline_stage);
@@ -1920,6 +1967,9 @@ serve(async (req) => {
               );
             }
             if (args.needs_enrichment) b = b.is("contact_email", null);
+            // An empty list means nobody is waiting on a reply, which has to
+            // narrow to nothing rather than be skipped as a falsy filter.
+            if (awaitingIds) b = b.in("id", awaitingIds.length > 0 ? awaitingIds : [NO_MATCH_ID]);
             return b;
           };
           const q = applyFilters(admin.from("leads").select(LEAD_FIELDS));
@@ -2375,17 +2425,49 @@ serve(async (req) => {
           // whole batch rather than per lead.
           const sentSubjects = await sentSubjectsFor(admin, userId, ids);
 
-          const draftSettings = {
-            goal,
-            tone: config?.tone ?? "professional",
-            senderName: basePayload.senderName,
-            senderEmail: basePayload.senderEmail,
-            senderCompany: basePayload.senderCompany,
-            businessDescription: basePayload.businessDescription,
-            ...(feedback
-              ? { customInstruction: basePayload.customInstruction as string, variantNum: 1 }
-              : {}),
-            triggerContext: `AI SDR chat — ${goal}`,
+          /*
+           * The goal is one word for the whole call, and it decided the shape
+           * of every email in the batch.
+           *
+           * Asked to follow up with a set that turned out to include people
+           * who had never been contacted, each of them got an email written to
+           * refer back to a first one. `4ps_followup` opens with fixed text —
+           * "I reached out the other day" — so to a stranger that is not a
+           * clumsy email, it is a false statement. Which lead has been emailed
+           * is a fact in sent_emails, so it is read rather than assumed.
+           */
+          const threads = await leadThreads(admin, userId, ids);
+          const stateOf = (id: string): ContactState => threads.get(id)?.state ?? "never_contacted";
+          const firstTouches = ids.filter((id) => stateOf(id) === "never_contacted");
+          if (FOLLOW_UP_GOALS.has(goal) && firstTouches.length > 0) {
+            const one = firstTouches.length === 1;
+            toolEvents.push({
+              name,
+              label: "Wrote first touches instead",
+              status: "ok",
+              detail:
+                `${firstTouches.length} of these ${one ? "leads has" : "leads have"} never been emailed, so ` +
+                `${one ? "it got an opener" : "they got openers"} rather than a follow-up to a message that ` +
+                `was never sent.`,
+            });
+          }
+
+          const settingsFor = (id: string) => {
+            const thread = threads.get(id);
+            const leadGoal = goalForLead(goal, thread?.state ?? "never_contacted");
+            return {
+              goal: leadGoal,
+              tone: config?.tone ?? "professional",
+              senderName: basePayload.senderName,
+              senderEmail: basePayload.senderEmail,
+              senderCompany: basePayload.senderCompany,
+              businessDescription: basePayload.businessDescription,
+              ...(feedback
+                ? { customInstruction: basePayload.customInstruction as string, variantNum: 1 }
+                : {}),
+              triggerContext: `AI SDR chat — ${leadGoal}`,
+              thread,
+            };
           };
 
           // One draft path, shared with the queue worker. See _shared/draft-one.ts:
@@ -2396,7 +2478,7 @@ serve(async (req) => {
             return await draftForLead(
               { admin, userId, invokeFn },
               lead as any,
-              draftSettings,
+              settingsFor(id),
               sentSubjects.get(id) ?? [],
             );
           };
@@ -3964,8 +4046,9 @@ CALENDAR (never compute a weekday-to-date mapping yourself, read it here): ${upc
 
 HOW TO WORK
 - When the user says something like "I just searched some leads, take it from here", find the relevant leads with list_leads first, then chain the work: enrich -> score -> draft -> send/queue. Do not ask permission for read-only or drafting steps; just do them and report back.
-- DRAFTING FOR A GROUP ("draft all my no-response leads", "follow up with everyone who never replied"): call list_leads with without_draft: true, then pass EVERY id it returns to draft_outreach in ONE call. Without that flag you get the same leads back on every pass and redraft work that is already done — which is how a request for eighty-two drafts produced twenty. draft_outreach skips any lead that already has a draft regardless, so a repeat call is wasted, not additive.
-- NEVER COUNT DRAFTS YOURSELF. Do not add this call's result to something you said earlier and report the sum, and do not subtract your running total from the list size to get a "remaining" figure. Queued is not drafted. The only two numbers you may quote are drafted_this_call from draft_outreach and remaining_without_draft from list_leads with without_draft: true. If you want a current total, call list_leads and read it — it costs one call and it is the number the user sees in their drafts folder.
+- DRAFTING FOR A GROUP: call list_leads once with the filters that match what the user actually asked for, then pass EVERY id it returns to draft_outreach in ONE call. Always include without_draft: true — without it you get the same leads back on every pass and redraft work that is already done, which is how a request for eighty-two drafts produced twenty. draft_outreach skips any lead that already has a draft regardless, so a repeat call is wasted, not additive.
+- SCOPE THAT CALL TO WHAT THEY ASKED FOR. The set you pass to list_leads is the set this turn commits to finishing, so a filter you leave off is work the user never requested. "No-response leads", "everyone who never replied", "people I haven't heard back from" all mean awaiting_reply: true — they do NOT mean every lead without a draft. Asked for eighty-six no-response leads and given only without_draft, you return one hundred and five, because without_draft includes everyone who has never been contacted at all. Those people cannot be followed up with; they have heard nothing from this user.
+- NEVER COUNT DRAFTS YOURSELF. Do not add this call's result to something you said earlier and report the sum, and do not subtract your running total from the list size to get a "remaining" figure. Queued is not drafted. The only two numbers you may quote are drafted_this_call from draft_outreach and remaining_without_draft from list_leads, called with the same filters you drafted against. If you want a current total, call list_leads and read it — it costs one call and it is the number the user sees in their drafts folder.
 - When a tool comes back with an error, say what the error was and stop. Do not call it again with the same arguments, and do not describe the attempt as progress.
 - Do several tool calls in a row when needed. Prefer batching lead ids over one-at-a-time calls. For drafting, ALWAYS pass every lead id in a single draft_outreach call via lead_ids — never fire many parallel draft_outreach calls, that trips the rate limiter.
 - NEVER write, rewrite or "improve" email copy yourself in the chat. Every email the user sees must come from draft_outreach, which runs the playbook, the banned-phrase list, the proof rules and the quality rubric. When the user dislikes a draft ("redraft this", "too salesy", "make it shorter"), call draft_outreach again for that lead with feedback set to what they said — it replaces the draft. Copy you compose by hand is checked by nothing and reads like generic marketing, which is the single most common complaint about this product.
@@ -4549,6 +4632,8 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
      * for — the cost of overreaching is a draft nobody wanted, sitting in a
      * folder, not an email to a prospect.
      */
+    let sweptQueued = 0;
+    let sweptBeyondLimit = 0;
     const drewFromPool = outstandingPool.some((id) => handledLeadIds.has(id));
     if (outstandingPool.length > 0 && drewFromPool) {
       const missed = outstandingPool.filter((id) => !handledLeadIds.has(id));
@@ -4570,6 +4655,8 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
       const beyondLimit = missed.length - sweeping.length;
       if (sweeping.length > 0) {
         const { queued } = await queueForDrafting(sweeping, outstandingGoal, outstandingFeedback);
+        sweptQueued = queued;
+        sweptBeyondLimit = beyondLimit;
         if (queued > 0) {
           toolEvents.push({
             name: "draft_outreach",
@@ -4617,8 +4704,25 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
       if (draftTally.queued > 0) {
         parts.push(`queued ${draftTally.queued} to be written in the background`);
       }
+      /*
+       * Why the reply below can disagree with the line above it.
+       *
+       * The sweep runs after the model has finished writing, so a reply saying
+       * "10 queued, 95 still to go" was true when it was written and stale by
+       * the time it was read — the 95 went into the queue a moment later. Both
+       * numbers appeared in the same message with nothing to say which was
+       * current, and the honest reading of "95 more to go" is that the user
+       * has to ask again. They do not.
+       */
+      const sweepNote = sweptQueued > 0
+        ? ` ${sweptQueued} of those were added at the end to cover leads the steps above left out, so` +
+          (sweptBeyondLimit > 0
+            ? ` ${sweptBeyondLimit} are still without a draft — say "keep going" for the next batch.`
+            : ` nothing from that set is still waiting. Any smaller count below this line was written before they were queued.`)
+        : "";
       finalText =
-        `📝 Your drafts folder holds ${draftsNow ?? 0}. This turn ${parts.join(", ")}.\n\n${finalText}`;
+        `📝 Your drafts folder holds ${draftsNow ?? 0}. This turn ${parts.join(", ")}.${sweepNote}` +
+        `\n\n${finalText}`;
       console.log(
         `[agent-chat] draft tally written=${draftTally.written} queued=${draftTally.queued} ` +
           `skipped=${draftTally.skippedAlreadyDrafted} failed=${draftTally.failed} total=${draftsNow ?? 0}`,

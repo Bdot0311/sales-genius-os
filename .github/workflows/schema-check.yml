@@ -14,6 +14,19 @@ on:
   pull_request:
   push:
     branches: [main]
+  # Re-runnable without a commit.
+  #
+  # When the account crossed its Actions minute cap, every job here was
+  # refused a runner -- created, then failed in three seconds with no steps
+  # and no billable time. Nothing was wrong with the code, but the only ways
+  # to ask for a fresh result were the Re-run button in the browser and a new
+  # commit. An automated caller has neither: re-running through the API needs
+  # a permission the repo's own app token does not carry, and pushing an empty
+  # commit to kick CI is worse than the problem.
+  #
+  # One line, and a stuck run can be retried by anything that can call the
+  # API, without inventing a commit to hang it on.
+  workflow_dispatch:
 
 jobs:
   # Catches the recurring class of runtime 500s where code references a Supabase
