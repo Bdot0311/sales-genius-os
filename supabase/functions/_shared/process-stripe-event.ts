@@ -5,6 +5,7 @@
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { sendManagedEmail } from "./managed-email.ts";
+import { getSubscriptionPeriod, toIsoUnix } from "./stripe-period.ts";
 import { logSystemAlert } from "./alerts.ts";
 import { trackBusinessEvent } from "./heycatch.ts";
 import { captureServerEvent } from "./posthog.ts";
@@ -755,6 +756,7 @@ export async function processStripeEvent(
       return;
     }
 
+    const period = getSubscriptionPeriod(sub);
     let newCredits = planDetails.credits;
     if (!planDetails.isYearly && (planDetails.plan === 'growth' || planDetails.plan === 'pro' || planDetails.plan === 'agency')) {
       newCredits = (cur?.search_credits_remaining || 0) + planDetails.credits;
@@ -766,14 +768,9 @@ export async function processStripeEvent(
       account_status: 'active',
       payment_failed_at: null,
       last_payment_error: null,
-      ...(() => {
-        const p = getSubscriptionPeriod(sub);
-        return {
-          credits_reset_at: toIsoUnix(p.endSec),
-          current_period_start: toIsoUnix(p.startSec),
-          current_period_end: toIsoUnix(p.endSec),
-        };
-      })(),
+      credits_reset_at: toIsoUnix(period.endSec),
+      current_period_start: toIsoUnix(period.startSec),
+      current_period_end: toIsoUnix(period.endSec),
     });
     await resetDunningState(supabase, userId);
 
