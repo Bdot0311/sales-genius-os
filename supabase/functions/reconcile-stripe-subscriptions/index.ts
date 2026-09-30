@@ -8,6 +8,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { corsHeaders, isInternalCaller } from "../_shared/internal-auth.ts";
 import { logSystemAlert } from "../_shared/alerts.ts";
 import { PRICE_TO_PLAN, PRODUCT_TO_PLAN } from "../_shared/process-stripe-event.ts";
+import { getSubscriptionPeriod, toIsoUnix } from "../_shared/stripe-period.ts";
 
 const log = (s: string, d?: unknown) =>
   console.log(`[RECONCILE-STRIPE] ${s}${d ? " - " + JSON.stringify(d) : ""}`);
@@ -129,7 +130,7 @@ Deno.serve(async (req) => {
             account_status: accountStatus,
             search_credits_base: details.credits,
             leads_limit: details.leadsLimit,
-            current_period_end: new Date((sub.current_period_end ?? 0) * 1000).toISOString(),
+            current_period_end: toIsoUnix(getSubscriptionPeriod(sub).endSec),
             updated_at: new Date().toISOString(),
           }).eq("user_id", row.user_id);
 
