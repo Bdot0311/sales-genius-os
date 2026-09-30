@@ -92,6 +92,20 @@ export const ROADMAP: RoadmapItem[] = [
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-09-30-stripe-updates-save",
+    date: "2026-09-30",
+    title: "Plan and credit updates now save every time",
+    summary: "Subscription changes from your payment account apply to your plan and credits immediately.",
+    items: [
+      {
+        tag: "billing",
+        title: "Upgrades, downgrades and cancellations no longer miss",
+        description:
+          "Some plan changes, renewals and cancellations were silently failing to save — leaving your plan, credits or billing dates out of step until someone noticed. They now apply straight away.",
+      },
+    ],
+  },
+  {
     id: "2026-09-28-google-sign-in",
     date: "2026-09-28",
     title: "Signing in with Google works again",
