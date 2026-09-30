@@ -163,15 +163,15 @@ const WhatsNew = () => {
         ) : (
           entries.map((entry) => (
             <Panel key={entry.id} id={entry.id}>
-              <PanelHeader
-                title={entry.title}
-                meta={formatDate(entry.date)}
-                actions={
-                  seenAtArrival !== null && entry.date > seenAtArrival ? (
+              <div className="border-b border-border/30 px-4 py-3 sm:px-5">
+                <h2 className="text-[0.875rem] font-medium leading-snug text-foreground">{entry.title}</h2>
+                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span className="text-[0.6875rem] text-muted-foreground">{formatDate(entry.date)}</span>
+                  {seenAtArrival !== null && entry.date > seenAtArrival && (
                     <span className="text-[0.625rem] uppercase tracking-[0.1em] text-primary">New to you</span>
-                  ) : undefined
-                }
-              />
+                  )}
+                </div>
+              </div>
               <p className="px-4 py-3 text-[0.8125rem] leading-relaxed text-muted-foreground sm:px-5">
                 {entry.summary}
               </p>
