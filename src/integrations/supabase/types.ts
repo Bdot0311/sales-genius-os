@@ -536,7 +536,8 @@ export type Database = {
           finished_at: string | null
           id: string
           job_id: string
-          lead_id: string
+          lead_id: string | null
+          payload: Json | null
           scheduled_at: string | null
           scheduled_email_id: string | null
           status: string
@@ -551,7 +552,8 @@ export type Database = {
           finished_at?: string | null
           id?: string
           job_id: string
-          lead_id: string
+          lead_id?: string | null
+          payload?: Json | null
           scheduled_at?: string | null
           scheduled_email_id?: string | null
           status?: string
@@ -566,7 +568,8 @@ export type Database = {
           finished_at?: string | null
           id?: string
           job_id?: string
-          lead_id?: string
+          lead_id?: string | null
+          payload?: Json | null
           scheduled_at?: string | null
           scheduled_email_id?: string | null
           status?: string
@@ -6445,7 +6448,8 @@ export type Database = {
           finished_at: string | null
           id: string
           job_id: string
-          lead_id: string
+          lead_id: string | null
+          payload: Json | null
           scheduled_at: string | null
           scheduled_email_id: string | null
           status: string
