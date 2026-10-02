@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { summariseFailures, type FailureSummary } from "@/lib/draft-failures";
 
 /**
  * Everything this user has running, anywhere in the app.
@@ -70,11 +71,13 @@ export const describeWork = (jobs: BackgroundJob[]): string | null => {
 
 export const useBackgroundWork = () => {
   const [jobs, setJobs] = useState<BackgroundJob[]>([]);
+  const [failures, setFailures] = useState<FailureSummary[]>([]);
 
   const load = useCallback(async () => {
     const { data: auth } = await supabase.auth.getUser();
     if (!auth?.user) {
       setJobs([]);
+      setFailures([]);
       return;
     }
     const { data } = await supabase
@@ -83,7 +86,38 @@ export const useBackgroundWork = () => {
       .eq("user_id", auth.user.id)
       .in("status", ["queued", "running"])
       .order("created_at", { ascending: true });
-    setJobs((data as unknown as BackgroundJob[]) ?? []);
+    const rows = (data as unknown as BackgroundJob[]) ?? [];
+    setJobs(rows);
+
+    /*
+     * Why, not just how many.
+     *
+     * The worker writes a real sentence onto every failed item and nothing
+     * read it, so the bar said "3 failed" and stopped. Most of those are
+     * refusals rather than crashes — a draft that invented a figure it could
+     * not back is one the product declined to save — and the user cannot act
+     * on a refusal they cannot see.
+     *
+     * Only fetched when something has actually failed. This polls every five
+     * seconds, and a second query on every tick to confirm an empty set is a
+     * cost with no reader.
+     */
+    const withFailures = rows.filter((j) => (j.failed ?? 0) > 0).map((j) => j.id);
+    if (withFailures.length === 0) {
+      setFailures([]);
+      return;
+    }
+    const { data: items } = await supabase
+      .from("agent_job_items" as any)
+      .select("error")
+      .in("job_id", withFailures)
+      .eq("status", "failed")
+      .limit(500);
+    setFailures(
+      summariseFailures(
+        ((items ?? []) as unknown as { error: string | null }[]).map((i) => i.error),
+      ),
+    );
   }, []);
 
   useEffect(() => {
@@ -107,5 +141,5 @@ export const useBackgroundWork = () => {
     };
   }, [load]);
 
-  return { jobs, summary: describeWork(jobs), refresh: load };
+  return { jobs, summary: describeWork(jobs), failures, refresh: load };
 };

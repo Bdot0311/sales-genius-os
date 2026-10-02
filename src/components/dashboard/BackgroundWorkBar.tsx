@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useBackgroundWork } from "@/hooks/use-background-work";
+import { describeFailures } from "@/lib/draft-failures";
 
 /**
  * What is still running, wherever you have navigated to.
@@ -14,10 +15,11 @@ import { useBackgroundWork } from "@/hooks/use-background-work";
  * reads "idle" trains people to stop looking at it.
  */
 export const BackgroundWorkBar = () => {
-  const { jobs, summary } = useBackgroundWork();
+  const { jobs, summary, failures } = useBackgroundWork();
   if (!summary || jobs.length === 0) return null;
 
   const failed = jobs.reduce((n, j) => n + (j.failed ?? 0), 0);
+  const why = describeFailures(failures);
 
   return (
     <div
@@ -30,8 +32,17 @@ export const BackgroundWorkBar = () => {
           "still working" without saying on what is worse than silence. */}
       <span className="text-muted-foreground">Still working — {summary}.</span>
       {failed > 0 && (
+        /*
+         * The count said "3 failed" and nothing else, which is the same
+         * report that made a batch of twelve unexplainable for hours. Most of
+         * these are refusals rather than crashes -- generate-email declines to
+         * save a draft that invents a figure or dates something the research
+         * cannot support -- and the reason decides what to do about it: a thin
+         * research brief is fixed by enriching the lead, a rate limit by
+         * waiting. The reason was on the row the whole time.
+         */
         <span className="text-destructive">
-          {failed} failed.
+          {failed} failed{why ? <span className="text-destructive/80"> — {why}</span> : null}.
         </span>
       )}
       <Link

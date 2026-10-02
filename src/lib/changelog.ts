@@ -101,7 +101,7 @@ export const CHANGELOG: ChangelogEntry[] = [
         tag: "billing",
         title: "Upgrades, downgrades and cancellations no longer miss",
         description:
-          "Some plan changes, renewals and cancellations were silently failing to save — leaving your plan, credits or billing dates out of step until someone noticed. They now apply straight away.",
+          "Some plan changes, renewals and cancellations were silently failing to save — leaving your plan, credits or billing dates out of step until someone noticed. They now apply straight away. Prices and credit allowances are unchanged.",
       },
     ],
   },

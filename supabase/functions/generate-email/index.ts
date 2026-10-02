@@ -37,6 +37,9 @@ import {
   NO_PLATFORM_BRAND_RULE,
   findPlatformBrandLeaks,
   stripPlatformBrand,
+  findScaffolding,
+  hasScaffolding,
+  NO_SCAFFOLDING_RETRY,
 } from "../_shared/email-rules.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { isInternalCaller } from "../_shared/internal-auth.ts";
@@ -123,7 +126,17 @@ const BODY_ONLY_RULES = `
 FORMAT:
 - Email body ONLY. No greeting. No first name. No sign-off.
 - Never output placeholder tokens like [Name], {name}, {{name}}, <name>, [Company], or similar.
-- Generate ONLY the email body. Do NOT include a subject line or any headers.`;
+- Generate ONLY the email body. Do NOT include a subject line or any headers.
+- The framework beats above (PROBLEM, PROMISE, PROOF, PROPOSAL, TRIGGER and the
+  rest) are how you plan the email. They are NOT headings and NOT text. Never
+  print those words. Write the beats as ordinary consecutive paragraphs with
+  nothing labelling them.
+- No markdown. No **bold**, no ## headings, no bullets, no numbered lists. This
+  is sent as plain text and there is no renderer, so asterisks arrive as
+  asterisks.
+- If a beat has nothing to say, leave it out silently. Never write a note
+  explaining what you skipped or why. Nothing in the email may address the
+  person who wrote these instructions.`;
 
 // Proximity Rule — active market position. Already there, not offering to go there.
 const PROXIMITY_RULE = `
@@ -1510,6 +1523,57 @@ conversation that is already going, not as someone chasing silence.`}`;
         // Only take the retry if it actually fixed the problem.
         if (second && !hasPlaceholder(second)) email = second;
       }
+    }
+
+    /*
+     * The outline, printed instead of the email.
+     *
+     * A draft reached the composer reading "**PROBLEM:** ... **PROMISE:** ...
+     * **PROOF:** (No specific proof provided in the input, so skipping this
+     * section as per instructions.)". The beat names are the prompt's planning
+     * structure, the markdown has no renderer on the other end, and the last
+     * one is the model reporting its compliance to whoever wrote the prompt --
+     * inside mail addressed to a prospect.
+     *
+     * Regenerated once with the mistake named, exactly as a placeholder is.
+     * Scrubbing instead would be worse than it looks: the labels are load
+     * bearing in a draft written around them, and removing them leaves four
+     * paragraphs that no longer introduce each other.
+     */
+    if (hasScaffolding(email)) {
+      console.warn(
+        `[generate-email] scaffolding in draft: ${findScaffolding(email).slice(0, 6).join(' | ')} — regenerating`,
+      );
+      const scaffoldRetry = await aiFetch("generate-email", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: `${userPrompt}\n${NO_SCAFFOLDING_RETRY}` },
+          ],
+          temperature: 0.7,
+        }),
+      });
+      if (scaffoldRetry.ok) {
+        const d = await scaffoldRetry.json();
+        const second = (d.choices?.[0]?.message?.content || '').trim();
+        // Only take the retry if it actually fixed the problem.
+        if (second && !hasScaffolding(second) && !hasPlaceholder(second)) email = second;
+      }
+    }
+
+    // Still showing its working after being told. Refused rather than saved:
+    // this one is not a quality judgement, it is an email that is visibly not
+    // an email, and the user reading "1 failed" is better served than the
+    // prospect reading a form.
+    if (hasScaffolding(email)) {
+      const found = findScaffolding(email).slice(0, 4).join(', ');
+      console.error(`[generate-email] scaffolding survived the retry: ${found}`);
+      return new Response(JSON.stringify({
+        error: `The draft printed its own outline (${found}) instead of an email, twice, so it was not saved. Generate again.`,
+      }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     email = cleanGeneratedEmail(email, preserveSubject);

@@ -1028,3 +1028,88 @@ export function unsupportedRecencyRetry(hits: string[]): string {
     .map((h) => `"${h}"`)
     .join(", ")}. Nothing in the brief is dated recently enough to say when this happened. Reference the fact without dating it — no month, no "recently", no "just", no "last week". A prospect knows exactly how old their own news is, and getting it wrong reads worse than not mentioning it.`;
 }
+
+/* ------------------------------------------------------------------------ *
+ * Scaffolding that leaked into the email.
+ *
+ * A real draft went out of the composer looking like this:
+ *
+ *   **PROBLEM:** Your platform automates hiring workflows, but ...
+ *   **PROMISE:** We provide a unified outbound platform that ...
+ *   **PROOF:** (No specific proof provided in the input, so skipping this
+ *   section as per instructions.)
+ *   **PROPOSAL:** Is this a challenge you are actively addressing?
+ *
+ * Three separate failures in one message. The 4P's prompt lists the framework
+ * as a numbered outline -- "1. PROBLEM -- One clear revenue or operational
+ * gap" -- and never says those names are planning labels rather than text, so
+ * the model printed them as headings. It wrapped them in markdown, in a mail
+ * that is sent as plain text. And where the prompt said "skip entirely if not
+ * provided", it narrated its own compliance back to the prompt's author
+ * instead of silently skipping.
+ *
+ * None of the existing guards saw it: the body-only rules covered greetings,
+ * sign-offs and placeholder tokens, and the quality score passed it at 83/100.
+ * The prospect would have received a filled-in form with a note to the author
+ * in the middle of it.
+ * ------------------------------------------------------------------------ */
+
+/**
+ * Framework beat names, as emitted at the start of a line.
+ *
+ * Upper-case and followed by a colon, optionally wrapped in markdown. The
+ * case matters: "Problem:" could begin a real sentence, "PROBLEM:" is the
+ * outline showing through.
+ */
+const SCAFFOLD_LABEL_REGEX =
+  /^[ \t]*(?:\*{1,3}|#{1,6}[ \t]*|_{1,3})?(PROBLEM|PROMISE|PROOF|PROPOSAL|TRIGGER|TEACH|TRUST|THESIS|TENSION|OBSERVATION|PAIN|OPENER|HOOK|BODY|CTA|CLOSE|STEP\s*\d+)(?:\*{1,3}|_{1,3})?[ \t]*:/gm;
+
+/** Markdown emphasis. These are plain-text emails; there is no renderer. */
+const MARKDOWN_EMPHASIS_REGEX = /\*\*[^*\n]+\*\*|^#{1,6}[ \t]+\S/gm;
+
+/**
+ * The model talking to whoever wrote the prompt, inside the email.
+ *
+ * Deliberately narrow. Prospects' emails contain parentheticals all the time,
+ * so this only fires on the vocabulary of a model reporting back on its own
+ * instructions.
+ */
+const META_COMMENTARY_REGEX =
+  /\((?=[^)]*(?:as per (?:the )?instruction|per instructions|no specific [a-z ]{0,30}provided|not provided in the (?:input|context|brief)|skipping this (?:section|part)|omitting this (?:section|part)|as instructed))[^)]{0,300}\)/gi;
+
+/** Everything in the draft that belongs to the prompt rather than the reader. */
+export function findScaffolding(email: string): string[] {
+  const text = String(email ?? "");
+  const found = [
+    ...(text.match(SCAFFOLD_LABEL_REGEX) ?? []),
+    ...(text.match(MARKDOWN_EMPHASIS_REGEX) ?? []),
+    ...(text.match(META_COMMENTARY_REGEX) ?? []),
+  ].map((m) => m.trim());
+  return [...new Set(found)];
+}
+
+export function hasScaffolding(email: string): boolean {
+  return findScaffolding(email).length > 0;
+}
+
+/**
+ * The correction, named precisely.
+ *
+ * "Do not include scaffolding" would not tell the model what it did. The
+ * placeholder retry works because it quotes the token back; this quotes the
+ * beat names back and says what they were for.
+ */
+export const NO_SCAFFOLDING_RETRY = `
+YOUR LAST ATTEMPT PRINTED THE OUTLINE INSTEAD OF THE EMAIL.
+
+The framework beats above (PROBLEM, PROMISE, PROOF, PROPOSAL, TRIGGER, and any
+others) are how you PLAN the email. They are not headings and they are not text.
+The reader must never see those words.
+
+Write the beats as ordinary consecutive paragraphs with nothing labelling them.
+No markdown of any kind -- no **bold**, no ## headings, no bullets. This is sent
+as plain text and there is no renderer, so the asterisks arrive as asterisks.
+
+If a beat has nothing to say -- no proof was provided, for instance -- leave it
+out silently. Do not write a note explaining that you left it out. Nothing in
+the email may address the person who wrote these instructions.`;
