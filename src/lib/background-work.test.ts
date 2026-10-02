@@ -77,7 +77,11 @@ describe("it lives in the shell, which is the whole point", () => {
 
   it("surfaces failures instead of counting them as progress", () => {
     expect(code(BAR)).toContain("jobs.reduce((n, j) => n + (j.failed ?? 0), 0)");
-    expect(code(BAR)).toContain("{failed} failed.");
+    // Matched on the rule rather than the sentence: the bar now names the
+    // reasons beside the count, and pinning the old literal broke on the very
+    // change that made the count useful.
+    expect(code(BAR)).toContain("{failed} failed");
+    expect(code(BAR)).toContain("describeFailures(failures)");
   });
 });
 
