@@ -155,7 +155,7 @@ export const FounderNoteSection = () => {
                   className="text-xs mt-0.5"
                   style={{ color: "hsl(0 0% 100% / 0.25)" }}
                 >
-                  Built in NYC · Launched 2026
+                  Launched 2026
                 </p>
               </div>
             </div>
