@@ -69,8 +69,11 @@ describe("the worker runs each kind", () => {
   });
 
   it("a body error is a failure even when the transport succeeded", () => {
-    // These report a dry well and a broken key the same way at the HTTP layer.
-    expect(W).toContain("const failedHere = !!r?.error;");
+    // These report a dry well and a broken key the same way at the HTTP layer,
+    // so the body is what decides. Pinned to the branch rather than the old
+    // `failedHere` literal: the settling moved into settleFailure so a rate
+    // limit can be handed back instead of retiring the lead.
+    expect(W).toMatch(/if \(r\?\.error\) \{\s*\n\s*await settleFailure\(item, r\.error\);/);
   });
 });
 

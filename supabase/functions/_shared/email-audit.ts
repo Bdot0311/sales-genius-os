@@ -298,12 +298,19 @@ export function auditEmail(input: AuditInput): Finding[] {
     });
   }
 
-  // ─── The pitch the playbook forbids on a first touch ─────────────────────
+  // ─── The pitch the playbook forbids ──────────────────────────────────────
   //
-  // Fires when this is touch 1, and when no position was given at all: a cold
-  // email pasted on its own is a first touch unless the caller says otherwise,
-  // and that is exactly the case where nothing was checking.
-  if (position === 1 || position === undefined) {
+  // This was gated to touch 1, on the reading that a later touch may name the
+  // mechanism. The system prompt it is meant to enforce is not gated: "the body
+  // NEVER names your own product or company" and "does NOT explain the product,
+  // list features, or use 'we built' / 'we help' / 'our platform'" apply to
+  // every email it writes. So a follow-up reading "We help companies like yours
+  // build the lead sourcing and campaign infrastructure" was caught by nothing,
+  // scored 83 out of 100, and went to a prospect.
+  //
+  // The playbook's own locked opener is excused inside findTouchOnePitch, which
+  // is the only sentence that was ever a real reason to gate this.
+  {
     const pitch = findTouchOnePitch(body);
     if (pitch.length) {
       add({
@@ -311,11 +318,11 @@ export function auditEmail(input: AuditInput): Finding[] {
         severity: "warning",
         evidence: pitch.join(" | "),
         why:
-          "Touch 1 earns a reply, it does not sell. Explaining what you do gives the reader " +
-          "something to decline before they have any reason to care, and the playbook forbids it outright.",
+          "The email earns a reply, it does not sell. Explaining what you do gives the reader " +
+          "something to decline before they have any reason to care, and it is the one sentence " +
+          "that reads identically to every other prospect on the list.",
         fix:
-          "Cut the sentence, or imply a better path exists without naming the how — that belongs on touch 2. " +
-          "If this is a later touch, pass its position so this rule does not apply.",
+          "Cut the sentence. Say what changes for them and leave the how for the reply.",
       });
     }
   }
