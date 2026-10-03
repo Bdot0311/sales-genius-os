@@ -113,9 +113,36 @@ serve(async (req) => {
     }
 
     // Get endpoint-specific rate limit or use default
-    const endpointLimits = apiKey.endpoint_rate_limits || {};
-    const tokensPerMinute = endpointLimits[endpoint]?.per_minute || apiKey.rate_limit_per_minute;
-    const tokensPerDay = endpointLimits[endpoint]?.per_day || apiKey.rate_limit_per_day;
+    // Limits come from the owner's CURRENT plan (public.api_tier_limits), so a
+    // downgrade or upgrade takes effect immediately. Free plans have no API access.
+    const { data: planName } = await supabase.rpc('plan_for_user', { _user_id: apiKey.user_id });
+    const { data: tierRows } = await supabase.rpc('api_tier_limits', { _plan: planName ?? 'free' });
+    const tier = Array.isArray(tierRows) ? tierRows[0] : tierRows;
+    if (!tier || !tier.per_minute) {
+      return new Response(
+        JSON.stringify({ allowed: false, reason: 'API access is included on Starter and above. Upgrade your plan to use the API.' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
+      );
+    }
+    const tokensPerMinute: number = tier.per_minute;
+    const tokensPerDay: number = tier.per_day;
+
+    // Daily cap across all of the owner's keys.
+    const { data: ownerKeys } = await supabase.from('api_keys').select('id').eq('user_id', apiKey.user_id);
+    const keyIds = (ownerKeys ?? []).map((k: { id: string }) => k.id);
+    if (keyIds.length) {
+      const { count: usedToday } = await supabase
+        .from('api_usage_log')
+        .select('id', { count: 'exact', head: true })
+        .in('api_key_id', keyIds)
+        .gte('created_at', new Date(Date.now() - 86_400_000).toISOString());
+      if ((usedToday ?? 0) >= tokensPerDay) {
+        return new Response(
+          JSON.stringify({ allowed: false, reason: `Daily limit reached: your plan allows ${tokensPerDay} API requests per day.`, tokensRemaining: 0, resetAt: new Date(Date.now() + 3_600_000).toISOString() }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
 
     // Token bucket algorithm - refill rate
     const refillRate = tokensPerMinute / 60; // tokens per second

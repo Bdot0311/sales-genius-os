@@ -1,6 +1,6 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
-import { supabaseForUser, notAuthed, err, ok } from "./_supabase";
+import { supabaseForUser, notAuthed, err, ok, planGate } from "./_supabase";
 
 export default defineTool({
   name: "send_reply",
@@ -15,6 +15,7 @@ export default defineTool({
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
   handler: async ({ reply_thread_id, body, subject }, ctx) => {
     if (!ctx.isAuthenticated()) return notAuthed();
+    { const blocked = await planGate(ctx, "send_reply"); if (blocked) return blocked; }
     const supabase = supabaseForUser(ctx);
 
     const { data: thread, error: tErr } = await supabase

@@ -6,207 +6,14 @@
 import { auth, defineMcp } from "npm:@lovable.dev/mcp-js@0.23.0";
 
 // src/lib/mcp/tools/list-leads.ts
-import { createClient } from "npm:@supabase/supabase-js@^2.76.1";
+import { createClient as createClient2 } from "npm:@supabase/supabase-js@^2.76.1";
 import { defineTool } from "npm:@lovable.dev/mcp-js@0.23.0";
 import { z } from "npm:zod@^3.25.76";
-function supabaseForUser(ctx) {
-  return createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY,
-    {
-      global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
-      auth: { persistSession: false, autoRefreshToken: false }
-    }
-  );
-}
-var list_leads_default = defineTool({
-  name: "list_leads",
-  title: "List leads",
-  description: "List the signed-in user's saved leads in OutReign, most recently created first. Optionally filter by the visible pipeline stage and cap the result count.",
-  inputSchema: {
-    limit: z.number().int().min(1).max(100).optional().describe("Max number of leads to return (default 25, max 100)."),
-    status: z.enum(["new", "contacted", "no_response", "replied", "bounced", "meeting_booked", "qualified", "not_interested", "won", "lost"]).optional().describe("Optional pipeline stage filter.")
-  },
-  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ limit, status }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    const supabase = supabaseForUser(ctx);
-    let q = supabase.from("leads").select(
-      "id, contact_name, contact_email, job_title, company_name, company_website, industry, lead_status, pipeline_stage, icp_score, created_at"
-    ).eq("user_id", ctx.getUserId()).order("created_at", { ascending: false }).limit(Math.min(limit ?? 25, 100));
-    if (status) q = q.eq("pipeline_stage", status);
-    const { data, error } = await q;
-    if (error)
-      return { content: [{ type: "text", text: error.message }], isError: true };
-    return {
-      content: [{ type: "text", text: JSON.stringify(data ?? [], null, 2) }],
-      structuredContent: { leads: data ?? [] }
-    };
-  }
-});
-
-// src/lib/mcp/tools/search-leads.ts
-import { createClient as createClient2 } from "npm:@supabase/supabase-js@^2.76.1";
-import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@0.23.0";
-import { z as z2 } from "npm:zod@^3.25.76";
-function supabaseForUser2(ctx) {
-  return createClient2(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY,
-    {
-      global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
-      auth: { persistSession: false, autoRefreshToken: false }
-    }
-  );
-}
-var search_leads_default = defineTool2({
-  name: "search_leads",
-  title: "Search leads",
-  description: "Full-text search across the signed-in user's OutReign leads by contact name, company, email, or job title.",
-  inputSchema: {
-    query: z2.string().trim().min(1).describe("Search text to match against name, company, email, or title."),
-    limit: z2.number().int().min(1).max(50).optional().describe("Max results (default 20, max 50).")
-  },
-  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ query, limit }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    const supabase = supabaseForUser2(ctx);
-    const like = `%${query.replace(/[%,]/g, " ")}%`;
-    const { data, error } = await supabase.from("leads").select(
-      "id, contact_name, contact_email, job_title, company_name, industry, lead_status, icp_score, created_at"
-    ).eq("user_id", ctx.getUserId()).or(
-      `contact_name.ilike.${like},contact_email.ilike.${like},company_name.ilike.${like},job_title.ilike.${like}`
-    ).order("created_at", { ascending: false }).limit(Math.min(limit ?? 20, 50));
-    if (error)
-      return { content: [{ type: "text", text: error.message }], isError: true };
-    return {
-      content: [{ type: "text", text: JSON.stringify(data ?? [], null, 2) }],
-      structuredContent: { leads: data ?? [] }
-    };
-  }
-});
-
-// src/lib/mcp/tools/list-sequences.ts
-import { createClient as createClient3 } from "npm:@supabase/supabase-js@^2.76.1";
-import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.23.0";
-import { z as z3 } from "npm:zod@^3.25.76";
-function supabaseForUser3(ctx) {
-  return createClient3(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY,
-    {
-      global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
-      auth: { persistSession: false, autoRefreshToken: false }
-    }
-  );
-}
-var list_sequences_default = defineTool3({
-  name: "list_sequences",
-  title: "List email sequences",
-  description: "List the signed-in user's outbound email sequences with enrollment and completion totals.",
-  inputSchema: {
-    limit: z3.number().int().min(1).max(100).optional().describe("Max results (default 25).")
-  },
-  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ limit }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    const supabase = supabaseForUser3(ctx);
-    const { data, error } = await supabase.from("email_sequences").select("id, name, description, status, total_enrollments, total_completed, created_at, updated_at").eq("user_id", ctx.getUserId()).order("updated_at", { ascending: false }).limit(Math.min(limit ?? 25, 100));
-    if (error)
-      return { content: [{ type: "text", text: error.message }], isError: true };
-    return {
-      content: [{ type: "text", text: JSON.stringify(data ?? [], null, 2) }],
-      structuredContent: { sequences: data ?? [] }
-    };
-  }
-});
-
-// src/lib/mcp/tools/list-recent-replies.ts
-import { createClient as createClient4 } from "npm:@supabase/supabase-js@^2.76.1";
-import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.23.0";
-import { z as z4 } from "npm:zod@^3.25.76";
-function supabaseForUser4(ctx) {
-  return createClient4(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY,
-    {
-      global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
-      auth: { persistSession: false, autoRefreshToken: false }
-    }
-  );
-}
-var list_recent_replies_default = defineTool4({
-  name: "list_recent_replies",
-  title: "List recent replies",
-  description: "List the most recent inbound replies (inbox threads) captured for the signed-in user, including sender, subject, and classification.",
-  inputSchema: {
-    limit: z4.number().int().min(1).max(50).optional().describe("Max results (default 20)."),
-    unread_only: z4.boolean().optional().describe("Only return threads that have not been marked read.")
-  },
-  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ limit, unread_only }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    const supabase = supabaseForUser4(ctx);
-    let q = supabase.from("reply_threads").select("id, sender_email, subject, classification, read, replied_at, created_at, lead_id").eq("user_id", ctx.getUserId()).order("created_at", { ascending: false }).limit(Math.min(limit ?? 20, 50));
-    if (unread_only) q = q.eq("read", false);
-    const { data, error } = await q;
-    if (error)
-      return { content: [{ type: "text", text: error.message }], isError: true };
-    return {
-      content: [{ type: "text", text: JSON.stringify(data ?? [], null, 2) }],
-      structuredContent: { replies: data ?? [] }
-    };
-  }
-});
-
-// src/lib/mcp/tools/list-recent-sent-emails.ts
-import { createClient as createClient5 } from "npm:@supabase/supabase-js@^2.76.1";
-import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.23.0";
-import { z as z5 } from "npm:zod@^3.25.76";
-function supabaseForUser5(ctx) {
-  return createClient5(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY,
-    {
-      global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
-      auth: { persistSession: false, autoRefreshToken: false }
-    }
-  );
-}
-var list_recent_sent_emails_default = defineTool5({
-  name: "list_recent_sent_emails",
-  title: "List recent sent emails",
-  description: "List the signed-in user's recently sent outbound emails with subject, recipient, status, and open/reply timestamps.",
-  inputSchema: {
-    limit: z5.number().int().min(1).max(50).optional().describe("Max results (default 20).")
-  },
-  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ limit }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    const supabase = supabaseForUser5(ctx);
-    const { data, error } = await supabase.from("sent_emails").select("id, subject, to_email, status, sent_at, opened_at, replied_at, sequence_id, lead_id").eq("user_id", ctx.getUserId()).order("sent_at", { ascending: false, nullsFirst: false }).limit(Math.min(limit ?? 20, 50));
-    if (error)
-      return { content: [{ type: "text", text: error.message }], isError: true };
-    return {
-      content: [{ type: "text", text: JSON.stringify(data ?? [], null, 2) }],
-      structuredContent: { sent_emails: data ?? [] }
-    };
-  }
-});
-
-// src/lib/mcp/tools/create-lead.ts
-import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.23.0";
-import { z as z6 } from "npm:zod@^3.25.76";
 
 // src/lib/mcp/tools/_supabase.ts
-import { createClient as createClient6 } from "npm:@supabase/supabase-js@^2.76.1";
-function supabaseForUser6(ctx) {
-  return createClient6(
+import { createClient } from "npm:@supabase/supabase-js@^2.76.1";
+function supabaseForUser(ctx) {
+  return createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY,
     {
@@ -227,8 +34,228 @@ function ok(payload, key = "result") {
     structuredContent: { [key]: payload }
   };
 }
+async function planGate(ctx, tool) {
+  const { data, error } = await supabaseForUser(ctx).rpc("mcp_consume_call", { _tool: tool });
+  if (error) return err("Could not verify your plan's MCP access. Try again shortly.");
+  const res = data;
+  if (!res?.allowed) return err(res?.reason ?? "MCP access is not available on your plan.");
+  return null;
+}
+
+// src/lib/mcp/tools/list-leads.ts
+function supabaseForUser2(ctx) {
+  return createClient2(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY,
+    {
+      global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
+      auth: { persistSession: false, autoRefreshToken: false }
+    }
+  );
+}
+var list_leads_default = defineTool({
+  name: "list_leads",
+  title: "List leads",
+  description: "List the signed-in user's saved leads in OutReign, most recently created first. Optionally filter by the visible pipeline stage and cap the result count.",
+  inputSchema: {
+    limit: z.number().int().min(1).max(100).optional().describe("Max number of leads to return (default 25, max 100)."),
+    status: z.enum(["new", "contacted", "no_response", "replied", "bounced", "meeting_booked", "qualified", "not_interested", "won", "lost"]).optional().describe("Optional pipeline stage filter.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ limit, status }, ctx) => {
+    if (!ctx.isAuthenticated())
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    {
+      const blocked = await planGate(ctx, "list_leads");
+      if (blocked) return blocked;
+    }
+    const supabase = supabaseForUser2(ctx);
+    let q = supabase.from("leads").select(
+      "id, contact_name, contact_email, job_title, company_name, company_website, industry, lead_status, pipeline_stage, icp_score, created_at"
+    ).eq("user_id", ctx.getUserId()).order("created_at", { ascending: false }).limit(Math.min(limit ?? 25, 100));
+    if (status) q = q.eq("pipeline_stage", status);
+    const { data, error } = await q;
+    if (error)
+      return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? [], null, 2) }],
+      structuredContent: { leads: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/search-leads.ts
+import { createClient as createClient3 } from "npm:@supabase/supabase-js@^2.76.1";
+import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z2 } from "npm:zod@^3.25.76";
+function supabaseForUser3(ctx) {
+  return createClient3(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY,
+    {
+      global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
+      auth: { persistSession: false, autoRefreshToken: false }
+    }
+  );
+}
+var search_leads_default = defineTool2({
+  name: "search_leads",
+  title: "Search leads",
+  description: "Full-text search across the signed-in user's OutReign leads by contact name, company, email, or job title.",
+  inputSchema: {
+    query: z2.string().trim().min(1).describe("Search text to match against name, company, email, or title."),
+    limit: z2.number().int().min(1).max(50).optional().describe("Max results (default 20, max 50).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ query, limit }, ctx) => {
+    if (!ctx.isAuthenticated())
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    {
+      const blocked = await planGate(ctx, "search_leads");
+      if (blocked) return blocked;
+    }
+    const supabase = supabaseForUser3(ctx);
+    const like = `%${query.replace(/[%,]/g, " ")}%`;
+    const { data, error } = await supabase.from("leads").select(
+      "id, contact_name, contact_email, job_title, company_name, industry, lead_status, icp_score, created_at"
+    ).eq("user_id", ctx.getUserId()).or(
+      `contact_name.ilike.${like},contact_email.ilike.${like},company_name.ilike.${like},job_title.ilike.${like}`
+    ).order("created_at", { ascending: false }).limit(Math.min(limit ?? 20, 50));
+    if (error)
+      return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? [], null, 2) }],
+      structuredContent: { leads: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-sequences.ts
+import { createClient as createClient4 } from "npm:@supabase/supabase-js@^2.76.1";
+import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z3 } from "npm:zod@^3.25.76";
+function supabaseForUser4(ctx) {
+  return createClient4(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY,
+    {
+      global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
+      auth: { persistSession: false, autoRefreshToken: false }
+    }
+  );
+}
+var list_sequences_default = defineTool3({
+  name: "list_sequences",
+  title: "List email sequences",
+  description: "List the signed-in user's outbound email sequences with enrollment and completion totals.",
+  inputSchema: {
+    limit: z3.number().int().min(1).max(100).optional().describe("Max results (default 25).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ limit }, ctx) => {
+    if (!ctx.isAuthenticated())
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    {
+      const blocked = await planGate(ctx, "list_sequences");
+      if (blocked) return blocked;
+    }
+    const supabase = supabaseForUser4(ctx);
+    const { data, error } = await supabase.from("email_sequences").select("id, name, description, status, total_enrollments, total_completed, created_at, updated_at").eq("user_id", ctx.getUserId()).order("updated_at", { ascending: false }).limit(Math.min(limit ?? 25, 100));
+    if (error)
+      return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? [], null, 2) }],
+      structuredContent: { sequences: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-recent-replies.ts
+import { createClient as createClient5 } from "npm:@supabase/supabase-js@^2.76.1";
+import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z4 } from "npm:zod@^3.25.76";
+function supabaseForUser5(ctx) {
+  return createClient5(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY,
+    {
+      global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
+      auth: { persistSession: false, autoRefreshToken: false }
+    }
+  );
+}
+var list_recent_replies_default = defineTool4({
+  name: "list_recent_replies",
+  title: "List recent replies",
+  description: "List the most recent inbound replies (inbox threads) captured for the signed-in user, including sender, subject, and classification.",
+  inputSchema: {
+    limit: z4.number().int().min(1).max(50).optional().describe("Max results (default 20)."),
+    unread_only: z4.boolean().optional().describe("Only return threads that have not been marked read.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ limit, unread_only }, ctx) => {
+    if (!ctx.isAuthenticated())
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    {
+      const blocked = await planGate(ctx, "list_recent_replies");
+      if (blocked) return blocked;
+    }
+    const supabase = supabaseForUser5(ctx);
+    let q = supabase.from("reply_threads").select("id, sender_email, subject, classification, read, replied_at, created_at, lead_id").eq("user_id", ctx.getUserId()).order("created_at", { ascending: false }).limit(Math.min(limit ?? 20, 50));
+    if (unread_only) q = q.eq("read", false);
+    const { data, error } = await q;
+    if (error)
+      return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? [], null, 2) }],
+      structuredContent: { replies: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-recent-sent-emails.ts
+import { createClient as createClient6 } from "npm:@supabase/supabase-js@^2.76.1";
+import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z5 } from "npm:zod@^3.25.76";
+function supabaseForUser6(ctx) {
+  return createClient6(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY,
+    {
+      global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
+      auth: { persistSession: false, autoRefreshToken: false }
+    }
+  );
+}
+var list_recent_sent_emails_default = defineTool5({
+  name: "list_recent_sent_emails",
+  title: "List recent sent emails",
+  description: "List the signed-in user's recently sent outbound emails with subject, recipient, status, and open/reply timestamps.",
+  inputSchema: {
+    limit: z5.number().int().min(1).max(50).optional().describe("Max results (default 20).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ limit }, ctx) => {
+    if (!ctx.isAuthenticated())
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    {
+      const blocked = await planGate(ctx, "list_recent_sent_emails");
+      if (blocked) return blocked;
+    }
+    const supabase = supabaseForUser6(ctx);
+    const { data, error } = await supabase.from("sent_emails").select("id, subject, to_email, status, sent_at, opened_at, replied_at, sequence_id, lead_id").eq("user_id", ctx.getUserId()).order("sent_at", { ascending: false, nullsFirst: false }).limit(Math.min(limit ?? 20, 50));
+    if (error)
+      return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? [], null, 2) }],
+      structuredContent: { sent_emails: data ?? [] }
+    };
+  }
+});
 
 // src/lib/mcp/tools/create-lead.ts
+import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z6 } from "npm:zod@^3.25.76";
 var create_lead_default = defineTool6({
   name: "create_lead",
   title: "Create lead",
@@ -248,7 +275,11 @@ var create_lead_default = defineTool6({
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
   handler: async (input, ctx) => {
     if (!ctx.isAuthenticated()) return notAuthed();
-    const supabase = supabaseForUser6(ctx);
+    {
+      const blocked = await planGate(ctx, "create_lead");
+      if (blocked) return blocked;
+    }
+    const supabase = supabaseForUser(ctx);
     const { data, error } = await supabase.from("leads").insert({
       user_id: ctx.getUserId(),
       source: input.source ?? "mcp",
@@ -290,9 +321,13 @@ var update_lead_default = defineTool7({
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   handler: async ({ id, ...patch }, ctx) => {
     if (!ctx.isAuthenticated()) return notAuthed();
+    {
+      const blocked = await planGate(ctx, "update_lead");
+      if (blocked) return blocked;
+    }
     const clean = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== void 0));
     if (Object.keys(clean).length === 0) return err("No fields to update.");
-    const supabase = supabaseForUser6(ctx);
+    const supabase = supabaseForUser(ctx);
     const { data, error } = await supabase.from("leads").update(clean).eq("id", id).eq("user_id", ctx.getUserId()).select("id, company_name, contact_name, contact_email, lead_status, pipeline_stage, updated_at").single();
     if (error) return err(error.message);
     return ok(data, "lead");
@@ -313,7 +348,11 @@ var enroll_lead_default = defineTool8({
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
   handler: async ({ lead_id, sequence_id }, ctx) => {
     if (!ctx.isAuthenticated()) return notAuthed();
-    const supabase = supabaseForUser6(ctx);
+    {
+      const blocked = await planGate(ctx, "enroll_lead_in_sequence");
+      if (blocked) return blocked;
+    }
+    const supabase = supabaseForUser(ctx);
     const now = (/* @__PURE__ */ new Date()).toISOString();
     const { data, error } = await supabase.from("sequence_enrollments").insert({
       user_id: ctx.getUserId(),
@@ -344,7 +383,11 @@ var send_reply_default = defineTool9({
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
   handler: async ({ reply_thread_id, body, subject }, ctx) => {
     if (!ctx.isAuthenticated()) return notAuthed();
-    const supabase = supabaseForUser6(ctx);
+    {
+      const blocked = await planGate(ctx, "send_reply");
+      if (blocked) return blocked;
+    }
+    const supabase = supabaseForUser(ctx);
     const { data: thread, error: tErr } = await supabase.from("reply_threads").select("id, lead_id, subject, sender_email").eq("id", reply_thread_id).eq("user_id", ctx.getUserId()).maybeSingle();
     if (tErr) return err(tErr.message);
     if (!thread) return err("Reply thread not found for this user.");
@@ -380,7 +423,11 @@ var list_deals_default = defineTool10({
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ limit, stage }, ctx) => {
     if (!ctx.isAuthenticated()) return notAuthed();
-    const supabase = supabaseForUser6(ctx);
+    {
+      const blocked = await planGate(ctx, "list_deals");
+      if (blocked) return blocked;
+    }
+    const supabase = supabaseForUser(ctx);
     let q = supabase.from("deals").select("id, title, company_name, contact_name, value, stage, probability, expected_close_date, lead_id, updated_at").eq("user_id", ctx.getUserId()).order("updated_at", { ascending: false }).limit(Math.min(limit ?? 25, 100));
     if (stage) q = q.eq("stage", stage);
     const { data, error } = await q;
@@ -410,9 +457,13 @@ var update_deal_default = defineTool11({
   annotations: { readOnlyHint: false, idempotentHint: true, openWorldHint: false },
   handler: async ({ id, ...patch }, ctx) => {
     if (!ctx.isAuthenticated()) return notAuthed();
+    {
+      const blocked = await planGate(ctx, "update_deal");
+      if (blocked) return blocked;
+    }
     const clean = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== void 0));
     if (Object.keys(clean).length === 0) return err("No fields to update.");
-    const supabase = supabaseForUser6(ctx);
+    const supabase = supabaseForUser(ctx);
     const { data, error } = await supabase.from("deals").update(clean).eq("id", id).eq("user_id", ctx.getUserId()).select("id, title, stage, value, probability, updated_at").single();
     if (error) return err(error.message);
     return ok(data, "deal");
@@ -432,7 +483,11 @@ var list_icp_profiles_default = defineTool12({
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ limit }, ctx) => {
     if (!ctx.isAuthenticated()) return notAuthed();
-    const supabase = supabaseForUser6(ctx);
+    {
+      const blocked = await planGate(ctx, "list_icp_profiles");
+      if (blocked) return blocked;
+    }
+    const supabase = supabaseForUser(ctx);
     const { data, error } = await supabase.from("icp_profiles").select(
       "id, name, industries, target_titles, departments, seniority_levels, geographies, company_size_min, company_size_max, revenue_range, tech_stack, buying_signals, intent_keywords, pain_points, value_proposition, disqualifiers, notes, updated_at"
     ).eq("user_id", ctx.getUserId()).order("updated_at", { ascending: false }).limit(Math.min(limit ?? 20, 50));
@@ -470,9 +525,13 @@ var update_icp_profile_default = defineTool13({
   annotations: { readOnlyHint: false, idempotentHint: true, openWorldHint: false },
   handler: async ({ id, ...patch }, ctx) => {
     if (!ctx.isAuthenticated()) return notAuthed();
+    {
+      const blocked = await planGate(ctx, "update_icp_profile");
+      if (blocked) return blocked;
+    }
     const clean = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== void 0));
     if (Object.keys(clean).length === 0) return err("No fields to update.");
-    const supabase = supabaseForUser6(ctx);
+    const supabase = supabaseForUser(ctx);
     const { data, error } = await supabase.from("icp_profiles").update(clean).eq("id", id).eq("user_id", ctx.getUserId()).select("id, name, updated_at").single();
     if (error) return err(error.message);
     return ok(data, "icp_profile");
@@ -492,7 +551,11 @@ var get_agent_stats_default = defineTool14({
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ days }, ctx) => {
     if (!ctx.isAuthenticated()) return notAuthed();
-    const supabase = supabaseForUser6(ctx);
+    {
+      const blocked = await planGate(ctx, "get_agent_stats");
+      if (blocked) return blocked;
+    }
+    const supabase = supabaseForUser(ctx);
     const window = days ?? 7;
     const since = new Date(Date.now() - window * 24 * 60 * 60 * 1e3).toISOString();
     const [configRes, actionsRes] = await Promise.all([
@@ -563,10 +626,14 @@ var update_agent_config_default = defineTool15({
   annotations: { readOnlyHint: false, idempotentHint: true, openWorldHint: false },
   handler: async (patch, ctx) => {
     if (!ctx.isAuthenticated()) return notAuthed();
+    {
+      const blocked = await planGate(ctx, "update_agent_config");
+      if (blocked) return blocked;
+    }
     const { agent_id: agentId, agent_name_match: agentNameMatch, ...fields } = patch;
     const clean = Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== void 0));
     if (Object.keys(clean).length === 0) return err("No fields to update.");
-    const supabase = supabaseForUser6(ctx);
+    const supabase = supabaseForUser(ctx);
     const userId = ctx.getUserId();
     let lookup = supabase.from("agent_configs").select("id").eq("user_id", userId);
     if (agentId) lookup = lookup.eq("id", agentId);

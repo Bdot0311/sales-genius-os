@@ -1,6 +1,6 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
-import { supabaseForUser, notAuthed, err, ok } from "./_supabase";
+import { supabaseForUser, notAuthed, err, ok, planGate } from "./_supabase";
 
 export default defineTool({
   name: "update_agent_config",
@@ -27,6 +27,7 @@ export default defineTool({
   annotations: { readOnlyHint: false, idempotentHint: true, openWorldHint: false },
   handler: async (patch, ctx) => {
     if (!ctx.isAuthenticated()) return notAuthed();
+    { const blocked = await planGate(ctx, "update_agent_config"); if (blocked) return blocked; }
     const { agent_id: agentId, agent_name_match: agentNameMatch, ...fields } = patch as Record<string, unknown> & {
       agent_id?: string;
       agent_name_match?: string;

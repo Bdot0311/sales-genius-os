@@ -257,8 +257,8 @@ serve(async (req) => {
     const rl = await checkRateLimit(supabaseUrl, serviceKey, keyData.id, resource || 'default');
     if (!rl.allowed) {
       return respond(
-        { error: 'Rate limit exceeded', resetAt: rl.resetAt },
-        429,
+        { error: rl.reason || 'Rate limit exceeded', resetAt: rl.resetAt },
+        /paid plan|Starter and above/i.test(String(rl.reason ?? '')) ? 403 : 429,
         { 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': rl.resetAt || '' },
       );
     }

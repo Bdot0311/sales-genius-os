@@ -3298,6 +3298,27 @@ export type Database = {
         }
         Relationships: []
       }
+      mcp_call_log: {
+        Row: {
+          created_at: string
+          id: number
+          tool: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          tool: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          tool?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       message_blocks: {
         Row: {
           category: string
@@ -6383,6 +6404,13 @@ export type Database = {
           sequences_count: number
         }[]
       }
+      api_tier_limits: {
+        Args: { _plan: Database["public"]["Enums"]["subscription_plan"] }
+        Returns: {
+          per_day: number
+          per_minute: number
+        }[]
+      }
       apply_stripe_event_to_subscription: {
         Args: {
           _event_created_at: string
@@ -6673,8 +6701,13 @@ export type Database = {
         }
         Returns: undefined
       }
+      mcp_consume_call: { Args: { _tool: string }; Returns: Json }
       next_month_start_utc: { Args: never; Returns: string }
       pick_sending_account: { Args: { p_user_id: string }; Returns: string }
+      plan_for_user: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["subscription_plan"]
+      }
       plan_search_credits: {
         Args: { _plan: Database["public"]["Enums"]["subscription_plan"] }
         Returns: number

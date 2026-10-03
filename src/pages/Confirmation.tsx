@@ -125,6 +125,7 @@ const Confirmation = () => {
       "Prospect search & verified emails",
       "AI email generator",
       "Campaign templates",
+      "API & MCP access (30 req/min)",
       "Standard support"
     ],
     growth: [
@@ -133,13 +134,14 @@ const Confirmation = () => {
       "Advanced prospect filters",
       "Bulk prospect export",
       "AI personalized outreach",
+      "API & MCP access (60 req/min)",
       "Priority support"
     ],
     pro: [
       "5,000 verified prospects / month",
       "500 prospects per day",
       "Advanced automation features",
-      "CRM integrations",
+      "API & MCP access (120 req/min)",
       "Team collaboration access",
       "Premium support"
     ],
@@ -148,7 +150,7 @@ const Confirmation = () => {
       "1,500 prospects per day",
       "White-label client portal",
       "Branded PDF reports",
-      "Priority API access",
+      "API & MCP access (300 req/min)",
       "Dedicated account support"
     ]
   };

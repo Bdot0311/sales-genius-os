@@ -1,6 +1,6 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
-import { supabaseForUser, notAuthed, err, ok } from "./_supabase";
+import { supabaseForUser, notAuthed, err, ok, planGate } from "./_supabase";
 
 export default defineTool({
   name: "create_lead",
@@ -22,6 +22,7 @@ export default defineTool({
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
   handler: async (input, ctx) => {
     if (!ctx.isAuthenticated()) return notAuthed();
+    { const blocked = await planGate(ctx, "create_lead"); if (blocked) return blocked; }
     const supabase = supabaseForUser(ctx);
     const { data, error } = await supabase
       .from("leads")

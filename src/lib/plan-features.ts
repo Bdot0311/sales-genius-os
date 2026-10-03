@@ -116,7 +116,7 @@ export const PLAN_FEATURES = {
     maxResultsPerSearch: PLAN_SEARCH_LIMITS.starter.maxResultsPerSearch,
     enrichmentLevel: 'basic',
     advancedFilters: false,
-    apiAccessLeads: false,
+    apiAccessLeads: true,
     
     // ICP Builder
     icpProfiles: 3,
@@ -182,7 +182,7 @@ export const PLAN_FEATURES = {
     repPerformance: false,
     customReports: false,
     dataExports: false,
-    apiAccessAnalytics: false,
+    apiAccessAnalytics: true,
     
     // AI Recommendations
     recommendationLevel: 'basic',
@@ -212,7 +212,7 @@ export const PLAN_FEATURES = {
     maxResultsPerSearch: PLAN_SEARCH_LIMITS.growth.maxResultsPerSearch,
     enrichmentLevel: 'standard',
     advancedFilters: false,
-    apiAccessLeads: false,
+    apiAccessLeads: true,
     
     // ICP Builder
     icpProfiles: 10,
@@ -278,7 +278,7 @@ export const PLAN_FEATURES = {
     repPerformance: false,
     customReports: false,
     dataExports: false,
-    apiAccessAnalytics: false,
+    apiAccessAnalytics: true,
     
     // AI Recommendations
     recommendationLevel: 'general',
@@ -534,7 +534,7 @@ export const UPGRADE_MESSAGES = {
   apiAccessLeads: {
     title: 'Lead Intelligence API',
     description: 'Integrate lead discovery directly into your existing tools and workflows.',
-    availableOn: 'pro',
+    availableOn: 'starter',
   },
   aiFirstLines: {
     title: 'AI-Written First Lines',

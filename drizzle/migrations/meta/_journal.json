@@ -218,6 +218,13 @@
       "when": 1790779950979,
       "tag": "0030_generalize_agent_jobs",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1791063877450,
+      "tag": "0031_api_mcp_paid_tiers",
+      "breakpoints": true
     }
   ]
 }
