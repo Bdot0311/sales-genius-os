@@ -387,3 +387,38 @@ describe("the progress card counts every open batch", () => {
     expect(code(HOOK)).toContain('rows.some((r) => r.status === "running") ? "running" : rows[0].status');
   });
 });
+
+/**
+ * "2 drafts failed (Cosmic Labs, monar) — will regenerate in next batch."
+ *
+ * Nothing regenerates them. claim_agent_job_items takes rows where status is
+ * 'pending'; a failed item is terminal and is never claimed again. The model
+ * said it because the tool result on a partly successful call returned the
+ * successes and said nothing whatsoever about the two that did not make it, so
+ * the only honest number it had was "7 written" and it invented a future for
+ * the other two. Two leads ended the run with no draft and nobody looking.
+ */
+describe("a failed draft is not quietly promised a retry", () => {
+  const QUEUE_SQL = readFileSync(
+    "supabase/migrations/20260922190000_agent_job_queue.sql",
+    "utf8",
+  );
+
+  it("hands the model the failures on a call that mostly worked", () => {
+    expect(CODE).toContain("drafts.length > okCount");
+    expect(CODE).toContain("reasons: failureReasons,");
+  });
+
+  it("tells it in words that nothing picks them up later", () => {
+    expect(CODE).toContain("there is no next batch for a failed lead");
+    expect(CODE).toContain("never say one will regenerate");
+  });
+
+  it("and that is the truth: the queue only ever claims pending work", () => {
+    // If this ever grows a retry, the note above becomes the lie instead.
+    const from = QUEUE_SQL.indexOf("claim_agent_job_items(p_limit");
+    const claim = QUEUE_SQL.slice(from, QUEUE_SQL.indexOf("$$;", from));
+    expect(claim).toContain("c.status = 'pending'");
+    expect(claim).not.toContain("'failed'");
+  });
+});

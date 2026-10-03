@@ -2676,6 +2676,32 @@ serve(async (req) => {
               "drafted. Never add up counts across calls yourself — call list_leads with without_draft: " +
               "true and quote its remaining_without_draft.",
             skipped_lead_ids: skipped,
+            /*
+             * Failures on a call that mostly worked.
+             *
+             * The model reported "2 drafts failed (Cosmic Labs, monar) — will
+             * regenerate in next batch". Nothing regenerates them. A failed
+             * item is terminal: process-agent-jobs writes status "failed" and
+             * never claims it again. This path returned the successes and said
+             * nothing at all about the two that did not make it, so the model
+             * filled the silence with a promise the product does not keep, and
+             * two leads ended the run with no draft and no one looking for it.
+             */
+            ...(drafts.length > okCount
+              ? {
+                  failed: {
+                    count: drafts.length - okCount,
+                    reasons: failureReasons,
+                    note:
+                      `${drafts.length - okCount} lead(s) got no draft. Say that plainly and say why, ` +
+                      "using reasons. Nothing retries them: there is no next batch for a failed lead, so " +
+                      "never say one will regenerate, be picked up later, or be covered by the queue. If " +
+                      "the user wants another attempt they have to ask for it, and most of these reasons " +
+                      "(a figure the research cannot back, a date it cannot support) will repeat until " +
+                      "the lead is enriched.",
+                  },
+                }
+              : {}),
             drafts: drafts.map(({ body: _b, ...rest }) => rest),
             // Without this the model reports twelve drafts as the whole job and
             // the user believes the other sixty-seven were never asked for.
