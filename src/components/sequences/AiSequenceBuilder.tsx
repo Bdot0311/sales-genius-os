@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Copy, Sparkles, Wand2 } from "lucide-react";
+import { Loader2, Copy, Sparkles, Wand2, Users } from "lucide-react";
+import { ENROLMENT_START_STEP, firstActionAt, stepsFromTouches } from "@/lib/sequence-from-touches";
 
 interface Touch {
   day: number;
@@ -54,6 +55,8 @@ export const AiSequenceBuilder = () => {
   const [signal, setSignal] = useState("");
   const [loading, setLoading] = useState(false);
   const [touches, setTouches] = useState<Touch[]>([]);
+  const [enrolling, setEnrolling] = useState(false);
+  const [sequenceName, setSequenceName] = useState("");
   const [lowPersonalization, setLowPersonalization] = useState(false);
   const [briefs, setBriefs] = useState<{ id: string; name: string }[]>([]);
   const [briefId, setBriefId] = useState<string>("");
@@ -134,6 +137,99 @@ export const AiSequenceBuilder = () => {
       toast({ title: "Generation failed", description: e?.message || "Try again", variant: "destructive" });
     } finally {
       setLoading(false);
+    }
+  };
+
+  /*
+   * Saving the sequence, and putting everyone selected into it.
+   *
+   * Until now this screen generated touches and offered to copy them, so
+   * "build a sequence for these prospects" ended at the clipboard and the
+   * cadence had to be rebuilt by hand in the sequence editor.
+   *
+   * One sequence is written and every selected lead is enrolled into it. The
+   * steps are the campaign and the leads are who walks through it, so this is
+   * one row in email_sequences, N in sequence_steps, and one enrolment per
+   * prospect -- not a sequence each.
+   *
+   * It writes as the user through RLS rather than through a function: all
+   * three tables already carry owner policies, and the dispatcher that walks
+   * the steps is the one the rest of the product uses.
+   */
+  const saveAndEnrol = async () => {
+    if (touches.length === 0 || leadIds.length === 0) return;
+    setEnrolling(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not signed in");
+
+      const name = (sequenceName.trim() ||
+        `${selectedLead?.company_name || "Sequence"} — ${touches.length} touches`).slice(0, 120);
+
+      const { data: sequence, error: seqError } = await supabase
+        .from("email_sequences")
+        .insert({
+          user_id: user.id,
+          name,
+          description: offer.trim().slice(0, 500) || null,
+          // Active, because the dispatcher only walks sequences that are, and
+          // enrolling into a draft would look like it had silently failed.
+          status: "active",
+        })
+        .select("id")
+        .single();
+      if (seqError || !sequence) throw new Error(seqError?.message || "Could not save the sequence");
+
+      const { error: stepsError } = await supabase.from("sequence_steps").insert(
+        // user_id as well as sequence_id: the table carries its own owner
+        // column now, beyond the ownership its RLS reads through the sequence.
+        stepsFromTouches(touches).map((step) => ({
+          ...step,
+          sequence_id: sequence.id,
+          user_id: user.id,
+        })),
+      );
+      if (stepsError) {
+        // A sequence with no steps enrols people into nothing and sends
+        // forever without sending anything.
+        await supabase.from("email_sequences").delete().eq("id", sequence.id);
+        throw new Error(stepsError.message);
+      }
+
+      const startAt = firstActionAt(touches);
+      const { data: enrolled, error: enrolError } = await supabase
+        .from("sequence_enrollments")
+        .insert(
+          leadIds.map((leadId) => ({
+            user_id: user.id,
+            sequence_id: sequence.id,
+            lead_id: leadId,
+            // Not the column default of 1: the dispatcher sends
+            // current_step + 1, so starting at 1 skips the opener.
+            current_step: ENROLMENT_START_STEP,
+            status: "active",
+            next_action_at: startAt,
+          })),
+        )
+        .select("id");
+      if (enrolError) throw new Error(enrolError.message);
+
+      const count = (enrolled ?? []).length;
+      toast({
+        title: `${count} ${count === 1 ? "prospect" : "prospects"} enrolled`,
+        description: `"${name}" is active. The first touch goes out ${
+          touches[0]?.day ? `in ${touches[0].day} days` : "shortly"
+        }, and the rest follow on their own.`,
+      });
+      navigate(`/dashboard/sequences/${sequence.id}`);
+    } catch (e: any) {
+      toast({
+        title: "Could not enrol",
+        description: e?.message || "Try again",
+        variant: "destructive",
+      });
+    } finally {
+      setEnrolling(false);
     }
   };
 
@@ -257,6 +353,37 @@ export const AiSequenceBuilder = () => {
 
       {touches.length > 0 && (
         <div className="space-y-4">
+          {/* The cadence exists; this is what turns it into a campaign.
+              Before, the only way out of this screen was the clipboard. */}
+          <Panel>
+            <PanelBody className="flex flex-wrap items-end gap-3">
+              <div className="min-w-[14rem] flex-1 space-y-1.5">
+                <Label htmlFor="sequence-name">Name</Label>
+                <Input
+                  id="sequence-name"
+                  value={sequenceName}
+                  onChange={(e) => setSequenceName(e.target.value)}
+                  placeholder={`${selectedLead?.company_name || "Sequence"} — ${touches.length} touches`}
+                />
+              </div>
+              <Button onClick={saveAndEnrol} disabled={enrolling || leadIds.length === 0}>
+                {enrolling ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Users className="mr-2 h-4 w-4" />
+                )}
+                {leadIds.length === 1
+                  ? "Save and enrol 1 prospect"
+                  : `Save and enrol ${leadIds.length} prospects`}
+              </Button>
+              <p className="w-full text-[0.6875rem] leading-relaxed text-muted-foreground">
+                One sequence, every selected prospect walking through it. The first touch goes out
+                {touches[0]?.day ? ` in ${touches[0].day} days` : " shortly"}, and the rest follow on
+                their own — you do not need to stay on this page.
+              </p>
+            </PanelBody>
+          </Panel>
+
           {lowPersonalization && (
             <div className="flex items-start gap-2 rounded-md border border-yellow-500/30 bg-yellow-500/10 p-3 text-xs text-yellow-500">
               <span>this prospect had no hook above generic persona pain. review carefully, or route it to a segment-level sequence.</span>
