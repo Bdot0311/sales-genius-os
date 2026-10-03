@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { defineTool, type ToolContext } from "@lovable.dev/mcp-js";
 import { z } from "zod";
+import { planGate } from "./_supabase";
 
 function supabaseForUser(ctx: ToolContext) {
   return createClient(
@@ -25,6 +26,7 @@ export default defineTool({
   handler: async ({ limit }, ctx) => {
     if (!ctx.isAuthenticated())
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    { const blocked = await planGate(ctx, "list_recent_sent_emails"); if (blocked) return blocked; }
 
     const supabase = supabaseForUser(ctx);
     const { data, error } = await supabase

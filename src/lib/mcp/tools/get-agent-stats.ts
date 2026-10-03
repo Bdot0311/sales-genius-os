@@ -1,6 +1,6 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
-import { supabaseForUser, notAuthed, err, ok } from "./_supabase";
+import { supabaseForUser, notAuthed, err, ok, planGate } from "./_supabase";
 
 export default defineTool({
   name: "get_agent_stats",
@@ -13,6 +13,7 @@ export default defineTool({
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ days }, ctx) => {
     if (!ctx.isAuthenticated()) return notAuthed();
+    { const blocked = await planGate(ctx, "get_agent_stats"); if (blocked) return blocked; }
     const supabase = supabaseForUser(ctx);
     const window = days ?? 7;
     const since = new Date(Date.now() - window * 24 * 60 * 60 * 1000).toISOString();
