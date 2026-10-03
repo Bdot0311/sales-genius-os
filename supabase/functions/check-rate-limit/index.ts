@@ -113,9 +113,19 @@ serve(async (req) => {
     }
 
     // Get endpoint-specific rate limit or use default
-    const endpointLimits = apiKey.endpoint_rate_limits || {};
-    const tokensPerMinute = endpointLimits[endpoint]?.per_minute || apiKey.rate_limit_per_minute;
-    const tokensPerDay = endpointLimits[endpoint]?.per_day || apiKey.rate_limit_per_day;
+    // Limits come from the owner's CURRENT plan (public.api_tier_limits), so a
+    // downgrade or upgrade takes effect immediately. Free plans have no API access.
+    const { data: planName } = await supabase.rpc('plan_for_user', { _user_id: apiKey.user_id });
+    const { data: tierRows } = await supabase.rpc('api_tier_limits', { _plan: planName ?? 'free' });
+    const tier = Array.isArray(tierRows) ? tierRows[0] : tierRows;
+    if (!tier || !tier.per_minute) {
+      return new Response(
+        JSON.stringify({ allowed: false, reason: 'API access is included on Starter and above. Upgrade your plan to use the API.' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
+      );
+    }
+    const tokensPerMinute: number = tier.per_minute;
+    const tokensPerDay: number = tier.per_day;
 
     // Token bucket algorithm - refill rate
     const refillRate = tokensPerMinute / 60; // tokens per second
