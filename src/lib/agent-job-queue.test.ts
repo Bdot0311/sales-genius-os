@@ -226,18 +226,31 @@ describe("one draft path, not two", () => {
   });
 
   it("does not put a provider's 'Unknown' in the subject line", () => {
-    // Real prospects were queued under "Quick question — Unknown".
-    expect(fallbackSubject("Unknown", [])).toBe("Quick question");
-    expect(fallbackSubject("N/A", [])).toBe("Quick question");
-    expect(fallbackSubject("Acme", [])).toBe("Quick question — Acme");
+    // Real prospects were queued under a subject naming "Unknown" as their
+    // company. The rule is that a stand-in value never reaches the subject,
+    // not that the subject reads any particular way.
+    for (const junk of ["Unknown", "N/A"]) {
+      expect(fallbackSubject(junk, []).toLowerCase()).not.toContain(junk.toLowerCase());
+    }
+    expect(fallbackSubject("Acme", [])).toContain("Acme");
+  });
+
+  it("never falls back to a phrase the prompts ban", () => {
+    // It returned "Quick question — <company>", which both the Outreach Studio
+    // prompt and the subject prompt list as banned, and which was the only
+    // subject most drafts ever got.
+    for (const company of ["Acme", "Unknown", ""]) {
+      expect(fallbackSubject(company, []).toLowerCase()).not.toContain("quick question");
+    }
   });
 
   it("does not reuse a subject this person already had", () => {
     // The fallback is deterministic per lead, so a redraft produced the same
     // subject, which the send path refuses as a repeat — a draft that could
     // never be sent, generated over and over.
-    const again = fallbackSubject("Acme", ["Quick question — Acme"]);
-    expect(again).not.toBe("Quick question — Acme");
+    const first = fallbackSubject("Acme", []);
+    const again = fallbackSubject("Acme", [first]);
+    expect(again).not.toBe(first);
     expect(again.toLowerCase()).toContain("acme");
   });
 

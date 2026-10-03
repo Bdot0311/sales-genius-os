@@ -122,11 +122,34 @@ CLAIMS & PROOF:
 ${NO_FABRICATED_METRICS_RULE}`;
 
 // Framework emails output body only — no greeting, no sign-off
+/**
+ * Frameworks that write a body were told not to write a subject, and nothing
+ * else wrote one either: cleanGeneratedEmail stripped it for every goal but
+ * `introduction`, so draftForLead's fallback was the only subject most drafts
+ * ever got. It returned "Quick question — <company>" — a hundred leads, a
+ * hundred subjects differing only in a name, and the exact phrase these very
+ * prompts ban.
+ *
+ * So they write one. A follow-up still overrides it by threading on the
+ * original (see threadedSubject), because continuing a conversation beats
+ * opening a second one about the same thing.
+ */
+const SUBJECT_LINE_RULES = `
+SUBJECT LINE — first line, exactly "Subject: <your subject>", then a blank line:
+- Maximum 6 words. Lowercase except proper nouns.
+- Reference something specific to THIS lead or their company. If you cannot be
+  specific, be plain and short rather than clever.
+- NEVER: "quick question", "checking in", "following up", "touching base",
+  "let's connect", "opportunity", "partnership", anything with a number or %,
+  anything that reads like a newsletter headline, any fake "re:" or "fwd:".
+- It must differ from every other subject you would write for a different
+  company. Two leads must never get the same subject with the name swapped.`;
+
 const BODY_ONLY_RULES = `
 FORMAT:
 - Email body ONLY. No greeting. No first name. No sign-off.
 - Never output placeholder tokens like [Name], {name}, {{name}}, <name>, [Company], or similar.
-- Generate ONLY the email body. Do NOT include a subject line or any headers.
+- Beyond the subject line above, no other headers. No To, From, Cc or Date.
 - The framework beats above (PROBLEM, PROMISE, PROOF, PROPOSAL, TRIGGER and the
   rest) are how you plan the email. They are NOT headings and NOT text. Never
   print those words. Write the beats as ordinary consecutive paragraphs with
@@ -400,7 +423,8 @@ TONE: Casual, confident, not apologetic. You're following up because it's releva
 NEVER use: "just following up", "circling back", "bumping this to the top", "wanted to check in"
 ${BREVITY_RULES}${ELITE_OUTBOUND_RULES}${PERSONALIZATION_RULES}${BANNED_PHRASES}
 ${CLAIMS_RULES}
-${SIGNOFF_RULES}`;
+${SIGNOFF_RULES}
+${SUBJECT_LINE_RULES}`;
 
     case 'meeting':
       return `${base}
@@ -415,7 +439,8 @@ STRUCTURE — 2-3 sentences:
 RULE: Be direct about what you want. Do not bury the ask in qualifiers.
 ${BREVITY_RULES}${ELITE_OUTBOUND_RULES}${PERSONALIZATION_RULES}${BANNED_PHRASES}
 ${CLAIMS_RULES}
-${SIGNOFF_RULES}`;
+${SIGNOFF_RULES}
+${SUBJECT_LINE_RULES}`;
 
     case 'demo':
       return `${base}
@@ -430,7 +455,8 @@ STRUCTURE — 2-3 sentences:
 RULE: Make the demo feel valuable, not like a sales pitch. Outcome first, product second.
 ${BREVITY_RULES}${ELITE_OUTBOUND_RULES}${PERSONALIZATION_RULES}${BANNED_PHRASES}
 ${CLAIMS_RULES}
-${SIGNOFF_RULES}`;
+${SIGNOFF_RULES}
+${SUBJECT_LINE_RULES}`;
 
     case 'proposal':
       return `${base}
@@ -446,7 +472,8 @@ STRUCTURE — 3-4 sentences:
 RULE: Outcome-focused, not feature-focused. They care about what changes, not what the product does.
 ${BREVITY_RULES}${ELITE_OUTBOUND_RULES}${PERSONALIZATION_RULES}${BANNED_PHRASES}
 ${CLAIMS_RULES}
-${SIGNOFF_RULES}`;
+${SIGNOFF_RULES}
+${SUBJECT_LINE_RULES}`;
 
     case '4ts':
       return `You are a sharp B2B sales operator writing a cold email using the 4T's framework. Peer-to-peer tone. Two founders at an industry event. You have seen this problem dozens of times.
@@ -476,6 +503,7 @@ TONE:
 FORBIDDEN: "Quick call/question" | "I help companies" | "Leverage/Synergy/Optimize" | "Industry-leading/Best-in-class" | "I noticed" | "I saw" | "Just reaching out" | "Happy to"
 ${BANNED_PHRASES}
 ${CLAIMS_RULES}
+${SUBJECT_LINE_RULES}
 ${BODY_ONLY_RULES}`;
 
     case 'elusive':
@@ -504,6 +532,7 @@ TONE:
 FORBIDDEN: "Quick call/question" | "I help companies" | "I noticed" | "I saw" | Any pitch or product mention | "Leverage/Synergy" | "Industry-leading"
 ${BANNED_PHRASES}
 ${CLAIMS_RULES}
+${SUBJECT_LINE_RULES}
 ${BODY_ONLY_RULES}
 End with exactly: Who would be the right person to connect with on this?`;
 
@@ -535,6 +564,7 @@ TONE:
 FORBIDDEN: "Quick call/question" | "I help companies" | "I noticed" | "Leverage/Synergy/Optimize" | "Industry-leading" | "can build" | "can help" | "can set up"
 ${BANNED_PHRASES}
 ${CLAIMS_RULES}
+${SUBJECT_LINE_RULES}
 ${BODY_ONLY_RULES}`;
 
     case '4ps_followup':
@@ -564,6 +594,7 @@ TONE:
 FORBIDDEN: "Just following up" | "Bumping this" | "Circling back" | "Quick call" | "Leverage/Synergy" | "Happy to"
 ${BANNED_PHRASES}
 ${CLAIMS_RULES}
+${SUBJECT_LINE_RULES}
 ${BODY_ONLY_RULES}
 Start with exactly: I reached out the other day but likely didn't do the best job explaining how we help.`;
 
@@ -597,6 +628,7 @@ TONE:
 FORBIDDEN: "Just following up" | "Bumping this" | "Circling back" | "Quick call" | "Leverage/Synergy"
 ${BANNED_PHRASES}
 ${CLAIMS_RULES}
+${SUBJECT_LINE_RULES}
 ${BODY_ONLY_RULES}
 Start with exactly: Reason I ask about this is...
 End with exactly: Am I barking up the wrong tree?`;
@@ -1499,7 +1531,18 @@ conversation that is already going, not as someone chasing silence.`}`;
     }
 
     // Introduction emails include Subject line — preserve it; all others strip it
-    const preserveSubject = goal === 'introduction' && !use4SentenceFramework;
+    /*
+     * The subject survives for every goal now, not only `introduction`.
+     *
+     * Stripping it everywhere else left draftForLead with nothing to use but
+     * its fallback, which is how every follow-up in a hundred-lead batch went
+     * out as "Quick question — <company>". The frameworks are asked for one
+     * (SUBJECT_LINE_RULES) and what they write is kept.
+     *
+     * subject_only is the exception it has always been: that goal returns a
+     * subject and nothing else, so there is no body to separate it from.
+     */
+    const preserveSubject = goal !== 'subject_only' && !use4SentenceFramework;
     // An unfilled placeholder is a broken draft, not a dirty one: scrubbing the
     // token leaves the sentence collapsed around the hole it came out of.
     // Regenerate once instead, telling the model exactly what it did.

@@ -261,8 +261,8 @@ describe("agent-chat subject fallback", () => {
     // still covers what providers write.
     // The fallback moved to _shared/draft-one.ts with the rest of the draft
     // path, which means it can be run rather than grepped for.
-    expect(fallbackSubject("Unknown", [])).toBe("Quick question");
-    expect(fallbackSubject("Acme", [])).toBe("Quick question — Acme");
+    expect(fallbackSubject("Unknown", []).toLowerCase()).not.toContain("unknown");
+    expect(fallbackSubject("Acme", [])).toContain("Acme");
     expect(DRAFT_ONE).toMatch(/realValue\(companyName\)/);
     expect(RULES_SRC).toMatch(/unknown\|n\\\/\?a/i);
     expect(RULES_SRC).toMatch(/\bnone\b/i);
