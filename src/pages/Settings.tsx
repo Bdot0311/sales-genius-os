@@ -171,6 +171,7 @@ const Settings = () => {
         '100 prospects per day',
         'Prospect search & verified emails',
         'AI email generator',
+        'API & MCP access (30 req/min)',
         'Standard support'
       ],
       paymentLink: 'https://buy.stripe.com/9B6dR9ep1a2b0gi1ca1B60u'
@@ -186,6 +187,7 @@ const Settings = () => {
         'Advanced prospect filters',
         'Bulk prospect export',
         'AI personalized outreach',
+        'API & MCP access (60 req/min)',
         'Priority support'
       ],
       highlighted: true,
@@ -200,7 +202,7 @@ const Settings = () => {
         '5,000 prospects / month (credits roll over)',
         '500 prospects per day',
         'Advanced automation features',
-        'CRM integrations',
+        'API & MCP access (120 req/min)',
         'Premium support'
       ],
       paymentLink: 'https://buy.stripe.com/8x2bJ15Svfmvd341ca1B60q'
@@ -214,7 +216,7 @@ const Settings = () => {
         '15,000 prospects / month (credits roll over)',
         '1,500 prospects per day',
         'White-label client portal',
-        'Priority API access',
+        'API & MCP access (300 req/min)',
         'Dedicated account support'
       ],
       paymentLink: ''
@@ -286,6 +288,7 @@ const Settings = () => {
           {(() => {
             const showPro = isAdmin || subscription?.plan === 'pro' || subscription?.plan === 'agency';
             const isAgency = isAdmin || subscription?.plan === 'agency';
+            const showPaid = isAdmin || ['starter', 'growth', 'pro', 'agency'].includes(subscription?.plan || '');
             const showGrowthPlus = isAdmin || ['growth', 'pro', 'agency'].includes(subscription?.plan || '');
             const tabBase =
               "min-h-9 w-full justify-start gap-2 whitespace-nowrap rounded-md px-2.5 py-1.5 text-left text-[0.8125rem] font-normal leading-tight text-muted-foreground data-[state=active]:bg-muted/60 data-[state=active]:text-foreground data-[state=active]:shadow-none hover:bg-muted/30 hover:text-foreground lg:min-h-8";
@@ -326,8 +329,8 @@ const Settings = () => {
                   {isAgency && <TabsTrigger value="agency-admin" className={tabBase}><ShieldCheck className="h-4 w-4" />Agency Admin</TabsTrigger>}
                   <TabsTrigger value="support-access" className={tabBase}><KeyRound className="h-4 w-4" />Support Access</TabsTrigger>
                   {showPro && <TabsTrigger value="activity" className={tabBase}><History className="h-4 w-4" />Activity</TabsTrigger>}
-                  {showPro && <TabsTrigger value="api-keys" className={tabBase}><Key className="h-4 w-4" />API Keys</TabsTrigger>}
-                  {showPro && <TabsTrigger value="webhooks" className={tabBase}><Webhook className="h-4 w-4" />Webhooks</TabsTrigger>}
+                  {showPaid && <TabsTrigger value="api-keys" className={tabBase}><Key className="h-4 w-4" />API Keys</TabsTrigger>}
+                  {showPaid && <TabsTrigger value="webhooks" className={tabBase}><Webhook className="h-4 w-4" />Webhooks</TabsTrigger>}
                 </TabsList>
               </div>
             );
@@ -736,7 +739,7 @@ const Settings = () => {
             </>
           )}
 
-          {(isAdmin || subscription?.plan === 'pro' || subscription?.plan === 'agency') && (
+          {(isAdmin || ['starter', 'growth', 'pro', 'agency'].includes(subscription?.plan || '')) && (
             <>
               <TabsContent value="api-keys">
                 <APIKeysTab />
@@ -745,7 +748,11 @@ const Settings = () => {
               <TabsContent value="webhooks">
                 <WebhooksTab />
               </TabsContent>
+            </>
+          )}
 
+          {(isAdmin || subscription?.plan === 'pro' || subscription?.plan === 'agency') && (
+            <>
               <TabsContent value="activity">
                 <TeamActivityTab />
               </TabsContent>
