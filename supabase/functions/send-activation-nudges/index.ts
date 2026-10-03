@@ -1,5 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.45.0'
 import { sendAppEmail } from '../_shared/transactional-email-templates/send-app-email.ts'
+import { reactivationAllowed } from '../_shared/reactivation-cap.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -65,6 +66,9 @@ Deno.serve(async (req) => {
         await admin.from('user_activation').update({ last_nudge_sent: rule.template, last_nudge_sent_at: new Date().toISOString() }).eq('user_id', row.user_id)
         skipped++; continue
       }
+
+      const cap = await reactivationAllowed(admin, prof.email)
+      if (!cap.allowed) { skipped++; continue }
 
       const idempotency = `nudge-${rule.template}-${row.user_id}`
       const sendRes = await sendAppEmail(admin, rule.template, prof.email, {

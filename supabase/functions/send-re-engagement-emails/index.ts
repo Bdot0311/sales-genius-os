@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { corsHeaders } from "../_shared/internal-auth.ts";
 import { sendAppEmail } from "../_shared/transactional-email-templates/send-app-email.ts";
+import { reactivationAllowed } from '../_shared/reactivation-cap.ts';
 
 // Sends a re-engagement check-in to users who haven't signed in for a while.
 // - Inactive threshold: 14 days since last_sign_in_at
@@ -243,6 +244,9 @@ serve(async (req) => {
         });
         continue;
       }
+
+      const cap = await reactivationAllowed(supabase, user.email);
+      if (!cap.allowed) { skipped++; continue; }
 
       const result = await sendOne(user as any, {
         manual: false,
