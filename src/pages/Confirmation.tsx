@@ -125,6 +125,7 @@ const Confirmation = () => {
       "Prospect search & verified emails",
       "AI email generator",
       "Campaign templates",
+      "API & MCP access (30 req/min)",
       "Standard support"
     ],
     growth: [
@@ -133,6 +134,7 @@ const Confirmation = () => {
       "Advanced prospect filters",
       "Bulk prospect export",
       "AI personalized outreach",
+      "API & MCP access (60 req/min)",
       "Priority support"
     ],
     pro: [
