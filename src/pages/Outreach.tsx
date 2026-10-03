@@ -38,7 +38,7 @@ import { BulkSendDialog } from "@/components/outreach/BulkSendDialog";
 import { EmailQualityChecker, scoreEmailQuality } from "@/components/outreach/EmailQualityChecker";
 import { EmailRubricPanel } from "@/components/outreach/EmailRubricPanel";
 import { EmailAuditPanel } from "@/components/outreach/EmailAuditPanel";
-import { readGeneratedEmail, readGeneratedSubject } from "@/lib/read-generated-email";
+import { readGeneratedEmail, readGeneratedSubject, stripLeadingSubject } from "@/lib/read-generated-email";
 import { applyEmailQualityFix } from "@/lib/email-quality-fixes";
 import { LeadResearchPanel, type LeadResearch } from "@/components/outreach/LeadResearchPanel";
 import { SequencesList, MessageBlocksList } from "@/components/sequences";
@@ -1627,7 +1627,7 @@ Return ONLY the corrected email body. No subject line. No explanation. No "Here 
         return {
           id: `variant-${idx + 1}`,
           subject,
-          body: sanitizeGeneratedEmailBody(bodyData?.email || ''),
+          body: sanitizeGeneratedEmailBody(stripLeadingSubject(bodyData?.email || '')),
           // Attach label so the picker can show which template each variant used
           label: tmpl.label,
         };
@@ -2059,6 +2059,9 @@ ${formattedBody}
       open={bulkSendOpen}
       onOpenChange={setBulkSendOpen}
       leads={leads.filter((l) => selectedLeadIds.includes(l.id))}
+      initialSelectedIds={selectedLeadIds}
+      initialSubject={subjectLine}
+      initialBody={generatedEmail}
       dailyEmailLimit={dailyEmailLimit}
       dailyEmailsSent={dailyEmailsSent}
       connectedAccounts={connectedAccounts}

@@ -41,7 +41,22 @@ export class GenerationRefused extends Error {
  * `invokeError` is whatever supabase-js reported, passed through so a caller
  * has one thing to check instead of two.
  */
+/** Removes a leading "Subject: ..." line the model writes above the body. */
+export function stripLeadingSubject(text: string): string {
+  return String(text ?? "").replace(/^\s*subject\s*:[^\n]*(?:\n|$)/i, "").replace(/^\s*\n/, "");
+}
+
+/** The email body, with any model-written subject line removed. */
 export function readGeneratedEmail(
+  data: GeneratedEmailPayload | null | undefined,
+  invokeError?: { message?: string } | null,
+): string {
+  const body = stripLeadingSubject(readRaw(data, invokeError));
+  if (!body.trim()) throw new Error("The generator returned nothing usable. Try again.");
+  return body;
+}
+
+function readRaw(
   data: GeneratedEmailPayload | null | undefined,
   invokeError?: { message?: string } | null,
 ): string {
@@ -70,5 +85,5 @@ export function readGeneratedSubject(
   data: GeneratedEmailPayload | null | undefined,
   invokeError?: { message?: string } | null,
 ): string {
-  return readGeneratedEmail(data, invokeError).replace(/^Subject:\s*/i, "").trim();
+  return readRaw(data, invokeError).split("\n")[0].replace(/^Subject:\s*/i, "").trim();
 }
