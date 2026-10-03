@@ -465,7 +465,7 @@ const ApiDocs = () => {
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "hsl(0 0% 100% / 0.7)" }}>Authentication</p>
                   <p className="text-sm mb-3" style={{ color: "hsl(0 0% 100% / 0.55)" }}>
-                    Include your API key in the <InlineCode>X-API-Key</InlineCode> header. Generate API keys from <strong style={{ color: "hsl(0 0% 80%)" }}>Settings → API Keys</strong> (Pro plan).
+                    Include your API key in the <InlineCode>X-API-Key</InlineCode> header. Generate API keys from <strong style={{ color: "hsl(0 0% 80%)" }}>Settings → API Keys</strong> (any paid plan; rate limits scale with your tier: Starter 30/min, Growth 60/min, Pro 120/min, Agency 300/min).
                   </p>
                   <div className="px-3 py-2 rounded-xl font-mono text-sm" style={codeBlockStyle}>X-API-Key: sk_your_api_key_here</div>
                 </div>
