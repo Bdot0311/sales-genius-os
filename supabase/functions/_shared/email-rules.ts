@@ -1092,16 +1092,72 @@ export function hasScaffolding(email: string): boolean {
   return findScaffolding(email).length > 0;
 }
 
+/* ------------------------------------------------------------------------ *
+ * The self-check, printed under the signature.
+ *
+ * Two drafts in one batch came back with the model's own verification
+ * attached:
+ *
+ *   ...
+ *   PS: not useful? tell me and I'll stop.
+ *
+ *   **Word count: 118**
+ *
+ * The prompt asks for a word count to be checked before returning, and never
+ * says the check is silent, so the model reported the result. The markdown
+ * guard caught it -- correctly, that is not an email -- the regeneration came
+ * back with the same habit, and both leads lost their draft entirely over a
+ * trailing line that was never part of the message.
+ *
+ * This one is detachable, which is what separates it from a beat label.
+ * "**PROBLEM:** Your platform ..." cannot be scrubbed: the sentence after it
+ * was written to be introduced by it, and removing the label leaves
+ * paragraphs that no longer hang together. A whole line reading only
+ * "Word count: 118" has no relationship to anything around it. Deleting it
+ * leaves exactly the email the model meant to send.
+ * ------------------------------------------------------------------------ */
+
+/**
+ * A count reported about the email. The number is required: without it the
+ * key alone is too close to ordinary prose to delete a line over.
+ */
+const SELF_REPORT_COUNT_REGEX =
+  /^[ \t]*[*_#[(\-]{0,3}[ \t]*(?:word[- ]?count|words|character[- ]?count|characters|char[- ]?count|sentence[- ]?count|sentences|reading[- ]?grade|readability|flesch(?:[- ]kincaid)?)[ \t]*[:=][^\n]*\d[^\n]{0,40}$/i;
+
+/**
+ * A verdict reported about the email. The verdict word is required for the
+ * same reason the number is above.
+ */
+const SELF_REPORT_CHECK_REGEX =
+  /^[ \t]*[*_#[(\-]{0,3}[ \t]*(?:post[- ]generation[ \t]+)?(?:self[- ]?checks?|checklist|validation)[ \t]*(?:[:=][ \t]*(?:pass(?:ed)?|ok|complete[d]?|done|all[ \t]+(?:clear|good|pass))|[ \t]+(?:pass(?:ed)?|complete[d]?|done))[ \t]*[*_)\]]{0,3}[ \t]*$/i;
+
+/** True when the line is nothing but the model reporting on its own output. */
+export function isSelfReportLine(line: string): boolean {
+  const text = String(line ?? "");
+  return SELF_REPORT_COUNT_REGEX.test(text) || SELF_REPORT_CHECK_REGEX.test(text);
+}
+
+/**
+ * Drop those lines and close the gap they leave.
+ *
+ * Runs on every draft, not only ones that tripped a guard: a word count under
+ * the signature is wrong whether or not anything else caught it.
+ */
+export function stripSelfReport(email: string): string {
+  const text = String(email ?? "");
+  const lines = text.split(/\r?\n/);
+  const kept = lines.filter((line) => !isSelfReportLine(line));
+  if (kept.length === lines.length) return text;
+  return kept.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
 /**
  * The correction, named precisely.
  *
  * "Do not include scaffolding" would not tell the model what it did. The
- * placeholder retry works because it quotes the token back; this quotes the
- * beat names back and says what they were for.
+ * placeholder retry works because it quotes the token back.
  */
-export const NO_SCAFFOLDING_RETRY = `
-YOUR LAST ATTEMPT PRINTED THE OUTLINE INSTEAD OF THE EMAIL.
-
+const NO_SCAFFOLDING_RULES = `
 The framework beats above (PROBLEM, PROMISE, PROOF, PROPOSAL, TRIGGER, and any
 others) are how you PLAN the email. They are not headings and they are not text.
 The reader must never see those words.
@@ -1112,4 +1168,30 @@ as plain text and there is no renderer, so the asterisks arrive as asterisks.
 
 If a beat has nothing to say -- no proof was provided, for instance -- leave it
 out silently. Do not write a note explaining that you left it out. Nothing in
-the email may address the person who wrote these instructions.`;
+the email may address the person who wrote these instructions.
+
+Return the email and nothing else. No word count, no self-check result, no note
+about what you verified. Those checks are yours to run in your head.`;
+
+/** Kept for the retry that has nothing specific to quote. */
+export const NO_SCAFFOLDING_RETRY = `
+YOUR LAST ATTEMPT PRINTED THE OUTLINE INSTEAD OF THE EMAIL.
+${NO_SCAFFOLDING_RULES}`;
+
+/**
+ * The same correction with the offending fragments quoted back.
+ *
+ * The generic version named beat labels and markdown. The draft that lost two
+ * leads had neither -- it had a word count under the signature -- so the model
+ * was told to fix something it had not done, and did it again.
+ */
+export function noScaffoldingRetry(found: string[]): string {
+  const quoted = found.slice(0, 6).filter(Boolean).map((f) => `  ${f}`).join("\n");
+  if (!quoted) return NO_SCAFFOLDING_RETRY;
+  return `
+YOUR LAST ATTEMPT PRINTED THE OUTLINE INSTEAD OF THE EMAIL.
+
+These exact fragments came back. None of them belong in mail to a prospect:
+${quoted}
+${NO_SCAFFOLDING_RULES}`;
+}

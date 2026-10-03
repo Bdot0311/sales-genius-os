@@ -31,6 +31,11 @@ export interface FailureClass {
  * vary per lead and neither of which belongs in a count.
  */
 const CLASSES: Array<[RegExp, FailureClass]> = [
+  // The sentence carries the leaked fragment in parentheses, so two drafts
+  // that made the same mistake read as two different reasons without this:
+  // the shell showed "1 ... (**Word count: 118**) ... twi, 1 ... (**Word
+  // count: 107**) ... twi" where it meant "2 printed its outline".
+  [/printed its own outline/i, { label: "printed its outline instead of an email", retryable: true }],
   [/inventing figures/i, { label: "invented a figure it can't back", retryable: false }],
   [/cannot date/i, { label: "dated something the research can't support", retryable: false }],
   [/unfilled placeholder/i, { label: "left a placeholder unfilled", retryable: true }],

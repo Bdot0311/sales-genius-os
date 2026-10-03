@@ -39,7 +39,8 @@ import {
   stripPlatformBrand,
   findScaffolding,
   hasScaffolding,
-  NO_SCAFFOLDING_RETRY,
+  stripSelfReport,
+  noScaffoldingRetry,
 } from "../_shared/email-rules.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { isInternalCaller } from "../_shared/internal-auth.ts";
@@ -159,7 +160,10 @@ FORMAT:
   asterisks.
 - If a beat has nothing to say, leave it out silently. Never write a note
   explaining what you skipped or why. Nothing in the email may address the
-  person who wrote these instructions.`;
+  person who wrote these instructions.
+- Nothing follows the email. No word count, no character count, no self-check
+  result, no line reporting what you verified. Every check in this prompt is
+  yours to run in your head; the reader must never see that it happened.`;
 
 // Proximity Rule — active market position. Already there, not offering to go there.
 const PROXIMITY_RULE = `
@@ -281,6 +285,7 @@ Before returning the email, verify:
   - The body is broken into short paragraphs, not one block
   - You chose a body framework for THIS lead's evidence rather than defaulting to observation, then inferred pain, then implied better path, then soft question. That default is the shape every one of these emails collapses into; if that is what you wrote, pick a different framework and write it again.
 If any self-check fails, silently regenerate once and return the improved email. Never refuse or return an error.
+The self-check is silent. Never print the checklist, a word count, a character count, or any line reporting what you verified. A draft that arrives with "Word count: 118" under the signature is thrown away, and the lead gets no email at all.
 
 VOICE
 Terse. Peer-to-peer. Founder-to-founder. Specific over general. No coaching energy. The reader should feel like another operator emailed them, not a sales rep. The first email opens a door, it never walks through it.
@@ -302,7 +307,8 @@ sender_company values from the input. Never output the words "sender_name",
 "Sender Name", "Your Name" or "Your Company" — a draft signed with a stand-in
 cannot be sent.
 
-Do not explain the email. Do not add commentary. Do not preface the output with "Here's the email:" or similar.`;
+Do not explain the email. Do not add commentary. Do not preface the output with "Here's the email:" or similar.
+Nothing may follow the PS line either. The output begins at "Subject:" and ends at the PS.`;
 
 const cleanGeneratedEmail = (rawEmail: string, preserveSubject = false) => {
   let email = rawEmail.trim();
@@ -1583,9 +1589,20 @@ conversation that is already going, not as someone chasing silence.`}`;
      * bearing in a draft written around them, and removing them leaves four
      * paragraphs that no longer introduce each other.
      */
+    /*
+     * The word count under the signature is the one piece of this that is
+     * safe to delete rather than regenerate for. It is a whole line about the
+     * email rather than part of it, so removing it leaves the message intact,
+     * where removing a beat label leaves paragraphs that no longer introduce
+     * each other. Two leads lost their draft to a trailing "**Word count:
+     * 118**" before this ran.
+     */
+    email = stripSelfReport(email);
+
     if (hasScaffolding(email)) {
+      const leaked = findScaffolding(email);
       console.warn(
-        `[generate-email] scaffolding in draft: ${findScaffolding(email).slice(0, 6).join(' | ')} — regenerating`,
+        `[generate-email] scaffolding in draft: ${leaked.slice(0, 6).join(' | ')} — regenerating`,
       );
       const scaffoldRetry = await aiFetch("generate-email", {
         method: "POST",
@@ -1594,14 +1611,14 @@ conversation that is already going, not as someone chasing silence.`}`;
           model: "google/gemini-2.5-flash",
           messages: [
             { role: "system", content: systemPrompt },
-            { role: "user", content: `${userPrompt}\n${NO_SCAFFOLDING_RETRY}` },
+            { role: "user", content: `${userPrompt}\n${noScaffoldingRetry(leaked)}` },
           ],
           temperature: 0.7,
         }),
       });
       if (scaffoldRetry.ok) {
         const d = await scaffoldRetry.json();
-        const second = (d.choices?.[0]?.message?.content || '').trim();
+        const second = stripSelfReport((d.choices?.[0]?.message?.content || '').trim());
         // Only take the retry if it actually fixed the problem.
         if (second && !hasScaffolding(second) && !hasPlaceholder(second)) email = second;
       }
