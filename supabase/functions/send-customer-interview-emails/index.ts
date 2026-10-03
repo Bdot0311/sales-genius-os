@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { corsHeaders } from "../_shared/internal-auth.ts";
 import { sendAppEmail } from "../_shared/transactional-email-templates/send-app-email.ts";
+import { reactivationAllowed } from '../_shared/reactivation-cap.ts';
 
 // One-time founder check-in to paying customers (any non-free plan, including
 // trials of paid plans), asking them to take a short voice interview. Each
@@ -94,6 +95,7 @@ serve(async (req) => {
       if (sent >= MAX_PER_RUN) break;
       if (!user.email) { skipped++; continue; }
       if (sentSet.has(user.email)) { skipped++; continue; }
+      if (!(await reactivationAllowed(supabase, user.email)).allowed) { skipped++; continue; }
 
       const firstName = user.full_name ? String(user.full_name).split(' ')[0] : undefined;
       const res = await sendAppEmail(supabase, TEMPLATE_NAME, user.email, {

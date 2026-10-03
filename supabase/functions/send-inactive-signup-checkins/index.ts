@@ -1,6 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders, isInternalCaller } from '../_shared/internal-auth.ts'
 import { sendAppEmail } from '../_shared/transactional-email-templates/send-app-email.ts'
+import { reactivationAllowed } from '../_shared/reactivation-cap.ts';
 
 const TARGETS = [
   { id: 'e9b6a292-cee5-49b4-840c-69695c6a0302', template: 'inactive-trial-checkin' },
@@ -65,6 +66,11 @@ Deno.serve(async (req) => {
       .maybeSingle()
     if (prior) {
       results.push({ userId: target.id, status: 'skipped', reason: 'already_sent' })
+      continue
+    }
+    const cap = await reactivationAllowed(admin, profile.email)
+    if (!cap.allowed) {
+      results.push({ userId: target.id, status: 'skipped', reason: cap.reason ?? 'frequency_cap' })
       continue
     }
 
