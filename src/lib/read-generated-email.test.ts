@@ -134,3 +134,12 @@ describe("the typecheck in CI checks something", () => {
     expect(job).not.toMatch(/run: npm install/);
   });
 });
+
+describe("the body never carries the model's subject line", () => {
+  it("strips a leading Subject: line from the body", () => {
+    expect(readGeneratedEmail({ email: "Subject: acme outbound\n\nHi Sarah,\nBody." })).toBe("Hi Sarah,\nBody.");
+  });
+  it("still reads the subject from the same payload", () => {
+    expect(readGeneratedSubject({ email: "Subject: acme outbound\n\nHi Sarah," })).toBe("acme outbound");
+  });
+});
