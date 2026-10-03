@@ -167,8 +167,10 @@ describe("the free plan is described as what it is", () => {
     // The row read "Monthly verified prospects" with free: "100 searches" and
     // paid values that are search credits, so it misdescribed every column.
     expect(PRICING).not.toContain('name: "Monthly verified prospects"');
-    expect(PRICING).toContain('name: "Monthly lead searches"');
+    expect(PRICING).toContain('name: "Monthly search / prospect allowance"');
+    expect(PRICING).toContain('free: "100 searches", starter: "1,000 prospects"');
   });
+
 });
 
 /**

@@ -355,7 +355,7 @@ export const PLAN_FEATURES = {
 
     // AI Sales Coach
     coachingLevel: 'premium',
-    coachMessagesPerMonth: 750,
+    coachMessagesPerMonth: -1,
     realTimeAnalysis: 'full',
     liveCoaching: true,
     customPlaybooks: true,
@@ -460,7 +460,7 @@ export const PLAN_FEATURES = {
     
     // AI Sales Coach
     coachingLevel: 'premium',
-    coachMessagesPerMonth: -1,
+    coachMessagesPerMonth: 750,
     realTimeAnalysis: 'full',
     liveCoaching: true,
     customPlaybooks: true,

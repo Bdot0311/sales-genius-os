@@ -103,10 +103,11 @@ const paidPlans: PaidPlan[] = [
       "Unified reply inbox with AI drafts",
       "Deliverability dashboard & warmup",
       "ICP lookalike discovery",
+      "Why-now account research",
       "AI personalized outreach",
       "AI Sales Coach — 200 messages / month",
       "Priority support",
-      "🤖 Growth Agent — 3 agent builds, objection handling, 50 auto-replies/day",
+      "🤖 Growth Agent — 3 agent builds, why-now research, objection handling, 50 auto-replies/day",
     ],
     highlighted: true,
     monthlyPriceId: STRIPE_PRICE_IDS.growth_monthly,
@@ -169,7 +170,7 @@ const comparisonCategories = [
   {
     name: "Verified Prospects & Email Sends",
     features: [
-      { name: "Monthly lead searches", free: "100", starter: "1,000", growth: "2,500", pro: "5,000", agency: "15,000" },
+      { name: "Monthly search / prospect allowance", free: "100 searches", starter: "1,000 prospects", growth: "2,500 prospects", pro: "5,000 prospects", agency: "15,000 prospects" },
       { name: "Daily prospect limit", free: "100", starter: "100", growth: "250", pro: "500", agency: "1,500" },
       { name: "Monthly email sends", free: "100", starter: "50,000", growth: "250,000", pro: "1,000,000", agency: "Unlimited" },
       { name: "Prospect search", free: "100/mo", starter: true, growth: true, pro: true, agency: true },
@@ -184,6 +185,9 @@ const comparisonCategories = [
       { name: "ICP Builder", free: false, starter: "3 profiles", growth: "10 profiles", pro: "Unlimited", agency: "Unlimited" },
       { name: "ICP match scoring", free: false, starter: true, growth: true, pro: true, agency: true },
       { name: "ICP lookalike discovery", free: false, starter: false, growth: true, pro: true, agency: true },
+      { name: "On-demand lead evaluation", free: false, starter: false, growth: true, pro: true, agency: false },
+      { name: "Sourced why-now account research", free: false, starter: false, growth: true, pro: true, agency: true },
+      { name: "Buying committee mapping", free: false, starter: false, growth: false, pro: true, agency: true },
     ],
   },
   {
@@ -243,7 +247,6 @@ const comparisonCategories = [
       { name: "Deliverability check on replies", free: true, starter: true, growth: true, pro: true, agency: true },
       { name: "Auto handle objections", free: false, starter: false, growth: true, pro: true, agency: true },
       { name: "Auto book meetings (Calendly)", free: false, starter: false, growth: false, pro: true, agency: true },
-      { name: "Buying committee mapping & why-now research", free: false, starter: false, growth: false, pro: true, agency: true },
       { name: "Priority agent processing", free: false, starter: false, growth: false, pro: false, agency: true },
     ],
   },
@@ -286,7 +289,7 @@ const creditFAQs = [
   { question: "What is the AI SDR Agent?", answer: "The AI SDR Agent is an autonomous sales rep built into OutReign. It sources leads that match your ICP, writes and sends the first-touch email from your Gmail, then monitors threads, classifies prospect replies (interested, objection, meeting request, etc.), and replies in your voice. Every plan includes the AI SDR — higher tiers unlock more agent builds, more daily volume, and more the agent can do on its own." },
   { question: "What is the AI Sales Coach?", answer: "The AI Sales Coach is a coaching chat that reads your actual pipeline — deals, lead scores, stalled threads, close rate — and tells you what to do next. Ask it how to unstick a deal, how to handle an objection, or what to prioritise today, and it answers using your own numbers, not generic advice." },
   { question: "How many AI Sales Coach messages do I get?", answer: "Every plan includes the coach: Explore 5 messages per month, Starter 50, Growth 200, Pro 750, and Agency unlimited. Limits reset on the 1st of each month. Pro and Agency also unlock live call coaching and custom sales playbooks." },
-  { question: "How does the AI SDR differ by plan?", answer: "Explore: 1 agent that sources 25 leads/day and drafts outreach and up to 3 replies/day for your approval. Starter: 1 agent that sends autonomously with 15 replies/day and 100 leads/day. Growth: 3 agent builds — label each with its own ICP, persona and campaign — 300 leads/day, 50 replies/day, plus objection handling. Pro: 5 agent builds, 750 leads/day, 150 replies/day, plus automatic meeting booking, committee mapping and why-now research. Agency (Elite): unlimited agent builds, unlimited sourcing, 500 replies/day, fully autonomous with priority processing." },
+  { question: "How does the AI SDR differ by plan?", answer: "Explore: 1 agent that sources 25 leads/day and drafts outreach and up to 3 replies/day for your approval. Starter: 1 agent that sends autonomously with 15 replies/day and 100 leads/day. Growth: 3 agent builds, 300 leads/day, 50 replies/day, why-now research and objection handling. Pro: 5 agent builds, 750 leads/day, 150 replies/day, automatic meeting booking and committee mapping. Agency (Elite): unlimited agent builds, unlimited sourcing, 500 replies/day, fully autonomous with priority processing." },
   { question: "Does the AI SDR Agent pass a spam/deliverability check?", answer: "Yes. Every reply the agent generates is scanned for spam trigger words before it's sent. If a reply fails the check, it's blocked and logged — your sender reputation is never put at risk by the agent." },
 ];
 

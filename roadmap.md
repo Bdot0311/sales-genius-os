@@ -1,7 +1,7 @@
-# Roadmap
+# Landing and pricing refresh
 
-- [x] Prepare preview-only inactivity emails for Samuel, Suleman, and John.
-- [x] Show all three personalized previews before sending.
-- [x] Send the three approved emails once with suppression and duplicate protection.
-- [x] Add select-all and bulk delete controls to the Outreach Drafts list.
-- [x] Verify the Drafts screen loads signed in and automated checks cover select-all and bulk deletion.
+- [x] Update homepage feature descriptions for lead intelligence, research, and automatic reply alerts.
+- [x] Correct pricing availability for lead evaluation, why-now research, and committee mapping.
+- [x] Align AI Sales Coach limits with live enforcement.
+- [x] Add regression coverage for plan limits and public allowance terminology.
+- [x] Verify homepage and pricing at desktop and phone widths.
