@@ -33,6 +33,7 @@ import { EmailUsagePanel } from "@/components/outreach/EmailUsagePanel";
 
 import { FollowUpSuggestion, FollowUpData } from "@/components/outreach/FollowUpSuggestion";
 import { BarChart3, ListOrdered, Layout, Users } from "lucide-react";
+import { LeadMultiSelect } from "@/components/outreach/LeadMultiSelect";
 import { BulkSendDialog } from "@/components/outreach/BulkSendDialog";
 import { EmailQualityChecker, scoreEmailQuality } from "@/components/outreach/EmailQualityChecker";
 import { EmailRubricPanel } from "@/components/outreach/EmailRubricPanel";
@@ -43,7 +44,7 @@ import { LeadResearchPanel, type LeadResearch } from "@/components/outreach/Lead
 import { SequencesList, MessageBlocksList } from "@/components/sequences";
 import { AiSequenceBuilder } from "@/components/sequences/AiSequenceBuilder";
 import { generateComplianceFooter, validateSenderDomain, checkSendTimeCompliance, parseSpintax } from "@/lib/compliance";
-import { AlertCircle, Ban } from "lucide-react";
+import { AlertCircle, Ban, ChevronLeft, ChevronRight } from "lucide-react";
 
 // Opener words for the cold email framework
 const OPENER_WORDS = [
@@ -319,7 +320,22 @@ const Outreach = () => {
       : "compose";
   });
   const [leads, setLeads] = useState<any[]>([]);
+  /*
+   * Two pieces of state for one idea.
+   *
+   * selectedLeadIds is the campaign: who this email is for. selectedLead is
+   * the one currently on screen, and it is always a member of that set.
+   *
+   * Splitting them is what makes this a change of about thirty lines rather
+   * than of the fifty-two places that read selectedLead. Every one of those
+   * still means "the lead being previewed", which is exactly what it meant
+   * before; what is new is that there can be others behind it.
+   */
   const [selectedLead, setSelectedLead] = useState("");
+  const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
+  // Opened by Send when the selection is more than one person, never by a
+  // button of its own. See the mount at the end of this component.
+  const [bulkSendOpen, setBulkSendOpen] = useState(false);
   const [emailTone, setEmailTone] = useState("professional");
   const [openerWord, setOpenerWord] = useState("");
   const [triggerContext, setTriggerContext] = useState("");
@@ -524,7 +540,7 @@ const Outreach = () => {
       if (activeTab === "compose" && e.ctrlKey && e.key === 'g') {
         e.preventDefault();
         if (!isGenerating && selectedLead) {
-          generateEmail();
+          generateForSelection();
         }
       }
 
@@ -1000,7 +1016,7 @@ const Outreach = () => {
 
   const loadDraft = (draft: EmailDraft) => {
     setCurrentDraftId(draft.id);
-    setSelectedLead(draft.lead_id || "");
+    focusLead(draft.lead_id || "");
     setSubjectLine(draft.subject || "");
     setGeneratedEmail(draft.body || "");
     setEmailTone(draft.tone || "professional");
@@ -1098,6 +1114,73 @@ const Outreach = () => {
     }
   };
 
+
+  /** Choose who the campaign is for, keeping the preview pointed at a member. */
+  const chooseLeads = (ids: string[]) => {
+    setSelectedLeadIds(ids);
+    if (ids.length === 0) setSelectedLead("");
+    else if (!ids.includes(selectedLead)) setSelectedLead(ids[0]);
+  };
+
+  /** Put one lead on screen, and make it the whole selection. */
+  const focusLead = (id: string) => {
+    setSelectedLead(id);
+    setSelectedLeadIds(id ? [id] : []);
+  };
+
+  /*
+   * Writing for everyone selected.
+   *
+   * Handed to the same queue the agent drafts through, rather than looped here.
+   * The Bulk Send dialog this replaces ran its generations in the browser, so
+   * closing the tab stopped the batch partway with no record of where it got
+   * to; the queue survives navigation, reports into the shell banner, resolves
+   * the goal per lead and skips anyone who already has a draft.
+   */
+  const queueDraftsForSelection = async () => {
+    const template = resolveActiveTemplate();
+    setIsGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("queue-draft-batch", {
+        body: {
+          lead_ids: selectedLeadIds,
+          goal: template?.goal || "introduction",
+          request_text: `Outreach Studio — ${selectedLeadIds.length} leads`,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(String(data.error));
+
+      const queued = Number(data?.queued ?? 0);
+      const alreadyQueued = Number(data?.already_queued ?? 0);
+      if (queued === 0 && alreadyQueued > 0) {
+        toast({
+          title: "Already in the queue",
+          description: `All ${alreadyQueued} of these are already waiting to be drafted.`,
+        });
+        return;
+      }
+      toast({
+        title: `Drafting ${queued} ${queued === 1 ? "email" : "emails"}`,
+        description:
+          `They are written in the background and appear in Drafts as they finish, ` +
+          `so you can close this tab.` +
+          (alreadyQueued > 0 ? ` ${alreadyQueued} were already queued.` : ""),
+      });
+    } catch (e) {
+      toast({
+        title: "Could not start the batch",
+        description: e instanceof Error ? e.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  /** One lead writes here and now; many go to the queue. */
+  const generateForSelection = () =>
+    selectedLeadIds.length > 1 ? queueDraftsForSelection() : generateEmail();
 
   const generateEmail = async (opts: { allowThinResearch?: boolean } = {}) => {
     if (!selectedLead) {
@@ -1694,7 +1777,7 @@ Return ONLY the corrected email body. No subject line. No explanation. No "Here 
         setCurrentDraftId(null);
       }
       setGeneratedEmail("");
-      setSelectedLead("");
+      chooseLeads([]);
       setSubjectLine("");
       setTriggerContext("");
       setOpenerWord("");
@@ -1868,7 +1951,7 @@ ${formattedBody}
         setCurrentDraftId(null);
       }
       setGeneratedEmail("");
-      setSelectedLead("");
+      chooseLeads([]);
       setSubjectLine("");
       setTriggerContext("");
       setOpenerWord("");
@@ -1929,7 +2012,7 @@ ${formattedBody}
 
   const clearForm = () => {
     setCurrentDraftId(null);
-    setSelectedLead("");
+    chooseLeads([]);
     setSubjectLine("");
     setGeneratedEmail("");
     setTriggerContext("");
@@ -1940,7 +2023,7 @@ ${formattedBody}
     if (!lastSentEmailInfo) return;
     
     // Set up the compose form with follow-up content
-    setSelectedLead(lastSentEmailInfo.leadId);
+    focusLead(lastSentEmailInfo.leadId);
     setSubjectLine(suggestion.suggestedSubject);
     setGeneratedEmail(appendSenderLine(suggestion.suggestedBody, getSenderName()));
     setTriggerContext(suggestion.triggerContext);
@@ -1961,37 +2044,53 @@ ${formattedBody}
     setLastSentEmailInfo(null);
   };
 
+  /*
+   * Bulk sending, reached through the composer rather than beside it.
+   *
+   * It keeps its own machinery -- the velocity throttle, the daily-cap
+   * accounting, the per-lead error reporting -- because that machinery is
+   * correct and reimplementing it would be a second send path, which is the
+   * failure this whole merge exists to undo. What changes is the way in: the
+   * selection comes from the field above, so it sends to the people the
+   * composer is writing for and nobody else.
+   */
+  const bulkSend = (
+    <BulkSendDialog
+      open={bulkSendOpen}
+      onOpenChange={setBulkSendOpen}
+      leads={leads.filter((l) => selectedLeadIds.includes(l.id))}
+      dailyEmailLimit={dailyEmailLimit}
+      dailyEmailsSent={dailyEmailsSent}
+      connectedAccounts={connectedAccounts}
+      selectedSenderId={selectedSenderId}
+      emailTone={emailTone}
+      openerWord={openerWord}
+      businessDescription={businessDescription}
+      signature={signature}
+      senderName={getSenderName()}
+      emailGoal={resolveActiveTemplate().goal || "introduction"}
+      templateDescription={resolveActiveTemplate().description || ""}
+      templateValue={resolveActiveTemplate().value || ""}
+      complianceSettings={complianceSettings}
+      useSpintax={useSpintax}
+      onComplete={() => {
+        loadCounts();
+        loadDailyEmailLimit();
+      }}
+      onDailyLimitChange={async (newLimit) => {
+        await saveDailyLimit(newLimit);
+      }}
+    />
+  );
+
   return (
     <DashboardLayout>
+      {bulkSend}
       <PageHeader
         title="Outreach Studio"
         description="Generate cold emails from proven frameworks, then send them from your own mailbox."
         actions={
           <>
-            <BulkSendDialog
-              leads={leads}
-              dailyEmailLimit={dailyEmailLimit}
-              dailyEmailsSent={dailyEmailsSent}
-              connectedAccounts={connectedAccounts}
-              selectedSenderId={selectedSenderId}
-              emailTone={emailTone}
-              openerWord={openerWord}
-              businessDescription={businessDescription}
-              signature={signature}
-              senderName={getSenderName()}
-              emailGoal={resolveActiveTemplate().goal || "introduction"}
-              templateDescription={resolveActiveTemplate().description || ""}
-              templateValue={resolveActiveTemplate().value || ""}
-              complianceSettings={complianceSettings}
-              useSpintax={useSpintax}
-              onComplete={() => {
-                loadCounts();
-                loadDailyEmailLimit();
-              }}
-              onDailyLimitChange={async (newLimit) => {
-                await saveDailyLimit(newLimit);
-              }}
-            />
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -2318,7 +2417,7 @@ For logos, use HTML:
                               variant="outline"
                               className="h-7 text-[0.6875rem]"
                               onClick={() => {
-                                setSelectedLead(lead.id);
+                                focusLead(lead.id);
                                 setSelectedTemplate("follow_up");
                                 dismissFollowUpReminder(fu.id);
                               }}
@@ -2435,19 +2534,49 @@ For logos, use HTML:
                   )}
 
                   <div>
-                    <Label className="text-[0.8125rem] font-medium text-foreground">Lead</Label>
-                    <Select value={selectedLead} onValueChange={setSelectedLead}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Choose a lead" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {leads.map((lead) => (
-                          <SelectItem key={lead.id} value={lead.id}>
-                            {lead.contact_name} - {lead.company_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label className="text-[0.8125rem] font-medium text-foreground">
+                      {selectedLeadIds.length > 1 ? "Leads" : "Lead"}
+                    </Label>
+                    {/* A set, not a value. Bulk Send was this field with a
+                        second generator and a second send loop bolted to it. */}
+                    <LeadMultiSelect leads={leads} value={selectedLeadIds} onChange={chooseLeads} />
+
+                    {/* Which of them is on screen. Only drawn when there is
+                        more than one, because with one there is nothing to
+                        step through. */}
+                    {selectedLeadIds.length > 1 && (
+                      <div className="mt-2 flex items-center justify-between gap-2 rounded-md border border-border/40 bg-muted/20 px-2 py-1.5">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2"
+                          onClick={() => {
+                            const i = selectedLeadIds.indexOf(selectedLead);
+                            setSelectedLead(selectedLeadIds[(i - 1 + selectedLeadIds.length) % selectedLeadIds.length]);
+                          }}
+                          aria-label="Previous lead"
+                        >
+                          <ChevronLeft className="h-3.5 w-3.5" />
+                        </Button>
+                        <span className="text-[0.6875rem] tabular-nums text-muted-foreground">
+                          Previewing {Math.max(1, selectedLeadIds.indexOf(selectedLead) + 1)} of {selectedLeadIds.length}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2"
+                          onClick={() => {
+                            const i = selectedLeadIds.indexOf(selectedLead);
+                            setSelectedLead(selectedLeadIds[(i + 1) % selectedLeadIds.length]);
+                          }}
+                          aria-label="Next lead"
+                        >
+                          <ChevronRight className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    )}
 
                     {/* Lead profile card — shows what the AI will personalize with */}
                     {selectedLead && (() => {
@@ -2771,7 +2900,7 @@ For logos, use HTML:
                   <div className="space-y-3">
                     <div className="flex gap-2">
                       <Button
-                        onClick={() => generateEmail()}
+                        onClick={() => generateForSelection()}
                         disabled={isGenerating || !selectedLead}
                         className="flex-1 bg-gradient-to-r from-primary to-accent hover:opacity-90"
                         size="lg"
@@ -3028,7 +3157,7 @@ For logos, use HTML:
                           variant="outline"
                           size="icon"
                           className="shrink-0 self-start"
-                          onClick={() => generateEmail()}
+                          onClick={() => generateForSelection()}
                           disabled={isGenerating || !selectedLead}
                         >
                           {isGenerating ? (
@@ -3064,7 +3193,9 @@ For logos, use HTML:
                       <div className="flex gap-2">
                         <Button
                           className="flex-1"
-                          onClick={sendEmail}
+                          onClick={() =>
+                            selectedLeadIds.length > 1 ? setBulkSendOpen(true) : sendEmail()
+                          }
                           disabled={isSending || isScheduling || dailyEmailsSent >= dailyEmailLimit}
                         >
                           {isSending ? (

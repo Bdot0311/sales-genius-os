@@ -98,6 +98,8 @@ project_id = "ghgfjnepvxvxrncmskys"
     verify_jwt = true
   [functions.generate-email]
     verify_jwt = true
+  [functions.queue-draft-batch]
+    verify_jwt = true
   [functions.google-oauth-callback]
     verify_jwt = false
   [functions.google-oauth-init]

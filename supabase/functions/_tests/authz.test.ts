@@ -21,6 +21,7 @@ const PRIVATE_FUNCTIONS = [
   "generate-followup-suggestion", "get-stripe-revenue",
   "inbox-sync", "link-agency-client", "parse-lead-query",
   "preview-transactional-email", "process-sequence-step", "purchase-credit-topup",
+  "queue-draft-batch",
   "refresh-google-token", "remove-subscription-addon", "replay-webhook",
   "research-lead",
   "rest-api", "rotate-api-key", "run-webhook-tests", "score-lead",

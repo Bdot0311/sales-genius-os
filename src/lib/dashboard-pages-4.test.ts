@@ -86,8 +86,26 @@ describe("outreach studio", () => {
     // They sat in a flex bar underneath whose only job was to right-align them,
     // while the header's actions slot went unused.
     expect(OUTREACH).not.toContain("sm:items-center justify-end gap-4");
-    expect(OUTREACH).toContain("<BulkSendDialog");
-    expect(OUTREACH.indexOf("<BulkSendDialog")).toBeLessThan(OUTREACH.indexOf('<div className="space-y-4 pt-4">'));
+  });
+
+  it("no longer offers bulk sending as a section of its own", () => {
+    /*
+     * This asserted that <BulkSendDialog came before the content, which was a
+     * way of saying "it is in the header". It is not in the header any more,
+     * and the assertion kept passing for a different reason: the component is
+     * now built into a const above the return, so it still appears first in
+     * the file while meaning something else entirely.
+     *
+     * The rule now is about how it is reached. It has no button of its own —
+     * Send opens it, with the leads the composer is already writing for — so
+     * writing to one person and writing to thirty is one flow rather than two
+     * products side by side.
+     */
+    expect(OUTREACH).not.toContain("Bulk Send\n");
+    expect(OUTREACH).toContain("open={bulkSendOpen}");
+    expect(OUTREACH).toContain("onOpenChange={setBulkSendOpen}");
+    expect(OUTREACH).toContain("leads={leads.filter((l) => selectedLeadIds.includes(l.id))}");
+    expect(OUTREACH).toContain("selectedLeadIds.length > 1 ? setBulkSendOpen(true) : sendEmail()");
   });
 
   it("uses the dashboard's surface for its panes", () => {
