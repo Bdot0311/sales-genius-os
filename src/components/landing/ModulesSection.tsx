@@ -231,20 +231,20 @@ const modules = [
   {
     number: "01",
     title: "Lead Discovery",
-    tagline: "Describe the customer. Get ranked, verified prospects back.",
-    description: "Describe who you want in plain English. Verified contacts come back ranked by fit.",
+    tagline: "Find the right prospects, then know who deserves attention first.",
+    description: "Describe who you want in plain English. Verify contacts, then evaluate saved leads for fit, intent, priority, confidence and the next best step.",
   },
   {
     number: "02",
     title: "Outreach Studio",
-    tagline: "Emails built from the company's own context.",
-    description: "News, growth signals, open roles. The Email Quality Checker scores every draft before it can send.",
+    tagline: "Emails grounded in current prospect and company research.",
+    description: "Website research, external sources, growth signals and saved lead strategy shape each draft. The Email Quality Checker scores it before it can send.",
   },
   {
     number: "03",
     title: "Reply Management",
-    tagline: "Every reply in one inbox, sorted by what it is.",
-    description: "Interest, objection, meeting request. Follow-up sequences keep the thread moving, and nothing sits overnight.",
+    tagline: "Connected inboxes checked automatically, with every reply sorted by intent.",
+    description: "Interest, objection, meeting request. Follow-up sequences keep the thread moving, while mobile notifications alert you when a prospect answers.",
   },
   {
     number: "04",
@@ -263,6 +263,8 @@ const modules = [
 const alsoIncluded = [
   "Multi-step sequences",
   "Deliverability monitoring",
+  "Sourced why-now account research (Growth & up)",
+  "Buying committee mapping (Pro & up)",
   "Live call coaching & playbooks (Pro & up)",
   "Zapier & API automation",
   "White-label client portal (Agency)",

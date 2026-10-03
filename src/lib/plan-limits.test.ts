@@ -78,6 +78,11 @@ describe("plan search limits", () => {
     }
   });
 
+  it("keeps paid AI Sales Coach limits aligned with enforcement", () => {
+    expect(PLAN_FEATURES.pro.coachMessagesPerMonth).toBe(750);
+    expect(PLAN_FEATURES.agency.coachMessagesPerMonth).toBe(-1);
+  });
+
   describe("getPlanSearchLimits", () => {
     it.each(PLANS)("returns the limits for %s", (plan) => {
       expect(getPlanSearchLimits(plan)).toEqual(PLAN_SEARCH_LIMITS[plan]);

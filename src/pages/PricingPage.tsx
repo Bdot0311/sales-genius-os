@@ -32,13 +32,13 @@ const PricingPage = () => {
   const valueProps = [
     {
       icon: Zap,
-      title: "ICP-driven discovery",
-      description: "Build Ideal Customer Profiles and get ranked leads with automatic match scores. Find lookalikes from closed deals."
+      title: "Lead intelligence",
+      description: "Rank saved leads by fit, intent, priority and confidence, then use the recommended next step to guide outreach."
     },
     {
       icon: Users,
       title: "Unified reply inbox",
-      description: "Replies auto-classified by intent with AI-drafted responses. Never miss a hot lead again."
+      description: "Connected inboxes are checked automatically, replies are classified by intent, and mobile alerts keep you informed."
     },
     {
       icon: Shield,
@@ -246,6 +246,9 @@ const PricingPage = () => {
                   "Unified reply inbox with AI drafts · Growth and up",
                   "Deliverability dashboard and warmup · Growth and up",
                   "ICP lookalike discovery · Growth and up",
+                  "Why-now account research · Growth and up",
+                  "On-demand fit, intent and priority evaluation · Growth and Pro",
+                  "Buying committee mapping · Pro and up",
                   "AI Sales Coach on your live pipeline · all plans (5 to unlimited messages/month)",
                   "Live call coaching and custom playbooks · Pro and up",
                   "Sequence branching and A/B testing · Pro and up",
