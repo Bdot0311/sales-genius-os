@@ -139,7 +139,7 @@ const Confirmation = () => {
       "5,000 verified prospects / month",
       "500 prospects per day",
       "Advanced automation features",
-      "CRM integrations",
+      "API & MCP access (120 req/min)",
       "Team collaboration access",
       "Premium support"
     ],
@@ -148,7 +148,7 @@ const Confirmation = () => {
       "1,500 prospects per day",
       "White-label client portal",
       "Branded PDF reports",
-      "Priority API access",
+      "API & MCP access (300 req/min)",
       "Dedicated account support"
     ]
   };
