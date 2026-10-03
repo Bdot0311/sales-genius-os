@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { LeadMultiSelect } from "@/components/outreach/LeadMultiSelect";
 import { useNavigate } from "react-router-dom";
 import { Panel, PanelBody, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -35,7 +36,17 @@ export const AiSequenceBuilder = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [leads, setLeads] = useState<LeadOption[]>([]);
+  /*
+   * A set, like Outreach Studio's.
+   *
+   * leadId stays as the prospect the sequence is written from: the steps are
+   * the campaign and the leads are who walks through it, so one sequence is
+   * generated rather than one per person. What the set buys today is not
+   * having to re-pick a lead for every generation, and it is what enrolment
+   * will read when it lands.
+   */
   const [leadId, setLeadId] = useState<string>("");
+  const [leadIds, setLeadIds] = useState<string[]>([]);
   const [senderName, setSenderName] = useState("");
   const [senderCompany, setSenderCompany] = useState("");
   const [offer, setOffer] = useState("");
@@ -150,19 +161,23 @@ export const AiSequenceBuilder = () => {
         </PanelHeader>
         <PanelBody className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2 md:col-span-2">
-            <Label>Prospect</Label>
-            <Select value={leadId} onValueChange={setLeadId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Pick a lead" />
-              </SelectTrigger>
-              <SelectContent>
-                {leads.map((l) => (
-                  <SelectItem key={l.id} value={l.id}>
-                    {(l.contact_name || "Unnamed")} — {l.company_name || "—"}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>{leadIds.length > 1 ? "Prospects" : "Prospect"}</Label>
+            <LeadMultiSelect
+              leads={leads}
+              value={leadIds}
+              placeholder="Pick prospects"
+              onChange={(ids) => {
+                setLeadIds(ids);
+                if (ids.length === 0) setLeadId("");
+                else if (!ids.includes(leadId)) setLeadId(ids[0]);
+              }}
+            />
+            {leadIds.length > 1 && (
+              <p className="text-[0.6875rem] leading-relaxed text-muted-foreground">
+                Written from {selectedLead?.contact_name || "the first prospect"}. The steps are the
+                campaign, so one sequence covers all {leadIds.length}.
+              </p>
+            )}
             {selectedLead?.signals && selectedLead.signals.length > 0 && (
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {selectedLead.signals.slice(0, 6).map((s) => (

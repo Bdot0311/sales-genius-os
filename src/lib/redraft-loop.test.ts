@@ -160,7 +160,7 @@ describe("a redraft cannot land on a subject the recipient already has", () => {
     // it instead of reading it: the second call must not return the first one.
     const first = fallbackSubject("Acme", []);
     const second = fallbackSubject("Acme", [first]);
-    expect(first).toBe("Quick question — Acme");
+    expect(first.toLowerCase()).toContain("acme");
     expect(second).not.toBe(first);
     expect(second.toLowerCase()).toContain("acme");
     // A third, with both spent, still moves.

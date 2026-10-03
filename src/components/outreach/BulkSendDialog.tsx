@@ -56,6 +56,20 @@ interface BulkSendDialogProps {
     userId: string;
   };
   useSpintax?: boolean;
+  /**
+   * Driven from the composer rather than from a button of its own.
+   *
+   * Sending in bulk was a separate section with a separate lead list and a
+   * separate generator, which is what made writing for a campaign feel like
+   * two products. The composer owns the selection now and opens this when
+   * Send is pressed with more than one lead, so the send machinery below --
+   * its throttle, its daily-cap accounting, its per-lead error reporting --
+   * is reached through the one flow instead of beside it.
+   *
+   * Uncontrolled still works: pass neither and it renders its own trigger.
+   */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export const BulkSendDialog = ({
@@ -76,9 +90,17 @@ export const BulkSendDialog = ({
   onDailyLimitChange,
   complianceSettings,
   useSpintax = false,
+  open: controlledOpen,
+  onOpenChange,
 }: BulkSendDialogProps) => {
   const { toast } = useToast();
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : uncontrolledOpen;
+  const setOpen = (next: boolean) => {
+    if (!isControlled) setUncontrolledOpen(next);
+    onOpenChange?.(next);
+  };
   const [selectedLeadIds, setSelectedLeadIds] = useState<Set<string>>(new Set());
   const [sendMode, setSendMode] = useState<"generate" | "same">("generate");
   const [sameSubject, setSameSubject] = useState("");
@@ -430,12 +452,17 @@ export const BulkSendDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Users className="w-4 h-4 mr-2" />
-          Bulk Send
-        </Button>
-      </DialogTrigger>
+      {/* No trigger of its own when the composer owns the selection: the
+          button that opened this was the second entry point that made bulk
+          sending read as a separate product. */}
+      {!isControlled && (
+        <DialogTrigger asChild>
+          <Button variant="outline" size="sm">
+            <Users className="w-4 h-4 mr-2" />
+            Bulk Send
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">

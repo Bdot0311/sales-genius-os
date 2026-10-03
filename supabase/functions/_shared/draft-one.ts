@@ -83,18 +83,50 @@ export function splitSubject(raw: string): { subject: string; body: string } {
  * send path refuses as a repeat — a draft that could never be sent, generated
  * over and over.
  */
+/**
+ * A follow-up continues the thread it is following up on.
+ *
+ * Returns "Re: <the last subject>" when there is one. This is not a nicety:
+ * Gmail threads on it, so the new message lands under the old one where the
+ * reader can see what it refers to, and it is reply-focused by construction
+ * rather than by asking a model to sound reply-focused.
+ *
+ * Already-prefixed subjects are not prefixed twice. "Re: Re: Re:" is the mark
+ * of software, not of a person.
+ */
+export function threadedSubject(thread?: LeadThread | null): string | null {
+  if (!thread || thread.state === "never_contacted") return null;
+  const last = String(thread.lastSubject ?? "").trim();
+  if (!last) return null;
+  const bare = last.replace(/^((re|fw|fwd)\s*:\s*)+/i, "").trim();
+  return bare ? `Re: ${bare}` : null;
+}
+
+/**
+ * The last resort, which was quietly the first.
+ *
+ * This emitted "Quick question — <company>", and because the subject is
+ * stripped from every goal except `introduction`, it was the only subject most
+ * drafts ever got. A hundred leads produced a hundred subjects differing only
+ * in the company name -- from one sending domain, which is a pattern a filter
+ * can see -- and it was the exact phrase the prompts ban:
+ *
+ *   OUTREACH_STUDIO_SYSTEM_PROMPT: BANNED: "quick question," ...
+ *   SUBJECT_SYSTEM_PROMPT:         NEVER use: "Quick question", ...
+ *
+ * The generator writes the subject now. This is what is left when it could not,
+ * so it leans on the one thing always known and true -- who they are -- and
+ * varies by lead rather than by nothing.
+ */
 export function fallbackSubject(companyName: unknown, avoidSubjects: string[]): string {
   const usable = realValue(companyName) ?? "";
-  const base = `Quick question${usable ? ` — ${usable}` : ""}`;
   const taken = new Set((avoidSubjects ?? []).map((x) => String(x).trim().toLowerCase()));
-  if (!taken.has(base.toLowerCase())) return base;
-  const alts = [
-    `following up${usable ? ` — ${usable}` : ""}`,
-    `one more thought${usable ? ` for ${usable}` : ""}`,
-    `different angle${usable ? ` — ${usable}` : ""}`,
-  ];
-  return alts.find((a) => !taken.has(a.toLowerCase())) ??
-    `${base} (${new Date().toISOString().slice(0, 10)})`;
+  const options = usable
+    ? [`${usable} — one question`, `about ${usable}`, `${usable}, quick thought`, `on ${usable}'s outbound`]
+    : ["one question", "a thought", "quick thought"];
+  const free = options.find((o) => !taken.has(o.toLowerCase()));
+  if (free) return free;
+  return `${options[0]} (${new Date().toISOString().slice(0, 10)})`;
 }
 
 /**
@@ -446,7 +478,17 @@ export async function draftForLead(
 
   const raw: string = typeof r?.email === "string" ? r.email : "";
   const split = splitSubject(raw);
-  const subject = split.subject || fallbackSubject(lead.company_name, avoidSubjects);
+  /*
+   * Where the subject comes from, in order.
+   *
+   * The generator's own line first. Then the thread, so a follow-up lands
+   * under the message it follows up on rather than opening a second
+   * conversation about the same thing. Only then the fallback, which used to
+   * be the only one of the three that ever ran.
+   */
+  const subject = split.subject
+    || threadedSubject(settings.thread)
+    || fallbackSubject(lead.company_name, avoidSubjects);
 
   let draftId: string | null = null;
   if (raw) {
