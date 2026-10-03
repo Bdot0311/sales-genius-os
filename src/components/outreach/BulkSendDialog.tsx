@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -70,6 +70,10 @@ interface BulkSendDialogProps {
    */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /** The composer's selection and reviewed email, carried in on open. */
+  initialSelectedIds?: string[];
+  initialSubject?: string;
+  initialBody?: string;
 }
 
 export const BulkSendDialog = ({
@@ -92,6 +96,9 @@ export const BulkSendDialog = ({
   useSpintax = false,
   open: controlledOpen,
   onOpenChange,
+  initialSelectedIds,
+  initialSubject,
+  initialBody,
 }: BulkSendDialogProps) => {
   const { toast } = useToast();
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
@@ -115,6 +122,19 @@ export const BulkSendDialog = ({
   const [delayBetweenSends, setDelayBetweenSends] = useState(60);
   const [previewLeadIdx, setPreviewLeadIdx] = useState(0);
   const [verifiedOnly, setVerifiedOnly] = useState(true);
+
+  // Opening from the composer sends what was reviewed there, to the leads
+  // picked there — never a fresh, unreviewed generation by default.
+  useEffect(() => {
+    if (!open) return;
+    if (initialSelectedIds?.length) setSelectedLeadIds(new Set(initialSelectedIds));
+    if (initialBody?.trim()) {
+      setSendMode("same");
+      setSameSubject(initialSubject || "");
+      setSameBody(initialBody);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const remaining = dailyEmailLimit - dailyEmailsSent;
   const emailableLeads = leads.filter((l) => l.contact_email);
