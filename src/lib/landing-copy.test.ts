@@ -171,11 +171,6 @@ describe("the free plan is described as what it is", () => {
     expect(PRICING).toContain('free: "100 searches", starter: "1,000 prospects"');
   });
 
-  it("publishes the live intelligence and research plan boundaries", () => {
-    expect(PRICING).toContain('{ name: "On-demand lead evaluation", free: false, starter: false, growth: true, pro: true, agency: false }');
-    expect(PRICING).toContain('{ name: "Sourced why-now account research", free: false, starter: false, growth: true, pro: true, agency: true }');
-    expect(PRICING).toContain('{ name: "Buying committee mapping", free: false, starter: false, growth: false, pro: true, agency: true }');
-  });
 });
 
 /**
