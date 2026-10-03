@@ -208,7 +208,7 @@ export const SoftwareApplicationSchema = () => {
           "priceCurrency": "USD",
           "priceValidUntil": "2027-12-31",
           "availability": "https://schema.org/InStock",
-          "description": "High-volume outbound. 5,000 verified prospects per month, sequence branching and A/B testing, CRM integrations, Pro AI SDR agent (5 agent builds, 150 replies/day). 14-day free trial."
+          "description": "High-volume outbound. 5,000 verified prospects per month, sequence branching and A/B testing, API and MCP access, Pro AI SDR agent (5 agent builds, 150 replies/day). 14-day free trial."
         },
         {
           "@type": "Offer",
