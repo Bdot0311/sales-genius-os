@@ -6748,6 +6748,7 @@ export type Database = {
           never_signed_in: boolean
         }[]
       }
+      release_agent_job_items: { Args: { p_ids: string[] }; Returns: number }
       release_stale_agent_job_items: { Args: never; Returns: number }
       reset_daily_email_counters: { Args: never; Returns: undefined }
       saved_lead_facets: { Args: never; Returns: Json }
