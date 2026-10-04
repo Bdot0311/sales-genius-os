@@ -47,6 +47,28 @@ const json = (body: unknown, status = 200) =>
 // one. Stop with time to write results rather than being killed mid-item.
 const BUDGET_MS = 100_000;
 
+/*
+ * How many claimed rows are drafted at once.
+ *
+ * Bounded, and deliberately modest. aiFetch has no backoff: a gateway that
+ * rate limits returns an ordinary error and the item is settled on it, so
+ * raising this too far converts slowness into failed leads rather than speed.
+ * Four keeps the pass busy through a model call without stacking requests the
+ * provider will refuse.
+ */
+const CONCURRENCY = 4;
+
+/*
+ * A failure the next pass could get past.
+ *
+ * The worker settled every non-success the same way. A provider busy for a
+ * second and a draft that invented a figure it cannot back are not the same
+ * thing: the first is worth running again, the second returns the same answer
+ * forever. Running four at a time makes the first more likely, not less.
+ */
+const TRANSIENT_FAILURE =
+  /rate limit|rate-limit|429|too many requests|timed out|timeout|temporarily unavailable|overloaded|503|502|504/i;
+
 /**
  * Hand one finished draft to the outbox.
  *
@@ -118,6 +140,7 @@ async function scheduleDraft(
   job: Record<string, any>,
   lead: Record<string, unknown>,
   draft: { subject: string | null; body: string | null },
+  slots: { taken: number },
 ): Promise<{ id: string; scheduledAt: string } | null> {
   const to = String((lead as any).contact_email ?? "").trim();
   if (!to || !draft.subject || !draft.body) return null;
@@ -130,7 +153,18 @@ async function scheduleDraft(
     .select("id", { count: "exact", head: true })
     .eq("job_id", job.id)
     .not("scheduled_email_id", "is", null);
-  const alreadyScheduled = count ?? 0;
+  /*
+   * The rows only know about passes that have finished.
+   *
+   * With several drafts in flight at once, four items read the same count and
+   * every one of them picked the same slot, so a batch meant to go out two
+   * minutes apart left as a burst from one domain — the exact thing the
+   * stagger exists to prevent. The slot is reserved here, before any further
+   * await, and a reservation that then bails out leaves a gap rather than a
+   * collision: a wider gap costs nothing, a collision costs reputation.
+   */
+  const alreadyScheduled = (count ?? 0) + slots.taken;
+  slots.taken += 1;
 
   // The ceiling is the size of the batch the user actually asked for. A job can
   // never put more in the outbox than it was asked to draft, whatever else goes
@@ -270,13 +304,52 @@ serve(async (req) => {
     let skipped = 0;
     const touchedJobs = new Set<string>();
 
-    for (const item of items) {
+    // Rows claimed but never started, handed back below in one statement.
+    const deferred: string[] = [];
+    // Outbox slots handed out in this pass, so concurrent drafts stagger.
+    const outboxSlots = { taken: 0 };
+
+    /*
+     * One claimed row, start to finish.
+     *
+     * This was the body of a `for (const item of items)` loop with an await on
+     * a full generate-email round trip inside it, so eight claimed rows were
+     * drafted strictly one after another. A draft is research plus a model call
+     * plus up to three regenerations — twenty to forty seconds — and the pass
+     * stops starting work at eighty, so two to four of the eight finished and
+     * the rest were handed back. The queue's ceiling was about three drafts a
+     * minute however many rows it claimed, and a hundred-lead batch took half an
+     * hour of wall clock to work through.
+     */
+    /*
+     * Settle a failure, or hand the row back for another pass.
+     *
+     * attempts has already been incremented by the claim, so the number here
+     * includes this try. Three is the same ceiling the stale-row reaper uses,
+     * so a lead cannot bounce between pending and claimed indefinitely.
+     */
+    const settleFailure = async (item: Record<string, any>, message: unknown): Promise<void> => {
+      const text = String(message ?? "Draft failed").slice(0, 400);
+      if (TRANSIENT_FAILURE.test(text) && Number(item.attempts ?? 0) < 3) {
+        console.warn(`[process-agent-jobs] transient, requeued: ${text}`);
+        await admin.from("agent_job_items")
+          .update({ status: "pending", claimed_at: null, error: text })
+          .eq("id", item.id);
+        return;
+      }
+      await admin.from("agent_job_items")
+        .update({ status: "failed", error: text, finished_at: new Date().toISOString() })
+        .eq("id", item.id);
+      failed++;
+    };
+
+    const processItem = async (item: Record<string, any>): Promise<void> => {
       const job = jobs.get(String(item.job_id));
       if (!job) {
         await admin.from("agent_job_items")
           .update({ status: "failed", error: "Its job is gone", finished_at: new Date().toISOString() })
           .eq("id", item.id);
-        continue;
+        return;
       }
       touchedJobs.add(String(job.id));
 
@@ -291,16 +364,7 @@ serve(async (req) => {
         await admin.from("agent_job_items")
           .update({ status: "skipped", finished_at: new Date().toISOString() })
           .eq("id", item.id);
-        continue;
-      }
-
-      // Out of time: give the row back rather than half-doing it. attempts was
-      // already incremented by the claim, so a row cannot loop here forever.
-      if (outOfTime()) {
-        await admin.from("agent_job_items")
-          .update({ status: "pending", claimed_at: null })
-          .eq("id", item.id);
-        continue;
+        return;
       }
 
       try {
@@ -321,7 +385,7 @@ serve(async (req) => {
           }).eq("id", item.id);
           if (outcome.ok) processed++;
           else failed++;
-          continue;
+          return;
         }
 
         const { data: lead } = await admin
@@ -336,7 +400,7 @@ serve(async (req) => {
             .update({ status: "failed", error: "Lead not found", finished_at: new Date().toISOString() })
             .eq("id", item.id);
           failed++;
-          continue;
+          return;
         }
 
         /*
@@ -356,7 +420,7 @@ serve(async (req) => {
               .update({ status: "skipped", error: "already drafted", finished_at: new Date().toISOString() })
               .eq("id", item.id);
             skipped++;
-            continue;
+            return;
           }
         }
 
@@ -385,15 +449,17 @@ serve(async (req) => {
           // The generator reports failure in the body with a 200, so a missing
           // error is not the same as success — each of these writes the lead
           // row, and `error` is how they say they did not.
-          const failedHere = !!r?.error;
+          if (r?.error) {
+            await settleFailure(item, r.error);
+            return;
+          }
           await admin.from("agent_job_items").update({
-            status: failedHere ? "failed" : "done",
-            error: failedHere ? String(r.error).slice(0, 300) : null,
+            status: "done",
+            error: null,
             finished_at: new Date().toISOString(),
           }).eq("id", item.id);
-          if (failedHere) failed++;
-          else processed++;
-          continue;
+          processed++;
+          return;
         }
 
         const { data: settingsRow } = await admin
@@ -470,7 +536,7 @@ serve(async (req) => {
           // Autonomous jobs hand the draft to the outbox. Approval jobs stop
           // here, and the draft is the deliverable.
           const outbox = job.autonomy === "autonomous"
-            ? await scheduleDraft(admin, job, lead as Record<string, unknown>, result)
+            ? await scheduleDraft(admin, job, lead as Record<string, unknown>, result, outboxSlots)
             : null;
 
           await admin.from("agent_job_items")
@@ -486,21 +552,60 @@ serve(async (req) => {
             .eq("id", item.id);
           processed++;
         } else {
-          await admin.from("agent_job_items")
-            .update({ status: "failed", error: String(result.error ?? "Draft failed").slice(0, 400), finished_at: new Date().toISOString() })
-            .eq("id", item.id);
-          failed++;
+          await settleFailure(item, result.error ?? "Draft failed");
         }
       } catch (e) {
         console.error("[process-agent-jobs] item failed:", e instanceof Error ? e.message : e);
+        await settleFailure(item, e instanceof Error ? e.message : "Unexpected error");
+      }
+    };
+
+    /*
+     * Several drafts in flight at once, from a shared queue.
+     *
+     * Bounded rather than all-at-once, and deliberately modest: aiFetch has no
+     * backoff, so a gateway that rate limits turns straight into failed items.
+     * Four is enough to keep the pass busy through a model call without
+     * stacking requests the provider will refuse.
+     */
+    const queue = [...items];
+    const drain = async (): Promise<void> => {
+      for (;;) {
+        const item = queue.shift();
+        if (!item) return;
+        // Checked per item rather than per pass: once the budget is gone the
+        // rest of the queue is handed back untouched, in one statement.
+        if (outOfTime()) {
+          deferred.push(String(item.id));
+          continue;
+        }
+        await processItem(item);
+      }
+    };
+    await Promise.all(
+      Array.from({ length: Math.min(CONCURRENCY, items.length) }, () => drain()),
+    );
+
+    /*
+     * A row nobody touched gets its attempt back.
+     *
+     * claim_agent_job_items increments attempts when it takes the row, not when
+     * the work is done, so an item handed back here had burned one of its three
+     * for nothing. Three passes of that and release_stale_agent_job_items
+     * retired it as "Gave up after three attempts" — for a lead no draft was
+     * ever attempted for.
+     */
+    if (deferred.length) {
+      const { error: releaseError } = await admin.rpc("release_agent_job_items", {
+        p_ids: deferred,
+      });
+      if (releaseError) {
+        console.error("[process-agent-jobs] release failed:", releaseError.message);
+        // Better a spent attempt than a row left claimed: the ten-minute
+        // reaper would hold these for a further pass either way.
         await admin.from("agent_job_items")
-          .update({
-            status: "failed",
-            error: (e instanceof Error ? e.message : "Unexpected error").slice(0, 400),
-            finished_at: new Date().toISOString(),
-          })
-          .eq("id", item.id);
-        failed++;
+          .update({ status: "pending", claimed_at: null })
+          .in("id", deferred);
       }
     }
 

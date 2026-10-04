@@ -158,18 +158,24 @@ describe("the worker", () => {
   });
 
   it("checks for a cancel before every item, not once per pass", () => {
-    const loop = code(WORKER).slice(code(WORKER).indexOf("for (const item of items)"));
-    const cancelAt = loop.indexOf('=== "cancelled"');
-    const draftAt = loop.indexOf("draftForLead(");
+    // The per-item work is a function now rather than a loop body, so the rule
+    // is pinned to where that function begins, not to the loop that is gone.
+    const item = code(WORKER).slice(code(WORKER).indexOf("const processItem = async (item"));
+    const cancelAt = item.indexOf('=== "cancelled"');
+    const draftAt = item.indexOf("draftForLead(");
     expect(cancelAt).toBeGreaterThan(-1);
     expect(draftAt).toBeGreaterThan(-1);
     expect(cancelAt).toBeLessThan(draftAt);
   });
 
   it("hands an item back rather than half-doing it when time runs out", () => {
-    const loop = code(WORKER).slice(code(WORKER).indexOf("for (const item of items)"));
-    expect(loop).toContain("outOfTime()");
-    expect(loop).toMatch(/status: "pending", claimed_at: null/);
+    // The check moved out of the per-item work and into the pool's own loop:
+    // a row the budget stopped should never be opened at all, which is also
+    // what lets its attempt be given back.
+    const drain = code(WORKER).slice(code(WORKER).indexOf("const drain = async ()"));
+    expect(drain).toContain("outOfTime()");
+    expect(drain).toContain("deferred.push(String(item.id));");
+    expect(code(WORKER)).toMatch(/status: "pending", claimed_at: null/);
   });
 
   it("stops before the next minute's drain overlaps it", () => {
@@ -327,5 +333,103 @@ describe("what the user sees while it runs", () => {
     const PAGE = readFileSync("src/pages/AgentChat.tsx", "utf8");
     expect(PAGE).toContain("<AgentJobCard");
     expect(PAGE).toContain("useAgentJob(threadId)");
+  });
+});
+
+/**
+ * "Only generated 46 and stopped working."
+ *
+ * It had not stopped. The worker claimed eight rows and drafted them strictly
+ * one after another — `for (const item of items)` with an await on a full
+ * generate-email round trip inside it. A draft is research plus a model call
+ * plus up to three regenerations, twenty to forty seconds, against a pass that
+ * stops starting work at eighty. Two to four of the eight finished and the
+ * rest went back, so the queue could not exceed about three drafts a minute
+ * however many rows it took. A hundred leads was half an hour of wall clock.
+ *
+ * Worse, claim_agent_job_items increments attempts when it TAKES the row. An
+ * item handed back untouched had spent one of its three for nothing, and three
+ * passes of that retired it as "Gave up after three attempts" for a lead
+ * nothing was ever tried on.
+ */
+describe("the batch is drafted several at a time", () => {
+  const THROUGHPUT = readFileSync(
+    "supabase/migrations/20261003120000_agent_queue_throughput.sql",
+    "utf8",
+  );
+  const worker = code(WORKER);
+
+  it("no longer walks the claim one row at a time", () => {
+    expect(worker).not.toContain("for (const item of items) {");
+    expect(worker).toContain("const processItem = async (item");
+  });
+
+  it("runs a bounded pool over a shared queue", () => {
+    expect(worker).toContain("const CONCURRENCY = 4;");
+    expect(worker).toMatch(/Array\.from\(\s*\{\s*length:\s*Math\.min\(CONCURRENCY,\s*items\.length\)/);
+    // A shared queue, not a slice per worker: one slow draft must not leave
+    // its share of the batch unworked while the others idle.
+    expect(worker).toContain("const item = queue.shift();");
+  });
+
+  it("hands back what it never started, in one statement", () => {
+    expect(worker).toContain("deferred.push(String(item.id));");
+    expect(worker).toContain('release_agent_job_items');
+  });
+
+  it("gives the attempt back with the row", () => {
+    expect(THROUGHPUT).toContain("attempts = GREATEST(attempts - 1, 0)");
+    // Only rows this pass still holds, so a row another pass settled is never
+    // resurrected.
+    expect(THROUGHPUT).toMatch(/WHERE id = ANY\(p_ids\)\s*\n\s*AND status = 'claimed'/);
+  });
+
+  it("claims enough rows to keep the pool busy", () => {
+    expect(THROUGHPUT).toContain("'batch', 12");
+  });
+
+  it("runs more than one pass when the backlog is deep, but not many", () => {
+    expect(THROUGHPUT).toContain("LEAST(GREATEST(CEIL(pending_ct / 12.0)::integer, 1), 3)");
+  });
+});
+
+/**
+ * Four drafts at once makes two older assumptions false.
+ */
+describe("what concurrency broke, and did not", () => {
+  const worker = code(WORKER);
+
+  it("tells a provider being busy from a draft being refused", () => {
+    // aiFetch has no backoff, so a rate limit came back as an ordinary error
+    // and the lead was failed for it — permanently, with no draft.
+    expect(worker).toContain("const TRANSIENT_FAILURE =");
+    expect(worker).toContain("TRANSIENT_FAILURE.test(text)");
+    expect(worker).toContain('status: "pending", claimed_at: null, error: text');
+  });
+
+  it("still gives up eventually rather than cycling forever", () => {
+    expect(worker).toContain('Number(item.attempts ?? 0) < 3');
+  });
+
+  it("settles every failure through the one decision", () => {
+    // Three call sites used to write status "failed" by hand; a fourth would
+    // have been written the same way and missed the retry.
+    expect(worker).toContain("await settleFailure(item, result.error");
+    expect(worker).toContain("await settleFailure(item, r.error)");
+    expect(worker).toContain("await settleFailure(item, e instanceof Error");
+  });
+
+  it("does not let four drafts claim the same outbox slot", () => {
+    // The stagger is read from rows that only know about finished passes, so
+    // four concurrent items read the same count and scheduled the same minute
+    // — a burst from one domain, which is what the stagger exists to prevent.
+    expect(worker).toContain("const alreadyScheduled = (count ?? 0) + slots.taken;");
+    expect(worker).toContain("slots.taken += 1;");
+    expect(worker).toContain("const outboxSlots = { taken: 0 };");
+  });
+
+  it("keeps the cancel check per item, not per pass", () => {
+    expect(worker).toContain('.eq("id", job.id)');
+    expect(worker).toContain('(fresh as any)?.status === "cancelled"');
   });
 });

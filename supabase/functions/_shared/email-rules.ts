@@ -761,8 +761,28 @@ const TOUCH_ONE_PITCH: RegExp[] = [
   /\bclients\s+we\s+work\s+with\b/i,
 ];
 
+/**
+ * Openers the playbook itself fixes, word for word.
+ *
+ * The 4P's follow-up prompt orders the model to open with "I reached out the
+ * other day but likely didn't do the best job explaining how we help." — which
+ * contains the exact construction the same prompt bans two sections earlier.
+ * Given a rule and a mandated breach of it, the model concluded the rule did
+ * not apply and wrote "We help companies like yours build the lead sourcing
+ * and campaign infrastructure" as the body of the email.
+ *
+ * The ban is right and the opener is the sender's own playbook copy, so the
+ * one quoted sentence is excused and every sentence after it is held to the
+ * rule. Excusing it here rather than loosening the pattern matters: "we help"
+ * anywhere else is still a finding.
+ */
+const PLAYBOOK_LOCKED_OPENER =
+  /^[^\n]*reached out the other day but likely did(?:n't|n.t| not) do the best job explaining[^\n]*$/gim;
+
 export function findTouchOnePitch(text: string): string[] {
-  const t = String(text ?? "");
+  // Blanked rather than removed, so offsets and sentence boundaries elsewhere
+  // in the draft are untouched.
+  const t = String(text ?? "").replace(PLAYBOOK_LOCKED_OPENER, "");
   const out: string[] = [];
   for (const re of TOUCH_ONE_PITCH) {
     // Quote the clause, not the pattern, so a finding can show the sentence.
@@ -770,6 +790,19 @@ export function findTouchOnePitch(text: string): string[] {
     if (m?.[0]) out.push(m[0].trim().replace(/\s+/g, " "));
   }
   return [...new Set(out)];
+}
+
+/**
+ * The correction, with the sentence quoted back.
+ *
+ * Naming the clause is what makes these retries work: a model told "do not
+ * pitch" writes the same paragraph again, a model told "you wrote this
+ * sentence, replace it" does not.
+ */
+export function pitchRetry(hits: string[]): string {
+  return `\nThe draft explains what you sell: ${hits
+    .map((h) => `"${h}"`)
+    .join(", ")}. The reader has not asked what you do, and a sentence that describes your product fits every company on the list unchanged. Cut it. Say what changes for THEM and leave the how for the reply — the email earns an answer, it does not deliver the pitch.`;
 }
 
 /**

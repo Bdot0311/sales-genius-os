@@ -210,8 +210,25 @@ Founder, BDOT Industries LLC`;
     expect(auditEmail({ body: EMAIL }).some((f) => f.rule === "touch_one_pitch")).toBe(true);
   });
 
-  it("lets a later touch pitch, which is where the playbook puts it", () => {
-    expect(auditEmail({ body: EMAIL, position: 3 }).some((f) => f.rule === "touch_one_pitch")).toBe(false);
+  it("applies on a later touch too, because the prompt it enforces is not gated", () => {
+    // This used to pass at position 3, on the reading that a follow-up may
+    // name the mechanism. The system prompt generate-email actually sends is
+    // unconditional -- "the body NEVER names your own product or company" --
+    // so a follow-up reading "We help companies like yours build the lead
+    // sourcing and campaign infrastructure" was caught by nothing and scored
+    // 83 out of 100.
+    expect(auditEmail({ body: EMAIL, position: 3 }).some((f) => f.rule === "touch_one_pitch")).toBe(true);
+  });
+
+  it("excuses the one sentence the playbook itself fixes", () => {
+    // The 4P's follow-up prompt orders this opener verbatim, and it contains
+    // the construction the same prompt bans. Excusing the quoted sentence is
+    // what lets the rule apply to every sentence after it.
+    const locked = "I reached out the other day but likely didn't do the best job explaining how we help.";
+    expect(findTouchOnePitch(locked)).toEqual([]);
+    expect(
+      findTouchOnePitch(`${locked}\n\nWe help companies like yours build the infrastructure.`).length,
+    ).toBeGreaterThan(0);
   });
 
   it("ignores the signature, which the playbook allows to carry the company", () => {
@@ -229,4 +246,86 @@ Founder, BDOT Industries LLC`;
     ["'we' with no pitch shape", "We should talk when it suits you."],
     ["their platform, not ours", "Your platform handles multi-region well."],
   ])("stays quiet on %s", (_l, t) => expect(findTouchOnePitch(t)).toEqual([]));
+});
+
+/**
+ * The follow-up that read like a brochure.
+ *
+ * A 4ps_followup draft went to a prospect saying "We help companies like yours
+ * build the lead sourcing and campaign infrastructure so you're not fighting
+ * disconnected tools... One system pulls the signals, runs the outbound, and
+ * tracks what lands". Every word of that is banned twice over in the same
+ * prompt, and it scored 83 out of 100.
+ *
+ * It happened because the prompt licensed it. The 4ps_followup goal orders the
+ * model, in capitals and twice, to open with "...explaining how we help", while
+ * the base prompt bans "we help" outright two sections earlier; and it defined
+ * the PROMISE beat as "the mechanism in plain language, what happens, in what
+ * order, how fast" against a base rule reading "does NOT explain the product,
+ * list features... the how is withheld for the reply". Given a rule and a
+ * mandated breach of it, the model dropped the rule.
+ */
+const GEN_SRC = readFileSync("supabase/functions/generate-email/index.ts", "utf8");
+const RULES_SRC = readFileSync("supabase/functions/_shared/email-rules.ts", "utf8");
+const noComments = (s: string) =>
+  s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
+
+describe("the follow-up prompt no longer licenses what it bans", () => {
+  const followUp = GEN_SRC.split("case '4ps_followup':")[1].split("case '4ps_elusive_followup':")[0];
+
+  it("still bans the construction everywhere else in the base prompt", () => {
+    expect(GEN_SRC).toContain('"We help,"');
+    expect(GEN_SRC).toContain('use "we built" / "we help" / "our platform."');
+  });
+
+  it("marks the locked opener as the single exception, not a licence", () => {
+    expect(followUp).toContain("fixed quotation");
+    expect(followUp).toContain("ONLY place in this email");
+    expect(followUp).toContain("buys you no licence for the rest");
+  });
+
+  it("stops PROMISE meaning 'describe the product'", () => {
+    // The old wording was "The mechanism in plain language. What happens, in
+    // what order, how fast." That is an instruction to explain the product,
+    // which the base prompt forbids in the same breath.
+    expect(followUp).not.toContain("The mechanism in plain language");
+    expect(followUp).toContain("What changes for THEM");
+    expect(followUp).toContain("not how it works");
+  });
+
+  it("quotes back the two shapes it actually produced", () => {
+    expect(followUp).toContain("We help companies like yours build the X");
+    expect(followUp).toContain("one system pulls the signals");
+  });
+});
+
+describe("the pitch paragraph is caught where drafts are actually made", () => {
+  const gen = noComments(GEN_SRC);
+
+  it("runs the check on every draft, not only in the audit's score", () => {
+    expect(gen).toContain("let pitch = findTouchOnePitch(email);");
+    expect(gen).toContain("if (pitch.length) {");
+  });
+
+  it("regenerates with the clause quoted back", () => {
+    expect(gen).toMatch(/\$\{userPrompt\}\\n\$\{pitchRetry\(pitch\)\}/);
+    expect(noComments(RULES_SRC)).toContain("The draft explains what you sell:");
+  });
+
+  it("keeps the rewrite only when it is better on every axis already guarded", () => {
+    expect(gen).toContain("findTouchOnePitch(second).length < pitch.length");
+    expect(gen).toContain("!hasPlaceholder(second)");
+    expect(gen).toContain("!hasScaffolding(second)");
+    expect(gen).toContain("!findUnverifiedClaims(second, proofForClaims).length");
+  });
+
+  it("does not refuse the draft over it", () => {
+    // A brochure paragraph costs a reply; refusing costs the lead its draft.
+    // At a hundred a batch that trade is the wrong way round, so unlike a
+    // leaked outline this one keeps the better of the two and ships.
+    const after = gen.slice(gen.indexOf("let pitch = findTouchOnePitch(email);"));
+    const nextRefusal = after.indexOf("so it was not saved");
+    const blockEnd = after.indexOf("Reply-worthiness");
+    expect(nextRefusal === -1 || nextRefusal > blockEnd).toBe(true);
+  });
 });

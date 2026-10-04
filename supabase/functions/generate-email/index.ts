@@ -41,6 +41,8 @@ import {
   hasScaffolding,
   stripSelfReport,
   noScaffoldingRetry,
+  findTouchOnePitch,
+  pitchRetry,
 } from "../_shared/email-rules.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { isInternalCaller } from "../_shared/internal-auth.ts";
@@ -579,11 +581,16 @@ ${BODY_ONLY_RULES}`;
 OPENING LINE (use exactly):
 I reached out the other day but likely didn't do the best job explaining how we help.
 
+That sentence is a fixed quotation. It is the ONLY place in this email where
+the words "we help" may appear, and it buys you no licence for the rest: from
+the second sentence onward the ban below applies in full — no "we help", no
+"we built", no "our platform", no naming or describing what you sell.
+
 FRAMEWORK: 4P's (strict order)
 
 1. PROBLEM — One clear revenue or operational gap anchored to their situation. No speculating on internals.
 
-2. PROMISE — The mechanism in plain language. What happens, in what order, how fast. Tangible enough the prospect can picture the work.
+2. PROMISE — What changes for THEM, and roughly how soon. Not what you sell, not how it works, not what it is made of. Do not name your product, do not list what it does, do not describe one system that does several things. "We help companies like yours build the X so you're not fighting Y" and "one system pulls the signals, runs the outbound and tracks what lands" are the two shapes this beat keeps collapsing into; both are brochure copy, both would fit any company on your list unchanged, and both are a rewrite. Write the outcome this specific reader would notice.
 
 3. PROOF — One sentence max. One specific client, result, and timeline if provided. Skip entirely if not provided — never force or invent.
 
@@ -1668,6 +1675,59 @@ conversation that is already going, not as someone chasing silence.`}`;
           claims = [];
         } else {
           claims = findUnverifiedClaims(second || email, proofForClaims);
+        }
+      }
+    }
+
+    /*
+     * The paragraph that explains the product.
+     *
+     * A follow-up went out reading "We help companies like yours build the lead
+     * sourcing and campaign infrastructure so you're not fighting disconnected
+     * tools... One system pulls the signals, runs the outbound, and tracks what
+     * lands". The rules ban that twice over, and findTouchOnePitch matches it
+     * exactly — but the audit only ran the check on touch 1, and the audit is a
+     * score, not a gate. So the one sentence that reads identically to every
+     * other prospect on the list was the one sentence nothing stopped.
+     *
+     * Regenerated once with the clause quoted, and the better of the two kept.
+     * Not a refusal: a brochure paragraph costs a reply, where refusing costs
+     * the lead its draft entirely, and at a hundred a batch that trade is the
+     * wrong way round.
+     */
+    let pitch = findTouchOnePitch(email);
+    if (pitch.length) {
+      console.warn(`[generate-email] pitch paragraph: ${pitch.join(', ')} — regenerating`);
+      const pitchRetryRes = await aiFetch("generate-email", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: `${userPrompt}\n${pitchRetry(pitch)}` },
+          ],
+          temperature: 0.5,
+        }),
+      });
+      if (pitchRetryRes.ok) {
+        const d = await pitchRetryRes.json();
+        const second = cleanGeneratedEmail(
+          stripSelfReport((d.choices?.[0]?.message?.content || '').trim()),
+          preserveSubject,
+        );
+        // Every axis already guarded, not just this one: a draft with no pitch
+        // that reintroduced a placeholder or an invented figure is not better.
+        const secondOk = second &&
+          findTouchOnePitch(second).length < pitch.length &&
+          !hasPlaceholder(second) &&
+          !hasScaffolding(second) &&
+          !findUnverifiedClaims(second, proofForClaims).length;
+        if (secondOk) {
+          email = second;
+          pitch = findTouchOnePitch(email);
+        } else {
+          console.warn('[generate-email] pitch rewrite rejected, keeping original');
         }
       }
     }
