@@ -225,6 +225,13 @@
       "when": 1791063877450,
       "tag": "0031_api_mcp_paid_tiers",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1791097326374,
+      "tag": "0032_agent_queue_throughput",
+      "breakpoints": true
     }
   ]
 }
