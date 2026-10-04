@@ -61,6 +61,13 @@ export interface DraftResult {
   name_warnings: unknown[];
   name_repairs: unknown[];
   error?: string;
+  /**
+   * Settled without writing anything, and not a failure.
+   *
+   * Carries the reason, phrased for the user: "contacted 13 hours ago, a
+   * follow-up is due in 2 days".
+   */
+  skipped?: string;
 }
 
 /** generate-email returns "Subject: ...\n\n<body>". Split it, or treat it all as body. */
@@ -315,10 +322,63 @@ export async function leadThreads(
  *   No reply anywhere in the thread. A reply to the first email and silence on
  *   the second is not an unanswered lead; that person is mid-conversation.
  */
+/*
+ * How long someone has to be silent before silence means anything.
+ *
+ * The same 103 leads were queued for a follow-up at 07:43 and again at 21:14
+ * the same day. Nothing in the drafting path disagreed: leadThreads calls a
+ * thread awaiting_reply the moment an email is sent with no reply, goalForLead
+ * turns awaiting_reply plus follow-up into 4ps_followup with no test on when
+ * that email went, and the end-of-turn sweep picks leads by "has no draft",
+ * which has no time in it at all. A lead whose first email went out in the
+ * morning, and whose draft left the folder when it sent, was a fresh candidate
+ * for a second email by the evening.
+ *
+ * This fence existed, but only in leadsAwaitingReply — the list_leads filter,
+ * one of several ways a batch gets its leads, and not the one the sweep uses.
+ * Three days is the sender's own playbook: OUTBOUND_KB cadenceDays is
+ * [0, 3, 7, 12, 18].
+ */
+export const FOLLOW_UP_QUIET_DAYS = 3;
+
+/**
+ * Hours since the last send when a follow-up is too early, else null.
+ *
+ * Only applies to goals that write to someone who has not answered. A first
+ * touch has nothing to be too soon after.
+ */
+export function followUpTooSoon(
+  goal: string,
+  thread: LeadThread | null | undefined,
+  quietForDays: number = FOLLOW_UP_QUIET_DAYS,
+): { hoursSince: number; dueInDays: number } | null {
+  if (!isReframeGoal(goal)) return null;
+  if (!thread || thread.state !== "awaiting_reply") return null;
+  const last = Date.parse(String(thread.lastSentAt ?? ""));
+  if (!Number.isFinite(last)) return null;
+
+  const quiet = Math.min(Math.max(quietForDays, 1), 60);
+  const hoursSince = Math.floor((Date.now() - last) / 3_600_000);
+  if (hoursSince >= quiet * 24) return null;
+  return { hoursSince, dueInDays: Math.max(1, Math.ceil((quiet * 24 - hoursSince) / 24)) };
+}
+
+/** The reason, phrased for someone reading a batch report. */
+export function tooSoonReason(t: { hoursSince: number; dueInDays: number }): string {
+  const when = t.hoursSince < 1
+    ? "less than an hour ago"
+    : t.hoursSince === 1
+    ? "an hour ago"
+    : t.hoursSince < 48
+    ? `${t.hoursSince} hours ago`
+    : `${Math.floor(t.hoursSince / 24)} days ago`;
+  return `contacted ${when}, a follow-up is due in ${t.dueInDays} day${t.dueInDays === 1 ? "" : "s"}`;
+}
+
 export async function leadsAwaitingReply(
   admin: any,
   userId: string,
-  quietForDays = 3,
+  quietForDays = FOLLOW_UP_QUIET_DAYS,
 ): Promise<Set<string>> {
   const quiet = Math.min(Math.max(quietForDays, 1), 60);
   const cutoff = new Date(Date.now() - quiet * 86_400_000).toISOString();
@@ -447,6 +507,33 @@ export async function draftForLead(
   settings: DraftSettings,
   avoidSubjects: string[] = [],
 ): Promise<DraftResult> {
+  /*
+   * Too soon to follow up, so nothing is written and nothing is charged.
+   *
+   * Settled rather than failed: the lead is fine, the batch is fine, and the
+   * only thing wrong is the date. Reported so the user can see why a batch of
+   * a hundred produced twelve drafts rather than wondering where the rest
+   * went.
+   */
+  const tooSoon = followUpTooSoon(settings.goal, settings.thread);
+  if (tooSoon) {
+    return {
+      lead_id: lead.id,
+      draft_id: null,
+      company: (lead.company_name as string) ?? null,
+      contact: (lead.contact_name as string) ?? null,
+      contact_email: (lead.contact_email as string) ?? null,
+      subject: null,
+      body: null,
+      email: null,
+      skills_used: [],
+      style_warnings: [],
+      name_warnings: [],
+      name_repairs: [],
+      skipped: tooSoonReason(tooSoon),
+    };
+  }
+
   const payload = {
     lead,
     goal: settings.goal,

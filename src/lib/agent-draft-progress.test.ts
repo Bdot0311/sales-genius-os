@@ -216,7 +216,11 @@ describe("the drafts total comes from the drafts table", () => {
     expect(CODE).toContain("draftTally.written += okCount;");
     expect(CODE).toContain("draftTally.queued += toQueue.length;");
     expect(CODE).toContain("draftTally.skippedAlreadyDrafted += already.length;");
-    expect(CODE).toContain("draftTally.failed += drafts.length - okCount;");
+    // Too soon to follow up leaves no draft and is not a failure, so it comes
+    // off the failed count as well as off okCount — otherwise a batch that
+    // correctly declined to email people contacted that morning reports every
+    // one of them as broken.
+    expect(CODE).toContain("draftTally.failed += drafts.length - okCount - tooSoon.length;");
   });
 
   it("tells the model not to do the arithmetic itself", () => {

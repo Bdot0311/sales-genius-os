@@ -2593,15 +2593,24 @@ serve(async (req) => {
            * two calls told nobody anything. Hours went into working out from
            * screenshots what one line of this would have said.
            */
+          /*
+           * Too soon to follow up is settled, not failed.
+           *
+           * Without this, a batch that correctly declined to email people
+           * contacted that morning would report every one of them as a
+           * failure, and the obvious reading of "89 failed" is that the
+           * product is broken.
+           */
+          const tooSoon = drafts.filter((d: any) => d.skipped);
           const failureReasons = [
             ...new Set(
               drafts
-                .filter((d: any) => !d.email)
+                .filter((d: any) => !d.email && !d.skipped)
                 .map((d: any) => String(d.error ?? "Draft failed").slice(0, 160)),
             ),
           ] as string[];
           draftTally.written += okCount;
-          draftTally.failed += drafts.length - okCount;
+          draftTally.failed += drafts.length - okCount - tooSoon.length;
           if (okCount === 0 && ids.length > 0) draftingProducedNothing = true;
           for (const d of drafts) if (d.draft_id) handledLeadIds.add(String(d.lead_id));
           outstandingGoal = goal;
@@ -2687,13 +2696,27 @@ serve(async (req) => {
              * filled the silence with a promise the product does not keep, and
              * two leads ended the run with no draft and no one looking for it.
              */
-            ...(drafts.length > okCount
+            ...(tooSoon.length
+              ? {
+                  too_soon: {
+                    count: tooSoon.length,
+                    reasons: [...new Set(tooSoon.map((d: any) => String(d.skipped)))].slice(0, 4),
+                    note:
+                      `${tooSoon.length} lead(s) got no draft because they were contacted too recently — ` +
+                      "the sender's own cadence is 0, 3, 7, 12, 18 days and a second email inside that " +
+                      "window burns the domain for no extra reply. This is the product working, not a " +
+                      "failure: say so plainly, say when they are due, and do NOT queue them again this " +
+                      "turn or call draft_outreach for them to try to get the number up.",
+                  },
+                }
+              : {}),
+            ...(drafts.length > okCount + tooSoon.length
               ? {
                   failed: {
-                    count: drafts.length - okCount,
+                    count: drafts.length - okCount - tooSoon.length,
                     reasons: failureReasons,
                     note:
-                      `${drafts.length - okCount} lead(s) got no draft. Say that plainly and say why, ` +
+                      `${drafts.length - okCount - tooSoon.length} lead(s) got no draft. Say that plainly and say why, ` +
                       "using reasons. Nothing retries them: there is no next batch for a failed lead, so " +
                       "never say one will regenerate, be picked up later, or be covered by the queue. If " +
                       "the user wants another attempt they have to ask for it, and most of these reasons " +

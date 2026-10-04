@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
+import {
+  FOLLOW_UP_QUIET_DAYS,
+  draftForLead,
+  followUpTooSoon,
+  tooSoonReason,
+} from "../../supabase/functions/_shared/draft-one";
 
 const AGENT = readFileSync("supabase/functions/agent-chat/index.ts", "utf8");
 const DRAFT = readFileSync("supabase/functions/_shared/draft-one.ts", "utf8");
@@ -214,5 +220,108 @@ describe("the counts in one message agree with each other", () => {
   it("keeps the folder total from the database above the reply", () => {
     expect(agent).toContain('.from("email_drafts")');
     expect(agent).toContain("Your drafts folder holds ${draftsNow ?? 0}");
+  });
+});
+
+/**
+ * Two follow-ups to the same 103 people, thirteen hours apart.
+ *
+ * Job eec23c11 at 07:43 drafted 89 of 103. Job 1d954287 at 21:14 drafted 97 of
+ * 101. Across both: 204 items, 103 distinct leads, neither carrying feedback,
+ * and zero items skipped as already-drafted. The skip was right to stay quiet —
+ * by the evening those leads genuinely had no draft, because the morning's had
+ * left the folder when it sent.
+ *
+ * Nothing in the drafting path disagreed. leadThreads calls a thread
+ * awaiting_reply the moment an email is sent with no reply. goalForLead turns
+ * awaiting_reply plus follow-up into 4ps_followup with no test on when that
+ * email went. The end-of-turn sweep picks leads by "has no draft", which has no
+ * time in it at all. The three-day fence existed only in leadsAwaitingReply —
+ * the list_leads filter, which is not how the sweep gets its leads.
+ */
+describe("a follow-up waits for the silence to mean something", () => {
+  const hoursAgo = (h: number) => new Date(Date.now() - h * 3_600_000).toISOString();
+  const thread = (h: number) => ({
+    state: "awaiting_reply" as const,
+    lastSentAt: hoursAgo(h),
+    lastSubject: "the first one",
+  });
+
+  it("uses the sender's own cadence, not a number invented here", () => {
+    // OUTBOUND_KB cadenceDays is [0, 3, 7, 12, 18]; the first gap is three days.
+    expect(FOLLOW_UP_QUIET_DAYS).toBe(3);
+    expect(code(DRAFT)).toContain("quietForDays = FOLLOW_UP_QUIET_DAYS");
+  });
+
+  it("stops the second email inside the window", () => {
+    expect(followUpTooSoon("4ps_followup", thread(13))).not.toBeNull();
+    expect(followUpTooSoon("4ps_followup", thread(1))).not.toBeNull();
+    expect(followUpTooSoon("4ps_followup", thread(71))).not.toBeNull();
+  });
+
+  it("lets it through once the window has passed", () => {
+    expect(followUpTooSoon("4ps_followup", thread(72))).toBeNull();
+    expect(followUpTooSoon("4ps_followup", thread(24 * 9))).toBeNull();
+  });
+
+  it("has nothing to say about a first touch", () => {
+    // An introduction cannot be too soon after an email that never went.
+    expect(followUpTooSoon("introduction", thread(1))).toBeNull();
+    expect(followUpTooSoon("4ps_followup", { state: "never_contacted" } as never)).toBeNull();
+    expect(followUpTooSoon("4ps_followup", null)).toBeNull();
+  });
+
+  it("says when they are due, in words a person reads", () => {
+    const t = followUpTooSoon("4ps_followup", thread(13))!;
+    // 72 - 13 = 59 hours left, rounded up. Up rather than down on purpose: a
+    // fence that says "due in 2 days" when it means two and a half invites the
+    // second email a day early, which is the thing being prevented.
+    expect(tooSoonReason(t)).toBe("contacted 13 hours ago, a follow-up is due in 3 days");
+    expect(tooSoonReason(followUpTooSoon("4ps_followup", thread(70))!)).toContain("due in 1 day");
+    expect(tooSoonReason(followUpTooSoon("4ps_followup", thread(50))!)).toContain("2 days ago");
+  });
+
+  it("does not spend a generation finding out", async () => {
+    // The whole point: the refusal is before generate-email, not after it.
+    const calls: string[] = [];
+    const result = await draftForLead(
+      {
+        admin: {} as never,
+        userId: "u1",
+        invokeFn: async (name: string) => {
+          calls.push(name);
+          return { email: "Subject: x\n\nbody" };
+        },
+      },
+      { id: "l1", company_name: "Acme" } as never,
+      { goal: "4ps_followup", thread: thread(13), tone: "professional" } as never,
+    );
+    expect(calls).toEqual([]);
+    expect(result.draft_id).toBeNull();
+    expect(result.skipped).toContain("a follow-up is due in");
+    // Not an error: the lead is fine and so is the batch.
+    expect(result.error).toBeUndefined();
+  });
+});
+
+describe("too soon is reported as settled, not as a failure", () => {
+  it("the worker settles it in the same bucket as already-drafted", () => {
+    const w = code(WORKER);
+    expect(w).toContain("if (result.skipped) {");
+    expect(w).toMatch(/status: "skipped",\s*\n\s*error: result\.skipped,/);
+    expect(w).toContain("skipped++;");
+  });
+
+  it("the turn does not count it against the drafts it wrote", () => {
+    const a = code(AGENT);
+    expect(a).toContain("const tooSoon = drafts.filter((d: any) => d.skipped);");
+    expect(a).toContain("draftTally.failed += drafts.length - okCount - tooSoon.length;");
+    // A reason that reads as a fault is how "89 failed" would have been read.
+    expect(a).toContain("!d.email && !d.skipped");
+  });
+
+  it("tells the model it is the product working, and not to retry for the count", () => {
+    expect(AGENT).toContain("This is the product working, not a");
+    expect(AGENT).toContain("do NOT queue them again this");
   });
 });
