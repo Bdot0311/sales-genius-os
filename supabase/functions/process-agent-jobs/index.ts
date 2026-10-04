@@ -532,6 +532,23 @@ serve(async (req) => {
           avoid.get(String(item.lead_id)) ?? [],
         );
 
+        /*
+         * Too soon for a second email. Settled, not failed: the lead is fine
+         * and nothing is wrong except the date. Same bucket as "already
+         * drafted", which is the other way an item finishes without writing.
+         */
+        if (result.skipped) {
+          await admin.from("agent_job_items")
+            .update({
+              status: "skipped",
+              error: result.skipped,
+              finished_at: new Date().toISOString(),
+            })
+            .eq("id", item.id);
+          skipped++;
+          return;
+        }
+
         if (result.draft_id) {
           // Autonomous jobs hand the draft to the outbox. Approval jobs stop
           // here, and the draft is the deliverable.
