@@ -2734,9 +2734,16 @@ serve(async (req) => {
                     job_id: queuedJobId,
                     count: queuedCount,
                     note:
-                      `${queuedCount} further lead(s) are queued and NOT yet drafted. ` +
-                      "Tell the user the count plainly, that the drafts appear as they finish, and that they can cancel the batch from the chat. " +
-                      "Do not call draft_outreach again for those leads: the queue already has them, and drafting them here would write each draft twice.",
+                      `${queuedCount} further lead(s) are ALREADY BEING DRAFTED by a background worker ` +
+                      "that is running right now. They are not outstanding work and they are not waiting on " +
+                      "anything from you or from the user. " +
+                      "Tell the user the count plainly, that the drafts appear in Outreach as they finish, and " +
+                      "that they can cancel the batch from the chat. " +
+                      "Never describe these as remaining, left to do, still to draft, or not yet started, and " +
+                      "never offer to continue them, draft the rest, or pick them up later — there is nothing " +
+                      "to continue and the user who waits for that offer waits forever. " +
+                      "Do not call draft_outreach again for those leads: the queue already has them, and " +
+                      "drafting them here would write each draft twice.",
                   },
                 }
               : {}),
@@ -4097,7 +4104,7 @@ HOW TO WORK
 - When the user says something like "I just searched some leads, take it from here", find the relevant leads with list_leads first, then chain the work: enrich -> score -> draft -> send/queue. Do not ask permission for read-only or drafting steps; just do them and report back.
 - DRAFTING FOR A GROUP: call list_leads once with the filters that match what the user actually asked for, then pass EVERY id it returns to draft_outreach in ONE call. Always include without_draft: true — without it you get the same leads back on every pass and redraft work that is already done, which is how a request for eighty-two drafts produced twenty. draft_outreach skips any lead that already has a draft regardless, so a repeat call is wasted, not additive.
 - SCOPE THAT CALL TO WHAT THEY ASKED FOR. The set you pass to list_leads is the set this turn commits to finishing, so a filter you leave off is work the user never requested. "No-response leads", "everyone who never replied", "people I haven't heard back from" all mean awaiting_reply: true — they do NOT mean every lead without a draft. Asked for eighty-six no-response leads and given only without_draft, you return one hundred and five, because without_draft includes everyone who has never been contacted at all. Those people cannot be followed up with; they have heard nothing from this user.
-- NEVER COUNT DRAFTS YOURSELF. Do not add this call's result to something you said earlier and report the sum, and do not subtract your running total from the list size to get a "remaining" figure. Queued is not drafted. The only two numbers you may quote are drafted_this_call from draft_outreach and remaining_without_draft from list_leads, called with the same filters you drafted against. If you want a current total, call list_leads and read it — it costs one call and it is the number the user sees in their drafts folder.
+- NEVER COUNT DRAFTS YOURSELF. Do not add this call's result to something you said earlier and report the sum, and do not subtract your running total from the list size to get a "remaining" figure. Queued is not drafted YET, but it is not outstanding either: a worker is drafting those leads right now and they need nothing from you or the user. So they are never "remaining", "left to draft", "still to do" or "not started", and you must never close a turn by offering to continue, resume or pick up leads that are already queued — the user who waits for that offer waits for a batch that was never stopped. The only two numbers you may quote are drafted_this_call from draft_outreach and remaining_without_draft from list_leads, called with the same filters you drafted against. If you want a current total, call list_leads and read it — it costs one call and it is the number the user sees in their drafts folder.
 - When a tool comes back with an error, say what the error was and stop. Do not call it again with the same arguments, and do not describe the attempt as progress.
 - Do several tool calls in a row when needed. Prefer batching lead ids over one-at-a-time calls. For drafting, ALWAYS pass every lead id in a single draft_outreach call via lead_ids — never fire many parallel draft_outreach calls, that trips the rate limiter.
 - NEVER write, rewrite or "improve" email copy yourself in the chat. Every email the user sees must come from draft_outreach, which runs the playbook, the banned-phrase list, the proof rules and the quality rubric. When the user dislikes a draft ("redraft this", "too salesy", "make it shorter"), call draft_outreach again for that lead with feedback set to what they said — it replaces the draft. Copy you compose by hand is checked by nothing and reads like generic marketing, which is the single most common complaint about this product.
