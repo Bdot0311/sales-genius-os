@@ -58,4 +58,13 @@ describe("API & MCP tiers", () => {
     expect(combined).not.toContain("No AI SDR agent");
     expect(combined).not.toContain("Elite AI SDR agent: 200");
   });
+
+  it("AI-readable pricing docs do not describe integrations as paid-only or Pro-only", () => {
+    const combined = [LLMS, LLMS_FULL, LLMS_EDGE].join("\n");
+    expect(combined).toContain("integrations on every plan, including Explore");
+    expect(combined).not.toContain("CRM integrations (HubSpot and Salesforce) are available on Pro and above");
+    expect(combined).not.toContain("Gmail (email delivery and reply tracking, all paid plans)");
+    expect(combined).not.toContain("HubSpot (CRM sync, Pro and above)");
+    expect(combined).not.toContain("Salesforce (CRM sync, Pro and above)");
+  });
 });

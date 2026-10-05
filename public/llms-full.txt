@@ -157,7 +157,6 @@ All prices are in USD. Pricing scales by verified prospects contacted per month,
 - Everything in Growth, plus:
 - Sequence branching and A/B testing
 - Unlimited ICP profiles
-- CRM integrations (HubSpot, Salesforce)
 - Team collaboration
 - API & MCP access: 120 requests/minute and 50,000/day
 - Premium support

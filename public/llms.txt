@@ -55,7 +55,7 @@ Pricing scales by verified prospects contacted per month, not per seat. Seats ar
 - **Explore (Free, $0/month)**: 100 lead searches per month, up to 25 results per search, 100 emails per month, view-only dashboard, summary analytics, help center access, integrations access, Explore AI SDR agent (1 agent build, 25 leads/day sourcing, 3 draft replies/day for approval). No API or MCP access. No credit card required.
 - **Starter ($39/month)**: 1,000 verified prospects per month, 100 per day, 50,000 emails per month. Prospect search and verified emails, ICP Builder (3 profiles), email quality checker, AI email generator, sequence templates, integrations, API & MCP access at 30 requests/minute and 2,000/day, standard support. Includes the Starter AI SDR agent: 1 agent build, 100 leads/day, 15 autonomous replies/day.
 - **Growth ($89/month)**: 2,500 verified prospects per month, 250 per day, 250,000 emails per month. Everything in Starter plus unified reply inbox with AI drafts, deliverability dashboard and warmup, ICP lookalike discovery, why-now account research, ICP Builder (10 profiles), AI personalized outreach, API & MCP access at 60 requests/minute and 10,000/day, priority support. Includes the Growth AI SDR agent: 3 agent builds, 300 leads/day, 50 autonomous replies/day, objection handling.
-- **Pro ($179/month)**: 5,000 verified prospects per month, 500 per day, 1,000,000 emails per month. Everything in Growth plus sequence branching and A/B testing, unlimited ICP profiles, CRM integrations, team collaboration, API & MCP access at 120 requests/minute and 50,000/day, premium support. Includes the Pro AI SDR agent: 5 agent builds, 750 leads/day, 150 autonomous replies/day, meeting booking.
+- **Pro ($179/month)**: 5,000 verified prospects per month, 500 per day, 1,000,000 emails per month. Everything in Growth plus sequence branching and A/B testing, unlimited ICP profiles, team collaboration, API & MCP access at 120 requests/minute and 50,000/day, premium support. Includes the Pro AI SDR agent: 5 agent builds, 750 leads/day, 150 autonomous replies/day, meeting booking.
 - **Agency ($249/month)**: 15,000 verified prospects per month, 1,500 per day, unlimited emails. Everything in Pro plus white-label client portal, branded PDF reports, client portal sharing without login, referral and reseller program, API & MCP access at 300 requests/minute and 200,000/day, dedicated account support. Includes the Elite AI SDR agent: unlimited agent builds, unlimited lead sourcing, 500 autonomous replies/day.
 
 All four paid plans start with a 14-day free trial and carry a 30-day money-back guarantee. Explore is free forever and needs no trial.
@@ -93,10 +93,10 @@ Sign up for free at https://outreign.io. The Explore plan needs no credit card.
 
 ## Integrations
 
-OutReign connects with:
-- Gmail (email delivery and reply tracking, all paid plans)
-- HubSpot (CRM sync, Pro and above)
-- Salesforce (CRM sync, Pro and above)
+OutReign connects with these integrations on every plan, including Explore:
+- Gmail (email delivery and reply tracking)
+- HubSpot (CRM sync)
+- Salesforce (CRM sync)
 - Slack (notifications)
 - Calendly (meeting booking)
 - Zapier (5000+ app automations)
