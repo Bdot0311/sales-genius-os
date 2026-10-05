@@ -299,3 +299,84 @@ describe("the attempt ceiling is a cost ceiling", () => {
     expect(AGENT_MAX_ATTEMPTS).toBeLessThanOrEqual(5);
   });
 });
+
+/**
+ * "It's always a bad score on both rubrics."
+ *
+ * A follow-up reached the composer carrying three phrases off the house banned
+ * list — "without adding headcount", "worth exploring", "worth comparing" —
+ * with the turn's own event admitting "rewrite attempted and did not clear
+ * them", and it was saved anyway.
+ *
+ * Two separate reasons, and neither was the model.
+ *
+ * generate-email scored every draft with scoreEmail, logged the number, hung
+ * it on the response as `quality_weak`, and stopped. The comment said the
+ * caller decides what to do about a weak score; no caller ever did. The first
+ * person to learn a draft was weak was the user opening it in the Studio,
+ * where a second checker says so again. rubricFeedback was written for exactly
+ * this and only generate-followup-suggestion used it.
+ *
+ * And the banned-phrase and recency rewrites called the Lovable gateway
+ * directly rather than going through aiFetch. routeFor sends every model call
+ * to Bedrock when Bedrock is configured, returning key "bedrock" and no url —
+ * so on this account those two requests carried an empty LOVABLE_API_KEY,
+ * came back not-ok, and silently kept the original. The rewrite the event
+ * reported as attempted had not run.
+ */
+const GENERATE = readFileSync("supabase/functions/generate-email/index.ts", "utf8");
+const stripComments = (s: string) =>
+  s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
+
+describe("every model call in the drafter goes through the router", () => {
+  it("has no hand-rolled gateway request left", () => {
+    // aiFetch is what picks Bedrock over the gateway, maps the model id, and
+    // meters the spend. A raw fetch does none of the three.
+    expect(stripComments(GENERATE)).not.toContain("fetch(\"https://ai.gateway.lovable.dev");
+  });
+
+  it("routes the two that used to bypass it", () => {
+    const gen = stripComments(GENERATE);
+    expect(gen).toContain('const recencyRetry = await aiFetch("generate-email"');
+    expect(gen).toContain('const bannedRetry = await aiFetch("generate-email"');
+  });
+});
+
+describe("a weak draft is rewritten, not just labelled weak", () => {
+  const gen = stripComments(GENERATE);
+
+  it("acts on the score it already paid to compute", () => {
+    expect(gen).toContain("if (rubric && (isWeak(rubric) || bannedHits.length > 0)) {");
+    expect(gen).toContain("rubricFeedback(rubric)");
+  });
+
+  it("tells the model what the scorer objected to, and what it must not reuse", () => {
+    // Both notes, not one: a draft can be weak and full of filler at once, and
+    // two sequential rewrites would be two chances to undo each other.
+    expect(gen).toMatch(/isWeak\(rubric\) \? rubricFeedback\(rubric\) : '',\s*\n\s*bannedHits\.length \? bannedPhraseRetry\(bannedHits\) : '',/);
+  });
+
+  it("keeps the rewrite only when the number actually went up", () => {
+    expect(gen).toContain("secondRubric.overall > rubric.overall");
+  });
+
+  it("and only when it is no worse on every guard above it", () => {
+    expect(gen).toContain("!hasPlaceholder(second)");
+    expect(gen).toContain("!hasScaffolding(second)");
+    expect(gen).toContain("!findUnverifiedClaims(second, proofForClaims).length");
+    expect(gen).toContain("findTouchOnePitch(second).length === 0");
+    expect(gen).toContain("secondHits.length <= bannedHits.length");
+  });
+
+  it("does not pay to rescore a rewrite it has already disqualified", () => {
+    expect(gen).toContain("const secondRubric = cleanEnough ? await scoreNow(second) : null;");
+  });
+
+  it("reports the score of the draft it kept, not of the one it discarded", () => {
+    // `rubric` rides out on the response and drives quality_weak, so a stale
+    // one would tell the user the email they have is the email that failed.
+    expect(gen).toContain("rubric = secondRubric;");
+    expect(gen).toContain("bannedHits = secondHits;");
+    expect(gen).toContain("quality_weak: isWeak(rubric)");
+  });
+});

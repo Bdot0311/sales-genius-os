@@ -171,7 +171,11 @@ describe("capitalisation is repaired, not just reported", () => {
   it("runs before the rubric scores the draft", () => {
     // Otherwise the score describes copy that is about to change.
     const GEN = readFileSync("supabase/functions/generate-email/index.ts", "utf8");
-    expect(GEN.indexOf("repairCompanyCasing(email")).toBeLessThan(GEN.indexOf("const rubric = await scoreEmail"));
+    // Anchored on the first scoring call rather than its old declaration: the
+    // score is now reassigned when a rewrite beats it, so `const` was wrong.
+    const firstScore = GEN.indexOf("let rubric = await scoreNow(email);");
+    expect(firstScore).toBeGreaterThan(-1);
+    expect(GEN.indexOf("repairCompanyCasing(email")).toBeLessThan(firstScore);
   });
 
   it("reports repairs and surviving warnings separately", () => {

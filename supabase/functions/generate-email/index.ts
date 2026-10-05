@@ -4,7 +4,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { composeSkillContext, skillNamesUsed } from "../_shared/email-skills.ts";
 // One quality verdict for every caller — Outreach Studio, agent-chat and the
 // autonomous agent all reach the rubric through this rather than each other.
-import { isWeak, scoreEmail } from "../_shared/email-quality.ts";
+import { isWeak, rubricFeedback, scoreEmail } from "../_shared/email-quality.ts";
 import { AI_CREDITS_USER_MESSAGE, isAiCreditError, reportAiCreditsExhausted } from "../_shared/ai-credits.ts";
 // The writing rules live in one module so the three copies that used to exist
 // cannot drift apart — see _shared/email-rules.ts.
@@ -1845,7 +1845,7 @@ conversation that is already going, not as someone chasing silence.`}`;
     if (recency.length) {
       console.warn(`[generate-email] unsupported recency: ${recency.join(', ')} — regenerating`);
       try {
-        const recencyRetry = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        const recencyRetry = await aiFetch("generate-email", {
           method: "POST",
           headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1904,7 +1904,7 @@ conversation that is already going, not as someone chasing silence.`}`;
     if (bannedHits.length) {
       console.warn(`[generate-email] banned phrases: ${bannedHits.join(', ')} — regenerating`);
       try {
-        const bannedRetry = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        const bannedRetry = await aiFetch("generate-email", {
           method: "POST",
           headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1980,14 +1980,96 @@ conversation that is already going, not as someone chasing silence.`}`;
     // the same verdict instead of the panel being the only thing that checks.
     // Advisory on this response: the caller decides what to do about a weak
     // score, and a null score (plan-gated, provider down) blocks nothing.
-    const rubric = await scoreEmail(
+    const scoreNow = (body: string) => scoreEmail(
       Deno.env.get('SUPABASE_URL') ?? '',
       authHeader ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { subject: subjectLineForRubric, body: email },
+      { subject: subjectLineForRubric, body },
     );
+    let rubric = await scoreNow(email);
     if (rubric) {
       console.log(`[generate-email] rubric: ${rubric.overall}/100 weakest=${rubric.weakest}${isWeak(rubric) ? ' WEAK' : ''}`);
+    }
+
+    /*
+     * The score, acted on rather than filed.
+     *
+     * This was computed, logged, attached to the response as `quality_weak`,
+     * and that was the end of it — the comment above said the caller decides,
+     * and no caller ever did. So a draft the product had already judged weak
+     * was saved, and the first person to find out was the user opening it in
+     * the Studio, where a different checker says the same thing a second time.
+     * "It's always a bad score on both rubrics" is that gap, exactly.
+     *
+     * rubricFeedback exists for this and was written for this — it turns the
+     * scorer's own objections into a rewrite instruction, which is what makes
+     * the second attempt different from another roll of the same dice. Only
+     * generate-followup-suggestion was using it. This function writes nearly
+     * every email the product sends.
+     *
+     * One attempt, and kept only if it is better on the number AND no worse on
+     * every guard already enforced above. A draft that scores five points
+     * higher by reintroducing a placeholder or an invented figure is not an
+     * improvement, and the rescore is the only honest way to know which of the
+     * two to keep.
+     */
+    if (rubric && (isWeak(rubric) || bannedHits.length > 0)) {
+      const notes = [
+        isWeak(rubric) ? rubricFeedback(rubric) : '',
+        bannedHits.length ? bannedPhraseRetry(bannedHits) : '',
+      ].filter(Boolean).join('\n');
+      console.warn(
+        `[generate-email] weak draft (${rubric.overall}/100, ${bannedHits.length} banned) — rewriting`,
+      );
+      try {
+        const qualityRetry = await aiFetch("generate-email", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: `${userPrompt}\n${notes}` },
+            ],
+            temperature: 0.5,
+          }),
+        });
+        if (qualityRetry.ok) {
+          const d = await qualityRetry.json();
+          let second = cleanGeneratedEmail(
+            stripSelfReport((d.choices?.[0]?.message?.content || '').trim()),
+            preserveSubject,
+          );
+          if (second) {
+            second = repairSelfReferentialPeers(second, String(lead?.company_name ?? ''));
+            second = enforceSignOff(second, resolvedSenderName);
+            const secondHits = findBannedPhrases(second);
+            const cleanEnough =
+              !hasPlaceholder(second) &&
+              !hasScaffolding(second) &&
+              !findUnverifiedClaims(second, proofForClaims).length &&
+              findTouchOnePitch(second).length === 0 &&
+              secondHits.length <= bannedHits.length;
+            const secondRubric = cleanEnough ? await scoreNow(second) : null;
+            if (
+              cleanEnough && secondRubric &&
+              secondRubric.overall > rubric.overall &&
+              secondHits.length <= bannedHits.length
+            ) {
+              console.log(
+                `[generate-email] rewrite kept: ${rubric.overall} -> ${secondRubric.overall}/100`,
+              );
+              email = second;
+              rubric = secondRubric;
+              bannedHits = secondHits;
+            } else {
+              console.warn('[generate-email] quality rewrite rejected, keeping original');
+            }
+          }
+        }
+      } catch (e) {
+        console.warn(`[generate-email] quality rewrite failed: ${e}`);
+      }
     }
 
     // Surfacing the failure beats shipping "[Sender Name]" to a prospect.
