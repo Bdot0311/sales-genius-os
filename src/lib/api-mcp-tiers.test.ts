@@ -31,4 +31,11 @@ describe("API & MCP tiers", () => {
       expect(PRICING).toContain(`${p}: "${n}"`);
     }
   });
+
+  it("the AI-assistant plan data (WebMCP) matches the rate limits of every paid tier", () => {
+    const WEBMCP = readFileSync("src/lib/webmcp.ts", "utf8");
+    for (const [plan, n] of [["Starter", 30], ["Growth", 60], ["Pro", 120], ["Agency", 300]] as const) {
+      expect(WEBMCP, `${plan} plan entry`).toContain(`API & MCP access at ${n} req/min`);
+    }
+  });
 });

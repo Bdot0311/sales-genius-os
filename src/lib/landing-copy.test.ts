@@ -174,6 +174,43 @@ describe("the free plan is described as what it is", () => {
 });
 
 /**
+ * The Agency card opens with "Everything in Pro, plus:", and Pro opens with
+ * "Everything in Growth, plus:". So no boolean row in the comparison table may
+ * be switched off on a higher tier while switched on for a lower one — an
+ * earlier edit left "On-demand lead evaluation" at agency: false right beside
+ * that promise, and the page contradicted itself on its most expensive plan.
+ */
+describe("every pricing comparison row is at least as available higher up the tiers", () => {
+  const PRICING = readFileSync("src/components/Pricing.tsx", "utf8");
+
+  it("keeps boolean feature rows monotonic across tiers", () => {
+    const rows = [...PRICING.matchAll(
+      /\{ name: "([^"]+)", free: (true|false|"[^"]*"), starter: (true|false|"[^"]*"), growth: (true|false|"[^"]*"), pro: (true|false|"[^"]*"), agency: (true|false|"[^"]*") \}/g,
+    )];
+    expect(rows.length).toBeGreaterThan(30);
+    const bool = (v: string) => (v === "true" ? 1 : v === "false" ? 0 : null);
+    const offenders: string[] = [];
+    for (const m of rows) {
+      const [line, name, free, starter, growth, pro, agency] = m;
+      const values = [free, starter, growth, pro, agency].map(bool);
+      for (let i = 1; i < values.length; i++) {
+        const higher = values[i];
+        const lower = values[i - 1];
+        if (higher === null || lower === null) continue; // string allowances
+        if (higher < lower) offenders.push(`${name}: tier ${i} is off while tier ${i - 1} is on (${line.slice(0, 60)}…)`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("shows on-demand lead evaluation on Growth and every plan above it", () => {
+    expect(PRICING).toContain(
+      '{ name: "On-demand lead evaluation", free: false, starter: false, growth: true, pro: true, agency: true }',
+    );
+  });
+});
+
+/**
  * The blog makes the same promises the homepage does, to the same reader, and
  * search engines and LLMs read it alongside llms-txt. It carried "under 2
  * minutes" in six calls to action after the homepage had stopped claiming a
