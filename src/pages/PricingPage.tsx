@@ -247,7 +247,7 @@ const PricingPage = () => {
                   "Deliverability dashboard and warmup · Growth and up",
                   "ICP lookalike discovery · Growth and up",
                   "Why-now account research · Growth and up",
-                  "On-demand fit, intent and priority evaluation · Growth and Pro",
+                  "On-demand fit, intent and priority evaluation · Growth and up",
                   "Buying committee mapping · Pro and up",
                   "AI Sales Coach on your live pipeline · all plans (5 to unlimited messages/month)",
                   "Live call coaching and custom playbooks · Pro and up",

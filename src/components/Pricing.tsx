@@ -189,7 +189,7 @@ const comparisonCategories = [
       { name: "ICP Builder", free: false, starter: "3 profiles", growth: "10 profiles", pro: "Unlimited", agency: "Unlimited" },
       { name: "ICP match scoring", free: false, starter: true, growth: true, pro: true, agency: true },
       { name: "ICP lookalike discovery", free: false, starter: false, growth: true, pro: true, agency: true },
-      { name: "On-demand lead evaluation", free: false, starter: false, growth: true, pro: true, agency: false },
+      { name: "On-demand lead evaluation", free: false, starter: false, growth: true, pro: true, agency: true },
       { name: "Sourced why-now account research", free: false, starter: false, growth: true, pro: true, agency: true },
       { name: "Buying committee mapping", free: false, starter: false, growth: false, pro: true, agency: true },
     ],
