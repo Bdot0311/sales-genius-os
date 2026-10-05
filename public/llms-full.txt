@@ -1,6 +1,6 @@
 # OutReign — Complete Product Documentation for AI Agents
 # https://outreign.io/llms-full.txt
-# Last Updated: 2026-08-01
+# Last Updated: 2026-10-05
 # This file is the authoritative reference for AI agents, LLMs, and automated
 # crawlers that need complete, accurate information about OutReign.
 
@@ -79,7 +79,7 @@ Build multi-step email sequences with:
 - A/B testing on subject lines and message variants
 
 ### 7. CRM and Tool Integrations
-OutReign connects with the tools below. CRM integrations (HubSpot and Salesforce) are available on Pro and above; the rest connect on paid plans.
+OutReign connects with the tools below on every plan, including Explore. CRM integrations (HubSpot and Salesforce) are available as connected integrations across tiers, with deeper automation and team workflows increasing on higher tiers.
 - **Gmail**: email delivery, reply tracking, and inbox sync
 - **HubSpot**: two-way CRM sync on Pro and above; leads and replies update contact records automatically
 - **Salesforce**: two-way CRM sync on Pro and above; deal and contact updates
@@ -120,7 +120,9 @@ All prices are in USD. Pricing scales by verified prospects contacted per month,
 - View-only dashboard access
 - Summary analytics
 - Help center access
-- No AI SDR agent
+- Integrations access
+- Explore AI SDR agent: 1 agent build, sources 25 leads/day, drafts first-touch emails and up to 3 replies/day for your approval, 120-minute minimum reply delay
+- No API or MCP access
 - No credit card required, no time limit
 
 ### Starter Plan — $39/month
@@ -131,8 +133,10 @@ All prices are in USD. Pricing scales by verified prospects contacted per month,
 - Email quality checker
 - AI email generator
 - Sequence templates
+- Integrations access
+- API & MCP access: 30 requests/minute and 2,000/day
 - Standard support
-- No AI SDR agent
+- Starter AI SDR agent: 1 agent build, 100 leads/day, sends outreach autonomously, 15 autonomous replies per day, 60-minute minimum reply delay
 
 ### Growth Plan — $89/month
 - 2,500 verified prospects per month, 250 per day
@@ -143,6 +147,7 @@ All prices are in USD. Pricing scales by verified prospects contacted per month,
 - ICP lookalike discovery
 - ICP Builder (10 profiles)
 - AI personalized outreach
+- API & MCP access: 60 requests/minute and 10,000/day
 - Priority support
 - Growth AI SDR agent: 3 agent builds, 300 leads/day, 50 autonomous replies per day, objection handling, 30-minute minimum reply delay
 
@@ -152,8 +157,8 @@ All prices are in USD. Pricing scales by verified prospects contacted per month,
 - Everything in Growth, plus:
 - Sequence branching and A/B testing
 - Unlimited ICP profiles
-- CRM integrations (HubSpot, Salesforce)
 - Team collaboration
+- API & MCP access: 120 requests/minute and 50,000/day
 - Premium support
 - Pro AI SDR agent: 5 agent builds, 750 leads/day, 150 autonomous replies per day, meeting booking, 10-minute minimum reply delay
 
@@ -165,9 +170,9 @@ All prices are in USD. Pricing scales by verified prospects contacted per month,
 - Branded PDF reports for clients
 - Client portal sharing (no login required)
 - Referral and reseller program
-- Priority API access
+- API & MCP access: 300 requests/minute and 200,000/day
 - Dedicated account support
-- Elite AI SDR agent: 200 autonomous replies per day, 5-minute minimum reply delay
+- Elite AI SDR agent: unlimited agent builds, unlimited lead sourcing, 500 autonomous replies per day, fully autonomous full-cycle outreach with priority processing, 5-minute minimum reply delay
 
 ### Free Trial and Guarantee
 All four paid plans (Starter, Growth, Pro, Agency) start with a 14-day free trial. You add a card at signup, use the full plan for two weeks, and are not charged until day 15. Every paid plan also carries a 30-day money-back guarantee after the first charge. The Explore plan is free forever and needs no trial.
@@ -303,7 +308,7 @@ A pre-seed founder uses OutReign to test whether a specific ICP responds to thei
 - **Frontend:** React, TypeScript
 - **Backend:** Supabase (PostgreSQL, Edge Functions)
 - **Security:** 256-bit TLS encryption in transit, SOC 2 compliant infrastructure, GDPR-ready
-- **API:** RESTful API available on Pro plan
+- **API:** RESTful API and MCP access available on all paid plans; Starter 30 requests/minute and 2,000/day, Growth 60/min and 10,000/day, Pro 120/min and 50,000/day, Agency 300/min and 200,000/day
 - **Authentication:** Email/password, Google OAuth
 - **Mobile:** Progressive Web App (PWA) — installable on iOS and Android from the browser
 
