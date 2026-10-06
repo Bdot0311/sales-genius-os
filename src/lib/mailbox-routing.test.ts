@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import {
   chooseMailbox,
   isBusinessHours,
@@ -161,5 +162,73 @@ describe("timing is reported, not acted on", () => {
 
   it("says nothing about timing when the zone is unknown", () => {
     expect(chooseMailbox(pool, { now: evening }).explanation).not.toMatch(/business hours/);
+  });
+});
+
+/**
+ * The router had eighteen tests and no caller.
+ *
+ * agent-chat picked a mailbox with its own `orderByLoad`, which sorts on a
+ * 24-hour send count and nothing else — so a mailbox that had already sent its
+ * full daily allowance was still handed the next send. The fields were loaded
+ * for the check: `daily_limit` and `sent_today` were read into the exact shape
+ * chooseMailbox takes, and never compared to each other.
+ *
+ * Eligibility is the router's job now. Order is still the rotation's, because
+ * spreading volume across domains is a separate question from whether a
+ * mailbox may send at all, and that rotation is what the tool description
+ * promises the model.
+ */
+describe("the live send path uses the router", () => {
+  const AGENT = readFileSync("supabase/functions/agent-chat/index.ts", "utf8");
+  const bare = AGENT.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
+
+  it("imports it", () => {
+    expect(bare).toContain('import { chooseMailbox, type RoutableMailbox } from "../_shared/mailbox-routing.ts"');
+  });
+
+  it("selects every column the router scores on", () => {
+    for (const col of ["provider", "reputation_score", "warmup_enabled", "last_sent_at"]) {
+      expect(bare).toContain(col);
+    }
+  });
+
+  it("asks the router who may send before choosing an order", () => {
+    const eligible = bare.indexOf("const { kept, reason } = eligibleToSend(sendable);");
+    const ordered = bare.indexOf("const ordered = await orderByLoad(kept);");
+    expect(eligible).toBeGreaterThan(-1);
+    expect(ordered).toBeGreaterThan(eligible);
+  });
+
+  it("keeps the least-used-first rotation, now over the eligible set", () => {
+    // Narrowing orderByLoad's input is the whole change: a capped mailbox is
+    // dropped, and the surviving ones rotate exactly as before.
+    expect(bare).not.toContain("orderByLoad(sendable)");
+    expect(bare).toContain("orderByLoad(kept)");
+  });
+
+  it("carries the router's own sentence when nothing may send", () => {
+    expect(bare).toContain("if (kept.length === 0) return { error: `${reason} (${list})` };");
+  });
+
+  it("rolls over a counter from an earlier day, like sendCapacity does", () => {
+    // Without this a mailbox reads as full the morning after a busy day.
+    expect(bare).toContain('sentToday: a.sent_today_date === today ? Number(a.sent_today ?? 0) : 0,');
+  });
+});
+
+describe("what the router adds that the old ordering could not", () => {
+  it("drops a mailbox that has spent its allowance", () => {
+    const pool = [
+      mailbox({ id: "full", email: "a@x.com", sentToday: 50, dailyLimit: 50 }),
+      mailbox({ id: "free", email: "b@x.com", sentToday: 0, dailyLimit: 50 }),
+    ];
+    expect(chooseMailbox(pool).considered.map((c) => c.id)).toEqual(["free"]);
+  });
+
+  it("says so in words when every mailbox is spent", () => {
+    const d = chooseMailbox([mailbox({ sentToday: 50, dailyLimit: 50 })]);
+    expect(d.mailboxId).toBeNull();
+    expect(d.explanation).toContain("full allowance for today");
   });
 });

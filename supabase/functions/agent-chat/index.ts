@@ -12,6 +12,7 @@ import {
   type ContactState,
 } from "../_shared/draft-one.ts";
 import { leadIntelligenceMode } from "../_shared/lead-intelligence.ts";
+import { chooseMailbox, type RoutableMailbox } from "../_shared/mailbox-routing.ts";
 import {
   AGENT_MAX_ATTEMPTS,
   AGENT_TARGET_SCORE,
@@ -1591,7 +1592,10 @@ serve(async (req) => {
     const loadMailboxes = async () => {
       const { data } = await admin
         .from("sending_accounts")
-        .select("id, integration_id, email, status, daily_limit, sent_today, sent_today_date")
+        .select(
+          "id, integration_id, email, status, provider, daily_limit, sent_today, sent_today_date, " +
+            "reputation_score, warmup_enabled, last_sent_at",
+        )
         .eq("user_id", userId)
         .order("created_at", { ascending: true });
       return (data ?? []).filter((a: any) => a.integration_id && a.email);
@@ -1635,6 +1639,49 @@ serve(async (req) => {
       status: a.status,
       sendingAccountId: a.id,
     });
+
+    /*
+     * A sending_accounts row as the router reads it.
+     *
+     * A counter from an earlier day has already rolled over in practice, so
+     * reading it as today's usage would report a mailbox as full the morning
+     * after a busy day — the same rollover sendCapacity above applies.
+     */
+    const toRoutable = (a: any, today: string): RoutableMailbox => ({
+      id: String(a.id),
+      email: String(a.email),
+      provider: a.provider ?? null,
+      reputationScore: a.reputation_score === null || a.reputation_score === undefined
+        ? null
+        : Number(a.reputation_score),
+      status: String(a.status ?? "active"),
+      sentToday: a.sent_today_date === today ? Number(a.sent_today ?? 0) : 0,
+      dailyLimit: Number(a.daily_limit ?? 0),
+      warmupEnabled: !!a.warmup_enabled,
+      lastSentAt: a.last_sent_at ?? null,
+    });
+
+    /*
+     * Which mailboxes may send at all, and why not when none may.
+     *
+     * chooseMailbox has existed in _shared/mailbox-routing.ts the whole time,
+     * with eighteen tests and no caller. This path had its own ordering that
+     * sorted on a 24-hour send count and nothing else, so a mailbox that had
+     * already sent its full daily allowance was still handed a send. The
+     * fields were loaded for it — daily_limit and sent_today were read into
+     * the exact shape the router takes — and never compared.
+     *
+     * The router decides eligibility: active, and with allowance left. The
+     * rotation below still decides the order, because spreading volume across
+     * domains is a separate concern from whether a mailbox may send, and that
+     * behaviour is what the tool description promises the model.
+     */
+    const eligibleToSend = (accounts: any[]): { kept: any[]; reason: string } => {
+      const today = new Date().toISOString().slice(0, 10);
+      const decision = chooseMailbox(accounts.map((a) => toRoutable(a, today)));
+      const allowed = new Set(decision.considered.map((c) => c.id));
+      return { kept: accounts.filter((a) => allowed.has(String(a.id))), reason: decision.explanation };
+    };
 
     // Orders mailboxes so the least-recently-used domain goes first. This keeps
     // volume spread across every connected sending domain instead of hammering one.
@@ -1690,7 +1737,12 @@ serve(async (req) => {
 
       if (sendable.length === 0)
         return { error: `Every connected mailbox is paused or disabled (${list}). Resume one on the Deliverability page.` };
-      const ordered = await orderByLoad(sendable);
+
+      // A mailbox at its daily cap used to be sent from anyway.
+      const { kept, reason } = eligibleToSend(sendable);
+      if (kept.length === 0) return { error: `${reason} (${list})` };
+
+      const ordered = await orderByLoad(kept);
       return { pool: ordered.map(toMailbox) };
     };
 
