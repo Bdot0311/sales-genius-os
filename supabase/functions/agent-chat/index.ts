@@ -1592,9 +1592,12 @@ serve(async (req) => {
     const loadMailboxes = async () => {
       const { data } = await admin
         .from("sending_accounts")
+        // One string literal, never a concatenation: supabase-js infers the row
+        // type by parsing this as a literal type, and `"a" + "b"` widens to
+        // string, which collapses the inference. The two other multi-line
+        // selects in this file are written the same way for the same reason.
         .select(
-          "id, integration_id, email, status, provider, daily_limit, sent_today, sent_today_date, " +
-            "reputation_score, warmup_enabled, last_sent_at",
+          "id, integration_id, email, status, provider, daily_limit, sent_today, sent_today_date, reputation_score, warmup_enabled, last_sent_at",
         )
         .eq("user_id", userId)
         .order("created_at", { ascending: true });
