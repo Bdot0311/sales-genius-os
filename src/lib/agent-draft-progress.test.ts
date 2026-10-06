@@ -426,3 +426,49 @@ describe("a failed draft is not quietly promised a retry", () => {
     expect(claim).not.toContain("'failed'");
   });
 });
+
+/**
+ * "It keeps stopping half way through."
+ *
+ * It had not stopped. The turn's own prefix said so: "queued 101 to be written
+ * in the background... nothing from that set is still waiting." Immediately
+ * below it the model wrote "📋 91 remaining to draft after queue completes"
+ * and "Reply when you want to continue drafting the remaining 91 leads, or I
+ * can wait for the queue to finish first."
+ *
+ * So the user waited for a batch that was already running, and read the silence
+ * as a stall. Twice the queue was investigated for a fault it did not have.
+ *
+ * The model got that from wording the product handed it. The tool result said
+ * the queued leads were "NOT yet drafted", and the system rule said "Queued is
+ * not drafted" — both true, and both read naturally as "queued means still to
+ * do". Nothing anywhere said the opposite thing that matters: those leads need
+ * nothing from anyone, so there is no continuing to offer.
+ */
+describe("queued work is never described as outstanding", () => {
+  it("says the worker is already on them, not that they are undrafted", () => {
+    expect(AGENT).toContain("ALREADY BEING DRAFTED by a background worker");
+    expect(AGENT).toContain("not outstanding work");
+  });
+
+  it("names the words the model actually reached for", () => {
+    // Banning the concept did not work; these are the exact phrasings that
+    // shipped, so they are the ones spelled out.
+    for (const phrase of ["remaining", "left to do", "still to draft", "not yet started"]) {
+      expect(AGENT).toContain(phrase);
+    }
+  });
+
+  it("forbids the offer, not just the count", () => {
+    // The count alone was survivable. The offer to continue is what made the
+    // user wait, because it implied something was paused.
+    expect(AGENT).toContain("never offer to continue them, draft the rest, or pick them up later");
+    expect(AGENT).toContain("the user who waits for that offer waits forever");
+  });
+
+  it("closes the same hole in the system rule that taught it", () => {
+    // "Queued is not drafted." was true and read as "queued = still to do".
+    expect(AGENT).toContain("Queued is not drafted YET, but it is not outstanding either");
+    expect(AGENT).toContain("never close a turn by offering to continue, resume or pick up leads that are already queued");
+  });
+});
