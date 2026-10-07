@@ -357,11 +357,22 @@ const useJwtSanityCheck = (pathname: string) => {
           await recover();
           return;
         }
-        // Token has a sub — confirm the server accepts it. If not (bad_jwt),
-        // clear the stale session rather than looping into permission errors.
-        const { error } = await supabase.auth.getUser();
-        if (error && /jwt|claim|sub/i.test(error.message || '')) {
-          await recover();
+        // Token has a sub — confirm the server accepts THIS token. Pass it
+        // explicitly: right after a Google sign-in the client can still be
+        // mid-handoff and send the anon key instead, which the server answers
+        // with "missing sub claim" — that used to wipe the brand-new session
+        // and bounce the user back to the sign-in page.
+        const token = session.access_token;
+        const { error } = await supabase.auth.getUser(token);
+        const msg = error?.message || '';
+        const rejected =
+          !!error &&
+          /jwt|signature|invalid claim/i.test(msg) &&
+          !/missing sub claim/i.test(msg);
+        if (rejected) {
+          // Only wipe if the session we checked is still the current one.
+          const { data: { session: current } } = await supabase.auth.getSession();
+          if (current?.access_token === token) await recover();
         }
 
       } catch { /* noop */ }
