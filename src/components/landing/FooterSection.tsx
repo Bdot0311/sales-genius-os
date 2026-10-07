@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { helpCategories, helpArticles } from "@/components/help/helpArticles";
 import { blogPostsMeta } from "@/data/blog-index";
 import { ALL_BADGES } from "@/lib/directory-badges";
+import DOMPurify from 'dompurify';
 
 // Guides and support links are generated from the same content data the pages
 // render. Help articles and categories previously had no link path from the
@@ -241,11 +242,16 @@ export const FooterSection = () => {
                 if ("html" in b) {
                   // b.html is a complete <a> pill — render it standalone so we
                   // never nest an anchor inside an anchor.
+                  // SECURITY: Sanitize HTML to prevent XSS from badge providers
+                  const sanitizedHtml = DOMPurify.sanitize(b.html, {
+                    ALLOWED_TAGS: ['a', 'span'],
+                    ALLOWED_ATTR: ['href', 'class', 'style', 'target', 'rel'],
+                  });
                   return (
                     <span
                       key={b.href}
                       className="inline-flex"
-                      dangerouslySetInnerHTML={{ __html: b.html }}
+                      dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
                     />
                   );
                 }

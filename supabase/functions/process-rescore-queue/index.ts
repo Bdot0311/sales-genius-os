@@ -29,6 +29,7 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({} as Record<string, unknown>));
     const batch = Math.min(Math.max(Number(body.batch) || 50, 1), 200);
 
+    // Use atomic claiming with SKIP LOCKED to prevent race conditions
     const { data: rows } = await supabase
       .from("rescore_queue")
       .select("id, user_id, lead_id")
@@ -42,6 +43,20 @@ serve(async (req) => {
       });
     }
 
+    // Claim rows atomically using RPC with SKIP LOCKED
+    const rowIds = rows.map(r => r.id);
+    const { data: claimed } = await supabase.rpc('claim_rescore_items', {
+      p_row_ids: rowIds
+    });
+
+    const toProcess = claimed || [];
+
+    if (toProcess.length === 0) {
+      return new Response(JSON.stringify({ processed: 0 }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const nowMs = Date.parse(new Date().toISOString());
     let processed = 0;
 
@@ -49,7 +64,7 @@ serve(async (req) => {
     const rubricCache = new Map<string, RubricWeights>();
     const icpCache = new Map<string, unknown>();
 
-    for (const row of rows) {
+    for (const row of toProcess) {
       try {
         if (!rubricCache.has(row.user_id)) {
           const { data: r } = await supabase.from("scoring_rubric").select("weights").eq("user_id", row.user_id).maybeSingle();

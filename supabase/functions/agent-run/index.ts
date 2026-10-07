@@ -102,7 +102,7 @@ async function callGemini(prompt: string, systemPrompt: string): Promise<string>
         { role: "system", content: systemPrompt },
         { role: "user", content: prompt },
       ],
-      temperature: 0.7,
+      temperature: 0.4,
     }),
   });
   const data = await response.json();

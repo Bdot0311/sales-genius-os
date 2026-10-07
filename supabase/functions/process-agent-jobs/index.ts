@@ -55,8 +55,10 @@ const BUDGET_MS = 100_000;
  * raising this too far converts slowness into failed leads rather than speed.
  * Four keeps the pass busy through a model call without stacking requests the
  * provider will refuse.
+ *
+ * Configurable via AGENT_JOB_CONCURRENCY environment variable (default: 4)
  */
-const CONCURRENCY = 4;
+const CONCURRENCY = Number(Deno.env.get("AGENT_JOB_CONCURRENCY")) || 4;
 
 /*
  * A failure the next pass could get past.
@@ -289,6 +291,32 @@ serve(async (req) => {
       .in("id", jobIds);
     const jobs = new Map((jobRows ?? []).map((j: any) => [String(j.id), j]));
 
+    // Batch-fetch all related data to eliminate N+1 queries
+    const leadIds = [...new Set(items.map((i) => String(i.lead_id)).filter(Boolean))];
+    const userIds = [...new Set((jobRows ?? []).map((j: any) => String(j.user_id)))];
+    const configIds = [...new Set((jobRows ?? []).map((j: any) => String(j.agent_config_id)).filter(Boolean))];
+
+    // Fetch all leads in one query
+    const { data: leadRows } = await admin
+      .from("leads")
+      .select("*")
+      .in("id", leadIds.length > 0 ? leadIds : ["00000000-0000-0000-0000-000000000000"]);
+    const leads = new Map((leadRows ?? []).map((l: any) => [String(l.id), l]));
+
+    // Fetch all agent configs in one query
+    const { data: configRows } = await admin
+      .from("agent_configs")
+      .select("id, tone, company_context, value_props")
+      .in("id", configIds.length > 0 ? configIds : ["00000000-0000-0000-0000-000000000000"]);
+    const configs = new Map((configRows ?? []).map((c: any) => [String(c.id), c]));
+
+    // Fetch all profiles in one query
+    const { data: profileRows } = await admin
+      .from("profiles")
+      .select("id, full_name, company_name")
+      .in("id", userIds.length > 0 ? userIds : ["00000000-0000-0000-0000-000000000000"]);
+    const profiles = new Map((profileRows ?? []).map((p: any) => [String(p.id), p]));
+
     // Mark the jobs running before any work, so a cancel during the pass is
     // seen against a job that is honestly in flight.
     await admin
@@ -388,12 +416,7 @@ serve(async (req) => {
           return;
         }
 
-        const { data: lead } = await admin
-          .from("leads")
-          .select("*")
-          .eq("id", item.lead_id)
-          .eq("user_id", job.user_id)
-          .maybeSingle();
+        const lead = leads.get(String(item.lead_id));
 
         if (!lead) {
           await admin.from("agent_job_items")
@@ -462,16 +485,8 @@ serve(async (req) => {
           return;
         }
 
-        const { data: settingsRow } = await admin
-          .from("agent_configs")
-          .select("tone, company_context, value_props")
-          .eq("id", job.agent_config_id ?? "00000000-0000-0000-0000-000000000000")
-          .maybeSingle();
-        const { data: profile } = await admin
-          .from("profiles")
-          .select("full_name, company_name")
-          .eq("id", job.user_id)
-          .maybeSingle();
+        const settingsRow = configs.get(String(job.agent_config_id ?? "00000000-0000-0000-0000-000000000000"));
+        const profile = profiles.get(String(job.user_id));
 
         const avoid = await sentSubjectsFor(admin, job.user_id, [String(item.lead_id)]);
 

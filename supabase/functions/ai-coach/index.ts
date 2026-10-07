@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { aiFetch } from "../_shared/ai-provider.ts";
+import { findUnverifiedClaims } from "../_shared/email-rules.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -204,6 +205,13 @@ Your coaching approach:
 - STRATEGIC: Help them prioritize based on deal value, ICP scores, and pipeline stage
 - ENCOURAGING: Celebrate wins while being honest about areas for improvement
 
+CRITICAL RULES - Never Break These:
+1. ONLY use the numbers provided in the context above. Never invent metrics, percentages, or figures.
+2. If you don't have data for a metric, say "I don't have this data" rather than estimating.
+3. When benchmarking, use the provided industry standard (20-30% close rate) - do not invent other benchmarks.
+4. Never make up deal values, lead counts, or conversion rates not shown in the context.
+5. All metrics you reference must be visible in the CRM data provided above.
+
 When coaching:
 1. Reference specific leads/deals by name when giving advice
 2. Prioritize high-value opportunities and high-scoring leads
@@ -240,7 +248,7 @@ Keep responses concise (2-3 focused paragraphs) unless they ask for detailed ana
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages,
-        stream: true,
+        stream: false, // Changed to false for validation
       }),
     });
 
@@ -262,10 +270,21 @@ Keep responses concise (2-3 focused paragraphs) unless they ask for detailed ana
       throw new Error("Failed to get coaching response");
     }
 
-    // Return the stream directly
-    return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
-    });
+    const data = await response.json();
+    const advice = data.choices?.[0]?.message?.content || "";
+
+    // Validate advice for fabricated claims
+    const unverifiedClaims = findUnverifiedClaims(advice, context);
+    if (unverifiedClaims.length > 0) {
+      console.warn("[ai-coach] Detected unverified claims:", unverifiedClaims);
+      // Return the advice but with a warning - don't block coaching for this
+      // as it could be legitimate insights. Log for monitoring.
+    }
+
+    return new Response(
+      JSON.stringify({ advice, hasUnverifiedClaims: unverifiedClaims.length > 0 }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   } catch (error: any) {
     console.error("Error in ai-coach function:", error.message);
     

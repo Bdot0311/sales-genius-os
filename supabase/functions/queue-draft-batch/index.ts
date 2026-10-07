@@ -33,6 +33,12 @@ const json = (body: unknown, status = 200) =>
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  // Validate request size (max 1MB)
+  const contentLength = req.headers.get("content-length");
+  if (contentLength && Number(contentLength) > 1_048_576) {
+    return json({ error: "Request payload too large (max 1MB)" }, 413);
+  }
+
   const caller = await resolveCaller(req);
   if (!caller.ok) return caller.response;
   // The composer calls this with the user's own JWT. An internal caller has no

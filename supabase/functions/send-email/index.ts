@@ -258,13 +258,9 @@ serve(async (req) => {
           .eq('user_id', user.id);
       }
 
-      // Monthly usage is derived from actually-sent emails (no counter column).
-      const { count: monthlyCount } = await supabase
-        .from('sent_emails')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .in('status', ['sent', 'delivered', 'opened', 'clicked', 'replied', 'bounced'])
-        .gte('sent_at', monthStart.toISOString());
+      // Monthly usage uses optimized counter via RPC
+      const { data: monthlyCount } = await supabase
+        .rpc('get_monthly_email_count', { p_user_id: user.id });
       const monthlySent = monthlyCount ?? 0;
 
 

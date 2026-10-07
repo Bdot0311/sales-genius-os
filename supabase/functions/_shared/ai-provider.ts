@@ -131,7 +131,7 @@ export interface AiCallContext {
  *
  * The first argument is ignored (kept so call sites read naturally); routing is
  * decided from the `model` in the request body plus the configured provider keys.
- * No timeout is applied — model calls routinely take minutes.
+ * Timeout of 120 seconds is applied to prevent hanging functions.
  */
 export async function aiFetch(
   _endpoint: string,
@@ -155,60 +155,133 @@ export async function aiFetch(
   body.model = route.model;
   const fnName = ctx.fn ?? _endpoint ?? "unknown";
 
-  if (route.provider === "bedrock") {
-    const wantsStream = body.stream === true;
-    if (wantsStream) {
-      // Real token-by-token streaming: usage arrives in the stream's metadata
-      // event and is metered from there, so nothing has to be buffered.
-      const streamed = await bedrockChatStream(route.model, body, (usage) => {
-        void meter({
-          fn: fnName,
-          provider: "bedrock",
-          model: route.model,
-          userId: ctx.userId,
-          usage,
+  // Apply 120-second timeout to prevent hanging functions
+  const timeoutMs = 120_000;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    // Merge with existing signal if present
+    const signal = init.signal ? 
+      AbortSignal.any([init.signal, controller.signal]) : 
+      controller.signal;
+
+    if (route.provider === "bedrock") {
+      const wantsStream = body.stream === true;
+      if (wantsStream) {
+        // Real token-by-token streaming: usage arrives in the stream's metadata
+        // event and is metered from there, so nothing has to be buffered.
+        const streamed = await Promise.race([
+          bedrockChatStream(route.model, body, (usage) => {
+            void meter({
+              fn: fnName,
+              provider: "bedrock",
+              model: route.model,
+              userId: ctx.userId,
+              usage,
+            });
+          }),
+          new Promise<Response>((_, reject) => 
+            setTimeout(() => reject(new Error("Timeout")), timeoutMs)
+          ),
+        ]);
+        if (streamed.ok) return streamed;
+        // Streaming unavailable (e.g. model without ConverseStream support): fall
+        // back to a buffered completion re-emitted as SSE so the feature still works.
+        console.error(`[ai-provider] ${fnName} bedrock stream unavailable -> buffered fallback`);
+      }
+      const res = await Promise.race([
+        bedrockChat(route.model, body),
+        new Promise<Response>((_, reject) => 
+          setTimeout(() => reject(new Error("Timeout")), timeoutMs)
+        ),
+      ]);
+      if (!res.ok) return res;
+      const completion = await res.json() as {
+        usage?: { prompt_tokens?: number; completion_tokens?: number };
+      };
+      await meter({
+        fn: fnName,
+        provider: "bedrock",
+        model: route.model,
+        userId: ctx.userId,
+        usage: completion.usage,
+      });
+      if (!wantsStream) {
+        return new Response(JSON.stringify(completion), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
         });
-      });
-      if (streamed.ok) return streamed;
-      // Streaming unavailable (e.g. model without ConverseStream support): fall
-      // back to a buffered completion re-emitted as SSE so the feature still works.
-      console.error(`[ai-provider] ${fnName} bedrock stream unavailable -> buffered fallback`);
+      }
+      return bedrockChatAsStream(route.model, body, completion as Record<string, unknown>);
+
     }
-    const res = await bedrockChat(route.model, body);
-    if (!res.ok) return res;
-    const completion = await res.json() as {
-      usage?: { prompt_tokens?: number; completion_tokens?: number };
+
+    // Lovable gateway fallback.
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${route.key}`,
+      "X-Lovable-AIG-SDK": "fetch",
     };
-    await meter({
-      fn: fnName,
-      provider: "bedrock",
-      model: route.model,
-      userId: ctx.userId,
-      usage: completion.usage,
-    });
-    if (!wantsStream) {
-      return new Response(JSON.stringify(completion), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
+
+    const res = await Promise.race([
+      fetch(route.url, {
+        ...init,
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+        signal,
+      }),
+      new Promise<Response>((_, reject) => 
+        setTimeout(() => reject(new Error("Timeout")), timeoutMs)
+      ),
+    ]);
+
+    clearTimeout(timeoutId);
+
+    // Streaming responses are passed through untouched; usage arrives in-stream and
+    // is not worth buffering the whole answer for.
+    if (body.stream === true || !res.ok) {
+      if (!res.ok) {
+        console.error(
+          `[ai-provider] ${fnName} ${route.provider}/${route.model} -> ${res.status}`,
+        );
+      }
+      return res;
     }
-    return bedrockChatAsStream(route.model, body, completion as Record<string, unknown>);
 
+    // Non-streaming: read the JSON once, meter it, and hand the caller an
+    // identical response it can still `.json()`.
+    const text = await res.text();
+    try {
+      const parsed = JSON.parse(text) as { usage?: { prompt_tokens?: number; completion_tokens?: number } };
+      await meter({
+        fn: fnName,
+        provider: route.provider,
+        model: route.model,
+        userId: ctx.userId,
+        usage: parsed.usage,
+      });
+    } catch {
+      // Non-JSON body — nothing to meter.
+    }
+
+    return new Response(text, {
+      status: res.status,
+      statusText: res.statusText,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error instanceof Error && error.message === "Timeout") {
+      console.error(`[ai-provider] ${fnName} request timed out after ${timeoutMs}ms`);
+      return new Response(
+        JSON.stringify({ error: { message: "AI request timed out. Please try again." } }),
+        { status: 504, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    throw error;
   }
-
-  // Lovable gateway fallback.
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    "Authorization": `Bearer ${route.key}`,
-    "X-Lovable-AIG-SDK": "fetch",
-  };
-
-  const res = await fetch(route.url, {
-    ...init,
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
-  });
 
   // Streaming responses are passed through untouched; usage arrives in-stream and
   // is not worth buffering the whole answer for.

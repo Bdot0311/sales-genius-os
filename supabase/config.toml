@@ -1,5 +1,12 @@
 project_id = "ghgfjnepvxvxrncmskys"
 
+# Database connection pooling should be configured in Supabase Dashboard:
+# Project Settings -> Database -> Connection Pooling
+# Recommended settings for high-volume usage:
+# - Pool mode: Transaction
+# - Pool size: 15-25 (based on expected concurrency)
+# - Max overflow: 10
+
 [functions]
   [functions.dispatch-webhooks]
     verify_jwt = true
