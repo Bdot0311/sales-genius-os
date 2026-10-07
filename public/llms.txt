@@ -29,7 +29,7 @@ OutReign is email-only. We do not provide phone numbers, cold calling tools, or 
 - **Reply management**: Replies and follow-ups organized in one place, with AI-drafted responses on Growth and above.
 - **Sequence automation**: Multi-step email sequences with send-time optimization, plus branching and A/B testing on Pro and above.
 - **AI SDR agent**: An autonomous email rep included on every plan (volume and autonomy scale by tier) that sources leads, sends the first touch, classifies replies, and responds in your voice.
-- **CRM integrations**: HubSpot and Salesforce sync on Pro and above. Gmail, Slack, Calendly, and Zapier connect on paid plans.
+- **CRM integrations**: HubSpot, Salesforce, Gmail, Slack, Calendly, and Zapier connect on every plan, including Explore.
 
 ## AI SDR Agent
 

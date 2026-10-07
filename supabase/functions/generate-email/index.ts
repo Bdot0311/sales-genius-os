@@ -1963,7 +1963,7 @@ conversation that is already going, not as someone chasing silence.`}`;
     // before the response, so the saved draft is the corrected one rather than
     // the flagged one. What it changed is reported rather than done quietly —
     // silent rewriting of a prospect's name is its own kind of wrong.
-    const casing = repairCompanyCasing(email, String(lead?.company_name ?? ''));
+    let casing = repairCompanyCasing(email, String(lead?.company_name ?? ''));
     email = casing.text;
     if (casing.repaired.length) {
       console.log(`[generate-email] fixed company casing: ${casing.repaired.join(', ')}`);
@@ -2043,12 +2043,20 @@ conversation that is already going, not as someone chasing silence.`}`;
           if (second) {
             second = repairSelfReferentialPeers(second, String(lead?.company_name ?? ''));
             second = enforceSignOff(second, resolvedSenderName);
+            // Re-apply the same mechanical repairs the first draft got, so a
+            // kept rewrite never undoes them and the response reports this draft.
+            if (findSenderStandIns(second).length) second = fillSenderStandIns(second, resolvedSenderName, resolvedSenderCompany);
+            if (findPlatformBrandLeaks(second, resolvedSenderCompany).length) second = stripPlatformBrand(second, resolvedSenderCompany);
+            const secondCasing = repairCompanyCasing(second, String(lead?.company_name ?? ''));
+            second = secondCasing.text;
+            const secondRecency = findUnsupportedRecency(second, freshDates);
             const secondHits = findBannedPhrases(second);
             const cleanEnough =
               !hasPlaceholder(second) &&
               !hasScaffolding(second) &&
               !findUnverifiedClaims(second, proofForClaims).length &&
               findTouchOnePitch(second).length === 0 &&
+              secondRecency.length <= recency.length &&
               secondHits.length <= bannedHits.length;
             const secondRubric = cleanEnough ? await scoreNow(second) : null;
             if (
@@ -2062,6 +2070,8 @@ conversation that is already going, not as someone chasing silence.`}`;
               email = second;
               rubric = secondRubric;
               bannedHits = secondHits;
+              casing = secondCasing;
+              recency = secondRecency;
             } else {
               console.warn('[generate-email] quality rewrite rejected, keeping original');
             }
