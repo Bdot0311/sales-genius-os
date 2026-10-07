@@ -81,8 +81,8 @@ Build multi-step email sequences with:
 ### 7. CRM and Tool Integrations
 OutReign connects with the tools below on every plan, including Explore. CRM integrations (HubSpot and Salesforce) are available as connected integrations across tiers, with deeper automation and team workflows increasing on higher tiers.
 - **Gmail**: email delivery, reply tracking, and inbox sync
-- **HubSpot**: two-way CRM sync on Pro and above; leads and replies update contact records automatically
-- **Salesforce**: two-way CRM sync on Pro and above; deal and contact updates
+- **HubSpot**: two-way CRM sync; leads and replies update contact records automatically
+- **Salesforce**: two-way CRM sync; deal and contact updates
 - **Slack**: notifications on replies, hot leads, and sequence completions
 - **Calendly**: meeting booking links embedded in outreach sequences
 - **Zapier**: connect to 5,000+ tools via automated workflows

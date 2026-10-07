@@ -66,5 +66,7 @@ describe("API & MCP tiers", () => {
     expect(combined).not.toContain("Gmail (email delivery and reply tracking, all paid plans)");
     expect(combined).not.toContain("HubSpot (CRM sync, Pro and above)");
     expect(combined).not.toContain("Salesforce (CRM sync, Pro and above)");
+    expect(combined).not.toMatch(/(HubSpot|Salesforce)[^\n]*sync on Pro and above/);
+    expect(combined).not.toContain("connect on paid plans");
   });
 });

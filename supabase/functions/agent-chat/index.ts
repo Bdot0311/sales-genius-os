@@ -1713,6 +1713,7 @@ serve(async (req) => {
     const resolveMailboxPool = async (
       fromEmail: string | null,
       fromEmails?: unknown,
+      opts: { forSchedule?: boolean } = {},
     ): Promise<{ pool: Mailbox[] } | { error: string }> => {
       const accounts = await loadMailboxes();
       const sendable = accounts.filter((a: any) => a.status !== "paused" && a.status !== "disabled");
@@ -1742,6 +1743,9 @@ serve(async (req) => {
         return { error: `Every connected mailbox is paused or disabled (${list}). Resume one on the Deliverability page.` };
 
       // A mailbox at its daily cap used to be sent from anyway.
+      // Scheduled sends are held and retried by the scheduler when capacity
+      // returns, so today's spent allowance must not block scheduling.
+      if (opts.forSchedule) return { pool: (await orderByLoad(sendable)).map(toMailbox) };
       const { kept, reason } = eligibleToSend(sendable);
       if (kept.length === 0) return { error: `${reason} (${list})` };
 
@@ -3262,6 +3266,7 @@ serve(async (req) => {
           const poolRes = await resolveMailboxPool(
             args.from_email ? String(args.from_email) : null,
             args.from_emails,
+            { forSchedule: true },
           );
           if ("error" in poolRes) {
             toolEvents.push({ name, label: "Scheduling blocked", status: "error", detail: poolRes.error });
