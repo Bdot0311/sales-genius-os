@@ -47,17 +47,15 @@ export const useSubscription = () => {
       }
 
       // Get basic plan info from RPC
-      const { data, error } = await supabase.rpc('get_user_plan');
-
-
+      let { data, error } = await supabase.rpc('get_user_plan');
 
       if (error) {
-        // Only force sign-out on a true permission-denied for get_user_plan,
-        // which happens when a stale JWT (post signing-key rotation) falls
-        // back to the anon role that lacks EXECUTE on this function.
-        // Do NOT sign out on transient "JWT expired" / "invalid JWT" /
-        // "missing sub claim" errors — the Supabase client auto-refreshes
-        // those on its own.
+        // A "permission denied" here means the request went out without the
+        // user's token. Right after a Google sign-in that is normal for a
+        // moment — the session is saved but not yet attached to requests — and
+        // signing out at that point bounced people straight back to /auth.
+        // Retry once, then only clear the session if the server itself
+        // rejects the stored token.
         const code = (error as { code?: string }).code ?? '';
         const msg = (error.message || '').toLowerCase();
         const isPermissionDenied =
@@ -65,15 +63,25 @@ export const useSubscription = () => {
           msg.includes('permission denied for function') ||
           msg.includes('permission denied for get_user_plan');
         if (isPermissionDenied) {
-          console.warn('get_user_plan permission denied — clearing stale session');
-          try { await supabase.auth.signOut(); } catch { /* noop */ }
-          try {
-            Object.keys(localStorage)
-              .filter(k => k.startsWith('sb-') && k.endsWith('-auth-token'))
-              .forEach(k => localStorage.removeItem(k));
-          } catch { /* noop */ }
+          await new Promise((r) => setTimeout(r, 800));
+          ({ data, error } = await supabase.rpc('get_user_plan'));
         }
-        throw error;
+        if (error && isPermissionDenied) {
+          const { data: { session: current } } = await supabase.auth.getSession();
+          const token = current?.access_token;
+          const check = token ? await supabase.auth.getUser(token) : null;
+          const tokenRejected = !token || (!!check?.error && /jwt|signature|invalid claim|not found/i.test(check.error.message || '') && !/missing sub claim/i.test(check.error.message || ''));
+          if (tokenRejected) {
+            console.warn('get_user_plan permission denied and token rejected — clearing stale session');
+            try { await supabase.auth.signOut(); } catch { /* noop */ }
+            try {
+              Object.keys(localStorage)
+                .filter(k => k.startsWith('sb-') && k.endsWith('-auth-token'))
+                .forEach(k => localStorage.removeItem(k));
+            } catch { /* noop */ }
+          }
+        }
+        if (error) throw error;
       }
       
       
