@@ -54,7 +54,11 @@ describe("a long run ends by telling the truth about itself", () => {
   it("records a continuation that fails, rather than just going idle", () => {
     const failure = CODE.slice(CODE.indexOf("agent-chat continuation error"));
     const insertAt = failure.indexOf('.from("agent_chat_messages")');
-    const idleAt = failure.indexOf('run_status: "idle"');
+    // Releasing the thread is one named call now, not the same UPDATE written
+    // out at each of three sites, so this follows it there.
+    // The name, not its punctuation: the call is optional-chained because the
+    // claim is only assigned once a run is actually claimed.
+    const idleAt = failure.indexOf("releaseRunClaim");
     expect(insertAt).toBeGreaterThan(-1);
     expect(idleAt).toBeGreaterThan(-1);
     // The note is written before the thread is released, so a client watching

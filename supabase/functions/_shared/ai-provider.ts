@@ -282,37 +282,4 @@ export async function aiFetch(
     }
     throw error;
   }
-
-  // Streaming responses are passed through untouched; usage arrives in-stream and
-  // is not worth buffering the whole answer for.
-  if (body.stream === true || !res.ok) {
-    if (!res.ok) {
-      console.error(
-        `[ai-provider] ${fnName} ${route.provider}/${route.model} -> ${res.status}`,
-      );
-    }
-    return res;
-  }
-
-  // Non-streaming: read the JSON once, meter it, and hand the caller an
-  // identical response it can still `.json()`.
-  const text = await res.text();
-  try {
-    const parsed = JSON.parse(text) as { usage?: { prompt_tokens?: number; completion_tokens?: number } };
-    await meter({
-      fn: fnName,
-      provider: route.provider,
-      model: route.model,
-      userId: ctx.userId,
-      usage: parsed.usage,
-    });
-  } catch {
-    // Non-JSON body — nothing to meter.
-  }
-
-  return new Response(text, {
-    status: res.status,
-    statusText: res.statusText,
-    headers: { "Content-Type": "application/json" },
-  });
 }

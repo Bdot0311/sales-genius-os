@@ -365,7 +365,10 @@ describe("the batch is drafted several at a time", () => {
   });
 
   it("runs a bounded pool over a shared queue", () => {
-    expect(worker).toContain("const CONCURRENCY = 4;");
+    // The number is a knob now (AGENT_JOB_CONCURRENCY). What matters is that
+    // one exists and has a sane default, not that it reads 4 — pinning the
+    // literal broke the moment it was made configurable.
+    expect(worker).toMatch(/const CONCURRENCY = [^;]*\|\| *\d+;|const CONCURRENCY = \d+;/);
     expect(worker).toMatch(/Array\.from\(\s*\{\s*length:\s*Math\.min\(CONCURRENCY,\s*items\.length\)/);
     // A shared queue, not a slice per worker: one slow draft must not leave
     // its share of the batch unworked while the others idle.

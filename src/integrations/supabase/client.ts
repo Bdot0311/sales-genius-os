@@ -14,5 +14,27 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: brokeredPreviewStorage(),
     persistSession: true,
     autoRefreshToken: true,
+    /*
+     * This client must not read the URL. Auth.tsx does it instead.
+     *
+     * supabase-js defaults this to true with flowType "pkce", so on every page
+     * load it scanned the address bar for `?code=` and tried to exchange it.
+     * Google's OAuth return lands on /auth carrying exactly that — a code
+     * belonging to Lovable's auth client, which started the flow and holds the
+     * only matching verifier. Supabase had none, its exchange failed, and the
+     * code is single use, so by the time Lovable's client asked for its tokens
+     * the code was spent: "failed to exchange authorization code", on every
+     * Google sign-in.
+     *
+     * It surfaced when the OAuth redirect moved from "/" to "/auth". The
+     * homepage defers loading this client, so nothing was there to take the
+     * code first; /auth loads it eagerly.
+     *
+     * Sign-in needs nothing from the URL — Lovable's wrapper hands the tokens
+     * over with setSession. Supabase's OWN links (recovery, email confirm) do,
+     * and Auth.tsx claims those explicitly, which it can do safely because it
+     * can tell them apart: Supabase always sends a `type`, Lovable never does.
+     */
+    detectSessionInUrl: false,
   }
 });
