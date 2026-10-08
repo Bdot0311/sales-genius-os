@@ -65,6 +65,27 @@ const Auth = () => {
   }, [location.search, location.hash]);
 
   const isRecoveryFlow = recoveryType === "recovery";
+
+  // When Google sign-in fails on the server side, the sign-in service sends
+  // the person back here with an error in the URL instead of a session. Show
+  // it, rather than silently re-displaying the sign-in form as if nothing
+  // happened.
+  useEffect(() => {
+    const hash = location.hash?.startsWith("#") ? location.hash.slice(1) : location.hash;
+    const q = new URLSearchParams(location.search);
+    const h = new URLSearchParams(hash || "");
+    const err = q.get("error") || h.get("error");
+    if (!err) return;
+    const desc = q.get("error_description") || h.get("error_description") || err;
+    console.error("Sign-in returned an error:", err, desc);
+    toast({
+      title: "Google sign-in didn't finish",
+      description: `${desc.replace(/\+/g, " ")}. Please try again, or sign in with email.`,
+      variant: "destructive",
+    });
+    window.history.replaceState(null, "", location.pathname);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   
   const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [newPassword, setNewPassword] = useState("");
