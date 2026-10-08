@@ -92,6 +92,20 @@ export const ROADMAP: RoadmapItem[] = [
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-08-saved-leads-one-page",
+    date: "2026-10-08",
+    title: "Your whole lead list on one page",
+    summary: "Saved Leads no longer splits into pages of 50 — every matching lead is on one scrollable list.",
+    items: [
+      {
+        tag: "improved",
+        title: "Scroll instead of paging",
+        description:
+          "The Saved Leads list now shows all of your leads in one long scroll, however many you have. Search, filters, sorting, export and bulk actions all work across the full list.",
+      },
+    ],
+  },
+  {
     id: "2026-09-30-stripe-updates-save",
     date: "2026-09-30",
     title: "Plan and credit updates now save every time",
