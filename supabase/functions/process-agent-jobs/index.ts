@@ -405,19 +405,21 @@ serve(async (req) => {
         // Keep the item-level lead lookup immediately after the search branch so
         // the worker has the same flow ordering as the job semantics: search exits
         // without a lead; everything else resolves the row it will work on.
-        const leadLookup = await admin
-          .from("leads")
-          .select("id")
-          .eq("id", item.lead_id)
-          .maybeSingle();
-        const lead = (leadLookup.data ?? leads.get(String(item.lead_id))) as Record<string, any> | undefined;
-
+        const lead = leads.get(String(item.lead_id)) as Record<string, any> | undefined;
         if (!lead) {
-          await admin.from("agent_job_items")
-            .update({ status: "failed", error: "Lead not found", finished_at: new Date().toISOString() })
-            .eq("id", item.id);
-          failed++;
-          return;
+          const leadLookup = await admin
+            .from("leads")
+            .select("*")
+            .eq("id", item.lead_id)
+            .maybeSingle();
+          const fetchedLead = leadLookup.data as Record<string, any> | undefined;
+          if (!fetchedLead) {
+            await admin.from("agent_job_items")
+              .update({ status: "failed", error: "Lead not found", finished_at: new Date().toISOString() })
+              .eq("id", item.id);
+            failed++;
+            return;
+          }
         }
 
         /*
@@ -462,7 +464,8 @@ serve(async (req) => {
         };
         const leadFunction = LEAD_FUNCTION[String(job.kind)];
         if (leadFunction) {
-          const r = await invokeFn(leadFunction, { leadId: item.lead_id, lead_id: item.lead_id, lead });
+          const leadForInvoke = lead || (leads.get(String(item.lead_id)) as Record<string, any>);
+          const r = await invokeFn(leadFunction, { leadId: item.lead_id, lead_id: item.lead_id, lead: leadForInvoke });
           // The generator reports failure in the body with a 200, so a missing
           // error is not the same as success — each of these writes the lead
           // row, and `error` is how they say they did not.
@@ -496,6 +499,7 @@ serve(async (req) => {
         const settingsRow = configs.get(String(job.agent_config_id ?? "00000000-0000-0000-0000-000000000000"));
         const profile = profiles.get(String(job.user_id));
 
+        const leadForDraft = lead || (leads.get(String(item.lead_id)) as Record<string, any>);
         const avoid = await sentSubjectsFor(admin, job.user_id, [String(item.lead_id)]);
 
         /*
@@ -535,7 +539,7 @@ serve(async (req) => {
 
         const result = await draftForLead(
           { admin, userId: job.user_id, invokeFn },
-          lead as any,
+          leadForDraft as any,
           {
             goal: itemGoal,
             thread,
@@ -576,7 +580,7 @@ serve(async (req) => {
           // Autonomous jobs hand the draft to the outbox. Approval jobs stop
           // here, and the draft is the deliverable.
           const outbox = job.autonomy === "autonomous"
-            ? await scheduleDraft(admin, job, lead as Record<string, unknown>, result, outboxSlots)
+            ? await scheduleDraft(admin, job, leadForDraft as Record<string, unknown>, result, outboxSlots)
             : null;
 
           await admin.from("agent_job_items")
