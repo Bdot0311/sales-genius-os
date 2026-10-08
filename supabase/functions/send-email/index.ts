@@ -258,10 +258,18 @@ serve(async (req) => {
           .eq('user_id', user.id);
       }
 
-      // Monthly usage uses optimized counter via RPC
-      const { data: monthlyCount } = await supabase
+      // Monthly usage: live count of this month's sends. Fail closed — a cap
+      // that silently reads 0 on error is no cap at all.
+      const { data: monthlyCount, error: monthlyErr } = await supabase
         .rpc('get_monthly_email_count', { p_user_id: user.id });
-      const monthlySent = monthlyCount ?? 0;
+      if (monthlyErr || typeof monthlyCount !== 'number') {
+        console.error('[send-email] monthly count unavailable', monthlyErr);
+        return new Response(
+          JSON.stringify({ error: "We couldn't check your monthly send allowance. Please try again in a moment.", code: 'monthly_count_unavailable' }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
+      const monthlySent = monthlyCount;
 
 
       const dailyLimit = subscription.daily_email_limit || 10;
