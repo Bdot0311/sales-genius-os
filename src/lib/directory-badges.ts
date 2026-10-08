@@ -89,4 +89,5 @@ export const ALL_BADGES: DirectoryBadge[] = [
   { href: "https://www.uneed.best/tool/outreign", src: "https://www.uneed.best/EMBED1B.png", alt: "Featured on Uneed", w: 200, h: 54 },
   { href: "https://scoutforge.net/apps/outreign?ref=badge", src: "https://scoutforge.net/badge/outreign/image?theme=dark&size=default", alt: "OutReign on Scout Forge", w: 300, h: 72 },
   { href: "https://dang.ai", src: "https://assets.dang.ai/badges/dang-verified-dark.png", alt: "Verified on DANG!", w: 260, h: 94 },
+  { href: "https://showmyproduct.com/p/outreign-m9yg", src: "https://showmyproduct.com/badge/outreign-m9yg.svg?theme=dark", alt: "On the wall at ShowMyProduct", w: 252, h: 54 },
 ];
