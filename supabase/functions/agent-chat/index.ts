@@ -5325,13 +5325,13 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
           } catch (noteError) {
             console.error("agent-chat could not record the continuation failure", noteError);
           }
-          await releaseRunClaim();
+          await releaseRunClaim?.();
         });
 
       const waitUntil = (globalThis as any).EdgeRuntime?.waitUntil;
       if (typeof waitUntil === "function") waitUntil(continueRun);
     } else {
-      await releaseRunClaim();
+      await releaseRunClaim?.();
     }
 
     return json({

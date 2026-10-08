@@ -56,7 +56,9 @@ describe("a long run ends by telling the truth about itself", () => {
     const insertAt = failure.indexOf('.from("agent_chat_messages")');
     // Releasing the thread is one named call now, not the same UPDATE written
     // out at each of three sites, so this follows it there.
-    const idleAt = failure.indexOf("await releaseRunClaim()");
+    // The name, not its punctuation: the call is optional-chained because the
+    // claim is only assigned once a run is actually claimed.
+    const idleAt = failure.indexOf("releaseRunClaim");
     expect(insertAt).toBeGreaterThan(-1);
     expect(idleAt).toBeGreaterThan(-1);
     // The note is written before the thread is released, so a client watching
