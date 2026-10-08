@@ -785,13 +785,13 @@ const SavedLeads = () => {
                   {intelligenceEnabled && (
                     <Button
                       variant="outline"
-                      onClick={() => evaluateLeads(Array.from(selectedLeads).slice(0, 10), { force: true })}
+                      onClick={() => evaluateLeads(Array.from(selectedLeads), { force: true })}
                       disabled={evaluatingLeads.size > 0}
                     >
                       <Brain className={`w-4 h-4 mr-2 ${evaluatingLeads.size > 0 ? "animate-pulse" : ""}`} />
                       {evaluatingLeads.size > 0
                         ? "Evaluating..."
-                        : `Evaluate (${Math.min(selectedLeads.size, 10)})`}
+                        : `Evaluate (${selectedLeads.size})`}
                     </Button>
                   )}
                   <Button variant="outline" onClick={() => setShowAssignDialog(true)}>
