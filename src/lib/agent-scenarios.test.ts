@@ -147,7 +147,10 @@ describe("a turn that claims completion without doing anything gets one retry", 
   });
 
   it("leaves room to act — no retry on the last step or out of time", () => {
-    expect(SRC).toMatch(/step < 7 &&/);
+    // The ceiling is named now, so this pins "one short of it" rather than a
+    // literal that drifts the moment the number moves.
+    expect(SRC).toMatch(/step < MAX_TURN_STEPS - 1 &&/);
+    expect(SRC).toContain("const MAX_TURN_STEPS = 8;");
     expect(SRC).toMatch(/!outOfTime\(\)/);
   });
 

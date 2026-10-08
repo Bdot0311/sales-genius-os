@@ -14,6 +14,7 @@ import {
 import { leadIntelligenceMode } from "../_shared/lead-intelligence.ts";
 import { chooseMailbox, type RoutableMailbox } from "../_shared/mailbox-routing.ts";
 import { invalidArgsResult, validateToolArgs, type ToolSchema } from "../_shared/tool-args.ts";
+import { mergeCompleted, resultOk, resumeFrom, supabaseTraceStore, trimResult } from "../_shared/agent-trace.ts";
 import {
   AGENT_MAX_ATTEMPTS,
   AGENT_TARGET_SCORE,
@@ -323,6 +324,15 @@ function serialiseToolResult(result: unknown): string {
       "Re-run the tool for fewer items rather than assuming what it contained.",
   });
 }
+
+/*
+ * How many model steps one turn gets.
+ *
+ * Named because the resume guard has to agree with the loop: a stored step at
+ * or past this number means the turn already spent its budget and there is
+ * nothing to resume into.
+ */
+const MAX_TURN_STEPS = 8;
 
 const MUTATING_TOOLS = new Set([
   "enrich_leads",
@@ -1316,6 +1326,19 @@ serve(async (req) => {
         .update({ run_status: "idle", run_pass: 0 })
         .eq("id", threadId)
         .eq("run_started_at", runStartedAt);
+      /*
+       * The turn is over, so what it already did stops counting.
+       *
+       * These rows exist to stop one turn repeating an action across a
+       * restart. Left behind they would block the same action in the next
+       * conversation — someone asking to send to the same lead tomorrow is
+       * not repeating themselves.
+       *
+       * The store is built here rather than closed over: `trace` is declared
+       * further down and this runs on paths that reach it first, which would
+       * be a temporal dead zone rather than a null check.
+       */
+      await supabaseTraceStore(admin).clearMutations(threadId);
     };
 
     if (!autoContinue) {
@@ -4530,6 +4553,39 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
 
     ];
 
+    /*
+     * Pick up where the last attempt died, if it left a step behind.
+     *
+     * A turn is up to eight model steps and nothing recorded them, so a worker
+     * restart threw away every search, enrichment and draft the turn had
+     * already paid for and the user began again from their first sentence.
+     * Each completed step now stores the working message array, so resuming is
+     * a continuation rather than a replay.
+     *
+     * resumeFrom refuses anything it cannot trust — no row, an empty array, a
+     * step past the ceiling — and starting over is the answer in those cases.
+     * A turn that resumes into a half-remembered conversation behaves strangely
+     * and cannot be explained afterwards, which is worse than repeating work.
+     */
+    const trace = supabaseTraceStore(admin);
+    let resumeAt = 0;
+    try {
+      const resumed = resumeFrom(await trace.latestStep(threadId, runPass), MAX_TURN_STEPS);
+      if (resumed) {
+        messages.length = 0;
+        messages.push(...(resumed.messages as any[]));
+        resumeAt = resumed.nextStep;
+        console.log(`[agent-chat] resuming thread ${threadId} pass ${runPass} at step ${resumeAt}`);
+      }
+      // What already ran, from the client's list and from what actually
+      // completed. Neither survives everything on its own.
+      for (const key of mergeCompleted(payload.completedMutationKeys, await trace.listMutations(threadId))) {
+        completedMutationKeys.add(key);
+      }
+    } catch (e) {
+      console.warn(`[agent-chat] trace unavailable, starting fresh: ${e instanceof Error ? e.message : e}`);
+    }
+
     let finalText = "";
     let ranOutOfTime = false;
     // Never lose completed tool work: when the model call fails we stop the loop
@@ -4547,7 +4603,7 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
      */
     const REASONING_STEPS = 5;
 
-    for (let step = 0; step < 8; step++) {
+    for (let step = resumeAt; step < MAX_TURN_STEPS; step++) {
       if (outOfTime()) {
         ranOutOfTime = true;
         break;
@@ -4667,7 +4723,7 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
         // already said it was doing.
         const claimedDone = emptyTurnWarning(finalText, toolEvents);
         const promisedWork = claimedDone ? "" : statedIntentWithoutAction(finalText, toolEvents);
-        if (!retriedEmptyTurn && (claimedDone || promisedWork) && step < 7 && !outOfTime()) {
+        if (!retriedEmptyTurn && (claimedDone || promisedWork) && step < MAX_TURN_STEPS - 1 && !outOfTime()) {
           retriedEmptyTurn = true;
           console.warn(
             promisedWork
@@ -4746,6 +4802,16 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
           result = await runTool(toolName, args);
           if (mutationKey && didMutate(result)) {
             completedMutationKeys.add(mutationKey);
+            /*
+             * And on disk, because the in-memory Set dies with the worker.
+             *
+             * This is the guard that stops a send going twice. It was exactly
+             * right for one request and worth nothing across the restart that
+             * causes a resume — which is the moment a repeat is most likely.
+             */
+            void trace.saveMutation(threadId, userId, mutationKey, toolName).catch((e) =>
+              console.warn(`[agent-chat] completed mutation not recorded: ${e instanceof Error ? e.message : e}`)
+            );
           }
         } catch (e) {
           stepStatus = "error";
@@ -4824,6 +4890,40 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
         const r = byId.get(call.id);
         if (r) messages.push(r);
       }
+
+      /*
+       * The step, written down before the next one starts.
+       *
+       * This is the resume point and the trace at once: the working array so a
+       * restart continues, and what was called with what so a fault can be
+       * explained from the system instead of from a screenshot. Results are
+       * trimmed — a lead list is megabytes and this is for reading.
+       *
+       * Never allowed to fail the turn. The user's work is the email, not the
+       * record of how it was made.
+       */
+      try {
+        await trace.saveStep({
+          threadId,
+          userId,
+          runPass,
+          stepIndex: step,
+          messages,
+          toolCalls: calls.map((c: any) => ({
+            name: c.function?.name ?? "",
+            args: c.function?.arguments ?? null,
+          })),
+          toolResults: calls.map((c: any) => {
+            const r = byId.get(c.id);
+            return trimResult(c.function?.name ?? "", resultOk(r?.content), r?.content ?? null);
+          }),
+          usage: data?.usage ?? null,
+          status: "done",
+        });
+      } catch (e) {
+        console.warn(`[agent-chat] step ${step} not recorded: ${e instanceof Error ? e.message : e}`);
+      }
+
       if (cancelled) break;
     }
 
@@ -5225,21 +5325,13 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
           } catch (noteError) {
             console.error("agent-chat could not record the continuation failure", noteError);
           }
-          await admin
-            .from("agent_chat_threads")
-            .update({ run_status: "idle", run_pass: 0 })
-            .eq("id", threadId)
-            .eq("run_started_at", runStartedAt);
+          await releaseRunClaim();
         });
 
       const waitUntil = (globalThis as any).EdgeRuntime?.waitUntil;
       if (typeof waitUntil === "function") waitUntil(continueRun);
     } else {
-      await admin
-        .from("agent_chat_threads")
-        .update({ run_status: "idle", run_pass: 0 })
-        .eq("id", threadId)
-        .eq("run_started_at", runStartedAt);
+      await releaseRunClaim();
     }
 
     return json({
