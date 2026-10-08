@@ -138,7 +138,14 @@ const SavedLeads = () => {
 
   // Lead Intelligence: saved evaluations for the leads on screen, plus the
   // on-demand evaluate action. Off entirely when the feature flag is off.
-  const PAGE_SIZE = 50;
+  /*
+   * One page, not fifty at a time.
+   *
+   * The list used to page in fifties because a page was a screen. It is a
+   * scroll now: the database sends the whole filtered list and the page
+   * shows it end to end.
+   */
+  const PAGE_SIZE = 100000;
   /*
    * The list, filtered and sorted by the database.
    *
