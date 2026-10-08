@@ -69,6 +69,25 @@ export async function askJev(
   state: string,
   questions: Record<string, JevChoiceQuestion>,
 ): Promise<{ response: JevResponse; latencyMs: number }> {
+  // The provider intermittently answers 503 "model_unavailable" or 429. Those
+  // are transient, so retry a couple of times with backoff before giving up.
+  const delays = [800, 2000];
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await askJevOnce(state, questions);
+    } catch (err) {
+      const transient = err instanceof JevError &&
+        (err.kind === "rate_limit" || err.kind === "timeout" || (err.status ?? 0) >= 500);
+      if (!transient || attempt >= delays.length) throw err;
+      await new Promise((r) => setTimeout(r, delays[attempt]));
+    }
+  }
+}
+
+async function askJevOnce(
+  state: string,
+  questions: Record<string, JevChoiceQuestion>,
+): Promise<{ response: JevResponse; latencyMs: number }> {
   const key = apiKey();
   if (!key) throw new JevError("not_configured", "Lead Intelligence is not configured");
 
