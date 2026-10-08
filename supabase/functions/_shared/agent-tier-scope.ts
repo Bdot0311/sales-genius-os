@@ -34,6 +34,9 @@ export const TIER_BLOCKED_TOOLS: Record<AgentTierId, string[]> = {
     "delete_drafts",
     "delete_inbox_threads",
     "delete_deal",
+    "update_sending_account",
+    "update_sequence_status",
+    "update_enrollment",
   ],
   // Starter can send, but sequences and fully autonomous runs are growth+.
   starter: ["draft_sequence", "enroll_lead_in_sequence", "run_full_agent"],
