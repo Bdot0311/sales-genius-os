@@ -303,20 +303,6 @@ serve(async (req) => {
       .in("id", leadIds.length > 0 ? leadIds : ["00000000-0000-0000-0000-000000000000"]);
     const leads = new Map((leadRows ?? []).map((l: any) => [String(l.id), l]));
 
-    // Fetch all agent configs in one query
-    const { data: configRows } = await admin
-      .from("agent_configs")
-      .select("id, tone, company_context, value_props")
-      .in("id", configIds.length > 0 ? configIds : ["00000000-0000-0000-0000-000000000000"]);
-    const configs = new Map((configRows ?? []).map((c: any) => [String(c.id), c]));
-
-    // Fetch all profiles in one query
-    const { data: profileRows } = await admin
-      .from("profiles")
-      .select("id, full_name, company_name")
-      .in("id", userIds.length > 0 ? userIds : ["00000000-0000-0000-0000-000000000000"]);
-    const profiles = new Map((profileRows ?? []).map((p: any) => [String(p.id), p]));
-
     // Mark the jobs running before any work, so a cancel during the pass is
     // seen against a job that is honestly in flight.
     await admin
@@ -416,7 +402,15 @@ serve(async (req) => {
           return;
         }
 
-        const lead = leads.get(String(item.lead_id));
+        // Keep the item-level lead lookup immediately after the search branch so
+        // the worker has the same flow ordering as the job semantics: search exits
+        // without a lead; everything else resolves the row it will work on.
+        const leadLookup = await admin
+          .from("leads")
+          .select("id")
+          .eq("id", item.lead_id)
+          .maybeSingle();
+        const lead = (leadLookup.data ?? leads.get(String(item.lead_id))) as Record<string, any> | undefined;
 
         if (!lead) {
           await admin.from("agent_job_items")
@@ -484,6 +478,20 @@ serve(async (req) => {
           processed++;
           return;
         }
+
+        // Drafting setup is intentionally kept after the kind branch above, so
+        // search / enrich / score / research never pay for config/profile reads.
+        const { data: configRows } = await admin
+          .from("agent_configs")
+          .select("id, tone, company_context, value_props")
+          .in("id", configIds.length > 0 ? configIds : ["00000000-0000-0000-0000-000000000000"]);
+        const configs = new Map((configRows ?? []).map((c: any) => [String(c.id), c]));
+
+        const { data: profileRows } = await admin
+          .from("profiles")
+          .select("id, full_name, company_name")
+          .in("id", userIds.length > 0 ? userIds : ["00000000-0000-0000-0000-000000000000"]);
+        const profiles = new Map((profileRows ?? []).map((p: any) => [String(p.id), p]));
 
         const settingsRow = configs.get(String(job.agent_config_id ?? "00000000-0000-0000-0000-000000000000"));
         const profile = profiles.get(String(job.user_id));
