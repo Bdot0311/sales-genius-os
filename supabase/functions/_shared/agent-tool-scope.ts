@@ -86,6 +86,19 @@ export const REPLY_TOOLS = [
   "delete_inbox_threads",
 ];
 
+/**
+ * CRM upkeep: audit lead records for problems, fix contact fields, and manage
+ * pipeline deals. Lets a custom "CRM monitor" build actually repair what it finds.
+ */
+export const CRM_TOOLS = [
+  "find_lead_issues",
+  "update_lead",
+  "list_deals",
+  "create_deal",
+  "update_deal",
+  "delete_deal",
+];
+
 export const FULL_CYCLE_EXTRA_TOOLS = ["run_full_agent"];
 
 /** Every tool a custom build can be granted. */
@@ -95,6 +108,7 @@ export const ALL_AGENT_TOOLS = [
     ...LEAD_GEN_TOOLS,
     ...OUTREACH_TOOLS,
     ...REPLY_TOOLS,
+    ...CRM_TOOLS,
     ...FULL_CYCLE_EXTRA_TOOLS,
   ]),
 ];
@@ -197,7 +211,12 @@ export const TOOL_CATALOG: Record<string, string> = {
   enrich_leads: "Fill missing contact/company data on existing leads.",
   score_leads: "Score existing leads against the saved ICP.",
   research_leads: "Research a lead/company for personalisation angles.",
-  update_lead: "Edit a lead's fields or pipeline stage.",
+  update_lead: "Edit a lead's contact/company fields, notes or pipeline stage. Use to fix bad CRM data.",
+  find_lead_issues: "Scan lead records for CRM problems: missing or invalid emails, duplicates, missing names/companies, stale stages.",
+  list_deals: "List pipeline deals with stage, value and probability.",
+  create_deal: "Create a pipeline deal, optionally linked to a lead.",
+  update_deal: "Edit a pipeline deal's stage, value, probability, close date or notes.",
+  delete_deal: "Permanently delete a pipeline deal (destructive).",
   delete_leads: "Permanently delete leads (destructive).",
   draft_outreach:
     "Write email drafts for leads — first touch AND follow-ups. Required for any agent that writes email.",
@@ -242,12 +261,16 @@ const TOOL_PREREQUISITES: Record<string, string[]> = {
   score_leads: ["list_leads"],
   research_leads: ["list_leads"],
   update_lead: ["list_leads", "get_lead"],
+  find_lead_issues: ["list_leads", "get_lead"],
+  create_deal: ["list_deals", "list_leads"],
+  update_deal: ["list_deals"],
+  delete_deal: ["list_deals"],
   delete_leads: ["list_leads"],
   find_leads: ["list_leads"],
   run_full_agent: ["get_agent_status"],
 };
 
-export const DESTRUCTIVE_TOOLS = ["delete_leads", "delete_drafts", "delete_inbox_threads"];
+export const DESTRUCTIVE_TOOLS = ["delete_leads", "delete_drafts", "delete_inbox_threads", "delete_deal"];
 
 /**
  * Add the prerequisites a granted tool needs to be usable. Without this a build
