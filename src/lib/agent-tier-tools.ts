@@ -21,6 +21,7 @@ export const TIER_BLOCKED_TOOLS: Record<AgentTierId, string[]> = {
     "delete_leads",
     "delete_drafts",
     "delete_inbox_threads",
+    "delete_deal",
   ],
   starter: ["draft_sequence", "enroll_lead_in_sequence", "run_full_agent"],
   growth: [],

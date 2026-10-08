@@ -103,6 +103,13 @@ export const CHANGELOG: ChangelogEntry[] = [
         description:
           "The Saved Leads list now shows all of your leads in one long scroll, however many you have. Search, filters, sorting, export and bulk actions all work across the full list.",
       },
+      {
+        tag: "new",
+        title: "Custom agents can keep your CRM clean",
+        description:
+          "Custom agent builds have a new CRM group: find bad lead records (missing or invalid emails, duplicates, missing names or companies, stale stages), fix contact details, and create, update or remove pipeline deals.",
+        href: "/dashboard/agent/chat",
+      },
     ],
   },
   {

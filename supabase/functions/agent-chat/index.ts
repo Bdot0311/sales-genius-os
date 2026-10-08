@@ -150,6 +150,9 @@ const LEAD_FIELDS =
  */
 const NO_MATCH_ID = "00000000-0000-0000-0000-000000000000";
 
+const DEAL_STAGES = ["new", "contacted", "qualified", "proposal", "negotiation", "closed-won", "closed-lost"] as const;
+const DEAL_FIELDS = ["title", "company_name", "contact_name", "lead_id", "value", "stage", "probability", "expected_close_date", "notes"];
+const LEAD_FIX_FIELDS = ["contact_name", "contact_email", "contact_phone", "job_title", "company_name", "company_website", "linkedin_url", "industry", "country"];
 const PIPELINE_STAGES = [
   "new", "contacted", "no_response", "replied", "bounced",
   "meeting_booked", "qualified", "not_interested", "won", "lost",
@@ -835,9 +838,74 @@ const TOOLS = [
           lead_id: { type: "string" },
           pipeline_stage: { type: "string", enum: [...PIPELINE_STAGES] },
           notes: { type: "string" },
+          contact_name: { type: "string" },
+          contact_email: { type: "string" },
+          contact_phone: { type: "string" },
+          job_title: { type: "string" },
+          company_name: { type: "string" },
+          company_website: { type: "string" },
+          linkedin_url: { type: "string" },
+          industry: { type: "string" },
+          country: { type: "string" },
         },
         required: ["lead_id"],
       },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "find_lead_issues",
+      description: "Scan the account's lead records for CRM data problems: missing or malformed emails, duplicate emails, missing contact names or company names, and leads stuck in a stage. Returns lead ids grouped by issue so you can fix them with update_lead.",
+      parameters: { type: "object", properties: { limit: { type: "number", description: "Max leads per issue (default 50)" } } },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_deals",
+      description: "List pipeline deals (stage, value, probability, close date, linked lead).",
+      parameters: { type: "object", properties: { stage: { type: "string", enum: [...DEAL_STAGES] }, limit: { type: "number" } } },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_deal",
+      description: "Create a pipeline deal, optionally linked to a lead.",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string" }, company_name: { type: "string" }, contact_name: { type: "string" },
+          lead_id: { type: "string" }, value: { type: "number" }, stage: { type: "string", enum: [...DEAL_STAGES] },
+          probability: { type: "number" }, expected_close_date: { type: "string", description: "YYYY-MM-DD" }, notes: { type: "string" },
+        },
+        required: ["title", "company_name"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "update_deal",
+      description: "Update a pipeline deal's stage, value, probability, close date, contact or notes.",
+      parameters: {
+        type: "object",
+        properties: {
+          deal_id: { type: "string" }, title: { type: "string" }, company_name: { type: "string" }, contact_name: { type: "string" },
+          lead_id: { type: "string" }, value: { type: "number" }, stage: { type: "string", enum: [...DEAL_STAGES] },
+          probability: { type: "number" }, expected_close_date: { type: "string" }, notes: { type: "string" },
+        },
+        required: ["deal_id"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "delete_deal",
+      description: "Permanently delete a pipeline deal. Only when the user asked for it or it is a clear duplicate.",
+      parameters: { type: "object", properties: { deal_id: { type: "string" } }, required: ["deal_id"] },
     },
   },
   {
@@ -3893,6 +3961,12 @@ serve(async (req) => {
             update.pipeline_stage = stage;
           }
           if (args.notes) update.notes = String(args.notes);
+          for (const f of LEAD_FIX_FIELDS) {
+            if (typeof args[f] === "string") update[f] = String(args[f]).trim() || null;
+          }
+          if (typeof update.contact_email === "string" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(update.contact_email as string)) {
+            return { error: "That email address is not valid" };
+          }
           if (!Object.keys(update).length) return { error: "Nothing to update" };
           const { error } = await admin
             .from("leads")
@@ -3905,6 +3979,94 @@ serve(async (req) => {
             status: error ? "error" : "ok",
             detail: error ? error.message : Object.keys(update).join(", "),
           });
+          return error ? { error: error.message } : { success: true };
+        }
+
+        case "find_lead_issues": {
+          const cap = Math.min(Math.max(Number(args.limit) || 50, 1), 200);
+          const { data: rows, error } = await admin
+            .from("leads")
+            .select("id, contact_name, contact_email, company_name, pipeline_stage, updated_at")
+            .eq("user_id", userId)
+            .limit(5000);
+          if (error) return { error: error.message };
+          const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          const missingEmail: string[] = [], badEmail: string[] = [], noName: string[] = [], noCompany: string[] = [], stale: string[] = [];
+          const byEmail = new Map<string, string[]>();
+          const staleCut = Date.now() - 30 * 86400000;
+          for (const r of rows ?? []) {
+            const e = (r.contact_email ?? "").trim().toLowerCase();
+            if (!e) missingEmail.push(r.id);
+            else if (!emailRe.test(e)) badEmail.push(r.id);
+            else byEmail.set(e, [...(byEmail.get(e) ?? []), r.id]);
+            if (!(r.contact_name ?? "").trim()) noName.push(r.id);
+            if (!(r.company_name ?? "").trim()) noCompany.push(r.id);
+            if (r.pipeline_stage && !["won", "lost", "closed-won", "closed-lost"].includes(String(r.pipeline_stage)) && new Date(r.updated_at).getTime() < staleCut) stale.push(r.id);
+          }
+          const duplicates = [...byEmail.entries()].filter(([, ids]) => ids.length > 1).map(([email, ids]) => ({ email, lead_ids: ids }));
+          const total = missingEmail.length + badEmail.length + noName.length + noCompany.length + duplicates.length + stale.length;
+          toolEvents.push({ name, label: "Checked CRM records", status: "ok", detail: `${total} issues across ${rows?.length ?? 0} leads` });
+          return {
+            leads_checked: rows?.length ?? 0,
+            missing_email: { count: missingEmail.length, lead_ids: missingEmail.slice(0, cap) },
+            invalid_email: { count: badEmail.length, lead_ids: badEmail.slice(0, cap) },
+            missing_contact_name: { count: noName.length, lead_ids: noName.slice(0, cap) },
+            missing_company: { count: noCompany.length, lead_ids: noCompany.slice(0, cap) },
+            duplicate_emails: { count: duplicates.length, groups: duplicates.slice(0, cap) },
+            stale_over_30_days: { count: stale.length, lead_ids: stale.slice(0, cap) },
+          };
+        }
+
+        case "list_deals": {
+          let q = admin
+            .from("deals")
+            .select("id, title, company_name, contact_name, value, stage, probability, expected_close_date, lead_id, notes, updated_at")
+            .eq("user_id", userId)
+            .order("updated_at", { ascending: false })
+            .limit(Math.min(Math.max(Number(args.limit) || 50, 1), 200));
+          if (args.stage) q = q.eq("stage", String(args.stage));
+          const { data, error } = await q;
+          if (error) return { error: error.message };
+          toolEvents.push({ name, label: "Read pipeline", status: "ok", detail: `${data?.length ?? 0} deals` });
+          return { deals: data ?? [] };
+        }
+
+        case "create_deal":
+        case "update_deal": {
+          const row: Record<string, unknown> = {};
+          for (const f of DEAL_FIELDS) if (args[f] !== undefined && args[f] !== null && args[f] !== "") row[f] = args[f];
+          if (row.stage && !DEAL_STAGES.includes(String(row.stage) as typeof DEAL_STAGES[number])) {
+            return { error: `Unsupported deal stage. Use one of: ${DEAL_STAGES.join(", ")}` };
+          }
+          if (row.probability !== undefined) row.probability = Math.min(100, Math.max(0, Math.round(Number(row.probability))));
+          if (row.value !== undefined) row.value = Number(row.value);
+          if (row.lead_id) {
+            const { data: own } = await admin.from("leads").select("id").eq("id", String(row.lead_id)).eq("user_id", userId).maybeSingle();
+            if (!own) return { error: "That lead is not in this account" };
+          }
+          let res;
+          if (name === "create_deal") {
+            if (!row.title || !row.company_name) return { error: "title and company_name are required" };
+            res = await admin.from("deals").insert({ ...row, user_id: userId }).select("id, title, stage").single();
+          } else {
+            delete row.deal_id;
+            if (!Object.keys(row).length) return { error: "Nothing to update" };
+            res = await admin.from("deals").update(row).eq("id", String(args.deal_id ?? "")).eq("user_id", userId).select("id, title, stage").maybeSingle();
+            if (!res.error && !res.data) return { error: "Deal not found" };
+          }
+          toolEvents.push({
+            name,
+            label: res.error ? "Deal change failed" : name === "create_deal" ? "Created deal" : "Updated deal",
+            status: res.error ? "error" : "ok",
+            detail: res.error ? res.error.message : `${res.data?.title ?? ""}`,
+          });
+          return res.error ? { error: res.error.message } : { success: true, deal: res.data };
+        }
+
+        case "delete_deal": {
+          const { data, error } = await admin.from("deals").delete().eq("id", String(args.deal_id ?? "")).eq("user_id", userId).select("id, title");
+          if (!error && !data?.length) return { error: "Deal not found" };
+          toolEvents.push({ name, label: error ? "Delete failed" : "Deleted deal", status: error ? "error" : "ok", detail: error ? error.message : data?.[0]?.title ?? "" });
           return error ? { error: error.message } : { success: true };
         }
 

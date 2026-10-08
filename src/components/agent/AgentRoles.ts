@@ -87,6 +87,16 @@ export const AGENT_TOOL_GROUPS: {
     ],
   },
   {
+    label: "CRM",
+    tools: [
+      { name: "find_lead_issues", label: "Find CRM data problems" },
+      { name: "list_deals", label: "See pipeline deals" },
+      { name: "create_deal", label: "Create deals" },
+      { name: "update_deal", label: "Update deals" },
+      { name: "delete_deal", label: "Delete deals" },
+    ],
+  },
+  {
     label: "Autonomy",
     tools: [{ name: "run_full_agent", label: "Trigger a full agent run" }],
   },
