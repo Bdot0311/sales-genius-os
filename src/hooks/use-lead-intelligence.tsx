@@ -58,10 +58,15 @@ export function useLeadIntelligence(leadIds: string[] = []) {
   }, [key]);
 
   const evaluate = useCallback(async (ids: string[], options: { force?: boolean } = {}) => {
-    const targets = ids.filter(Boolean).slice(0, 10);
-    if (targets.length === 0) return;
+    const all = ids.filter(Boolean);
+    if (all.length === 0) return;
 
-    setEvaluating((prev) => new Set([...prev, ...targets]));
+    // The backend accepts 10 leads per call (provider rate limits). Larger
+    // selections are evaluated in sequential batches of 10.
+    const batches: string[][] = [];
+    for (let i = 0; i < all.length; i += 10) batches.push(all.slice(i, i + 10));
+
+    setEvaluating((prev) => new Set([...prev, ...all]));
     try {
       // A stale access token is the common failure here (a tab or phone left
       // open). Refresh it first so the customer never sees a raw failure.
