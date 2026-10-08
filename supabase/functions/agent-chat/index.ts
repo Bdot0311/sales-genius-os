@@ -51,6 +51,7 @@ import { captureServerEvent } from "../_shared/posthog.ts";
 import { getSignatureHtml, appendSignatureToBody } from "../_shared/signature.ts";
 import { aiFetch } from "../_shared/ai-provider.ts";
 import { allowedToolsFor, scopeNoteFor } from "../_shared/agent-tool-scope.ts";
+import { OUTBOUND_TOOL_DEFS, runOutboundTool } from "../_shared/agent-outbound-tools.ts";
 import {
   blockedToolsFor,
   capToolsToTier,
@@ -358,6 +359,7 @@ const PARALLEL_SAFE_TOOLS = new Set([
 ]);
 
 const TOOLS = [
+  ...OUTBOUND_TOOL_DEFS,
   {
     type: "function",
     function: {
@@ -2062,6 +2064,10 @@ serve(async (req) => {
         return { owned: ids.filter((i) => owned.has(i)), unknown: ids.filter((i) => !owned.has(i)) };
       };
 
+      {
+        const handled = await runOutboundTool(name, args as Record<string, any>, { admin, userId, toolEvents: toolEvents as any });
+        if (handled !== undefined) return handled;
+      }
       switch (name) {
         case "list_leads": {
           /*

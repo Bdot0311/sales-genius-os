@@ -75,6 +75,9 @@ export const AGENT_TOOL_GROUPS: {
       { name: "delete_drafts", label: "Delete drafts" },
       { name: "list_sequences", label: "See sequences" },
       { name: "enroll_lead_in_sequence", label: "Enroll leads in sequences" },
+      { name: "list_sequence_enrollments", label: "See sequence enrollments" },
+      { name: "update_enrollment", label: "Pause, resume or stop a lead's sequence" },
+      { name: "update_sequence_status", label: "Activate or pause sequences" },
     ],
   },
   {
@@ -83,7 +86,31 @@ export const AGENT_TOOL_GROUPS: {
       { name: "list_recent_replies", label: "Read inbound replies" },
       { name: "list_sent_emails", label: "Read sent inbox history" },
       { name: "get_email_thread", label: "Read a full email thread" },
+      { name: "classify_reply", label: "Tag replies and mark read" },
       { name: "delete_inbox_threads", label: "Delete inbox threads" },
+    ],
+  },
+  {
+    label: "Targeting & campaign assets",
+    tools: [
+      { name: "list_icp_profiles", label: "Read ICP profiles" },
+      { name: "update_icp_profile", label: "Edit ICP targeting" },
+      { name: "list_campaign_briefs", label: "Read campaign briefs" },
+      { name: "save_campaign_brief", label: "Create or edit campaign briefs" },
+      { name: "list_email_templates", label: "Read email templates" },
+      { name: "save_email_template", label: "Create or edit templates" },
+      { name: "list_objections", label: "Read objection library" },
+      { name: "save_objection", label: "Create or edit objection talk tracks" },
+    ],
+  },
+  {
+    label: "Deliverability & performance",
+    tools: [
+      { name: "list_sending_accounts", label: "See mailbox health" },
+      { name: "update_sending_account", label: "Pause mailboxes or change limits" },
+      { name: "list_deliverability_alerts", label: "Read deliverability alerts" },
+      { name: "resolve_deliverability_alert", label: "Resolve deliverability alerts" },
+      { name: "get_outbound_stats", label: "Read open and reply rates" },
     ],
   },
   {

@@ -99,6 +99,35 @@ export const CRM_TOOLS = [
   "delete_deal",
 ];
 
+/** ICP upkeep belongs with sourcing. */
+export const ICP_TOOLS = ["list_icp_profiles", "update_icp_profile"];
+
+/** Campaign assets and sequence control for email-facing agents. */
+export const CAMPAIGN_TOOLS = [
+  "list_sequence_enrollments",
+  "update_enrollment",
+  "update_sequence_status",
+  "list_email_templates",
+  "save_email_template",
+  "list_objections",
+  "save_objection",
+  "list_campaign_briefs",
+  "save_campaign_brief",
+  "get_outbound_stats",
+];
+
+/** Inbox triage. */
+export const INBOX_TOOLS = ["classify_reply"];
+
+/** Mailbox health and deliverability. */
+export const DELIVERABILITY_TOOLS = [
+  "list_sending_accounts",
+  "update_sending_account",
+  "list_deliverability_alerts",
+  "resolve_deliverability_alert",
+  "get_outbound_stats",
+];
+
 export const FULL_CYCLE_EXTRA_TOOLS = ["run_full_agent"];
 
 /** Every tool a custom build can be granted. */
@@ -109,6 +138,10 @@ export const ALL_AGENT_TOOLS = [
     ...OUTREACH_TOOLS,
     ...REPLY_TOOLS,
     ...CRM_TOOLS,
+    ...ICP_TOOLS,
+    ...CAMPAIGN_TOOLS,
+    ...INBOX_TOOLS,
+    ...DELIVERABILITY_TOOLS,
     ...FULL_CYCLE_EXTRA_TOOLS,
   ]),
 ];
@@ -118,7 +151,7 @@ export const ALL_AGENT_TOOLS = [
 // an agent that says "I can't do that" for work it is supposed to own.
 const ROLE_TOOLS: Record<Exclude<AgentRole, "custom">, string[]> = {
   full_cycle: ALL_AGENT_TOOLS,
-  lead_gen: [...CORE_TOOLS, ...LEAD_GEN_TOOLS],
+  lead_gen: [...CORE_TOOLS, ...LEAD_GEN_TOOLS, ...ICP_TOOLS],
   outreach: [
     ...CORE_TOOLS,
     ...OUTREACH_TOOLS,
@@ -126,8 +159,12 @@ const ROLE_TOOLS: Record<Exclude<AgentRole, "custom">, string[]> = {
     "research_leads",
     "score_leads",
     "update_lead",
+    ...CAMPAIGN_TOOLS,
+    "list_icp_profiles",
+    "list_sending_accounts",
+    "list_deliverability_alerts",
   ],
-  replies: [...CORE_TOOLS, ...REPLY_TOOLS],
+  replies: [...CORE_TOOLS, ...REPLY_TOOLS, ...INBOX_TOOLS, "list_objections", "list_sequence_enrollments", "update_enrollment"],
 };
 
 
@@ -240,6 +277,23 @@ export const TOOL_CATALOG: Record<string, string> = {
     "Read one full conversation: every outbound email to that person plus their inbound replies. Required before replying or following up in an existing thread.",
   delete_inbox_threads: "Permanently delete inbox threads (destructive).",
   run_full_agent: "Run the whole autonomous cycle end to end.",
+  list_icp_profiles: "Read the ICP definitions.",
+  update_icp_profile: "Edit ICP targeting: industries, titles, seniority, geos, size, pains, signals, exclusions.",
+  list_sequence_enrollments: "See which leads are in which sequence and their next send.",
+  update_enrollment: "Pause, resume or stop one lead's sequence.",
+  update_sequence_status: "Activate or pause a whole sequence.",
+  list_email_templates: "Read saved email templates.",
+  save_email_template: "Create or edit an email template.",
+  list_objections: "Read the objection and competitor library.",
+  save_objection: "Create or edit an objection/competitor talk track.",
+  list_campaign_briefs: "Read campaign briefs (offer, proof, forbidden claims).",
+  save_campaign_brief: "Create or edit a campaign brief.",
+  get_outbound_stats: "Sent, open, click and reply rates, overall and per mailbox.",
+  classify_reply: "Tag an inbound reply (interested, objection, unsubscribe...) or mark it read.",
+  list_sending_accounts: "See sending mailboxes: status, limits, sent today, reputation, warm-up.",
+  update_sending_account: "Pause/resume a mailbox or change its daily limit.",
+  list_deliverability_alerts: "Read open deliverability alerts.",
+  resolve_deliverability_alert: "Mark a deliverability alert resolved.",
 };
 
 /** Tools that only make sense with these other tools also granted. */
@@ -268,6 +322,16 @@ const TOOL_PREREQUISITES: Record<string, string[]> = {
   delete_leads: ["list_leads"],
   find_leads: ["list_leads"],
   run_full_agent: ["get_agent_status"],
+  update_icp_profile: ["list_icp_profiles"],
+  update_enrollment: ["list_sequence_enrollments"],
+  update_sequence_status: ["list_sequences"],
+  list_sequence_enrollments: ["list_sequences"],
+  save_email_template: ["list_email_templates"],
+  save_objection: ["list_objections"],
+  save_campaign_brief: ["list_campaign_briefs"],
+  classify_reply: ["list_recent_replies"],
+  update_sending_account: ["list_sending_accounts"],
+  resolve_deliverability_alert: ["list_deliverability_alerts"],
 };
 
 export const DESTRUCTIVE_TOOLS = ["delete_leads", "delete_drafts", "delete_inbox_threads", "delete_deal"];
