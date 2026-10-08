@@ -110,6 +110,13 @@ export const CHANGELOG: ChangelogEntry[] = [
           "Custom agent builds have a new CRM group: find bad lead records (missing or invalid emails, duplicates, missing names or companies, stale stages), fix contact details, and create, update or remove pipeline deals.",
         href: "/dashboard/agent/chat",
       },
+      {
+        tag: "new",
+        title: "Agents can work across all of outbound",
+        description:
+          "Agents can now edit your ICP, pause or resume sequences and individual leads, tag replies, check mailbox health and deliverability alerts, pause a mailbox or change its daily limit, manage templates, objection talk tracks and campaign briefs, and report open and reply rates. Pick any of these when you build a custom agent.",
+        href: "/dashboard/agent/chat",
+      },
     ],
   },
   {
