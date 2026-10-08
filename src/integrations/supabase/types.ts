@@ -657,6 +657,94 @@ export type Database = {
           },
         ]
       }
+      agent_run_mutations: {
+        Row: {
+          created_at: string
+          mutation_key: string
+          thread_id: string
+          tool_name: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          mutation_key: string
+          thread_id: string
+          tool_name?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          mutation_key?: string
+          thread_id?: string
+          tool_name?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_run_mutations_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "agent_chat_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_run_steps: {
+        Row: {
+          error: string | null
+          finished_at: string | null
+          id: string
+          messages: Json
+          run_pass: number
+          started_at: string
+          status: string
+          step_index: number
+          thread_id: string
+          tool_calls: Json
+          tool_results: Json
+          usage: Json | null
+          user_id: string
+        }
+        Insert: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          messages: Json
+          run_pass?: number
+          started_at?: string
+          status?: string
+          step_index: number
+          thread_id: string
+          tool_calls?: Json
+          tool_results?: Json
+          usage?: Json | null
+          user_id: string
+        }
+        Update: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          messages?: Json
+          run_pass?: number
+          started_at?: string
+          status?: string
+          step_index?: number
+          thread_id?: string
+          tool_calls?: Json
+          tool_results?: Json
+          usage?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_run_steps_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "agent_chat_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_step_metrics: {
         Row: {
           agent_config_id: string | null
@@ -4015,6 +4103,7 @@ export type Database = {
       }
       rescore_queue: {
         Row: {
+          claimed_at: string | null
           enqueued_at: string
           id: string
           lead_id: string
@@ -4024,6 +4113,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          claimed_at?: string | null
           enqueued_at?: string
           id?: string
           lead_id: string
@@ -4033,6 +4123,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          claimed_at?: string | null
           enqueued_at?: string
           id?: string
           lead_id?: string
@@ -6490,6 +6581,14 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      claim_rescore_items: {
+        Args: { p_row_ids: string[] }
+        Returns: {
+          id: string
+          lead_id: string
+          user_id: string
+        }[]
+      }
       claim_stripe_webhook_event: {
         Args: {
           _event_id: string
@@ -6582,6 +6681,7 @@ export type Database = {
       }
       get_maintenance_message: { Args: never; Returns: string }
       get_maintenance_status: { Args: never; Returns: boolean }
+      get_monthly_email_count: { Args: { p_user_id: string }; Returns: number }
       get_monthly_email_limit: {
         Args: { _plan: Database["public"]["Enums"]["subscription_plan"] }
         Returns: number
