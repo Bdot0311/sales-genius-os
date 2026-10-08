@@ -13,6 +13,7 @@ import {
 } from "../_shared/draft-one.ts";
 import { leadIntelligenceMode } from "../_shared/lead-intelligence.ts";
 import { chooseMailbox, type RoutableMailbox } from "../_shared/mailbox-routing.ts";
+import { invalidArgsResult, validateToolArgs, type ToolSchema } from "../_shared/tool-args.ts";
 import {
   AGENT_MAX_ATTEMPTS,
   AGENT_TARGET_SCORE,
@@ -1427,6 +1428,19 @@ serve(async (req) => {
     const forceAudit = allowedTools.includes("audit_email") && wantsCopyAudit(userMessage);
     if (forceAudit) console.log("[agent-chat] copy review: requiring audit_email");
     const scopedTools = TOOLS.filter((t: any) => allowedTools.includes(t.function?.name));
+    /*
+     * The schemas, indexed by the name the model calls.
+     *
+     * Built from TOOLS rather than written out again, so a tool added to that
+     * array — including anything spread in from OUTBOUND_TOOL_DEFS — is
+     * validated the moment it exists, and a schema can never drift from the
+     * one the model was actually shown.
+     */
+    const TOOL_SCHEMAS = new Map<string, ToolSchema>(
+      (TOOLS as any[])
+        .filter((t) => t.function?.name)
+        .map((t) => [String(t.function.name), (t.function.parameters ?? {}) as ToolSchema]),
+    );
     const scopeNote = scopeNoteFor(config as any) + tierScopeNote(agentTier, tierRemoved);
 
     const invokeFn = async (name: string, body: unknown): Promise<any> => {
@@ -2032,7 +2046,8 @@ serve(async (req) => {
       };
     };
 
-    const runTool = async (name: string, args: Record<string, any>): Promise<unknown> => {
+    const runTool = async (name: string, rawArgs: Record<string, any>): Promise<unknown> => {
+      let args: Record<string, any> = rawArgs;
       // Hard scope gate: even if the model hallucinates a tool it wasn't given,
       // an out-of-role action never runs.
       if (!allowedTools.includes(name)) {
@@ -2042,6 +2057,28 @@ serve(async (req) => {
             `This agent's role (${config?.role ?? "full_cycle"}) does not allow "${name}". Tell the user this agent is scoped differently and suggest switching agents. Do not attempt another tool to work around it.`,
         };
       }
+
+      /*
+       * The call checked against the schema the model was given.
+       *
+       * Thirty-five tools declare parameters and nothing read them back, so a
+       * call that did not match its own schema became strange behaviour
+       * further down rather than a rejection. The worst of it was silent: a
+       * missing lead_ids read as an empty list and the tool reported doing
+       * nothing to nobody, and unparseable arguments became {} — which for
+       * list_leads is every lead on the account.
+       *
+       * Refused the same way an out-of-scope tool is, because the model
+       * already recovers from that shape. Arguments are coerced first: "25"
+       * for a number and "true" for a boolean are what models send and what
+       * the hand-written call sites accepted anyway.
+       */
+      const checked = validateToolArgs(TOOL_SCHEMAS.get(name), args);
+      if (!checked.ok) {
+        console.warn(`[agent-chat] ${name} called with invalid arguments: ${checked.errors.join("; ")}`);
+        return invalidArgsResult(name, checked.errors);
+      }
+      args = checked.args;
       // Which of these ids the account actually owns.
       //
       // A batch arrived with three ids the user does not have — carried over
@@ -4658,13 +4695,35 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
       // Anything that writes, sends or hits an external provider stays serial so
       // we don't trip rate limiters or double-send.
       const runOne = async (call: any) => {
-        let args: Record<string, any> = {};
-        try {
-          args = JSON.parse(call.function?.arguments ?? "{}");
-        } catch {
-          args = {};
-        }
         const toolName = call.function?.name ?? "";
+        /*
+         * Arguments that will not parse are not no arguments.
+         *
+         * This swallowed the error and ran the tool with {}, which for a tool
+         * whose parameters are all filters means no filters: list_leads with
+         * an unparseable body returned every lead on the account, and the
+         * model had no idea its call had been mangled.
+         */
+        let args: Record<string, any> = {};
+        const rawArguments = call.function?.arguments;
+        if (rawArguments !== undefined && rawArguments !== null && String(rawArguments).trim() !== "") {
+          try {
+            const parsed = JSON.parse(String(rawArguments));
+            if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+              throw new Error("not an object");
+            }
+            args = parsed;
+          } catch {
+            console.warn(`[agent-chat] ${toolName} sent arguments that do not parse as JSON`);
+            return {
+              role: "tool",
+              tool_call_id: call.id,
+              content: JSON.stringify(
+                invalidArgsResult(toolName, ["arguments were not valid JSON for an object"]),
+              ),
+            };
+          }
+        }
         const mutationKey = mutationKeyFor(toolName, args);
         if (mutationKey && completedMutationKeys.has(mutationKey)) {
           return {
