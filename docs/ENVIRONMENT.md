@@ -52,13 +52,14 @@ without them.
 
 ---
 
-## Background worker
+## Agent tuning
 
 Tuning, not credentials. Safe to leave unset.
 
 | Variable | Read by | Missing |
 |---|---|---|
 | `AGENT_JOB_CONCURRENCY` | `process-agent-jobs` | Defaults to 4 drafts in flight per pass. Raising it past what the AI provider will serve turns slowness into failed leads rather than speed, because a rate-limited draft is settled, not queued forever |
+| `AGENT_TURN_TOKEN_BUDGET` | `agent-chat` | Defaults to 400,000 tokens for one turn, carried across a resume so a restart cannot pay for the same work twice. A turn that hits it stops and says so; it is a runaway stop, not a cost control, and values under 50,000 are ignored because a turn below that cannot finish anything |
 
 ---
 

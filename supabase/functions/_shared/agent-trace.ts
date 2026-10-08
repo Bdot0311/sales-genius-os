@@ -45,6 +45,8 @@ export interface StepRecord {
 export interface StoredStep {
   step_index: number;
   messages: unknown;
+  /** Carries cumulative_tokens, so a resume continues the spend rather than restarting it. */
+  usage?: unknown;
 }
 
 export interface TraceStore {
@@ -122,6 +124,8 @@ export function messagesFitInTrace(messages: unknown[]): boolean {
 export interface Resume {
   messages: unknown[];
   nextStep: number;
+  /** What the turn had already spent when it died. */
+  usage?: unknown;
 }
 
 /**
@@ -144,7 +148,7 @@ export function resumeFrom(stored: StoredStep | null, maxSteps: number): Resume 
   // The turn already used its whole budget; there is nothing to resume into.
   if (nextStep >= maxSteps) return null;
 
-  return { messages, nextStep };
+  return { messages, nextStep, usage: stored.usage };
 }
 
 // ─── Mutations that already happened ────────────────────────────────────────
@@ -194,7 +198,7 @@ export function supabaseTraceStore(admin: any): TraceStore {
     async latestStep(threadId, runPass) {
       const { data, error } = await admin
         .from("agent_run_steps")
-        .select("step_index, messages")
+        .select("step_index, messages, usage")
         .eq("thread_id", threadId)
         .eq("run_pass", runPass)
         .eq("status", "done")

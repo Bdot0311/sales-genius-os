@@ -15,6 +15,7 @@ import { leadIntelligenceMode } from "../_shared/lead-intelligence.ts";
 import { chooseMailbox, type RoutableMailbox } from "../_shared/mailbox-routing.ts";
 import { invalidArgsResult, validateToolArgs, type ToolSchema } from "../_shared/tool-args.ts";
 import { mergeCompleted, resultOk, resumeFrom, supabaseTraceStore, trimResult } from "../_shared/agent-trace.ts";
+import { budgetExhausted, budgetNote, carriedTokens, tokensIn, turnTokenBudget } from "../_shared/agent-budget.ts";
 import {
   AGENT_MAX_ATTEMPTS,
   AGENT_TARGET_SCORE,
@@ -4569,13 +4570,26 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
      */
     const trace = supabaseTraceStore(admin);
     let resumeAt = 0;
+    /*
+     * What this turn has spent, across every step and every resume.
+     *
+     * outOfTime() was the only ceiling, and a resumed turn restarts its clock
+     * while its spend carries on — so a turn could loop through a restart and
+     * pay for the whole thing twice with nothing to stop it.
+     */
+    const tokenBudget = turnTokenBudget(Deno.env.get("AGENT_TURN_TOKEN_BUDGET"));
+    let tokensUsed = 0;
+    let stoppedOnBudget = false;
     try {
       const resumed = resumeFrom(await trace.latestStep(threadId, runPass), MAX_TURN_STEPS);
       if (resumed) {
         messages.length = 0;
         messages.push(...(resumed.messages as any[]));
         resumeAt = resumed.nextStep;
-        console.log(`[agent-chat] resuming thread ${threadId} pass ${runPass} at step ${resumeAt}`);
+        tokensUsed = carriedTokens(resumed.usage);
+        console.log(
+          `[agent-chat] resuming thread ${threadId} pass ${runPass} at step ${resumeAt}, ${tokensUsed} tokens already spent`,
+        );
       }
       // What already ran, from the client's list and from what actually
       // completed. Neither survives everything on its own.
@@ -4604,6 +4618,15 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
     const REASONING_STEPS = 5;
 
     for (let step = resumeAt; step < MAX_TURN_STEPS; step++) {
+      /*
+       * Checked before the call, not after: knowing the budget is gone once
+       * the money is spent is a report, not a limit.
+       */
+      if (budgetExhausted(tokensUsed, tokenBudget)) {
+        stoppedOnBudget = true;
+        console.warn(`[agent-chat] turn stopped on budget: ${tokensUsed}/${tokenBudget} tokens`);
+        break;
+      }
       if (outOfTime()) {
         ranOutOfTime = true;
         break;
@@ -4693,6 +4716,9 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
       })();
 
       const data = await res.json();
+      // Counted here, where the cost is actually incurred, so the check at the
+      // top of the next step is looking at a real number.
+      tokensUsed += tokensIn(data?.usage);
       const choice = data.choices?.[0]?.message;
       if (!choice) break;
       messages.push(choice);
@@ -4917,7 +4943,7 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
             const r = byId.get(c.id);
             return trimResult(c.function?.name ?? "", resultOk(r?.content), r?.content ?? null);
           }),
-          usage: data?.usage ?? null,
+          usage: { ...(data?.usage ?? {}), cumulative_tokens: tokensUsed },
           status: "done",
         });
       } catch (e) {
@@ -4990,6 +5016,20 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
       finalText += "\n\nStill more to do here — continuing…";
     } else if (stoppedShort) {
       finalText += `\n\n${stoppedShortNote}`;
+    }
+
+    /*
+     * A turn that stopped on spend says so.
+     *
+     * Appended rather than branched into the chain above because it is true
+     * alongside whatever else happened: the model may have produced a perfectly
+     * good summary of the work it did before the budget ran out, and that
+     * summary should survive. What must not survive is the impression that the
+     * request finished.
+     */
+    if (stoppedOnBudget) {
+      const note = budgetNote(tokensUsed, tokenBudget);
+      finalText = finalText ? `${finalText}\n\n${note}` : note;
     }
 
     // The model is not the only witness to its own actions.
