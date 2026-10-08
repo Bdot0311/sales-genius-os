@@ -95,6 +95,72 @@ const Auth = () => {
   
   // Track if we've already handled the recovery to prevent double-processing
   const recoveryHandled = useRef(false);
+  // And whether this page has already consumed the link it arrived with.
+  const linkHandled = useRef(false);
+
+  /*
+   * Claim a Supabase auth link, and nothing else.
+   *
+   * The client is created with detectSessionInUrl: false. It used to do this
+   * itself, and that is what broke Google sign-in: it took the `?code=` Google
+   * returns to /auth — Lovable's code, exchangeable only with Lovable's
+   * verifier — failed, and spent it, so the real exchange that followed got
+   * "failed to exchange authorization code".
+   *
+   * Which means a recovery or confirmation link now has to be picked up here,
+   * and only when the URL actually carries one. The test is `type`: Supabase
+   * puts it on every link it sends, in the query or the hash, and Lovable's
+   * OAuth return never has one. A bare `?code=` is therefore not ours and is
+   * left strictly alone.
+   */
+  useEffect(() => {
+    if (linkHandled.current) return;
+
+    const rawHash = location.hash?.startsWith("#") ? location.hash.slice(1) : (location.hash ?? "");
+    const hashParams = new URLSearchParams(rawHash);
+    const queryParams = new URLSearchParams(location.search);
+
+    const accessToken = hashParams.get("access_token");
+    const refreshToken = hashParams.get("refresh_token");
+    const code = queryParams.get("code");
+    // Read from both: recovery redirects often put this in the hash.
+    const linkType = queryParams.get("type") ?? hashParams.get("type");
+
+    const hashLink = !!(accessToken && refreshToken);
+    const codeLink = !!(code && linkType);
+    if (!hashLink && !codeLink) return;
+
+    linkHandled.current = true;
+
+    void (async () => {
+      const { error } = hashLink
+        ? await supabase.auth.setSession({
+            access_token: accessToken as string,
+            refresh_token: refreshToken as string,
+          })
+        : await supabase.auth.exchangeCodeForSession(code as string);
+
+      if (error) {
+        // A reset link opened in a different browser from the one that asked
+        // for it cannot be completed, and saying so beats an idle spinner.
+        setCheckingRecovery(false);
+        toast({
+          title: linkType === "recovery" ? "That reset link didn't work" : "That link didn't work",
+          description: `${error.message}. Request a new one and open it in this browser.`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Take the credentials out of the address bar once they are spent, which
+      // is what detectSessionInUrl did for the hash before this. The query is
+      // left as it is: `type` is read from it, and useLocation would not see
+      // this change anyway.
+      if (hashLink && typeof window !== "undefined") {
+        window.history.replaceState({}, "", `${window.location.pathname}${window.location.search}`);
+      }
+    })();
+  }, [location.hash, location.search, toast]);
 
   useEffect(() => {
     // Keep checking state in sync if the URL changes (e.g., hash-only changes)

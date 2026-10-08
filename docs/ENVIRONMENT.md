@@ -52,6 +52,16 @@ without them.
 
 ---
 
+## Background worker
+
+Tuning, not credentials. Safe to leave unset.
+
+| Variable | Read by | Missing |
+|---|---|---|
+| `AGENT_JOB_CONCURRENCY` | `process-agent-jobs` | Defaults to 4 drafts in flight per pass. Raising it past what the AI provider will serve turns slowness into failed leads rather than speed, because a rate-limited draft is settled, not queued forever |
+
+---
+
 ## AI
 
 `_shared/ai-provider.ts` routes to a direct provider account first and falls back

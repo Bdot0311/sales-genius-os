@@ -203,8 +203,11 @@ describe("the live send path uses the router", () => {
   it("keeps the least-used-first rotation, now over the eligible set", () => {
     // Narrowing orderByLoad's input is the whole change: a capped mailbox is
     // dropped, and the surviving ones rotate exactly as before.
-    expect(bare).not.toContain("orderByLoad(sendable)");
+    // Scheduling legitimately orders the unfiltered set: a mailbox at its cap
+    // today may have room on the day the send actually goes. The rule is about
+    // the immediate path, so it is pinned to that and not to the file.
     expect(bare).toContain("orderByLoad(kept)");
+    expect(bare).toContain("const { kept, reason } = eligibleToSend(sendable);");
   });
 
   it("carries the router's own sentence when nothing may send", () => {
