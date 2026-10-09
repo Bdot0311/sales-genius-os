@@ -1,6 +1,7 @@
 import { Component, Suspense, lazy, useState, useEffect, useRef, type ComponentType, type ErrorInfo, type ReactNode } from "react";
 import { CampaignSetupHost } from "@/components/CampaignSetupHost";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ThemeProvider } from "next-themes";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { isPostHogEnabled, posthog } from "@/lib/posthog";
 import { capturePageview } from "@/lib/analytics-events";
@@ -486,6 +487,7 @@ const AuthSideEffects = () => {
 
 const App = () => {
   return (
+  <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} storageKey="outreign-theme">
   <QueryClientProvider client={queryClient}>
     <DeferredUIShell>
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
