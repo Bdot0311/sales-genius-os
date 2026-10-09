@@ -92,6 +92,20 @@ export const ROADMAP: RoadmapItem[] = [
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-09-light-mode",
+    date: "2026-10-09",
+    title: "Light mode is here",
+    summary: "Switch the whole app between dark and light with the new toggle in the top-right corner.",
+    items: [
+      {
+        tag: "new",
+        title: "Light or dark, your choice",
+        description:
+          "A sun/moon toggle now sits in the top-right corner of the dashboard and the website. Your choice is remembered on this device, so the app opens the way you left it.",
+      },
+    ],
+  },
+  {
     id: "2026-10-08-saved-leads-one-page",
     date: "2026-10-08",
     title: "Your whole lead list on one page",

@@ -49,6 +49,7 @@ import { refreshPushSubscription } from "@/lib/push";
 import { ServiceStatusBanner } from "@/components/dashboard/ServiceStatusBanner";
 import { BackgroundWorkBar } from "@/components/dashboard/BackgroundWorkBar";
 import { WhatsNewButton } from "@/components/dashboard/WhatsNewButton";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 
 
@@ -402,6 +403,9 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <div className="flex-1 min-w-0" />
           
           <div className="flex min-w-0 flex-shrink items-center gap-1 sm:gap-3">
+            {/* Light/dark display toggle */}
+            <ThemeToggle />
+
             {/* What's new — badge only while there's an unread update */}
             <WhatsNewButton />
 

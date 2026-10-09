@@ -55,7 +55,7 @@ export const DifferentiationSection = () => {
               fontWeight: 800,
               lineHeight: 1.08,
               letterSpacing: "-0.02em",
-              color: "hsl(0 0% 95%)",
+              color: "hsl(var(--foreground))",
             }}
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -100,7 +100,7 @@ export const DifferentiationSection = () => {
                   show: { opacity: 1, y: 0, transition: { duration: 0.55, ease } },
                 }}
               >
-                <span className="flex-1 text-sm line-through leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.22)" }}>
+                <span className="flex-1 text-sm line-through leading-relaxed" style={{ color: "hsl(var(--foreground) / 0.22)" }}>
                   {row.legacy}
                 </span>
 
@@ -139,7 +139,7 @@ export const DifferentiationSection = () => {
               Start free, then pick your plan
               <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
             </motion.a>
-            <p className="text-xs" style={{ color: "hsl(0 0% 100% / 0.25)" }}>
+            <p className="text-xs" style={{ color: "hsl(var(--foreground) / 0.25)" }}>
               Free plan · 14-day trial on paid plans · Cancel anytime
             </p>
           </motion.div>

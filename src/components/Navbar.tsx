@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Menu, X, ArrowRight } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -71,8 +72,8 @@ export const Navbar = () => {
       }`}
       style={{
         top: 'env(safe-area-inset-top, 0px)',
-        background: isScrolled ? 'hsl(261 75% 2% / 0.92)' : 'transparent',
-        borderColor: isScrolled ? 'hsl(261 75% 50% / 0.18)' : 'transparent',
+        background: isScrolled ? 'hsl(var(--background) / 0.92)' : 'transparent',
+        borderColor: isScrolled ? 'hsl(var(--primary) / 0.18)' : 'transparent',
       }}
       role="navigation"
       aria-label="Main navigation"
@@ -113,10 +114,7 @@ export const Navbar = () => {
                 <button
                   key={link.label}
                   onClick={() => handleNavigation(link.path)}
-                  className="px-3 lg:px-4 min-h-[40px] text-sm transition-colors rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  style={{ color: 'hsl(0 0% 100% / 0.7)' }}
-                  onMouseEnter={e => (e.currentTarget.style.color = 'hsl(0 0% 100% / 0.85)')}
-                  onMouseLeave={e => (e.currentTarget.style.color = 'hsl(0 0% 100% / 0.7)')}
+                  className="px-3 lg:px-4 min-h-[40px] text-sm transition-colors rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground/70 hover:text-foreground/85"
                 >
                   {link.label}
                 </button>
@@ -125,12 +123,12 @@ export const Navbar = () => {
 
             {/* CTA Buttons */}
             <div className="flex items-center gap-3">
+              {/* Light/dark display toggle */}
+              <ThemeToggle />
+
               {/* De-emphasized Login */}
               <button
-                className="hidden md:inline-flex items-center min-h-[40px] px-2 text-sm transition-colors"
-                style={{ color: 'hsl(0 0% 100% / 0.65)' }}
-                onMouseEnter={e => (e.currentTarget.style.color = 'hsl(0 0% 100% / 0.75)')}
-                onMouseLeave={e => (e.currentTarget.style.color = 'hsl(0 0% 100% / 0.65)')}
+                className="hidden md:inline-flex items-center min-h-[40px] px-2 text-sm transition-colors text-foreground/65 hover:text-foreground/80"
                 onClick={() => navigate("/auth")}
               >
                 Log in

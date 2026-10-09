@@ -75,32 +75,32 @@ export const FooterSection = () => {
                   height={32}
                 />
                 <span className="text-lg font-semibold">
-                  <span style={{ color: "hsl(0 0% 92%)" }}>Out</span>
+                  <span style={{ color: "hsl(var(--foreground))" }}>Out</span>
                   <span style={{ color: "hsl(261 75% 65%)" }}>Reign</span>
                 </span>
               </div>
-              <p className="text-sm max-w-xs leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
+              <p className="text-sm max-w-xs leading-relaxed" style={{ color: "hsl(var(--foreground) / 0.7)" }}>
                 Plain-English lead discovery and outbound workflow software for B2B teams that want to move from prospecting to outreach faster.
               </p>
             </div>
 
             {/* Product */}
             <div>
-              <h3 className="font-semibold text-sm mb-4" style={{ color: "hsl(0 0% 92%)" }}>Product</h3>
+              <h3 className="font-semibold text-sm mb-4" style={{ color: "hsl(var(--foreground))" }}>Product</h3>
               <ul className="space-y-3">
                 {footerLinks.product.map((link) => (
                   <li key={link.label}>
                     {link.href.startsWith('/') ? (
                       <Link 
                         to={link.href} 
-                        className="text-sm transition-colors duration-150 inline-flex items-center py-2 min-h-[40px] min-w-[40px] px-1" style={{ color: "hsl(0 0% 100% / 0.7)" }} onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")} onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.7)")}
+                        className="text-sm transition-colors duration-150 inline-flex items-center py-2 min-h-[40px] min-w-[40px] px-1" style={{ color: "hsl(var(--foreground) / 0.7)" }} onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")} onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(var(--foreground) / 0.7)")}
                       >
                         {link.label}
                       </Link>
                     ) : (
                       <a 
                         href={link.href} 
-                        className="text-sm transition-colors duration-150 inline-flex items-center py-2 min-h-[40px] min-w-[40px] px-1" style={{ color: "hsl(0 0% 100% / 0.7)" }} onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")} onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.7)")}
+                        className="text-sm transition-colors duration-150 inline-flex items-center py-2 min-h-[40px] min-w-[40px] px-1" style={{ color: "hsl(var(--foreground) / 0.7)" }} onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")} onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(var(--foreground) / 0.7)")}
                       >
                         {link.label}
                       </a>
@@ -112,13 +112,13 @@ export const FooterSection = () => {
 
             {/* Compare */}
             <div>
-              <h3 className="font-semibold text-sm mb-4" style={{ color: "hsl(0 0% 92%)" }}>Compare</h3>
+              <h3 className="font-semibold text-sm mb-4" style={{ color: "hsl(var(--foreground))" }}>Compare</h3>
               <ul className="space-y-3">
                 {footerLinks.compare.map((link) => (
                   <li key={link.label}>
                     <Link
                       to={link.href}
-                      className="text-sm transition-colors duration-150 inline-flex items-center py-2 min-h-[40px] min-w-[40px] px-1" style={{ color: "hsl(0 0% 100% / 0.7)" }} onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")} onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.7)")}
+                      className="text-sm transition-colors duration-150 inline-flex items-center py-2 min-h-[40px] min-w-[40px] px-1" style={{ color: "hsl(var(--foreground) / 0.7)" }} onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")} onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(var(--foreground) / 0.7)")}
                     >
                       {link.label}
                     </Link>
@@ -129,13 +129,13 @@ export const FooterSection = () => {
 
             {/* Resources */}
             <div>
-              <h3 className="font-semibold text-sm mb-4" style={{ color: "hsl(0 0% 92%)" }}>Resources</h3>
+              <h3 className="font-semibold text-sm mb-4" style={{ color: "hsl(var(--foreground))" }}>Resources</h3>
               <ul className="space-y-3">
                 {footerLinks.resources.map((link) => (
                   <li key={link.label}>
                     <Link 
                       to={link.href} 
-                      className="text-sm transition-colors duration-150 inline-flex items-center py-2 min-h-[40px] min-w-[40px] px-1" style={{ color: "hsl(0 0% 100% / 0.7)" }} onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")} onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.7)")}
+                      className="text-sm transition-colors duration-150 inline-flex items-center py-2 min-h-[40px] min-w-[40px] px-1" style={{ color: "hsl(var(--foreground) / 0.7)" }} onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")} onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(var(--foreground) / 0.7)")}
                     >
                       {link.label}
                     </Link>
@@ -146,13 +146,13 @@ export const FooterSection = () => {
 
             {/* Legal */}
             <div>
-              <h3 className="font-semibold text-sm mb-4" style={{ color: "hsl(0 0% 92%)" }}>Legal</h3>
+              <h3 className="font-semibold text-sm mb-4" style={{ color: "hsl(var(--foreground))" }}>Legal</h3>
               <ul className="space-y-3">
                 {footerLinks.legal.map((link) => (
                   <li key={link.label}>
                     <Link 
                       to={link.href} 
-                      className="text-sm transition-colors duration-150 inline-flex items-center py-2 min-h-[40px] min-w-[40px] px-1" style={{ color: "hsl(0 0% 100% / 0.7)" }} onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")} onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.7)")}
+                      className="text-sm transition-colors duration-150 inline-flex items-center py-2 min-h-[40px] min-w-[40px] px-1" style={{ color: "hsl(var(--foreground) / 0.7)" }} onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")} onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(var(--foreground) / 0.7)")}
                     >
                       {link.label}
                     </Link>
@@ -164,16 +164,16 @@ export const FooterSection = () => {
 
           {/* Guides — latest articles, so every content page has one real internal link */}
           <div className="mb-12 pt-8 border-t" style={{ borderColor: "hsl(261 75% 50% / 0.18)" }}>
-            <h3 className="font-semibold text-sm mb-4" style={{ color: "hsl(0 0% 92%)" }}>Guides &amp; popular articles</h3>
+            <h3 className="font-semibold text-sm mb-4" style={{ color: "hsl(var(--foreground))" }}>Guides &amp; popular articles</h3>
             <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-1">
               {footerLinks.guides.map((link) => (
                 <li key={link.href}>
                   <Link
                     to={link.href}
                     className="text-sm transition-colors duration-150 inline-flex items-center py-2 min-h-[40px] px-1"
-                    style={{ color: "hsl(0 0% 100% / 0.7)" }}
+                    style={{ color: "hsl(var(--foreground) / 0.7)" }}
                     onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")}
-                    onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.7)")}
+                    onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(var(--foreground) / 0.7)")}
                   >
                     {link.label}
                   </Link>
@@ -186,30 +186,30 @@ export const FooterSection = () => {
 
           {/* Google API Disclosure */}
           <div id="google-api-disclosure" className="mb-8 p-6 rounded-xl border" style={{ background: "hsl(240 30% 10%)", borderColor: "hsl(261 75% 50% / 0.25)" }}>
-            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: "hsl(0 0% 92%)" }}>
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: "hsl(var(--foreground))" }}>
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "hsl(261 75% 65%)" }}><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
               How OutReign Uses Google User Data
             </h3>
-            <div className="text-sm space-y-3" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
+            <div className="text-sm space-y-3" style={{ color: "hsl(var(--foreground) / 0.7)" }}>
               <p>
                 OutReign requests access to your Gmail data solely to enable outbound email features within the platform. Specifically, we access your Gmail account to:
               </p>
               <ul className="space-y-1.5 ml-4">
                 <li className="flex items-start gap-2">
                   <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: "hsl(261 75% 55% / 0.6)" }} />
-                  <span><strong style={{ color: "hsl(0 0% 85%)" }}>Send outbound emails</strong>: messages composed and sent through OutReign on your behalf</span>
+                  <span><strong style={{ color: "hsl(var(--foreground) / 0.85)" }}>Send outbound emails</strong>: messages composed and sent through OutReign on your behalf</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: "hsl(261 75% 55% / 0.6)" }} />
-                  <span><strong style={{ color: "hsl(0 0% 85%)" }}>Read reply data</strong>: detect replies to your outreach for tracking and analytics</span>
+                  <span><strong style={{ color: "hsl(var(--foreground) / 0.85)" }}>Read reply data</strong>: detect replies to your outreach for tracking and analytics</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: "hsl(261 75% 55% / 0.6)" }} />
-                  <span><strong style={{ color: "hsl(0 0% 85%)" }}>Detect open events</strong>: tracking pixels to measure engagement with your sent emails</span>
+                  <span><strong style={{ color: "hsl(var(--foreground) / 0.85)" }}>Detect open events</strong>: tracking pixels to measure engagement with your sent emails</span>
                 </li>
               </ul>
               <p>
-                Our use of Google user data complies with the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: "hsl(261 75% 65%)" }}>Google API Services User Data Policy</a>, including the <strong style={{ color: "hsl(0 0% 85%)" }}>Limited Use</strong> requirements. We do not use Gmail data for advertising, we do not sell it to third parties, we do not use it to train AI models outside your account, and no human reads your messages.
+                Our use of Google user data complies with the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: "hsl(261 75% 65%)" }}>Google API Services User Data Policy</a>, including the <strong style={{ color: "hsl(var(--foreground) / 0.85)" }}>Limited Use</strong> requirements. We do not use Gmail data for advertising, we do not sell it to third parties, we do not use it to train AI models outside your account, and no human reads your messages.
               </p>
               <p>
                 You can revoke OutReign's access to your Gmail data at any time via your <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: "hsl(261 75% 65%)" }}>Google Account permissions</a> or by disconnecting the integration in your OutReign settings.
@@ -262,7 +262,7 @@ export const FooterSection = () => {
                 );
               })}
             </div>
-            <p className="text-sm text-center" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
+            <p className="text-sm text-center" style={{ color: "hsl(var(--foreground) / 0.6)" }}>
               © {new Date().getFullYear()} BDØT Industries LLC. All rights reserved.
             </p>
           </div>

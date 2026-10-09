@@ -113,7 +113,7 @@ export const FAQSection = () => {
                 fontWeight: 800,
                 lineHeight: 1.1,
                 letterSpacing: "-0.02em",
-                color: "hsl(0 0% 93%)",
+                color: "hsl(var(--foreground))",
               }}
             >
               Questions we actually
@@ -151,17 +151,17 @@ export const FAQSection = () => {
                 >
                   <AccordionTrigger
                     className="text-left py-5 hover:no-underline transition-colors duration-200 group"
-                    style={{ color: "hsl(0 0% 80%)" }}
+                    style={{ color: "hsl(var(--foreground) / 0.80)" }}
                   >
                     <span
-                      className="font-medium text-[15px] leading-snug group-hover:text-white transition-colors duration-200"
+                      className="font-medium text-[15px] leading-snug group-hover:text-foreground transition-colors duration-200"
                     >
                       {faq.question}
                     </span>
                   </AccordionTrigger>
                   <AccordionContent
                     className="pb-5 text-sm leading-relaxed"
-                    style={{ color: "hsl(0 0% 100% / 0.7)" }}
+                    style={{ color: "hsl(var(--foreground) / 0.7)" }}
                   >
                     {faq.answer}
                   </AccordionContent>
@@ -176,7 +176,7 @@ export const FAQSection = () => {
             }`}
             style={{ transitionDelay: "300ms" }}
           >
-            <p className="text-sm" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
+            <p className="text-sm" style={{ color: "hsl(var(--foreground) / 0.6)" }}>
               Still have questions?{" "}
               <a
                 href="/help"

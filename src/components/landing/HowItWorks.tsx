@@ -42,11 +42,11 @@ const steps = [
             style={{ borderBottom: i < 2 ? "1px solid hsl(261 75% 50% / 0.1)" : undefined }}
           >
             <div>
-              <p className="text-sm font-semibold" style={{ color: "hsl(0 0% 88%)" }}>{name}</p>
-              <p className="text-xs mt-0.5" style={{ color: "hsl(0 0% 100% / 0.6)" }}>{role}</p>
+              <p className="text-sm font-semibold" style={{ color: "hsl(var(--foreground) / 0.88)" }}>{name}</p>
+              <p className="text-xs mt-0.5" style={{ color: "hsl(var(--foreground) / 0.6)" }}>{role}</p>
             </div>
             <div className="flex items-center gap-2.5 flex-shrink-0">
-              <div className="h-1 w-14 rounded-full overflow-hidden" style={{ background: "hsl(0 0% 100% / 0.08)" }}>
+              <div className="h-1 w-14 rounded-full overflow-hidden" style={{ background: "hsl(var(--foreground) / 0.08)" }}>
                 <div className="h-full rounded-full" style={{ width: `${fit}%`, background: "linear-gradient(to right, hsl(261 75% 55%), hsl(280 80% 65%))" }} />
               </div>
               <span className="text-xs font-semibold" style={{ color: "hsl(261 75% 68%)" }}>{fit}%</span>
@@ -55,7 +55,7 @@ const steps = [
         ))}
         <div className="flex items-center gap-1.5 px-4 py-2.5" style={{ borderTop: "1px solid hsl(261 75% 50% / 0.1)" }}>
           <span style={{ color: "hsl(261 75% 62%)", fontSize: "10px" }}>✓</span>
-          <span className="text-[10px]" style={{ color: "hsl(0 0% 100% / 0.22)" }}>
+          <span className="text-[10px]" style={{ color: "hsl(var(--foreground) / 0.22)" }}>
             Business emails verified via SMTP + multi-source enrichment
           </span>
         </div>
@@ -81,10 +81,10 @@ const steps = [
           </span>
         </div>
         <div className="px-4 py-3 space-y-1.5">
-          <p className="text-[11px]" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
+          <p className="text-[11px]" style={{ color: "hsl(var(--foreground) / 0.6)" }}>
             Subject: Quick idea for Northline's outbound push
           </p>
-          <p className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
+          <p className="text-sm leading-relaxed" style={{ color: "hsl(var(--foreground) / 0.6)" }}>
             Hey Jordan, saw Northline is scaling the sales team in NYC and hiring SDRs right now. That usually means more pressure to build pipeline fast…
           </p>
         </div>
@@ -126,7 +126,7 @@ export const HowItWorks = () => {
               fontWeight: 800,
               lineHeight: 1.06,
               letterSpacing: "-0.02em",
-              color: "hsl(0 0% 95%)",
+              color: "hsl(var(--foreground))",
             }}
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -177,10 +177,10 @@ export const HowItWorks = () => {
                   <p className="font-mono text-xs tracking-widest mb-3 uppercase" style={{ color: "hsl(261 75% 60%)" }}>
                     {step.number}
                   </p>
-                  <h3 className="text-2xl font-semibold mb-3 leading-snug" style={{ color: "hsl(0 0% 90%)" }}>
+                  <h3 className="text-2xl font-semibold mb-3 leading-snug" style={{ color: "hsl(var(--foreground))" }}>
                     {step.title}
                   </h3>
-                  <p className="leading-relaxed max-w-lg mx-auto" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
+                  <p className="leading-relaxed max-w-lg mx-auto" style={{ color: "hsl(var(--foreground) / 0.7)" }}>
                     {step.body}
                   </p>
                   {step.visual}
@@ -202,7 +202,7 @@ export const HowItWorks = () => {
               className="inline-flex items-center px-6 py-3 rounded-xl text-sm font-semibold"
               style={{
                 background: "linear-gradient(135deg, hsl(261 75% 55%), hsl(280 80% 60%))",
-                color: "hsl(0 0% 98%)",
+                color: "hsl(var(--foreground))",
                 boxShadow: "0 0 24px hsl(261 75% 55% / 0.3)",
               }}
               whileHover={{ boxShadow: "0 0 36px hsl(261 75% 55% / 0.5)" }}
@@ -210,7 +210,7 @@ export const HowItWorks = () => {
             >
               Try it free, 100 lead searches a month, no card required
             </motion.a>
-            <p className="text-xs" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
+            <p className="text-xs" style={{ color: "hsl(var(--foreground) / 0.6)" }}>
               Free to start. No credit card.
             </p>
           </motion.div>

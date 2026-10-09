@@ -6,8 +6,8 @@ const lines: Array<{
   gradient?: boolean;
   italic?: boolean;
 }> = [
-  { text: "Export 500 contacts. Score them by hand.", color: "hsl(0 0% 90%)" },
-  { text: "Write 500 emails. Send 50.", color: "hsl(0 0% 65%)" },
+  { text: "Export 500 contacts. Score them by hand.", color: "hsl(var(--foreground))" },
+  { text: "Write 500 emails. Send 50.", color: "hsl(var(--foreground) / 0.65)" },
   { text: "Get 3 replies. Start again Monday.", gradient: true, italic: true },
 ];
 
@@ -72,7 +72,7 @@ export const ProblemSection = () => {
 
           <motion.p
             className="text-base font-light max-w-xl mx-auto leading-relaxed"
-            style={{ color: "hsl(0 0% 100% / 0.7)" }}
+            style={{ color: "hsl(var(--foreground) / 0.7)" }}
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-10% 0px" }}

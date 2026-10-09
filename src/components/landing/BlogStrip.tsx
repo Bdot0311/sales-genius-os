@@ -49,7 +49,7 @@ export const BlogStrip = () => {
                 fontWeight: 800,
                 lineHeight: 1.06,
                 letterSpacing: "-0.02em",
-                color: "hsl(0 0% 95%)",
+                color: "hsl(var(--foreground))",
               }}
             >
               Picking the right
@@ -113,13 +113,13 @@ export const BlogStrip = () => {
                 </p>
                 <h3
                   className="mb-3 font-display text-lg font-semibold leading-snug"
-                  style={{ color: "hsl(0 0% 92%)" }}
+                  style={{ color: "hsl(var(--foreground))" }}
                 >
                   {post.title}
                 </h3>
                 <p
                   className="mb-6 flex-1 text-sm leading-relaxed"
-                  style={{ color: "hsl(0 0% 100% / 0.7)" }}
+                  style={{ color: "hsl(var(--foreground) / 0.7)" }}
                 >
                   {post.blurb}
                 </p>
