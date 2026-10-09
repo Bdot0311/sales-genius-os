@@ -61,7 +61,7 @@ export const FounderNoteSection = () => {
               fontWeight: 800,
               lineHeight: 1.2,
               letterSpacing: "-0.01em",
-              color: "hsl(0 0% 90%)",
+              color: "hsl(var(--foreground))",
             }}
           >
             I was paying $500/month for Apollo and still spending three hours a day finding people to email.

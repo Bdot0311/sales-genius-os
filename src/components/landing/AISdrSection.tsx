@@ -105,7 +105,7 @@ const AgentFeedPreview = ({ visible }: { visible: boolean }) => {
             />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 mb-0.5">
-                <span className="text-xs font-semibold" style={{ color: "hsl(0 0% 90%)" }}>
+                <span className="text-xs font-semibold" style={{ color: "hsl(var(--foreground))" }}>
                   {item.prospect}
                 </span>
                 <span className="text-[10px]" style={{ color: "hsl(var(--foreground) / 0.6)" }}>
@@ -256,7 +256,7 @@ export const AISdrSection = () => {
                   >
                     <span className="text-base flex-shrink-0 mt-0.5">{cap.icon}</span>
                     <div>
-                      <p className="text-sm font-semibold mb-0.5" style={{ color: "hsl(0 0% 90%)" }}>
+                      <p className="text-sm font-semibold mb-0.5" style={{ color: "hsl(var(--foreground))" }}>
                         {cap.title}
                       </p>
                       <p className="text-xs leading-snug" style={{ color: "hsl(var(--foreground) / 0.5)" }}>

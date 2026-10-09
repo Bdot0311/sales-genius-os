@@ -113,7 +113,7 @@ export const FAQSection = () => {
                 fontWeight: 800,
                 lineHeight: 1.1,
                 letterSpacing: "-0.02em",
-                color: "hsl(0 0% 93%)",
+                color: "hsl(var(--foreground))",
               }}
             >
               Questions we actually

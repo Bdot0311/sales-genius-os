@@ -177,7 +177,7 @@ export const HowItWorks = () => {
                   <p className="font-mono text-xs tracking-widest mb-3 uppercase" style={{ color: "hsl(261 75% 60%)" }}>
                     {step.number}
                   </p>
-                  <h3 className="text-2xl font-semibold mb-3 leading-snug" style={{ color: "hsl(0 0% 90%)" }}>
+                  <h3 className="text-2xl font-semibold mb-3 leading-snug" style={{ color: "hsl(var(--foreground))" }}>
                     {step.title}
                   </h3>
                   <p className="leading-relaxed max-w-lg mx-auto" style={{ color: "hsl(var(--foreground) / 0.7)" }}>

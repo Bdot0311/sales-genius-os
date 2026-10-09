@@ -113,7 +113,7 @@ export const BlogStrip = () => {
                 </p>
                 <h3
                   className="mb-3 font-display text-lg font-semibold leading-snug"
-                  style={{ color: "hsl(0 0% 92%)" }}
+                  style={{ color: "hsl(var(--foreground))" }}
                 >
                   {post.title}
                 </h3>

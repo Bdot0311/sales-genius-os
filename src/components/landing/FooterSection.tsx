@@ -75,7 +75,7 @@ export const FooterSection = () => {
                   height={32}
                 />
                 <span className="text-lg font-semibold">
-                  <span style={{ color: "hsl(0 0% 92%)" }}>Out</span>
+                  <span style={{ color: "hsl(var(--foreground))" }}>Out</span>
                   <span style={{ color: "hsl(261 75% 65%)" }}>Reign</span>
                 </span>
               </div>
@@ -86,7 +86,7 @@ export const FooterSection = () => {
 
             {/* Product */}
             <div>
-              <h3 className="font-semibold text-sm mb-4" style={{ color: "hsl(0 0% 92%)" }}>Product</h3>
+              <h3 className="font-semibold text-sm mb-4" style={{ color: "hsl(var(--foreground))" }}>Product</h3>
               <ul className="space-y-3">
                 {footerLinks.product.map((link) => (
                   <li key={link.label}>
@@ -112,7 +112,7 @@ export const FooterSection = () => {
 
             {/* Compare */}
             <div>
-              <h3 className="font-semibold text-sm mb-4" style={{ color: "hsl(0 0% 92%)" }}>Compare</h3>
+              <h3 className="font-semibold text-sm mb-4" style={{ color: "hsl(var(--foreground))" }}>Compare</h3>
               <ul className="space-y-3">
                 {footerLinks.compare.map((link) => (
                   <li key={link.label}>
@@ -129,7 +129,7 @@ export const FooterSection = () => {
 
             {/* Resources */}
             <div>
-              <h3 className="font-semibold text-sm mb-4" style={{ color: "hsl(0 0% 92%)" }}>Resources</h3>
+              <h3 className="font-semibold text-sm mb-4" style={{ color: "hsl(var(--foreground))" }}>Resources</h3>
               <ul className="space-y-3">
                 {footerLinks.resources.map((link) => (
                   <li key={link.label}>
@@ -146,7 +146,7 @@ export const FooterSection = () => {
 
             {/* Legal */}
             <div>
-              <h3 className="font-semibold text-sm mb-4" style={{ color: "hsl(0 0% 92%)" }}>Legal</h3>
+              <h3 className="font-semibold text-sm mb-4" style={{ color: "hsl(var(--foreground))" }}>Legal</h3>
               <ul className="space-y-3">
                 {footerLinks.legal.map((link) => (
                   <li key={link.label}>
@@ -164,7 +164,7 @@ export const FooterSection = () => {
 
           {/* Guides — latest articles, so every content page has one real internal link */}
           <div className="mb-12 pt-8 border-t" style={{ borderColor: "hsl(261 75% 50% / 0.18)" }}>
-            <h3 className="font-semibold text-sm mb-4" style={{ color: "hsl(0 0% 92%)" }}>Guides &amp; popular articles</h3>
+            <h3 className="font-semibold text-sm mb-4" style={{ color: "hsl(var(--foreground))" }}>Guides &amp; popular articles</h3>
             <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-1">
               {footerLinks.guides.map((link) => (
                 <li key={link.href}>
@@ -186,7 +186,7 @@ export const FooterSection = () => {
 
           {/* Google API Disclosure */}
           <div id="google-api-disclosure" className="mb-8 p-6 rounded-xl border" style={{ background: "hsl(240 30% 10%)", borderColor: "hsl(261 75% 50% / 0.25)" }}>
-            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: "hsl(0 0% 92%)" }}>
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: "hsl(var(--foreground))" }}>
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "hsl(261 75% 65%)" }}><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
               How OutReign Uses Google User Data
             </h3>
