@@ -574,6 +574,7 @@ const App = () => {
       </BrowserRouter>
     </DeferredUIShell>
   </QueryClientProvider>
+  </ThemeProvider>
   );
 };
 
