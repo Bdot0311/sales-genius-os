@@ -154,7 +154,7 @@ export const FAQSection = () => {
                     style={{ color: "hsl(0 0% 80%)" }}
                   >
                     <span
-                      className="font-medium text-[15px] leading-snug group-hover:text-white transition-colors duration-200"
+                      className="font-medium text-[15px] leading-snug group-hover:text-foreground transition-colors duration-200"
                     >
                       {faq.question}
                     </span>

@@ -110,9 +110,9 @@ export const HeroSection = () => {
           className="mb-3 flex max-w-[21rem] flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-xs leading-tight text-foreground/90 sm:flex-nowrap"
         >
           100 free lead searches
-          <span className="w-px h-3 bg-white/20 inline-block" />
+          <span className="w-px h-3 bg-foreground/20 inline-block" />
           14-day trial on paid plans
-          <span className="w-px h-3 bg-white/20 inline-block" />
+          <span className="w-px h-3 bg-foreground/20 inline-block" />
           Built with you on a call
         </p>
 

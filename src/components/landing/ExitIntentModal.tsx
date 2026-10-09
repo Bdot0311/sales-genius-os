@@ -76,7 +76,7 @@ export const ExitIntentModal = () => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="exit-intent-title"
-            className="relative w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-[hsl(0,0%,5%)] p-7 shadow-2xl sm:p-9"
+            className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card p-7 shadow-2xl sm:p-9"
             initial={{ opacity: 0, y: 20, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.97 }}
@@ -92,7 +92,7 @@ export const ExitIntentModal = () => {
 
             <button
               onClick={close}
-              className="absolute right-4 top-4 rounded-full p-1.5 text-white/75 transition-colors hover:bg-white/5 hover:text-white"
+              className="absolute right-4 top-4 rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               aria-label="Close"
             >
               <X className="h-4 w-4" />
@@ -103,12 +103,12 @@ export const ExitIntentModal = () => {
             </p>
             <h2
               id="exit-intent-title"
-              className="mb-3 font-display text-2xl font-bold text-white sm:text-[1.65rem]"
+              className="mb-3 font-display text-2xl font-bold text-foreground sm:text-[1.65rem]"
               style={{ letterSpacing: "-0.01em", lineHeight: 1.15 }}
             >
               See OutReign find real leads.
             </h2>
-            <p className="mb-7 text-sm leading-relaxed text-white/80">
+            <p className="mb-7 text-sm leading-relaxed text-foreground/80">
               Watch how plain-English search returns ranked, SMTP-verified prospects with a first-touch email already drafted.
             </p>
 
@@ -130,7 +130,7 @@ export const ExitIntentModal = () => {
               </button>
               <button
                 onClick={close}
-                className="h-10 text-xs text-white/75 transition-colors hover:text-white"
+                className="h-10 text-xs text-muted-foreground transition-colors hover:text-foreground"
               >
                 No thanks, I'll keep browsing
               </button>
