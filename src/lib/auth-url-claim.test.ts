@@ -40,8 +40,12 @@ describe("Supabase's own links are claimed by the page instead", () => {
   const page = bare(AUTH_PAGE);
 
   it("handles a hash link by setting the session from its tokens", () => {
-    expect(page).toContain('const accessToken = hashParams.get("access_token");');
-    expect(page).toContain('const refreshToken = hashParams.get("refresh_token");');
+    // Read from either half of the URL: Supabase's own links use the hash,
+    // and nothing published about Lovable's broker says which it redirects
+    // back with. Missing them after the broker succeeded is the one failure
+    // nothing here would report.
+    expect(page).toContain('hashParams.get("access_token") ?? queryParams.get("access_token")');
+    expect(page).toContain('hashParams.get("refresh_token") ?? queryParams.get("refresh_token")');
     expect(page).toContain("await supabase.auth.setSession({");
   });
 
