@@ -49,7 +49,7 @@ export const BlogStrip = () => {
                 fontWeight: 800,
                 lineHeight: 1.06,
                 letterSpacing: "-0.02em",
-                color: "hsl(0 0% 95%)",
+                color: "hsl(var(--foreground))",
               }}
             >
               Picking the right

@@ -126,7 +126,7 @@ export const HowItWorks = () => {
               fontWeight: 800,
               lineHeight: 1.06,
               letterSpacing: "-0.02em",
-              color: "hsl(0 0% 95%)",
+              color: "hsl(var(--foreground))",
             }}
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
