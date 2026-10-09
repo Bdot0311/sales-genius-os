@@ -118,6 +118,18 @@
     
     <!-- App Meta Tags -->
     <meta name="theme-color" content="#8B5CF6" />
+    <script>
+      // Apply saved light/dark theme before first paint to avoid a flash.
+      // Must stay in sync with the ThemeProvider storageKey in src/App.tsx.
+      (function () {
+        try {
+          var t = localStorage.getItem("outreign-theme");
+          if (t !== "light") document.documentElement.classList.add("dark");
+        } catch (e) {
+          document.documentElement.classList.add("dark");
+        }
+      })();
+    </script>
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
