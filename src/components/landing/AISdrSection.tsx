@@ -214,7 +214,7 @@ export const AISdrSection = () => {
                   fontWeight: 800,
                   lineHeight: 1.05,
                   letterSpacing: "-0.02em",
-                  color: "hsl(0 0% 96%)",
+                  color: "hsl(var(--foreground) / 0.96)",
                   transitionDelay: "80ms",
                 }}
               >

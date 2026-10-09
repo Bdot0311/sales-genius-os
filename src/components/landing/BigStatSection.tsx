@@ -66,7 +66,7 @@ export const BigStatSection = () => {
             viewport={{ once: true, margin: "-10% 0px" }}
             transition={{ duration: 0.65, ease, delay: 0.28 }}
           >
-            <span className="block font-display font-bold" style={{ fontSize: "1.75rem", color: "hsl(0 0% 78%)", letterSpacing: "-0.02em" }}>
+            <span className="block font-display font-bold" style={{ fontSize: "1.75rem", color: "hsl(var(--foreground) / 0.78)", letterSpacing: "-0.02em" }}>
               1 tool
             </span>
             <span className="block text-xs mt-1" style={{ color: "hsl(var(--foreground) / 0.28)" }}>

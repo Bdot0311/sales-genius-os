@@ -7,7 +7,7 @@ const lines: Array<{
   italic?: boolean;
 }> = [
   { text: "Export 500 contacts. Score them by hand.", color: "hsl(var(--foreground))" },
-  { text: "Write 500 emails. Send 50.", color: "hsl(0 0% 65%)" },
+  { text: "Write 500 emails. Send 50.", color: "hsl(var(--foreground) / 0.65)" },
   { text: "Get 3 replies. Start again Monday.", gradient: true, italic: true },
 ];
 

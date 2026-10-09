@@ -40,7 +40,7 @@ const LeadDiscoveryPreview = () => (
         style={{ background: "hsl(var(--foreground) / 0.03)", border: "1px solid hsl(var(--foreground) / 0.07)" }}
       >
         <div>
-          <p className="text-sm font-medium" style={{ color: "hsl(0 0% 88%)" }}>{name}</p>
+          <p className="text-sm font-medium" style={{ color: "hsl(var(--foreground) / 0.88)" }}>{name}</p>
           <p className="text-[11px] mt-0.5" style={{ color: "hsl(var(--foreground) / 0.6)" }}>{role}</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -101,7 +101,7 @@ const ReplyPreview = () => (
       { name: "Jordan Park",  last: "Thanks, can we talk Thursday?",     badge: "Reply",    badgeColor: "hsl(142 70% 50%)" },
       { name: "Rina Shah",    last: "Interested, send me a demo link",      badge: "Hot",      badgeColor: "hsl(22 90% 60%)"  },
       { name: "Alex Müller",  last: "Not right now, maybe Q3",              badge: "Follow up", badgeColor: "hsl(261 75% 60%)" },
-      { name: "Priya Nair",   last: "Who are you? (sent your follow-up)",   badge: "Opened",   badgeColor: "hsl(0 0% 50%)"    },
+      { name: "Priya Nair",   last: "Who are you? (sent your follow-up)",   badge: "Opened",   badgeColor: "hsl(var(--foreground) / 0.50)"    },
     ].map(({ name, last, badge, badgeColor }, i) => (
       <div
         key={name}
@@ -115,7 +115,7 @@ const ReplyPreview = () => (
           {name[0]}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium" style={{ color: "hsl(0 0% 88%)" }}>{name}</p>
+          <p className="text-sm font-medium" style={{ color: "hsl(var(--foreground) / 0.88)" }}>{name}</p>
           <p className="text-xs truncate mt-0.5" style={{ color: "hsl(var(--foreground) / 0.6)" }}>{last}</p>
         </div>
         <span
@@ -142,7 +142,7 @@ const PipelinePreview = () => {
       {stages.map(({ label, count, pct }) => (
         <div key={label}>
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs font-medium" style={{ color: "hsl(0 0% 70%)" }}>{label}</span>
+            <span className="text-xs font-medium" style={{ color: "hsl(var(--foreground) / 0.70)" }}>{label}</span>
             <span className="text-xs font-semibold" style={{ color: "hsl(261 75% 65%)" }}>{count}</span>
           </div>
           <div className="h-2 rounded-full overflow-hidden" style={{ background: "hsl(var(--foreground) / 0.06)" }}>
@@ -193,7 +193,7 @@ const CoachPreview = () => (
       className="self-end max-w-[80%] px-4 py-3 rounded-2xl"
       style={{ background: "hsl(261 75% 50% / 0.12)", border: "1px solid hsl(261 75% 50% / 0.22)" }}
     >
-      <p className="text-sm" style={{ color: "hsl(0 0% 88%)" }}>Which deals should I push this week?</p>
+      <p className="text-sm" style={{ color: "hsl(var(--foreground) / 0.88)" }}>Which deals should I push this week?</p>
     </div>
 
     <div
@@ -313,7 +313,7 @@ export const ModulesSection = () => {
             <h2
               id="modules-heading"
               className="font-display text-center text-5xl"
-              style={{ fontSize: "clamp(2.4rem, 5vw, 4rem)", fontWeight: 800, lineHeight: 1.05, letterSpacing: "-0.02em", color: "hsl(0 0% 96%)" }}
+              style={{ fontSize: "clamp(2.4rem, 5vw, 4rem)", fontWeight: 800, lineHeight: 1.05, letterSpacing: "-0.02em", color: "hsl(var(--foreground) / 0.96)" }}
             >
               Five screens doing one job
               <br />
@@ -371,7 +371,7 @@ export const ModulesSection = () => {
                       <div className="flex-1">
                         <h3
                           className="text-lg font-semibold mb-1 transition-colors duration-200 leading-snug"
-                          style={{ color: isActive ? "hsl(var(--foreground))" : "hsl(0 0% 72%)" }}
+                          style={{ color: isActive ? "hsl(var(--foreground))" : "hsl(var(--foreground) / 0.72)" }}
                         >
                           {mod.title}
                         </h3>

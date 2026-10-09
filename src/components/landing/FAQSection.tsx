@@ -151,7 +151,7 @@ export const FAQSection = () => {
                 >
                   <AccordionTrigger
                     className="text-left py-5 hover:no-underline transition-colors duration-200 group"
-                    style={{ color: "hsl(0 0% 80%)" }}
+                    style={{ color: "hsl(var(--foreground) / 0.80)" }}
                   >
                     <span
                       className="font-medium text-[15px] leading-snug group-hover:text-foreground transition-colors duration-200"

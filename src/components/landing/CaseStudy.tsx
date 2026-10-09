@@ -29,13 +29,13 @@ export const CaseStudy = ({ data }: CaseStudyProps) => {
         </p>
         <blockquote
           className="text-xl font-light leading-relaxed mb-8"
-          style={{ color: "hsl(0 0% 88%)" }}
+          style={{ color: "hsl(var(--foreground) / 0.88)" }}
         >
           "{data.quote}"
         </blockquote>
         <div className="flex items-center justify-center gap-4 mb-8">
           <div>
-            <p className="font-semibold text-sm" style={{ color: "hsl(0 0% 88%)" }}>
+            <p className="font-semibold text-sm" style={{ color: "hsl(var(--foreground) / 0.88)" }}>
               {data.company}
             </p>
             <p className="text-xs" style={{ color: "hsl(var(--foreground) / 0.5)" }}>

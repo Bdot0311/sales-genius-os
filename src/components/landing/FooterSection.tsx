@@ -197,19 +197,19 @@ export const FooterSection = () => {
               <ul className="space-y-1.5 ml-4">
                 <li className="flex items-start gap-2">
                   <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: "hsl(261 75% 55% / 0.6)" }} />
-                  <span><strong style={{ color: "hsl(0 0% 85%)" }}>Send outbound emails</strong>: messages composed and sent through OutReign on your behalf</span>
+                  <span><strong style={{ color: "hsl(var(--foreground) / 0.85)" }}>Send outbound emails</strong>: messages composed and sent through OutReign on your behalf</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: "hsl(261 75% 55% / 0.6)" }} />
-                  <span><strong style={{ color: "hsl(0 0% 85%)" }}>Read reply data</strong>: detect replies to your outreach for tracking and analytics</span>
+                  <span><strong style={{ color: "hsl(var(--foreground) / 0.85)" }}>Read reply data</strong>: detect replies to your outreach for tracking and analytics</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ background: "hsl(261 75% 55% / 0.6)" }} />
-                  <span><strong style={{ color: "hsl(0 0% 85%)" }}>Detect open events</strong>: tracking pixels to measure engagement with your sent emails</span>
+                  <span><strong style={{ color: "hsl(var(--foreground) / 0.85)" }}>Detect open events</strong>: tracking pixels to measure engagement with your sent emails</span>
                 </li>
               </ul>
               <p>
-                Our use of Google user data complies with the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: "hsl(261 75% 65%)" }}>Google API Services User Data Policy</a>, including the <strong style={{ color: "hsl(0 0% 85%)" }}>Limited Use</strong> requirements. We do not use Gmail data for advertising, we do not sell it to third parties, we do not use it to train AI models outside your account, and no human reads your messages.
+                Our use of Google user data complies with the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: "hsl(261 75% 65%)" }}>Google API Services User Data Policy</a>, including the <strong style={{ color: "hsl(var(--foreground) / 0.85)" }}>Limited Use</strong> requirements. We do not use Gmail data for advertising, we do not sell it to third parties, we do not use it to train AI models outside your account, and no human reads your messages.
               </p>
               <p>
                 You can revoke OutReign's access to your Gmail data at any time via your <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: "hsl(261 75% 65%)" }}>Google Account permissions</a> or by disconnecting the integration in your OutReign settings.

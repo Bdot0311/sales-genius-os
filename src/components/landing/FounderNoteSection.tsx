@@ -114,7 +114,7 @@ export const FounderNoteSection = () => {
                 <div className="flex items-center gap-2">
                   <p
                     className="text-sm font-medium"
-                    style={{ color: "hsl(0 0% 70%)" }}
+                    style={{ color: "hsl(var(--foreground) / 0.70)" }}
                   >
                     Brandon, Founder of OutReign
                   </p>

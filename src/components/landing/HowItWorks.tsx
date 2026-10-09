@@ -42,7 +42,7 @@ const steps = [
             style={{ borderBottom: i < 2 ? "1px solid hsl(261 75% 50% / 0.1)" : undefined }}
           >
             <div>
-              <p className="text-sm font-semibold" style={{ color: "hsl(0 0% 88%)" }}>{name}</p>
+              <p className="text-sm font-semibold" style={{ color: "hsl(var(--foreground) / 0.88)" }}>{name}</p>
               <p className="text-xs mt-0.5" style={{ color: "hsl(var(--foreground) / 0.6)" }}>{role}</p>
             </div>
             <div className="flex items-center gap-2.5 flex-shrink-0">

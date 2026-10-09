@@ -39,7 +39,7 @@ export const FinalCTA = () => {
               fontWeight: 800,
               lineHeight: 1.04,
               letterSpacing: "-0.02em",
-              color: "hsl(0 0% 96%)",
+              color: "hsl(var(--foreground) / 0.96)",
             }}
           >
             <motion.span
