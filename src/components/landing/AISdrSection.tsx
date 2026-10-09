@@ -81,7 +81,7 @@ const AgentFeedPreview = ({ visible }: { visible: boolean }) => {
           {[["12", "leads"], ["9", "sent"], ["5", "replied"], ["1", "meeting"]].map(([val, lbl]) => (
             <div key={lbl} className="text-center">
               <p className="text-xs font-bold" style={{ color: "hsl(261 75% 68%)" }}>{val}</p>
-              <p className="text-[9px]" style={{ color: "hsl(0 0% 100% / 0.6)" }}>{lbl}</p>
+              <p className="text-[9px]" style={{ color: "hsl(var(--foreground) / 0.6)" }}>{lbl}</p>
             </div>
           ))}
         </div>
@@ -94,8 +94,8 @@ const AgentFeedPreview = ({ visible }: { visible: boolean }) => {
             key={i}
             className="flex items-start gap-3 px-3 py-2.5 rounded-xl"
             style={{
-              background: "hsl(0 0% 100% / 0.03)",
-              border: "1px solid hsl(0 0% 100% / 0.06)",
+              background: "hsl(var(--foreground) / 0.03)",
+              border: "1px solid hsl(var(--foreground) / 0.06)",
               animation: "fadeSlideIn 0.4s ease forwards",
             }}
           >
@@ -108,17 +108,17 @@ const AgentFeedPreview = ({ visible }: { visible: boolean }) => {
                 <span className="text-xs font-semibold" style={{ color: "hsl(0 0% 90%)" }}>
                   {item.prospect}
                 </span>
-                <span className="text-[10px]" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
+                <span className="text-[10px]" style={{ color: "hsl(var(--foreground) / 0.6)" }}>
                   · {item.company}
                 </span>
               </div>
-              <p className="text-[11px] leading-snug" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
+              <p className="text-[11px] leading-snug" style={{ color: "hsl(var(--foreground) / 0.6)" }}>
                 {item.text}
               </p>
             </div>
             <span
               className="text-[9px] flex-shrink-0 font-mono mt-0.5"
-              style={{ color: "hsl(0 0% 100% / 0.25)" }}
+              style={{ color: "hsl(var(--foreground) / 0.25)" }}
             >
               {item.time}
             </span>
@@ -238,7 +238,7 @@ export const AISdrSection = () => {
               {/* Sub-copy */}
               <p
                 className={`text-base leading-relaxed mb-8 max-w-[480px] transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
-                style={{ color: "hsl(0 0% 100% / 0.65)", transitionDelay: "160ms" }}
+                style={{ color: "hsl(var(--foreground) / 0.65)", transitionDelay: "160ms" }}
               >
                 Every plan ships an agent, the free one included. What changes is how much it does without asking you first.
               </p>
@@ -252,14 +252,14 @@ export const AISdrSection = () => {
                   <div
                     key={cap.title}
                     className="flex items-start gap-3 px-4 py-3 rounded-xl"
-                    style={{ background: "hsl(0 0% 100% / 0.03)", border: "1px solid hsl(261 75% 50% / 0.12)" }}
+                    style={{ background: "hsl(var(--foreground) / 0.03)", border: "1px solid hsl(261 75% 50% / 0.12)" }}
                   >
                     <span className="text-base flex-shrink-0 mt-0.5">{cap.icon}</span>
                     <div>
                       <p className="text-sm font-semibold mb-0.5" style={{ color: "hsl(0 0% 90%)" }}>
                         {cap.title}
                       </p>
-                      <p className="text-xs leading-snug" style={{ color: "hsl(0 0% 100% / 0.5)" }}>
+                      <p className="text-xs leading-snug" style={{ color: "hsl(var(--foreground) / 0.5)" }}>
                         {cap.desc}
                       </p>
                     </div>
@@ -278,7 +278,7 @@ export const AISdrSection = () => {
                   className="inline-flex items-center px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200"
                   style={{
                     background: "linear-gradient(135deg, hsl(261 75% 55%), hsl(280 80% 60%))",
-                    color: "hsl(0 0% 98%)",
+                    color: "hsl(var(--foreground))",
                     boxShadow: "0 0 24px hsl(261 75% 55% / 0.35)",
                   }}
                   onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 0 36px hsl(261 75% 55% / 0.5)")}
@@ -316,13 +316,13 @@ export const AISdrSection = () => {
                 {/* Window chrome */}
                 <div
                   className="flex items-center justify-between px-4 py-3"
-                  style={{ borderBottom: "1px solid hsl(261 75% 50% / 0.1)", background: "hsl(0 0% 100% / 0.025)" }}
+                  style={{ borderBottom: "1px solid hsl(261 75% 50% / 0.1)", background: "hsl(var(--foreground) / 0.025)" }}
                 >
                   <div className="flex items-center gap-2">
                     {["hsl(0 70% 55% / 0.5)", "hsl(45 90% 55% / 0.5)", "hsl(142 60% 50% / 0.5)"].map((bg, i) => (
                       <div key={i} className="w-2.5 h-2.5 rounded-full" style={{ background: bg }} />
                     ))}
-                    <span className="ml-2 text-[11px] font-medium" style={{ color: "hsl(0 0% 100% / 0.55)" }}>
+                    <span className="ml-2 text-[11px] font-medium" style={{ color: "hsl(var(--foreground) / 0.55)" }}>
                       OutReign — AI SDR · Activity Feed
                     </span>
                   </div>
@@ -349,7 +349,7 @@ export const AISdrSection = () => {
               </div>
 
               {/* Caption below preview */}
-              <p className="text-center text-xs mt-4" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
+              <p className="text-center text-xs mt-4" style={{ color: "hsl(var(--foreground) / 0.6)" }}>
                 Simulated preview. Connects to your real Gmail inbox
               </p>
             </div>
@@ -367,7 +367,7 @@ export const AISdrSection = () => {
             </p>
             <p
               className="text-center text-sm mb-8 max-w-xl mx-auto"
-              style={{ color: "hsl(0 0% 100% / 0.6)", lineHeight: 1.6 }}
+              style={{ color: "hsl(var(--foreground) / 0.6)", lineHeight: 1.6 }}
             >
               The free plan gets an agent that drafts and waits for you. The top
               plan gets one that runs the desk.
@@ -387,7 +387,7 @@ export const AISdrSection = () => {
                         scope="col"
                         className="py-3 px-3 text-center font-semibold"
                         style={{
-                          color: plan === "Agency" ? "hsl(261 75% 75%)" : "hsl(0 0% 100% / 0.85)",
+                          color: plan === "Agency" ? "hsl(261 75% 75%)" : "hsl(var(--foreground) / 0.85)",
                           borderBottom: "1px solid hsl(261 75% 50% / 0.18)",
                         }}
                       >
@@ -417,8 +417,8 @@ export const AISdrSection = () => {
                         scope="row"
                         className="py-3 pr-4 text-left font-medium whitespace-nowrap"
                         style={{
-                          color: "hsl(0 0% 100% / 0.55)",
-                          borderBottom: "1px solid hsl(0 0% 100% / 0.06)",
+                          color: "hsl(var(--foreground) / 0.55)",
+                          borderBottom: "1px solid hsl(var(--foreground) / 0.06)",
                         }}
                       >
                         {row.label}
@@ -428,8 +428,8 @@ export const AISdrSection = () => {
                           key={`${row.label}-${i}`}
                           className="py-3 px-3 text-center"
                           style={{
-                            color: i === 4 ? "hsl(0 0% 98%)" : "hsl(0 0% 100% / 0.75)",
-                            borderBottom: "1px solid hsl(0 0% 100% / 0.06)",
+                            color: i === 4 ? "hsl(var(--foreground))" : "hsl(var(--foreground) / 0.75)",
+                            borderBottom: "1px solid hsl(var(--foreground) / 0.06)",
                             background: i === 4 ? "hsl(261 75% 50% / 0.06)" : undefined,
                           }}
                         >

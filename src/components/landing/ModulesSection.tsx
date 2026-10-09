@@ -21,10 +21,10 @@ const LeadDiscoveryPreview = () => (
         <div
           key={lbl}
           className="flex-1 rounded-lg p-3 text-center"
-          style={{ background: "hsl(0 0% 100% / 0.04)", border: "1px solid hsl(0 0% 100% / 0.07)" }}
+          style={{ background: "hsl(var(--foreground) / 0.04)", border: "1px solid hsl(var(--foreground) / 0.07)" }}
         >
           <p className="text-base font-bold" style={{ color: "hsl(261 75% 68%)" }}>{val}</p>
-          <p className="text-[10px] mt-0.5" style={{ color: "hsl(0 0% 100% / 0.6)" }}>{lbl}</p>
+          <p className="text-[10px] mt-0.5" style={{ color: "hsl(var(--foreground) / 0.6)" }}>{lbl}</p>
         </div>
       ))}
     </div>
@@ -37,14 +37,14 @@ const LeadDiscoveryPreview = () => (
       <div
         key={name}
         className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl"
-        style={{ background: "hsl(0 0% 100% / 0.03)", border: "1px solid hsl(0 0% 100% / 0.07)" }}
+        style={{ background: "hsl(var(--foreground) / 0.03)", border: "1px solid hsl(var(--foreground) / 0.07)" }}
       >
         <div>
           <p className="text-sm font-medium" style={{ color: "hsl(0 0% 88%)" }}>{name}</p>
-          <p className="text-[11px] mt-0.5" style={{ color: "hsl(0 0% 100% / 0.6)" }}>{role}</p>
+          <p className="text-[11px] mt-0.5" style={{ color: "hsl(var(--foreground) / 0.6)" }}>{role}</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <div className="h-1 w-12 rounded-full overflow-hidden" style={{ background: "hsl(0 0% 100% / 0.08)" }}>
+          <div className="h-1 w-12 rounded-full overflow-hidden" style={{ background: "hsl(var(--foreground) / 0.08)" }}>
             <div className="h-full rounded-full" style={{ width: `${fit}%`, background: "linear-gradient(to right, hsl(261 75% 55%), hsl(280 80% 65%))" }} />
           </div>
           <span className="text-xs font-semibold" style={{ color: "hsl(261 75% 68%)" }}>{fit}%</span>
@@ -57,7 +57,7 @@ const LeadDiscoveryPreview = () => (
 const OutreachPreview = () => (
   <div className="w-full h-full flex flex-col gap-3 p-6">
     {/* Email card */}
-    <div className="rounded-xl overflow-hidden flex-1 flex flex-col" style={{ background: "hsl(0 0% 100% / 0.03)", border: "1px solid hsl(261 75% 50% / 0.2)" }}>
+    <div className="rounded-xl overflow-hidden flex-1 flex flex-col" style={{ background: "hsl(var(--foreground) / 0.03)", border: "1px solid hsl(261 75% 50% / 0.2)" }}>
       <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid hsl(261 75% 50% / 0.12)" }}>
         <div className="flex items-center gap-2">
           <div className="w-1.5 h-1.5 rounded-full" style={{ background: "hsl(261 75% 60%)" }} />
@@ -68,13 +68,13 @@ const OutreachPreview = () => (
         </span>
       </div>
       <div className="px-4 py-4 flex-1 space-y-3">
-        <p className="text-[11px]" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
+        <p className="text-[11px]" style={{ color: "hsl(var(--foreground) / 0.6)" }}>
           Subject: Quick idea for Northline's outbound push
         </p>
-        <p className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.65)" }}>
+        <p className="text-sm leading-relaxed" style={{ color: "hsl(var(--foreground) / 0.65)" }}>
           Hey Jordan, saw Northline is scaling the sales team in NYC. That usually means more pressure to build pipeline fast.
         </p>
-        <p className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.65)" }}>
+        <p className="text-sm leading-relaxed" style={{ color: "hsl(var(--foreground) / 0.65)" }}>
           OutReign helps teams like yours find better-fit leads and move into outreach in one session. No list-building, no copy-paste.
         </p>
       </div>
@@ -106,7 +106,7 @@ const ReplyPreview = () => (
       <div
         key={name}
         className="flex items-center gap-3 px-4 py-3 rounded-xl"
-        style={{ background: i === 0 ? "hsl(261 75% 50% / 0.08)" : "hsl(0 0% 100% / 0.03)", border: `1px solid ${i === 0 ? "hsl(261 75% 50% / 0.2)" : "hsl(0 0% 100% / 0.07)"}` }}
+        style={{ background: i === 0 ? "hsl(261 75% 50% / 0.08)" : "hsl(var(--foreground) / 0.03)", border: `1px solid ${i === 0 ? "hsl(261 75% 50% / 0.2)" : "hsl(var(--foreground) / 0.07)"}` }}
       >
         <div
           className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-semibold"
@@ -116,7 +116,7 @@ const ReplyPreview = () => (
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium" style={{ color: "hsl(0 0% 88%)" }}>{name}</p>
-          <p className="text-xs truncate mt-0.5" style={{ color: "hsl(0 0% 100% / 0.6)" }}>{last}</p>
+          <p className="text-xs truncate mt-0.5" style={{ color: "hsl(var(--foreground) / 0.6)" }}>{last}</p>
         </div>
         <span
           className="text-[10px] px-2 py-0.5 rounded-full flex-shrink-0 font-medium"
@@ -145,7 +145,7 @@ const PipelinePreview = () => {
             <span className="text-xs font-medium" style={{ color: "hsl(0 0% 70%)" }}>{label}</span>
             <span className="text-xs font-semibold" style={{ color: "hsl(261 75% 65%)" }}>{count}</span>
           </div>
-          <div className="h-2 rounded-full overflow-hidden" style={{ background: "hsl(0 0% 100% / 0.06)" }}>
+          <div className="h-2 rounded-full overflow-hidden" style={{ background: "hsl(var(--foreground) / 0.06)" }}>
             <div
               className="h-full rounded-full"
               style={{
@@ -166,7 +166,7 @@ const PipelinePreview = () => {
             style={{ background: "hsl(261 75% 50% / 0.08)", border: "1px solid hsl(261 75% 50% / 0.18)" }}
           >
             <p className="text-base font-bold" style={{ color: "hsl(261 75% 68%)" }}>{val}</p>
-            <p className="text-[10px] mt-0.5" style={{ color: "hsl(0 0% 100% / 0.6)" }}>{lbl}</p>
+            <p className="text-[10px] mt-0.5" style={{ color: "hsl(var(--foreground) / 0.6)" }}>{lbl}</p>
           </div>
         ))}
       </div>
@@ -198,12 +198,12 @@ const CoachPreview = () => (
 
     <div
       className="px-4 py-3 rounded-2xl space-y-2"
-      style={{ background: "hsl(0 0% 100% / 0.03)", border: "1px solid hsl(0 0% 100% / 0.07)" }}
+      style={{ background: "hsl(var(--foreground) / 0.03)", border: "1px solid hsl(var(--foreground) / 0.07)" }}
     >
-      <p className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
+      <p className="text-sm leading-relaxed" style={{ color: "hsl(var(--foreground) / 0.7)" }}>
         Northline ($24K, proposal) has gone quiet for 9 days. Send the pricing recap today.
       </p>
-      <p className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
+      <p className="text-sm leading-relaxed" style={{ color: "hsl(var(--foreground) / 0.7)" }}>
         Rina Shah scores 88 and asked for a demo link. Book her before Thursday.
       </p>
     </div>
@@ -216,7 +216,7 @@ const CoachPreview = () => (
           style={{ background: "hsl(261 75% 50% / 0.08)", border: "1px solid hsl(261 75% 50% / 0.18)" }}
         >
           <p className="text-base font-bold" style={{ color: "hsl(261 75% 68%)" }}>{val}</p>
-          <p className="text-[10px] mt-0.5" style={{ color: "hsl(0 0% 100% / 0.6)" }}>{lbl}</p>
+          <p className="text-[10px] mt-0.5" style={{ color: "hsl(var(--foreground) / 0.6)" }}>{lbl}</p>
         </div>
       ))}
     </div>
@@ -371,7 +371,7 @@ export const ModulesSection = () => {
                       <div className="flex-1">
                         <h3
                           className="text-lg font-semibold mb-1 transition-colors duration-200 leading-snug"
-                          style={{ color: isActive ? "hsl(0 0% 98%)" : "hsl(0 0% 72%)" }}
+                          style={{ color: isActive ? "hsl(var(--foreground))" : "hsl(0 0% 72%)" }}
                         >
                           {mod.title}
                         </h3>
@@ -383,7 +383,7 @@ export const ModulesSection = () => {
                           className="overflow-hidden transition-all duration-500"
                           style={{ maxHeight: isActive ? "80px" : "0px", opacity: isActive ? 1 : 0 }}
                         >
-                          <p className="text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
+                          <p className="text-sm leading-relaxed" style={{ color: "hsl(var(--foreground) / 0.7)" }}>
                             {mod.description}
                           </p>
                         </div>
@@ -405,7 +405,7 @@ export const ModulesSection = () => {
                 </p>
                 <div className="flex flex-wrap gap-x-4 gap-y-2">
                   {alsoIncluded.map((item) => (
-                    <span key={item} className="text-xs" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
+                    <span key={item} className="text-xs" style={{ color: "hsl(var(--foreground) / 0.6)" }}>
                       {item}
                     </span>
                   ))}
@@ -443,15 +443,15 @@ export const ModulesSection = () => {
                 {/* Fake window chrome */}
                 <div
                   className="flex items-center gap-2 px-4 py-3"
-                  style={{ borderBottom: "1px solid hsl(261 75% 50% / 0.1)", background: "hsl(0 0% 100% / 0.02)" }}
+                  style={{ borderBottom: "1px solid hsl(261 75% 50% / 0.1)", background: "hsl(var(--foreground) / 0.02)" }}
                 >
                   {["hsl(0 70% 55% / 0.5)", "hsl(45 90% 55% / 0.5)", "hsl(142 60% 50% / 0.5)"].map((bg, i) => (
                     <div key={i} className="w-2.5 h-2.5 rounded-full" style={{ background: bg }} />
                   ))}
-                  <span className="ml-3 text-[11px] font-medium" style={{ color: "hsl(0 0% 100% / 0.55)" }}>
+                  <span className="ml-3 text-[11px] font-medium" style={{ color: "hsl(var(--foreground) / 0.55)" }}>
                     OutReign — {modules[activeIndex].title}
                   </span>
-                  <span className="ml-auto text-[9px] font-medium uppercase tracking-wider" style={{ color: "hsl(0 0% 100% / 0.62)" }}>
+                  <span className="ml-auto text-[9px] font-medium uppercase tracking-wider" style={{ color: "hsl(var(--foreground) / 0.62)" }}>
                     Simulated preview
                   </span>
                 </div>

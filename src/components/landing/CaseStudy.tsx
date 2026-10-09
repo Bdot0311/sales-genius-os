@@ -38,7 +38,7 @@ export const CaseStudy = ({ data }: CaseStudyProps) => {
             <p className="font-semibold text-sm" style={{ color: "hsl(0 0% 88%)" }}>
               {data.company}
             </p>
-            <p className="text-xs" style={{ color: "hsl(0 0% 100% / 0.5)" }}>
+            <p className="text-xs" style={{ color: "hsl(var(--foreground) / 0.5)" }}>
               {data.role}
             </p>
           </div>
@@ -47,7 +47,7 @@ export const CaseStudy = ({ data }: CaseStudyProps) => {
           <span className="block font-display font-bold text-3xl" style={{ color: "hsl(261 75% 68%)" }}>
             {data.metric}
           </span>
-          <span className="block text-xs mt-1" style={{ color: "hsl(0 0% 100% / 0.5)" }}>
+          <span className="block text-xs mt-1" style={{ color: "hsl(var(--foreground) / 0.5)" }}>
             {data.metricLabel}
           </span>
         </div>

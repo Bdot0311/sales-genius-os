@@ -119,7 +119,7 @@ export const HeroSection = () => {
         {/* Social proof line */}
         <p
           className="text-xs text-center"
-          style={{ color: "hsl(0 0% 100% / 0.5)" }}
+          style={{ color: "hsl(var(--foreground) / 0.5)" }}
         >
           Built by operators who run outbound every day
         </p>

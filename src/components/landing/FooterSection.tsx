@@ -79,7 +79,7 @@ export const FooterSection = () => {
                   <span style={{ color: "hsl(261 75% 65%)" }}>Reign</span>
                 </span>
               </div>
-              <p className="text-sm max-w-xs leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
+              <p className="text-sm max-w-xs leading-relaxed" style={{ color: "hsl(var(--foreground) / 0.7)" }}>
                 Plain-English lead discovery and outbound workflow software for B2B teams that want to move from prospecting to outreach faster.
               </p>
             </div>
@@ -93,14 +93,14 @@ export const FooterSection = () => {
                     {link.href.startsWith('/') ? (
                       <Link 
                         to={link.href} 
-                        className="text-sm transition-colors duration-150 inline-flex items-center py-2 min-h-[40px] min-w-[40px] px-1" style={{ color: "hsl(0 0% 100% / 0.7)" }} onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")} onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.7)")}
+                        className="text-sm transition-colors duration-150 inline-flex items-center py-2 min-h-[40px] min-w-[40px] px-1" style={{ color: "hsl(var(--foreground) / 0.7)" }} onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")} onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(var(--foreground) / 0.7)")}
                       >
                         {link.label}
                       </Link>
                     ) : (
                       <a 
                         href={link.href} 
-                        className="text-sm transition-colors duration-150 inline-flex items-center py-2 min-h-[40px] min-w-[40px] px-1" style={{ color: "hsl(0 0% 100% / 0.7)" }} onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")} onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.7)")}
+                        className="text-sm transition-colors duration-150 inline-flex items-center py-2 min-h-[40px] min-w-[40px] px-1" style={{ color: "hsl(var(--foreground) / 0.7)" }} onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")} onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(var(--foreground) / 0.7)")}
                       >
                         {link.label}
                       </a>
@@ -118,7 +118,7 @@ export const FooterSection = () => {
                   <li key={link.label}>
                     <Link
                       to={link.href}
-                      className="text-sm transition-colors duration-150 inline-flex items-center py-2 min-h-[40px] min-w-[40px] px-1" style={{ color: "hsl(0 0% 100% / 0.7)" }} onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")} onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.7)")}
+                      className="text-sm transition-colors duration-150 inline-flex items-center py-2 min-h-[40px] min-w-[40px] px-1" style={{ color: "hsl(var(--foreground) / 0.7)" }} onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")} onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(var(--foreground) / 0.7)")}
                     >
                       {link.label}
                     </Link>
@@ -135,7 +135,7 @@ export const FooterSection = () => {
                   <li key={link.label}>
                     <Link 
                       to={link.href} 
-                      className="text-sm transition-colors duration-150 inline-flex items-center py-2 min-h-[40px] min-w-[40px] px-1" style={{ color: "hsl(0 0% 100% / 0.7)" }} onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")} onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.7)")}
+                      className="text-sm transition-colors duration-150 inline-flex items-center py-2 min-h-[40px] min-w-[40px] px-1" style={{ color: "hsl(var(--foreground) / 0.7)" }} onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")} onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(var(--foreground) / 0.7)")}
                     >
                       {link.label}
                     </Link>
@@ -152,7 +152,7 @@ export const FooterSection = () => {
                   <li key={link.label}>
                     <Link 
                       to={link.href} 
-                      className="text-sm transition-colors duration-150 inline-flex items-center py-2 min-h-[40px] min-w-[40px] px-1" style={{ color: "hsl(0 0% 100% / 0.7)" }} onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")} onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.7)")}
+                      className="text-sm transition-colors duration-150 inline-flex items-center py-2 min-h-[40px] min-w-[40px] px-1" style={{ color: "hsl(var(--foreground) / 0.7)" }} onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")} onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(var(--foreground) / 0.7)")}
                     >
                       {link.label}
                     </Link>
@@ -171,9 +171,9 @@ export const FooterSection = () => {
                   <Link
                     to={link.href}
                     className="text-sm transition-colors duration-150 inline-flex items-center py-2 min-h-[40px] px-1"
-                    style={{ color: "hsl(0 0% 100% / 0.7)" }}
+                    style={{ color: "hsl(var(--foreground) / 0.7)" }}
                     onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")}
-                    onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(0 0% 100% / 0.7)")}
+                    onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(var(--foreground) / 0.7)")}
                   >
                     {link.label}
                   </Link>
@@ -190,7 +190,7 @@ export const FooterSection = () => {
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "hsl(261 75% 65%)" }}><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
               How OutReign Uses Google User Data
             </h3>
-            <div className="text-sm space-y-3" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
+            <div className="text-sm space-y-3" style={{ color: "hsl(var(--foreground) / 0.7)" }}>
               <p>
                 OutReign requests access to your Gmail data solely to enable outbound email features within the platform. Specifically, we access your Gmail account to:
               </p>
@@ -262,7 +262,7 @@ export const FooterSection = () => {
                 );
               })}
             </div>
-            <p className="text-sm text-center" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
+            <p className="text-sm text-center" style={{ color: "hsl(var(--foreground) / 0.6)" }}>
               © {new Date().getFullYear()} BDØT Industries LLC. All rights reserved.
             </p>
           </div>

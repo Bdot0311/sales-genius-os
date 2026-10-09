@@ -75,13 +75,13 @@ export const FounderNoteSection = () => {
           >
             <p
               className="text-base leading-relaxed"
-              style={{ color: "hsl(0 0% 100% / 0.7)" }}
+              style={{ color: "hsl(var(--foreground) / 0.7)" }}
             >
               The data was fine. But I was living across five tabs. Export from Apollo, paste into a sheet, figure out who to prioritize, write a different email for each one, then chase replies in my inbox while forgetting which follow-up was next. It was a part-time job on top of the actual job.
             </p>
             <p
               className="text-base leading-relaxed"
-              style={{ color: "hsl(0 0% 100% / 0.7)" }}
+              style={{ color: "hsl(var(--foreground) / 0.7)" }}
             >
               I built OutReign because no single tool did all of it. Describe who you want, see who fits, draft the email, track the thread. That's the whole job. That's the whole product.
             </p>
@@ -153,7 +153,7 @@ export const FounderNoteSection = () => {
                 </div>
                 <p
                   className="text-xs mt-0.5"
-                  style={{ color: "hsl(0 0% 100% / 0.25)" }}
+                  style={{ color: "hsl(var(--foreground) / 0.25)" }}
                 >
                   Launched 2026
                 </p>
@@ -185,12 +185,12 @@ export const FounderNoteSection = () => {
               href="/pricing"
               onClick={(e) => { e.preventDefault(); navigate("/pricing"); }}
               className="text-sm transition-colors duration-200 inline-flex items-center min-h-[40px] px-1"
-              style={{ color: "hsl(0 0% 100% / 0.6)" }}
+              style={{ color: "hsl(var(--foreground) / 0.6)" }}
               onMouseEnter={(e) =>
-                (e.currentTarget.style.color = "hsl(0 0% 100% / 0.6)")
+                (e.currentTarget.style.color = "hsl(var(--foreground) / 0.6)")
               }
               onMouseLeave={(e) =>
-                (e.currentTarget.style.color = "hsl(0 0% 100% / 0.6)")
+                (e.currentTarget.style.color = "hsl(var(--foreground) / 0.6)")
               }
             >
               View plans →

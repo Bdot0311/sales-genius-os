@@ -30,12 +30,12 @@ export const ProofBar = ({ metrics }: ProofBarProps) => {
             >
               {value}
             </span>
-            <span className="block text-xs mt-0.5" style={{ color: "hsl(0 0% 100% / 0.5)" }}>
+            <span className="block text-xs mt-0.5" style={{ color: "hsl(var(--foreground) / 0.5)" }}>
               {label}
             </span>
           </div>
         ))}
-        <p className="w-full text-center text-xs mt-2" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
+        <p className="w-full text-center text-xs mt-2" style={{ color: "hsl(var(--foreground) / 0.6)" }}>
           Built in public by a founder running real outbound daily.{" "}
           <a
             href={BRAND.founderX}

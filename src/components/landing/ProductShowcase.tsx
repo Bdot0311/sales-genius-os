@@ -30,7 +30,7 @@ export const ProductShowcase = () => {
           <div
             className="relative overflow-hidden rounded-[24px] sm:rounded-2xl"
             style={{
-              border: "1px solid hsl(0 0% 100% / 0.08)",
+              border: "1px solid hsl(var(--foreground) / 0.08)",
               boxShadow:
                 "0 0 0 1px hsl(261 75% 55% / 0.1), 0 40px 100px -20px hsl(0 0% 0% / 0.7), 0 0 80px -20px hsl(261 75% 55% / 0.15)",
               transform: hovered

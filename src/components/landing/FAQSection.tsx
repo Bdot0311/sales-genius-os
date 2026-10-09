@@ -161,7 +161,7 @@ export const FAQSection = () => {
                   </AccordionTrigger>
                   <AccordionContent
                     className="pb-5 text-sm leading-relaxed"
-                    style={{ color: "hsl(0 0% 100% / 0.7)" }}
+                    style={{ color: "hsl(var(--foreground) / 0.7)" }}
                   >
                     {faq.answer}
                   </AccordionContent>
@@ -176,7 +176,7 @@ export const FAQSection = () => {
             }`}
             style={{ transitionDelay: "300ms" }}
           >
-            <p className="text-sm" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
+            <p className="text-sm" style={{ color: "hsl(var(--foreground) / 0.6)" }}>
               Still have questions?{" "}
               <a
                 href="/help"
