@@ -86,7 +86,7 @@ export const HeroSection = () => {
             onClick={(e) => { e.preventDefault(); void openCampaignSetupBooking("hero_book_setup", null, { signedIn }); }}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-full border border-border bg-muted/50 px-7 text-sm font-medium text-white transition-colors hover:bg-muted sm:w-auto"
+            className="inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-full border border-border bg-muted/50 px-7 text-sm font-medium text-foreground transition-colors hover:bg-muted sm:w-auto"
             aria-label="Book a call and we build your first campaign with you"
           >
             Or build it with us on a call
