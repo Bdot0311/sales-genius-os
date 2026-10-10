@@ -32,30 +32,21 @@ export const HeroSection = () => {
         {/* H1 — two lines spring in with stagger */}
         <h1
           id="hero-heading"
-          className="font-display mb-5 max-w-[13ch] text-balance sm:mb-8 sm:max-w-none"
-          style={{ fontSize: "clamp(3rem, 8vw, 5.25rem)", lineHeight: 1.02, letterSpacing: "-0.01em", fontWeight: 800, textShadow: "0 4px 30px rgba(0,0,0,0.35)" }}
+          className="landing-hero-copy font-display mb-5 max-w-[13ch] text-balance sm:mb-8 sm:max-w-none"
+          style={{ fontSize: "clamp(3rem, 8vw, 5.25rem)", lineHeight: 1.02, fontWeight: 800 }}
         >
           <span className="block text-foreground">
             The output of a sales team.
           </span>
           <span
-            className="block font-display italic animate-shiny"
-            style={{
-              fontStyle: "italic",
-              fontWeight: 800,
-              backgroundImage: "linear-gradient(to right, #a78bfa 0%, #8b5cf6 15%, #c4b5fd 35%, #e9d5ff 50%, #c4b5fd 65%, #8b5cf6 85%, #a78bfa 100%)",
-              backgroundSize: "200% auto",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-            }}
+            className="landing-hero-highlight block font-display italic font-extrabold animate-shiny"
           >
             Headcount of one.
           </span>
         </h1>
 
         {/* Subhead — LCP element: rendered fully opaque, no entrance animation */}
-        <p className="mb-7 max-w-[26rem] text-pretty text-xl font-medium leading-snug text-foreground sm:mb-8 sm:max-w-2xl sm:text-[1.75rem] sm:leading-relaxed" style={{ textShadow: "0 4px 32px rgba(0,0,0,0.55)" }}>
+        <p className="landing-hero-copy mb-7 max-w-[26rem] text-pretty text-xl font-medium leading-snug text-foreground sm:mb-8 sm:max-w-2xl sm:text-[1.75rem] sm:leading-relaxed">
           Describe your customer in plain English. Get ranked prospects with verified emails, a first draft for each, and an AI SDR that works the replies from your Gmail.
         </p>
 

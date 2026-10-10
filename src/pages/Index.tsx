@@ -169,6 +169,7 @@ const Index = () => {
           </video>
         )}
         <div className="cinematic-scrim absolute inset-0" />
+        <div className="cinematic-tint absolute inset-0" />
         <div className="cinematic-vignette absolute inset-0" />
       </div>
 
