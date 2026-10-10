@@ -14,7 +14,7 @@ All colors MUST be HSL. Using 8px spacing scale.
     --mobile-page-gutter: 1rem;
 
     /* Lighter charcoal theme: never a white canvas. */
-    --cinematic-brightness: 1.65;
+    --cinematic-brightness: 1.15;
     --background: 260 8% 16%;
     --foreground: 0 0% 95%;
 
@@ -1456,4 +1456,52 @@ html.theme-transition *::after {
   [role="tablist"].settings-tab-list > * {
     scroll-snap-align: start;
   }
+}
+
+/* Landing Page Legibility Enhancements */
+@layer components {
+  /* Increase contrast of simulated UI elements */
+  .backdrop-blur-sm {
+    backdrop-filter: blur(12px); /* Stronger blur */
+  }
+
+  /* Simulated UI cards in DashboardMockup and ModulesSection */
+  .bg-card\/90 {
+    @apply bg-card/95; /* More opaque */
+  }
+
+  .bg-background\/60 {
+    @apply bg-background/85; /* Much more opaque for legibility */
+  }
+
+  /* Improve heading legibility against cinematic background */
+  h1, h2, h3 {
+    text-shadow: 0 2px 10px hsl(0 0% 0% / 0.2);
+  }
+
+  /* Ensure body text has enough contrast */
+  .text-foreground\/70, .text-muted-foreground {
+    @apply text-foreground/80;
+  }
+}
+
+/* Adjust cinematic background for light (charcoal) mode */
+:root {
+  --cinematic-video-opacity: 0.35;
+  --cinematic-overlay-opacity: 0.8;
+}
+
+.dark {
+  --cinematic-video-opacity: 0.55;
+  --cinematic-overlay-opacity: 0.6;
+}
+
+.cinematic-background video {
+  opacity: var(--cinematic-video-opacity) !important;
+  transition: opacity 0.5s ease-in-out;
+}
+
+.cinematic-background > div {
+  opacity: var(--cinematic-overlay-opacity);
+  transition: opacity 0.5s ease-in-out;
 }
