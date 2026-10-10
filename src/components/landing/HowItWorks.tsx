@@ -37,7 +37,7 @@ const steps = [
           >
             <div>
               <p className="text-sm font-semibold" style={{ color: "hsl(var(--foreground) / 0.88)" }}>{name}</p>
-              <p className="text-xs mt-0.5" style={{ color: "hsl(var(--foreground) / 0.6)" }}>{role}</p>
+              <p className="text-xs mt-0.5" style={{ color: "hsl(var(--landing-copy))" }}>{role}</p>
             </div>
             <div className="flex items-center gap-2.5 flex-shrink-0">
               <div className="h-1 w-14 rounded-full overflow-hidden" style={{ background: "hsl(var(--foreground) / 0.08)" }}>
@@ -74,10 +74,10 @@ const steps = [
           </span>
         </div>
         <div className="px-4 py-3 space-y-1.5">
-          <p className="text-[11px]" style={{ color: "hsl(var(--foreground) / 0.6)" }}>
+          <p className="text-[11px]" style={{ color: "hsl(var(--landing-copy))" }}>
             Subject: Quick idea for Northline's outbound push
           </p>
-          <p className="text-sm leading-relaxed" style={{ color: "hsl(var(--foreground) / 0.6)" }}>
+          <p className="text-sm leading-relaxed" style={{ color: "hsl(var(--landing-copy))" }}>
             Hey Jordan, saw Northline is scaling the sales team in NYC and hiring SDRs right now. That usually means more pressure to build pipeline fast…
           </p>
         </div>
@@ -173,7 +173,7 @@ export const HowItWorks = () => {
                   <h3 className="text-2xl font-semibold mb-3 leading-snug" style={{ color: "hsl(var(--foreground))" }}>
                     {step.title}
                   </h3>
-                  <p className="leading-relaxed max-w-lg mx-auto" style={{ color: "hsl(var(--foreground) / 0.7)" }}>
+                  <p className="leading-relaxed max-w-lg mx-auto" style={{ color: "hsl(var(--landing-copy))" }}>
                     {step.body}
                   </p>
                   {step.visual}
@@ -203,7 +203,7 @@ export const HowItWorks = () => {
             >
               Try it free, 100 lead searches a month, no card required
             </motion.a>
-            <p className="text-xs" style={{ color: "hsl(var(--foreground) / 0.6)" }}>
+            <p className="text-xs" style={{ color: "hsl(var(--landing-copy))" }}>
               Free to start. No credit card.
             </p>
           </motion.div>
