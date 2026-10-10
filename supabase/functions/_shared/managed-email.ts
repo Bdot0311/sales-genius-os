@@ -11,17 +11,13 @@ export const SENDER_DOMAIN = 'notify.outreign.io'
 export const FROM_DOMAIN = 'notify.outreign.io'
 export const DEFAULT_FROM = `${SITE_NAME} <noreply@${FROM_DOMAIN}>`
 
-// Never send to reserved / synthetic test addresses. Automated smoke tests
-// create throwaway signups, and delivering to those domains produces real hard
-// bounces that pollute sender reputation and the health report.
-const TEST_DOMAINS = ['outreign-tests.com', 'example.com', 'example.org', 'example.net']
-const TEST_TLDS = ['.test', '.invalid', '.localhost', '.local']
-
-export function isReservedTestRecipient(email: string): boolean {
-  const domain = (email ?? '').toLowerCase().split('@')[1] ?? ''
-  if (!domain) return false
-  return TEST_DOMAINS.includes(domain) || TEST_TLDS.some((tld) => domain.endsWith(tld))
-}
+// Never send to reserved / synthetic test addresses. The rule moved to
+// test-recipients.ts, which imports nothing: this module's `npm:` specifier for
+// the managed transport made it Deno-only, so a vitest file could not import
+// the predicate to check it. Re-exported here so every existing caller is
+// unchanged.
+import { isReservedTestRecipient } from './test-recipients.ts'
+export { isReservedTestRecipient, TEST_DOMAINS, TEST_TLDS } from './test-recipients.ts'
 
 /**
  * Where replies to platform-sent email land.

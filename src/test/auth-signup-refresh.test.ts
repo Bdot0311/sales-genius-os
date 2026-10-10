@@ -9,6 +9,28 @@ import path from "node:path";
  *
  * Runs against the live backend using the publishable (anon) key only.
  * Skipped automatically when the env is unavailable.
+ *
+ * ── Why the signup half is opt-in ────────────────────────────────────────
+ *
+ * It does not simulate a signup. It creates a real one: a row in auth.users
+ * and everything the provisioning trigger hangs off it, permanently, with no
+ * way to clean up from here because the test deliberately holds the anon key
+ * and nothing stronger.
+ *
+ * The publishable key and project URL live in a committed .env, which is
+ * correct for a Vite app and means this ran for everyone — CI on every commit,
+ * Lovable, and anyone who cloned the repo and typed `vitest run`. Each run left
+ * an account behind and fired a "🎉 New User Signup" at the admin inbox.
+ *
+ * notify-new-signup now drops anything from a reserved test domain, so the
+ * email and the analytics event are gone either way. The accounts are not:
+ * only running it on purpose stops those. Set RUN_LIVE_SIGNUP_SMOKE=1 to run
+ * it, which is worth doing against a migration that touches the trigger, the
+ * profiles table or the subscriptions constraint.
+ *
+ * The refresh half creates nothing — it posts a refresh token that was never
+ * valid — so it stays on whenever credentials are present, which keeps the 500
+ * on /auth/v1/token guarded on every commit.
  */
 
 function loadEnv(): Record<string, string> {
@@ -27,6 +49,8 @@ const env = loadEnv();
 const SUPABASE_URL = env.VITE_SUPABASE_URL;
 const ANON_KEY = env.VITE_SUPABASE_PUBLISHABLE_KEY || env.VITE_SUPABASE_ANON_KEY;
 const enabled = Boolean(SUPABASE_URL && ANON_KEY);
+/** The half that leaves a permanent account behind runs only when asked. */
+const signupEnabled = enabled && env.RUN_LIVE_SIGNUP_SMOKE === "1";
 
 describe.runIf(enabled)("auth signup + token refresh never return 5xx", () => {
   const headers = {
@@ -35,7 +59,7 @@ describe.runIf(enabled)("auth signup + token refresh never return 5xx", () => {
     Authorization: `Bearer ${ANON_KEY}`,
   };
 
-  it("POST /auth/v1/signup does not fail with a server error", async () => {
+  it.runIf(signupEnabled)("POST /auth/v1/signup does not fail with a server error", async () => {
     const email = `signup-smoke-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@outreign-tests.com`;
     const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
       method: "POST",
