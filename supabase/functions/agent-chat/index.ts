@@ -16,6 +16,7 @@ import { chooseMailbox, type RoutableMailbox } from "../_shared/mailbox-routing.
 import { invalidArgsResult, validateToolArgs, type ToolSchema } from "../_shared/tool-args.ts";
 import { mergeCompleted, resultOk, resumeFrom, supabaseTraceStore, trimResult } from "../_shared/agent-trace.ts";
 import { budgetExhausted, budgetNote, carriedTokens, tokensIn, turnTokenBudget } from "../_shared/agent-budget.ts";
+import { pruneTurnContext } from "../_shared/turn-context.ts";
 import {
   AGENT_MAX_ATTEMPTS,
   AGENT_TARGET_SCORE,
@@ -4632,6 +4633,27 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
         break;
       }
       if (await cancelRequested()) break;
+
+      /*
+       * Shed what this turn has finished with, before paying to send it again.
+       *
+       * Nothing ever removed anything from this array, so a turn that listed a
+       * hundred leads carried that payload into every later step — paid for on
+       * each call, and slower on each call, on a function with a 110-second
+       * ceiling. The tools that act later read their records back by id, so
+       * the raw payload is weight rather than context.
+       *
+       * In place, so the step the trace stores for a resume is the pruned one
+       * and a restart does not re-inflate it. The full result is still in the
+       * trace's own tool_results column for anyone reading back.
+       */
+      const pruned = pruneTurnContext(messages);
+      if (pruned.prunedCount > 0) {
+        console.log(
+          `[agent-chat] pruned ${pruned.prunedCount} stale tool result(s): ` +
+            `${pruned.tokensBefore} -> ${pruned.tokensAfter} tokens`,
+        );
+      }
 
       let res: Response;
       try {
