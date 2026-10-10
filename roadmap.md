@@ -10,4 +10,4 @@
 
 - [x] Add editable display name and private profile photo under Settings → Profile.
 - [x] Show saved name and photo in the bottom-corner account menu.
-- [ ] Verify saved profile changes and publish a What's New entry.
+- [x] Verify saved profile changes and publish a What's New entry.
