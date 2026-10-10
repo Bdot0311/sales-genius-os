@@ -76,6 +76,8 @@ export const MIN_WORDS = 50;
 export const MAX_WORDS = 90;
 /** Hard ceiling before length alone stops the email being read on a phone. */
 export const HARD_MAX_WORDS = 140;
+/** Subject words past which it truncates on a phone and reads as marketing. */
+export const SUBJECT_MAX_WORDS = 6;
 
 /** The body with any signature block and PS removed, as lines. */
 export function bodyWithoutSignature(body: string): string {
@@ -327,6 +329,24 @@ export function auditEmail(input: AuditInput): Finding[] {
     }
   }
 
+  // ─── The subject line ────────────────────────────────────────────────────
+  //
+  // This was gated to touch 1, which was an accident of where it was written:
+  // a subject truncates on a phone at touch four exactly as it does at touch
+  // one. It is also the only subject rule in the product, so gating it left
+  // the studio's own rubric panel to re-implement the same check with its own
+  // threshold — see _shared/email-deliverability.ts for what happened to the
+  // other three copies of that pattern.
+  if (subject && wordCount(subject) > SUBJECT_MAX_WORDS) {
+    add({
+      rule: "long_subject",
+      severity: "note",
+      evidence: `${wordCount(subject)} words: "${subject}"`,
+      why: "A long subject truncates on mobile and reads as marketing.",
+      fix: `${SUBJECT_MAX_WORDS} words or fewer. The signal itself is the strongest subject a first touch can carry.`,
+    });
+  }
+
   // ─── Position-specific rules ─────────────────────────────────────────────
   if (position === 1) {
     const timeAsk = asks.find((a) => TIME_ASK.test(a));
@@ -338,15 +358,6 @@ export function auditEmail(input: AuditInput): Finding[] {
         evidence: timeAsk!,
         why: "Asking a stranger for half an hour on the first touch converts far worse than the smallest viable ask.",
         fix: "Ask for fifteen minutes, or ask for a reply rather than a slot.",
-      });
-    }
-    if (subject && wordCount(subject) > 6) {
-      add({
-        rule: "long_subject",
-        severity: "note",
-        evidence: `${wordCount(subject)} words: "${subject}"`,
-        why: "A long subject truncates on mobile and reads as marketing.",
-        fix: "Six words or fewer. The signal itself is the strongest subject a first touch can carry.",
       });
     }
   }

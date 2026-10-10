@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
+import { CANNOT_AUTOFIX } from "./email-quality-fixes";
 import {
   STRONG_SCORE,
   allStrong,
@@ -167,8 +168,16 @@ describe("a Fix button that cannot work is not offered", () => {
   });
 
   it("names the checks no body edit can resolve", () => {
-    expect(FIXES).toContain("CANNOT_AUTOFIX");
-    expect(FIXES).toContain('new Set(["Signature"])');
+    // Pinned to the rule rather than to the membership list: every label in
+    // the set must have no case in the switch, and no label with a case in
+    // the switch may be in the set. Asserting the literal set meant adding a
+    // second unfixable check broke a test that had no opinion about it.
+    const cases = FIXES.slice(FIXES.indexOf("switch (label)"));
+    const handled = new Set([...cases.matchAll(/case "([^"]+)":/g)].map((m) => m[1]));
+    const unfixable = [...CANNOT_AUTOFIX];
+    expect(unfixable.length).toBeGreaterThan(0);
+    expect(unfixable).toContain("Signature");
+    for (const label of unfixable) expect(handled.has(label)).toBe(false);
   });
 
   it("hides the button for them", () => {

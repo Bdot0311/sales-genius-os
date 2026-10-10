@@ -43,6 +43,7 @@ import { userConfirmedSend } from "../_shared/user-confirmation.ts";
 import { duplicateGuidanceFor } from "../_shared/duplicate-send.ts";
 import { wantsCopyAudit } from "../_shared/copy-review-intent.ts";
 import { auditEmail, auditSummary } from "../_shared/email-audit.ts";
+import { auditDeliverability } from "../_shared/email-deliverability.ts";
 import { auditSequence, sequenceSummary } from "../_shared/sequence-audit.ts";
 import {
   accountFor,
@@ -3706,13 +3707,27 @@ serve(async (req) => {
               auditLead = { company: leadRow.company_name, contactName: leadRow.contact_name };
             }
           }
-          const findings = auditEmail({
-            subject: args.subject ? String(args.subject) : "",
-            body: String(args.body ?? ""),
-            position: typeof args.position === "number" ? args.position : undefined,
-            verifiedProof: args.verified_proof ? String(args.verified_proof) : "",
-            lead: auditLead,
-          });
+          const auditSubject = args.subject ? String(args.subject) : "";
+          const auditBody = String(args.body ?? "");
+          const auditPosition = typeof args.position === "number" ? args.position : undefined;
+          // Both rule sets, because the quality card the user is looking at
+          // shows both. An agent that audits an email and says nothing about
+          // the three links in it is reporting half the answer, and the user
+          // can see the other half.
+          const findings = [
+            ...auditEmail({
+              subject: auditSubject,
+              body: auditBody,
+              position: auditPosition,
+              verifiedProof: args.verified_proof ? String(args.verified_proof) : "",
+              lead: auditLead,
+            }),
+            ...auditDeliverability({
+              subject: auditSubject,
+              body: auditBody,
+              isFirstTouch: auditPosition === undefined || auditPosition === 1,
+            }),
+          ];
           const blockers = findings.filter((f) => f.severity === "blocker").length;
           toolEvents.push({
             name,

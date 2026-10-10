@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { aiFetch } from "../_shared/ai-provider.ts";
+import { deliverabilityCheck } from "../_shared/email-deliverability.ts";
 import {
   AGENT_SCENARIOS,
   explainResult,
@@ -37,17 +38,6 @@ async function callGemini(prompt: string, systemPrompt: string): Promise<string>
   return data?.choices?.[0]?.message?.content ?? "";
 }
 
-const SPAM_TRIGGERS = [
-  "free", "guarantee", "winner", "congratulations", "act now", "limited time",
-  "click here", "earn money", "make money", "risk free", "special promotion",
-  "no obligation", "100%", "$$$", "discount", "cash bonus",
-];
-
-function deliverabilityCheck(subject: string, body: string): { ok: boolean; hits: string[] } {
-  const text = `${subject} ${body}`.toLowerCase();
-  const hits = SPAM_TRIGGERS.filter((w) => text.includes(w));
-  return { ok: hits.length === 0, hits };
-}
 
 interface Scenario {
   id: string;

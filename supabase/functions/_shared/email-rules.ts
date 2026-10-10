@@ -28,14 +28,14 @@ export const BANNED_PHRASES: string[] = [
   "I hope this message finds you", "hope this finds you well", "I'll keep this brief",
   "love what you're doing", "big fan",
   // Follow-up filler
-  "touching base", "circling back", "bumping this", "bumping this to the top",
+  "touching base", "touch base", "circling back", "bumping this", "bumping this to the top",
   "just following up", "wanted to follow up", "just checking in", "wanted to check in",
   "any update", "per my last email", "did you see my last email",
   // Closers that ask for nothing
   "I'd love to connect", "let me know if you have any questions",
   "looking forward to hearing from you",
   // Marketing and AI tells
-  "quick question", "in today's fast-paced world", "innovative solution",
+  "quick question", "quick call", "in today's fast-paced world", "innovative solution",
   "cutting-edge", "industry-leading", "best-in-class", "revolutionary",
   "next-gen", "game-changing", "all-in-one",
   "synergy", "leverage", "optimize", "streamline", "seamless", "supercharge",
@@ -53,6 +53,11 @@ export const BANNED_PHRASES: string[] = [
   "worth comparing", "worth exploring", "drive results", "drive growth",
   "boost revenue", "maximize", "scale faster", "operational efficiency",
   "value prop", "solutions that", "tailored solution", "bespoke solution",
+  // Named from OUTBOUND_KB.deadPhrases, which the panel checked and this did
+  // not. Its remaining entry, "happy to", is deliberately absent: the playbook
+  // itself uses "happy to send the one-pager" as the low-friction ask, so
+  // banning the substring would flag the recommended closing line.
+  "i help companies",
 ];
 
 const quoted = (list: string[]) => list.map((p) => `"${p}"`).join(", ");
