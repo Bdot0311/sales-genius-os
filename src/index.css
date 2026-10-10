@@ -1529,6 +1529,7 @@ html.light:has(.landing-page) body {
   nav button:not(.cta-pill-glow),
   main p:not(.animate-shiny),
   main small,
+  main a:not(.cta-pill-glow),
   main [style*="color: hsl(var(--foreground)"],
   main .text-foreground\/70,
   main .text-foreground\/90,
