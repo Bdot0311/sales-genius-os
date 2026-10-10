@@ -1460,19 +1460,21 @@ html.theme-transition *::after {
 
 /* Homepage-only presentation tokens; dashboard styling stays unchanged. */
 :root {
-  --landing-surface: 261 65% 96%;
+  --landing-surface: 261 55% 87%;
   --landing-copy: 261 25% 22%;
   --landing-line: 261 30% 65%;
-  --landing-scrim: 261 65% 92%;
-  --landing-scrim-opacity: 0.32;
-  --landing-video-filter: invert(1) hue-rotate(180deg) saturate(0.85);
-  --landing-tint: 263 70% 74%;
+  --landing-canvas: 261 55% 81%;
+  --landing-scrim: 261 55% 81%;
+  --landing-scrim-opacity: 0.7;
+  --landing-video-filter: saturate(1.35) hue-rotate(18deg);
+  --landing-tint: 263 80% 45%;
   --landing-vignette-opacity: 0.32;
   --landing-shadow: 0 24px 70px hsl(261 45% 25% / 0.15);
   --landing-text-shadow: none;
   --landing-heading-gradient: linear-gradient(to right, hsl(261 70% 35%), hsl(280 65% 38%), hsl(261 70% 43%), hsl(280 65% 38%), hsl(261 70% 35%));
 }
 .dark {
+  --landing-canvas: 261 75% 2%;
   --landing-surface: 261 75% 4%;
   --landing-copy: 260 8% 82%;
   --landing-line: 261 75% 45%;
@@ -1514,3 +1516,24 @@ html.theme-transition *::after {
   color: hsl(var(--foreground));
 }
 .landing-readable { color: hsl(var(--landing-copy)); }
+
+/* Legacy landing headings share the same shimmer in both palettes. */
+.landing-page .animate-shiny {
+  background-image: var(--landing-heading-gradient) !important;
+}
+html.light:has(.landing-page) body {
+  background-color: hsl(var(--landing-canvas));
+}
+/* Only supporting copy and navigation: preserve primary button contrast. */
+.light .landing-page :is(
+  nav button:not(.cta-pill-glow),
+  main p:not(.animate-shiny),
+  main small,
+  main a:not(.cta-pill-glow),
+  main [style*="color: hsl(var(--foreground)"],
+  main .text-foreground\/70,
+  main .text-foreground\/90,
+  main .text-muted-foreground
+) {
+  color: hsl(var(--foreground)) !important;
+}

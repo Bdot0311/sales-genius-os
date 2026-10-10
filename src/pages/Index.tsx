@@ -176,7 +176,7 @@ const Index = () => {
       <div className="hidden lg:block fixed inset-y-0 left-1/2 w-px -translate-x-[36rem] bg-white/[0.04] pointer-events-none z-0" aria-hidden="true" />
       <div className="hidden lg:block fixed inset-y-0 left-1/2 w-px translate-x-[36rem] bg-white/[0.04] pointer-events-none z-0" aria-hidden="true" />
 
-      <div className="min-h-screen bg-transparent text-foreground overflow-x-hidden">
+      <div className="landing-page min-h-screen bg-transparent text-foreground overflow-x-hidden">
         <Navbar />
         <main itemScope itemType="https://schema.org/WebPage">
           <article>
