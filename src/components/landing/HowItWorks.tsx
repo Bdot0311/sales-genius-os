@@ -10,12 +10,7 @@ const steps = [
     body: "Type it the way you would say it out loud. Title, industry, size, location, the signals that matter. No boolean, no filter menus.",
     visual: (
       <div
-        className="mt-5 rounded-md px-4 py-3 font-mono text-sm leading-relaxed"
-        style={{
-          background: "hsl(261 75% 50% / 0.08)",
-          border: "1px solid hsl(261 75% 50% / 0.2)",
-          color: "hsl(261 75% 72%)",
-        }}
+        className="landing-example mt-5 rounded-lg px-4 py-4 font-mono text-sm leading-relaxed text-left"
       >
         <span style={{ color: "hsl(261 75% 50% / 0.5)" }} className="mr-2 select-none">{">"}</span>
         "VP of Sales at Series B SaaS companies in the US, 50–200 employees, actively hiring SDRs"
@@ -28,8 +23,7 @@ const steps = [
     body: "Prospects come back ranked by fit, with verified business emails attached and what the company just did. You decide who is in.",
     visual: (
       <div
-        className="mt-5 rounded-xl overflow-hidden"
-        style={{ background: "hsl(261 75% 50% / 0.05)", border: "1px solid hsl(261 75% 50% / 0.18)" }}
+        className="landing-example mt-5 rounded-lg overflow-hidden text-left"
       >
         {[
           { name: "Jordan Park", role: "Head of Sales · Northline", fit: 94 },
@@ -43,7 +37,7 @@ const steps = [
           >
             <div>
               <p className="text-sm font-semibold" style={{ color: "hsl(var(--foreground) / 0.88)" }}>{name}</p>
-              <p className="text-xs mt-0.5" style={{ color: "hsl(var(--foreground) / 0.6)" }}>{role}</p>
+              <p className="text-xs mt-0.5" style={{ color: "hsl(var(--landing-copy))" }}>{role}</p>
             </div>
             <div className="flex items-center gap-2.5 flex-shrink-0">
               <div className="h-1 w-14 rounded-full overflow-hidden" style={{ background: "hsl(var(--foreground) / 0.08)" }}>
@@ -55,7 +49,7 @@ const steps = [
         ))}
         <div className="flex items-center gap-1.5 px-4 py-2.5" style={{ borderTop: "1px solid hsl(261 75% 50% / 0.1)" }}>
           <span style={{ color: "hsl(261 75% 62%)", fontSize: "10px" }}>✓</span>
-          <span className="text-[10px]" style={{ color: "hsl(var(--foreground) / 0.22)" }}>
+          <span className="text-xs landing-readable">
             Business emails verified via SMTP + multi-source enrichment
           </span>
         </div>
@@ -68,8 +62,7 @@ const steps = [
     body: "Each email is written from that company's own context and quality-checked before it leaves. It sends from your Gmail, in your name.",
     visual: (
       <div
-        className="mt-5 rounded-xl overflow-hidden"
-        style={{ background: "hsl(261 75% 50% / 0.05)", border: "1px solid hsl(261 75% 50% / 0.18)" }}
+        className="landing-example mt-5 rounded-lg overflow-hidden text-left"
       >
         <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: "1px solid hsl(261 75% 50% / 0.1)" }}>
           <span className="text-xs font-medium" style={{ color: "hsl(261 75% 60%)" }}>AI Draft</span>
@@ -81,10 +74,10 @@ const steps = [
           </span>
         </div>
         <div className="px-4 py-3 space-y-1.5">
-          <p className="text-[11px]" style={{ color: "hsl(var(--foreground) / 0.6)" }}>
+          <p className="text-[11px]" style={{ color: "hsl(var(--landing-copy))" }}>
             Subject: Quick idea for Northline's outbound push
           </p>
-          <p className="text-sm leading-relaxed" style={{ color: "hsl(var(--foreground) / 0.6)" }}>
+          <p className="text-sm leading-relaxed" style={{ color: "hsl(var(--landing-copy))" }}>
             Hey Jordan, saw Northline is scaling the sales team in NYC and hiring SDRs right now. That usually means more pressure to build pipeline fast…
           </p>
         </div>
@@ -109,7 +102,7 @@ export const HowItWorks = () => {
         <div className="max-w-[720px] mx-auto text-center">
 
           <motion.p
-            className="font-serif italic font-thin text-base text-center text-purple-500 mb-6"
+            className="text-sm font-medium text-center text-primary mb-6"
             initial={{ opacity: 0, y: 14 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-10% 0px" }}
@@ -180,7 +173,7 @@ export const HowItWorks = () => {
                   <h3 className="text-2xl font-semibold mb-3 leading-snug" style={{ color: "hsl(var(--foreground))" }}>
                     {step.title}
                   </h3>
-                  <p className="leading-relaxed max-w-lg mx-auto" style={{ color: "hsl(var(--foreground) / 0.7)" }}>
+                  <p className="leading-relaxed max-w-lg mx-auto" style={{ color: "hsl(var(--landing-copy))" }}>
                     {step.body}
                   </p>
                   {step.visual}
@@ -210,7 +203,7 @@ export const HowItWorks = () => {
             >
               Try it free, 100 lead searches a month, no card required
             </motion.a>
-            <p className="text-xs" style={{ color: "hsl(var(--foreground) / 0.6)" }}>
+            <p className="text-xs" style={{ color: "hsl(var(--landing-copy))" }}>
               Free to start. No credit card.
             </p>
           </motion.div>

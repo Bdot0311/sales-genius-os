@@ -159,7 +159,7 @@ const Index = () => {
             width="100%"
             height="100%"
             poster="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%3E%3Crect width='16' height='9' fill='%230a0612'/%3E%3C/svg%3E"
-            style={{ transition: "opacity 400ms ease", opacity: 0, filter: "saturate(1.35) hue-rotate(18deg)" }}
+            style={{ transition: "opacity 400ms ease", opacity: 0 }}
             className="absolute inset-0 h-full w-full object-cover"
           >
             <source
@@ -168,18 +168,8 @@ const Index = () => {
             />
           </video>
         )}
-        <div
-          className="absolute inset-0"
-          style={{ background: 'linear-gradient(to bottom, hsl(261 75% 4% / 0.45), hsl(261 75% 3% / 0.72))' }}
-        />
-        <div
-          className="absolute inset-0"
-          style={{ background: 'hsl(263 80% 45%)', mixBlendMode: 'color', opacity: 0.35 }}
-        />
-        <div
-          className="absolute inset-0"
-          style={{ background: 'radial-gradient(ellipse at center, transparent 25%, hsl(261 75% 2% / 0.78) 100%)' }}
-        />
+        <div className="cinematic-scrim absolute inset-0" />
+        <div className="cinematic-vignette absolute inset-0" />
       </div>
 
       <div className="hidden lg:block fixed inset-y-0 left-1/2 w-px -translate-x-[36rem] bg-white/[0.04] pointer-events-none z-0" aria-hidden="true" />

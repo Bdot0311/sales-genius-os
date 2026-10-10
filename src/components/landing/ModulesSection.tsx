@@ -24,7 +24,7 @@ const LeadDiscoveryPreview = () => (
           style={{ background: "hsl(var(--foreground) / 0.04)", border: "1px solid hsl(var(--foreground) / 0.07)" }}
         >
           <p className="text-base font-bold" style={{ color: "hsl(261 75% 68%)" }}>{val}</p>
-          <p className="text-[10px] mt-0.5" style={{ color: "hsl(var(--foreground) / 0.6)" }}>{lbl}</p>
+          <p className="text-[10px] mt-0.5" style={{ color: "hsl(var(--landing-copy))" }}>{lbl}</p>
         </div>
       ))}
     </div>
@@ -41,7 +41,7 @@ const LeadDiscoveryPreview = () => (
       >
         <div>
           <p className="text-sm font-medium" style={{ color: "hsl(var(--foreground) / 0.88)" }}>{name}</p>
-          <p className="text-[11px] mt-0.5" style={{ color: "hsl(var(--foreground) / 0.6)" }}>{role}</p>
+          <p className="text-[11px] mt-0.5" style={{ color: "hsl(var(--landing-copy))" }}>{role}</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <div className="h-1 w-12 rounded-full overflow-hidden" style={{ background: "hsl(var(--foreground) / 0.08)" }}>
@@ -68,13 +68,13 @@ const OutreachPreview = () => (
         </span>
       </div>
       <div className="px-4 py-4 flex-1 space-y-3">
-        <p className="text-[11px]" style={{ color: "hsl(var(--foreground) / 0.6)" }}>
+        <p className="text-[11px]" style={{ color: "hsl(var(--landing-copy))" }}>
           Subject: Quick idea for Northline's outbound push
         </p>
-        <p className="text-sm leading-relaxed" style={{ color: "hsl(var(--foreground) / 0.65)" }}>
+        <p className="text-sm leading-relaxed" style={{ color: "hsl(var(--landing-copy))" }}>
           Hey Jordan, saw Northline is scaling the sales team in NYC. That usually means more pressure to build pipeline fast.
         </p>
-        <p className="text-sm leading-relaxed" style={{ color: "hsl(var(--foreground) / 0.65)" }}>
+        <p className="text-sm leading-relaxed" style={{ color: "hsl(var(--landing-copy))" }}>
           OutReign helps teams like yours find better-fit leads and move into outreach in one session. No list-building, no copy-paste.
         </p>
       </div>
@@ -116,7 +116,7 @@ const ReplyPreview = () => (
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium" style={{ color: "hsl(var(--foreground) / 0.88)" }}>{name}</p>
-          <p className="text-xs truncate mt-0.5" style={{ color: "hsl(var(--foreground) / 0.6)" }}>{last}</p>
+          <p className="text-xs truncate mt-0.5" style={{ color: "hsl(var(--landing-copy))" }}>{last}</p>
         </div>
         <span
           className="text-[10px] px-2 py-0.5 rounded-full flex-shrink-0 font-medium"
@@ -142,7 +142,7 @@ const PipelinePreview = () => {
       {stages.map(({ label, count, pct }) => (
         <div key={label}>
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs font-medium" style={{ color: "hsl(var(--foreground) / 0.70)" }}>{label}</span>
+            <span className="text-xs font-medium" style={{ color: "hsl(var(--landing-copy))" }}>{label}</span>
             <span className="text-xs font-semibold" style={{ color: "hsl(261 75% 65%)" }}>{count}</span>
           </div>
           <div className="h-2 rounded-full overflow-hidden" style={{ background: "hsl(var(--foreground) / 0.06)" }}>
@@ -166,7 +166,7 @@ const PipelinePreview = () => {
             style={{ background: "hsl(261 75% 50% / 0.08)", border: "1px solid hsl(261 75% 50% / 0.18)" }}
           >
             <p className="text-base font-bold" style={{ color: "hsl(261 75% 68%)" }}>{val}</p>
-            <p className="text-[10px] mt-0.5" style={{ color: "hsl(var(--foreground) / 0.6)" }}>{lbl}</p>
+            <p className="text-[10px] mt-0.5" style={{ color: "hsl(var(--landing-copy))" }}>{lbl}</p>
           </div>
         ))}
       </div>
@@ -200,10 +200,10 @@ const CoachPreview = () => (
       className="px-4 py-3 rounded-2xl space-y-2"
       style={{ background: "hsl(var(--foreground) / 0.03)", border: "1px solid hsl(var(--foreground) / 0.07)" }}
     >
-      <p className="text-sm leading-relaxed" style={{ color: "hsl(var(--foreground) / 0.7)" }}>
+      <p className="text-sm leading-relaxed" style={{ color: "hsl(var(--landing-copy))" }}>
         Northline ($24K, proposal) has gone quiet for 9 days. Send the pricing recap today.
       </p>
-      <p className="text-sm leading-relaxed" style={{ color: "hsl(var(--foreground) / 0.7)" }}>
+      <p className="text-sm leading-relaxed" style={{ color: "hsl(var(--landing-copy))" }}>
         Rina Shah scores 88 and asked for a demo link. Book her before Thursday.
       </p>
     </div>
@@ -216,7 +216,7 @@ const CoachPreview = () => (
           style={{ background: "hsl(261 75% 50% / 0.08)", border: "1px solid hsl(261 75% 50% / 0.18)" }}
         >
           <p className="text-base font-bold" style={{ color: "hsl(261 75% 68%)" }}>{val}</p>
-          <p className="text-[10px] mt-0.5" style={{ color: "hsl(var(--foreground) / 0.6)" }}>{lbl}</p>
+          <p className="text-[10px] mt-0.5" style={{ color: "hsl(var(--landing-copy))" }}>{lbl}</p>
         </div>
       ))}
     </div>
@@ -307,7 +307,7 @@ export const ModulesSection = () => {
           <div
             className={`mb-16 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
           >
-            <p className="font-serif italic font-thin text-base text-center text-purple-500 mb-5">
+            <p className="text-sm font-medium text-center text-primary mb-5">
               Five screens
             </p>
             <h2
@@ -381,9 +381,9 @@ export const ModulesSection = () => {
                         {/* Description only expands when active */}
                         <div
                           className="overflow-hidden transition-all duration-500"
-                          style={{ maxHeight: isActive ? "80px" : "0px", opacity: isActive ? 1 : 0 }}
+                          style={{ maxHeight: isActive ? "240px" : "0px", opacity: isActive ? 1 : 0 }}
                         >
-                          <p className="text-sm leading-relaxed" style={{ color: "hsl(var(--foreground) / 0.7)" }}>
+                          <p className="text-sm leading-relaxed" style={{ color: "hsl(var(--landing-copy))" }}>
                             {mod.description}
                           </p>
                         </div>
@@ -405,7 +405,7 @@ export const ModulesSection = () => {
                 </p>
                 <div className="flex flex-wrap gap-x-4 gap-y-2">
                   {alsoIncluded.map((item) => (
-                    <span key={item} className="text-xs" style={{ color: "hsl(var(--foreground) / 0.6)" }}>
+                    <span key={item} className="text-xs" style={{ color: "hsl(var(--landing-copy))" }}>
                       {item}
                     </span>
                   ))}
@@ -432,12 +432,9 @@ export const ModulesSection = () => {
               style={{ transitionDelay: "200ms" }}
             >
               <div
-                className="rounded-2xl overflow-hidden relative"
+                className="landing-preview rounded-lg overflow-hidden relative"
                 style={{
-                  background: "hsl(261 75% 3%)",
-                  border: "1px solid hsl(261 75% 50% / 0.2)",
-                  boxShadow: "0 0 60px hsl(261 75% 50% / 0.1), 0 24px 60px rgba(0,0,0,0.4)",
-                  minHeight: "400px",
+                  minHeight: "480px",
                 }}
               >
                 {/* Fake window chrome */}
@@ -448,16 +445,16 @@ export const ModulesSection = () => {
                   {["hsl(0 70% 55% / 0.5)", "hsl(45 90% 55% / 0.5)", "hsl(142 60% 50% / 0.5)"].map((bg, i) => (
                     <div key={i} className="w-2.5 h-2.5 rounded-full" style={{ background: bg }} />
                   ))}
-                  <span className="ml-3 text-[11px] font-medium" style={{ color: "hsl(var(--foreground) / 0.55)" }}>
+                  <span className="ml-3 text-[11px] font-medium" style={{ color: "hsl(var(--landing-copy))" }}>
                     OutReign — {modules[activeIndex].title}
                   </span>
-                  <span className="ml-auto text-[9px] font-medium uppercase tracking-wider" style={{ color: "hsl(var(--foreground) / 0.62)" }}>
+                  <span className="ml-auto text-[9px] font-medium uppercase tracking-wider" style={{ color: "hsl(var(--landing-copy))" }}>
                     Simulated preview
                   </span>
                 </div>
 
                 {/* Preview content — crossfades */}
-                <div className="relative" style={{ minHeight: "360px" }}>
+                <div className="relative" style={{ minHeight: "440px" }}>
                   {previews.map((P, i) => (
                     <div
                       key={i}

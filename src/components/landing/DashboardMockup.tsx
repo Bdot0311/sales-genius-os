@@ -35,7 +35,7 @@ const DashboardMockup = () => {
         aria-hidden="true"
       />
 
-      <div className="relative rounded-xl border border-border/30 bg-card/90 backdrop-blur-sm overflow-hidden shadow-2xl shadow-primary/5">
+      <div className="relative rounded-xl border border-border/30 bg-card overflow-hidden shadow-2xl shadow-primary/5">
         <div className="relative flex items-center gap-2 px-4 py-2.5 border-b border-border/30 bg-muted/20">
           <div className="flex gap-1.5">
             <div className="w-2.5 h-2.5 rounded-full bg-destructive/50" />
@@ -49,7 +49,7 @@ const DashboardMockup = () => {
             <span>Dashboard</span>
           </div>
           </div>
-          <span className="flex items-center gap-1.5 text-[9px] font-medium uppercase tracking-wider text-muted-foreground/70">
+          <span className="flex items-center gap-1.5 text-[9px] font-medium uppercase tracking-wider text-muted-foreground">
             <span className="w-1.5 h-1.5 rounded-full bg-primary" style={{ opacity: 0.8 }} aria-hidden="true" />
             Simulated preview
           </span>
@@ -57,7 +57,7 @@ const DashboardMockup = () => {
 
         <div className="relative grid grid-cols-1 gap-3 p-3 sm:grid-cols-2 sm:p-4">
           <div
-            className="rounded-lg border border-border/20 bg-background/60 p-3 sm:col-span-2"
+            className="rounded-lg border border-border/20 bg-background p-3 sm:col-span-2"
           >
               <div className="flex flex-wrap items-center gap-2 mb-2">
               <Search className="w-3.5 h-3.5 text-primary" />
@@ -88,7 +88,7 @@ const DashboardMockup = () => {
           </div>
 
           <div
-            className="rounded-lg border border-border/20 bg-background/60 p-3"
+            className="rounded-lg border border-border/20 bg-background p-3"
           >
               <div className="flex flex-wrap items-center gap-2 mb-2">
               <Mail className="w-3.5 h-3.5 text-primary" />
@@ -108,7 +108,7 @@ const DashboardMockup = () => {
           </div>
 
           <div
-            className="rounded-lg border border-border/20 bg-background/60 p-3"
+            className="rounded-lg border border-border/20 bg-background p-3"
           >
               <div className="flex flex-wrap items-center gap-2 mb-2">
               <BarChart3 className="w-3.5 h-3.5 text-primary" />
@@ -141,7 +141,7 @@ const DashboardMockup = () => {
             ].map((m, i) => (
               <div
                 key={i}
-                className={`rounded-lg border bg-background/60 p-2 text-center relative overflow-hidden ${m.glow ? "border-primary/30" : "border-border/20"}`}
+                className={`rounded-lg border bg-background p-2 text-center relative overflow-hidden ${m.glow ? "border-primary/30" : "border-border/20"}`}
               >
                 {m.glow && (
                   <div

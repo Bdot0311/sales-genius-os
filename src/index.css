@@ -14,7 +14,7 @@ All colors MUST be HSL. Using 8px spacing scale.
     --mobile-page-gutter: 1rem;
 
     /* Lighter charcoal theme: never a white canvas. */
-    --cinematic-brightness: 1.65;
+    --cinematic-brightness: 1.15;
     --background: 260 8% 16%;
     --foreground: 0 0% 95%;
 
@@ -1457,3 +1457,41 @@ html.theme-transition *::after {
     scroll-snap-align: start;
   }
 }
+
+/* Homepage-only presentation tokens; dashboard styling stays unchanged. */
+:root {
+  --landing-surface: 260 8% 20%;
+  --landing-copy: 260 8% 84%;
+  --landing-line: 260 10% 38%;
+  --landing-scrim: 260 8% 12%;
+  --landing-scrim-opacity: 0.7;
+  --landing-shadow: 0 24px 70px hsl(0 0% 0% / 0.35);
+}
+.dark {
+  --landing-surface: 260 12% 8%;
+  --landing-copy: 260 8% 82%;
+  --landing-line: 260 10% 26%;
+  --landing-scrim: 260 12% 4%;
+  --landing-scrim-opacity: 0.64;
+  --landing-shadow: 0 24px 70px hsl(0 0% 0% / 0.45);
+}
+.cinematic-background video {
+  filter: saturate(0.75);
+}
+.cinematic-scrim {
+  background: hsl(var(--landing-scrim) / var(--landing-scrim-opacity));
+}
+.cinematic-vignette {
+  background: radial-gradient(ellipse at center, transparent 15%, hsl(var(--landing-scrim) / 0.55) 100%);
+}
+.landing-preview {
+  background: hsl(var(--landing-surface));
+  border: 1px solid hsl(var(--landing-line));
+  box-shadow: var(--landing-shadow);
+}
+.landing-example {
+  background: hsl(var(--landing-surface) / 0.97);
+  border: 1px solid hsl(var(--landing-line));
+  color: hsl(var(--foreground));
+}
+.landing-readable { color: hsl(var(--landing-copy)); }
