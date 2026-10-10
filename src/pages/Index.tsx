@@ -143,8 +143,8 @@ const Index = () => {
       <SoftwareApplicationSchema />
       <FAQSchema faqs={HOMEPAGE_FAQS} />
 
-      {/* Fixed cinematic video background with purple tint (dark mode only) */}
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none dark:block hidden" aria-hidden="true">
+      {/* The same cinematic background stays visible in both themes. */}
+      <div className="cinematic-background fixed inset-0 -z-10 overflow-hidden pointer-events-none" aria-hidden="true">
         {mountVideo && (
           <video
             ref={videoRef}

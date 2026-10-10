@@ -95,13 +95,13 @@ export const CHANGELOG: ChangelogEntry[] = [
     id: "2026-10-09-light-mode",
     date: "2026-10-09",
     title: "A lighter charcoal theme",
-    summary: "Switch between deep dark and lighter charcoal without a bright white background.",
+    summary: "Switch between deep dark and lighter charcoal with the same video background and visual effects.",
     items: [
       {
         tag: "new",
         title: "Dark or lighter charcoal, your choice",
         description:
-          "A sun/moon toggle now sits in the top-right corner of the dashboard and the website. Your choice is remembered on this device, so the app opens the way you left it.",
+          "The sun/moon toggle brightens the same design without hiding the video background or visual effects. Your choice is remembered on this device, so the app opens the way you left it.",
       },
     ],
   },
