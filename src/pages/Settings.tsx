@@ -36,6 +36,7 @@ import { PayoffBankTab } from "@/components/settings/PayoffBankTab";
 import { CampaignBriefsTab } from "@/components/settings/CampaignBriefsTab";
 import { useAdmin } from "@/hooks/use-admin";
 import { SupportAccessCard } from "@/components/settings/SupportAccessCard";
+import { ProfileIdentityEditor } from "@/components/settings/ProfileIdentityEditor";
 
 const Settings = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -66,6 +67,7 @@ const Settings = () => {
   const { isAdmin } = useAdmin();
   const [syncing, setSyncing] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
+  const [profileUserId, setProfileUserId] = useState<string>();
   const [profile, setProfile] = useState({
     full_name: "",
     email: "",
@@ -83,6 +85,7 @@ const Settings = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      setProfileUserId(user.id);
 
       const { data, error } = await supabase
         .from("profiles")
@@ -348,6 +351,7 @@ const Settings = () => {
                   carries it, and repeating it says the same thing twice. */}
               <PanelHeader title="Profile" meta="Your personal and company details" />
               <PanelBody className="space-y-4">
+                {profileUserId && <ProfileIdentityEditor userId={profileUserId} />}
                 <div className="space-y-2">
                   <Label htmlFor="full_name">Full Name</Label>
                   <Input

@@ -92,6 +92,13 @@ export const ROADMAP: RoadmapItem[] = [
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-10-profile-identity",
+    date: "2026-10-10",
+    title: "Your name and photo",
+    summary: "Personalize the account shown in your sidebar.",
+    items: [{ tag: "new", title: "Edit your display name and profile photo", description: "Add, change or remove your photo and choose a display name in Settings → Profile. Your account menu updates as soon as you save.", href: "/settings?tab=profile" }],
+  },
+  {
     id: "2026-10-09-light-mode",
     date: "2026-10-09",
     title: "A lighter charcoal theme",

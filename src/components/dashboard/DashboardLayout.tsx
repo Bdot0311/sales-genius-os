@@ -50,6 +50,8 @@ import { ServiceStatusBanner } from "@/components/dashboard/ServiceStatusBanner"
 import { BackgroundWorkBar } from "@/components/dashboard/BackgroundWorkBar";
 import { WhatsNewButton } from "@/components/dashboard/WhatsNewButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useAccountProfile } from "@/hooks/use-account-profile";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 
 
@@ -94,6 +96,8 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState<User | null>(null);
+  const { data: accountProfile } = useAccountProfile(user?.id);
+  const displayName = accountProfile?.display_name || accountProfile?.full_name || user?.email || "Account";
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { subscription } = useSubscription();
@@ -342,12 +346,16 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <TooltipProvider delayDuration={0}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="w-7 h-7 rounded-full bg-gradient-primary flex items-center justify-center text-white text-xs font-semibold cursor-default">
-                      {user.email?.[0].toUpperCase()}
-                    </div>
+                    <Button variant="ghost" size="icon" aria-label="Edit profile" onClick={() => navigate('/settings?tab=profile')} className="h-8 w-8">
+                      <Avatar className="h-7 w-7">
+                        <AvatarImage src={accountProfile?.avatarUrl} alt={displayName} className="object-cover" />
+                        <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">{displayName.slice(0, 1).toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                    </Button>
                   </TooltipTrigger>
                   <TooltipContent side="right">
-                    <p>{user.email}</p>
+                    <p>{displayName}</p>
+                    <p className="text-xs text-muted-foreground">{user.email}</p>
                     <p className="text-xs text-muted-foreground capitalize">{subscription?.plan || 'Growth'} Plan</p>
                   </TooltipContent>
                 </Tooltip>
@@ -364,13 +372,17 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           ) : (
             <div className="flex-shrink-0 border-t border-border/60 p-3">
               <div className="flex items-center gap-3 p-2 rounded-md hover:bg-accent/50 transition-colors">
-                <div className="w-7 h-7 rounded-full bg-gradient-primary flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
-                  {user.email?.[0].toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium truncate">{user.email}</p>
-                  <p className="text-[10px] text-muted-foreground capitalize">{subscription?.plan || 'Growth'} Plan</p>
-                </div>
+                <Button variant="ghost" aria-label="Edit profile" onClick={() => { navigate('/settings?tab=profile'); setSidebarOpen(false); }} className="flex-1 min-w-0 h-auto justify-start gap-3 p-0 hover:bg-transparent">
+                  <Avatar className="h-7 w-7">
+                    <AvatarImage src={accountProfile?.avatarUrl} alt={displayName} className="object-cover" />
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">{displayName.slice(0, 1).toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className="text-xs font-medium truncate">{displayName}</p>
+                    <p className="text-[10px] text-muted-foreground truncate">{user.email}</p>
+                    <p className="text-[10px] text-muted-foreground capitalize">{subscription?.plan || 'Growth'} Plan</p>
+                  </div>
+                </Button>
                 <Button variant="ghost" size="icon" onClick={handleSignOut} className="h-6 w-6 flex-shrink-0 text-muted-foreground hover:text-foreground">
                   <LogOut className="w-3.5 h-3.5" />
                 </Button>
