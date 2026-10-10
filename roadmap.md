@@ -14,6 +14,6 @@
 
 # Accessible purple themes
 
-- [ ] Restore original dark-purple video treatment and effects.
-- [ ] Swap light mode to pale-purple surfaces and dark, readable text without removing visuals.
-- [ ] Verify switching themes and preserved visuals in the browser.
+- [x] Restore original dark-purple video treatment and effects.
+- [x] Swap light mode to pale-purple surfaces and dark, readable text without removing visuals.
+- [x] Verify switching themes and preserved visuals in the browser (video tested with a temporary browser-compatible transcode; app keeps original source).
