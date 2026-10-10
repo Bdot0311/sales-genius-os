@@ -4,7 +4,7 @@ import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 /**
- * Light/dark display toggle. Mounted in the dashboard topbar and the
+ * Charcoal/dark display toggle. Mounted in the dashboard topbar and the
  * marketing navbar. Defaults to dark (brand default); choice persists
  * via next-themes localStorage.
  */
@@ -30,8 +30,8 @@ export const ThemeToggle = () => {
       size="icon"
       className="h-8 w-8 flex-shrink-0"
       onClick={toggle}
-      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      aria-label={isDark ? "Switch to lighter mode" : "Switch to dark mode"}
+      title={isDark ? "Switch to lighter mode" : "Switch to dark mode"}
     >
       {mounted && !isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
     </Button>

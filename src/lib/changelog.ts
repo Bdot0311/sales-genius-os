@@ -94,12 +94,12 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     id: "2026-10-09-light-mode",
     date: "2026-10-09",
-    title: "Light mode is here",
-    summary: "Switch the whole app between dark and light with the new toggle in the top-right corner.",
+    title: "A lighter charcoal theme",
+    summary: "Switch between deep dark and lighter charcoal without a bright white background.",
     items: [
       {
         tag: "new",
-        title: "Light or dark, your choice",
+        title: "Dark or lighter charcoal, your choice",
         description:
           "A sun/moon toggle now sits in the top-right corner of the dashboard and the website. Your choice is remembered on this device, so the app opens the way you left it.",
       },

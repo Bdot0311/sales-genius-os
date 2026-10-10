@@ -13,44 +13,44 @@ All colors MUST be HSL. Using 8px spacing scale.
     /* Phone gutter: tight enough that cards get real width on a 360–430px screen */
     --mobile-page-gutter: 1rem;
 
-    /* Light theme (default when .dark is absent) */
-    --background: 0 0% 100%;
-    --foreground: 261 30% 12%;
+    /* Lighter charcoal theme: never a white canvas. */
+    --background: 260 8% 16%;
+    --foreground: 0 0% 95%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 261 30% 12%;
+    --card: 260 8% 20%;
+    --card-foreground: 0 0% 95%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 261 30% 12%;
+    --popover: 260 8% 22%;
+    --popover-foreground: 0 0% 95%;
 
-    --primary: 261 75% 55%;
+    --primary: 261 75% 70%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 261 40% 96%;
-    --secondary-foreground: 261 30% 20%;
+    --secondary: 260 8% 25%;
+    --secondary-foreground: 0 0% 95%;
 
-    --muted: 261 30% 95%;
-    --muted-foreground: 261 12% 42%;
+    --muted: 260 8% 23%;
+    --muted-foreground: 260 8% 78%;
 
-    --accent: 261 45% 94%;
-    --accent-foreground: 261 40% 25%;
+    --accent: 260 10% 28%;
+    --accent-foreground: 0 0% 98%;
 
     --destructive: 0 84% 55%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 261 25% 86%;
-    --input: 261 25% 90%;
-    --ring: 261 75% 55%;
+    --border: 260 10% 36%;
+    --input: 260 8% 26%;
+    --ring: 261 75% 70%;
 
     --radius: 0.5rem;
 
-    --gradient-primary: linear-gradient(135deg, hsl(261, 75%, 55%), hsl(280, 70%, 50%));
-    --gradient-secondary: linear-gradient(135deg, hsl(261, 75%, 55%), hsl(320, 70%, 50%));
-    --gradient-hero: linear-gradient(180deg, hsl(0, 0%, 100%) 0%, hsl(261, 45%, 97%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(261, 75%, 63%), hsl(280, 70%, 58%));
+    --gradient-secondary: linear-gradient(135deg, hsl(261, 75%, 63%), hsl(320, 70%, 58%));
+    --gradient-hero: linear-gradient(180deg, hsl(260, 8%, 16%) 0%, hsl(260, 8%, 20%) 100%);
 
-    --shadow-glow: 0 0 30px hsl(261 75% 55% / 0.15);
-    --shadow-card: 0 4px 24px hsl(261 30% 20% / 0.08);
-    --shadow-card-hover: 0 8px 32px hsl(261 30% 20% / 0.12), 0 0 0 1px hsl(261 75% 55% / 0.08);
+    --shadow-glow: 0 0 30px hsl(261 75% 63% / 0.15);
+    --shadow-card: 0 4px 24px hsl(0 0% 0% / 0.25);
+    --shadow-card-hover: 0 8px 32px hsl(0 0% 0% / 0.3), 0 0 0 1px hsl(261 75% 70% / 0.15);
 
     --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
