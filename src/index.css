@@ -13,41 +13,41 @@ All colors MUST be HSL. Using 8px spacing scale.
     /* Phone gutter: tight enough that cards get real width on a 360–430px screen */
     --mobile-page-gutter: 1rem;
 
-    /* Lighter charcoal theme: never a white canvas. */
-    --cinematic-brightness: 1.15;
-    --background: 260 8% 16%;
-    --foreground: 0 0% 95%;
+    /* Accessible lavender palette: same visuals, dark text on light purple. */
+    --cinematic-brightness: 1;
+    --background: 261 65% 92%;
+    --foreground: 261 35% 10%;
 
-    --card: 260 8% 20%;
-    --card-foreground: 0 0% 95%;
+    --card: 261 65% 96%;
+    --card-foreground: 261 35% 10%;
 
-    --popover: 260 8% 22%;
-    --popover-foreground: 0 0% 95%;
+    --popover: 261 65% 97%;
+    --popover-foreground: 261 35% 10%;
 
-    --primary: 261 75% 70%;
+    --primary: 261 70% 43%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 260 8% 25%;
-    --secondary-foreground: 0 0% 95%;
+    --secondary: 261 55% 86%;
+    --secondary-foreground: 261 35% 15%;
 
-    --muted: 260 8% 23%;
-    --muted-foreground: 260 8% 78%;
+    --muted: 261 45% 88%;
+    --muted-foreground: 261 22% 30%;
 
-    --accent: 260 10% 28%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 261 55% 83%;
+    --accent-foreground: 261 35% 12%;
 
     --destructive: 0 84% 55%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 260 10% 36%;
-    --input: 260 8% 26%;
-    --ring: 261 75% 70%;
+    --border: 261 30% 65%;
+    --input: 261 55% 96%;
+    --ring: 261 70% 43%;
 
     --radius: 0.5rem;
 
     --gradient-primary: linear-gradient(135deg, hsl(261, 75%, 63%), hsl(280, 70%, 58%));
     --gradient-secondary: linear-gradient(135deg, hsl(261, 75%, 63%), hsl(320, 70%, 58%));
-    --gradient-hero: linear-gradient(180deg, hsl(260, 8%, 16%) 0%, hsl(260, 8%, 20%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(261, 65%, 92%) 0%, hsl(261, 65%, 96%) 100%);
 
     --shadow-glow: 0 0 30px hsl(261 75% 63% / 0.15);
     --shadow-card: 0 4px 24px hsl(0 0% 0% / 0.25);
@@ -1460,29 +1460,48 @@ html.theme-transition *::after {
 
 /* Homepage-only presentation tokens; dashboard styling stays unchanged. */
 :root {
-  --landing-surface: 260 8% 20%;
-  --landing-copy: 260 8% 84%;
-  --landing-line: 260 10% 38%;
-  --landing-scrim: 260 8% 12%;
-  --landing-scrim-opacity: 0.7;
-  --landing-shadow: 0 24px 70px hsl(0 0% 0% / 0.35);
+  --landing-surface: 261 65% 96%;
+  --landing-copy: 261 25% 22%;
+  --landing-line: 261 30% 65%;
+  --landing-scrim: 261 65% 92%;
+  --landing-scrim-opacity: 0.32;
+  --landing-video-filter: invert(1) hue-rotate(180deg) saturate(0.85);
+  --landing-tint: 263 70% 74%;
+  --landing-vignette-opacity: 0.32;
+  --landing-shadow: 0 24px 70px hsl(261 45% 25% / 0.15);
+  --landing-text-shadow: none;
+  --landing-heading-gradient: linear-gradient(to right, hsl(261 70% 35%), hsl(280 65% 38%), hsl(261 70% 43%), hsl(280 65% 38%), hsl(261 70% 35%));
 }
 .dark {
-  --landing-surface: 260 12% 8%;
+  --landing-surface: 261 75% 4%;
   --landing-copy: 260 8% 82%;
-  --landing-line: 260 10% 26%;
-  --landing-scrim: 260 12% 4%;
-  --landing-scrim-opacity: 0.64;
+  --landing-line: 261 75% 45%;
+  --landing-scrim: 261 75% 3%;
+  --landing-scrim-opacity: 0.58;
+  --landing-video-filter: saturate(1.35) hue-rotate(18deg);
+  --landing-tint: 263 80% 45%;
+  --landing-vignette-opacity: 0.78;
   --landing-shadow: 0 24px 70px hsl(0 0% 0% / 0.45);
+  --landing-text-shadow: 0 4px 30px hsl(0 0% 0% / 0.35);
+  --landing-heading-gradient: linear-gradient(to right, hsl(255 92% 76%) 0%, hsl(261 90% 66%) 15%, hsl(255 92% 85%) 35%, hsl(277 100% 92%) 50%, hsl(255 92% 85%) 65%, hsl(261 90% 66%) 85%, hsl(255 92% 76%) 100%);
 }
 .cinematic-background video {
-  filter: saturate(0.75);
+  filter: var(--landing-video-filter);
 }
 .cinematic-scrim {
   background: hsl(var(--landing-scrim) / var(--landing-scrim-opacity));
 }
 .cinematic-vignette {
-  background: radial-gradient(ellipse at center, transparent 15%, hsl(var(--landing-scrim) / 0.55) 100%);
+  background: radial-gradient(ellipse at center, transparent 25%, hsl(var(--landing-scrim) / var(--landing-vignette-opacity)) 100%);
+}
+.cinematic-tint { background: hsl(var(--landing-tint)); mix-blend-mode: color; opacity: 0.35; }
+.landing-hero-copy { text-shadow: var(--landing-text-shadow); }
+.landing-hero-highlight {
+  background-image: var(--landing-heading-gradient);
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 .landing-preview {
   background: hsl(var(--landing-surface));

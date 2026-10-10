@@ -4,7 +4,7 @@ import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 /**
- * Charcoal/dark display toggle. Mounted in the dashboard topbar and the
+ * Light-purple/dark display toggle. Mounted in the dashboard topbar and the
  * marketing navbar. Defaults to dark (brand default); choice persists
  * via next-themes localStorage.
  */
