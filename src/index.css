@@ -1458,62 +1458,40 @@ html.theme-transition *::after {
   }
 }
 
-/* Landing Page Legibility Enhancements */
-@layer components {
-  /* Increase contrast of simulated UI elements */
-  .backdrop-blur-sm {
-    backdrop-filter: blur(12px); /* Stronger blur */
-  }
-
-  /* Simulated UI cards in DashboardMockup and ModulesSection */
-  .bg-card\/90 {
-    @apply bg-card/95; /* More opaque */
-  }
-
-  .bg-background\/60 {
-    @apply bg-background/85; /* Much more opaque for legibility */
-  }
-
-  /* Improve heading legibility against cinematic background */
-  h1, h2, h3 {
-    text-shadow: 0 4px 12px hsl(0 0% 0% / 0.4) !important;
-  }
-
-  /* Ensure body text has enough contrast */
-  .text-foreground\/70, .text-muted-foreground {
-    @apply text-foreground/80;
-  }
-}
-
-/* Adjust cinematic background for light (charcoal) mode */
+/* Homepage-only presentation tokens; dashboard styling stays unchanged. */
 :root {
-  --cinematic-video-opacity: 0.35;
-  --cinematic-overlay-opacity: 0.8;
+  --landing-surface: 260 8% 20%;
+  --landing-copy: 260 8% 84%;
+  --landing-line: 260 10% 38%;
+  --landing-scrim: 260 8% 12%;
+  --landing-scrim-opacity: 0.7;
+  --landing-shadow: 0 24px 70px hsl(0 0% 0% / 0.35);
 }
-
 .dark {
-  --cinematic-video-opacity: 0.55;
-  --cinematic-overlay-opacity: 0.6;
+  --landing-surface: 260 12% 8%;
+  --landing-copy: 260 8% 82%;
+  --landing-line: 260 10% 26%;
+  --landing-scrim: 260 12% 4%;
+  --landing-scrim-opacity: 0.64;
+  --landing-shadow: 0 24px 70px hsl(0 0% 0% / 0.45);
 }
-
 .cinematic-background video {
-  opacity: var(--cinematic-video-opacity) !important;
-  transition: opacity 0.5s ease-in-out;
+  filter: saturate(0.75);
 }
-
-.cinematic-background > div {
-  opacity: var(--cinematic-overlay-opacity);
-  transition: opacity 0.5s ease-in-out;
+.cinematic-scrim {
+  background: hsl(var(--landing-scrim) / var(--landing-scrim-opacity));
 }
-
-/* Product Showcase Adjustments */
-section[aria-label="Product preview"] > div > div > div {
-  box-shadow: 0 40px 100px -20px hsl(0 0% 0% / 0.5) !important;
+.cinematic-vignette {
+  background: radial-gradient(ellipse at center, transparent 15%, hsl(var(--landing-scrim) / 0.55) 100%);
 }
-
-/* Simulated UI inside ModulesSection and other areas */
-[style*="background: hsl(var(--foreground) / 0.03)"],
-[style*="background: hsl(var(--foreground) / 0.04)"] {
-  background-color: hsl(var(--background) / 0.8) !important;
-  backdrop-filter: blur(8px);
+.landing-preview {
+  background: hsl(var(--landing-surface));
+  border: 1px solid hsl(var(--landing-line));
+  box-shadow: var(--landing-shadow);
 }
+.landing-example {
+  background: hsl(var(--landing-surface) / 0.97);
+  border: 1px solid hsl(var(--landing-line));
+  color: hsl(var(--foreground));
+}
+.landing-readable { color: hsl(var(--landing-copy)); }

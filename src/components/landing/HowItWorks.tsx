@@ -10,12 +10,7 @@ const steps = [
     body: "Type it the way you would say it out loud. Title, industry, size, location, the signals that matter. No boolean, no filter menus.",
     visual: (
       <div
-        className="mt-5 rounded-md px-4 py-3 font-mono text-sm leading-relaxed"
-        style={{
-          background: "hsl(261 75% 50% / 0.08)",
-          border: "1px solid hsl(261 75% 50% / 0.2)",
-          color: "hsl(261 75% 72%)",
-        }}
+        className="landing-example mt-5 rounded-lg px-4 py-4 font-mono text-sm leading-relaxed text-left"
       >
         <span style={{ color: "hsl(261 75% 50% / 0.5)" }} className="mr-2 select-none">{">"}</span>
         "VP of Sales at Series B SaaS companies in the US, 50–200 employees, actively hiring SDRs"
@@ -28,8 +23,7 @@ const steps = [
     body: "Prospects come back ranked by fit, with verified business emails attached and what the company just did. You decide who is in.",
     visual: (
       <div
-        className="mt-5 rounded-xl overflow-hidden"
-        style={{ background: "hsl(261 75% 50% / 0.05)", border: "1px solid hsl(261 75% 50% / 0.18)" }}
+        className="landing-example mt-5 rounded-lg overflow-hidden text-left"
       >
         {[
           { name: "Jordan Park", role: "Head of Sales · Northline", fit: 94 },
@@ -55,7 +49,7 @@ const steps = [
         ))}
         <div className="flex items-center gap-1.5 px-4 py-2.5" style={{ borderTop: "1px solid hsl(261 75% 50% / 0.1)" }}>
           <span style={{ color: "hsl(261 75% 62%)", fontSize: "10px" }}>✓</span>
-          <span className="text-[10px]" style={{ color: "hsl(var(--foreground) / 0.22)" }}>
+          <span className="text-xs landing-readable">
             Business emails verified via SMTP + multi-source enrichment
           </span>
         </div>
@@ -68,8 +62,7 @@ const steps = [
     body: "Each email is written from that company's own context and quality-checked before it leaves. It sends from your Gmail, in your name.",
     visual: (
       <div
-        className="mt-5 rounded-xl overflow-hidden"
-        style={{ background: "hsl(261 75% 50% / 0.05)", border: "1px solid hsl(261 75% 50% / 0.18)" }}
+        className="landing-example mt-5 rounded-lg overflow-hidden text-left"
       >
         <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: "1px solid hsl(261 75% 50% / 0.1)" }}>
           <span className="text-xs font-medium" style={{ color: "hsl(261 75% 60%)" }}>AI Draft</span>
@@ -109,7 +102,7 @@ export const HowItWorks = () => {
         <div className="max-w-[720px] mx-auto text-center">
 
           <motion.p
-            className="font-serif italic font-thin text-base text-center text-purple-500 mb-6"
+            className="text-sm font-medium text-center text-primary mb-6"
             initial={{ opacity: 0, y: 14 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-10% 0px" }}

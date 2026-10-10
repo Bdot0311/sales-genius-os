@@ -28,11 +28,8 @@ export const ProductShowcase = () => {
           />
 
           <div
-            className="relative overflow-hidden rounded-[24px] sm:rounded-2xl"
+            className="landing-preview relative overflow-hidden rounded-lg"
             style={{
-              border: "1px solid hsl(var(--foreground) / 0.08)",
-              boxShadow:
-                "0 0 0 1px hsl(261 75% 55% / 0.1), 0 40px 100px -20px hsl(var(--foreground) / 0.7), 0 0 80px -20px hsl(261 75% 55% / 0.15)",
               transform: hovered
                 ? "perspective(1200px) rotateX(0deg) scale(1.005)"
                 : "perspective(1200px) rotateX(2deg) scale(1)",
@@ -42,14 +39,6 @@ export const ProductShowcase = () => {
           >
             <DashboardMockup />
 
-            <div
-              className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none sm:h-40"
-              style={{
-                background:
-                  "linear-gradient(to top, hsl(261 75% 2%) 0%, transparent 100%)",
-              }}
-              aria-hidden="true"
-            />
           </div>
         </div>
 

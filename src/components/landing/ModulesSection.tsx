@@ -307,7 +307,7 @@ export const ModulesSection = () => {
           <div
             className={`mb-16 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
           >
-            <p className="font-serif italic font-thin text-base text-center text-purple-500 mb-5">
+            <p className="text-sm font-medium text-center text-primary mb-5">
               Five screens
             </p>
             <h2
@@ -381,7 +381,7 @@ export const ModulesSection = () => {
                         {/* Description only expands when active */}
                         <div
                           className="overflow-hidden transition-all duration-500"
-                          style={{ maxHeight: isActive ? "80px" : "0px", opacity: isActive ? 1 : 0 }}
+                          style={{ maxHeight: isActive ? "240px" : "0px", opacity: isActive ? 1 : 0 }}
                         >
                           <p className="text-sm leading-relaxed" style={{ color: "hsl(var(--foreground) / 0.7)" }}>
                             {mod.description}
@@ -432,11 +432,8 @@ export const ModulesSection = () => {
               style={{ transitionDelay: "200ms" }}
             >
               <div
-                className="rounded-2xl overflow-hidden relative"
+                className="landing-preview rounded-lg overflow-hidden relative"
                 style={{
-                  background: "hsl(261 75% 3%)",
-                  border: "1px solid hsl(261 75% 50% / 0.2)",
-                  boxShadow: "0 0 60px hsl(261 75% 50% / 0.1), 0 24px 60px rgba(0,0,0,0.4)",
                   minHeight: "400px",
                 }}
               >
