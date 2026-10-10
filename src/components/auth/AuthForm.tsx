@@ -59,7 +59,9 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
       const { error } = await supabase.auth.resend({
         type: "signup",
         email: unconfirmedEmail,
-        options: { emailRedirectTo: `${window.location.origin}/` },
+        // Land on /auth: only that page claims Supabase links now (the shared
+        // client has detectSessionInUrl: false), and it signs the user in.
+        options: { emailRedirectTo: `${window.location.origin}/auth` },
       });
       if (error) throw error;
       toast({
@@ -334,7 +336,9 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/`,
+          // Confirmation link must land on /auth, where Supabase links are
+          // claimed and the user is signed straight in.
+          emailRedirectTo: `${window.location.origin}/auth`,
           data: { signup_source: signupSource },
         },
       });
