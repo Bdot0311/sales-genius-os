@@ -3749,9 +3749,11 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_path: string | null
           business_description: string | null
           company_name: string | null
           created_at: string
+          display_name: string | null
           email: string
           email_signature: string | null
           full_name: string | null
@@ -3766,9 +3768,11 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          avatar_path?: string | null
           business_description?: string | null
           company_name?: string | null
           created_at?: string
+          display_name?: string | null
           email: string
           email_signature?: string | null
           full_name?: string | null
@@ -3783,9 +3787,11 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          avatar_path?: string | null
           business_description?: string | null
           company_name?: string | null
           created_at?: string
+          display_name?: string | null
           email?: string
           email_signature?: string | null
           full_name?: string | null
