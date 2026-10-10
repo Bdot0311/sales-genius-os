@@ -1476,7 +1476,7 @@ html.theme-transition *::after {
 
   /* Improve heading legibility against cinematic background */
   h1, h2, h3 {
-    text-shadow: 0 2px 10px hsl(0 0% 0% / 0.2);
+    text-shadow: 0 4px 12px hsl(0 0% 0% / 0.4) !important;
   }
 
   /* Ensure body text has enough contrast */
@@ -1504,4 +1504,16 @@ html.theme-transition *::after {
 .cinematic-background > div {
   opacity: var(--cinematic-overlay-opacity);
   transition: opacity 0.5s ease-in-out;
+}
+
+/* Product Showcase Adjustments */
+section[aria-label="Product preview"] > div > div > div {
+  box-shadow: 0 40px 100px -20px hsl(0 0% 0% / 0.5) !important;
+}
+
+/* Simulated UI inside ModulesSection and other areas */
+[style*="background: hsl(var(--foreground) / 0.03)"],
+[style*="background: hsl(var(--foreground) / 0.04)"] {
+  background-color: hsl(var(--background) / 0.8) !important;
+  backdrop-filter: blur(8px);
 }
