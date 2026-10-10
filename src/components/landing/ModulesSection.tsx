@@ -434,7 +434,7 @@ export const ModulesSection = () => {
               <div
                 className="landing-preview rounded-lg overflow-hidden relative"
                 style={{
-                  minHeight: "400px",
+                  minHeight: "480px",
                 }}
               >
                 {/* Fake window chrome */}
@@ -454,7 +454,7 @@ export const ModulesSection = () => {
                 </div>
 
                 {/* Preview content — crossfades */}
-                <div className="relative" style={{ minHeight: "360px" }}>
+                <div className="relative" style={{ minHeight: "440px" }}>
                   {previews.map((P, i) => (
                     <div
                       key={i}
