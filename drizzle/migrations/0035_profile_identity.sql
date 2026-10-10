@@ -1,0 +1,5 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS display_name text, ADD COLUMN IF NOT EXISTS avatar_path text;
+INSERT INTO public.schema_contract (table_name, column_name, note) VALUES ('profiles', 'display_name', 'Editable account display name'), ('profiles', 'avatar_path', 'Private profile photo storage path') ON CONFLICT (table_name, column_name) DO NOTHING;
+CREATE POLICY "Users read own profile photos" ON storage.objects FOR SELECT TO authenticated USING (bucket_id = 'profile-avatars' AND (storage.foldername(name))[1] = auth.uid()::text);
+CREATE POLICY "Users upload own profile photos" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'profile-avatars' AND (storage.foldername(name))[1] = auth.uid()::text AND lower(name) ~ '\.(png|jpe?g|webp)$');
+CREATE POLICY "Users delete own profile photos" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'profile-avatars' AND (storage.foldername(name))[1] = auth.uid()::text);
