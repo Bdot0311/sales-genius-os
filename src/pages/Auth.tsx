@@ -120,8 +120,19 @@ const Auth = () => {
     const hashParams = new URLSearchParams(rawHash);
     const queryParams = new URLSearchParams(location.search);
 
-    const accessToken = hashParams.get("access_token");
-    const refreshToken = hashParams.get("refresh_token");
+    /*
+     * Tokens from either place.
+     *
+     * Supabase's own links put them after the '#', which is why this only read
+     * the hash. Lovable's OAuth broker redirects back here with the session on
+     * success, and nothing in its published client says which half of the URL
+     * it uses — its redirect path is server-side and the only shape visible
+     * from the package is the postMessage one. Reading both costs a line and
+     * removes a way for sign-in to break silently after the broker succeeded,
+     * which is the one failure nothing here would report.
+     */
+    const accessToken = hashParams.get("access_token") ?? queryParams.get("access_token");
+    const refreshToken = hashParams.get("refresh_token") ?? queryParams.get("refresh_token");
     const code = queryParams.get("code");
     // Read from both: recovery redirects often put this in the hash.
     const linkType = queryParams.get("type") ?? hashParams.get("type");

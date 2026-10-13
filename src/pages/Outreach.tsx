@@ -35,7 +35,7 @@ import { FollowUpSuggestion, FollowUpData } from "@/components/outreach/FollowUp
 import { BarChart3, ListOrdered, Layout, Users } from "lucide-react";
 import { LeadMultiSelect } from "@/components/outreach/LeadMultiSelect";
 import { BulkSendDialog } from "@/components/outreach/BulkSendDialog";
-import { EmailQualityChecker, scoreEmailQuality } from "@/components/outreach/EmailQualityChecker";
+import { EmailQualityChecker, blockerSummary, scoreEmailQuality } from "@/components/outreach/EmailQualityChecker";
 import { EmailRubricPanel } from "@/components/outreach/EmailRubricPanel";
 import { EmailAuditPanel } from "@/components/outreach/EmailAuditPanel";
 import { readGeneratedEmail, readGeneratedSubject, stripLeadingSubject } from "@/lib/read-generated-email";
@@ -1317,32 +1317,40 @@ const Outreach = () => {
       'Length': `TASK: Adjust the word count to 50–70 words. If over 70 words, cut the most generic or redundant sentence. If under 40 words, add one specific detail about the prospect's situation. Do not change the opening line or the CTA.`,
       'Readability': `TASK: Simplify sentence structure only. Find any sentence over 20 words and split it or shorten it. Replace multi-syllable words (e.g. "utilize" → "use", "facilitate" → "help", "leverage" → "use"). Do not change the meaning or the CTA.`,
       'CTA': `TASK: Fix the call-to-action only. Replace the current ask with a single low-friction question on the last content line before the sign-off. Use one of: "Worth a look?", "Open to seeing it?", "Worth a quick chat?", "Should I send a 2-minute breakdown?", or "Want to compare to your current process?" — pick whichever fits the email's tone. Do not change the opening or body.`,
-      'Personalization': `TASK: Fix personalization only. Replace unresolved placeholders and generic phrases like "your company", "your team", "your business", and "someone like you" with one concrete lead-specific reference from the lead data. Use the company name, role, industry, team size, or tech stack when available. Do not invent facts. Change nothing else.`,
+      'Placeholders': `TASK: Fill the unresolved merge fields only. Replace each placeholder token with the real value from the lead data — company name, first name, role, industry. If a value is not available, delete the sentence that needed it rather than guessing. Do not invent facts. Change nothing else.`,
       'Credibility': `TASK: Remove or soften unverified claims only. Find percentage stats, multiplier claims (3x, 4x), benchmark numbers, or phrases like "teams cut ramp time" and either remove them or replace with a specific but unquantified outcome (e.g. "3x faster" → "noticeably faster"). Change nothing else.`,
       'Naturalness': `TASK: Rewrite the opening line only (the first sentence after "Hi [Name],"). It must NOT start with: "I noticed", "I hope", "I wanted", "Just", "I came across", "I was", "I've been". Start with a direct observation about their company or role — something that shows you understand their world right now. Keep the rest of the email exactly as-is.`,
       'Links': `TASK: Remove URLs and hyperlinks only. Find all instances of http://, https://, href= and remove them. If a URL was inline, replace it with a plain-text description of what it was linking to. Change nothing else.`,
       'Images': `TASK: Remove HTML image tags only. Delete every <img ...> tag from the email. Change nothing else.`,
       'You-focus': `TASK: Flip sentence subjects where possible. Find sentences that start with "I" or "We" and rewrite them to start from the prospect's perspective ("Your team", "You", "Your workflow"). Aim to convert at least 2 "I/We" sentences. Keep all facts and the CTA identical.`,
       'CTA position': `TASK: Move the CTA to the last line before the sign-off only. Find the question or call-to-action sentence and move it to immediately before the sender's name. Reorder sentences if needed but do not rewrite them. The sign-off (sender name) stays last.`,
+      'Pitch': `TASK: Remove the sentence that explains what you or your company does. Find any sentence using "we help", "we built", "our platform", "we provide" or naming your own product, and delete it. Replace nothing — the email works better without it. Keep the opening observation and the closing question exactly as they are.`,
+      'Mechanism': `TASK: Add the bridge, one sentence only. The email names something you noticed about them but never says why it causes a problem. After the observation sentence, add one sentence stating the problem that situation usually produces and why. Do not touch the opening line or the CTA, and add nothing else.`,
+      'Name match': `TASK: Correct the company and contact names only. Every mention must match the lead record exactly, including its capitalisation. Change nothing else — not one other word.`,
       'Signature': `TASK: This is a manual fix — the HTML signature block is too long relative to the email body. Return the email body unchanged and append this note on a new line at the very end: "[Tip: Shorten your signature in Settings → Email Signature to improve deliverability]"`,
-      'Word Ceiling': `TASK: Trim the email body to under 75 words. Cut the most generic or redundant sentence first. If still over, compress the context sentence. Preserve the greeting, the specific hook/observation, and the final CTA question exactly. Do not rewrite — only delete.`,
-      'CTA Question': `TASK: Fix the question count. The email must end with exactly ONE question mark — on the final content line before the sign-off. If there are zero questions, convert the closing statement into one low-friction question (e.g. "Worth a look?", "Open to seeing it?"). If there are multiple, keep only the final one and convert the others to statements. Change nothing else.`,
     };
 
-    // Banned Phrases check — look up the actual banned phrase currently present in the body
-    // so the model knows exactly what to remove.
+    // The instruction is built from the finding, not from a list kept here.
+    //
+    // This used to hold its own eleven-phrase copy of BANNED_PHRASES, purely
+    // so the model could be told what to remove. The panel detected with one
+    // list and the fix looked up from another, so a phrase the server banned
+    // and this file did not produced a fix instruction naming phrases that
+    // were not in the email — and the edit failed with "could not fix".
+    //
+    // The finding already carries the matched text and the rule's own fix, so
+    // every rule in _shared is fixable without a line being added here.
+    const row = scoreEmailQuality(subjectLine, generatedEmail, isFirstTouch).checks
+      .find((check) => check.label === checkLabel);
+    const evidence = row?.findings.map((f) => f.evidence).filter(Boolean).join("; ") ?? "";
     let instruction = fixInstructions[checkLabel];
-    if (!instruction && checkLabel === 'Banned Phrases') {
-      const BANNED = [
-        'hope this finds you well', 'just checking in', 'reaching out because',
-        'leverage', 'optimize', 'streamline', 'synergy',
-        'revolutionar', 'cutting-edge', 'industry-leading', 'best-in-class',
-      ];
-      const lower = generatedEmail.toLowerCase();
-      const hit = BANNED.find((p) => lower.includes(p));
-      instruction = hit
-        ? `TASK: Remove the banned phrase "${hit}" from the email body. Replace it with a plain, direct equivalent that keeps the sentence meaning. Change as FEW words as possible — do not rewrite surrounding sentences.`
-        : `TASK: Scan for cold-outreach banned phrases ("hope this finds you well", "just checking in", "reaching out because", "leverage", "optimize", "streamline", "synergy", "revolutionary", "cutting-edge", "industry-leading", "best-in-class") and replace the first match with a plain equivalent. Change nothing else.`;
+    if (row?.findings.length) {
+      const rule = row.findings[0];
+      instruction =
+        (instruction ?? `TASK: ${rule.fix}`) +
+        `\n\nWHAT TRIGGERED THIS: ${evidence}` +
+        `\nWHY IT COSTS REPLIES: ${rule.why}` +
+        `\nChange as FEW words as possible. Do not rewrite anything the issue does not touch.`;
     }
     if (!instruction) {
       instruction = `Fix only the following issue and nothing else: ${checkLabel}`;
@@ -1358,12 +1366,12 @@ const Outreach = () => {
       await saveDraft({ body: fixedBody });
     };
 
-    if (checkLabel === 'Personalization') {
+    if (checkLabel === 'Placeholders') {
       const fixed = applyPersonalizationFixLocally(generatedEmail, lead).trim();
       if (fixed && fixed !== generatedEmail.trim()) {
         try {
           await persistFixedDraft(fixed);
-          toast({ title: "Personalization fixed", description: "The draft was updated and saved." });
+          toast({ title: "Placeholders filled", description: "The draft was updated and saved." });
           return;
         } catch (err) {
           console.error('Fix persistence failed:', err);
@@ -1704,12 +1712,19 @@ Return ONLY the corrected email body. No subject line. No explanation. No "Here 
 
       const senderName = await resolveSenderName();
       const fullEmailBody = buildEmailBodyWithSignature(generatedEmail, senderName, undefined, lead.id);
-      const quality = scoreEmailQuality(subjectLine, fullEmailBody);
+      const quality = scoreEmailQuality(subjectLine, fullEmailBody, isFirstTouch, {
+        company: lead.company_name,
+        contactName: lead.contact_name,
+      });
 
-      if (quality.overallStatus === "red") {
+      if (quality.blockers.length > 0) {
+        // Naming them is the difference between a gate and a wall. "High-risk
+        // outbound issues" told the user nothing about which of eighteen
+        // checks to look at, and the number it was computed from could not
+        // have failed the draft on one blocker anyway.
         toast({
           title: "Email needs edits before sending",
-          description: "This draft has high-risk outbound issues. Tighten the copy and try again.",
+          description: `Fix first — ${blockerSummary(quality.blockers)}.`,
           variant: "destructive",
         });
         setIsSending(false);

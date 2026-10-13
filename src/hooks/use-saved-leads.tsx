@@ -24,6 +24,15 @@ export interface SavedLeadFilters {
   stage: string;
   priority: string;
   nextStep: string;
+  /**
+   * The A/B/C grade from lead-scoring.ts, or "unscored".
+   *
+   * Computed, stored and shown as a pill since 20260726000000, and until now
+   * impossible to select on. B is the segment worth having: strong enough fit
+   * to be worth an email, no fired signal to make a human pick it, so nobody
+   * ever works it.
+   */
+  tier: string;
 }
 
 export const EMPTY_FILTERS: SavedLeadFilters = {
@@ -35,6 +44,7 @@ export const EMPTY_FILTERS: SavedLeadFilters = {
   stage: "all",
   priority: "all",
   nextStep: "all",
+  tier: "all",
 };
 
 /** Whether the user has narrowed anything. Drives "no leads" vs "none match". */
@@ -64,6 +74,8 @@ export interface Facets {
   industries: string[];
   company_sizes: string[];
   seniorities: string[];
+  /** How many leads carry each grade, keyed A/B/C/unscored. */
+  tiers: Record<string, number>;
   total: number;
 }
 
@@ -98,6 +110,7 @@ export const useSavedLeads = <T,>(
       p_stage: orNull(filters.stage),
       p_priority: orNull(filters.priority),
       p_next_step: orNull(filters.nextStep),
+      p_tier: orNull(filters.tier),
       p_sort: sort.field,
       p_desc: sort.desc,
       p_limit: pageSize,
@@ -124,6 +137,7 @@ export const useSavedLeads = <T,>(
         p_stage: orNull(filters.stage),
         p_priority: orNull(filters.priority),
         p_next_step: orNull(filters.nextStep),
+        p_tier: orNull(filters.tier),
         p_limit: 1,
         p_offset: 0,
         p_show: show,
@@ -186,6 +200,7 @@ export const useSavedLeads = <T,>(
         p_stage: orNull(filters.stage),
         p_priority: orNull(filters.priority),
         p_next_step: orNull(filters.nextStep),
+        p_tier: orNull(filters.tier),
         p_sort: sort.field,
         p_desc: sort.desc,
         p_limit: size,
@@ -215,6 +230,7 @@ export const useLeadFacets = () => {
     industries: [],
     company_sizes: [],
     seniorities: [],
+    tiers: {},
     total: 0,
   });
 

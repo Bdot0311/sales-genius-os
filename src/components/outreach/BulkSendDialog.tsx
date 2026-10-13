@@ -11,7 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Send, Sparkles, Users, Search, Settings2, Mail, ChevronLeft, ChevronRight, AlertTriangle, Shield, CheckCircle2, XCircle, HelpCircle } from "lucide-react";
-import { EmailQualityChecker, scoreEmailQuality } from "./EmailQualityChecker";
+import { EmailQualityChecker, blockerSummary, scoreEmailQuality } from "./EmailQualityChecker";
 import { readGeneratedEmail, readGeneratedSubject } from "@/lib/read-generated-email";
 import { generateComplianceFooter, parseSpintax, validateSenderDomain } from "@/lib/compliance";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -409,9 +409,15 @@ export const BulkSendDialog = ({
         }
 
         const fullBody = buildBodyWithSignature(body, lead.id);
-        const quality = scoreEmailQuality(subject, fullBody);
-        if (quality.overallStatus === "red") {
-          throw new Error("Draft failed outbound quality checks");
+        const quality = scoreEmailQuality(subject, fullBody, true, {
+          company: lead.company_name,
+          contactName: lead.contact_name,
+        });
+        if (quality.blockers.length > 0) {
+          // The per-lead failure is recorded against this lead, so it has to
+          // say which rule stopped it. "Failed outbound quality checks" on
+          // forty rows is a report nobody can act on.
+          throw new Error(`Blocked: ${blockerSummary(quality.blockers)}`);
         }
         // Round-robin across accounts or use selected one
         let senderAccountId: string;

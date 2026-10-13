@@ -85,6 +85,38 @@ describe("one ask, because two asks is zero asks", () => {
     expect(f.find((x) => x.rule === "two_asks")?.severity).toBe("blocker");
   });
 
+  /*
+   * "Err toward counting" was wrong in a way that refused real sends.
+   *
+   * Opening on a question about the reader's own situation is a recommended
+   * technique in every outbound playbook — "How are you ramping the four SDRs
+   * you just hired?" — and an email that opened on one and closed on "Worth a
+   * quick look?" was scored as two asks. two_asks is a blocker, so the send
+   * gate refused a correctly written email.
+   *
+   * Two asks is zero asks because the reader has to choose, and that only
+   * happens when both ask for something.
+   */
+  it("does not count a diagnostic opener as a second ask", () => {
+    const body =
+      "Hi Dana,\n\nHow are you ramping the four SDRs you just hired? At that size the ramp lands on whoever closed last quarter.\n\nWorth a quick look?\n\nBest,\nBrandon";
+    expect(findAsks(body)).toHaveLength(1);
+    expect(rules(auditEmail({ body, position: 1 }))).not.toContain("two_asks");
+  });
+
+  it("still counts an earlier question that asks for a slot", () => {
+    // This one competes with the closing ask rather than setting it up.
+    const body =
+      "Hi Dana,\n\nCan we hop on a 15-minute call Thursday? Four roles went up this month.\n\nWorth a look?\n\nBest,\nBrandon";
+    expect(findAsks(body)).toHaveLength(2);
+    expect(rules(auditEmail({ body, position: 1 }))).toContain("two_asks");
+  });
+
+  it("counts two asks that share the closing line", () => {
+    const body = "Hi Dana,\n\nFour roles went up.\n\nWorth a 15-minute call? Or should I send the one-pager?\n\nBest,\nBrandon";
+    expect(findAsks(body)).toHaveLength(2);
+  });
+
   it("warns when there is no ask at all", () => {
     const f = auditEmail({ body: "Noticed the four SDR roles you posted, which usually means ramp time eats into the quarter for the whole team." });
     expect(rules(f)).toContain("no_ask");

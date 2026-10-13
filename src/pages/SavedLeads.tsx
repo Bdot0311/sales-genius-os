@@ -96,6 +96,20 @@ const URL_FILTERS = {
 
 type UrlFilterKey = keyof typeof URL_FILTERS;
 
+/**
+ * The grades, said in words.
+ *
+ * "A" on its own is a letter the user has to go and look up. deriveTier needs
+ * a fired signal on top of strong fit for A, which is exactly why B is the big
+ * untouched pile and worth naming as such.
+ */
+const TIER_OPTIONS = [
+  { value: "A", label: "A — strong fit, live signal" },
+  { value: "B", label: "B — strong fit, no signal yet" },
+  { value: "C", label: "C — weak fit" },
+  { value: "unscored", label: "Not scored yet" },
+] as const;
+
 
 const SavedLeads = () => {
   const [page, setPage] = useState(0);
@@ -739,6 +753,32 @@ const SavedLeads = () => {
                   </SelectContent>
                 </Select>
               )}
+
+              {/*
+                * The grade, finally selectable.
+                *
+                * It has been computed, stored, indexed and drawn as a pill on
+                * every row since the scoring rewrite, and there was no way to
+                * ask for it. B is the one worth having: good enough fit to be
+                * worth an email, no fired signal to make anyone pick it by
+                * hand, so the whole segment sits untouched. The counts are on
+                * the options because "B" without "1,284" is asking the user to
+                * guess whether running it is worth their afternoon.
+                */}
+              <Select value={filters.tier} onValueChange={(v) => setFilter("tier", v)}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Grade" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All grades</SelectItem>
+                  {TIER_OPTIONS.map(({ value, label }) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                      {facets.tiers?.[value] ? ` (${facets.tiers[value].toLocaleString()})` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
               {uniqueSeniorities.length > 0 && (
                 <Select value={filters.seniority} onValueChange={(v) => setFilter("seniority", v)}>

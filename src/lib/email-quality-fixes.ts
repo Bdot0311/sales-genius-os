@@ -117,8 +117,17 @@ function simplify(body: string) {
  *
  * Offering "Fix this" on one of these is a button that cannot succeed: at best
  * it does nothing, at worst it mangles the draft to look like it did something.
+ *
+ * "Sender" is the audit's sender_stand_in rule — the email is signed "[Your
+ * Name]" or by nobody. The signature comes from Settings, so no edit to the
+ * body resolves it either.
+ *
+ * "Subject" is here for a different reason: the fix path persists the body
+ * only, and it strips a leading "Subject:" line from whatever the editor
+ * returns. A subject rewrite would be thrown away and reported as a failed
+ * fix. The subject field is directly editable in the studio.
  */
-export const CANNOT_AUTOFIX = new Set(["Signature"]);
+export const CANNOT_AUTOFIX = new Set(["Signature", "Sender", "Subject"]);
 
 export function applyEmailQualityFix(body: string, label: string): string {
   let fixed = body.trim();
@@ -130,7 +139,6 @@ export function applyEmailQualityFix(body: string, label: string): string {
       BANNED_REPLACEMENTS.forEach(([pattern, replacement]) => { fixed = fixed.replace(pattern, replacement); });
       break;
     case "CTA":
-    case "CTA Question":
       fixed = singleCta(fixed);
       break;
     case "CTA position":
@@ -172,7 +180,6 @@ export function applyEmailQualityFix(body: string, label: string): string {
       fixed = simplify(fixed);
       break;
     case "Length":
-    case "Word Ceiling":
       fixed = trimToWords(fixed, 70);
       break;
     default:

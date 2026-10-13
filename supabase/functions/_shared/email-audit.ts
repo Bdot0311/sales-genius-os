@@ -76,6 +76,8 @@ export const MIN_WORDS = 50;
 export const MAX_WORDS = 90;
 /** Hard ceiling before length alone stops the email being read on a phone. */
 export const HARD_MAX_WORDS = 140;
+/** Subject words past which it truncates on a phone and reads as marketing. */
+export const SUBJECT_MAX_WORDS = 6;
 
 /** The body with any signature block and PS removed, as lines. */
 export function bodyWithoutSignature(body: string): string {
@@ -90,6 +92,26 @@ export function wordCount(text: string): number {
 }
 
 /**
+ * The last line of real content — where the ask lives.
+ *
+ * bodyWithoutSignature has already dropped the sign-off block and any PS, so
+ * this is simply the final non-empty line of what is left. An email closes on
+ * its call to action; everything above it is the case for making it.
+ *
+ * Shared with email-deliverability.ts, which needs the same line to say
+ * whether the question sits where the eye lands. Two functions walking back
+ * over sign-offs with slightly different rules is how the old quality card
+ * managed to disagree with itself about where an email ended.
+ */
+export function closingLine(body: string): string {
+  const lines = bodyWithoutSignature(body).split(/\r?\n/);
+  for (let i = lines.length - 1; i >= 0; i--) {
+    if (lines[i].trim()) return lines[i].trim();
+  }
+  return "";
+}
+
+/**
  * The asks in an email.
  *
  * "One call to action per email. Two asks is zero asks" — the prospect
@@ -101,17 +123,36 @@ export function wordCount(text: string): number {
  * A question that offers rather than requests ("Want the one-page breakdown?")
  * still counts as the ask — it IS the call to action — so this counts asks,
  * not requests for time specifically.
+ *
+ * ── Why position decides it ──────────────────────────────────────────────
+ *
+ * This counted every question mark, and "err toward counting" was wrong in a
+ * way that cost real sends. Opening on a question about the reader's own
+ * situation is a recommended technique in every outbound playbook — "How are
+ * you ramping the four SDRs you just hired?" — and an email that opens on one
+ * and closes on "Worth a quick look?" was scored as two asks, which is a
+ * BLOCKER, which refused the send.
+ *
+ * Two asks is zero asks because the reader has to CHOOSE, and that only
+ * happens when both are asking for something. A diagnostic opener asks for
+ * nothing; it is the case for the ask that comes later. So a question counts
+ * when it sits on the closing line, and an earlier one counts only when it
+ * requests action on its own — a block of their time, or one of the imperative
+ * forms below. "Worth fifteen minutes? Or reply here and I will send it" is
+ * still two, because the second genuinely competes with the first.
  */
 export function findAsks(text: string): string[] {
   const clean = bodyWithoutSignature(text);
+  const closing = closingLine(text);
   const asks: string[] = [];
 
-  // Sentences ending in a question mark, minus rhetorical setups.
   for (const m of clean.matchAll(/[^.!?\n]*\?/g)) {
     const q = m[0].trim();
     if (!q) continue;
-    // "Is that something you have covered, or not on the radar yet?" is an ask.
-    // "Sound familiar?" as a mid-paragraph aside is too — err toward counting.
+    const isClosing = closing.includes(q);
+    // An earlier question that asks for a slot is a competing ask wherever it
+    // sits. One that asks about their world is the setup for the real ask.
+    if (!isClosing && !TIME_ASK.test(q)) continue;
     asks.push(q);
   }
 
@@ -327,6 +368,24 @@ export function auditEmail(input: AuditInput): Finding[] {
     }
   }
 
+  // ─── The subject line ────────────────────────────────────────────────────
+  //
+  // This was gated to touch 1, which was an accident of where it was written:
+  // a subject truncates on a phone at touch four exactly as it does at touch
+  // one. It is also the only subject rule in the product, so gating it left
+  // the studio's own rubric panel to re-implement the same check with its own
+  // threshold — see _shared/email-deliverability.ts for what happened to the
+  // other three copies of that pattern.
+  if (subject && wordCount(subject) > SUBJECT_MAX_WORDS) {
+    add({
+      rule: "long_subject",
+      severity: "note",
+      evidence: `${wordCount(subject)} words: "${subject}"`,
+      why: "A long subject truncates on mobile and reads as marketing.",
+      fix: `${SUBJECT_MAX_WORDS} words or fewer. The signal itself is the strongest subject a first touch can carry.`,
+    });
+  }
+
   // ─── Position-specific rules ─────────────────────────────────────────────
   if (position === 1) {
     const timeAsk = asks.find((a) => TIME_ASK.test(a));
@@ -338,15 +397,6 @@ export function auditEmail(input: AuditInput): Finding[] {
         evidence: timeAsk!,
         why: "Asking a stranger for half an hour on the first touch converts far worse than the smallest viable ask.",
         fix: "Ask for fifteen minutes, or ask for a reply rather than a slot.",
-      });
-    }
-    if (subject && wordCount(subject) > 6) {
-      add({
-        rule: "long_subject",
-        severity: "note",
-        evidence: `${wordCount(subject)} words: "${subject}"`,
-        why: "A long subject truncates on mobile and reads as marketing.",
-        fix: "Six words or fewer. The signal itself is the strongest subject a first touch can carry.",
       });
     }
   }

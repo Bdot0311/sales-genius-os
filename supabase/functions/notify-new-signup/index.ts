@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, requireServiceRole } from "../_shared/internal-auth.ts";
 import { captureServerEvent } from "../_shared/posthog.ts";
 import { sendAppEmail } from "../_shared/transactional-email-templates/send-app-email.ts";
+import { isReservedTestRecipient } from "../_shared/test-recipients.ts";
 
 
 serve(async (req) => {
@@ -27,6 +28,26 @@ serve(async (req) => {
     if (!emailValid) {
       console.warn('notify-new-signup: skipped — missing/invalid email on record', { hasRecord: !!record });
       return new Response(JSON.stringify({ success: true, skipped: 'invalid_email' }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Nothing happens for a synthetic signup.
+    //
+    // isReservedTestRecipient already guarded every send, but it guards the
+    // RECIPIENT. The three emails addressed to the new user were suppressed by
+    // it correctly; the admin notification is addressed to a real inbox, so it
+    // went out — one "🎉 New User Signup" for every run of the live auth smoke
+    // test, from CI, from Lovable, from anyone who cloned the repo and ran the
+    // suite. The subject of the notification is the test address, not its
+    // recipient, which is the distinction that was missing.
+    //
+    // Placed above the analytics call as well: a smoke signup counted in
+    // PostHog is a number in the funnel that never belonged to a person.
+    if (isReservedTestRecipient(rawEmail)) {
+      console.log('notify-new-signup: skipped — reserved test domain', { email: rawEmail });
+      return new Response(JSON.stringify({ success: true, skipped: 'test_domain' }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

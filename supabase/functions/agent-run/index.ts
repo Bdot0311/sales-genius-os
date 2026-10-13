@@ -15,6 +15,8 @@ import {
   type RubricDimension,
 } from "../_shared/email-quality.ts";
 import { auditEmail } from "../_shared/email-audit.ts";
+import { agentProhibitions } from "../_shared/agent-prohibitions.ts";
+import { deliverabilityCheck } from "../_shared/email-deliverability.ts";
 import { findPlaceholders, hasPlaceholder, bannedPhrasesBlock, realValue } from "../_shared/email-rules.ts";
 // The autonomous agent writes email the same way every other path does, and
 // was the one path that loaded none of the house rules — see _shared/email-skills.ts.
@@ -109,17 +111,6 @@ async function callGemini(prompt: string, systemPrompt: string): Promise<string>
   return data.choices[0].message.content;
 }
 
-const SPAM_TRIGGERS = [
-  "free", "guarantee", "winner", "congratulations", "act now", "limited time",
-  "click here", "earn money", "make money", "risk free", "special promotion",
-  "no obligation", "100%", "$$$", "discount", "cash bonus",
-];
-
-function deliverabilityCheck(subject: string, body: string): { ok: boolean; hits: string[] } {
-  const text = `${subject} ${body}`.toLowerCase();
-  const hits = SPAM_TRIGGERS.filter((w) => text.includes(w));
-  return { ok: hits.length === 0, hits };
-}
 
 interface Reply {
   sentEmailId: string;
@@ -871,6 +862,7 @@ const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
                  (leadSenderEmail ?? "").split("@")[0] ||
                  "there";
               const outreachSystemPrompt = `You are ${config.agent_name ?? "a sales rep"} writing outbound for a B2B founder. Persona: ${config.persona ?? "direct and helpful"}. Tone: ${config.tone ?? "professional"}.
+${agentProhibitions(config.agent_name)}
 Company context: ${config.company_context ?? ""}
 Value propositions:
 ${cfgValuePropsText}
@@ -1409,6 +1401,7 @@ Return JSON: { "classification": one of ["interested","objection","meeting_reque
           const replySystemPrompt = `You are ${config.agent_name}, a sales rep. Your persona: ${config.persona}. Tone: ${config.tone}.
 ${UNTRUSTED_CONTENT_RULE}
 ${bannedPhrasesBlock()}
+${agentProhibitions(config.agent_name)}
 ${composeSkillContext({ goal: "meeting" })}
 Company context: ${config.company_context ?? ""}
 Value propositions: ${valuePropsText}
