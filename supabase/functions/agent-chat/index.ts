@@ -43,6 +43,7 @@ import { userConfirmedSend } from "../_shared/user-confirmation.ts";
 import { duplicateGuidanceFor } from "../_shared/duplicate-send.ts";
 import { wantsCopyAudit } from "../_shared/copy-review-intent.ts";
 import { auditEmail, auditSummary } from "../_shared/email-audit.ts";
+import { agentProhibitions } from "../_shared/agent-prohibitions.ts";
 import { auditDeliverability } from "../_shared/email-deliverability.ts";
 import { auditSequence, sequenceSummary } from "../_shared/sequence-audit.ts";
 import {
@@ -145,7 +146,7 @@ const AGENT_CHAT_BUILD = [
 ] as const;
 
 const LEAD_FIELDS =
-  "id, company_name, contact_name, contact_email, job_title, industry, company_website, linkedin_url, lead_status, pipeline_stage, icp_score, intent_score, intent_label, signal_score, signals, notes, last_contacted_at, created_at";
+  "id, company_name, contact_name, contact_email, job_title, industry, company_website, linkedin_url, lead_status, pipeline_stage, tier, icp_score, intent_score, intent_label, signal_score, signals, notes, last_contacted_at, created_at";
 
 /**
  * A uuid no row can carry, for a filter whose matching set is empty.
@@ -399,6 +400,12 @@ const TOOLS = [
             type: "number",
             description:
               "How long a lead must have been silent to count as no-response. Default 3, max 60. Only used with awaiting_reply.",
+          },
+          tier: {
+            type: "string",
+            enum: ["A", "B", "C", "unscored"],
+            description:
+              "Filter by the lead's grade. A is strong ICP fit WITH a live buying signal, B is strong fit with no signal fired yet, C is weak fit, unscored has never been through scoring. 'My best leads', 'top leads', 'the good ones' mean A. 'B leads', 'the second tier', 'the ones nobody has worked' mean B — that is the largest segment on most accounts and the one with the most unworked pipeline in it, because a person working a list by hand takes the A's and never reaches the rest.",
           },
           without_draft: {
             type: "boolean",
@@ -2163,6 +2170,11 @@ serve(async (req) => {
               );
             }
             if (args.needs_enrichment) b = b.is("contact_email", null);
+            // "unscored" is an answer, not an absence: a lead nobody has
+            // graded is the one most worth finding, and .eq would never match
+            // a NULL.
+            if (args.tier === "unscored") b = b.is("tier", null);
+            else if (typeof args.tier === "string" && args.tier) b = b.eq("tier", args.tier);
             // An empty list means nobody is waiting on a reply, which has to
             // narrow to nothing rather than be skipped as a falsy filter.
             if (awaitingIds) b = b.in("id", awaitingIds.length > 0 ? awaitingIds : [NO_MATCH_ID]);
@@ -4414,6 +4426,8 @@ HOW TO WORK
 - Do several tool calls in a row when needed. Prefer batching lead ids over one-at-a-time calls. For drafting, ALWAYS pass every lead id in a single draft_outreach call via lead_ids — never fire many parallel draft_outreach calls, that trips the rate limiter.
 - NEVER write, rewrite or "improve" email copy yourself in the chat. Every email the user sees must come from draft_outreach, which runs the playbook, the banned-phrase list, the proof rules and the quality rubric. When the user dislikes a draft ("redraft this", "too salesy", "make it shorter"), call draft_outreach again for that lead with feedback set to what they said — it replaces the draft. Copy you compose by hand is checked by nothing and reads like generic marketing, which is the single most common complaint about this product.
 - NEVER invent proof. No case studies, no "one company saw a significant increase", no anonymized customer stories, no metrics — not even vague ones — unless the exact proof was given to you in the lead data or by the user. An invented result is worse than no result.
+
+${agentProhibitions(profile?.full_name)}
 - draft_outreach goal must be one of: introduction, follow-up, meeting, demo, proposal. Use "introduction" for first touches.
 - INBOX HISTORY: before drafting a follow-up, replying, or claiming someone has or hasn't been contacted, read what already went out — list_sent_emails (use awaiting_reply: true for follow-up candidates, lead_id/email to narrow) and get_email_thread for the full conversation. Follow-ups must reference the real earlier email's angle and timing; never guess at what was sent and never repeat the same pitch.
 

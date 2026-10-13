@@ -26,7 +26,7 @@
  * refuse to send an email. Warnings and notes only.
  */
 
-import { SUBJECT_MAX_WORDS, type Finding, type Severity } from "./email-audit.ts";
+import { closingLine, SUBJECT_MAX_WORDS, type Finding, type Severity } from "./email-audit.ts";
 
 /**
  * Words that land mail in Promotions regardless of who wrote it.
@@ -118,10 +118,6 @@ function htmlStart(body: string): number {
   return String(body ?? "").search(/<[a-z]/i);
 }
 
-const SIGN_OFF_LINE =
-  /^(best|regards|thanks|thank you|sincerely|cheers|talk soon|speak soon|warmly|all the best)[\s,!.:-]*$/i;
-const PS_LINE = /^p\.?\s*s\.?[\s:.\-—]/i;
-
 /**
  * Whether the ask sits where the eye lands.
  *
@@ -133,21 +129,22 @@ const PS_LINE = /^p\.?\s*s\.?[\s:.\-—]/i;
 export function ctaPlacement(body: string): "last" | "near" | "buried" | null {
   const text = stripHtml(body);
   if (!text.includes("?")) return null;
+
+  /*
+   * The closing line comes from email-audit, so "where the email ends" has one
+   * answer. This walked back over sign-offs with its own rules and skipped any
+   * line under fifteen characters — which skipped "Worth a look?", thirteen
+   * characters and the entire point of the email — and then needed a "near the
+   * end" fallback to call its own result acceptable.
+   */
+  const closing = stripHtml(closingLine(body));
+  if (!closing) return null;
+  if (closing.includes("?")) return "last";
+
+  // One line above the close still reads as the ask on a phone.
   const lines = String(body ?? "").split("\n").map((l) => stripHtml(l)).filter(Boolean);
-  if (!lines.length) return null;
-
-  let last = lines.length - 1;
-  while (
-    last > 0 &&
-    // A short line that carries the question IS the CTA. The old panel skipped
-    // it — "Worth a look?" is thirteen characters — and then needed a
-    // "near the end" fallback to call its own result acceptable.
-    !lines[last].includes("?") &&
-    (SIGN_OFF_LINE.test(lines[last]) || PS_LINE.test(lines[last]) || lines[last].length < 15)
-  ) last--;
-
-  if ((lines[last] ?? "").includes("?")) return "last";
-  if (lines.slice(Math.max(0, last - 1), last + 1).join(" ").includes("?")) return "near";
+  const at = lines.findIndex((l) => l === closing);
+  if (at > 0 && lines[at - 1].includes("?")) return "near";
   return "buried";
 }
 

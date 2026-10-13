@@ -92,6 +92,26 @@ export function wordCount(text: string): number {
 }
 
 /**
+ * The last line of real content — where the ask lives.
+ *
+ * bodyWithoutSignature has already dropped the sign-off block and any PS, so
+ * this is simply the final non-empty line of what is left. An email closes on
+ * its call to action; everything above it is the case for making it.
+ *
+ * Shared with email-deliverability.ts, which needs the same line to say
+ * whether the question sits where the eye lands. Two functions walking back
+ * over sign-offs with slightly different rules is how the old quality card
+ * managed to disagree with itself about where an email ended.
+ */
+export function closingLine(body: string): string {
+  const lines = bodyWithoutSignature(body).split(/\r?\n/);
+  for (let i = lines.length - 1; i >= 0; i--) {
+    if (lines[i].trim()) return lines[i].trim();
+  }
+  return "";
+}
+
+/**
  * The asks in an email.
  *
  * "One call to action per email. Two asks is zero asks" — the prospect
@@ -103,17 +123,36 @@ export function wordCount(text: string): number {
  * A question that offers rather than requests ("Want the one-page breakdown?")
  * still counts as the ask — it IS the call to action — so this counts asks,
  * not requests for time specifically.
+ *
+ * ── Why position decides it ──────────────────────────────────────────────
+ *
+ * This counted every question mark, and "err toward counting" was wrong in a
+ * way that cost real sends. Opening on a question about the reader's own
+ * situation is a recommended technique in every outbound playbook — "How are
+ * you ramping the four SDRs you just hired?" — and an email that opens on one
+ * and closes on "Worth a quick look?" was scored as two asks, which is a
+ * BLOCKER, which refused the send.
+ *
+ * Two asks is zero asks because the reader has to CHOOSE, and that only
+ * happens when both are asking for something. A diagnostic opener asks for
+ * nothing; it is the case for the ask that comes later. So a question counts
+ * when it sits on the closing line, and an earlier one counts only when it
+ * requests action on its own — a block of their time, or one of the imperative
+ * forms below. "Worth fifteen minutes? Or reply here and I will send it" is
+ * still two, because the second genuinely competes with the first.
  */
 export function findAsks(text: string): string[] {
   const clean = bodyWithoutSignature(text);
+  const closing = closingLine(text);
   const asks: string[] = [];
 
-  // Sentences ending in a question mark, minus rhetorical setups.
   for (const m of clean.matchAll(/[^.!?\n]*\?/g)) {
     const q = m[0].trim();
     if (!q) continue;
-    // "Is that something you have covered, or not on the radar yet?" is an ask.
-    // "Sound familiar?" as a mid-paragraph aside is too — err toward counting.
+    const isClosing = closing.includes(q);
+    // An earlier question that asks for a slot is a competing ask wherever it
+    // sits. One that asks about their world is the setup for the real ask.
+    if (!isClosing && !TIME_ASK.test(q)) continue;
     asks.push(q);
   }
 
