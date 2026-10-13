@@ -4,7 +4,10 @@ import {
   PRUNE_RESULTS_OVER_CHARS,
   TURN_CONTEXT_BUDGET,
   lastStepStart,
+  KEEP_IDS,
+  idsIn,
   messagesTokens,
+  prunedNotice,
   pruneTurnContext,
   toolNamesByCallId,
   type TurnMessage,
@@ -82,7 +85,45 @@ describe("it sheds what the turn has finished with", () => {
   it("tells the model to fetch again rather than guess", () => {
     const messages = turn();
     pruneTurnContext(messages);
-    expect(String(messages[3].content)).toContain("do not guess");
+    expect(String(messages[3].content)).toContain("never invent one");
+  });
+
+  /*
+   * An instruction not to hallucinate is not a mechanism.
+   *
+   * The note used to say "do not guess at what they contained" and that is
+   * exactly what happened: after a resume, with the list_leads result rewritten
+   * to a note, the model called draft_outreach with twelve lead ids belonging
+   * to no account, then listed leads three more times trying to recover. One
+   * request for forty-nine leads became four overlapping passes.
+   *
+   * Records are what cost context. Ids are what the turn still needs.
+   */
+  it("keeps the ids the result returned", () => {
+    const ids = Array.from({ length: 5 }, (_, i) => `aaaaaaaa-bbbb-cccc-dddd-00000000000${i}`);
+    const messages: TurnMessage[] = [
+      { role: "user", content: "u".repeat(300_000) },
+      { role: "assistant", content: null, tool_calls: [{ id: "c1", function: { name: "list_leads" } }] },
+      { role: "tool", tool_call_id: "c1", content: JSON.stringify({ leads: ids.map((id) => ({ id, notes: "x".repeat(2000) })) }) },
+      { role: "assistant", content: null, tool_calls: [{ id: "c2", function: { name: "draft_outreach" } }] },
+      { role: "tool", tool_call_id: "c2", content: "ok" },
+    ];
+    pruneTurnContext(messages);
+    const note = String(messages[2].content);
+    expect(note).toContain("__pruned_by_context_manager");
+    for (const id of ids) expect(note).toContain(id);
+  });
+
+  it("keeps the ids cheap — a bounded number of them, not the records", () => {
+    const many = Array.from({ length: 400 }, (_, i) =>
+      `aaaaaaaa-bbbb-cccc-dddd-${String(i).padStart(12, "0")}`);
+    const payload = JSON.stringify(many.map((id) => ({ id, notes: "x".repeat(500) })));
+    expect(idsIn(payload)).toHaveLength(KEEP_IDS);
+    expect(prunedNotice("list_leads", payload.length, payload).length).toBeLessThan(payload.length / 4);
+  });
+
+  it("says nothing about ids when the payload had none", () => {
+    expect(prunedNotice("get_metrics", 5000, "no identifiers here")).not.toContain('"ids"');
   });
 
   it("takes the oldest first and stops once it fits", () => {
