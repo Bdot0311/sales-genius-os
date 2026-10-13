@@ -237,7 +237,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed z-50 bg-[hsl(224,13%,7%)] border-r border-border/60 transition-all duration-300 ${
+        className={`fixed z-50 bg-card border-r border-border/60 transition-all duration-300 ${
           sidebarCollapsed ? "w-[4.5rem]" : "w-64"
         } ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
