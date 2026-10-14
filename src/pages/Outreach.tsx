@@ -3195,6 +3195,7 @@ For logos, use HTML:
                         isFirstTouch={isFirstTouch}
                         onFix={handleQualityFix}
                         fixingCheck={fixingCheck}
+                        lead={(() => { const l = leads.find((x) => x.id === selectedLead); return l ? { company: l.company_name, contactName: l.contact_name } : undefined; })()}
                       />
                       <EmailRubricPanel
                         subject={subjectLine}

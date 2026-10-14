@@ -40,6 +40,7 @@ interface EmailQualityCheckerProps {
   isFirstTouch?: boolean;
   onFix?: (checkLabel: string) => Promise<void>;
   fixingCheck?: string | null;
+  lead?: { company?: string | null; contactName?: string | null };
 }
 
 export interface CheckResult {
@@ -166,10 +167,12 @@ export const scoreEmailQuality = (
 export const blockerSummary = (blockers: Finding[]): string =>
   blockers.map((f) => `${f.rule.replace(/_/g, " ")}: ${f.evidence}`).join("; ");
 
-export const EmailQualityChecker = ({ subject, body, isFirstTouch = true, onFix, fixingCheck }: EmailQualityCheckerProps) => {
+export const EmailQualityChecker = ({ subject, body, isFirstTouch = true, onFix, fixingCheck, lead }: EmailQualityCheckerProps) => {
+  const leadCompany = lead?.company ?? null;
+  const leadContact = lead?.contactName ?? null;
   const { checks, overallScore, overallStatus, wordCount, blockers } = useMemo(
-    () => scoreEmailQuality(subject, body, isFirstTouch),
-    [subject, body, isFirstTouch]
+    () => scoreEmailQuality(subject, body, isFirstTouch, leadCompany || leadContact ? { company: leadCompany, contactName: leadContact } : undefined),
+    [subject, body, isFirstTouch, leadCompany, leadContact]
   );
 
   const wordCountColor = wordCount >= 50 && wordCount <= 90 ? "text-green-500" : wordCount <= 140 ? "text-yellow-500" : "text-destructive";
