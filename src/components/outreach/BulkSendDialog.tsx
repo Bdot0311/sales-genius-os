@@ -417,7 +417,11 @@ export const BulkSendDialog = ({
           // The per-lead failure is recorded against this lead, so it has to
           // say which rule stopped it. "Failed outbound quality checks" on
           // forty rows is a report nobody can act on.
-          throw new Error(`Blocked: ${blockerSummary(quality.blockers)}`);
+          // A content block is not a delivery failure, so it must not count
+          // toward the "check your Gmail connection" pause.
+          const err = new Error(`Blocked: ${blockerSummary(quality.blockers)}`);
+          (err as Error & { qualityBlock?: boolean }).qualityBlock = true;
+          throw err;
         }
         // Round-robin across accounts or use selected one
         let senderAccountId: string;
