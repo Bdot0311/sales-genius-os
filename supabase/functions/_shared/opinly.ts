@@ -97,12 +97,6 @@ export function getPost(apiKey: string, slug: string): Promise<OpinlyFullPost> {
   return get(`/content/post?slug=${encodeURIComponent(slug)}`, apiKey);
 }
 
-export function listRoutes(
-  apiKey: string,
-): Promise<Array<{ type: string; slug: string; lastModified: string }>> {
-  return get(`/content/routes`, apiKey);
-}
-
 // ---------------------------------------------------------------------------
 // ProseMirror -> markdown
 // ---------------------------------------------------------------------------

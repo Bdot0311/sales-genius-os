@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 
 /**
  * One surface, everywhere behind the login.
@@ -36,7 +36,10 @@ const DASHBOARD_PAGES = [
 ].map((n) => `src/pages/${n}.tsx`);
 
 const files = [
-  ...DASHBOARD_DIRS.flatMap((dir) =>
+  // A directory that has emptied is not a reason for this to stop checking the
+  // other nine. It threw ENOENT the moment the one component under
+  // components/calendar was deleted for being unreferenced.
+  ...DASHBOARD_DIRS.filter(existsSync).flatMap((dir) =>
     readdirSync(dir, { recursive: true, encoding: "utf8" })
       .filter((f) => f.endsWith(".tsx"))
       .map((f) => `${dir}/${f}`),

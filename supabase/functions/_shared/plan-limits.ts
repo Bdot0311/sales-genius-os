@@ -53,7 +53,3 @@ export const DEFAULT_PLAN: PlanId = "free";
 export function getPlanSearchLimits(plan: string | null | undefined): PlanSearchLimits {
   return PLAN_SEARCH_LIMITS[plan as PlanId] ?? PLAN_SEARCH_LIMITS[DEFAULT_PLAN];
 }
-
-export function isPlanId(plan: string | null | undefined): plan is PlanId {
-  return plan != null && plan in PLAN_SEARCH_LIMITS;
-}
