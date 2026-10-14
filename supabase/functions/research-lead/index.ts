@@ -20,6 +20,7 @@ import {
   resolveLeadDomain,
   scoreResearchQuality,
   type LeadResearchBrief,
+  researchInputs,
 } from "../_shared/lead-research.ts";
 import { aiFetch } from "../_shared/ai-provider.ts";
 import { diffBriefs } from "../_shared/brief-diff.ts";
@@ -49,7 +50,7 @@ const BROWSER_UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0 Safari/537.36";
 
 const LEAD_SELECT =
-  "id, user_id, company_name, contact_name, contact_email, company_website, job_title, department, seniority, industry, company_size, employee_count, technologies, company_description, notes, signals, signal_type, intent_reasons, recommended_angle, linkedin_url, company_linkedin, research_brief, research_sources, research_confidence, researched_at, updated_at, enriched_at, icp_score, intent_score, intent_label, tier, score_reason";
+  "id, user_id, company_name, contact_name, contact_email, company_website, job_title, department, seniority, industry, company_size, employee_count, technologies, company_description, notes, signals, signal_type, intent_reasons, recommended_angle, linkedin_url, company_linkedin, research_brief, research_sources, research_confidence, researched_at, research_inputs, updated_at, enriched_at, icp_score, intent_score, intent_label, tier, score_reason";
 
 function extractText(html: string): { text: string; meta: string } {
   const metaBits: string[] = [];
@@ -722,6 +723,11 @@ serve(async (req) => {
         research_sources: [...sources, ...signalFacts.map((f) => f.source)],
         research_confidence: brief.confidence,
         researched_at: researchedAt,
+        // What this brief was built from, so the next freshness check can ask
+        // whether the inputs changed rather than whether the row was written
+        // to. Without it, the score written a moment from now invalidates the
+        // work that just finished.
+        research_inputs: researchInputs(lead as Record<string, string | null>),
       })
       .eq("id", leadId)
       .eq("user_id", userId);

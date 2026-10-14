@@ -1,221 +1,155 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import {
-  OBSERVATION_FRESHNESS_DAYS,
-  briefToPromptBlock,
-  datingNote,
-  freshObservationDates,
-  isStaleObservation,
-  normalizeOccurred,
-  observationAgeDays,
-} from "../../supabase/functions/_shared/lead-research.ts";
-import {
-  findUnsupportedRecency,
-  unsupportedRecencyRetry,
-} from "../../supabase/functions/_shared/email-rules.ts";
+  RESEARCH_TTL_DAYS,
+  isResearchFresh,
+  researchInputs,
+} from "../../supabase/functions/_shared/lead-research";
 
-// Fixed clock: the date the WeAre draft actually went out.
-const NOW = new Date("2026-08-25T00:00:00Z");
+/**
+ * Research invalidated itself, and the symptom was the same work twice.
+ *
+ * isResearchFresh went stale when updated_at ran past researched_at, the idea
+ * being that a changed lead needs new context. public.leads has a BEFORE
+ * UPDATE trigger that sets updated_at on EVERY write, and scoring, enrichment,
+ * stage changes and the send path all write to the row.
+ *
+ * So "research these 49 leads, qualify them, then draft" invalidated its own
+ * research: research wrote the brief, scoring wrote a tier a moment later, and
+ * generate-email found all 49 stale and scraped all 49 sites again. A 14-day
+ * cache that could not survive the next step of its own pipeline.
+ */
 
-describe("normalizeOccurred", () => {
-  it("accepts the shapes a site actually prints", () => {
-    expect(normalizeOccurred("2025-11-14", NOW)).toBe("2025-11-14");
-    expect(normalizeOccurred("2025-11", NOW)).toBe("2025-11");
-    expect(normalizeOccurred("2025", NOW)).toBe("2025");
-    expect(normalizeOccurred("November 2025", NOW)).toBe("2025-11");
-    expect(normalizeOccurred("Nov 2025", NOW)).toBe("2025-11");
-    expect(normalizeOccurred("November 14, 2025", NOW)).toBe("2025-11-14");
+const ago = (ms: number) => new Date(Date.now() - ms).toISOString();
+const MIN = 60_000;
+
+const lead = (over: Record<string, unknown> = {}) => {
+  const base = {
+    company_website: "kogenie.com",
+    contact_email: "dana@kogenie.com",
+    company_name: "Kogenie",
+    linkedin_url: "",
+    company_linkedin: "",
+  };
+  const row = { ...base, ...over };
+  return {
+    research_brief: { what_they_do: "x" },
+    researched_at: ago(10 * MIN),
+    research_inputs: researchInputs(base),
+    ...row,
+  };
+};
+
+describe("a brief survives a write that changed nothing it was built from", () => {
+  it("is still fresh after the row is scored", () => {
+    // The exact sequence from the report: research, then a tier written a
+    // moment later, then drafting.
+    expect(isResearchFresh({ ...lead(), updated_at: new Date().toISOString() })).toBe(true);
   });
 
-  it("returns undated rather than a guess when it cannot read the value", () => {
-    // Undated is handled conservatively downstream. A wrong date is not
-    // recoverable, so anything unreadable has to land here.
-    for (const bad of ["", "   ", "soon", "last year", "Q3", "someday", null, undefined, 42]) {
-      expect(normalizeOccurred(bad as unknown, NOW), String(bad)).toBe("");
-    }
+  it("is stale when the website changes", () => {
+    expect(isResearchFresh(lead({ company_website: "kogenie.io" }))).toBe(false);
   });
 
-  it("rejects impossible years and out-of-range parts", () => {
-    expect(normalizeOccurred("3025-01", NOW)).toBe("");
-    expect(normalizeOccurred("1500", NOW)).toBe("");
-    expect(normalizeOccurred("2025-13", NOW)).toBe("2025");
-    expect(normalizeOccurred("2025-11-45", NOW)).toBe("2025-11");
-  });
-});
-
-describe("observationAgeDays", () => {
-  it("measures a month-only date from its last day, the reading kindest to recency", () => {
-    // 2025-11 ends 2025-11-30; 2026-08-25 is 268 days later.
-    expect(observationAgeDays("2025-11", NOW)).toBe(268);
+  it("is stale when the company name changes", () => {
+    expect(isResearchFresh(lead({ company_name: "KOgenie Labs" }))).toBe(false);
   });
 
-  it("treats a future date as today rather than as negative age", () => {
-    expect(observationAgeDays("2026-12", NOW)).toBe(0);
+  it("is stale when enrichment finds a different email domain", () => {
+    expect(isResearchFresh(lead({ contact_email: "dana@kogenielabs.com" }))).toBe(false);
   });
 
-  it("has no answer for an undated observation", () => {
-    expect(observationAgeDays("", NOW)).toBeNull();
-    expect(observationAgeDays("not a date", NOW)).toBeNull();
-  });
-});
-
-describe("staleness", () => {
-  it("calls the WeAre acquisition stale", () => {
-    // The whole reason this file exists.
-    expect(isStaleObservation("2025-11", NOW)).toBe(true);
-    expect(observationAgeDays("2025-11", NOW)!).toBeGreaterThan(OBSERVATION_FRESHNESS_DAYS);
+  it("ignores a change to anything research never read", () => {
+    expect(isResearchFresh({ ...lead(), tier: "A", pipeline_stage: "contacted" } as never)).toBe(true);
   });
 
-  it("leaves something inside the window alone", () => {
-    expect(isStaleObservation("2026-07", NOW)).toBe(false);
+  it("still expires on the TTL", () => {
+    const old = { ...lead(), researched_at: ago((RESEARCH_TTL_DAYS + 1) * 86_400_000) };
+    expect(isResearchFresh(old)).toBe(false);
   });
 
-  it("does not call an undated observation stale — it calls it undated", () => {
-    // Absence of a date is not evidence of age in either direction.
-    expect(isStaleObservation("", NOW)).toBe(false);
-    expect(freshObservationDates({ observations: [{ fact: "x", source: "", occurred: "" }] } as never, NOW))
-      .toEqual([]);
+  it("has nothing to reuse without a brief", () => {
+    expect(isResearchFresh({ ...lead(), research_brief: null })).toBe(false);
+    expect(isResearchFresh({ ...lead(), researched_at: null })).toBe(false);
   });
 });
 
-describe("datingNote", () => {
-  it("tells the writer not to present a stale fact as news", () => {
-    const note = datingNote("2025-11", NOW);
-    expect(note).toContain("2025-11");
-    expect(note).toContain("months ago");
-    expect(note).toContain("do NOT present as news");
-  });
-
-  it("clears a fresh fact for use as news", () => {
-    expect(datingNote("2026-07", NOW)).toContain("recent enough");
-  });
-
-  it("tells the writer an undated fact carries no timing", () => {
-    expect(datingNote("", NOW)).toContain("do NOT imply this is recent");
-  });
-});
-
-describe("briefToPromptBlock carries the dating", () => {
-  const brief = {
-    what_they_do: "Consulting for enterprise teams.",
-    who_they_sell_to: "Enterprise ops leaders",
-    observations: [
-      { fact: "Acquired WeAre.", source: "https://x.com/news", occurred: "2025-11" },
-    ],
-    hooks: [],
-    avoid: [],
-    confidence: "high" as const,
+describe("rows researched before this shipped", () => {
+  const legacy = () => {
+    const l = lead();
+    delete (l as Record<string, unknown>).research_inputs;
+    return l;
   };
 
-  it("labels a stale observation in the prompt itself", () => {
-    const block = briefToPromptBlock(brief, ["https://x.com/news"]);
-    expect(block).toContain("Acquired WeAre.");
-    expect(block).toContain("do NOT present as news");
+  /*
+   * Falling back to updated_at would keep the bug alive until every brief
+   * aged out of a fourteen-day TTL.
+   */
+  it("are not re-invalidated by an unrelated write", () => {
+    expect(isResearchFresh({ ...legacy(), updated_at: new Date().toISOString() })).toBe(true);
+    expect(isResearchFresh({ ...legacy(), research_inputs: null, updated_at: new Date().toISOString() })).toBe(true);
   });
 
-  it("bans time claims outright when nothing is fresh", () => {
-    const block = briefToPromptBlock(brief, ["https://x.com/news"]);
-    expect(block).toContain("TIMING:");
-    expect(block).toContain("no month names");
-  });
-
-  it("says nothing about timing when something genuinely is recent", () => {
-    const fresh = { ...brief, observations: [{ ...brief.observations[0], occurred: "2026-08" }] };
-    expect(briefToPromptBlock(fresh, [])).not.toContain("TIMING:");
+  it("still go stale when enrichment runs, which does change the inputs", () => {
+    expect(isResearchFresh({ ...legacy(), enriched_at: new Date().toISOString() })).toBe(false);
   });
 });
 
-describe("findUnsupportedRecency", () => {
-  it("catches the line that shipped", () => {
-    const draft = "Hi Wiktor,\n\nSaw the WeAre acquisition in November. Usually means growth phase.";
-    expect(findUnsupportedRecency(draft, [])).toContain("November");
+describe("the fingerprint", () => {
+  it("is the same for the same inputs", () => {
+    expect(researchInputs({ company_website: "Kogenie.com ", company_name: "KOGENIE" }))
+      .toBe(researchInputs({ company_website: "kogenie.com", company_name: "kogenie" }));
   });
 
-  it("allows a month the research actually supports", () => {
-    const draft = "Saw the WeAre acquisition in August.";
-    expect(findUnsupportedRecency(draft, ["2026-08"])).toEqual([]);
+  it("falls back to the website field when company_website is empty", () => {
+    expect(researchInputs({ website: "kogenie.com" })).toContain("kogenie.com");
   });
 
-  it("still catches a different month when something else is fresh", () => {
-    // A fresh fact does not license dating a stale one.
-    const draft = "Saw the WeAre acquisition in November.";
-    expect(findUnsupportedRecency(draft, ["2026-08"])).toContain("November");
-  });
-
-  it("catches vague recency when nothing at all is fresh", () => {
-    expect(findUnsupportedRecency("You recently launched the new tier.", [])).toContain("recently");
-    expect(findUnsupportedRecency("Saw you just raised.", [])).toContain("just raised");
-    expect(findUnsupportedRecency("Noticed the change last week.", [])).toContain("last week");
-  });
-
-  it("leaves vague recency alone when a fresh fact backs it", () => {
-    expect(findUnsupportedRecency("You recently launched the new tier.", ["2026-08"])).toEqual([]);
-  });
-
-  it("does not fire on 'may' the verb", () => {
-    expect(findUnsupportedRecency("This may be worth a look.", [])).toEqual([]);
-    expect(findUnsupportedRecency("You may already do this.", [])).toEqual([]);
-  });
-
-  it("does fire on 'May' the month", () => {
-    expect(findUnsupportedRecency("Since May you've doubled the team.", [])).toContain("May");
-  });
-
-  it("says nothing about a draft that makes no time claim", () => {
-    const clean = "Hi Sam,\n\nYou run onboarding for enterprise teams. Worth a look?\n\nBrandon";
-    expect(findUnsupportedRecency(clean, [])).toEqual([]);
-  });
-
-  it("names the offending claims in the retry", () => {
-    const retry = unsupportedRecencyRetry(["November", "recently"]);
-    expect(retry).toContain('"November"');
-    expect(retry).toContain('"recently"');
-    expect(retry).toContain("without dating it");
+  it("uses the email domain, not the whole address", () => {
+    const a = researchInputs({ contact_email: "dana@kogenie.com" });
+    const b = researchInputs({ contact_email: "sam@kogenie.com" });
+    expect(a).toBe(b);
   });
 });
 
-describe("generate-email keeps the recency guard wired", () => {
-  const SRC = readFileSync(
-    new URL("../../supabase/functions/generate-email/index.ts", import.meta.url),
-    "utf8",
-  );
+describe("every reader fetches what the comparison needs", () => {
+  /*
+   * A select that omits these computes an empty fingerprint, which matches
+   * nothing — the same bug, louder.
+   */
+  const NEEDED = ["research_inputs", "company_website", "contact_email", "company_name"];
+  for (const [name, path] of [
+    ["research-lead", "supabase/functions/research-lead/index.ts"],
+    ["generate-email", "supabase/functions/generate-email/index.ts"],
+    ["agent-run", "supabase/functions/agent-run/index.ts"],
+  ] as const) {
+    it(`${name} selects the fingerprint fields`, () => {
+      // The select that also fetches research_brief is the one feeding the
+      // freshness check; it has to carry everything the comparison reads.
+      const src = readFileSync(path, "utf8");
+      // The column list is one line in each of the three, whether it sits
+      // inline in .select() or in a const above it.
+      const selects = src
+        .split("\n")
+        .filter((line) => line.includes("research_brief") && line.includes("researched_at"));
+      expect(selects.length, `${name} has no research select`).toBeGreaterThan(0);
+      for (const sel of selects) {
+        for (const field of NEEDED) {
+          expect(sel, `${name} is missing ${field}`).toContain(field);
+        }
+      }
+    });
+  }
 
-  it("checks the finished draft's time claims against dated research", () => {
-    expect(SRC).toContain("findUnsupportedRecency");
-    expect(SRC).toContain("freshObservationDates");
+  it("research-lead records the fingerprint when it writes a brief", () => {
+    const src = readFileSync("supabase/functions/research-lead/index.ts", "utf8");
+    expect(src).toContain("research_inputs: researchInputs(");
+    const write = src.indexOf("researched_at: researchedAt,");
+    expect(src.indexOf("research_inputs: researchInputs(")).toBeGreaterThan(write - 400);
   });
 
-  it("blocks a named month the research cannot support", () => {
-    expect(SRC).toContain("unsupported_recency");
-    expect(SRC).toContain("datedLies");
-  });
-
-  it("reports softer recency as weakness instead of losing the draft", () => {
-    expect(SRC).toMatch(/quality_weak:[^\n]*recency\.length/);
-  });
-});
-
-describe("research-lead asks for and normalizes the date", () => {
-  const SRC = readFileSync(
-    new URL("../../supabase/functions/research-lead/index.ts", import.meta.url),
-    "utf8",
-  );
-
-  it("requests occurred in the brief schema", () => {
-    expect(SRC).toContain('"occurred": string');
-    expect(SRC).toContain("DATE EVERY OBSERVATION YOU CAN");
-  });
-
-  it("forbids inventing a date rather than leaving it blank", () => {
-    expect(SRC).toContain("Never estimate one");
-  });
-
-  it("normalizes rather than trusting what the model returned", () => {
-    expect(SRC).toContain("occurred: normalizeOccurred(o.occurred)");
-  });
-
-  it("keeps a signal event's own date through the merge", () => {
-    // Dropping it made a verified dated event look like an undated scrape.
-    expect(SRC).toContain("occurred: normalizeOccurred(f.occurred_at");
+  it("the column exists", () => {
+    const sql = readFileSync("supabase/migrations/20261014120000_research_inputs.sql", "utf8");
+    expect(sql).toContain("ADD COLUMN IF NOT EXISTS research_inputs text");
   });
 });

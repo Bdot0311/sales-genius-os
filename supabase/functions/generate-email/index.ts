@@ -1062,7 +1062,11 @@ STRICT RULES:
       try {
         const { data: leadRow } = await serviceClient
           .from('leads')
-          .select('research_brief, research_sources, research_confidence, researched_at, updated_at, enriched_at, icp_score, intent_score, intent_label, score_reason')
+          
+          // The fields the brief was built from: freshness compares the
+          // inputs now, not the row's last write, and reading it without
+          // them computes an empty fingerprint that never matches.
+          .select('research_brief, research_sources, research_confidence, researched_at, research_inputs, company_website, contact_email, company_name, linkedin_url, company_linkedin, enriched_at, icp_score, intent_score, intent_label, score_reason')
           .eq('id', lead.id)
           .maybeSingle();
 
