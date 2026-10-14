@@ -724,17 +724,32 @@ export function findNameMismatches(
   const company = String(lead.company ?? "").trim();
   if (company) {
     const escaped = company.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const loose = text.match(new RegExp(escaped, "gi")) ?? [];
+    // Whole-word only: "ramping" is not a miscased "Ramp".
+    const loose = text.match(new RegExp(`(?<![\\w])${escaped}(?![\\w])`, "gi")) ?? [];
     if (loose.length && !loose.some((hit) => hit === company)) {
       out.push(`"${loose[0]}" should be "${company}"`);
     }
   }
 
-  // The greeting is the one place a wrong name is unrecoverable.
+  // The greeting is the one place a wrong name is unrecoverable. Generic
+  // greetings ("Hi there", "Hi team") and nicknames are not wrong names, so
+  // only a greeting that names someone clearly different is flagged.
   const contact = String(lead.contactName ?? "").trim();
-  const expected = contact.split(/\s+/)[0] ?? "";
-  const greeted = text.match(/^\s*(?:hi|hello|hey|dear)\s+([A-Za-z][\w'-]*)/i)?.[1];
-  if (expected && greeted && greeted.toLowerCase() !== expected.toLowerCase()) {
+  const TITLES = /^(dr|mr|mrs|ms|miss|mx|prof|sir)\.?$/i;
+  const tokens = contact.split(/\s+/).filter((t) => t && !TITLES.test(t));
+  const expected = (tokens[0] ?? "").toLowerCase();
+  const GENERIC = new Set(["there", "team", "all", "everyone", "folks", "friend", "friends", "y'all", "sir", "madam", "hiring", "again"]);
+  const greetMatch = text.match(/^\s*(?:hi|hello|hey|dear)\s+([A-Za-z][\w'-]*\.?)(?:\s+([A-Za-z][\w'-]*))?/i);
+  let greeted = greetMatch?.[1] ?? "";
+  if (TITLES.test(greeted)) greeted = greetMatch?.[2] ?? "";
+  const g = greeted.replace(/\.$/, "").toLowerCase();
+  const surname = tokens.length > 1 ? tokens[tokens.length - 1].toLowerCase() : "";
+  const plausible =
+    !g || GENERIC.has(g) || g === expected || g === surname ||
+    (g.length >= 2 && expected.length >= 2 && (expected.startsWith(g.slice(0, 2)) || g.startsWith(expected.slice(0, 2)))) ||
+    // Common nicknames that don't share a prefix.
+    ({ bob: "robert", bill: "william", will: "william", liz: "elizabeth", beth: "elizabeth", jim: "james", dick: "richard", rick: "richard", peggy: "margaret", ted: "edward", jack: "john", chuck: "charles", hank: "henry", sandy: "alexandra" } as Record<string, string>)[g] === expected;
+  if (expected && !plausible) {
     out.push(`greets "${greeted}" but the lead is "${contact}"`);
   }
 
