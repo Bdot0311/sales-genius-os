@@ -80,9 +80,10 @@ Deno.test("private edge functions reject anonymous callers", async () => {
     // Acceptable: 401 (unauth), 403 (forbidden), or a JSON body that says so.
     // The wording is not uniform across handlers — "Authentication required"
     // comes from _shared/internal-auth.ts, "No authorization header" from the
-    // older handlers — so every refusal phrase in use is matched here.
+    // older handlers — and some handlers answer a refusal with HTTP 200 and the
+    // reason in the body, so every refusal phrase in use is matched here.
     const ok = status === 401 || status === 403 ||
-      /unauthor|forbidden|access denied|not authenticated|authentication required|authorization header/i.test(body);
+      /unauthor|forbidden|access denied|not authenticated|authentication required|authorization header|missing auth token/i.test(body);
     if (!ok) failures.push(`${fn} → ${status} ${body.slice(0, 120)}`);
   }
   if (failures.length) {
