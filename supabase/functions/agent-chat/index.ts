@@ -2233,11 +2233,26 @@ serve(async (req) => {
             : undraftedIds;
           const outstanding = Math.max(undraftedIds.length, allUndrafted.length);
           if (wantsUndrafted) {
-            // The set this turn is now responsible for finishing. See the sweep
-            // at the end of the turn: the model asked which leads still need
-            // drafting, so all of them get drafted or queued whatever it does
-            // with the ids next.
-            outstandingPool = allUndrafted;
+            /*
+             * The set this turn commits to finishing — bounded by what was
+             * actually asked for.
+             *
+             * This was allUndrafted: every matching lead on the account,
+             * ignoring the limit on the call that produced it. So "draft for
+             * these 49 new leads" called list_leads with limit 49, and the
+             * sweep at the end of the turn committed the account's whole
+             * backlog of 162 and queued the other 140 under a line saying
+             * "the whole set is accounted for". The user got a hundred and
+             * forty drafts they never asked for and no way to tell which
+             * forty-nine they wanted.
+             *
+             * The limit the model passed IS its statement of scope. The
+             * account-wide figure is still reported as remaining_without_draft,
+             * which is the number worth quoting; it is just no longer a
+             * commitment. Taken from the same ordering as the page, so the
+             * pool always contains the ids the model was shown.
+             */
+            outstandingPool = allUndrafted.slice(0, limit);
           }
 
           toolEvents.push({
@@ -5172,13 +5187,12 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
     if (outstandingPool.length > 0 && drewFromPool) {
       const missed = outstandingPool.filter((id) => !handledLeadIds.has(id));
       /*
-       * A bound on what one sentence can commit someone to.
+       * A second bound, under the one the pool already carries.
        *
-       * outstandingPool is now the whole matching account rather than a page,
-       * which is what makes the sweep complete — and on an account with twenty
-       * thousand undrafted leads, "follow up with everyone" would otherwise
-       * queue twenty thousand generations off one turn. Five hundred is far
-       * above any batch seen here and still finite.
+       * outstandingPool is capped at the limit the model passed to list_leads,
+       * so it cannot exceed 100 any more and this rarely bites. It stays
+       * because the pool is only as careful as the call that set it, and a
+       * runaway here queues generations nobody asked for.
        *
        * Truncating quietly is what produced the original twenty-draft ceiling,
        * so this does the opposite: the event says how many were left and how
@@ -5197,7 +5211,7 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
             label: "Queued the leads it skipped",
             status: "ok",
             detail:
-              `${queued} lead(s) from the ${outstandingPool.length} you asked about were not drafted or ` +
+              `${queued} of the ${outstandingPool.length} lead(s) in this request were not drafted or ` +
               `queued by the steps above, so they were added to the batch.` +
               (beyondLimit > 0
                 ? ` ${beyondLimit} more are still without a draft — say "keep going" and I'll queue the next ${SWEEP_LIMIT}.`

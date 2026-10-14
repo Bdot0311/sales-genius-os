@@ -129,14 +129,71 @@ export const FREE_MAIL_DOMAINS = new Set([
 ]);
 
 /**
- * A brief is stale when it's missing, older than the TTL, or older than the
- * lead's own last update (new signals / enrichment mean new context).
+ * What a brief was built from.
+ *
+ * Research reads the lead's domain, its company name and its profile links;
+ * nothing else about the row changes what a scrape would return. Recorded at
+ * research time so a later check can ask whether the INPUTS changed rather
+ * than whether the row was written to.
+ *
+ * Plain text rather than a digest: it has to be compared, not kept secret, and
+ * a stale brief is far easier to explain when you can read what it was built
+ * from.
+ */
+export function researchInputs(lead: {
+  company_website?: string | null;
+  website?: string | null;
+  contact_email?: string | null;
+  company_name?: string | null;
+  linkedin_url?: string | null;
+  company_linkedin?: string | null;
+}): string {
+  const norm = (v: unknown) => String(v ?? "").trim().toLowerCase();
+  return [
+    norm(lead.company_website) || norm(lead.website),
+    norm(lead.contact_email).split("@")[1] ?? "",
+    norm(lead.company_name),
+    norm(lead.linkedin_url),
+    norm(lead.company_linkedin),
+  ].join("|");
+}
+
+/**
+ * Whether a brief can be reused.
+ *
+ * ── Why this stopped keying on updated_at ───────────────────────────────
+ *
+ * It used to go stale when updated_at ran more than a minute past
+ * researched_at, the idea being that a changed lead needs new context. But
+ * leads has a BEFORE UPDATE trigger that sets updated_at on EVERY write, and
+ * scoring, enrichment, stage changes and the send path all write to the row.
+ *
+ * So "research these 49 leads, qualify them, then draft" invalidated its own
+ * research: research wrote the brief, scoring wrote a tier a moment later, and
+ * generate-email then found every one of the 49 stale and scraped all 49 sites
+ * a second time. The cache existed and could not hold, and the only visible
+ * symptom was the same work reported twice.
+ *
+ * The inputs are what matter. A lead whose website changed needs a new brief;
+ * a lead that merely got a score does not.
+ *
+ * A row researched before this shipped has no recorded inputs. Those fall back
+ * to the TTL and to enrichment, which is the one write that genuinely changes
+ * what a scrape would find — deliberately NOT back to updated_at, which would
+ * keep the bug alive until every brief aged out.
  */
 export function isResearchFresh(lead: {
   research_brief?: unknown;
   researched_at?: string | null;
   updated_at?: string | null;
   enriched_at?: string | null;
+  research_inputs?: string | null;
+  company_website?: string | null;
+  website?: string | null;
+  contact_email?: string | null;
+  company_name?: string | null;
+  linkedin_url?: string | null;
+  company_linkedin?: string | null;
 }): boolean {
   if (!lead?.research_brief || !lead?.researched_at) return false;
   const researchedAt = new Date(lead.researched_at).getTime();
@@ -144,12 +201,14 @@ export function isResearchFresh(lead: {
 
   if (Date.now() - researchedAt > RESEARCH_TTL_DAYS * 86_400_000) return false;
 
-  for (const ts of [lead.updated_at, lead.enriched_at]) {
-    if (!ts) continue;
-    const t = new Date(ts).getTime();
-    // Small grace window: the research write itself bumps updated_at.
-    if (Number.isFinite(t) && t - researchedAt > 60_000) return false;
+  const recorded = lead.research_inputs;
+  if (typeof recorded === "string" && recorded !== "") {
+    return recorded === researchInputs(lead);
   }
+
+  const enriched = lead.enriched_at ? new Date(lead.enriched_at).getTime() : NaN;
+  // Grace window: the research write itself lands alongside the timestamps.
+  if (Number.isFinite(enriched) && enriched - researchedAt > 60_000) return false;
   return true;
 }
 

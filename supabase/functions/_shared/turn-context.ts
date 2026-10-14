@@ -109,15 +109,52 @@ export function toolNamesByCallId(messages: TurnMessage[]): Map<string, string> 
   return names;
 }
 
-/** What replaces a payload the turn has finished with. */
-export function prunedNotice(toolName: string, originalChars: number): string {
+/** Record ids, in the order the result listed them. */
+const UUID = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi;
+
+/**
+ * How many ids a pruned result keeps.
+ *
+ * A hundred uuids is about 3,700 characters against the tens of thousands a
+ * hundred lead records take, so this is still most of the saving.
+ */
+export const KEEP_IDS = 100;
+
+/** The ids a payload carried, deduplicated, in first-seen order. */
+export function idsIn(content: string): string[] {
+  const seen = new Set<string>();
+  for (const m of String(content ?? "").matchAll(UUID)) {
+    seen.add(m[0].toLowerCase());
+    if (seen.size >= KEEP_IDS) break;
+  }
+  return [...seen];
+}
+
+/**
+ * What replaces a payload the turn has finished with.
+ *
+ * The ids survive it. Telling the model "do not guess at what they contained"
+ * did not stop it guessing: after a resume, with the list_leads result
+ * rewritten to a note, it called draft_outreach with twelve lead ids that
+ * belong to no account — then went back and listed leads three more times
+ * trying to recover, which is how one request for forty-nine leads turned into
+ * four overlapping passes.
+ *
+ * Records are what cost context; ids are what the turn still needs. Pruning
+ * both was throwing away the cheap half, and an instruction not to hallucinate
+ * is not a mechanism. Keeping them is.
+ */
+export function prunedNotice(toolName: string, originalChars: number, content = ""): string {
+  const ids = idsIn(content);
   return JSON.stringify({
     [PRUNED_MARKER]: true,
     tool: toolName || "unknown",
     note:
-      `This result was removed from the conversation to keep the turn within its context budget. ` +
-      `It ran successfully and whatever you took from it is in your own messages below. ` +
-      `If you need these records again, call the tool again or read them by id — do not guess at what they contained.`,
+      `The records from this result were removed to keep the turn within its context budget. ` +
+      `It ran successfully. The ids it returned are kept below and are the ONLY ids from it you may use — ` +
+      `never invent one, and never reuse an id that did not come from a tool result. ` +
+      `If you need the full records again, call the tool again or read them by id.`,
+    ...(ids.length ? { ids, ids_shown: ids.length } : {}),
     original_size_chars: originalChars,
   });
 }
@@ -164,7 +201,11 @@ export function pruneTurnContext(
     // Already rewritten by an earlier pass of this same turn.
     if (content.includes(PRUNED_MARKER)) continue;
 
-    const replacement = prunedNotice(names.get(String(message.tool_call_id ?? "")) ?? "", content.length);
+    const replacement = prunedNotice(
+      names.get(String(message.tool_call_id ?? "")) ?? "",
+      content.length,
+      content,
+    );
     running -= approxTokens(content) - approxTokens(replacement);
     message.content = replacement;
     prunedCount += 1;

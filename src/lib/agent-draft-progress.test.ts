@@ -295,9 +295,18 @@ describe("the turn finishes the set it was given", () => {
     // is `{ has_draft: boolean }` and reading .id off it does not compile.
     // Deno's full typecheck caught that; the offline one structurally cannot.
     expect(CODE).toContain("const rowIds = rows.map((r) => String(r.id));");
-    // The full undrafted set, not the page — the sweep is only as complete as
-    // the set it is given.
-    expect(CODE).toContain("outstandingPool = allUndrafted;");
+    /*
+     * The undrafted set the request asked for — not the page, and not the
+     * account.
+     *
+     * This asserted `outstandingPool = allUndrafted`, every matching lead on
+     * the account, which is what turned "draft for these 49 new leads" into
+     * 162 drafts: the sweep queued the other 140 under a line reading "the
+     * whole set is accounted for". Wider than the page so the sweep can still
+     * finish what the model started, bounded by the limit the model passed so
+     * it cannot finish something nobody asked to start.
+     */
+    expect(CODE).toContain("outstandingPool = allUndrafted.slice(0, limit);");
     expect(CODE).not.toContain("outstandingPool = pool.map(");
   });
 

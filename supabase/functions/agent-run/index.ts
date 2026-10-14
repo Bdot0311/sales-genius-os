@@ -64,7 +64,12 @@ async function researchBlockForLead(
   try {
     const { data: row } = await admin
       .from("leads")
-      .select("research_brief, research_sources, research_confidence, researched_at, updated_at, enriched_at")
+      .select(
+        // The fields the brief was built from, because freshness now compares
+        // the inputs rather than the row's last write. Reading the brief
+        // without them computes an empty fingerprint and never matches.
+        "research_brief, research_sources, research_confidence, researched_at, research_inputs, company_website, contact_email, company_name, linkedin_url, company_linkedin, enriched_at",
+      )
       .eq("id", leadId)
       .maybeSingle();
 
