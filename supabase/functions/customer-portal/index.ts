@@ -31,7 +31,9 @@ serve(async (req) => {
     );
 
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) throw new Error('No authorization header provided');
+    // Prefixed with "auth:" so the catch below reports it as a sign-in problem
+    // (401) rather than a billing failure (500) — the message a user sees.
+    if (!authHeader) throw new Error('auth: No authorization header provided');
     logStep('Authorization header found');
 
     const token = authHeader.replace('Bearer ', '');

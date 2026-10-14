@@ -17,3 +17,12 @@
 - [x] Restore original dark-purple video treatment and effects.
 - [x] Swap light mode to pale-purple surfaces and dark, readable text without removing visuals.
 - [x] Verify switching themes and preserved visuals in the browser (video tested with a temporary browser-compatible transcode; app keeps original source).
+
+# Generic greeting send block
+
+- [x] Let general greetings, nicknames and titles pass the name check; keep a wrong person's name blocked.
+- [x] Match company names whole-word so "ramping" is not read as a miscased "Ramp".
+- [x] Stop a content block from counting as a Gmail delivery failure in bulk send.
+- [x] Add regression tests at both layers (shared rule, browser send gate).
+- [x] Publish a What's New entry.
+- [ ] Live end-to-end bulk send with a generic greeting (needs a real campaign to real prospects; not run).

@@ -14,6 +14,7 @@ import {
   NO_PLACEHOLDER_RETRY,
   bannedPhrasesBlock,
   bannedPhrasesLine,
+  findNameMismatches,
   findPlaceholders,
   hasPlaceholder,
 } from "../_shared/email-rules.ts";
@@ -67,7 +68,10 @@ Deno.test("a precision edit cannot reintroduce a banned phrase", () => {
 });
 
 Deno.test("the edit rules keep the constraints that survived from the old client copy", () => {
-  for (const rule of ["75 words", "Hi [FirstName],", "no subject line"]) {
+  // The word-count number moved when the 50-90 band became the single enforced
+  // limit; what must not move is that an edit is still held to a length, to the
+  // greeting, and to returning a body with no subject line.
+  for (const rule of ["50-90 words", "Hi [FirstName],", "no subject line"]) {
     assert(IMMUTABLE_EDIT_RULES.includes(rule), `"${rule}" was lost`);
   }
 });
@@ -111,4 +115,36 @@ Deno.test("the offending tokens are reported, for logs and for the retry", () =>
 Deno.test("the retry instruction says what to do instead of leaving a blank", () => {
   assert(/never write a bracketed/i.test(NO_PLACEHOLDER_RETRY));
   assert(/write around it/i.test(NO_PLACEHOLDER_RETRY));
+});
+
+Deno.test("a generic or nickname greeting is not a name mismatch", () => {
+  // The send gate once refused any greeting whose first word was not the lead's
+  // exact first name, so "Hi there," blocked every lead in a bulk batch.
+  const lead = { contactName: "Robert Smith", company: "Acme" };
+  for (const greet of [
+    "Hi there,", "Hi team,", "Hey everyone,", "Hi Bob,", "Hi Robert,",
+    "Hi Smith,", "Dear Dr. Robert Smith,",
+  ]) {
+    const body = `${greet}\n\nSaw what Acme is shipping. Worth a look?`;
+    assertEquals(findNameMismatches(body, lead), [], `wrongly blocked: ${greet}`);
+  }
+});
+
+Deno.test("a greeting that names someone else is still a mismatch", () => {
+  const lead = { contactName: "Sarah Lee", company: "Acme" };
+  const mismatches = findNameMismatches("Hi Jane,\n\nSaw what Acme is shipping.", lead);
+  assert(mismatches.some((m) => /greets/i.test(m)), `wrong name slipped through: ${mismatches.join(", ")}`);
+});
+
+Deno.test("a company name inside a longer word is not a mismatch", () => {
+  // "ramping" is not a miscased "Ramp"...
+  assertEquals(
+    findNameMismatches("Hi Dana,\n\nYou are ramping outreach.", { contactName: "Dana Cole", company: "Ramp" }),
+    [],
+  );
+  // ...but a real miscasing of the name still is.
+  assert(
+    findNameMismatches("Hi Dana,\n\nSaw RAMP's launch.", { contactName: "Dana Cole", company: "Ramp" }).length > 0,
+    "miscased company slipped through",
+  );
 });
