@@ -221,6 +221,36 @@ describe("a blocker fails the draft on its own", () => {
     expect(card.blockers).toEqual([]);
   });
 
+  it("opens the gate when the greeting is general, a nickname or a title", () => {
+    // A bulk template opening "Hi there," used to fail for every lead in the
+    // batch, because the greeting had to carry the lead's exact first name.
+    const rest = [
+      "",
+      "Four SDR openings went up on your careers page this month. In teams that size the ramp",
+      "usually lands on whoever closed last quarter, so the quota carrier ends up training instead",
+      "of selling and both numbers slip. Kogenie ran into the same thing at nine reps.",
+      "",
+      "Worth a quick look at how they split it?",
+      "",
+      "Best,",
+      "Brandon",
+    ].join("\n");
+    for (const greeting of ["Hi there,", "Hi team,", "Hey everyone,", "Hi Bob,", "Dear Dr. Smith,"]) {
+      const card = scoreEmailQuality("sdr ramp", greeting + rest, true, {
+        company: "Kogenie",
+        contactName: "Robert Smith",
+      });
+      expect(card.blockers.map((f) => f.rule), `blocked: ${greeting}`).not.toContain("name_mismatch");
+    }
+  });
+
+  it("still closes the gate when the greeting names someone else", () => {
+    const body =
+      "Hi Jane,\n\nFour SDR openings went up on your careers page this month at Kogenie. Worth a quick look?";
+    const card = scoreEmailQuality("sdr ramp", body, true, { company: "Kogenie", contactName: "Robert Smith" });
+    expect(card.blockers.map((f) => f.rule)).toContain("name_mismatch");
+  });
+
   it("both send gates key on the blockers, not on the score", () => {
     const STUDIO = readFileSync("src/pages/Outreach.tsx", "utf8");
     const BULK = readFileSync("src/components/outreach/BulkSendDialog.tsx", "utf8");
