@@ -92,6 +92,21 @@ export const ROADMAP: RoadmapItem[] = [
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-14-greeting-flexibility",
+    date: "2026-10-14",
+    title: "Emails that greet a lead warmly get through",
+    summary: "A greeting like \"Hi there,\" or a nickname no longer stops a send.",
+    items: [
+      {
+        tag: "fixed",
+        title: "\"Hi there,\" sends",
+        description:
+          "Emails and bulk campaigns that open with a general greeting, a shortened name like \"Hi Bob\" for Robert, or a title like \"Dr. Lee\" now send normally instead of being held back. A greeting that names the wrong person is still caught before it goes out.",
+        href: "/dashboard/outreach",
+      },
+    ],
+  },
+  {
     id: "2026-10-10-profile-identity",
     date: "2026-10-10",
     title: "Your name and photo",
