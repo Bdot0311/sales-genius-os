@@ -3131,7 +3131,6 @@ export type Database = {
           recommended_angle: string | null
           research_brief: Json | null
           research_confidence: string | null
-          research_inputs: string | null
           research_sources: string[] | null
           researched_at: string | null
           score_breakdown: Json | null
@@ -3189,7 +3188,6 @@ export type Database = {
           recommended_angle?: string | null
           research_brief?: Json | null
           research_confidence?: string | null
-          research_inputs?: string | null
           research_sources?: string[] | null
           researched_at?: string | null
           score_breakdown?: Json | null
@@ -3247,7 +3245,6 @@ export type Database = {
           recommended_angle?: string | null
           research_brief?: Json | null
           research_confidence?: string | null
-          research_inputs?: string | null
           research_sources?: string[] | null
           researched_at?: string | null
           score_breakdown?: Json | null
@@ -6876,6 +6873,7 @@ export type Database = {
           p_show?: string
           p_sort?: string
           p_stage?: string
+          p_tier?: string
         }
         Returns: {
           company_name: string
