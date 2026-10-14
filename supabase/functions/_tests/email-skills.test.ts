@@ -66,9 +66,10 @@ Deno.test("the agent playbook carries the frameworks, not just the rules", () =>
 Deno.test("ordering ranks the goal's own material above the general principles", () => {
   // Every skill ships on every path, so ordering is emphasis rather than a
   // filter — but if a budget ever does bite, what the caller asked for has to
-  // outlive what it did not.
+  // outlive what it did not. For a sequence that is the skill stating the JOB
+  // of each touch, which is six-email-sequence.
   const names = skillsForGoal({ goal: "sequence" });
-  assertEquals(names[0], "cold-email-4-sequence");
+  assertEquals(names[0], "six-email-sequence");
   assert(
     names.indexOf("b2b-cold-email-copywriting") > names.indexOf("cold-email-4-sequence"),
     `core outranks the routed skill: ${names.join(", ")}`,

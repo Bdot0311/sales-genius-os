@@ -67,7 +67,10 @@ Deno.test("a precision edit cannot reintroduce a banned phrase", () => {
 });
 
 Deno.test("the edit rules keep the constraints that survived from the old client copy", () => {
-  for (const rule of ["75 words", "Hi [FirstName],", "no subject line"]) {
+  // The word-count number moved when the 50-90 band became the single enforced
+  // limit; what must not move is that an edit is still held to a length, to the
+  // greeting, and to returning a body with no subject line.
+  for (const rule of ["50-90 words", "Hi [FirstName],", "no subject line"]) {
     assert(IMMUTABLE_EDIT_RULES.includes(rule), `"${rule}" was lost`);
   }
 });
