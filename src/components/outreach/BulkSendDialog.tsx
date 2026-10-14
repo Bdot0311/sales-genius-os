@@ -455,7 +455,7 @@ export const BulkSendDialog = ({
       } catch (err: any) {
         console.error(`Failed to send to ${lead.contact_name}:`, err);
         failed++;
-        consecutiveFailures++;
+        if (!err?.qualityBlock) consecutiveFailures++;
       }
 
       setProgress({ sent, failed, total: selectedLeads.length });
