@@ -264,3 +264,39 @@ describe("the tools are wired the way this repo requires", () => {
     expect(CHAT).toContain("do not substitute your own guess about who their customers are");
   });
 });
+
+/**
+ * The other ICP scorer.
+ *
+ * computeFit in _shared/lead-scoring.ts has always treated an unset bound as
+ * unbounded. calculateICPMatch in src/lib/icp-scoring.ts did not, and nothing
+ * surfaced it because the ICPProfile type declared company_size_max as
+ * non-null while the column has always allowed null.
+ *
+ * Writing a real null — which an open-ended winning size now does — turned
+ * `empCount <= null` into `empCount <= 0`, so every lead with a positive
+ * headcount lost its size points, on every screen that scores in the browser.
+ */
+describe("both ICP scorers agree about an unset bound", () => {
+  const FRONT = readFileSync("src/lib/icp-scoring.ts", "utf8");
+  const SERVER = readFileSync("supabase/functions/_shared/lead-scoring.ts", "utf8");
+  const TYPE = readFileSync("src/hooks/use-icp-profiles.tsx", "utf8");
+
+  it("the browser scorer guards both ends", () => {
+    expect(FRONT).toContain("(min == null || empCount >= min) && (max == null || empCount <= max)");
+    // Matched on the code, not the file: the comment above the fix quotes the
+    // unguarded comparison to record what it used to do.
+    const bare = FRONT.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
+    expect(bare).not.toMatch(/empCount <= profile\.company_size_max/);
+  });
+
+  it("the server scorer always did", () => {
+    expect(SERVER).toContain("icp.company_size_max == null || size <= icp.company_size_max");
+  });
+
+  it("the type admits the column is nullable", () => {
+    // Declared non-null, the unguarded comparison typechecked cleanly.
+    expect(TYPE).toContain("company_size_min: number | null;");
+    expect(TYPE).toContain("company_size_max: number | null;");
+  });
+});
