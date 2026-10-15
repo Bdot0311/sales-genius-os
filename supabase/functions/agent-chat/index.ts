@@ -3648,24 +3648,54 @@ serve(async (req) => {
             .map((x: any) => String(x));
           if (!ids.length) return { error: "Pass scheduled_ids from list_scheduled_emails" };
 
+          /*
+           * Not one that has already left.
+           *
+           * This deleted the row on status alone, and the sender never
+           * re-read status between taking a row and posting it to Gmail. So
+           * cancelling something in flight deleted the record while the email
+           * was on its way: the recipient got it, the sender's "sent" write
+           * matched no row, and the product kept no trace of a send that
+           * happened — which also silently breaks the reply tracking and the
+           * do-not-follow-up-within-N-hours guard that read it.
+           *
+           * send_attempted_at is set immediately before the Gmail call, so it
+           * is exactly the point past which cancelling is a lie. A row that is
+           * merely claimed is still cancellable: begin_scheduled_email_send
+           * requires status 'scheduled', so the sender refuses it.
+           */
           const { data: rows, error } = await admin
             .from("sent_emails")
             .select("id, lead_id, to_email, subject, body_text, scheduled_at")
             .eq("user_id", userId)
             .eq("status", "scheduled")
+            .is("send_attempted_at", null)
             .in("id", ids);
           if (error) return { error: error.message };
-          if (!rows?.length) return { error: "No matching scheduled emails (they may have already sent)" };
+          if (!rows?.length) {
+            return {
+              error: "No matching scheduled emails — they have already been sent or are being sent right now",
+            };
+          }
 
           const cancelled: any[] = [];
+          const alreadyGone: string[] = [];
           for (const r of rows) {
-            const { error: delErr } = await admin
+            const { data: removed, error: delErr } = await admin
               .from("sent_emails")
               .delete()
               .eq("id", r.id)
               .eq("user_id", userId)
-              .eq("status", "scheduled");
+              .eq("status", "scheduled")
+              .is("send_attempted_at", null)
+              .select("id");
             if (delErr) continue;
+            // The send started between the read above and this delete. Leave
+            // the row alone: it is the only record that the email went out.
+            if (!removed || removed.length === 0) {
+              alreadyGone.push(r.id);
+              continue;
+            }
             let restoreError: string | null = null;
             if (r.lead_id && r.body_text) {
               // One draft per lead is enforced by a unique index, so a plain
@@ -3697,11 +3727,22 @@ serve(async (req) => {
             name,
             label: cancelled.length ? "Cancelled scheduled email" : "Cancel failed",
             status: cancelled.length ? "ok" : "error",
-            detail: `${cancelled.length} of ${rows.length} cancelled`,
+            detail: alreadyGone.length
+              ? `${cancelled.length} of ${rows.length} cancelled; ${alreadyGone.length} had already started sending`
+              : `${cancelled.length} of ${rows.length} cancelled`,
           });
           return {
             cancelled: cancelled.length,
             details: cancelled,
+            ...(alreadyGone.length
+              ? {
+                already_sending: alreadyGone.length,
+                already_sending_ids: alreadyGone,
+                already_sending_note:
+                  "These were already being sent when the cancel ran, so they were left alone. " +
+                  "Tell the user they have gone out rather than that they were cancelled.",
+              }
+              : {}),
             note: "Cancelled sends were restored as saved drafts so they can be edited, re-sent or re-scheduled.",
           };
         }

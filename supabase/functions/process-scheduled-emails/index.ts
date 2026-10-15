@@ -26,27 +26,78 @@ serve(async (req) => {
   const unauth = requireServiceRole(req);
   if (unauth) return unauth;
 
+  /**
+   * Claims a run took and will not use, handed back before it returns.
+   *
+   * Declared out here because the catch below needs it too: a throw that
+   * leaves a claim held costs the next run fifteen minutes on work nothing is
+   * doing.
+   */
+  const releaseLater = new Set<string>();
+  const handBackClaims = async () => {
+    if (releaseLater.size === 0) return;
+    const ids = [...releaseLater];
+    const { error } = await supabase.rpc("release_scheduled_email_claims", { p_ids: ids });
+    if (error) {
+      // The stale sweep picks these up in fifteen minutes either way.
+      console.warn(`[process-scheduled-emails] could not hand back ${ids.length} claim(s):`, error.message);
+    }
+    releaseLater.clear();
+  };
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  // Out here so the catch can hand back claims with it; building a client
+  // reads two env vars and cannot throw on its own.
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
   try {
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Find scheduled emails that are due
-    const { data: scheduledEmails, error: fetchError } = await supabase
-      .from("sent_emails")
-      .select("*")
-      .eq("status", "scheduled")
-      .not("scheduled_at", "is", null)
-      .lte("scheduled_at", new Date().toISOString())
-      .limit(20);
-
-    if (fetchError) {
-      console.error("Error fetching scheduled emails:", fetchError);
-      throw fetchError;
+    /*
+     * Settle claims from runs that are gone before taking any more.
+     *
+     * A row left claimed is invisible to the claim below, so this is what
+     * stops a killed run's emails from sitting unsent forever. It also parts
+     * the two cases a stale claim can be: never attempted, which is handed
+     * back, and attempted-and-unconfirmed, which is failed with a reason
+     * rather than risking the duplicate. See
+     * 20261015234500_claim_scheduled_emails.sql.
+     */
+    const { error: reapError } = await supabase.rpc("release_stale_scheduled_email_claims");
+    if (reapError) {
+      // Not fatal: the claim below is still correct, this run just does not
+      // pick up what an earlier one dropped.
+      console.warn("[process-scheduled-emails] stale-claim sweep failed:", reapError.message);
     }
 
-    if (!scheduledEmails || scheduledEmails.length === 0) {
+    /*
+     * Claim the batch rather than reading it.
+     *
+     * This function is scheduled every minute and used to select twenty rows
+     * at status 'scheduled' with no claim at all, then walk them one at a time
+     * sending each, writing 'sent' only after Gmail answered. Two runs
+     * overlapping — one slow minute is enough, and there was no wall clock
+     * here to prevent one — both read the same rows and both sent them. A
+     * duplicate cold email cannot be taken back.
+     *
+     * claim_due_scheduled_emails stamps send_claimed_at under FOR UPDATE SKIP
+     * LOCKED, so simultaneous runs take disjoint sets, and it is fair across
+     * accounts: twenty sends a minute is the whole product's capacity, and
+     * ordered by due time alone one account's backlog owned all of it.
+     */
+    const { data: claimed, error: fetchError } = await supabase
+      .rpc("claim_due_scheduled_emails", { p_limit: 20 });
+
+    if (fetchError) {
+      console.error("Error claiming scheduled emails:", fetchError);
+      throw fetchError;
+    }
+    // Same shape the select returned, typed the way process-agent-jobs types
+    // its own claim: the client is built without the Database generic here, so
+    // an rpc result arrives as unknown.
+    const scheduledEmails = (claimed ?? []) as Record<string, any>[];
+
+    if (scheduledEmails.length === 0) {
       return new Response(
         JSON.stringify({ success: true, processed: 0, message: "No scheduled emails due" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -57,6 +108,23 @@ serve(async (req) => {
 
     let processed = 0;
     let failed = 0;
+
+    /*
+     * A wall clock, because the cron does not wait.
+     *
+     * This function is scheduled every minute and had no budget at all:
+     * twenty sequential sends, each a Gmail call plus up to eight Supabase
+     * round trips and sometimes an OAuth refresh, ran until the platform
+     * killed the whole invocation around 150s. Claiming makes an overrun safe
+     * rather than a duplicate, but a run that stops of its own accord can hand
+     * back what it did not reach, and a run that is killed cannot.
+     *
+     * 50s leaves the next minute's run a clear field.
+     */
+    const startedAt = Date.now();
+    const BUDGET_MS = 50_000;
+    const outOfTime = () => Date.now() - startedAt > BUDGET_MS;
+
 
     /**
      * Emails that were neither sent nor failed, and why.
@@ -95,6 +163,14 @@ serve(async (req) => {
     const defer = (email: any, reason: string) => {
       console.log(`Deferring ${email.id} to ${email.to_email}: ${reason}`);
       deferrals.push({ id: email.id, to: email.to_email, reason });
+      /*
+       * A deferral leaves the row at 'scheduled' on purpose — a reached cap or
+       * a paused mailbox is genuinely retryable. But the row is claimed now,
+       * and a claimed row is invisible to the next claim, so without this it
+       * would wait fifteen minutes for the stale sweep instead of going out on
+       * the next run once the cap resets.
+       */
+      releaseLater.add(email.id);
     };
 
     // Pre-fetch daily + monthly limits for all unique users
@@ -138,6 +214,15 @@ serve(async (req) => {
     }
 
     for (const email of scheduledEmails) {
+      /*
+       * Everything still unsent goes back on the queue rather than being
+       * started with no time to finish. The remainder is claimed, so no other
+       * run can have taken it in the meantime.
+       */
+      if (outOfTime()) {
+        releaseLater.add(email.id);
+        continue;
+      }
       try {
         // Compliance: skip recipients who unsubscribed after the email was
         // queued. Scoped to this sender plus any global opt-out — matching on
@@ -361,6 +446,35 @@ serve(async (req) => {
           .replace(/\//g, "_")
           .replace(/=+$/, "");
 
+        /*
+         * The last line before the only irreversible call in the product.
+         *
+         * begin_scheduled_email_send sets send_attempted_at and returns the id
+         * only if it was unset, so exactly one caller can ever get past here
+         * for a given row. The claim above should already make a second caller
+         * impossible; this is what holds if it ever is not, and a guard this
+         * cheap in front of a duplicate email is not worth economising on.
+         *
+         * It is also what lets the stale sweep tell the two cases apart later:
+         * a claim with no attempt was never sent and is handed back, a claim
+         * with one may be in the recipient's inbox and is never retried.
+         */
+        const { data: mine, error: beginError } = await supabase
+          .rpc("begin_scheduled_email_send", { p_id: email.id });
+        if (beginError) {
+          console.error(`[process-scheduled-emails] could not mark ${email.id} as sending:`, beginError.message);
+          // Unknown state, so nothing is sent and nothing is written. The row
+          // keeps its claim and the stale sweep decides in fifteen minutes.
+          failed++;
+          continue;
+        }
+        if (!Array.isArray(mine) || mine.length === 0) {
+          // Another run already has this one. Not an error, and not a failure
+          // to report — the email is going out, just not from here.
+          console.log(`[process-scheduled-emails] ${email.id} is already being sent elsewhere; skipping`);
+          continue;
+        }
+
         const gmailResponse = await fetch(
           "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
           {
@@ -455,6 +569,8 @@ serve(async (req) => {
       }
     }
 
+    await handBackClaims();
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -470,6 +586,14 @@ serve(async (req) => {
     );
   } catch (error: any) {
     console.error("Error in process-scheduled-emails:", error.message);
+    /*
+     * A throw here leaves whatever this run claimed held. Handing back the set
+     * it had already decided not to send keeps the next run from waiting on
+     * the fifteen-minute sweep for work nothing is doing.
+     */
+    try {
+      await handBackClaims();
+    } catch { /* the stale sweep covers it */ }
     return new Response(
       JSON.stringify({ error: "Failed to process scheduled emails" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
