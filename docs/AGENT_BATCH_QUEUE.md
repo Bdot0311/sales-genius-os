@@ -175,3 +175,131 @@ Phase 1 now: it is an afternoon and it removes the part that annoys you daily.
 
 Phase 2 next, as its own PR. Phase 3 only once phase 2 has run a real batch and
 the counts in the job card have matched the drafts folder on a run you watched.
+
+---
+
+## Fairness across accounts
+
+All three phases shipped. What none of them considered is that the queue is
+shared, and `claim_agent_job_items` ordered the batch by `created_at` across
+the whole table.
+
+### The measurement
+
+Postgres 16, the real claim function, the real drain rate (`trigger_agent_jobs`
+fires up to three passes of twelve a minute):
+
+| | |
+|---|---|
+| Account A queues | 2,000 leads at 10:00 |
+| Account B queues | 5 leads at 10:05 |
+| Drain | 36 items/minute |
+| **B's wait for its first lead** | **56 minutes** |
+| B's UI for those 56 minutes | "queued" |
+
+Linear in the backlog ahead of you: a 20,000-lead import would have made a new
+signup's first batch wait most of a day, with nothing to distinguish it from a
+queue that had stopped.
+
+This is not a throughput problem. Raising the pass cap moves every number in
+that table by the same factor and changes nothing about the ordering.
+
+### The fix
+
+Round-robin across accounts, FIFO within an account:
+`20261015230000_fair_agent_job_claim.sql`. Each account's pending items are
+numbered oldest-first, and the batch is taken in that `turn` order — everyone's
+oldest before anyone's second.
+
+Same scenario after:
+
+| | |
+|---|---|
+| B's wait for its first lead | 1 minute |
+| B's five leads | all claimed in that minute |
+| A's share of the first 36 slots | 31 |
+
+A gets every slot nobody else wants, which at one tenant is all of them.
+
+### What was verified, and how
+
+Against a real cluster, not by reading:
+
+- 56 minutes → 1 minute on the scenario above.
+- An account's own items still come oldest-first (0 of 36 claims out of order).
+- Three simultaneous drains: 12 rows each, 36 total, nothing claimed twice.
+  `FOR UPDATE OF c SKIP LOCKED` is what makes that true and is unchanged.
+- 50,000 pending across 40 accounts: the first 24 claims went to 24 different
+  accounts.
+- Cost at 200,000 pending: ~90ms per claim against ~40ms for the unfair
+  version, three times a minute.
+
+### Round-robin needed a memory
+
+Review caught what the measurement above missed, and the cluster confirmed it.
+Numbering each account's items oldest-first and taking the batch in turn order
+produces the *same* order on every call. So with more accounts than slots, the
+ones at the back of that order never get in at all:
+
+| | |
+|---|---|
+| Accounts, each with a 500-item backlog | 13 |
+| Batch | 12 |
+| Calls | 60 (20 minutes of draining) |
+| **Slots the newest account got** | **0 of 720** |
+
+Zero, until one of the twelve ahead of it drained completely. Taking turns
+requires remembering whose turn it was, and statelessness was the bug.
+
+`20261016000500_queue_tenant_turn.sql` adds one row per account per queue
+holding how many rows were claimed for it recently, and orders accounts
+least-served-first. Three versions were measured before one worked:
+
+| ordering | 13 accounts | 20 | 50 | 100 |
+|---|---|---|---|---|
+| global FIFO | starves | starves | starves | starves |
+| stateless round-robin | 0–120 | 60–120 | 24–30 | 13–15 |
+| last-served timestamp | 60–120 | 60–120 | 24–30 | 13–15 |
+| **recent deficit** | **110–111** | **72** | **28–29** | **14–15** |
+
+(min–max slots per account out of 1,440, across 120 calls of twelve.)
+
+The timestamp version fixes the starvation and not the unfairness: every
+account served in a call gets a stamp within microseconds of the others, so the
+order among them is arbitrary-but-stable and the same two accounts absorb every
+miss. A *lifetime* total fixes the spread and introduces drift — a new account
+at zero outranks everyone until it catches up, and an account returning after a
+week away outranks the accounts that kept working. Hence a count over a sliding
+window: it accumulates while an account keeps being served and resets once the
+account has been idle past the window.
+
+Two details that are load-bearing:
+
+- **The count is rows claimed, not calls appeared in.** An account that took
+  eleven of twelve slots has been served more than one that took a single row.
+- **The stamp is written at claim time, whatever becomes of the work.** This is
+  the other half of the same review finding: a capped or paused account's rows
+  were claimed, deferred, released, and claimed again the next minute, burning
+  a slot a minute while accounts that could work waited. Having a turn and not
+  being able to use it still counts as having had it. Measured with one capped
+  account of thirteen: 7.8% of slots against a 7.7% fair share.
+
+It is a data-modifying CTE in the same statement as the claim, so a row cannot
+be claimed without the turn being recorded.
+
+Cost at 200,000 pending across 40 accounts: ~110-130ms per claim, against ~90ms
+for the stateless version and ~40ms for the unfair one. Three times a minute.
+
+### The bound worth knowing about
+
+The obvious implementation ranks every pending row in one window. It sorts the
+whole backlog to disk for a twelve-row answer — 2.4MB spilled at 50,000 rows —
+and gets worse as the queue deepens. The shipped version uses a lateral per
+account, so the work is bounded by the batch size and the number of accounts
+with pending items rather than by queue depth.
+
+`p_limit * 8` is headroom for concurrent drains: each pass locks `p_limit` rows
+with SKIP LOCKED, so the pool must hold more than `passes * p_limit` claimable
+rows or the later passes come back short and throughput halves silently.
+`src/lib/agent-job-fairness.test.ts` asserts the factor stays above the pass cap
+in `trigger_agent_jobs`, because those two numbers live in different migrations.

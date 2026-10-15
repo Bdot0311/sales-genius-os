@@ -152,7 +152,16 @@ describe("the worker", () => {
     // the row scheduled when it does. Re-checking them here would be a second
     // copy of four ceilings.
     const SENDER = readFileSync("supabase/functions/process-scheduled-emails/index.ts", "utf8");
-    expect(SENDER).toContain('.eq("status", "scheduled")');
+    /*
+     * Pinned to the four refusals themselves rather than to how the sender
+     * finds its rows. This used to assert `.eq("status", "scheduled")`, which
+     * was only ever a proxy for "the sender is the one reading the queue" —
+     * and it broke the day that read became an atomic claim, which had nothing
+     * to do with where the caps live.
+     */
+    expect(SENDER).toContain("daily send limit is reached");
+    expect(SENDER).toContain("monthly send cap is reached");
+    expect(SENDER).toMatch(/mailbox/i);
     expect(code(WORKER)).not.toContain("daily_email_limit");
     expect(code(WORKER)).not.toContain("capacityFor");
   });

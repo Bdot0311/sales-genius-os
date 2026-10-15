@@ -80,7 +80,17 @@ export const EditScheduledEmailDialog = ({ email, open, onOpenChange, onSaved }:
 ${bodyText.split('\n').map((line: string) => line.trim() ? `<p>${line}</p>` : '').join('\n')}
 </body></html>`;
 
-      const { error } = await supabase
+      /*
+       * Not while a send is holding it.
+       *
+       * The sender claims a row, composes the message from what it read, and
+       * posts it. An edit that lands in between updated the row and changed
+       * nothing about what went out, and the user was told "Email updated"
+       * for text the recipient never saw. send_claimed_at is how that window
+       * is now visible from here; it lasts at most the sender's budget, and
+       * cancelling still works throughout it.
+       */
+      const { data: edited, error } = await supabase
         .from("sent_emails")
         .update({
           subject,
@@ -89,9 +99,21 @@ ${bodyText.split('\n').map((line: string) => line.trim() ? `<p>${line}</p>` : ''
           ...(scheduledAt ? { scheduled_at: scheduledAt } : {}),
         })
         .eq("id", email.id)
-        .eq("status", "scheduled");
+        .eq("status", "scheduled")
+        .is("send_claimed_at", null)
+        .select("id");
 
       if (error) throw error;
+      if (!edited || edited.length === 0) {
+        toast({
+          title: "Too late to edit this one",
+          description:
+            "It is being sent right now, so the changes were not saved. Cancel it if it has not " +
+            "arrived yet, or wait a moment and check the Sent tab.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       toast({ title: "Email updated", description: "Your scheduled email has been updated" });
       handleOpenChange(false);
@@ -107,13 +129,35 @@ ${bodyText.split('\n').map((line: string) => line.trim() ? `<p>${line}</p>` : ''
     if (!email) return;
     setIsCancelling(true);
     try {
-      const { error } = await supabase
+      /*
+       * Cancelling is safe right up to the Gmail call and not one step past it.
+       *
+       * It used to guard on status alone, and the sender never re-read status
+       * between taking the row and sending it — so cancelling something
+       * already in flight said "The scheduled email has been cancelled" and
+       * the email arrived anyway. Claiming is deliberately not a barrier here:
+       * begin_scheduled_email_send requires status 'scheduled', so a row
+       * cancelled while merely claimed is refused by the sender and never
+       * goes out. send_attempted_at is the real point of no return.
+       */
+      const { data: stopped, error } = await supabase
         .from("sent_emails")
         .update({ status: "cancelled" })
         .eq("id", email.id)
-        .eq("status", "scheduled");
+        .eq("status", "scheduled")
+        .is("send_attempted_at", null)
+        .select("id");
 
       if (error) throw error;
+      if (!stopped || stopped.length === 0) {
+        toast({
+          title: "This one has already gone",
+          description:
+            "The send had already started, so it could not be stopped. It will show in the Sent tab.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       toast({ title: "Email cancelled", description: "The scheduled email has been cancelled" });
       handleOpenChange(false);

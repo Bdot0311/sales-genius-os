@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 
 /**
@@ -18,7 +18,7 @@ import { readFileSync } from "node:fs";
 
 import {
   DEFAULT_FALLBACK_ENDPOINT,
-  bedrockSendUrl,
+  bedrockRoute,
 } from "../../supabase/functions/_shared/ai-gateway";
 
 /*
@@ -28,6 +28,11 @@ import {
  * that environment.
  */
 const BEDROCK_GW = "https://gateway.ai.cloudflare.com/v1/acct/outreign/aws-bedrock";
+const TOKEN = "cf-aig-test-token";
+
+/** The URL half, for the cases that are only about the path. */
+const sendUrl = (region: string, base?: string | null) =>
+  bedrockRoute(awsUrl(), region, base, TOKEN).url;
 
 const awsUrl = () =>
   new URL("https://bedrock-runtime.us-east-1.amazonaws.com/model/us.anthropic.claude-haiku-4-5-20251001-v1%3A0/converse");
@@ -39,8 +44,8 @@ describe("off by default, and identical when off", () => {
    * exactly where it went yesterday.
    */
   it("sends Bedrock straight to AWS", () => {
-    expect(bedrockSendUrl(awsUrl(), "us-east-1", undefined)).toBe(awsUrl().toString());
-    expect(bedrockSendUrl(awsUrl(), "us-east-1", null)).toBe(awsUrl().toString());
+    expect(sendUrl("us-east-1", undefined)).toBe(awsUrl().toString());
+    expect(sendUrl("us-east-1", null)).toBe(awsUrl().toString());
   });
 
   /*
@@ -60,7 +65,7 @@ describe("off by default, and identical when off", () => {
 
 describe("when a gateway is configured", () => {
   it("posts the signed Bedrock request at the proxy, keeping the AWS path", () => {
-    expect(bedrockSendUrl(awsUrl(), "us-east-1", BEDROCK_GW)).toBe(
+    expect(sendUrl("us-east-1", BEDROCK_GW)).toBe(
       "https://gateway.ai.cloudflare.com/v1/acct/outreign/aws-bedrock/bedrock-runtime/us-east-1" +
         "/model/us.anthropic.claude-haiku-4-5-20251001-v1%3A0/converse",
     );
@@ -69,16 +74,66 @@ describe("when a gateway is configured", () => {
   it("keeps the model id encoded exactly as signed", () => {
     // The colon in a Bedrock model id is percent-encoded, and SigV4 signs the
     // canonical path. Re-encoding or decoding it breaks the signature.
-    expect(bedrockSendUrl(awsUrl(), "us-east-1", "https://gw.test/v1/a/b/aws-bedrock"))
+    expect(sendUrl("us-east-1", "https://gw.test/v1/a/b/aws-bedrock"))
       .toContain("v1%3A0/converse");
   });
 
   it("tolerates a trailing slash", () => {
-    expect(bedrockSendUrl(awsUrl(), "eu-west-1", "https://gw.test/v1/a/b/aws-bedrock/"))
+    expect(sendUrl("eu-west-1", "https://gw.test/v1/a/b/aws-bedrock/"))
       .toContain("/aws-bedrock/bedrock-runtime/eu-west-1/model/");
   });
 
 
+});
+
+describe("the credential travels with the URL", () => {
+  /*
+   * A gateway with authentication turned on answers 401 to anything without
+   * `cf-aig-authorization`. Moving the traffic and forgetting the credential
+   * is therefore not a degraded mode, it is every model call in the product
+   * failing at once — which is the failure this whole file exists to avoid.
+   * Returning both from one function is what makes that combination
+   * unreachable.
+   */
+  it("sends the gateway token when the gateway is in use", () => {
+    expect(bedrockRoute(awsUrl(), "us-east-1", BEDROCK_GW, TOKEN).headers)
+      .toEqual({ "cf-aig-authorization": `Bearer ${TOKEN}` });
+  });
+
+  /*
+   * It is a Cloudflare credential. Going direct to AWS it would be a secret
+   * handed to someone with no use for it, and a secret sent where it is not
+   * needed is a secret in one more log.
+   */
+  it("never sends it to AWS", () => {
+    expect(bedrockRoute(awsUrl(), "us-east-1", undefined, TOKEN).headers).toEqual({});
+    expect(bedrockRoute(awsUrl(), "us-east-1", "", TOKEN).headers).toEqual({});
+    // Including when the base was meant to be a gateway and is unusable: the
+    // request goes direct, so the credential must not go with it.
+    expect(bedrockRoute(awsUrl(), "us-east-1", "https://gw.test:bad/v1", TOKEN).headers)
+      .toEqual({});
+  });
+
+  /*
+   * An unauthenticated gateway is a real configuration, so a missing token is
+   * not an error — but it is the shape of a half-finished setup, and the
+   * symptom (401 on every call) does not name its own cause.
+   */
+  it("still routes without a token, and says so", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const route = bedrockRoute(awsUrl(), "us-east-1", BEDROCK_GW, undefined);
+      expect(route.headers).toEqual({});
+      expect(route.url).toContain("/aws-bedrock/bedrock-runtime/us-east-1/");
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining("CF_AI_GATEWAY_TOKEN"));
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it("ignores a token that is only whitespace", () => {
+    expect(bedrockRoute(awsUrl(), "us-east-1", BEDROCK_GW, "   ").headers).toEqual({});
+  });
 });
 
 describe("it fails back rather than into the dark", () => {
@@ -87,9 +142,9 @@ describe("it fails back rather than into the dark", () => {
    * with it. Both fall back to the endpoint that has always worked.
    */
   it("ignores a value that is not https", () => {
-    expect(bedrockSendUrl(awsUrl(), "us-east-1", "gateway.ai.cloudflare.com/v1/a/b"))
+    expect(sendUrl("us-east-1", "gateway.ai.cloudflare.com/v1/a/b"))
       .toBe(awsUrl().toString());
-    expect(bedrockSendUrl(awsUrl(), "us-east-1", "http://insecure.test/v1"))
+    expect(sendUrl("us-east-1", "http://insecure.test/v1"))
       .toBe(awsUrl().toString());
   });
 
@@ -97,12 +152,12 @@ describe("it fails back rather than into the dark", () => {
     // A prefix test passes this and a URL parse does not; the request would
     // then fail instead of quietly going direct, which is the opposite of
     // what this function promises.
-    expect(bedrockSendUrl(awsUrl(), "us-east-1", "https://gateway.ai.cloudflare.com:bad/v1/a/b"))
+    expect(sendUrl("us-east-1", "https://gateway.ai.cloudflare.com:bad/v1/a/b"))
       .toBe(awsUrl().toString());
   });
 
   it("ignores whitespace", () => {
-    expect(bedrockSendUrl(awsUrl(), "us-east-1", "   ")).toBe(awsUrl().toString());
+    expect(sendUrl("us-east-1", "   ")).toBe(awsUrl().toString());
   });
 });
 
@@ -114,17 +169,28 @@ describe("the seam is where it has to be", () => {
     // If the signer ever saw the gateway URL, the signature would cover the
     // wrong host and AWS would reject every request.
     expect(BEDROCK).toContain("host: url.host");
-    expect(BEDROCK).not.toMatch(/signRequest\(\s*new URL\(resolveSendUrl/);
+    expect(BEDROCK).not.toMatch(/signRequest\(\s*new URL\(route/);
+    // The signer is handed the AWS URL; the route is derived from it after.
+    expect(BEDROCK).not.toMatch(/signRequest\(\s*routeFor/);
   });
 
   it("every Bedrock send goes through it", () => {
-    const sends = BEDROCK.match(/await fetch\(resolveSendUrl\(url, bedrockRegion\(\)/g) ?? [];
+    const sends = BEDROCK.match(/await fetch\(route\.url, \{/g) ?? [];
     expect(sends).toHaveLength(2);
     expect(BEDROCK).not.toMatch(/await fetch\(url\.toString\(\)/);
+
+    /*
+     * And each one merges the route's headers in. A send that takes the URL
+     * and drops the credential is the 401-on-everything case, and it is one
+     * forgetful edit away, so it is asserted rather than trusted.
+     */
+    const withCredential = BEDROCK.match(/\.\.\.headers, \.\.\.route\.headers/g) ?? [];
+    expect(withCredential).toHaveLength(2);
   });
 
   it("only the Bedrock half is configurable", () => {
     expect(PROVIDER).not.toContain("fallbackEndpoint");
     expect(BEDROCK).toContain('Deno.env.get("CF_AI_GATEWAY_BEDROCK")');
+    expect(BEDROCK).toContain('Deno.env.get("CF_AI_GATEWAY_TOKEN")');
   });
 });
