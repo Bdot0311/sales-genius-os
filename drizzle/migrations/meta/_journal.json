@@ -260,6 +260,34 @@
       "when": 1791993671816,
       "tag": "0036_add_lead_research_inputs",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1792102960752,
+      "tag": "0037_fair_agent_job_claim",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1792102976528,
+      "tag": "0038_claim_scheduled_emails",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1792103004709,
+      "tag": "0039_queue_tenant_turn",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1792103148747,
+      "tag": "0040_schema_contract_send_claims",
+      "breakpoints": true
     }
   ]
 }

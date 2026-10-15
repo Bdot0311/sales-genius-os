@@ -3870,6 +3870,27 @@ export type Database = {
         }
         Relationships: []
       }
+      queue_tenant_turn: {
+        Row: {
+          last_served_at: string
+          queue: string
+          served_count: number
+          user_id: string
+        }
+        Insert: {
+          last_served_at?: string
+          queue: string
+          served_count?: number
+          user_id: string
+        }
+        Update: {
+          last_served_at?: string
+          queue?: string
+          served_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       rate_limit_buckets: {
         Row: {
           api_key_id: string
@@ -6556,6 +6577,12 @@ export type Database = {
           reason: string
         }[]
       }
+      begin_scheduled_email_send: {
+        Args: { p_id: string }
+        Returns: {
+          id: string
+        }[]
+      }
       billing_bump_failed_invoice_count: {
         Args: { _user_id: string }
         Returns: number
@@ -6598,9 +6625,30 @@ export type Database = {
       }
       check_ai_gateway_usage_alert: { Args: never; Returns: undefined }
       check_expiring_api_keys: { Args: never; Returns: undefined }
-      begin_scheduled_email_send: {
-        Args: { p_id: string }
-        Returns: { id: string }[]
+      claim_agent_job_items: {
+        Args: { p_limit?: number }
+        Returns: {
+          attempts: number
+          claimed_at: string | null
+          created_at: string
+          draft_id: string | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          job_id: string
+          lead_id: string | null
+          payload: Json | null
+          scheduled_at: string | null
+          scheduled_email_id: string | null
+          status: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "agent_job_items"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       claim_due_scheduled_emails: {
         Args: { p_limit?: number }
@@ -6637,28 +6685,9 @@ export type Database = {
           tracking_pixel_id: string | null
           user_id: string
         }[]
-      }
-      claim_agent_job_items: {
-        Args: { p_limit?: number }
-        Returns: {
-          attempts: number
-          claimed_at: string | null
-          created_at: string
-          draft_id: string | null
-          error: string | null
-          finished_at: string | null
-          id: string
-          job_id: string
-          lead_id: string | null
-          payload: Json | null
-          scheduled_at: string | null
-          scheduled_email_id: string | null
-          status: string
-          user_id: string
-        }[]
         SetofOptions: {
           from: "*"
-          to: "agent_job_items"
+          to: "sent_emails"
           isOneToOne: false
           isSetofReturn: true
         }
@@ -6935,11 +6964,8 @@ export type Database = {
         Args: { p_ids: string[] }
         Returns: number
       }
-      release_stale_scheduled_email_claims: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
       release_stale_agent_job_items: { Args: never; Returns: number }
+      release_stale_scheduled_email_claims: { Args: never; Returns: number }
       reset_daily_email_counters: { Args: never; Returns: undefined }
       saved_lead_facets: { Args: never; Returns: Json }
       search_saved_leads: {
