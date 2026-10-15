@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { OAUTH_START_KEY, classifyOAuthReturn, silentFailureMessage } from "@/lib/oauth-return";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthForm } from "@/components/auth/AuthForm";
@@ -70,6 +71,46 @@ const Auth = () => {
   // the person back here with an error in the URL instead of a session. Show
   // it, rather than silently re-displaying the sign-in form as if nothing
   // happened.
+  /*
+   * A return that carries nothing is still a failure.
+   *
+   * The handler below reports an `error` the broker names, and the effect
+   * after it establishes a session from tokens. Neither fires when the
+   * browser comes back with a bare /auth — which is what a real failure
+   * looked like — so the sign-in page simply renders again and the user sees
+   * exactly what pressing cancel would have shown them.
+   */
+  useEffect(() => {
+    let startedAt: number | null = null;
+    try {
+      const raw = sessionStorage.getItem(OAUTH_START_KEY);
+      startedAt = raw ? Number(raw) : null;
+      if (raw) sessionStorage.removeItem(OAUTH_START_KEY);
+    } catch {
+      startedAt = null;
+    }
+    if (startedAt == null || Number.isNaN(startedAt)) return;
+
+    const verdict = classifyOAuthReturn({
+      startedAt,
+      now: Date.now(),
+      search: location.search,
+      hash: location.hash ?? "",
+    });
+    if (verdict.outcome !== "silent-failure") return;
+
+    console.error(
+      "[auth] Google sign-in returned without a session or an error.",
+      { carried: verdict.carried, elapsedMs: verdict.elapsedMs },
+    );
+    toast({
+      title: "Google sign-in didn't complete",
+      description: silentFailureMessage(verdict.carried),
+      variant: "destructive",
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     const hash = location.hash?.startsWith("#") ? location.hash.slice(1) : location.hash;
     const q = new URLSearchParams(location.search);

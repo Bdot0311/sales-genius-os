@@ -15,8 +15,12 @@ export interface ICPProfile {
   user_id: string;
   name: string;
   industries: string[];
-  company_size_min: number;
-  company_size_max: number;
+  // Nullable in the database, and genuinely so: an open-ended winning size
+  // ("1000+") leaves the ceiling unset on purpose. Declared non-null, the
+  // scorer compared against it with no guard and TypeScript had no reason to
+  // object.
+  company_size_min: number | null;
+  company_size_max: number | null;
   revenue_range: string[];
   geographies: string[];
   target_titles: string[];

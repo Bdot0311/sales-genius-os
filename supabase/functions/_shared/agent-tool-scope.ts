@@ -94,13 +94,20 @@ export const CRM_TOOLS = [
   "find_lead_issues",
   "update_lead",
   "list_deals",
+  "analyse_won_deals",
   "create_deal",
   "update_deal",
   "delete_deal",
 ];
 
-/** ICP upkeep belongs with sourcing. */
-export const ICP_TOOLS = ["list_icp_profiles", "update_icp_profile"];
+/**
+ * ICP upkeep belongs with sourcing.
+ *
+ * apply_won_deal_icp is here rather than with the deal tools because what it
+ * touches is the ICP: it reads the pipeline and writes the profile every lead
+ * is scored against.
+ */
+export const ICP_TOOLS = ["list_icp_profiles", "update_icp_profile", "apply_won_deal_icp"];
 
 /** Campaign assets and sequence control for email-facing agents. */
 export const CAMPAIGN_TOOLS = [
@@ -251,6 +258,10 @@ export const TOOL_CATALOG: Record<string, string> = {
   update_lead: "Edit a lead's contact/company fields, notes or pipeline stage. Use to fix bad CRM data.",
   find_lead_issues: "Scan lead records for CRM problems: missing or invalid emails, duplicates, missing names/companies, stale stages.",
   list_deals: "List pipeline deals with stage, value and probability.",
+  analyse_won_deals:
+    "Read what the closed-won deals have in common — industry, size, seniority, title, country, tech — counted from the leads behind them, with a ready search query. Reports nothing below five wins.",
+  apply_won_deal_icp:
+    "Write that closed-won pattern into the saved ICP, so scoring and search follow deals that closed rather than a guess made at signup. Changes how every lead scores.",
   create_deal: "Create a pipeline deal, optionally linked to a lead.",
   update_deal: "Edit a pipeline deal's stage, value, probability, close date or notes.",
   delete_deal: "Permanently delete a pipeline deal (destructive).",

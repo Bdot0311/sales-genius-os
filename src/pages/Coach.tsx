@@ -129,7 +129,7 @@ const Coach = () => {
       const activeDeals = deals?.length || 0;
       const pipelineValue = deals?.reduce((sum, deal) => sum + (Number(deal.value) || 0), 0) || 0;
       const avgDealSize = activeDeals > 0 ? Math.round(pipelineValue / activeDeals) : 0;
-      const closedDeals = deals?.filter(d => d.stage === 'closed-won').length || 0;
+      const closedDeals = deals?.filter(d => d.stage === 'closed_won').length || 0;
       const closeRate = totalLeads > 0 ? Math.round((closedDeals / totalLeads) * 100) : 0;
 
       setStats({

@@ -37,8 +37,8 @@ const stages = [
   { name: "Qualified", key: "qualified", color: "bg-primary/55" },
   { name: "Proposal", key: "proposal", color: "bg-primary/70" },
   { name: "Negotiation", key: "negotiation", color: "bg-primary/85" },
-  { name: "Closed Won", key: "closed-won", color: "bg-emerald-500" },
-  { name: "Closed Lost", key: "closed-lost", color: "bg-muted-foreground/40" },
+  { name: "Closed Won", key: "closed_won", color: "bg-emerald-500" },
+  { name: "Closed Lost", key: "closed_lost", color: "bg-muted-foreground/40" },
 ];
 
 const Pipeline = () => {
@@ -88,15 +88,15 @@ const Pipeline = () => {
    * which is what the Forecast button used to put in a toast and then throw
    * away.
    */
-  const open = deals.filter((d) => d.stage !== "closed-won" && d.stage !== "closed-lost");
+  const open = deals.filter((d) => d.stage !== "closed_won" && d.stage !== "closed_lost");
   const openValue = open.reduce((sum, d) => sum + (Number(d.value) || 0), 0);
   const weighted = open.reduce((sum, d) => sum + (Number(d.value) || 0) * ((d.probability || 0) / 100), 0);
   const wonValue = deals
-    .filter((d) => d.stage === "closed-won")
+    .filter((d) => d.stage === "closed_won")
     .reduce((sum, d) => sum + (Number(d.value) || 0), 0);
 
   const lostValue = deals
-    .filter((d) => d.stage === "closed-lost")
+    .filter((d) => d.stage === "closed_lost")
     .reduce((sum, d) => sum + (Number(d.value) || 0), 0);
 
   const summary: Metric[] = [
@@ -108,8 +108,8 @@ const Pipeline = () => {
     // included — and the Forecast button stays as the way to ask for it.
     features.revenueForecasting
       ? { label: "Weighted", value: money(weighted), note: "open value × each deal's probability" }
-      : { label: "Closed lost", value: money(lostValue), note: `${deals.filter((d) => d.stage === "closed-lost").length} deals` },
-    { label: "Closed won", value: money(wonValue), note: `${deals.filter((d) => d.stage === "closed-won").length} deals` },
+      : { label: "Closed lost", value: money(lostValue), note: `${deals.filter((d) => d.stage === "closed_lost").length} deals` },
+    { label: "Closed won", value: money(wonValue), note: `${deals.filter((d) => d.stage === "closed_won").length} deals` },
   ];
 
   const getDealsByStage = (stageKey: string) => deals.filter((deal) => deal.stage === stageKey);

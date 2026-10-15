@@ -42,6 +42,12 @@ jobs:
           node-version: 22
       - name: Check DB column references against generated types
         run: node scripts/check-schema-refs.mjs
+      # The other half of the same question. schema-refs catches a column that
+      # does not exist; this catches a column that does exist, is NOT NULL,
+      # and was left off an insert — which typechecks and fails at runtime on
+      # whichever path happens to reach it first.
+      - name: Check inserts supply every required column
+        run: node scripts/check-insert-columns.mjs
 
   # The edge functions are the other half of the product, and nothing else here
   # sees them: they are Deno and are not in the app's tsconfig program, so

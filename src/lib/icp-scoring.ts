@@ -96,7 +96,23 @@ export function calculateICPMatch(lead: Lead, profiles: ICPProfile[]): ScoreBrea
       empCount = revenueToApproxEmployees(lead.annual_revenue);
     }
     if (empCount > 0) {
-      sizeMatch = empCount >= profile.company_size_min && empCount <= profile.company_size_max;
+      /*
+       * An unset bound is unbounded, not zero.
+       *
+       * This read `empCount <= profile.company_size_max` with no guard, and
+       * null coerces to 0 in that comparison — so a null ceiling failed every
+       * positive headcount and every lead silently lost its size points.
+       * Nothing surfaced it because the type declared the column non-null
+       * while the database has always allowed null.
+       *
+       * This is the same shape as computeFit in _shared/lead-scoring.ts,
+       * which has always guarded both ends. Two scorers, one guarded and one
+       * not, is how a saved ICP means two different things depending on which
+       * screen is reading it.
+       */
+      const min = profile.company_size_min;
+      const max = profile.company_size_max;
+      sizeMatch = (min == null || empCount >= min) && (max == null || empCount <= max);
       sizeEval = sizeMatch;
     }
 

@@ -26,9 +26,12 @@ import {
   bedrockProModel,
 } from "./bedrock.ts";
 
-const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+import { DEFAULT_FALLBACK_ENDPOINT } from "./ai-gateway.ts";
+
+const GATEWAY_URL = DEFAULT_FALLBACK_ENDPOINT;
 
 export type AiProvider = "bedrock" | "lovable";
+
 
 /** USD per 1M tokens. Unknown models fall back to a mid-range Flash estimate. */
 const PRICING: Record<string, { in: number; out: number }> = {
