@@ -197,6 +197,19 @@ describe("the tools are wired the way this repo requires", () => {
     expect(handler).toContain('.eq("stage", "closed_won")');
   });
 
+  it("the coach drops a settled lead before anything else", () => {
+    // A lead can be marked won or lost without ever being emailed — the stage
+    // control writes pipeline_stage and nothing else — so the settled test
+    // has to come before the never-contacted branch or the coach recommends
+    // chasing a decided deal.
+    const COACH = readFileSync("supabase/functions/ai-coach/index.ts", "utf8");
+    const filter = COACH.slice(COACH.indexOf("const stalledLeads"));
+    const settled = filter.indexOf("l.pipeline_stage === 'won'");
+    const uncontacted = filter.indexOf("if (!l.last_contacted_at)");
+    expect(settled).toBeGreaterThan(-1);
+    expect(settled).toBeLessThan(uncontacted);
+  });
+
   it("tells the model not to fill the gap itself", () => {
     expect(CHAT).toContain("do not substitute your own guess about who their customers are");
   });

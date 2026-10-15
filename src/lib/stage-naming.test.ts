@@ -56,6 +56,39 @@ describe("a deal stage is spelled one way", () => {
    * The point of the change: this condition becomes reachable. It has been in
    * the trigger since the webhook work shipped and no row could satisfy it.
    */
+  /*
+   * The rewrite must not look like a hundred deals closing at once.
+   *
+   * webhooks_deals_upd fires on every row the UPDATE touches, and
+   * trg_webhooks_deals compares OLD.stage to NEW.stage — different strings,
+   * so each row would queue deal.stage_changed, deal.updated and, because the
+   * new spelling is exactly what its closing branch tests for, deal.closed.
+   * Firing the event this migration exists to UNBLOCK, for every deal ever
+   * won, in one burst, is a worse first impression than never firing it.
+   */
+  it("does not fire a closing event for every historical deal", () => {
+    const disable = MIGRATION.indexOf("DISABLE TRIGGER webhooks_deals_upd");
+    const update = MIGRATION.indexOf("UPDATE public.deals");
+    const enable = MIGRATION.indexOf("ENABLE TRIGGER webhooks_deals_upd");
+    expect(disable).toBeGreaterThan(-1);
+    expect(disable).toBeLessThan(update);
+    expect(update).toBeLessThan(enable);
+  });
+
+  it("turns the trigger back on", () => {
+    // Left off, every future deal close would go unreported — the same fault
+    // in the other direction.
+    expect(MIGRATION).toContain("ENABLE TRIGGER webhooks_deals_upd");
+  });
+
+  it("disables only that trigger, not every trigger on the table", () => {
+    // session_replication_role would have taken out anything else guarding
+    // this table as collateral. Matched as a statement, not as a word: the
+    // migration names it in a comment explaining why it is not used.
+    expect(MIGRATION).not.toMatch(/SET\s+session_replication_role/i);
+    expect(MIGRATION).toContain("DISABLE TRIGGER webhooks_deals_upd");
+  });
+
   it("the deal.closed webhook can finally fire", () => {
     expect(TRIGGER).toContain("IF NEW.stage IN ('closed_won', 'closed_lost') THEN");
     const from = MIGRATION.indexOf("ADD CONSTRAINT");

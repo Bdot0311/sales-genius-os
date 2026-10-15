@@ -156,14 +156,22 @@ serve(async (req) => {
 
     const stalledLeads = recentLeads
       .filter(l => {
+        /*
+         * lead_status is 'discovered' | 'active' | 'archived'; it has never
+         * held a deal stage, so the comparisons this replaces were always true
+         * and a lead's actual outcome was never consulted. won/lost live on
+         * pipeline_stage.
+         *
+         * Checked FIRST, before the never-contacted branch. A lead can be
+         * marked won or lost without ever being emailed — the stage control
+         * writes pipeline_stage and nothing else — and that lead would
+         * otherwise fall through on lead_status === 'active' and have the
+         * coach recommend chasing a deal that is already decided.
+         */
+        if (l.pipeline_stage === 'won' || l.pipeline_stage === 'lost') return false;
         if (!l.last_contacted_at) return l.lead_status === 'active';
         const daysSinceContact = Math.floor((Date.now() - new Date(l.last_contacted_at).getTime()) / (1000 * 60 * 60 * 24));
-        // lead_status is 'discovered' | 'active' | 'archived'; it has never
-        // held a deal stage, so the two comparisons this replaces were always
-        // true and the lead's actual outcome was never consulted. won/lost
-        // live on pipeline_stage.
-        const settled = l.pipeline_stage === 'won' || l.pipeline_stage === 'lost';
-        return daysSinceContact > 7 && !settled;
+        return daysSinceContact > 7;
       })
       .slice(0, 5);
 

@@ -29,6 +29,33 @@
 -- constraint is still on the table.
 ALTER TABLE public.deals DROP CONSTRAINT IF EXISTS deals_stage_check;
 
+-- ── The rewrite must not look like a hundred deals closing at once ───────
+--
+-- webhooks_deals_upd fires AFTER UPDATE on every row this touches, and
+-- trg_webhooks_deals compares OLD.stage to NEW.stage. 'closed-won' and
+-- 'closed_won' are different strings, so each row would queue a
+-- deal.stage_changed, a deal.updated, and — because the new spelling is
+-- exactly what its closing branch tests for — a deal.closed.
+--
+-- The whole point of this migration is that deal.closed has never been able
+-- to fire. Firing it for every deal ever won, in one burst, to whatever
+-- integration is subscribed, would be a worse first impression than never
+-- firing at all: every one of those deals closed months ago.
+--
+-- So the trigger is off for the rewrite and on again straight after. Only
+-- webhooks_deals_upd is touched; the INSERT trigger is not involved, and
+-- session_replication_role would have disabled every trigger on the table
+-- including ones that keep other columns honest.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_trigger
+    WHERE tgname = 'webhooks_deals_upd' AND tgrelid = 'public.deals'::regclass
+  ) THEN
+    ALTER TABLE public.deals DISABLE TRIGGER webhooks_deals_upd;
+  END IF;
+END $$;
+
 UPDATE public.deals
 SET stage = 'closed_won'
 WHERE stage = 'closed-won';
@@ -36,6 +63,16 @@ WHERE stage = 'closed-won';
 UPDATE public.deals
 SET stage = 'closed_lost'
 WHERE stage = 'closed-lost';
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_trigger
+    WHERE tgname = 'webhooks_deals_upd' AND tgrelid = 'public.deals'::regclass
+  ) THEN
+    ALTER TABLE public.deals ENABLE TRIGGER webhooks_deals_upd;
+  END IF;
+END $$;
 
 ALTER TABLE public.deals
   ADD CONSTRAINT deals_stage_check
