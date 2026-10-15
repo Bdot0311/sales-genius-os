@@ -267,6 +267,13 @@
       "when": 1792102960752,
       "tag": "0037_fair_agent_job_claim",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1792102976528,
+      "tag": "0038_claim_scheduled_emails",
+      "breakpoints": true
     }
   ]
 }

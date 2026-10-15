@@ -4591,6 +4591,8 @@ export type Database = {
           opened_at: string | null
           replied_at: string | null
           scheduled_at: string | null
+          send_attempted_at: string | null
+          send_claimed_at: string | null
           sending_account_id: string | null
           sent_at: string | null
           sequence_id: string | null
@@ -4622,6 +4624,8 @@ export type Database = {
           opened_at?: string | null
           replied_at?: string | null
           scheduled_at?: string | null
+          send_attempted_at?: string | null
+          send_claimed_at?: string | null
           sending_account_id?: string | null
           sent_at?: string | null
           sequence_id?: string | null
@@ -4653,6 +4657,8 @@ export type Database = {
           opened_at?: string | null
           replied_at?: string | null
           scheduled_at?: string | null
+          send_attempted_at?: string | null
+          send_claimed_at?: string | null
           sending_account_id?: string | null
           sent_at?: string | null
           sequence_id?: string | null
@@ -6550,6 +6556,12 @@ export type Database = {
           reason: string
         }[]
       }
+      begin_scheduled_email_send: {
+        Args: { p_id: string }
+        Returns: {
+          id: string
+        }[]
+      }
       billing_bump_failed_invoice_count: {
         Args: { _user_id: string }
         Returns: number
@@ -6613,6 +6625,48 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "agent_job_items"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      claim_due_scheduled_emails: {
+        Args: { p_limit?: number }
+        Returns: {
+          agent_last_synced_at: string | null
+          agent_thread_status: string | null
+          body_html: string | null
+          body_text: string | null
+          clicked_at: string | null
+          created_at: string | null
+          demo_seed: boolean
+          enrollment_id: string | null
+          error_message: string | null
+          failed_at: string | null
+          gmail_message_id: string | null
+          gmail_thread_id: string | null
+          id: string
+          last_opened_at: string | null
+          lead_id: string | null
+          open_count: number
+          opened_at: string | null
+          replied_at: string | null
+          scheduled_at: string | null
+          send_attempted_at: string | null
+          send_claimed_at: string | null
+          sending_account_id: string | null
+          sent_at: string | null
+          sequence_id: string | null
+          sequence_step: number | null
+          status: string | null
+          subject: string
+          template_id: string | null
+          to_email: string
+          tracking_pixel_id: string | null
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "sent_emails"
           isOneToOne: false
           isSetofReturn: true
         }
@@ -6885,7 +6939,12 @@ export type Database = {
         }[]
       }
       release_agent_job_items: { Args: { p_ids: string[] }; Returns: number }
+      release_scheduled_email_claims: {
+        Args: { p_ids: string[] }
+        Returns: number
+      }
       release_stale_agent_job_items: { Args: never; Returns: number }
+      release_stale_scheduled_email_claims: { Args: never; Returns: number }
       reset_daily_email_counters: { Args: never; Returns: undefined }
       saved_lead_facets: { Args: never; Returns: Json }
       search_saved_leads: {
