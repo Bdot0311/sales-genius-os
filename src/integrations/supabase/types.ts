@@ -2219,6 +2219,30 @@ export type Database = {
           },
         ]
       }
+      email_optouts: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          opted_out_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          opted_out_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          opted_out_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       email_send_log: {
         Row: {
           created_at: string
