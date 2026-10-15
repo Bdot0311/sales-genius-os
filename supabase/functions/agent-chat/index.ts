@@ -157,7 +157,7 @@ const LEAD_FIELDS =
  */
 const NO_MATCH_ID = "00000000-0000-0000-0000-000000000000";
 
-const DEAL_STAGES = ["new", "contacted", "qualified", "proposal", "negotiation", "closed-won", "closed-lost"] as const;
+const DEAL_STAGES = ["new", "contacted", "qualified", "proposal", "negotiation", "closed_won", "closed_lost"] as const;
 const DEAL_FIELDS = ["title", "company_name", "contact_name", "lead_id", "value", "stage", "probability", "expected_close_date", "notes"];
 const LEAD_FIX_FIELDS = ["contact_name", "contact_email", "contact_phone", "job_title", "company_name", "company_website", "linkedin_url", "industry", "country"];
 const PIPELINE_STAGES = [
@@ -4111,7 +4111,7 @@ serve(async (req) => {
             else byEmail.set(e, [...(byEmail.get(e) ?? []), r.id]);
             if (!(r.contact_name ?? "").trim()) noName.push(r.id);
             if (!(r.company_name ?? "").trim()) noCompany.push(r.id);
-            if (r.pipeline_stage && !["won", "lost", "closed-won", "closed-lost"].includes(String(r.pipeline_stage)) && new Date(r.updated_at).getTime() < staleCut) stale.push(r.id);
+            if (r.pipeline_stage && !["won", "lost"].includes(String(r.pipeline_stage)) && new Date(r.updated_at).getTime() < staleCut) stale.push(r.id);
           }
           const duplicates = [...byEmail.entries()].filter(([, ids]) => ids.length > 1).map(([email, ids]) => ({ email, lead_ids: ids }));
           const total = missingEmail.length + badEmail.length + noName.length + noCompany.length + duplicates.length + stale.length;

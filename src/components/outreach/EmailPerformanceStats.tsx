@@ -340,7 +340,10 @@ export const EmailPerformanceStats = () => {
     const scheduled = emails.filter((e) => e.status === "scheduled").length;
 
     const positive = replies.filter((r) => isPositiveReply(r)).length;
-    const won = deals.filter((d) => (d.stage || "").toLowerCase() === "won" || (d.stage || "").toLowerCase() === "closed_won");
+    // Two guesses, neither of which the column could hold: it stored
+    // "closed-won" with a hyphen, so this counted zero won deals for as long
+    // as it has existed.
+    const won = deals.filter((d) => (d.stage || "").toLowerCase() === "closed_won");
     return {
       sent: sent.length,
       opened,
@@ -660,7 +663,7 @@ export const EmailPerformanceStats = () => {
                     setDrill({
                       title: "Won deals",
                       description: "Closed-won deals in this window.",
-                      dealRows: deals.filter((d) => ["won", "closed_won"].includes((d.stage || "").toLowerCase())),
+                      dealRows: deals.filter((d) => (d.stage || "").toLowerCase() === "closed_won"),
                     })
                   }
                 />

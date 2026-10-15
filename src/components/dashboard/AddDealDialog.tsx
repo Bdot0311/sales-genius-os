@@ -202,8 +202,8 @@ export const AddDealDialog = ({ open, onOpenChange, onDealAdded, stage = "new" }
                   <SelectItem value="qualified">Qualified</SelectItem>
                   <SelectItem value="proposal">Proposal</SelectItem>
                   <SelectItem value="negotiation">Negotiation</SelectItem>
-                  <SelectItem value="closed-won">Closed Won</SelectItem>
-                  <SelectItem value="closed-lost">Closed Lost</SelectItem>
+                  <SelectItem value="closed_won">Closed Won</SelectItem>
+                  <SelectItem value="closed_lost">Closed Lost</SelectItem>
                 </SelectContent>
               </Select>
             </div>

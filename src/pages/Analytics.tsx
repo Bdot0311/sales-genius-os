@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { LEAD_STAGES } from "@/components/dashboard/LeadStageSelect";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { PageHeader } from "@/components/dashboard/PageHeader";
@@ -55,11 +56,19 @@ const STAGES = [
   { key: "qualified", label: "Qualified" },
   { key: "proposal", label: "Proposal" },
   { key: "negotiation", label: "Negotiation" },
-  { key: "closed-won", label: "Closed Won" },
-  { key: "closed-lost", label: "Closed Lost" },
+  { key: "closed_won", label: "Closed Won" },
+  { key: "closed_lost", label: "Closed Lost" },
 ];
 
-const PIPELINE_STAGES = ["new", "contacted", "engaged", "no_response", "meeting_booked", "won", "lost"];
+/*
+ * The lead stages, from the one list the column is constrained to.
+ *
+ * This was a hand-written array, and it had drifted both ways: "engaged" is
+ * not a value leads.pipeline_stage can hold, so that bar was always empty,
+ * and "replied", "bounced", "qualified" and "not_interested" are values it
+ * does hold and were missing, so those leads appeared nowhere on the chart.
+ */
+const PIPELINE_STAGES = LEAD_STAGES.map((s) => s.value);
 
 /* Three series on one chart do need telling apart — that is encoding, not
    decoration, and a ramp would make overlapping lines unreadable. What they do
@@ -179,9 +188,9 @@ const Analytics = () => {
   }, []);
 
   const m = useMemo(() => {
-    const openDeals = deals.filter((d) => d.stage !== "closed-won" && d.stage !== "closed-lost");
-    const won = deals.filter((d) => d.stage === "closed-won");
-    const lost = deals.filter((d) => d.stage === "closed-lost");
+    const openDeals = deals.filter((d) => d.stage !== "closed_won" && d.stage !== "closed_lost");
+    const won = deals.filter((d) => d.stage === "closed_won");
+    const lost = deals.filter((d) => d.stage === "closed_lost");
     const pipelineValue = openDeals.reduce((s, d) => s + (Number(d.value) || 0), 0);
     const wonValue = won.reduce((s, d) => s + (Number(d.value) || 0), 0);
     const weighted = openDeals.reduce((s, d) => s + (Number(d.value) || 0) * ((d.probability ?? 0) / 100), 0);
