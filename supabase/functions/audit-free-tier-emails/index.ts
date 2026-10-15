@@ -2,6 +2,7 @@
 // (bad syntax, disposable domain, or no MX records). Reduces free-loader abuse.
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { isInternalCaller } from "../_shared/internal-auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,8 +27,12 @@ serve(async (req) => {
     // require either the service role (cron) or an authenticated admin.
     const authHeader = req.headers.get("Authorization") ?? "";
     const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
-    const isServiceRole = bearer && bearer === SERVICE_KEY;
-    if (!isServiceRole) {
+    // Cron signs with the vault secret named email_queue_service_role_key,
+    // which despite its name holds INTERNAL_TRIGGER_SECRET (see
+    // sync-vault-service-key). isInternalCaller accepts that as well as the
+    // service role key, which is why every job using it works; comparing
+    // against SUPABASE_SERVICE_ROLE_KEY alone rejects cron outright.
+    if (!isInternalCaller(req)) {
       if (!bearer) {
         return new Response(JSON.stringify({ error: "Authentication required" }), {
           status: 401,

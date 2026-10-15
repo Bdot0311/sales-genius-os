@@ -3,6 +3,7 @@
 // Triggered by pg_cron. Diffs against open issues, marks resolved ones,
 // pushes web-push to admins on new issues.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { isInternalCaller } from "../_shared/internal-auth.ts";
 // Taken as a namespace with a default fallback, because @types/web-push
 // declares no default export while esm.sh's build may or may not provide one.
 // Whichever exists is the module, so this is the same object at runtime that a
@@ -280,11 +281,16 @@ Deno.serve(async (req) => {
   const authHeader = req.headers.get("Authorization") ?? "";
   const token = authHeader.replace(/^Bearer\s+/i, "").trim();
 
-  if (!token || !SERVICE_ROLE) {
+  if (!token) {
     return json({ error: "Unauthorized" }, 401);
   }
 
-  if (token !== SERVICE_ROLE) {
+  // Cron signs with the vault secret named email_queue_service_role_key, which
+  // despite its name holds INTERNAL_TRIGGER_SECRET (see sync-vault-service-key).
+  // isInternalCaller accepts that as well as the service role key, which is why
+  // every job that uses it works; a hand-rolled check against
+  // SUPABASE_SERVICE_ROLE_KEY alone rejects cron outright.
+  if (!isInternalCaller(req)) {
     const { data: userData, error: userError } = await supabase.auth.getUser(token);
     if (userError || !userData.user) {
       return json({ error: "Unauthorized" }, 401);

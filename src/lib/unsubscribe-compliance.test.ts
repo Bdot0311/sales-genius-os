@@ -171,3 +171,57 @@ describe("the constraints an upsert has to be able to name", () => {
     expect(MIGRATION).not.toMatch(/UPDATE public\.email_optouts\s+SET user_id/i);
   });
 });
+
+/**
+ * The vault secret the scheduled jobs sign with is not the service role key.
+ *
+ * sync-vault-service-key writes INTERNAL_TRIGGER_SECRET into the vault under
+ * the name `email_queue_service_role_key`. The name says one thing and the
+ * contents are another, and every job in the schedule signs with it.
+ *
+ * requireServiceRole accepts either that secret or the real service role key,
+ * which is why the jobs using it work. Five functions rolled their own check
+ * against SUPABASE_SERVICE_ROLE_KEY alone, so they rejected cron whichever of
+ * the two it sent — the anon key before, and the vault secret after the first
+ * attempt at this fix.
+ */
+describe("scheduled jobs reach the functions they call", () => {
+  const SHARED = readFileSync("supabase/functions/_shared/internal-auth.ts", "utf8");
+
+  it("the shared guard accepts both secrets", () => {
+    expect(SHARED).toContain('Deno.env.get("INTERNAL_TRIGGER_SECRET")');
+    expect(SHARED).toContain('Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")');
+  });
+
+  it("the vault secret holds the internal one, whatever its name says", () => {
+    const SYNC = readFileSync("supabase/functions/sync-vault-service-key/index.ts", "utf8");
+    expect(SYNC).toContain('_name: "email_queue_service_role_key"');
+    expect(SYNC).toContain("_secret: INTERNAL_TRIGGER_SECRET");
+  });
+
+  /*
+   * The five that were 401ing. Each now defers to the shared guard rather
+   * than comparing the bearer against the service key itself.
+   */
+  for (const fn of [
+    "audit-free-tier-emails",
+    "run-scheduled-imports",
+    "run-seo-audit",
+    "send-seo-digest",
+  ]) {
+    it(`${fn} accepts the key cron actually sends`, () => {
+      const src = readFileSync(`supabase/functions/${fn}/index.ts`, "utf8");
+      expect(src).toMatch(/from ['"]\.\.\/_shared\/internal-auth\.ts['"]/);
+      // No hand-rolled comparison left to reject it.
+      expect(src).not.toMatch(/token !== SERVICE_ROLE\b/);
+      expect(src).not.toMatch(/token !== serviceKey\b/);
+      expect(src).not.toMatch(/bearer === SERVICE_KEY\b/);
+    });
+  }
+
+  it("the migration signs with that vault secret", () => {
+    const SQL = readFileSync("supabase/migrations/20261015040000_fix_cron_job_auth.sql", "utf8");
+    expect(SQL.match(/email_queue_service_role_key/g)?.length).toBe(5);
+    expect(SQL).not.toContain("role\":\"anon");
+  });
+});
