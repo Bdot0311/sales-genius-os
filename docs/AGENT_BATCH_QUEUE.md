@@ -175,3 +175,75 @@ Phase 1 now: it is an afternoon and it removes the part that annoys you daily.
 
 Phase 2 next, as its own PR. Phase 3 only once phase 2 has run a real batch and
 the counts in the job card have matched the drafts folder on a run you watched.
+
+---
+
+## Fairness across accounts
+
+All three phases shipped. What none of them considered is that the queue is
+shared, and `claim_agent_job_items` ordered the batch by `created_at` across
+the whole table.
+
+### The measurement
+
+Postgres 16, the real claim function, the real drain rate (`trigger_agent_jobs`
+fires up to three passes of twelve a minute):
+
+| | |
+|---|---|
+| Account A queues | 2,000 leads at 10:00 |
+| Account B queues | 5 leads at 10:05 |
+| Drain | 36 items/minute |
+| **B's wait for its first lead** | **56 minutes** |
+| B's UI for those 56 minutes | "queued" |
+
+Linear in the backlog ahead of you: a 20,000-lead import would have made a new
+signup's first batch wait most of a day, with nothing to distinguish it from a
+queue that had stopped.
+
+This is not a throughput problem. Raising the pass cap moves every number in
+that table by the same factor and changes nothing about the ordering.
+
+### The fix
+
+Round-robin across accounts, FIFO within an account:
+`20261015230000_fair_agent_job_claim.sql`. Each account's pending items are
+numbered oldest-first, and the batch is taken in that `turn` order — everyone's
+oldest before anyone's second.
+
+Same scenario after:
+
+| | |
+|---|---|
+| B's wait for its first lead | 1 minute |
+| B's five leads | all claimed in that minute |
+| A's share of the first 36 slots | 31 |
+
+A gets every slot nobody else wants, which at one tenant is all of them.
+
+### What was verified, and how
+
+Against a real cluster, not by reading:
+
+- 56 minutes → 1 minute on the scenario above.
+- An account's own items still come oldest-first (0 of 36 claims out of order).
+- Three simultaneous drains: 12 rows each, 36 total, nothing claimed twice.
+  `FOR UPDATE OF c SKIP LOCKED` is what makes that true and is unchanged.
+- 50,000 pending across 40 accounts: the first 24 claims went to 24 different
+  accounts.
+- Cost at 200,000 pending: ~90ms per claim against ~40ms for the unfair
+  version, three times a minute.
+
+### The bound worth knowing about
+
+The obvious implementation ranks every pending row in one window. It sorts the
+whole backlog to disk for a twelve-row answer — 2.4MB spilled at 50,000 rows —
+and gets worse as the queue deepens. The shipped version uses a lateral per
+account, so the work is bounded by the batch size and the number of accounts
+with pending items rather than by queue depth.
+
+`p_limit * 8` is headroom for concurrent drains: each pass locks `p_limit` rows
+with SKIP LOCKED, so the pool must hold more than `passes * p_limit` claimable
+rows or the later passes come back short and throughput halves silently.
+`src/lib/agent-job-fairness.test.ts` asserts the factor stays above the pass cap
+in `trigger_agent_jobs`, because those two numbers live in different migrations.
