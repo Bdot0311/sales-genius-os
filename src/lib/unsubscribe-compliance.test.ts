@@ -195,7 +195,8 @@ describe("scheduled jobs reach the functions they call", () => {
 
   it("the vault secret holds the internal one, whatever its name says", () => {
     const SYNC = readFileSync("supabase/functions/sync-vault-service-key/index.ts", "utf8");
-    expect(SYNC).toContain('_name: "email_queue_service_role_key"');
+    // Both names carry the same value while the old one is still read.
+    expect(SYNC).toContain('["internal_trigger_secret", "email_queue_service_role_key"]');
     expect(SYNC).toContain("_secret: INTERNAL_TRIGGER_SECRET");
   });
 
@@ -219,9 +220,65 @@ describe("scheduled jobs reach the functions they call", () => {
     });
   }
 
-  it("the migration signs with that vault secret", () => {
+  it("the migration signs with that vault secret, under its honest name", () => {
     const SQL = readFileSync("supabase/migrations/20261015040000_fix_cron_job_auth.sql", "utf8");
-    expect(SQL.match(/email_queue_service_role_key/g)?.length).toBe(5);
+    // Counted in the job bodies, not the file: the header comment names it too.
+    const lookups = SQL.match(/WHERE name = 'internal_trigger_secret'/g) ?? [];
+    expect(lookups).toHaveLength(5);
     expect(SQL).not.toContain("role\":\"anon");
+  });
+});
+
+/**
+ * A secret whose name says the opposite of what it holds.
+ *
+ * email_queue_service_role_key has never held the service role key, and the
+ * name cost a round on this branch: five broken jobs were repointed at "the
+ * service role key", got the internal secret, and carried on answering 401
+ * because the functions compared against the real one.
+ */
+describe("the vault secret is renamed without dropping anyone", () => {
+  const RENAME = readFileSync(
+    "supabase/migrations/20261015030000_rename_internal_trigger_secret.sql",
+    "utf8",
+  );
+  const SYNC = readFileSync("supabase/functions/sync-vault-service-key/index.ts", "utf8");
+
+  it("creates the honest name from the old value", () => {
+    expect(RENAME).toContain("vault.create_secret(");
+    expect(RENAME).toContain("'internal_trigger_secret'");
+  });
+
+  it("moves every job that reads the old name", () => {
+    // Driven off cron.job rather than a hand-listed set: nine of them are
+    // scheduled in the live database and only some have a migration here.
+    expect(RENAME).toContain("FROM cron.job");
+    expect(RENAME).toContain("WHERE command LIKE '%email_queue_service_role_key%'");
+    expect(RENAME).toContain("replace(j.command, 'email_queue_service_role_key', 'internal_trigger_secret')");
+  });
+
+  /*
+   * internal_job_key() is defined in the database and nowhere in this
+   * repository. Dropping the old secret would break whichever readers like it
+   * are invisible from here, silently.
+   */
+  it("keeps the old name alive rather than dropping it", () => {
+    expect(RENAME).not.toMatch(/delete_secret|DROP SECRET/i);
+    expect(SYNC).toContain('["internal_trigger_secret", "email_queue_service_role_key"]');
+  });
+
+  it("writes the honest name first, so a failure leaves it current", () => {
+    const order = SYNC.indexOf('["internal_trigger_secret"');
+    expect(order).toBeGreaterThan(-1);
+    expect(SYNC.indexOf("internal_trigger_secret", order)).toBeLessThan(
+      SYNC.indexOf("email_queue_service_role_key", order),
+    );
+  });
+
+  it("runs before the jobs that read the new name", () => {
+    // 20261015030000 creates it; 20261015040000 schedules five jobs against
+    // it. The other way round, those five read a secret that is not there yet
+    // and send a null Authorization header.
+    expect("20261015030000" < "20261015040000").toBe(true);
   });
 });

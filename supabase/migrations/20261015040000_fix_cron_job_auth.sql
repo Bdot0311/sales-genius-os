@@ -26,6 +26,12 @@
 --
 -- Schedules and bodies are unchanged. Only the Authorization header moves to
 -- the vault secret the working jobs already use.
+--
+-- That secret is read here under its honest name, internal_trigger_secret.
+-- It has been called email_queue_service_role_key since it was created and has
+-- never held the service role key. The migration immediately before this one
+-- creates the new name from the old value and repoints every other job at it,
+-- so the name is already there when these five are written.
 
 DO $$
 BEGIN
@@ -40,7 +46,7 @@ BEGIN
     $job$
     SELECT net.http_post(
       url := 'https://ghgfjnepvxvxrncmskys.supabase.co/functions/v1/audit-free-tier-emails',
-      headers := jsonb_build_object('Content-Type','application/json','Authorization','Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'email_queue_service_role_key')),
+      headers := jsonb_build_object('Content-Type','application/json','Authorization','Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'internal_trigger_secret')),
       body := '{"limit": 1000}'::jsonb
     ) AS request_id;
     $job$
@@ -52,7 +58,7 @@ BEGIN
     $job$
     SELECT net.http_post(
       url := 'https://ghgfjnepvxvxrncmskys.supabase.co/functions/v1/run-scheduled-imports',
-      headers := jsonb_build_object('Content-Type','application/json','Authorization','Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'email_queue_service_role_key')),
+      headers := jsonb_build_object('Content-Type','application/json','Authorization','Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'internal_trigger_secret')),
       body := '{}'::jsonb
     ) AS request_id;
     $job$
@@ -64,7 +70,7 @@ BEGIN
     $job$
     SELECT net.http_post(
       url := 'https://ghgfjnepvxvxrncmskys.supabase.co/functions/v1/run-seo-audit',
-      headers := jsonb_build_object('Content-Type','application/json','Authorization','Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'email_queue_service_role_key')),
+      headers := jsonb_build_object('Content-Type','application/json','Authorization','Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'internal_trigger_secret')),
       body := '{"mode":"both"}'::jsonb
     ) AS request_id;
     $job$
@@ -76,7 +82,7 @@ BEGIN
     $job$
     SELECT net.http_post(
       url := 'https://ghgfjnepvxvxrncmskys.supabase.co/functions/v1/run-seo-audit',
-      headers := jsonb_build_object('Content-Type','application/json','Authorization','Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'email_queue_service_role_key')),
+      headers := jsonb_build_object('Content-Type','application/json','Authorization','Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'internal_trigger_secret')),
       body := '{"mode":"perf"}'::jsonb
     ) AS request_id;
     $job$
@@ -88,7 +94,7 @@ BEGIN
     $job$
     SELECT net.http_post(
       url := 'https://ghgfjnepvxvxrncmskys.supabase.co/functions/v1/send-seo-digest',
-      headers := jsonb_build_object('Content-Type','application/json','Authorization','Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'email_queue_service_role_key')),
+      headers := jsonb_build_object('Content-Type','application/json','Authorization','Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'internal_trigger_secret')),
       body := '{}'::jsonb
     ) AS request_id;
     $job$
