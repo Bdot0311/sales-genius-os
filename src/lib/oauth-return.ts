@@ -85,11 +85,38 @@ export function classifyOAuthReturn(args: {
   };
 }
 
-/** What the user is told. Accurate about who can fix it, and never blaming them. */
+/**
+ * What the user is told. Accurate about who can fix it, and never blaming them.
+ *
+ * The fallback is worded for the person most likely to be reading it. Someone
+ * whose only route in was Google has no password to fall back ON, so "use your
+ * email and password" sends them to a second failure — the identical
+ * frustration, one screen later. Forgot Password sets one against the same
+ * address and the account is the same account either way.
+ */
 export function silentFailureMessage(carried: string): string {
   return (
     `Google sent you back without completing sign-in (the return carried ${carried}). ` +
-    "This is on our side, not yours. Sign in with your email and password for now — " +
-    "that works, and it gets you to the same account."
+    "This is on our side, not yours. If you have a password, sign in with your email " +
+    "below. If you have only ever used Google, choose Forgot Password to set one — " +
+    "it reaches the same account."
   );
+}
+
+/**
+ * Forget an attempt that ended on this page.
+ *
+ * The flag is a claim that the browser is about to leave and come back. Every
+ * outcome that does NOT leave — the popup path inside an iframe, an error from
+ * the SDK, a thrown exception — has to retract it, or it outlives the attempt
+ * and the next visit to /auth within the window reports a failure that already
+ * finished. A false alarm on a sign-in page costs more trust than the silence
+ * this was built to replace.
+ */
+export function clearOAuthStart(): void {
+  try {
+    sessionStorage.removeItem(OAUTH_START_KEY);
+  } catch {
+    // Blocked storage: nothing was written, so nothing needs removing.
+  }
 }

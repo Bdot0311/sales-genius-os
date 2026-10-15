@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { OAUTH_START_KEY } from "@/lib/oauth-return";
+import { OAUTH_START_KEY, clearOAuthStart } from "@/lib/oauth-return";
 import { supabase } from "@/integrations/supabase/client";
 import { HONEYPOT_FIELD, botRejectionMessage, botSignals } from "../../../supabase/functions/_shared/bot-signals";
 import { lovable } from "@/integrations/lovable/index";
@@ -104,6 +104,17 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
         // and forwards to the dashboard.
         redirect_uri: `${window.location.origin}/auth`,
       });
+      /*
+       * Checked first, and it is the only outcome that keeps the flag.
+       *
+       * `redirected` means the page is on its way out and the diagnosis has
+       * to survive to the other side. Every other outcome happens right here
+       * — the popup path inside an iframe, an error, a throw — and leaving
+       * the flag set on those makes the next visit to /auth report a failure
+       * that already finished.
+       */
+      if (result.redirected) return;
+      clearOAuthStart();
       if (result.error) {
         toast({
           title: "Google sign-in failed",
@@ -113,9 +124,10 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
         setGoogleLoading(false);
         return;
       }
-      if (result.redirected) return;
       onSuccess?.();
     } catch (err: any) {
+      // A throw never leaves the page either.
+      clearOAuthStart();
       toast({
         title: "Google sign-in failed",
         description: err?.message || "Please try again.",

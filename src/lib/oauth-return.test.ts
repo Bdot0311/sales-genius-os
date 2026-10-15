@@ -4,6 +4,7 @@ import {
   OAUTH_START_KEY,
   OAUTH_WINDOW_MS,
   classifyOAuthReturn,
+  clearOAuthStart,
   silentFailureMessage,
 } from "./oauth-return";
 
@@ -92,7 +93,56 @@ describe("what the user is told", () => {
   it("says who can fix it, and does not blame them", () => {
     const m = silentFailureMessage("nothing");
     expect(m).toContain("on our side");
-    expect(m).toContain("email and password");
+  });
+
+  /*
+   * The person most likely to be reading this signed up with Google and has
+   * no password to fall back on. "Use your email and password" sends them to
+   * a second failure — the identical frustration, one screen later.
+   */
+  it("does not send a Google-only user at a password they never set", () => {
+    const m = silentFailureMessage("nothing");
+    expect(m).toContain("Forgot Password");
+    expect(m).not.toMatch(/sign in with your email and password for now/i);
+  });
+
+  it("points at a control the sign-in page actually has", () => {
+    expect(readFileSync("src/components/auth/AuthForm.tsx", "utf8")).toContain("Forgot Password?");
+  });
+});
+
+/**
+ * The flag claims the browser is about to leave and come back.
+ *
+ * Every outcome that does not leave has to retract it. The popup path inside
+ * an iframe, an error from the SDK and a thrown exception all finish on this
+ * page, and a flag left set there makes the next visit to /auth report a
+ * failure that already finished — a false alarm on a sign-in page, which
+ * costs more trust than the silence this replaced.
+ */
+describe("an attempt that ends on this page is forgotten", () => {
+  const FORM = readFileSync("src/components/auth/AuthForm.tsx", "utf8");
+  const handler = FORM.slice(FORM.indexOf("const handleGoogleAuth"), FORM.indexOf("const handleSubmit"));
+
+  it("keeps the flag only when the page is leaving", () => {
+    const redirected = handler.indexOf("if (result.redirected) return;");
+    const clear = handler.indexOf("clearOAuthStart();");
+    expect(redirected).toBeGreaterThan(-1);
+    expect(clear).toBeGreaterThan(redirected);
+  });
+
+  it("clears it before reporting an SDK error", () => {
+    const clear = handler.indexOf("clearOAuthStart();");
+    expect(handler.indexOf("if (result.error) {")).toBeGreaterThan(clear);
+  });
+
+  it("clears it on a throw too", () => {
+    const tail = handler.slice(handler.indexOf("} catch (err"));
+    expect(tail).toContain("clearOAuthStart();");
+  });
+
+  it("uses the shared helper, not a second spelling of removeItem", () => {
+    expect(FORM).not.toContain("sessionStorage.removeItem");
   });
 });
 
