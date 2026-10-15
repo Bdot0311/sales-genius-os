@@ -44,6 +44,7 @@ import { duplicateGuidanceFor } from "../_shared/duplicate-send.ts";
 import { wantsCopyAudit } from "../_shared/copy-review-intent.ts";
 import { auditEmail, auditSummary } from "../_shared/email-audit.ts";
 import { agentProhibitions } from "../_shared/agent-prohibitions.ts";
+import { icpPatch, patternQuery, wonDealPattern, type WonDealRow } from "../_shared/won-deal-pattern.ts";
 import { auditDeliverability } from "../_shared/email-deliverability.ts";
 import { auditSequence, sequenceSummary } from "../_shared/sequence-audit.ts";
 import {
@@ -889,6 +890,34 @@ const TOOLS = [
       name: "list_deals",
       description: "List pipeline deals (stage, value, probability, close date, linked lead).",
       parameters: { type: "object", properties: { stage: { type: "string", enum: [...DEAL_STAGES] }, limit: { type: "number" } } },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "analyse_won_deals",
+      description:
+        "Read what the account's CLOSED-WON deals have in common — industry, company size, seniority, title, country, tech — counted from the leads behind them, and a ready-made search query for find_leads. Use it when the user asks who their best customers are, what their real ICP is, where to find more like the ones that closed, or to run the closed-won replication play. It reports nothing below five wins, because fewer than that cannot tell a pattern from a coincidence; say so plainly rather than filling the gap yourself.",
+      parameters: {
+        type: "object",
+        properties: {
+          limit: { type: "number", description: "How many of the most recent won deals to read (default 100, max 500)." },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "apply_won_deal_icp",
+      description:
+        "Write what analyse_won_deals found into the account's saved ICP, so lead scoring and every later search are grounded in deals that actually closed rather than in what someone guessed at signup. Only fills the dimensions enough of the wins agree on, and leaves every other ICP field untouched. Ask the user before calling it: it changes how all their leads score.",
+      parameters: {
+        type: "object",
+        properties: {
+          limit: { type: "number", description: "How many won deals to read, same as analyse_won_deals." },
+        },
+      },
     },
   },
   {
@@ -4124,6 +4153,126 @@ serve(async (req) => {
             missing_company: { count: noCompany.length, lead_ids: noCompany.slice(0, cap) },
             duplicate_emails: { count: duplicates.length, groups: duplicates.slice(0, cap) },
             stale_over_30_days: { count: stale.length, lead_ids: stale.slice(0, cap) },
+          };
+        }
+
+        /*
+         * The closed-won replication play, as two calls.
+         *
+         * Reading the pattern and acting on it are kept apart on purpose:
+         * applying it rewrites the ICP every lead is scored against, and that
+         * is not something to do inside a call the user asked for a read.
+         */
+        case "analyse_won_deals":
+        case "apply_won_deal_icp": {
+          const cap = Math.min(Math.max(Number(args.limit) || 100, 1), 500);
+          const { data: deals, error: dealErr } = await admin
+            .from("deals")
+            .select("id, company_name, value, lead_id")
+            .eq("user_id", userId)
+            .eq("stage", "closed_won")
+            .order("updated_at", { ascending: false })
+            .limit(cap);
+          if (dealErr) return { error: dealErr.message };
+
+          // The attributes live on the lead, not the deal. A deal with no lead
+          // still counts toward the sample and toward won value; it just has
+          // nothing to contribute to the dimensions.
+          const leadIds = (deals ?? []).map((d) => d.lead_id).filter(Boolean).map(String);
+          const leadById = new Map<string, Record<string, unknown>>();
+          if (leadIds.length) {
+            const { data: leadRows } = await admin
+              .from("leads")
+              .select("id, industry, company_size, seniority, job_title, country, technologies")
+              .eq("user_id", userId)
+              .in("id", leadIds);
+            for (const l of leadRows ?? []) leadById.set(String(l.id), l as Record<string, unknown>);
+          }
+
+          const rows: WonDealRow[] = (deals ?? []).map((d) => {
+            const lead = d.lead_id ? leadById.get(String(d.lead_id)) : undefined;
+            return {
+              deal_id: String(d.id),
+              company_name: d.company_name,
+              value: d.value as number | null,
+              industry: (lead?.industry as string) ?? null,
+              company_size: (lead?.company_size as string) ?? null,
+              seniority: (lead?.seniority as string) ?? null,
+              job_title: (lead?.job_title as string) ?? null,
+              country: (lead?.country as string) ?? null,
+              technologies: (lead?.technologies as string[]) ?? null,
+            };
+          });
+
+          const pattern = wonDealPattern(rows);
+          const query = patternQuery(pattern);
+
+          if (name === "analyse_won_deals") {
+            toolEvents.push({
+              name,
+              label: "Read the closed-won pattern",
+              status: pattern.enough ? "ok" : "queued",
+              detail: pattern.enough
+                ? `${pattern.sampleSize} won deal(s)`
+                : `${pattern.sampleSize} won deal(s) — too few to read a pattern from`,
+            });
+            return {
+              pattern,
+              suggested_search: query,
+              note: pattern.enough
+                ? "Report the counts, not just the conclusion — the user should see how many deals each claim rests on. " +
+                  "To act on it, pass suggested_search to find_leads, or ask before calling apply_won_deal_icp."
+                : "There is no pattern to report. Say that plainly and do not substitute your own guess about who their customers are.",
+            };
+          }
+
+          if (!pattern.enough) {
+            toolEvents.push({
+              name,
+              label: "ICP left alone",
+              status: "error",
+              detail: `${pattern.sampleSize} won deal(s) — below the floor for a pattern`,
+            });
+            return {
+              applied: false,
+              pattern,
+              error:
+                "Not enough closed-won deals to derive an ICP from. Nothing was changed. " +
+                "Narrowing the ICP onto a handful of wins would send every future search in an arbitrary direction.",
+            };
+          }
+
+          const patch = icpPatch(pattern);
+          if (!Object.keys(patch).length) {
+            toolEvents.push({ name, label: "ICP left alone", status: "error", detail: "the wins agree on nothing" });
+            return { applied: false, pattern, error: "The won deals share no dimension strongly enough to write. Nothing was changed." };
+          }
+
+          const { data: existing } = await admin
+            .from("icp_profiles")
+            .select("id")
+            .eq("user_id", userId)
+            .order("updated_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          const { error: writeErr } = existing?.id
+            ? await admin.from("icp_profiles").update(patch).eq("id", existing.id).eq("user_id", userId)
+            : await admin.from("icp_profiles").insert({ ...patch, user_id: userId });
+          if (writeErr) return { error: writeErr.message };
+
+          toolEvents.push({
+            name,
+            label: "ICP set from closed-won deals",
+            status: "ok",
+            detail: `${Object.keys(patch).join(", ")} — from ${pattern.sampleSize} win(s)`,
+          });
+          return {
+            applied: true,
+            fields: Object.keys(patch),
+            pattern,
+            suggested_search: query,
+            note: "Tell the user which fields changed and what they came from. Scoring uses this from now on, so their existing leads will score differently.",
           };
         }
 

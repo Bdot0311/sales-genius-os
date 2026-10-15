@@ -95,6 +95,7 @@ export const AGENT_TOOL_GROUPS: {
     tools: [
       { name: "list_icp_profiles", label: "Read ICP profiles" },
       { name: "update_icp_profile", label: "Edit ICP targeting" },
+      { name: "apply_won_deal_icp", label: "Set the ICP from won deals" },
       { name: "list_campaign_briefs", label: "Read campaign briefs" },
       { name: "save_campaign_brief", label: "Create or edit campaign briefs" },
       { name: "list_email_templates", label: "Read email templates" },
@@ -118,6 +119,7 @@ export const AGENT_TOOL_GROUPS: {
     tools: [
       { name: "find_lead_issues", label: "Find CRM data problems" },
       { name: "list_deals", label: "See pipeline deals" },
+      { name: "analyse_won_deals", label: "Read what won deals share" },
       { name: "create_deal", label: "Create deals" },
       { name: "update_deal", label: "Update deals" },
       { name: "delete_deal", label: "Delete deals" },

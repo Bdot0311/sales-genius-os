@@ -77,12 +77,19 @@ describe("a deal stage is spelled one way", () => {
      */
     const hits = execFileSync(
       "git",
-      ["grep", "-n", "-E", "['\"]closed-(won|lost)['\"]", "--", "src", "supabase", ":(exclude)*.test.ts"],
+      // --untracked, because without it this skipped the one file it most
+      // needed to read: a migration is a new file until it is committed, so
+      // the sweep passed while the rewrite itself was unstaged and only
+      // failed once it was tracked.
+      ["grep", "-n", "--untracked", "-E", "['\"]closed-(won|lost)['\"]", "--", "src", "supabase", ":(exclude)*.test.ts"],
       { cwd: process.cwd(), encoding: "utf8" },
     )
       .split("\n")
       .filter(Boolean)
+      // The CREATE TABLE that introduced the hyphen, and the migration that
+      // rewrites it: both have to name the old value to do their job.
       .filter((l) => !l.includes("20251021012546"))
+      .filter((l) => !l.includes("20261015200000"))
       .filter((l) => !/:\s*(\/\/|\*|--)/.test(l));
     expect(hits).toEqual([]);
   });
