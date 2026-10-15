@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { OAUTH_START_KEY } from "@/lib/oauth-return";
 import { supabase } from "@/integrations/supabase/client";
 import { HONEYPOT_FIELD, botRejectionMessage, botSignals } from "../../../supabase/functions/_shared/bot-signals";
 import { lovable } from "@/integrations/lovable/index";
@@ -83,6 +84,19 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
   const handleGoogleAuth = async () => {
     setGoogleLoading(true);
     try {
+      /*
+       * Recorded before the page is gone. signInWithOAuth sets
+       * window.location.href and this origin is unloaded, so nothing in
+       * memory survives to tell /auth that a sign-in was in flight — which is
+       * why a broker that returns nothing is indistinguishable from a user
+       * who changed their mind.
+       */
+      try {
+        sessionStorage.setItem(OAUTH_START_KEY, String(Date.now()));
+      } catch {
+        // Private mode or blocked storage. The sign-in still works; only the
+        // diagnosis on an empty return is lost.
+      }
       const result = await lovable.auth.signInWithOAuth("google", {
         // Return to the public sign-in page (not "/"): the homepage defers
         // loading the auth client, so Google's returned session was dropped
