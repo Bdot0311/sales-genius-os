@@ -92,6 +92,28 @@ export const ROADMAP: RoadmapItem[] = [
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-15-working-unsubscribe",
+    date: "2026-10-15",
+    title: "Every email carries a working unsubscribe",
+    summary: "Bulk sends now include an unsubscribe link and header, and opt-outs are per account.",
+    items: [
+      {
+        tag: "fixed",
+        title: "Unsubscribing no longer blocks other businesses",
+        description:
+          "Unsubscribe requests now apply to the account that sent the email, so a prospect opting out of one business's emails is no longer suppressed by every account. Unsubscribe links already in people's inboxes keep working too, instead of being invalidated by the next account that emailed them.",
+        href: "/dashboard/outreach",
+      },
+      {
+        tag: "new",
+        title: "One-click unsubscribe on every scheduled send",
+        description:
+          "Emails sent from campaigns and scheduled batches now include a visible unsubscribe link in the footer and a one-click unsubscribe header, the standard Gmail and Yahoo require from bulk senders. Missing it is what gets legitimate mail filed as spam.",
+        href: "/dashboard/deliverability",
+      },
+    ],
+  },
+  {
     id: "2026-10-14-greeting-flexibility",
     date: "2026-10-14",
     title: "Emails that greet a lead warmly get through",
