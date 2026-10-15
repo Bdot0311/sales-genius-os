@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isInternalCaller } from '../_shared/internal-auth.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -26,7 +27,12 @@ serve(async (req) => {
     
     // Verify the request is using service role key (for cron jobs) or valid user token
     const token = authHeader.replace('Bearer ', '');
-    const isServiceRole = token === supabaseServiceKey;
+    // Cron signs with the vault secret named email_queue_service_role_key,
+    // which despite its name holds INTERNAL_TRIGGER_SECRET (see
+    // sync-vault-service-key). isInternalCaller accepts that as well as the
+    // service role key, which is why every job using it works; comparing
+    // against SUPABASE_SERVICE_ROLE_KEY alone rejects cron outright.
+    const isServiceRole = isInternalCaller(req);
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 

@@ -1,5 +1,6 @@
 // Weekly SEO digest email to admins via Resend.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { requireServiceRole } from "../_shared/internal-auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,14 +15,13 @@ const json = (body: unknown, status = 200) =>
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  const authHeader = req.headers.get("Authorization") ?? "";
-  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-  if (!token || !serviceKey || token !== serviceKey) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401,
-    });
-  }
+// Cron signs with the vault secret named email_queue_service_role_key, which
+// despite its name holds INTERNAL_TRIGGER_SECRET (see sync-vault-service-key).
+// isInternalCaller accepts that as well as the service role key, which is why
+// every job that uses it works; a hand-rolled check against
+// SUPABASE_SERVICE_ROLE_KEY alone rejects cron outright.
+  const unauthorized = requireServiceRole(req);
+  if (unauthorized) return unauthorized;
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
   const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;

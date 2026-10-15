@@ -171,3 +171,169 @@ describe("the constraints an upsert has to be able to name", () => {
     expect(MIGRATION).not.toMatch(/UPDATE public\.email_optouts\s+SET user_id/i);
   });
 });
+
+/**
+ * The vault secret the scheduled jobs sign with is not the service role key.
+ *
+ * sync-vault-service-key writes INTERNAL_TRIGGER_SECRET into the vault under
+ * the name `email_queue_service_role_key`. The name says one thing and the
+ * contents are another, and every job in the schedule signs with it.
+ *
+ * requireServiceRole accepts either that secret or the real service role key,
+ * which is why the jobs using it work. Five functions rolled their own check
+ * against SUPABASE_SERVICE_ROLE_KEY alone, so they rejected cron whichever of
+ * the two it sent — the anon key before, and the vault secret after the first
+ * attempt at this fix.
+ */
+describe("scheduled jobs reach the functions they call", () => {
+  const SHARED = readFileSync("supabase/functions/_shared/internal-auth.ts", "utf8");
+
+  it("the shared guard accepts both secrets", () => {
+    expect(SHARED).toContain('Deno.env.get("INTERNAL_TRIGGER_SECRET")');
+    expect(SHARED).toContain('Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")');
+  });
+
+  it("the vault secret holds the internal one, whatever its name says", () => {
+    const SYNC = readFileSync("supabase/functions/sync-vault-service-key/index.ts", "utf8");
+    // Both names carry the same value while the old one is still read.
+    expect(SYNC).toContain('["internal_trigger_secret", "email_queue_service_role_key"]');
+    expect(SYNC).toContain("_secret: INTERNAL_TRIGGER_SECRET");
+  });
+
+  /*
+   * The five that were 401ing. Each now defers to the shared guard rather
+   * than comparing the bearer against the service key itself.
+   */
+  for (const fn of [
+    "audit-free-tier-emails",
+    "run-scheduled-imports",
+    "run-seo-audit",
+    "send-seo-digest",
+  ]) {
+    it(`${fn} accepts the key cron actually sends`, () => {
+      const src = readFileSync(`supabase/functions/${fn}/index.ts`, "utf8");
+      expect(src).toMatch(/from ['"]\.\.\/_shared\/internal-auth\.ts['"]/);
+      // No hand-rolled comparison left to reject it.
+      expect(src).not.toMatch(/token !== SERVICE_ROLE\b/);
+      expect(src).not.toMatch(/token !== serviceKey\b/);
+      expect(src).not.toMatch(/bearer === SERVICE_KEY\b/);
+    });
+  }
+
+  it("the migration signs with that vault secret, under its honest name", () => {
+    const SQL = readFileSync("supabase/migrations/20261015040000_fix_cron_job_auth.sql", "utf8");
+    // Counted in the job bodies, not the file: the header comment names it too.
+    const lookups = SQL.match(/WHERE name = 'internal_trigger_secret'/g) ?? [];
+    expect(lookups).toHaveLength(5);
+    expect(SQL).not.toContain("role\":\"anon");
+  });
+});
+
+/**
+ * A secret whose name says the opposite of what it holds.
+ *
+ * email_queue_service_role_key has never held the service role key, and the
+ * name cost a round on this branch: five broken jobs were repointed at "the
+ * service role key", got the internal secret, and carried on answering 401
+ * because the functions compared against the real one.
+ */
+describe("the vault secret is renamed without dropping anyone", () => {
+  const RENAME = readFileSync(
+    "supabase/migrations/20261015030000_rename_internal_trigger_secret.sql",
+    "utf8",
+  );
+  const SYNC = readFileSync("supabase/functions/sync-vault-service-key/index.ts", "utf8");
+
+  it("creates the honest name from the old value", () => {
+    expect(RENAME).toContain("vault.create_secret(");
+    expect(RENAME).toContain("'internal_trigger_secret'");
+  });
+
+  it("moves every job that reads the old name", () => {
+    // Driven off cron.job rather than a hand-listed set: nine of them are
+    // scheduled in the live database and only some have a migration here.
+    expect(RENAME).toContain("FROM cron.job");
+    expect(RENAME).toContain("WHERE command LIKE '%email_queue_service_role_key%'");
+    expect(RENAME).toContain("replace(j.command, 'email_queue_service_role_key', 'internal_trigger_secret')");
+  });
+
+  /*
+   * internal_job_key() is defined in the database and nowhere in this
+   * repository. Dropping the old secret would break whichever readers like it
+   * are invisible from here, silently.
+   */
+  it("keeps the old name alive rather than dropping it", () => {
+    expect(RENAME).not.toMatch(/delete_secret|DROP SECRET/i);
+    expect(SYNC).toContain('["internal_trigger_secret", "email_queue_service_role_key"]');
+  });
+
+  it("writes the honest name first, so a failure leaves it current", () => {
+    const order = SYNC.indexOf('["internal_trigger_secret"');
+    expect(order).toBeGreaterThan(-1);
+    expect(SYNC.indexOf("internal_trigger_secret", order)).toBeLessThan(
+      SYNC.indexOf("email_queue_service_role_key", order),
+    );
+  });
+
+  it("runs before the jobs that read the new name", () => {
+    // 20261015030000 creates it; 20261015040000 schedules five jobs against
+    // it. The other way round, those five read a secret that is not there yet
+    // and send a null Authorization header.
+    expect("20261015030000" < "20261015040000").toBe(true);
+  });
+});
+
+/**
+ * Warmup has never run, and two more jobs with it.
+ *
+ * deliverability_call_edge is the helper behind compute-reputation-daily,
+ * deliverability-alerts-scan-daily and warmup-orchestrator-hourly. It signed
+ * them with deliverability_settings.anon_key — a row that really does hold an
+ * anon-role JWT, per the seed in 20260717232146.
+ *
+ * The three functions are the correct side of this: they use the shared
+ * guards, which accept the service role key or INTERNAL_TRIGGER_SECRET, and
+ * for warmup a real signed-in user. An anon key is none of those, so every
+ * call the helper ever made was rejected at the door.
+ */
+describe("the deliverability jobs can reach their functions", () => {
+  const FIX = readFileSync(
+    "supabase/migrations/20261015060000_deliverability_call_edge_auth.sql",
+    "utf8",
+  );
+
+  it("signs with the vault secret instead of the anon key", () => {
+    expect(FIX).toContain("WHERE name = 'internal_trigger_secret'");
+    const body = FIX.slice(FIX.indexOf("CREATE OR REPLACE FUNCTION"));
+    expect(body).not.toContain("key = 'anon_key'");
+  });
+
+  it("falls back to the old secret name, in case of out-of-order apply", () => {
+    expect(FIX).toContain("WHERE name = 'email_queue_service_role_key'");
+  });
+
+  it("refuses to send an unsigned call", () => {
+    // A null secret concatenates to a null Authorization header, which reads
+    // downstream as the function being broken rather than the call unsigned.
+    expect(FIX).toContain("IF v_url IS NULL OR v_key IS NULL THEN");
+    expect(FIX).toContain("RAISE WARNING");
+  });
+
+  it("the three targets still require a real credential", () => {
+    // The fix is on the caller. If a target ever loosened to accept the anon
+    // key, that would be the wrong repair.
+    const guards: Array<[string, string]> = [
+      ["compute-reputation", "requireServiceRole"],
+      ["deliverability-alerts-scan", "requireServiceRole"],
+      ["warmup-orchestrator", "requireInternalOrUser"],
+    ];
+    for (const [fn, guard] of guards) {
+      const src = readFileSync(`supabase/functions/${fn}/index.ts`, "utf8");
+      expect(src, `${fn} should use ${guard}`).toContain(guard);
+    }
+  });
+
+  it("runs after the secret it reads exists", () => {
+    expect("20261015030000" < "20261015060000").toBe(true);
+  });
+});
