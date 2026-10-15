@@ -4258,7 +4258,12 @@ serve(async (req) => {
 
           const { error: writeErr } = existing?.id
             ? await admin.from("icp_profiles").update(patch).eq("id", existing.id).eq("user_id", userId)
-            : await admin.from("icp_profiles").insert({ ...patch, user_id: userId });
+            // name is NOT NULL with no default, so an insert without one
+            // fails — and it fails for exactly the account this is most use
+            // to: wins on the board and no ICP written yet.
+            : await admin
+                .from("icp_profiles")
+                .insert({ ...patch, user_id: userId, name: "Learned from closed-won deals" });
           if (writeErr) return { error: writeErr.message };
 
           toolEvents.push({

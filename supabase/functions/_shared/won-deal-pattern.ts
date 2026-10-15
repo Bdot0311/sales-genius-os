@@ -195,6 +195,16 @@ export function patternQuery(p: WonDealPattern): string | null {
   return `${who}${at}${sized}${place}`.replace(/\s+/g, " ").trim();
 }
 
+/**
+ * Whether any winning bucket is unbounded above.
+ *
+ * "1000+", "1000 or more", "over 1000" — all of them mean there is no top,
+ * and a ceiling read off the digits excludes the largest customers.
+ */
+export function hasOpenEndedSize(sizes: Tally[]): boolean {
+  return sizes.some((t) => /\+\s*$|\bor more\b|\bover\b|\bmore than\b|\band (?:up|above)\b/i.test(t.value));
+}
+
 /** The ICP columns this pattern can fill in, and nothing else. */
 export function icpPatch(p: WonDealPattern): Record<string, unknown> {
   const patch: Record<string, unknown> = {};
@@ -211,11 +221,22 @@ export function icpPatch(p: WonDealPattern): Record<string, unknown> {
    * bounds come from the span the winning sizes actually cover rather than
    * from the single most common one. Narrowing to one bucket would exclude
    * the other wins this pattern was read from.
+   *
+   * An open-ended bucket has no top. "1000+" reads as a single number, and
+   * taking it as both ends writes company_size_max = 1000 — which computeFit
+   * applies as a hard ceiling (`size <= company_size_max`), so a two-thousand
+   * person company fails the headcount match while belonging to the very
+   * group the pattern was read from. The maximum is left open instead.
+   *
+   * Written as an explicit null rather than omitted, because this patch
+   * updates an existing profile: leaving the key out keeps whatever ceiling
+   * was there before, which is the same bug wearing the previous ICP's
+   * number.
    */
   const bounds = p.companySizes.flatMap((t) => (t.value.replace(/,/g, "").match(/\d+/g) ?? []).map(Number));
   if (bounds.length) {
     patch.company_size_min = Math.min(...bounds);
-    patch.company_size_max = Math.max(...bounds);
+    patch.company_size_max = hasOpenEndedSize(p.companySizes) ? null : Math.max(...bounds);
   }
   return patch;
 }

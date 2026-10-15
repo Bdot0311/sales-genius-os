@@ -4,6 +4,7 @@ import {
   MIN_SHARE,
   MIN_WINS,
   agreed,
+  hasOpenEndedSize,
   icpPatch,
   patternQuery,
   tally,
@@ -148,6 +149,46 @@ describe("turning the pattern into work", () => {
     expect(patch.company_size_max).toBe(500);
   });
 
+  /*
+   * computeFit applies company_size_max as a hard ceiling (size <= max), so a
+   * bucket with no top must not be written as one. "1000+" read as both ends
+   * excludes a two-thousand-person company from the very group the pattern
+   * was read from.
+   */
+  it("leaves the ceiling open when a winning bucket has no top", () => {
+    const patch = icpPatch(wonDealPattern(many(MIN_WINS, { company_size: "1000+" })));
+    expect(patch.company_size_min).toBe(1000);
+    expect(patch.company_size_max).toBeNull();
+  });
+
+  it("clears a stale ceiling rather than leaving the old one", () => {
+    // The patch updates an existing profile. Omitting the key keeps whatever
+    // ceiling was there before, which is the same bug wearing the previous
+    // ICP's number.
+    const patch = icpPatch(wonDealPattern(many(MIN_WINS, { company_size: "5000+" })));
+    expect("company_size_max" in patch).toBe(true);
+    expect(patch.company_size_max).toBeNull();
+  });
+
+  it("still writes a ceiling when every bucket has one", () => {
+    const patch = icpPatch(wonDealPattern(many(MIN_WINS, { company_size: "51-200" })));
+    expect(patch.company_size_max).toBe(200);
+  });
+
+  it("one open bucket among closed ones opens the top", () => {
+    const rows = [...many(5), ...many(4, { company_size: "1000+" })];
+    const patch = icpPatch(wonDealPattern(rows));
+    expect(patch.company_size_min).toBe(51);
+    expect(patch.company_size_max).toBeNull();
+  });
+
+  it("reads the wordier ways of saying the same thing", () => {
+    for (const label of ["1000+", "1000 or more", "over 1000", "more than 1000", "1000 and up"]) {
+      expect(hasOpenEndedSize([{ value: label, count: 5, share: 1 }]), label).toBe(true);
+    }
+    expect(hasOpenEndedSize([{ value: "51-200", count: 5, share: 1 }])).toBe(false);
+  });
+
   it("totals what the wins were worth", () => {
     expect(wonDealPattern(many(5, { value: 20_000 })).wonValue).toBe(100_000);
   });
@@ -190,6 +231,15 @@ describe("the tools are wired the way this repo requires", () => {
     const handler = CHAT.slice(CHAT.indexOf('case "analyse_won_deals"'), CHAT.indexOf('case "list_deals"'));
     expect(handler).toContain("if (!pattern.enough)");
     expect(handler).toContain("applied: false");
+  });
+
+  it("names the profile it creates, because the column demands one", () => {
+    // icp_profiles.name is NOT NULL with no default, so an insert without one
+    // fails for exactly the account this is most use to: wins on the board
+    // and no ICP written yet.
+    const handler = CHAT.slice(CHAT.indexOf('case "analyse_won_deals"'), CHAT.indexOf('case "list_deals"'));
+    const insert = handler.slice(handler.indexOf('.insert({'));
+    expect(insert.slice(0, 200)).toContain("name:");
   });
 
   it("reads the deals the renamed stage actually holds", () => {
