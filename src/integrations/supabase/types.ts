@@ -3870,6 +3870,27 @@ export type Database = {
         }
         Relationships: []
       }
+      queue_tenant_turn: {
+        Row: {
+          last_served_at: string
+          queue: string
+          served_count: number
+          user_id: string
+        }
+        Insert: {
+          last_served_at?: string
+          queue: string
+          served_count?: number
+          user_id: string
+        }
+        Update: {
+          last_served_at?: string
+          queue?: string
+          served_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       rate_limit_buckets: {
         Row: {
           api_key_id: string

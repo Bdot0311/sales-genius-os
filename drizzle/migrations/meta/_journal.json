@@ -274,6 +274,13 @@
       "when": 1792102976528,
       "tag": "0038_claim_scheduled_emails",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1792103004709,
+      "tag": "0039_queue_tenant_turn",
+      "breakpoints": true
     }
   ]
 }
