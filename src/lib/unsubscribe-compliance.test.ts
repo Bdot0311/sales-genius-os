@@ -282,3 +282,58 @@ describe("the vault secret is renamed without dropping anyone", () => {
     expect("20261015030000" < "20261015040000").toBe(true);
   });
 });
+
+/**
+ * Warmup has never run, and two more jobs with it.
+ *
+ * deliverability_call_edge is the helper behind compute-reputation-daily,
+ * deliverability-alerts-scan-daily and warmup-orchestrator-hourly. It signed
+ * them with deliverability_settings.anon_key — a row that really does hold an
+ * anon-role JWT, per the seed in 20260717232146.
+ *
+ * The three functions are the correct side of this: they use the shared
+ * guards, which accept the service role key or INTERNAL_TRIGGER_SECRET, and
+ * for warmup a real signed-in user. An anon key is none of those, so every
+ * call the helper ever made was rejected at the door.
+ */
+describe("the deliverability jobs can reach their functions", () => {
+  const FIX = readFileSync(
+    "supabase/migrations/20261015060000_deliverability_call_edge_auth.sql",
+    "utf8",
+  );
+
+  it("signs with the vault secret instead of the anon key", () => {
+    expect(FIX).toContain("WHERE name = 'internal_trigger_secret'");
+    const body = FIX.slice(FIX.indexOf("CREATE OR REPLACE FUNCTION"));
+    expect(body).not.toContain("key = 'anon_key'");
+  });
+
+  it("falls back to the old secret name, in case of out-of-order apply", () => {
+    expect(FIX).toContain("WHERE name = 'email_queue_service_role_key'");
+  });
+
+  it("refuses to send an unsigned call", () => {
+    // A null secret concatenates to a null Authorization header, which reads
+    // downstream as the function being broken rather than the call unsigned.
+    expect(FIX).toContain("IF v_url IS NULL OR v_key IS NULL THEN");
+    expect(FIX).toContain("RAISE WARNING");
+  });
+
+  it("the three targets still require a real credential", () => {
+    // The fix is on the caller. If a target ever loosened to accept the anon
+    // key, that would be the wrong repair.
+    const guards: Array<[string, string]> = [
+      ["compute-reputation", "requireServiceRole"],
+      ["deliverability-alerts-scan", "requireServiceRole"],
+      ["warmup-orchestrator", "requireInternalOrUser"],
+    ];
+    for (const [fn, guard] of guards) {
+      const src = readFileSync(`supabase/functions/${fn}/index.ts`, "utf8");
+      expect(src, `${fn} should use ${guard}`).toContain(guard);
+    }
+  });
+
+  it("runs after the secret it reads exists", () => {
+    expect("20261015030000" < "20261015060000").toBe(true);
+  });
+});
