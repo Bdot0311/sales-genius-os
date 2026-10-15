@@ -6,7 +6,21 @@
 // here is translation plus AWS SigV4 request signing (no AWS SDK — Deno's Web
 // Crypto is enough and keeps the function cold start small).
 
-import { bedrockSendUrl as resolveSendUrl } from "./ai-gateway.ts";
+import { bedrockRoute } from "./ai-gateway.ts";
+
+/**
+ * Where this request is posted, and the gateway credential if one applies.
+ *
+ * Read here rather than at module load so that turning the gateway on is a
+ * secret change and a restart, not a redeploy.
+ */
+const routeFor = (url: URL) =>
+  bedrockRoute(
+    url,
+    bedrockRegion(),
+    Deno.env.get("CF_AI_GATEWAY_BEDROCK"),
+    Deno.env.get("CF_AI_GATEWAY_TOKEN"),
+  );
 
 // ─── Config ────────────────────────────────────────────────────────────────
 export function bedrockRegion(): string {
@@ -340,7 +354,12 @@ export async function bedrockChat(
     : await signRequest(url, payload);
 
 
-  const res = await fetch(resolveSendUrl(url, bedrockRegion(), Deno.env.get("CF_AI_GATEWAY_BEDROCK")), { method: "POST", headers, body: payload });
+  const route = routeFor(url);
+  const res = await fetch(route.url, {
+    method: "POST",
+    headers: { ...headers, ...route.headers },
+    body: payload,
+  });
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
     console.error(`[bedrock] ${modelId} -> ${res.status} ${detail.slice(0, 400)}`);
@@ -380,7 +399,12 @@ export async function bedrockChatStream(
     ? { "content-type": "application/json", Authorization: `Bearer ${bearerToken()}` }
     : await signRequest(url, payload);
 
-  const res = await fetch(resolveSendUrl(url, bedrockRegion(), Deno.env.get("CF_AI_GATEWAY_BEDROCK")), { method: "POST", headers, body: payload });
+  const route = routeFor(url);
+  const res = await fetch(route.url, {
+    method: "POST",
+    headers: { ...headers, ...route.headers },
+    body: payload,
+  });
   if (!res.ok || !res.body) {
     const detail = await res.text().catch(() => "");
     console.error(`[bedrock] stream ${modelId} -> ${res.status} ${detail.slice(0, 400)}`);

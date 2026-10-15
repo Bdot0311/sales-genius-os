@@ -63,30 +63,55 @@ function base(raw: string | undefined | null, name: string): string {
 }
 
 /**
- * Where to POST an already-signed Bedrock request.
+ * Where to POST an already-signed Bedrock request, and what to add to it.
  *
  * Signing and sending are not the same address. SigV4 covers the `host`
  * header, so the signature is computed against
- * bedrock-runtime.<region>.amazonaws.com whatever happens next, and a proxy
- * forwarding it has to receive those headers untouched. That is why this
- * takes the AWS URL the signer already saw and returns somewhere else to post
- * it, rather than changing the URL before signing.
+ * bedrock-runtime.<region>.amazonaws.com whatever happens next, and AWS
+ * recomputes the canonical request from the headers it actually receives —
+ * which is why a proxy that forwards to the real Bedrock host can relay a
+ * signature it never saw the signing key for. That is why this takes the AWS
+ * URL the signer already saw and returns somewhere else to post it, rather
+ * than changing the URL before signing.
  *
- * ── Confirm the path shape before switching this on ─────────────────────
+ * ── The path shape, confirmed against the provider docs ─────────────────
  *
- * Cloudflare's aws-bedrock route is documented as
- * `/v1/<account>/<gateway>/aws-bedrock/bedrock-runtime/<region>/<aws path>`
- * and that is what this builds, but I have not run it against a live gateway
- * — there is no Cloudflare account wired to this project. The whole prefix is
- * one environment variable for that reason: if the shape differs it is a
- * settings change, or one line here, and never a hunt through call sites.
+ * `/v1/<account>/<gateway>/aws-bedrock/bedrock-runtime/<region>/<aws path>`.
+ * `CF_AI_GATEWAY_BEDROCK` holds everything up to and including `aws-bedrock`;
+ * this appends the rest from the URL the signer saw. The whole prefix is one
+ * environment variable so that a different shape is a settings change, or one
+ * line here, and never a hunt through call sites.
+ *
+ * ── Why the header travels with the URL ─────────────────────────────────
+ *
+ * A gateway with authentication turned on rejects anything without
+ * `cf-aig-authorization`, so a URL without a token is a 401 on every model
+ * call in the product — the failure the rest of this file exists to avoid.
+ * Returning both together is what makes it impossible to move the traffic and
+ * forget the credential.
+ *
+ * The token is attached only when the base is present and usable. It is a
+ * Cloudflare credential; going direct to AWS it would be a secret sent to
+ * someone with no use for it, and secrets do not belong anywhere they are not
+ * needed.
  */
-export function bedrockSendUrl(
+export function bedrockRoute(
   awsUrl: { pathname: string; search: string; toString(): string },
   region: string,
   gatewayBase?: string | null,
-): string {
+  gatewayToken?: string | null,
+): { url: string; headers: Record<string, string> } {
   const b = base(gatewayBase, "CF_AI_GATEWAY_BEDROCK");
-  if (!b) return awsUrl.toString();
-  return `${b}/bedrock-runtime/${region}${awsUrl.pathname}${awsUrl.search}`;
+  if (!b) return { url: awsUrl.toString(), headers: {} };
+  const token = String(gatewayToken ?? "").trim();
+  if (!token) {
+    console.warn(
+      "[ai-gateway] CF_AI_GATEWAY_BEDROCK is set without CF_AI_GATEWAY_TOKEN; " +
+        "an authenticated gateway will reject these calls",
+    );
+  }
+  return {
+    url: `${b}/bedrock-runtime/${region}${awsUrl.pathname}${awsUrl.search}`,
+    headers: token ? { "cf-aig-authorization": `Bearer ${token}` } : {},
+  };
 }
