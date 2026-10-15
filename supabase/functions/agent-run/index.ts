@@ -1791,11 +1791,20 @@ Output ONLY the reply body. No subject line or signature.`;
             metadata: { gmail_message_id: reply.gmailMessageId, confidence },
           });
         } else if (classification === "unsubscribe") {
+          // Scoped to this sender. On the address alone it stopped every
+          // other account on the platform mailing that person, and
+          // onConflict: "email" no longer resolves anyway — the plain unique
+          // on the address became two partial indexes when opt-outs gained a
+          // sender.
           await adminClient
             .from("email_optouts")
             .upsert(
-              { email: reply.fromEmail, opted_out_at: new Date().toISOString() },
-              { onConflict: "email" }
+              {
+                email: reply.fromEmail.toLowerCase().trim(),
+                user_id: user.id,
+                opted_out_at: new Date().toISOString(),
+              },
+              { onConflict: "user_id,email" }
             );
 
           await adminClient

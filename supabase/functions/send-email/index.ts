@@ -1,6 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.76.0';
 import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
+import {
+  isOptedOut,
+  listUnsubscribeHeaders,
+  mintUnsubscribeToken,
+  unsubscribeFooterHtml as unsubscribeFooterHtml_,
+  unsubscribeUrl,
+} from '../_shared/unsubscribe.ts';
 import { logSystemAlert } from "../_shared/alerts.ts";
 import { getSignatureHtml, appendSignatureToBody } from "../_shared/signature.ts";
 import { injectClickTracking } from "../_shared/click-tracking.ts";
@@ -360,12 +367,13 @@ serve(async (req) => {
       }
     }
 
-    // Check opt-out status
-    const { data: optout } = await supabase
-      .from('email_optouts')
-      .select('id')
-      .eq('email', to.toLowerCase().trim())
-      .maybeSingle();
+    // Check opt-out status for THIS sender, plus any global opt-out.
+    //
+    // It matched on the address alone, so a prospect who unsubscribed from one
+    // account could not be emailed by any other account on the platform —
+    // and the refusal told the second account that somebody, somewhere, had
+    // already burned that address.
+    const optout = await isOptedOut(supabase, user.id, to);
 
     if (optout) {
       return new Response(
@@ -417,16 +425,12 @@ serve(async (req) => {
       // DNS check failed non-fatally — proceed with send
     }
 
-    // Generate cryptographically random unsubscribe token and persist it
-    const unsubToken = crypto.randomUUID() + crypto.randomUUID().replace(/-/g, '');
-    try {
-      await supabase.from('email_unsubscribe_tokens').upsert(
-        { email: to.toLowerCase().trim(), token: unsubToken, used_at: null },
-        { onConflict: 'email' }
-      );
-    } catch (e) {
-      console.error('Failed to persist unsubscribe token', e);
-    }
+    // One live token per sender per recipient. Keyed on the address alone it
+    // meant a second account's send invalidated the unsubscribe link the first
+    // had already delivered, and that recipient's click landed on "this link
+    // is not valid".
+    const unsubToken = await mintUnsubscribeToken(supabase, user.id, to);
+    const unsubUrl = unsubscribeUrl(supabaseUrl, unsubToken);
 
     // Per-account daily limit + rotation counter (atomic). Only spend the
     // account's quota once we're about to actually send. A null id (mailbox not
@@ -524,9 +528,9 @@ serve(async (req) => {
         formattedBody = textLinesToHtml(body);
       }
 
-      // Append unsubscribe footer to plain text body for plain-text paths
-      // For HTML we inject below closing body tag
-      const unsubscribeFooterHtml = `<div style="margin-top:24px;padding-top:12px;border-top:1px solid #e5e5e5;font-size:11px;color:#999;">Not interested? <a href="${supabaseUrl}/functions/v1/unsubscribe?email=${encodeURIComponent(to)}&token=${unsubToken}" style="color:#999;">Unsubscribe</a></div>`;
+      // The visible link. The header below is what Gmail renders its own
+      // control from; CAN-SPAM wants one in the body regardless.
+      const unsubscribeFooterHtml = unsubscribeFooterHtml_(unsubUrl);
 
       const htmlBody = `<!DOCTYPE html>
 <html>
@@ -602,6 +606,11 @@ ${unsubscribeFooterHtml}
         `Subject: ${mimeEncodeSubject(subject)}`,
         'MIME-Version: 1.0',
         'Content-Type: text/html; charset=utf-8',
+        // Required of every bulk sender by Gmail and Yahoo since February
+        // 2024. Missing it is invisible from in here: the API accepts the
+        // message and the far side throttles or spam-folders it, so the send
+        // reads as fine and the reply never comes.
+        ...listUnsubscribeHeaders(unsubUrl),
         '',
         trackedHtmlBody
       ].join('\r\n');

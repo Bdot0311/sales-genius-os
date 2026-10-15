@@ -1003,12 +1003,6 @@ export function repairSelfReferentialPeers(text: string, companyName: string): s
   return out;
 }
 
-/** Retry instruction for a draft that used the recipient as its own peer proof. */
-export function selfReferentialPeerRetry(hits: string[], companyName: string): string {
-  return `\nThe draft presents ${companyName} as an example of who this sender already works with: ${hits
-    .map((h) => `"${h}"`)
-    .join(", ")}. ${companyName} is the person you are writing TO. Either name a genuinely different company from verified_proof, or write "companies like yours" — never use the recipient as their own reference.`;
-}
 
 // ─── Unsupported time claims ─────────────────────────────────────────────────
 

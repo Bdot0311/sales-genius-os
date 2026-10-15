@@ -37,12 +37,8 @@ export const BOUNCE_CRITICAL = 0.03;
 /** Bounce rate at which providers throttle the sender outright. */
 export const BOUNCE_FAILING = 0.05;
 
-/** Complaint rate targets, as a percentage of sends. */
-export const COMPLAINT_AT_RISK = 0.001;
+/** Complaint rate, as a share of sends, at which providers act on it. */
 export const COMPLAINT_CRITICAL = 0.003;
-
-/** Reputation drop, in points, that counts as a collapse rather than drift. */
-export const REPUTATION_DROP_CRITICAL = 25;
 
 /**
  * Severity for a bounce rate, shared by the alert scan and anything that

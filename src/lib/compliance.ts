@@ -18,20 +18,6 @@ export interface UnsubscribeToken {
   type: 'unsubscribe' | 'manage';
 }
 
-/**
- * Generates a secure unsubscribe URL
- * Unsubscribe handling is managed by Lovable email delivery
- */
-export function generateUnsubscribeUrl(token: UnsubscribeToken): string {
-  // Use the same token format as the existing system
-  const payload = btoa(JSON.stringify({
-    userId: token.userId,
-    leadId: token.leadId,
-    campaignId: token.campaignId,
-    timestamp: token.timestamp,
-  }));
-  return `${window.location.origin}/unsubscribe?token=${payload}`;
-}
 
 /**
  * Generates the CAN-SPAM compliant footer
@@ -55,25 +41,6 @@ export function generateComplianceFooter(options: ComplianceFooterOptions): stri
   return parts.join('\n\n');
 }
 
-/**
- * Validates an unsubscribe token
- * Returns null if invalid or expired
- */
-export function validateUnsubscribeToken(tokenString: string): UnsubscribeToken | null {
-  try {
-    const token: UnsubscribeToken = JSON.parse(atob(tokenString));
-
-    // Check expiration (30 days)
-    const thirtyDays = 30 * 24 * 60 * 60 * 1000;
-    if (Date.now() - token.timestamp > thirtyDays) {
-      return null;
-    }
-
-    return token;
-  } catch {
-    return null;
-  }
-}
 
 /**
  * Checks if an email is being sent at a compliant time
@@ -185,22 +152,7 @@ export function parseSpintax(text: string): string {
   });
 }
 
-/**
- * Generates multiple spintax variations for A/B testing
- */
-export function generateSpintaxVariations(text: string, count: number = 3): string[] {
-  const variations: string[] = [];
-  for (let i = 0; i < count; i++) {
-    variations.push(parseSpintax(text));
-  }
-  return variations;
-}
 
 // CAN-SPAM penalty amount
 export const CAN_SPAM_PENALTY = 51744; // $51,744 per violation as of 2026
 
-// Required footer text
-export const REQUIRED_FOOTER_ELEMENTS = [
-  'Unsubscribe link',
-  'Physical postal address',
-] as const;

@@ -76,10 +76,6 @@ export function routeFor(model: string): { provider: AiProvider; url: string; mo
   };
 }
 
-/** True when our own AI account (Bedrock) is configured. */
-export function hasDirectProvider(): boolean {
-  return bedrockConfigured();
-}
 
 function priceOf(model: string, promptTokens: number, completionTokens: number): number {
   const p = bedrockPrice(model) ?? PRICING[model] ?? DEFAULT_PRICE;

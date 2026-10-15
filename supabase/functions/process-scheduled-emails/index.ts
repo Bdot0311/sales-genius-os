@@ -1,6 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
 import { corsHeaders, requireServiceRole } from "../_shared/internal-auth.ts";
+import {
+  appendUnsubscribeFooter,
+  isOptedOut,
+  listUnsubscribeHeaders,
+  mintUnsubscribeToken,
+  unsubscribeUrl,
+} from '../_shared/unsubscribe.ts';
 import { injectClickTracking } from "../_shared/click-tracking.ts";
 
 // RFC 2047 MIME encode subject for non-ASCII characters
@@ -132,12 +139,11 @@ serve(async (req) => {
 
     for (const email of scheduledEmails) {
       try {
-        // Compliance: skip recipients who unsubscribed after the email was queued.
-        const { data: optout } = await supabase
-          .from('email_optouts')
-          .select('id')
-          .eq('email', (email.to_email || '').toLowerCase().trim())
-          .maybeSingle();
+        // Compliance: skip recipients who unsubscribed after the email was
+        // queued. Scoped to this sender plus any global opt-out — matching on
+        // the address alone let one account's unsubscribe block every other
+        // account on the platform.
+        const optout = await isOptedOut(supabase, email.user_id, email.to_email || "");
         if (optout) {
           console.log(`Recipient ${email.to_email} unsubscribed, skipping ${email.id}`);
           await failEmail(
@@ -324,11 +330,28 @@ serve(async (req) => {
             : trackedBody + trackingPixel;
         }
 
+        /*
+         * The unsubscribe mechanism this path never had.
+         *
+         * Everything queued goes out through here, which is to say this is the
+         * path that carries the volume — and it minted no token, wrote no
+         * footer link and sent no header. It checked the opt-out list on the
+         * way out and gave the recipient no way to get onto it.
+         */
+        const unsubUrl = unsubscribeUrl(
+          supabaseUrl,
+          await mintUnsubscribeToken(supabase, email.user_id, email.to_email || ""),
+        );
+        trackedBody = appendUnsubscribeFooter(trackedBody, unsubUrl);
+
         const emailContent = [
           `To: ${email.to_email}`,
           `Subject: ${mimeEncodeSubject(email.subject)}`,
           "MIME-Version: 1.0",
           "Content-Type: text/html; charset=utf-8",
+          // Required of every bulk sender by Gmail and Yahoo since February
+          // 2024, with RFC 8058 one-click.
+          ...listUnsubscribeHeaders(unsubUrl),
           "",
           trackedBody,
         ].join("\r\n");
