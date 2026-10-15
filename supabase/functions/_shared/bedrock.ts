@@ -6,6 +6,8 @@
 // here is translation plus AWS SigV4 request signing (no AWS SDK — Deno's Web
 // Crypto is enough and keeps the function cold start small).
 
+import { bedrockSendUrl as resolveSendUrl } from "./ai-gateway.ts";
+
 // ─── Config ────────────────────────────────────────────────────────────────
 export function bedrockRegion(): string {
   return Deno.env.get("AWS_REGION") || Deno.env.get("BEDROCK_REGION") || "us-east-1";
@@ -338,7 +340,7 @@ export async function bedrockChat(
     : await signRequest(url, payload);
 
 
-  const res = await fetch(url.toString(), { method: "POST", headers, body: payload });
+  const res = await fetch(resolveSendUrl(url, bedrockRegion(), Deno.env.get("CF_AI_GATEWAY_BEDROCK")), { method: "POST", headers, body: payload });
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
     console.error(`[bedrock] ${modelId} -> ${res.status} ${detail.slice(0, 400)}`);
@@ -378,7 +380,7 @@ export async function bedrockChatStream(
     ? { "content-type": "application/json", Authorization: `Bearer ${bearerToken()}` }
     : await signRequest(url, payload);
 
-  const res = await fetch(url.toString(), { method: "POST", headers, body: payload });
+  const res = await fetch(resolveSendUrl(url, bedrockRegion(), Deno.env.get("CF_AI_GATEWAY_BEDROCK")), { method: "POST", headers, body: payload });
   if (!res.ok || !res.body) {
     const detail = await res.text().catch(() => "");
     console.error(`[bedrock] stream ${modelId} -> ${res.status} ${detail.slice(0, 400)}`);

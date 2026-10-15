@@ -26,9 +26,12 @@ import {
   bedrockProModel,
 } from "./bedrock.ts";
 
-const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+import { DEFAULT_FALLBACK_ENDPOINT, fallbackEndpoint } from "./ai-gateway.ts";
+
+const GATEWAY_URL = DEFAULT_FALLBACK_ENDPOINT;
 
 export type AiProvider = "bedrock" | "lovable";
+
 
 /** USD per 1M tokens. Unknown models fall back to a mid-range Flash estimate. */
 const PRICING: Record<string, { in: number; out: number }> = {
@@ -70,7 +73,7 @@ export function routeFor(model: string): { provider: AiProvider; url: string; mo
   // Bedrock unavailable — fall back to the platform gateway.
   return {
     provider: "lovable",
-    url: GATEWAY_URL,
+    url: fallbackEndpoint(Deno.env.get("CF_AI_GATEWAY_OPENAI")),
     model: gatewayId,
     key: Deno.env.get("LOVABLE_API_KEY") || "",
   };
