@@ -114,7 +114,6 @@ export const CHANGELOG: ChangelogEntry[] = [
     ],
   },
   {
-  {
     id: "2026-10-14-greeting-flexibility",
     date: "2026-10-14",
     title: "Emails that greet a lead warmly get through",
