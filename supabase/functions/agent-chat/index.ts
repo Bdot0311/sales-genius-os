@@ -3664,22 +3664,35 @@ serve(async (req) => {
            * merely claimed is still cancellable: begin_scheduled_email_send
            * requires status 'scheduled', so the sender refuses it.
            */
-          const { data: rows, error } = await admin
+          const { data: requested, error } = await admin
             .from("sent_emails")
-            .select("id, lead_id, to_email, subject, body_text, scheduled_at")
+            .select("id, lead_id, to_email, subject, body_text, scheduled_at, send_attempted_at")
             .eq("user_id", userId)
             .eq("status", "scheduled")
-            .is("send_attempted_at", null)
             .in("id", ids);
           if (error) return { error: error.message };
-          if (!rows?.length) {
+          if (!requested?.length) {
             return {
-              error: "No matching scheduled emails — they have already been sent or are being sent right now",
+              error: "No matching scheduled emails — they have already been sent or were cancelled",
             };
           }
 
+          /*
+           * Classified here rather than filtered in the query.
+           *
+           * Filtering the already-sending ones out of this read dropped them
+           * from the denominator too: cancel one sending and one cancellable
+           * email and the answer was "1 of 1 cancelled", with no mention of
+           * the one that is on its way. The model then had nothing to tell the
+           * user with, which is the same lie the status-only guard used to
+           * tell, moved one layer out.
+           */
+          const rows = requested.filter((r: any) => !r.send_attempted_at);
+          const alreadyGone: string[] = requested
+            .filter((r: any) => Boolean(r.send_attempted_at))
+            .map((r: any) => String(r.id));
+
           const cancelled: any[] = [];
-          const alreadyGone: string[] = [];
           for (const r of rows) {
             const { data: removed, error: delErr } = await admin
               .from("sent_emails")
@@ -3725,11 +3738,15 @@ serve(async (req) => {
 
           toolEvents.push({
             name,
-            label: cancelled.length ? "Cancelled scheduled email" : "Cancel failed",
+            label: cancelled.length
+              ? "Cancelled scheduled email"
+              : alreadyGone.length
+                ? "Too late to cancel"
+                : "Cancel failed",
             status: cancelled.length ? "ok" : "error",
             detail: alreadyGone.length
-              ? `${cancelled.length} of ${rows.length} cancelled; ${alreadyGone.length} had already started sending`
-              : `${cancelled.length} of ${rows.length} cancelled`,
+              ? `${cancelled.length} of ${requested.length} cancelled; ${alreadyGone.length} had already started sending`
+              : `${cancelled.length} of ${requested.length} cancelled`,
           });
           return {
             cancelled: cancelled.length,

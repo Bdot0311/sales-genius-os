@@ -253,3 +253,10 @@ product's capacity, and ordered by due time alone one account's backlog owned
 all of it. Measured: 200 emails queued by one account and three by another, one
 batch — the second account's three all went in it instead of waiting ten
 minutes.
+
+The send claim takes turns the same way the drafting queue does, with the same
+memory and for the same reason — see **Round-robin needed a memory** in
+`docs/AGENT_BATCH_QUEUE.md`. It matters more here: twenty sends a minute is the
+whole product's capacity, so an account stuck at the back of a fixed order
+never sends at all, and a capped or paused account was burning a slot a minute
+without sending anything.

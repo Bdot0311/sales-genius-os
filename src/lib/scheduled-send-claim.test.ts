@@ -24,20 +24,29 @@ const SENDER = readFileSync("supabase/functions/process-scheduled-emails/index.t
 const code = SENDER.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
 
 const MIGRATIONS = "supabase/migrations";
-const migration = readFileSync(
-  `${MIGRATIONS}/${
-    readdirSync(MIGRATIONS)
-      .filter((f) => f.endsWith(".sql"))
-      .sort()
-      .filter((f) =>
-        readFileSync(`${MIGRATIONS}/${f}`, "utf8")
-          .includes("FUNCTION public.release_stale_scheduled_email_claims")
-      )
-      .pop()
-  }`,
-  "utf8",
-);
-const sql = migration.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*--.*$/gm, "");
+
+/** The migration that defines `name` last, which is the one that wins. */
+function liveFile(name: string): string {
+  const create = `CREATE OR REPLACE FUNCTION public.${name}(`;
+  const file = readdirSync(MIGRATIONS)
+    .filter((f) => f.endsWith(".sql"))
+    .sort()
+    .filter((f) => readFileSync(`${MIGRATIONS}/${f}`, "utf8").includes(create))
+    .pop();
+  expect(file, `nothing defines ${name}`).toBeTruthy();
+  return readFileSync(`${MIGRATIONS}/${file}`, "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/^\s*--.*$/gm, "");
+}
+
+/*
+ * The sweep and the claim are not in the same migration any more, and reading
+ * the sweep's file for both would assert the claim's rules against a
+ * superseded copy — green while the function that actually runs says
+ * something else. Fairness is covered by agent-job-fairness.test.ts, which
+ * resolves the live definition the same way.
+ */
+const sql = liveFile("release_stale_scheduled_email_claims");
 
 describe("the sender takes its work rather than reading it", () => {
   it("claims through the RPC", () => {
@@ -126,20 +135,6 @@ describe("an interrupted send is never repeated", () => {
   });
 });
 
-describe("the send queue is fair across accounts too", () => {
-  it("round-robins by account and keeps due order within one", () => {
-    // Twenty sends a minute is the whole product's capacity. Ordered by due
-    // time alone, one account's backlog owns all of it.
-    expect(sql).toMatch(/row_number\(\) OVER \(ORDER BY c\.scheduled_at, c\.id\) AS turn/);
-    expect(sql).toMatch(/ORDER BY x\.turn/);
-    expect(sql).toMatch(/c\.user_id = t\.user_id/);
-  });
-
-  it("keeps concurrent runs disjoint", () => {
-    expect(sql).toContain("FOR UPDATE OF c SKIP LOCKED");
-  });
-});
-
 describe("cancelling says what actually happened", () => {
   /*
    * Both cancel paths guarded on status alone, and the sender never re-read
@@ -180,5 +175,21 @@ describe("cancelling says what actually happened", () => {
   it("tells the model to report those as sent, not cancelled", () => {
     expect(cancelTool).toContain("already_sending");
     expect(cancelTool).toMatch(/rather than that they were cancelled/);
+  });
+
+  it("counts every email the user asked about, not just the stoppable ones", () => {
+    /*
+     * Filtering the already-sending rows out of the read dropped them from the
+     * denominator too: cancel one sending and one cancellable email and the
+     * answer was "1 of 1 cancelled", with nothing about the one on its way.
+     * The same lie as the status-only guard, moved one layer out.
+     */
+    expect(cancelTool).not.toMatch(/select\([^)]*\)[\s\S]{0,200}?\.is\("send_attempted_at", null\)/);
+    expect(cancelTool).toMatch(/of \$\{requested\.length\} cancelled/);
+    expect(cancelTool).toMatch(/const rows = requested\.filter/);
+  });
+
+  it("does not call a request of only-already-sending emails a clean nothing", () => {
+    expect(cancelTool).toContain('"Too late to cancel"');
   });
 });

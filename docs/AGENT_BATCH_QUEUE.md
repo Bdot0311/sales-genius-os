@@ -234,6 +234,62 @@ Against a real cluster, not by reading:
 - Cost at 200,000 pending: ~90ms per claim against ~40ms for the unfair
   version, three times a minute.
 
+### Round-robin needed a memory
+
+Review caught what the measurement above missed, and the cluster confirmed it.
+Numbering each account's items oldest-first and taking the batch in turn order
+produces the *same* order on every call. So with more accounts than slots, the
+ones at the back of that order never get in at all:
+
+| | |
+|---|---|
+| Accounts, each with a 500-item backlog | 13 |
+| Batch | 12 |
+| Calls | 60 (20 minutes of draining) |
+| **Slots the newest account got** | **0 of 720** |
+
+Zero, until one of the twelve ahead of it drained completely. Taking turns
+requires remembering whose turn it was, and statelessness was the bug.
+
+`20261016000500_queue_tenant_turn.sql` adds one row per account per queue
+holding how many rows were claimed for it recently, and orders accounts
+least-served-first. Three versions were measured before one worked:
+
+| ordering | 13 accounts | 20 | 50 | 100 |
+|---|---|---|---|---|
+| global FIFO | starves | starves | starves | starves |
+| stateless round-robin | 0–120 | 60–120 | 24–30 | 13–15 |
+| last-served timestamp | 60–120 | 60–120 | 24–30 | 13–15 |
+| **recent deficit** | **110–111** | **72** | **28–29** | **14–15** |
+
+(min–max slots per account out of 1,440, across 120 calls of twelve.)
+
+The timestamp version fixes the starvation and not the unfairness: every
+account served in a call gets a stamp within microseconds of the others, so the
+order among them is arbitrary-but-stable and the same two accounts absorb every
+miss. A *lifetime* total fixes the spread and introduces drift — a new account
+at zero outranks everyone until it catches up, and an account returning after a
+week away outranks the accounts that kept working. Hence a count over a sliding
+window: it accumulates while an account keeps being served and resets once the
+account has been idle past the window.
+
+Two details that are load-bearing:
+
+- **The count is rows claimed, not calls appeared in.** An account that took
+  eleven of twelve slots has been served more than one that took a single row.
+- **The stamp is written at claim time, whatever becomes of the work.** This is
+  the other half of the same review finding: a capped or paused account's rows
+  were claimed, deferred, released, and claimed again the next minute, burning
+  a slot a minute while accounts that could work waited. Having a turn and not
+  being able to use it still counts as having had it. Measured with one capped
+  account of thirteen: 7.8% of slots against a 7.7% fair share.
+
+It is a data-modifying CTE in the same statement as the claim, so a row cannot
+be claimed without the turn being recorded.
+
+Cost at 200,000 pending across 40 accounts: ~110-130ms per claim, against ~90ms
+for the stateless version and ~40ms for the unfair one. Three times a minute.
+
 ### The bound worth knowing about
 
 The obvious implementation ranks every pending row in one window. It sorts the
