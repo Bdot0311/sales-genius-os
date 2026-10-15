@@ -26,7 +26,7 @@ import {
   bedrockProModel,
 } from "./bedrock.ts";
 
-import { DEFAULT_FALLBACK_ENDPOINT, fallbackEndpoint } from "./ai-gateway.ts";
+import { DEFAULT_FALLBACK_ENDPOINT } from "./ai-gateway.ts";
 
 const GATEWAY_URL = DEFAULT_FALLBACK_ENDPOINT;
 
@@ -73,7 +73,7 @@ export function routeFor(model: string): { provider: AiProvider; url: string; mo
   // Bedrock unavailable — fall back to the platform gateway.
   return {
     provider: "lovable",
-    url: fallbackEndpoint(Deno.env.get("CF_AI_GATEWAY_OPENAI")),
+    url: GATEWAY_URL,
     model: gatewayId,
     key: Deno.env.get("LOVABLE_API_KEY") || "",
   };

@@ -19,7 +19,6 @@ import { readFileSync } from "node:fs";
 import {
   DEFAULT_FALLBACK_ENDPOINT,
   bedrockSendUrl,
-  fallbackEndpoint,
 } from "../../supabase/functions/_shared/ai-gateway";
 
 /*
@@ -44,9 +43,18 @@ describe("off by default, and identical when off", () => {
     expect(bedrockSendUrl(awsUrl(), "us-east-1", null)).toBe(awsUrl().toString());
   });
 
-  it("leaves the fallback gateway alone", () => {
-    expect(fallbackEndpoint(undefined)).toBe(DEFAULT_FALLBACK_ENDPOINT);
+  /*
+   * The fallback is deliberately not configurable. It is Lovable's gateway,
+   * with Lovable's key and Lovable's model ids; an earlier version of this
+   * let it be repointed at Cloudflare's /openai route, which would have sent
+   * OpenAI the wrong credential and the wrong model names and broken every
+   * fallback call the moment the setting was filled in.
+   */
+  it("keeps the fallback endpoint fixed", () => {
     expect(DEFAULT_FALLBACK_ENDPOINT).toBe("https://ai.gateway.lovable.dev/v1/chat/completions");
+    const PROVIDER = readFileSync("supabase/functions/_shared/ai-provider.ts", "utf8");
+    expect(PROVIDER).toContain("url: GATEWAY_URL,");
+    expect(PROVIDER).not.toContain("CF_AI_GATEWAY_OPENAI");
   });
 });
 
@@ -70,10 +78,7 @@ describe("when a gateway is configured", () => {
       .toContain("/aws-bedrock/bedrock-runtime/eu-west-1/model/");
   });
 
-  it("moves the whole fallback endpoint", () => {
-    expect(fallbackEndpoint("https://gateway.ai.cloudflare.com/v1/acct/outreign/openai"))
-      .toBe("https://gateway.ai.cloudflare.com/v1/acct/outreign/openai/chat/completions");
-  });
+
 });
 
 describe("it fails back rather than into the dark", () => {
@@ -84,7 +89,16 @@ describe("it fails back rather than into the dark", () => {
   it("ignores a value that is not https", () => {
     expect(bedrockSendUrl(awsUrl(), "us-east-1", "gateway.ai.cloudflare.com/v1/a/b"))
       .toBe(awsUrl().toString());
-    expect(fallbackEndpoint("http://insecure.test/v1")).toBe(DEFAULT_FALLBACK_ENDPOINT);
+    expect(bedrockSendUrl(awsUrl(), "us-east-1", "http://insecure.test/v1"))
+      .toBe(awsUrl().toString());
+  });
+
+  it("rejects a value that starts with https and is not a URL", () => {
+    // A prefix test passes this and a URL parse does not; the request would
+    // then fail instead of quietly going direct, which is the opposite of
+    // what this function promises.
+    expect(bedrockSendUrl(awsUrl(), "us-east-1", "https://gateway.ai.cloudflare.com:bad/v1/a/b"))
+      .toBe(awsUrl().toString());
   });
 
   it("ignores whitespace", () => {
@@ -109,7 +123,8 @@ describe("the seam is where it has to be", () => {
     expect(BEDROCK).not.toMatch(/await fetch\(url\.toString\(\)/);
   });
 
-  it("routeFor hands back the resolved endpoint", () => {
-    expect(PROVIDER).toContain('url: fallbackEndpoint(Deno.env.get("CF_AI_GATEWAY_OPENAI")),');
+  it("only the Bedrock half is configurable", () => {
+    expect(PROVIDER).not.toContain("fallbackEndpoint");
+    expect(BEDROCK).toContain('Deno.env.get("CF_AI_GATEWAY_BEDROCK")');
   });
 });

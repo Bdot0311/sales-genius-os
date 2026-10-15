@@ -76,7 +76,7 @@ to the Lovable gateway.
 | `BEDROCK_MODEL_ID` / `BEDROCK_MODEL_ID_PRO` | `_shared/bedrock.ts` | Built-in model ids used |
 | `LOVABLE_API_KEY` | ~29 functions | **With no Bedrock key either: every AI call returns "No AI provider key configured"** — drafting, scoring, research, the agent |
 | `CF_AI_GATEWAY_BEDROCK` | `_shared/ai-gateway.ts` | Bedrock traffic goes direct to AWS, as it always has. Set it to an AI Gateway base ending `/aws-bedrock` to route every Bedrock call through it for spend analytics, caching and rate limiting. Anything that is not an https URL is ignored with a warning rather than sending model traffic somewhere unreachable. The path shape it builds has not been run against a live gateway — confirm before switching on |
-| `CF_AI_GATEWAY_OPENAI` | `_shared/ai-gateway.ts` | The fallback provider posts to its usual chat-completions endpoint. Set it to an AI Gateway base ending `/openai` to proxy that half too. Same https-only guard |
+| *(the fallback provider is not configurable)* | `_shared/ai-gateway.ts` | Lovable's gateway takes `LOVABLE_API_KEY` and gateway-style model ids, so it cannot be repointed at another provider's route without a credential and a model map for whatever is on the other end. Bedrock is the primary provider and the one worth observing |
 
 ---
 
