@@ -409,3 +409,59 @@ which needs a claim older than the fifteen-minute fence. The drain's budget is
 100s. The two numbers live in different files, so the test asserts the budget
 stays below the fence — raise it past fifteen minutes and that function needs a
 claim token, not a comment.
+
+
+---
+
+## The three kinds that were never enqueued
+
+`process-agent-jobs` maps `enrich`, `score` and `research` to their edge
+functions, and `agent_jobs.kind` is constrained to those plus `draft` and
+`search`. Every insert in the codebase wrote `kind: "draft"`. The other three
+were built end to end and unreachable.
+
+What made that matter: `enrich_leads`, `score_leads` and `research_leads` walk
+their ids with `mapLimit`, which stops when the turn's budget is gone and hands
+back what it never started. That remainder was reported to the model as
+"skipped — ran out of time" and then existed nowhere. If the model did not
+retry it — and on the sixth pass it cannot — the work was simply not done, and
+the only trace was a phrase in a tool result.
+
+Drafting has not behaved that way since this queue was built: its overflow is
+enqueued, and enqueued *before* the inline drafts are written, so a dying turn
+still leaves the work durable. The three other kinds now do the same through
+the same helper.
+
+### What had to change first
+
+The enqueue deduped against every live job the account had. That is correct
+while `draft` is the only kind and a silent bug the moment it is not: a lead
+waiting to be drafted would read as "already queued" for enrichment and never
+be enriched at all. The pending check is now scoped by kind, the per-turn
+handled-set is per kind, and a turn opens one job per kind rather than mixing
+them into one.
+
+`goal` and `feedback` are written only on a `draft` job. The other kinds take
+the lead row as it stands, and a goal on an enrich job is a value nothing reads
+— which later reads as intent.
+
+### The invariant worth keeping
+
+An item of a kind nothing handles is claimed, not recognised, and sits there:
+the agent would report it queued and the worker would never do it, which is the
+same silent non-completion this change removes, moved one layer down. So
+`src/lib/agent-queue-kinds.test.ts` checks every kind `queueWork` accepts
+against both the worker's handlers and the database CHECK.
+
+Verified against a real cluster: a lead queued for drafting and for enrichment
+holds one item under each kind rather than blocking the second; the claim
+serves both; all four kinds pass the CHECK and an unknown one is refused.
+
+### What this is not
+
+This is the phase the original plan called durable execution, and it needed no
+Cloudflare and no Durable Objects. The 110-second ceiling was never the thing
+that lost work — the resume machinery already carries a turn across restarts at
+step granularity, and the queue already carries bulk work across turns. What
+lost work was a code path that dropped its remainder on the floor instead of
+handing it to either one.

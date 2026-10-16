@@ -59,7 +59,7 @@ describe("the deploy probe answers honestly", () => {
       "reports-real-draft-totals": "Your drafts folder holds",
       // #265
       "finishes-the-whole-outstanding-set": "Queued the leads it skipped",
-      "one-batch-job-per-turn": "const queueForDrafting = async (",
+      "one-batch-job-per-turn": "const queueWork = async (",
     };
     for (const marker of markers) {
       const proof = evidence[marker];

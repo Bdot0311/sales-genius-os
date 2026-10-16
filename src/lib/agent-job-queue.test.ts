@@ -300,9 +300,10 @@ describe("handing a batch over", () => {
   });
 
   it("never leaves a job with no items behind", () => {
-    // The enqueue moved to queueForDrafting, shared by every draft_outreach
-    // call in the turn and by the sweep that finishes what they missed.
-    const helper = code(AGENT).slice(code(AGENT).indexOf("const queueForDrafting = async ("));
+    // The enqueue lives in queueWork, shared by every draft_outreach call in
+    // the turn, by the sweep that finishes what they missed, and now by the
+    // three tools whose overflow used to be dropped.
+    const helper = code(AGENT).slice(code(AGENT).indexOf("const queueWork = async ("));
     expect(helper).toContain("itemsError");
     expect(helper).toMatch(/from\("agent_jobs"\)\.delete\(\)\.eq\("id", batchJobId\)/);
     // And only when the failure left it empty: it is shared, so dropping it on
@@ -320,7 +321,7 @@ describe("handing a batch over", () => {
   it("carries the autonomy in force when the user asked", () => {
     // The work runs later; the answer to "was this allowed to send" must be the
     // one from when they asked, not from whatever the toggle says at 11pm.
-    const helper = code(AGENT).slice(code(AGENT).indexOf("const queueForDrafting = async ("));
+    const helper = code(AGENT).slice(code(AGENT).indexOf("const queueWork = async ("));
     expect(helper).toMatch(/autonomy: \(thread as any\)\.autonomy/);
     expect(MIGRATION).toContain("autonomy           text NOT NULL DEFAULT 'approval'");
   });
