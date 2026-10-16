@@ -390,3 +390,22 @@ key**; the live one, mirrored into `drizzle/migrations`, signs with
 the anon key outright, so rebuilding the function from the older copy would
 401 the entire queue. `src/lib/rescore-queue-claim.test.ts` asserts the live
 definition keeps the internal key.
+
+**And a sweep must not take a claim another run is working.** The per-row loop
+above reads a snapshot, and two sweeps overlap routinely: the trigger calls
+one, the drain calls another, and the one-minute backfill job runs alongside
+the five-minute one. Between a sweep selecting a stale row and reaching it,
+another sweep can release it and a drain can claim it fresh — and an UPDATE
+keyed on `id` and `status` alone still matches that active claim. Two drains
+then score the same lead at once, one overwriting the other and one settling a
+row the other owns. Reproduced: without the recheck the freshly claimed row
+went straight back to `pending`. The UPDATE now repeats the staleness
+conditions, so it releases nothing and the row is untouched.
+
+`release_rescore_items` needs no such recheck, and that is an invariant rather
+than an accident: a row it releases was claimed by that same invocation moments
+earlier, so for another run to hold it the sweep must have released it first,
+which needs a claim older than the fifteen-minute fence. The drain's budget is
+100s. The two numbers live in different files, so the test asserts the budget
+stays below the fence — raise it past fifteen minutes and that function needs a
+claim token, not a comment.

@@ -209,3 +209,61 @@ describe("the recovery path is reachable, and one lead cannot abort it", () => {
     expect(errorAt).toBeGreaterThan(loopEnd);
   });
 });
+
+describe("a sweep never takes a claim another run is working", () => {
+  const releaseStale = liveBody("release_stale_rescore_items");
+  const release = liveBody("release_rescore_items");
+
+  it("rechecks the stale conditions in the update, not just the select", () => {
+    /*
+     * The loop reads a snapshot. Two sweeps overlap routinely — the trigger
+     * calls one and the drain calls another, and the one-minute backfill job
+     * runs alongside the five-minute one — so between this sweep selecting a
+     * row and reaching it, another sweep can have released it and a drain can
+     * have claimed it fresh. An UPDATE keyed on id and status alone still
+     * matches that active claim and hands the row back out from under the run
+     * working it: two drains score the same lead at once, one overwriting the
+     * other's score and one settling a row the other owns.
+     *
+     * Reproduced on a cluster: without the recheck the freshly claimed row
+     * went back to 'pending'; with it, the sweep releases nothing and the row
+     * is untouched.
+     */
+    const update = releaseStale.slice(releaseStale.indexOf("SET status = 'pending'"));
+    const guard = update.slice(0, update.indexOf(";"));
+    expect(guard).toContain("status = 'processing'");
+    expect(guard).toMatch(/claimed_at < now\(\) - interval '15 minutes'/);
+    expect(guard).toMatch(/attempts < 3/);
+  });
+
+  it("counts what it actually moved", () => {
+    // A row the recheck skipped belongs to somebody else and is not recovery.
+    expect(releaseStale).toMatch(/CASE WHEN FOUND THEN 1 ELSE 0 END/);
+  });
+
+  it("keeps the drain's budget under the sweep's fence", () => {
+    /*
+     * Why `release_rescore_items` needs no such recheck, as an invariant
+     * rather than an accident. A row it releases was claimed by that same
+     * invocation moments earlier; for another run to hold it, the sweep must
+     * have released it first, which needs a claim older than its fence. So
+     * the window is closed as long as the drain cannot run that long.
+     *
+     * The two numbers live in different files, so the relationship is checked
+     * rather than trusted. Raise the budget past the fence and that function
+     * needs a claim token, not a comment.
+     */
+    const fence = release.match(/(\d+) ?minutes/) ?? releaseStale.match(/interval '(\d+) minutes'/);
+    expect(fence, "the sweep should state its fence in minutes").toBeTruthy();
+    const fenceMs = Number(fence![1]) * 60_000;
+    expect(fenceMs, "fence read from the migration looks wrong").toBeGreaterThan(60_000);
+
+    const DRAIN = readFileSync("supabase/functions/process-rescore-queue/index.ts", "utf8");
+    const budget = DRAIN.match(/const BUDGET_MS = ([\d_]+);/);
+    expect(budget, "the drain should have a wall clock").toBeTruthy();
+    const budgetMs = Number(budget![1].replace(/_/g, ""));
+    expect(budgetMs).toBeGreaterThan(0);
+
+    expect(budgetMs).toBeLessThan(fenceMs);
+  });
+});

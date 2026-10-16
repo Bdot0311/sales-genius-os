@@ -53,6 +53,17 @@
  * Per row, so a conflict cannot take the batch with it. The attempt is given
  * back because nothing was tried — three budget stops in a row would otherwise
  * retire a lead no rescore was ever attempted for.
+ *
+ * This one does not need the sweep's recheck, and the reason is an invariant
+ * rather than an accident. A row here was claimed by this same invocation
+ * moments ago; for another run to hold it, the sweep must have released it
+ * first, which needs a claim older than its fifteen-minute fence. The drain's
+ * own budget is 100s, so that cannot happen inside one invocation.
+ *
+ * That is a relationship between two files, so it is asserted rather than
+ * trusted: src/lib/rescore-queue-claim.test.ts checks the drain's BUDGET_MS
+ * stays below this fence. Raise the budget past fifteen minutes and this
+ * function needs a claim token, not a comment.
  */
 CREATE OR REPLACE FUNCTION public.release_rescore_items(p_ids uuid[])
 RETURNS integer LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
@@ -102,10 +113,29 @@ BEGIN
        AND attempts < 3
   LOOP
     BEGIN
+      /*
+       * The stale conditions are rechecked here, not just in the loop above.
+       *
+       * The loop reads a snapshot. Two sweeps overlap routinely — the trigger
+       * calls one and the drain calls another, and the one-minute backfill job
+       * runs alongside the five-minute one — so between this sweep selecting a
+       * row and reaching it, another sweep can have released it and a drain
+       * can have claimed it fresh. An UPDATE keyed on id and status alone
+       * still matches that active claim and hands a row back out from under
+       * the run working it: two drains then score the same lead at once, one
+       * overwriting the other, and one settling a row the other owns.
+       *
+       * Reproduced on a cluster before fixing, and the recheck is what makes
+       * the row untouched instead.
+       */
       UPDATE public.rescore_queue
          SET status = 'pending', claimed_at = NULL
-       WHERE id = r.id AND status = 'processing';
-      released := released + 1;
+       WHERE id = r.id
+         AND status = 'processing'
+         AND claimed_at < now() - interval '15 minutes'
+         AND attempts < 3;
+      -- Rows the recheck skipped are somebody else's now, and are not counted.
+      released := released + (CASE WHEN FOUND THEN 1 ELSE 0 END);
     EXCEPTION WHEN unique_violation THEN
       DELETE FROM public.rescore_queue WHERE id = r.id AND status = 'processing';
     END;
