@@ -868,7 +868,8 @@ export async function processStripeEvent(
       },
       { email: customer.email, plan: "free" },
     );
-    await logSystemAlert({
+    const dunningEnded = (sub.cancellation_details as any)?.comment === "Payment failed after the recovery window";
+    if (!dunningEnded) await logSystemAlert({
       category: "billing_cancellation", severity: "critical",
       message: `${customer.email} cancelled — subscription ended and the account is now inactive`,
       details: {
