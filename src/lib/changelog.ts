@@ -114,12 +114,24 @@ export const ROADMAP: RoadmapItem[] = [
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    id: "2026-10-16-no-duplicate-sends",
+    id: "2026-10-16-failed-payments",
     date: "2026-10-16",
-    title: "A scheduled email can no longer send twice",
+    title: "Clearer handling when a payment fails",
     summary:
-      "Duplicate sends are now impossible, cancelling tells you the truth, and lead scores stop going stale.",
+      "A failed payment now has one day of grace and a one-click fix, and a scheduled email can never be sent twice.",
     items: [
+      {
+        tag: "billing",
+        title: "What happens when your card is declined",
+        description:
+          "Your plan stays on for one day after a failed payment. After that the account moves to Free until the payment succeeds, and paying restores your plan straight away. We retry the card for three days; if it still hasn't gone through, the subscription ends and the account stays on Free. A bar at the top of the dashboard shows where you are and has a Fix payment button.",
+        // Settings is mounted at /settings, not under /dashboard. This arrived
+        // pointing at /dashboard/settings, which has no route and lands on Not
+        // Found — the one link in the entry someone follows because their card
+        // was declined, and the exact dead path the route check was written
+        // after two earlier items took.
+        href: "/settings",
+      },
       {
         tag: "fixed",
         title: "A scheduled email is sent once",

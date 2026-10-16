@@ -9,6 +9,47 @@ import { getSubscriptionPeriod, toIsoUnix } from "./stripe-period.ts";
 import { logSystemAlert } from "./alerts.ts";
 import { trackBusinessEvent } from "./heycatch.ts";
 import { captureServerEvent } from "./posthog.ts";
+import { DUNNING, dunningStage, shouldAlertForFailure, graceEndsAt, recoveryEndsAt } from "./dunning-policy.ts";
+
+/**
+ * The permanent end of a failed-payment run: cancel in Stripe so the card is
+ * not retried again, and drop to free with nothing left to restore.
+ */
+export async function finalizeFailedPayment(
+  stripe: Stripe,
+  supabase: SupabaseClient,
+  userId: string,
+  email: string | null,
+  stripeSubscriptionId: string | null,
+  attemptCount: number,
+) {
+  if (stripeSubscriptionId) {
+    try {
+      await stripe.subscriptions.cancel(stripeSubscriptionId, {
+        cancellation_details: { comment: "Payment failed after the recovery window" },
+      } as any);
+    } catch (e: any) {
+      if (e?.code !== "resource_missing") console.log(`[STRIPE-EVT] cancel failed - ${e?.message}`);
+    }
+  }
+  await supabase.rpc('billing_downgrade_to_free', {
+    _user_id: userId,
+    _reason: 'Payment not recovered — permanently moved to the free plan',
+    _details: { trigger: 'dunning_final', target_email: email, attempt_count: attemptCount },
+  });
+  await supabase.from('subscriptions').update({
+    previous_plan: null,
+    status: 'cancelled',
+    account_status: 'active',
+    stripe_subscription_id: null,
+    grace_started_at: null,
+    grace_period_ends_at: null,
+    failed_invoice_count: 0,
+    payment_failed_at: null,
+    last_payment_error: null,
+    updated_at: new Date().toISOString(),
+  }).eq('user_id', userId);
+}
 
 
 export const PRICE_TO_PLAN: Record<string, { plan: 'starter' | 'growth' | 'pro' | 'agency', credits: number, dailyLimit: number, leadsLimit: number, isYearly: boolean }> = {
@@ -444,7 +485,15 @@ export async function processStripeEvent(
     // no longer active or trialing, the account returns to the free tier until
     // it is paid again. Previously the plan column stayed on the paid tier and
     // had to be corrected by hand.
-    if (!isEntitled) {
+    // A past_due subscription keeps its plan during the grace day.
+    let inGrace = false;
+    if (sub.status === 'past_due') {
+      const { data: g } = await supabase
+        .from('subscriptions').select('grace_period_ends_at').eq('user_id', userId).maybeSingle();
+      const ends = (g as any)?.grace_period_ends_at;
+      inGrace = !ends || new Date(ends).getTime() > Date.now();
+    }
+    if (!isEntitled && !inGrace) {
       const { error: downErr } = await supabase.rpc('billing_downgrade_to_free', {
         _user_id: userId,
         _reason: `Stripe subscription is ${sub.status} — entitlements returned to the free plan`,
@@ -608,79 +657,66 @@ export async function processStripeEvent(
       last_payment_error: String(reason).slice(0, 500),
     });
 
-    // Count consecutive failures first — the grace window and pause decision
-    // both depend on it.
     const { data: failures, error: bumpErr } = await supabase.rpc(
       'billing_bump_failed_invoice_count', { _user_id: userId },
     );
     if (bumpErr) log("failed-invoice bump failed", { error: bumpErr.message });
     const failureCount = Number(failures ?? attemptCount) || attemptCount;
 
-    // Policy step 1: open a grace window on the first failure. Access stays on
-    // until the deadline passes with the invoice still unpaid.
-    let graceEndsAt: string | null = null;
-    if (policy.grace.enabled && policy.grace.days > 0) {
-      graceEndsAt = await startGracePeriod(
-        supabase, userId, policy.grace.days,
-        `Invoice payment failed — ${reason}`,
-        {
-          trigger: 'invoice_payment_failed',
-          target_email: customer.email,
-          attempt_count: attemptCount,
-          failed_invoice_count: failureCount,
-          next_payment_attempt: nextAttempt,
-          invoice_url: invoice.hosted_invoice_url,
-        },
-      );
-    }
-    const graceActive = !!graceEndsAt && new Date(graceEndsAt).getTime() > Date.now();
-
-    await logSystemAlert({
-      category: "billing_payment_failed",
-      severity: nextAttempt ? "error" : "critical",
-      message: `Payment failed for ${customer.email} — $${((invoice.amount_due ?? 0) / 100).toFixed(2)} (attempt ${attemptCount})${nextAttempt ? `, Stripe retries ${nextAttempt.slice(0, 10)}` : `, no further retries`}${graceActive ? `. Access continues until ${graceEndsAt!.slice(0, 10)} (grace period)` : ''}`,
-      details: {
-        email: customer.email,
-        amount_due: (invoice.amount_due ?? 0) / 100,
-        currency: invoice.currency,
+    // One grace window per run of failures; later retries never reopen it.
+    await startGracePeriod(
+      supabase, userId, DUNNING.graceDays,
+      `Invoice payment failed — ${reason}`,
+      {
+        trigger: 'invoice_payment_failed',
+        target_email: customer.email,
         attempt_count: attemptCount,
         failed_invoice_count: failureCount,
-        next_payment_attempt: nextAttempt,
-        grace_period_ends_at: graceEndsAt,
-        reason,
         invoice_url: invoice.hosted_invoice_url,
-        stripe_customer_id: invoice.customer,
-        stripe_subscription_id: invoice.subscription,
       },
-      user_id: userId,
-      related_entity: invoice.id,
-    });
+    );
+    const { data: subRow } = await supabase
+      .from('subscriptions').select('grace_started_at').eq('user_id', userId).maybeSingle();
+    const firstFailedAt = (subRow as any)?.grace_started_at ?? new Date().toISOString();
+    const stage = dunningStage(firstFailedAt, attemptCount);
 
-    // Policy step 2: pause once the failure threshold is hit AND the grace
-    // window is over (or grace is disabled).
-    const cfg = policy.autoPause;
-    if (cfg.enabled && failureCount >= cfg.max_failed_invoices && !graceActive) {
-      await autoPauseAccount(
-        supabase, userId, customer.email,
-        `${failureCount} failed invoices (threshold ${cfg.max_failed_invoices}) — ${reason}`,
-        {
-          trigger: 'failed_invoice_threshold',
-          failed_invoice_count: failureCount,
-          threshold: cfg.max_failed_invoices,
-          attempt_count: attemptCount,
-          amount_due: (invoice.amount_due ?? 0) / 100,
-          currency: invoice.currency,
-          decline_reason: reason,
-          invoice_url: invoice.hosted_invoice_url,
-          stripe_customer_id: invoice.customer,
-          stripe_subscription_id: invoice.subscription,
-        },
-      );
+    if (stage === 'temporary_free') {
+      await supabase.rpc('billing_downgrade_to_free', {
+        _user_id: userId,
+        _reason: 'Payment still failing after the grace day — temporarily on the free plan',
+        _details: { trigger: 'dunning_temporary_free', target_email: customer.email, attempt_count: attemptCount },
+      });
     }
 
-    log("invoice.payment_failed handled", {
-      email: customer.email, failureCount, graceEndsAt, graceActive,
-    });
+    if (stage === 'final') {
+      await finalizeFailedPayment(stripe, supabase, userId, customer.email,
+        (invoice as any).subscription as string | null, attemptCount);
+    }
+
+    if (shouldAlertForFailure(attemptCount, stage)) {
+      await logSystemAlert({
+        category: "billing_payment_failed",
+        severity: stage === 'final' ? "critical" : "error",
+        message: stage === 'final'
+          ? `Payment failed for ${customer.email} after ${attemptCount} attempts — subscription cancelled, account moved to the free plan`
+          : `Payment failed for ${customer.email} — $${((invoice.amount_due ?? 0) / 100).toFixed(2)}. Paid access until ${graceEndsAt(firstFailedAt).slice(0, 16).replace('T', ' ')} UTC, then free until paid; permanent after ${recoveryEndsAt(firstFailedAt).slice(0, 10)}`,
+        details: {
+          email: customer.email,
+          amount_due: (invoice.amount_due ?? 0) / 100,
+          currency: invoice.currency,
+          attempt_count: attemptCount,
+          stage,
+          reason,
+          invoice_url: invoice.hosted_invoice_url,
+          stripe_customer_id: invoice.customer,
+          stripe_subscription_id: (invoice as any).subscription,
+        },
+        user_id: userId,
+        related_entity: invoice.id,
+      });
+    }
+
+    log("invoice.payment_failed handled", { email: customer.email, attemptCount, stage });
     return;
   }
 
@@ -832,7 +868,8 @@ export async function processStripeEvent(
       },
       { email: customer.email, plan: "free" },
     );
-    await logSystemAlert({
+    const dunningEnded = (sub.cancellation_details as any)?.comment === "Payment failed after the recovery window";
+    if (!dunningEnded) await logSystemAlert({
       category: "billing_cancellation", severity: "critical",
       message: `${customer.email} cancelled — subscription ended and the account is now inactive`,
       details: {
