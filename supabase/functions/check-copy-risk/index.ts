@@ -12,7 +12,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
-import { aiFetch } from "../_shared/ai-provider.ts";
+import { AI_SMART, aiFetch } from "../_shared/ai-provider.ts";
 import { checkDomainAgainstDnsbls } from "../_shared/dnsbl.ts";
 import {
   COPY_RISK_PROMPT_VERSION,
@@ -126,7 +126,7 @@ serve(async (req) => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: AI_SMART,
         temperature: 0,
         messages: [
           { role: "system", content: COPY_RISK_SYSTEM_PROMPT },

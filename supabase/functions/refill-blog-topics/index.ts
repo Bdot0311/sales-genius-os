@@ -2,7 +2,7 @@
 // Triggered weekly by pg_cron. Uses Lovable AI to generate fresh SEO/AEO topics
 // scoped to OutReign (outbound sales, AI SDR, cold email, ICP, comparisons).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { aiFetch } from "../_shared/ai-provider.ts";
+import { AI_FAST, aiFetch } from "../_shared/ai-provider.ts";
 import { corsHeaders, requireServiceRole } from "../_shared/internal-auth.ts";
 
 const MIN_UNUSED = 8;     // refill when fewer than this remain unused
@@ -71,7 +71,7 @@ Deno.serve(async (req: Request) => {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: AI_FAST,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           {

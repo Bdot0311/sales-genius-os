@@ -56,7 +56,7 @@ import {
   type LeadResearchBrief,
   type ResearchQuality,
 } from "../_shared/lead-research.ts";
-import { aiFetch } from "../_shared/ai-provider.ts";
+import { AI_SMART, aiFetch } from "../_shared/ai-provider.ts";
 import { decisionForDrafting, decisionPromptBlock } from "../_shared/lead-intelligence.ts";
 
 const corsHeaders = {
@@ -961,7 +961,7 @@ STRICT RULES:
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "google/gemini-2.5-flash",
+            model: AI_SMART,
             messages: [
               { role: "system", content: "You are a B2B sales researcher. You return ONLY verifiable, source-grounded facts. You never speculate, never infer, never hallucinate. If a fact cannot be confirmed, you omit it." },
               { role: "user", content: researchPrompt },
@@ -1484,7 +1484,7 @@ conversation that is already going, not as someone chasing silence.`}`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: AI_SMART,
         messages: [
           { role: "system", content: systemPrompt + NO_PLATFORM_BRAND_RULE + strategyBlock },
           {
@@ -1533,7 +1533,7 @@ conversation that is already going, not as someone chasing silence.`}`;
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: AI_SMART,
           messages: [
             { role: "system", content: systemPrompt + "\n\nNEVER refuse. NEVER output INSUFFICIENT_RESEARCH. Always produce an email using the best available context, inferring missing details from industry and role." },
             { role: "user", content: userPrompt },
@@ -1569,7 +1569,7 @@ conversation that is already going, not as someone chasing silence.`}`;
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: AI_SMART,
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: `${userPrompt}\n${NO_PLACEHOLDER_RETRY}` },
@@ -1619,7 +1619,7 @@ conversation that is already going, not as someone chasing silence.`}`;
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: AI_SMART,
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: `${userPrompt}\n${noScaffoldingRetry(leaked)}` },
@@ -1663,7 +1663,7 @@ conversation that is already going, not as someone chasing silence.`}`;
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: AI_SMART,
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: `${userPrompt}\n${noFabricationRetry(claims)}` },
@@ -1706,7 +1706,7 @@ conversation that is already going, not as someone chasing silence.`}`;
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: AI_SMART,
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: `${userPrompt}\n${pitchRetry(pitch)}` },
@@ -1770,7 +1770,7 @@ conversation that is already going, not as someone chasing silence.`}`;
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: AI_SMART,
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: `${userPrompt}\n${note}` },
@@ -1853,7 +1853,7 @@ conversation that is already going, not as someone chasing silence.`}`;
           method: "POST",
           headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: "google/gemini-2.5-flash",
+            model: AI_SMART,
             messages: [
               { role: "system", content: systemPrompt },
               { role: "user", content: `${userPrompt}\n${unsupportedRecencyRetry(recency)}` },
@@ -1912,7 +1912,7 @@ conversation that is already going, not as someone chasing silence.`}`;
           method: "POST",
           headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: "google/gemini-2.5-flash",
+            model: AI_SMART,
             messages: [
               { role: "system", content: systemPrompt },
               { role: "user", content: `${userPrompt}\n${bannedPhraseRetry(bannedHits)}` },
@@ -2030,7 +2030,7 @@ conversation that is already going, not as someone chasing silence.`}`;
           method: "POST",
           headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: "google/gemini-2.5-flash",
+            model: AI_SMART,
             messages: [
               { role: "system", content: systemPrompt },
               { role: "user", content: `${userPrompt}\n${notes}` },

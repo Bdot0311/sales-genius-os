@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
 import { RUBRIC_SYSTEM_PROMPT, rubricUserPayload } from "./prompt.ts";
-import { aiFetch } from "../_shared/ai-provider.ts";
+import { AI_SMART, aiFetch } from "../_shared/ai-provider.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -64,7 +64,7 @@ serve(async (req) => {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: AI_SMART,
         temperature: 0,
         messages: [
           { role: "system", content: RUBRIC_SYSTEM_PROMPT },

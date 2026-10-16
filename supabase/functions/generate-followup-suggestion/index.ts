@@ -23,7 +23,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
 import { composeSkillContext, skillNamesUsed } from "../_shared/email-skills.ts";
 import { bannedPhrasesBlock, findPlaceholders, hasPlaceholder } from "../_shared/email-rules.ts";
 import { isWeak, rubricFeedback, scoreEmail } from "../_shared/email-quality.ts";
-import { aiFetch } from "../_shared/ai-provider.ts";
+import { AI_SMART, aiFetch } from "../_shared/ai-provider.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -178,7 +178,7 @@ Respond in this EXACT JSON format:
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: AI_SMART,
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt },

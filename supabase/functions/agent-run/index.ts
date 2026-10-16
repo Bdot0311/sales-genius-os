@@ -27,7 +27,7 @@ import {
   parseTouches,
   scheduleFollowUps,
 } from "../_shared/cold-email-playbook.ts";
-import { aiFetch } from "../_shared/ai-provider.ts";
+import { AI_SMART, aiFetch } from "../_shared/ai-provider.ts";
 import { capToolsToTier, resolveAgentTier } from "../_shared/agent-tier-scope.ts";
 import { notifyAgentRunFinished, notifyMeetingBooked } from "../_shared/notify-events.ts";
 import { briefToPromptBlock, isResearchFresh, type LeadResearchBrief } from "../_shared/lead-research.ts";
@@ -104,7 +104,7 @@ async function callGemini(prompt: string, systemPrompt: string): Promise<string>
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemini-3-flash-preview",
+      model: AI_SMART,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: prompt },

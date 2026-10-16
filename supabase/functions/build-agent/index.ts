@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
-import { aiFetch } from "../_shared/ai-provider.ts";
+import { AI_FAST, aiFetch } from "../_shared/ai-provider.ts";
 import {
   ALL_AGENT_TOOLS,
   CORE_TOOLS,
@@ -109,7 +109,7 @@ serve(async (req) => {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: AI_FAST,
         temperature: 0.3,
         messages: [
           { role: "system", content: SYSTEM },

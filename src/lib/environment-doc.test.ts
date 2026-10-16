@@ -50,6 +50,18 @@ const documented = (name: string) =>
   DOC.includes(`\`${name}\``) ||
   (name.startsWith("VITE_LOVABLE_CONNECTOR_") && DOC.includes("`VITE_LOVABLE_CONNECTOR_*`"));
 
+/**
+ * SCREAMING_CASE values the code exports, which are not environment variables.
+ *
+ * `AI_FAST` and `AI_SMART` are the two model tiers; the page names them where
+ * it explains which model a call runs on. They are collected from the source
+ * so the doc cannot keep naming one after it is deleted.
+ */
+const exportedConstants = new Set([
+  ...matchAll(EDGE, /export const ([A-Z][A-Z0-9_]{3,})\s*[:=]/g),
+  ...matchAll(APP, /export const ([A-Z][A-Z0-9_]{3,})\s*[:=]/g),
+]);
+
 describe("every key the code reads is written down", () => {
   it("documents every edge function secret", () => {
     const missing = [...edgeVars].filter((v) => !documented(v)).sort();
@@ -82,6 +94,18 @@ describe("every key the doc names is still read somewhere", () => {
       .filter((v) => !notVariables.has(v))
       .filter((v) => !edgeVars.has(v) && !appVars.has(v))
       .filter((v) => !v.startsWith("VITE_LOVABLE_CONNECTOR_"))
+      /*
+       * A SCREAMING_CASE name the page explains which is an exported constant
+       * rather than a variable anybody sets. The page documents which model
+       * each call runs on, and the two tiers are named in code — so they
+       * belong on the page, in backticks, without being environment.
+       *
+       * Checked against the source rather than exempted by name: delete the
+       * export and this still fails, which is the point. Anything the doc
+       * names that is neither read from the environment nor exported from the
+       * code is the stale reference this test is for.
+       */
+      .filter((v) => !exportedConstants.has(v))
       .sort();
     expect(orphans).toEqual([]);
   });
