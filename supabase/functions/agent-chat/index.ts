@@ -1647,10 +1647,21 @@ serve(async (req) => {
       leadIds: string[],
       goal: string,
       feedback: string | null,
-    ): Promise<{ queued: number; alreadyPending: number }> => {
+      /**
+       * Options the work needs that the lead row does not carry.
+       *
+       * `research_leads` takes a `force` that means "ignore the cached brief
+       * and scrape again". The inline path forwards it; the queued path wrote
+       * only the lead id, so an overflowing forced refresh came back as the
+       * very brief the user asked to replace, and the item was marked done.
+       * The column already existed and the worker already reads it for search.
+       */
+      itemPayload: Record<string, unknown> | null = null,
+    ): Promise<{ queued: number; alreadyPending: number; queuedIds: string[] }> => {
+      let queuedIds: string[] = [];
       const handled = handledFor(kind);
       const fresh = leadIds.filter((id) => !handled.has(id));
-      if (fresh.length === 0) return { queued: 0, alreadyPending: leadIds.length };
+      if (fresh.length === 0) return { queued: 0, alreadyPending: leadIds.length, queuedIds: [] };
 
       const { data: pendingItems } = await admin
         .from("agent_job_items")
@@ -1691,7 +1702,7 @@ serve(async (req) => {
       );
       const toQueue = fresh.filter((id) => !alreadyQueued.has(id));
       const alreadyPending = leadIds.length - toQueue.length;
-      if (toQueue.length === 0) return { queued: 0, alreadyPending };
+      if (toQueue.length === 0) return { queued: 0, alreadyPending, queuedIds: [] };
 
       let batchJobId = batchJobIds.get(kind) ?? null;
       if (!batchJobId) {
@@ -1716,7 +1727,9 @@ serve(async (req) => {
           .single();
         if (jobError || !job) {
           console.error(`[agent-chat] could not open the ${kind} batch job:`, jobError?.message);
-          return { queued: 0, alreadyPending };
+          // The write failed: nothing is queued, and saying otherwise is how
+        // the ids disappear.
+        return { queued: 0, alreadyPending, queuedIds: [] };
         }
         batchJobId = String((job as { id: unknown }).id);
         batchJobIds.set(kind, batchJobId);
@@ -1728,6 +1741,7 @@ serve(async (req) => {
           user_id: userId,
           lead_id: leadId,
           status: "pending",
+          ...(itemPayload ? { payload: itemPayload } : {}),
         })),
       );
       if (itemsError) {
@@ -1741,10 +1755,13 @@ serve(async (req) => {
           await admin.from("agent_jobs").delete().eq("id", batchJobId);
           batchJobIds.delete(kind);
         }
-        return { queued: 0, alreadyPending };
+        // The write failed: nothing is queued, and saying otherwise is how
+        // the ids disappear.
+        return { queued: 0, alreadyPending, queuedIds: [] };
       }
 
       for (const id of toQueue) handled.add(id);
+      queuedIds = toQueue;
       // The drafting card counts drafts. The other kinds have their own job
       // rows and are not drafts, so adding them here would overstate it.
       if (kind === "draft") draftTally.queued += toQueue.length;
@@ -1754,7 +1771,7 @@ serve(async (req) => {
         .select("id", { count: "exact", head: true })
         .eq("job_id", batchJobId);
       await admin.from("agent_jobs").update({ total: itemCount ?? 0 }).eq("id", batchJobId);
-      return { queued: toQueue.length, alreadyPending };
+      return { queued: toQueue.length, alreadyPending, queuedIds };
     };
 
     /**
@@ -1775,9 +1792,28 @@ serve(async (req) => {
       kind: "enrich" | "score" | "research",
       skipped: string[],
       toolName: string,
-    ): Promise<string> => {
-      if (skipped.length === 0) return "";
-      const { queued, alreadyPending } = await queueWork(kind, skipped, "", null);
+      itemPayload: Record<string, unknown> | null = null,
+    ): Promise<{ note: string; queued: string[]; stillOutstanding: string[] }> => {
+      if (skipped.length === 0) return { note: "", queued: [], stillOutstanding: [] };
+      const { queued, alreadyPending, queuedIds } =
+        await queueWork(kind, skipped, "", null, itemPayload);
+      /*
+       * What is genuinely on the queue, and what is not.
+       *
+       * The first version answered with a string and let the caller assume
+       * every skipped id was covered by it. Two ways that lied. A failed job
+       * or item insert returned no note at all, so the ids appeared in
+       * neither the queued list nor anywhere else — gone. And when some ids
+       * were already pending while the insert for the rest failed, the note
+       * was non-empty, so the caller reported the whole set as queued and
+       * told the model not to retry any of it.
+       *
+       * That is the same silent non-completion this whole change exists to
+       * remove, reintroduced in the error path. So the split is returned
+       * rather than inferred, and anything not actually queued stays visible.
+       */
+      const queuedSet = new Set(queuedIds);
+      const stillOutstanding = skipped.filter((id) => !queuedSet.has(id));
       if (queued > 0) {
         toolEvents.push({
           name: toolName,
@@ -1785,10 +1821,26 @@ serve(async (req) => {
           status: "ok",
           detail: `${queued} more ran past this turn's budget and were queued — they finish in the background.`,
         });
-        return ` (${queued} queued — they finish in the background)`;
       }
-      if (alreadyPending > 0) return ` (${alreadyPending} already queued)`;
-      return "";
+      if (stillOutstanding.length > 0 && queued === 0 && alreadyPending === 0) {
+        toolEvents.push({
+          name: toolName,
+          label: "Could not queue the rest",
+          status: "error",
+          detail: `${stillOutstanding.length} lead(s) could not be queued and still need doing.`,
+        });
+      }
+      const parts: string[] = [];
+      if (queued > 0) parts.push(`${queued} queued — they finish in the background`);
+      if (alreadyPending > 0) parts.push(`${alreadyPending} already queued`);
+      if (stillOutstanding.length > 0 && queued === 0 && alreadyPending === 0) {
+        parts.push(`${stillOutstanding.length} could not be queued`);
+      }
+      return {
+        note: parts.length ? ` (${parts.join(", ")})` : "",
+        queued: queuedIds,
+        stillOutstanding,
+      };
     };
 
     // Step timing telemetry (Agent > Performance tab reads this).
@@ -2455,22 +2507,32 @@ serve(async (req) => {
             return { lead_id: id, ...r };
           });
           const failed = results.filter((r: any) => r?.error).length;
-          const queuedNote = await queueSkipped("enrich", skipped, name);
+          const handover = await queueSkipped("enrich", skipped, name);
           toolEvents.push({
             name,
             label: "Enriched leads",
             status: failed === results.length && results.length > 0 ? "error" : "ok",
-            detail: `${results.length - failed}/${ids.length} enriched${queuedNote}`,
+            detail: `${results.length - failed}/${ids.length} enriched${handover.note}`,
           });
           return {
             results,
-            queued_lead_ids: queuedNote ? skipped : [],
+            queued_lead_ids: handover.queued,
             unknown_lead_ids: unknown,
-            ...(queuedNote
+            ...(handover.stillOutstanding.length
+              ? { not_done_lead_ids: handover.stillOutstanding }
+              : {}),
+            ...(handover.queued.length
               ? {
                 note:
-                  "The rest ran past this turn's budget and are on the background queue. " +
-                  "Do not call this again with those ids — they are already being worked.",
+                  "The leads in queued_lead_ids are on the background queue. Do not call this " +
+                  "again with those ids — they are already being worked.",
+              }
+              : {}),
+            ...(handover.stillOutstanding.length
+              ? {
+                outstanding_note:
+                  "The leads in not_done_lead_ids were neither done here nor queued. They still " +
+                  "need doing — say so, or try them again in a later call.",
               }
               : {}),
           };
@@ -2482,21 +2544,31 @@ serve(async (req) => {
             const r = await invokeFn("score-lead", { leadId: id });
             return { lead_id: id, ...r };
           });
-          const queuedNote = await queueSkipped("score", skipped, name);
+          const handover = await queueSkipped("score", skipped, name);
           toolEvents.push({
             name,
             label: "Scored leads",
             status: "ok",
-            detail: `${results.length} lead(s) scored${queuedNote}`,
+            detail: `${results.length} lead(s) scored${handover.note}`,
           });
           return {
             results,
-            queued_lead_ids: queuedNote ? skipped : [],
-            ...(queuedNote
+            queued_lead_ids: handover.queued,
+            ...(handover.stillOutstanding.length
+              ? { not_done_lead_ids: handover.stillOutstanding }
+              : {}),
+            ...(handover.queued.length
               ? {
                 note:
-                  "The rest ran past this turn's budget and are on the background queue. " +
-                  "Do not call this again with those ids — they are already being worked.",
+                  "The leads in queued_lead_ids are on the background queue. Do not call this " +
+                  "again with those ids — they are already being worked.",
+              }
+              : {}),
+            ...(handover.stillOutstanding.length
+              ? {
+                outstanding_note:
+                  "The leads in not_done_lead_ids were neither done here nor queued. They still " +
+                  "need doing — say so, or try them again in a later call.",
               }
               : {}),
           };
@@ -2558,21 +2630,31 @@ serve(async (req) => {
               detail: String(externalOff.external_research.note),
             });
           }
-          const queuedNote = await queueSkipped("research", skipped, name);
+          const handover = await queueSkipped("research", skipped, name, force ? { force: true } : null);
           toolEvents.push({
             name,
             label: "Researched leads",
             status: okCount === 0 ? "error" : "ok",
-            detail: `${okCount}/${ids.length} researched from their websites${thinCount ? ` — ${thinCount} too thin to personalize safely` : ""}${queuedNote}`,
+            detail: `${okCount}/${ids.length} researched from their websites${thinCount ? ` — ${thinCount} too thin to personalize safely` : ""}${handover.note}`,
           });
           return {
             results,
-            queued_lead_ids: queuedNote ? skipped : [],
-            ...(queuedNote
+            queued_lead_ids: handover.queued,
+            ...(handover.stillOutstanding.length
+              ? { not_done_lead_ids: handover.stillOutstanding }
+              : {}),
+            ...(handover.queued.length
               ? {
                 note:
-                  "The rest ran past this turn's budget and are on the background queue. " +
-                  "Do not call this again with those ids — they are already being worked.",
+                  "The leads in queued_lead_ids are on the background queue. Do not call this " +
+                  "again with those ids — they are already being worked.",
+              }
+              : {}),
+            ...(handover.stillOutstanding.length
+              ? {
+                outstanding_note:
+                  "The leads in not_done_lead_ids were neither done here nor queued. They still " +
+                  "need doing — say so, or try them again in a later call.",
               }
               : {}),
           };

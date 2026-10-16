@@ -93,8 +93,18 @@ describe("every kind the agent can enqueue is one the worker can run", () => {
      * run and watching it stay green.
      */
     const sig = AGENT_CODE.slice(AGENT_CODE.indexOf("const queueWork = async ("));
-    const line = sig.slice(sig.indexOf("kind:"), sig.indexOf("\n", sig.indexOf("kind:")));
-    const kinds = [...line.matchAll(/"([a-z]+)"/g)].map((m) => m[1]);
+    /*
+     * To the comma that ends the parameter, not to the end of the line.
+     *
+     * A union of string literals contains no commas, so the first one closes
+     * it however many lines it spans. Reading one line meant a kind added on
+     * a continuation line was invisible to both checks below — the third
+     * version of this parse, after one that matched a fixed list of four and
+     * one that stopped at the newline.
+     */
+    const from = sig.indexOf("kind:");
+    const union = sig.slice(from, sig.indexOf(",", from));
+    const kinds = [...union.matchAll(/"([a-z]+)"/g)].map((m) => m[1]);
     expect(kinds.length, "queueWork should name the kinds it accepts").toBeGreaterThan(0);
     return kinds;
   };
@@ -130,5 +140,67 @@ describe("every kind the agent can enqueue is one the worker can run", () => {
     for (const k of enqueueable()) {
       expect(allowed.slice(0, allowed.indexOf(")"))).toContain(`'${k}'`);
     }
+  });
+});
+
+describe("the handover tells the truth about what it queued", () => {
+  /*
+   * The first version answered with a string and let the caller assume every
+   * skipped id was covered by it. Two ways that lied, both in the error path:
+   * a failed job or item insert returned no note, so the ids appeared in
+   * neither the queued list nor anywhere else; and when some ids were already
+   * pending while the insert for the rest failed, the note was non-empty, so
+   * the caller reported the whole set as queued and told the model not to
+   * retry any of it. The same silent non-completion this change removes,
+   * reintroduced one layer in.
+   */
+  it("reports the ids it actually wrote, not the ids it was given", () => {
+    const helper = AGENT_CODE.slice(AGENT_CODE.indexOf("const queueSkipped = async ("));
+    expect(helper).toContain("const queuedSet = new Set(queuedIds);");
+    expect(helper).toMatch(/stillOutstanding = skipped\.filter\(\(id\) => !queuedSet\.has\(id\)\)/);
+  });
+
+  it("never claims a failed write as queued", () => {
+    const helper = AGENT_CODE.slice(AGENT_CODE.indexOf("const queueWork = async ("));
+    // Every failure return carries an empty id list.
+    for (const m of helper.matchAll(/return \{ queued: 0, [^}]*\}/g)) {
+      expect(m[0]).toContain("queuedIds: []");
+    }
+    expect(helper).toMatch(/return \{ queued: toQueue\.length, alreadyPending, queuedIds \}/);
+  });
+
+  it.each(["enrich_leads", "score_leads", "research_leads"])(
+    "%s keeps unqueued leads visible",
+    (tool) => {
+      const body = AGENT_CODE.slice(AGENT_CODE.indexOf(`case "${tool}"`));
+      const ret = body.slice(0, body.indexOf("\n        case "));
+      expect(ret).toContain("queued_lead_ids: handover.queued");
+      expect(ret).toContain("not_done_lead_ids: handover.stillOutstanding");
+    },
+  );
+});
+
+describe("a forced refresh stays forced once it is queued", () => {
+  /*
+   * research_leads takes a `force` meaning "ignore the cached brief and
+   * scrape again". The inline path forwarded it and the queued path did not,
+   * so an overflowing forced refresh came back as the very brief the user
+   * asked to replace — returned without an error, and settled as done. A
+   * wrong answer that looked like a right one.
+   */
+  it("sends the option with the work", () => {
+    expect(AGENT_CODE).toMatch(/queueSkipped\("research", skipped, name, force \? \{ force: true \} : null\)/);
+  });
+
+  it("writes it onto the item", () => {
+    const helper = AGENT_CODE.slice(AGENT_CODE.indexOf("const queueWork = async ("));
+    expect(helper).toMatch(/\.\.\.\(itemPayload \? \{ payload: itemPayload \} : \{\}\)/);
+  });
+
+  it("and the worker forwards it", () => {
+    // Carrying it without forwarding it would be theatre.
+    const worker = code(WORKER);
+    expect(worker).toContain("const itemOptions = (item.payload ?? {}) as Record<string, unknown>;");
+    expect(worker).toMatch(/\.\.\.\(itemOptions\.force === true \? \{ force: true \} : \{\}\)/);
   });
 });
