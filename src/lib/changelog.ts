@@ -71,16 +71,38 @@ export const ROADMAP: RoadmapItem[] = [
       "Today every enrolled lead walks the same steps. Next, a reply that says \"not now\" pauses the sequence and schedules a check-back, and one that asks a question hands you a draft answer instead of sending step three.",
   },
   {
+    /*
+     * This promised something that already works.
+     *
+     * Selecting saved leads and enriching them in one pass, with a live count
+     * of what was found, skipped and failed, has shipped — it is billed for in
+     * the pricing entry below. Leaving it on the roadmap as "up next" tells
+     * someone a feature they used this morning is not built yet, which is a
+     * worse thing for this page to say than nothing. What is genuinely
+     * missing is the half about money.
+     */
     status: "next",
-    title: "Enrich a whole list at once",
+    title: "See what a bulk run will cost before it runs",
     description:
-      "Select any number of saved leads and fill in their missing emails, titles and company data in one pass, with a running count of what was found and what it cost.",
+      "Enriching a selection spends a credit for each contact it finds, and today you watch the count rather than the bill. Next, an estimate before you start and a running total as it goes, so a thousand-lead run is a decision rather than a surprise.",
   },
   {
     status: "next",
     title: "Your own sending domains, end to end",
     description:
       "Buy a domain, warm it, and route sending through it without leaving OutReign — with the DNS records checked for you rather than handed to you as a list.",
+  },
+  {
+    status: "next",
+    title: "Inboxes made for you, not by you",
+    description:
+      "Create the mailboxes on your sending domain from inside OutReign, with signatures, display names and warmup set up as they are created — instead of making each one by hand in Google and connecting them back one at a time.",
+  },
+  {
+    status: "exploring",
+    title: "Outreach that is not only email",
+    description:
+      "A sequence that can open with a LinkedIn connection, follow with an email, and leave a call task on the day the lead opens it — with replies on any of them stopping the rest, the way they already do for email.",
   },
   {
     status: "exploring",
@@ -91,6 +113,64 @@ export const ROADMAP: RoadmapItem[] = [
 ];
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    id: "2026-10-16-no-duplicate-sends",
+    date: "2026-10-16",
+    title: "A scheduled email can no longer send twice",
+    summary:
+      "Duplicate sends are now impossible, cancelling tells you the truth, and lead scores stop going stale.",
+    items: [
+      {
+        tag: "fixed",
+        title: "A scheduled email is sent once",
+        description:
+          "When two send runs overlapped, both could pick up the same queued email and deliver it twice. Each email is now claimed before it is sent, so a prospect receives it once however the sends are scheduled.",
+        href: "/dashboard/outreach",
+      },
+      {
+        tag: "fixed",
+        title: "Cancelling tells you if it already went",
+        description:
+          "Cancelling an email that was already on its way said \"cancelled\" and sent it anyway. Cancelling now stops anything that has not started, and says plainly when it is too late rather than claiming otherwise. Editing behaves the same way.",
+        href: "/dashboard/outreach",
+      },
+      {
+        tag: "fixed",
+        title: "Lead scores no longer quietly stop updating",
+        description:
+          "If a scoring run was interrupted, the leads it was working on were left in a state nothing picked up again — so their ICP fit and signal scores stayed frozen at whatever they were, with nothing to show it. Interrupted work is now picked up on the next pass.",
+        href: "/dashboard/leads/saved",
+      },
+      {
+        tag: "improved",
+        title: "Drafts, and the checks on them, use a stronger model",
+        description:
+          "Writing an email, grading it against the rules, and the research behind the personalisation now all run on a more capable model. The checks matter as much as the writing: a weak grader passes copy a strong writer would not have sent.",
+        href: "/dashboard/outreach",
+      },
+      {
+        tag: "improved",
+        title: "A long enrich or score run finishes in the background",
+        description:
+          "Asking the agent to enrich, score or research more leads than one reply could cover used to leave the remainder undone, reported only as \"skipped\". The rest is now queued and worked through in the background, and the agent tells you which leads are still outstanding.",
+        href: "/dashboard/agent/chat",
+      },
+      {
+        tag: "improved",
+        title: "One busy account no longer holds up everyone else",
+        description:
+          "Background drafting, scoring and sending took work strictly oldest-first across the whole product, so a large import could sit in front of everybody else's queue. Each account now takes turns, and a small batch is picked up in the same minute it is queued.",
+        href: "/dashboard/leads/saved",
+      },
+      {
+        tag: "new",
+        title: "Learn your ICP from the deals you have won",
+        description:
+          "Point the agent at your closed-won deals and it looks for what they have in common — industry, company size, seniority — and offers to write those back into your ICP. It needs a handful of wins before it will say anything, so an early account is told it does not have enough yet rather than given a pattern made of two deals.",
+        href: "/dashboard/icp",
+      },
+    ],
+  },
   {
     id: "2026-10-15-working-unsubscribe",
     date: "2026-10-15",
