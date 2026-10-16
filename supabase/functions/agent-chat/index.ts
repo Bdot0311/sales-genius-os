@@ -1657,11 +1657,27 @@ serve(async (req) => {
        * The column already existed and the worker already reads it for search.
        */
       itemPayload: Record<string, unknown> | null = null,
-    ): Promise<{ queued: number; alreadyPending: number; queuedIds: string[] }> => {
+    ): Promise<{
+      queued: number;
+      alreadyPending: number;
+      /** Newly written to the queue by this call. */
+      queuedIds: string[];
+      /**
+       * Already being worked, so not written again and not outstanding.
+       *
+       * Either handled earlier in this turn or sitting on a live job of this
+       * kind. Reported separately from a write that failed, because the two
+       * need opposite things from the caller: these must not be retried, and
+       * a failure must be.
+       */
+      coveredIds: string[];
+    }> => {
       let queuedIds: string[] = [];
       const handled = handledFor(kind);
       const fresh = leadIds.filter((id) => !handled.has(id));
-      if (fresh.length === 0) return { queued: 0, alreadyPending: leadIds.length, queuedIds: [] };
+      if (fresh.length === 0) {
+        return { queued: 0, alreadyPending: leadIds.length, queuedIds: [], coveredIds: leadIds };
+      }
 
       const { data: pendingItems } = await admin
         .from("agent_job_items")
@@ -1702,7 +1718,9 @@ serve(async (req) => {
       );
       const toQueue = fresh.filter((id) => !alreadyQueued.has(id));
       const alreadyPending = leadIds.length - toQueue.length;
-      if (toQueue.length === 0) return { queued: 0, alreadyPending, queuedIds: [] };
+      // Handled this turn, or on a live job of this kind. Covered either way.
+      const coveredIds = leadIds.filter((id) => !toQueue.includes(id));
+      if (toQueue.length === 0) return { queued: 0, alreadyPending, queuedIds: [], coveredIds };
 
       let batchJobId = batchJobIds.get(kind) ?? null;
       if (!batchJobId) {
@@ -1729,7 +1747,7 @@ serve(async (req) => {
           console.error(`[agent-chat] could not open the ${kind} batch job:`, jobError?.message);
           // The write failed: nothing is queued, and saying otherwise is how
         // the ids disappear.
-        return { queued: 0, alreadyPending, queuedIds: [] };
+        return { queued: 0, alreadyPending, queuedIds: [], coveredIds };
         }
         batchJobId = String((job as { id: unknown }).id);
         batchJobIds.set(kind, batchJobId);
@@ -1757,7 +1775,7 @@ serve(async (req) => {
         }
         // The write failed: nothing is queued, and saying otherwise is how
         // the ids disappear.
-        return { queued: 0, alreadyPending, queuedIds: [] };
+        return { queued: 0, alreadyPending, queuedIds: [], coveredIds };
       }
 
       for (const id of toQueue) handled.add(id);
@@ -1771,7 +1789,7 @@ serve(async (req) => {
         .select("id", { count: "exact", head: true })
         .eq("job_id", batchJobId);
       await admin.from("agent_jobs").update({ total: itemCount ?? 0 }).eq("id", batchJobId);
-      return { queued: toQueue.length, alreadyPending, queuedIds };
+      return { queued: toQueue.length, alreadyPending, queuedIds, coveredIds };
     };
 
     /**
@@ -1795,7 +1813,7 @@ serve(async (req) => {
       itemPayload: Record<string, unknown> | null = null,
     ): Promise<{ note: string; queued: string[]; stillOutstanding: string[] }> => {
       if (skipped.length === 0) return { note: "", queued: [], stillOutstanding: [] };
-      const { queued, alreadyPending, queuedIds } =
+      const { queued, alreadyPending, queuedIds, coveredIds } =
         await queueWork(kind, skipped, "", null, itemPayload);
       /*
        * What is genuinely on the queue, and what is not.
@@ -1812,8 +1830,20 @@ serve(async (req) => {
        * remove, reintroduced in the error path. So the split is returned
        * rather than inferred, and anything not actually queued stays visible.
        */
-      const queuedSet = new Set(queuedIds);
-      const stillOutstanding = skipped.filter((id) => !queuedSet.has(id));
+      /*
+       * Being worked and not being worked, which is not the same split as
+       * written-now and not-written-now.
+       *
+       * A lead already sitting on a live job of this kind is not written
+       * again — correctly, since writing it twice is what the dedupe exists
+       * to stop. Counting that as outstanding told the model to retry work a
+       * worker already held, and a retry runs it inline: the same work paid
+       * for twice and written twice. The mirror of the bug this helper was
+       * fixing, so both halves are now named rather than inferred from one.
+       */
+      const settled = new Set([...queuedIds, ...coveredIds]);
+      const inHand = skipped.filter((id) => settled.has(id));
+      const stillOutstanding = skipped.filter((id) => !settled.has(id));
       if (queued > 0) {
         toolEvents.push({
           name: toolName,
@@ -1838,7 +1868,9 @@ serve(async (req) => {
       }
       return {
         note: parts.length ? ` (${parts.join(", ")})` : "",
-        queued: queuedIds,
+        // Everything a worker will do, whether this call put it there or found
+        // it already there. The model must not retry any of it.
+        queued: inHand,
         stillOutstanding,
       };
     };

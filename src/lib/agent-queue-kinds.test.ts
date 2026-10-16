@@ -156,8 +156,37 @@ describe("the handover tells the truth about what it queued", () => {
    */
   it("reports the ids it actually wrote, not the ids it was given", () => {
     const helper = AGENT_CODE.slice(AGENT_CODE.indexOf("const queueSkipped = async ("));
-    expect(helper).toContain("const queuedSet = new Set(queuedIds);");
-    expect(helper).toMatch(/stillOutstanding = skipped\.filter\(\(id\) => !queuedSet\.has\(id\)\)/);
+    expect(helper).toContain("const settled = new Set([...queuedIds, ...coveredIds]);");
+    expect(helper).toMatch(/stillOutstanding = skipped\.filter\(\(id\) => !settled\.has\(id\)\)/);
+  });
+
+  it("counts a lead already on the queue as in hand, not outstanding", () => {
+    /*
+     * The mirror of the bug above, and the one I introduced fixing it. A lead
+     * already sitting on a live job of this kind is not written again —
+     * correctly, since writing it twice is what the dedupe exists to stop.
+     * Counting that as outstanding told the model to retry work a worker
+     * already held, and a retry runs it inline: the same work paid for twice
+     * and written twice.
+     */
+    const helper = AGENT_CODE.slice(AGENT_CODE.indexOf("const queueWork = async ("));
+    expect(helper).toMatch(/const coveredIds = leadIds\.filter\(\(id\) => !toQueue\.includes\(id\)\)/);
+    /*
+     * Every return hands back the real set, including the failure paths,
+     * where "covered" and "written" differ. Matched as the shorthand rather
+     * than as the word: `coveredIds: []` contains "coveredIds" and satisfied
+     * the first version of this, which is how a failure path that stopped
+     * reporting what it covered passed the check.
+     */
+    for (const m of helper.matchAll(/return \{ queued: [^}]*\}/g)) {
+      // Present, and never the empty literal. One branch legitimately returns
+      // `coveredIds: leadIds` — there, every id is covered.
+      expect(m[0], `a return drops the covered set: ${m[0]}`).toContain("coveredIds");
+      expect(m[0], `a return reports nothing covered: ${m[0]}`).not.toMatch(/coveredIds:\s*\[\]/);
+    }
+    const skipper = AGENT_CODE.slice(AGENT_CODE.indexOf("const queueSkipped = async ("));
+    expect(skipper).toMatch(/const inHand = skipped\.filter\(\(id\) => settled\.has\(id\)\)/);
+    expect(skipper).toMatch(/queued: inHand/);
   });
 
   it("never claims a failed write as queued", () => {
@@ -166,7 +195,7 @@ describe("the handover tells the truth about what it queued", () => {
     for (const m of helper.matchAll(/return \{ queued: 0, [^}]*\}/g)) {
       expect(m[0]).toContain("queuedIds: []");
     }
-    expect(helper).toMatch(/return \{ queued: toQueue\.length, alreadyPending, queuedIds \}/);
+    expect(helper).toMatch(/return \{ queued: toQueue\.length, alreadyPending, queuedIds, coveredIds \}/);
   });
 
   it.each(["enrich_leads", "score_leads", "research_leads"])(
