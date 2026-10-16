@@ -47,6 +47,14 @@ describe("send-email still points at the right place when it refuses", () => {
   });
 
   it("defaults the cap to 10 when the subscription carries none", () => {
-    expect(SEND).toContain("subscription.daily_email_limit || 10");
+    /*
+     * The default still holds; it moved. It used to be read straight off the
+     * row at the point of enforcement, which meant it applied only when a row
+     * came back — and an account whose status was not `active` produced none,
+     * so no cap applied at all. It is now resolved before the checks, where an
+     * absent or lapsed plan lands on the same 10.
+     */
+    expect(SEND).toContain("subscription?.daily_email_limit || 10");
+    expect(SEND).toContain("const dailyLimit = effectiveDailyLimit;");
   });
 });

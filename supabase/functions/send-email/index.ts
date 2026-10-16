@@ -239,25 +239,66 @@ serve(async (req) => {
     }
 
     // --- Daily + Monthly email limit enforcement ---
+    /*
+     * Read the row, not only the active one.
+     *
+     * This asked for `.eq('status', 'active').single()` and kept `subError`
+     * without ever reading it. `.single()` errors when there are no rows, so
+     * an account that is `past_due`, `paused` or `cancelled` — all three of
+     * which the billing path writes — produced a null subscription. Everything
+     * below hung off `if (subscription)`, and the send happens three hundred
+     * lines further down, outside it. The accounts that should send least were
+     * the ones sending with no plan cap at all.
+     *
+     * The same was true of a transient failure on this read, which is the
+     * shape the monthly count below already guards against, in this same
+     * function, with a comment saying a cap that reads zero on error is no cap.
+     * That reasoning was one level too deep.
+     */
     const { data: subscription, error: subError } = await supabase
       .from('subscriptions')
-      .select('plan, daily_email_limit, daily_emails_sent, daily_emails_reset_at')
+      .select('plan, status, daily_email_limit, daily_emails_sent, daily_emails_reset_at')
       .eq('user_id', user.id)
-      .eq('status', 'active')
-      .single();
+      .maybeSingle();
+
+    if (subError) {
+      console.error('[send-email] subscription unavailable', subError);
+      return new Response(
+        JSON.stringify({
+          error: "We couldn't check your send allowance. Please try again in a moment.",
+          code: 'allowance_unavailable',
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
 
     const MONTHLY_EMAIL_LIMITS: Record<string, number> = {
       free: 100, starter: 50000, growth: 250000, pro: 1000000, elite: 1000000, agency: -1,
     };
 
-    if (subscription) {
+    /*
+     * An account without an active plan is on Free, not on unlimited.
+     *
+     * A missing row, or one that is past_due, paused or cancelled, falls back
+     * to the Free allowance — 10 a day and 100 a month — rather than skipping
+     * the check. That is the most restrictive reading of "no current plan",
+     * and it is the right one for the accounts it covers: a card that failed
+     * is a reason to send less.
+     */
+    const planActive = subscription?.status === 'active';
+    const effectivePlan = planActive ? String(subscription?.plan ?? 'free') : 'free';
+    const effectiveDailyLimit = planActive ? (subscription?.daily_email_limit || 10) : 10;
+
+    {
       const now = new Date();
       const todayMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
       const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
 
       // Daily reset
-      const dailyResetAt = subscription.daily_emails_reset_at ? new Date(subscription.daily_emails_reset_at) : new Date(0);
-      let dailySent = subscription.daily_emails_sent || 0;
+      const dailyResetAt = subscription?.daily_emails_reset_at
+        ? new Date(subscription.daily_emails_reset_at)
+        : new Date(0);
+      let dailySent = subscription?.daily_emails_sent || 0;
       if (dailyResetAt < todayMidnight) {
         dailySent = 0;
         await supabase.from('subscriptions')
@@ -279,7 +320,7 @@ serve(async (req) => {
       const monthlySent = monthlyCount;
 
 
-      const dailyLimit = subscription.daily_email_limit || 10;
+      const dailyLimit = effectiveDailyLimit;
       const nextMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
       if (dailySent >= dailyLimit) {
         await logSystemAlert({
@@ -298,20 +339,20 @@ serve(async (req) => {
         );
       }
 
-      const monthlyLimit = MONTHLY_EMAIL_LIMITS[subscription.plan as string] ?? 0;
+      const monthlyLimit = MONTHLY_EMAIL_LIMITS[effectivePlan] ?? 0;
       if (monthlyLimit !== -1 && monthlySent >= monthlyLimit) {
         await logSystemAlert({
           category: "outreach_send_limit", severity: "warning",
           message: `User hit monthly email send limit (${monthlyLimit})`,
-          details: { user_id: user.id, plan: subscription.plan, monthly_emails_sent: monthlySent },
+          details: { user_id: user.id, plan: effectivePlan, monthly_emails_sent: monthlySent },
           user_id: user.id,
         });
         return new Response(
           JSON.stringify({
-            error: `Monthly email send cap reached on your ${subscription.plan} plan.`,
+            error: `Monthly email send cap reached on your ${effectivePlan} plan.`,
             code: 'monthly_cap_reached',
             upgradeRequired: true,
-            plan: subscription.plan,
+            plan: effectivePlan,
             monthlyLimit,
             monthlySent,
             monthlyRemaining: 0,

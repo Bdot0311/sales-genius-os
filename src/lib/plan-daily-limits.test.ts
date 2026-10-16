@@ -44,7 +44,10 @@ describe("the plan's daily limit reaches the subscription", () => {
 
 describe("send-email still enforces whatever the row holds", () => {
   it("reads the column rather than hardcoding a plan", () => {
-    expect(SEND).toContain("subscription.daily_email_limit || 10");
+    // Still the column, resolved once before the checks rather than inside
+    // them — so a lapsed account gets the Free cap instead of no cap.
+    expect(SEND).toContain("subscription?.daily_email_limit || 10");
+    expect(SEND).not.toMatch(/dailyLimit = \d+;/);
   });
 });
 

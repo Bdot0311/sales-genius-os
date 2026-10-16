@@ -78,14 +78,49 @@ function columnsFromSelect(sel) {
 const files = [
   ...walk("supabase/functions", [".ts"]),
   ...walk("src", [".ts", ".tsx"]),
+
 ].filter((f) => !f.endsWith("types.ts"));
 
 const FILTERS = "eq|neq|gt|gte|lt|lte|order|is|in|like|ilike";
 const hits = [];
+
+/*
+ * Code only, never a test about code.
+ *
+ * A test asserting that some query filters on a column holds that call as a
+ * string, and this scanner reads strings. It attached one such assertion to
+ * whatever table the nearest `.from(...)` *literal* in the same test file
+ * named — a different table, which does not have that column — and reported a
+ * runtime 500 for a line that never reaches the database.
+ *
+ * Tests are the one place where quoting a query is the point, so they are not
+ * scanned. Nothing is lost: a test file makes no calls of its own.
+ */
+const scanned = files.filter((f) => !/\.test\.tsx?$/.test(f));
+
 const seen = new Set();
 
-for (const file of files) {
-  const src = readFileSync(file, "utf8");
+/**
+ * Code only, never the prose about it.
+ *
+ * This scans for `.from("table")` and the `.eq("column", ...)` calls that
+ * follow, which means a comment *quoting* a query reads to it as a query. A
+ * comment explaining that a filter used to say `.eq('status', 'active')`
+ * attached that column to whatever table the nearest real `.from()` above it
+ * named, and the guard reported a column the table does not have — pointing
+ * at a line that is not code.
+ *
+ * The cost of leaving it is worse than a false alarm: the way to silence it
+ * is to stop quoting the code you are explaining, and a comment that cannot
+ * name what it is about is not worth writing.
+ */
+const stripComments = (s) =>
+  s.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "))
+    .replace(/^(\s*)\/\/.*$/gm, (m, indent) => indent);
+
+for (const file of scanned) {
+  // Line numbers are reported, so comments are blanked rather than removed.
+  const src = stripComments(readFileSync(file, "utf8"));
   const fromRe = /\.from\(\s*['"`](\w+)['"`]\s*\)/g;
   let fm;
   while ((fm = fromRe.exec(src)) !== null) {
