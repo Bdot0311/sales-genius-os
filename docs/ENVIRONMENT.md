@@ -134,9 +134,12 @@ The constants are real gateway ids rather than labels, because when Bedrock is
 unconfigured the requested id is passed through to the fallback gateway
 verbatim.
 
-To move everything at once without touching code, point `BEDROCK_MODEL_ID` at
-a stronger model — that is the knob, and it costs roughly three times as much
-per token across every call in the product, including the bulk paths.
+Each environment variable moves one tier and only that tier.
+`BEDROCK_MODEL_ID` is the fast tier, which is where the bulk paths live;
+`BEDROCK_MODEL_ID_PRO` is the strong tier. Moving every Bedrock call in the
+product to another model without touching code means setting **both** to that
+model's id — and doing that with a stronger model costs roughly three times as
+much per token on the bulk paths, which is the expensive half.
 `src/lib/ai-model-tier.test.ts` lifts the live regex out of `routeFor` and
 checks each constant still lands on the tier it claims.
 

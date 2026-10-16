@@ -89,8 +89,20 @@ describe("the calls whose output is the product ask for the strong tier", () => 
     "ai-coach",
     "agent-run",
   ])("%s", (fn) => {
-    expect(body(fn)).toContain("model: AI_SMART");
-    expect(body(fn)).toContain("AI_SMART");
+    /*
+     * Every request in the file, not merely one.
+     *
+     * `generate-email` has eleven call sites, among them the retry that runs
+     * when a draft fails its own quality bar. An assertion that the file
+     * contains AI_SMART somewhere is satisfied while that retry quietly goes
+     * back to Haiku — and a retry writing the email is writing the email.
+     */
+    const src = body(fn);
+    const total = [...src.matchAll(/\bmodel: /g)].length;
+    const smart = [...src.matchAll(/\bmodel: AI_SMART\b/g)].length;
+    expect(total, `${fn} should make at least one AI request`).toBeGreaterThan(0);
+    expect(smart, `${fn} has ${total - smart} request(s) not on the strong tier`)
+      .toBe(total);
   });
 
   it("leaves the mechanical calls on the cheap tier", () => {
