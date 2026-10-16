@@ -88,7 +88,7 @@ function base(raw: string | undefined | null, name: string): string {
  * `cf-aig-authorization`, so a URL without a token is a 401 on every model
  * call in the product — the failure the rest of this file exists to avoid.
  * Returning both together is what makes it impossible to move the traffic and
- * forget the credential.
+ * forget the credential, and a base with no token does not move it at all.
  *
  * The token is attached only when the base is present and usable. It is a
  * Cloudflare credential; going direct to AWS it would be a secret sent to
@@ -104,14 +104,34 @@ export function bedrockRoute(
   const b = base(gatewayBase, "CF_AI_GATEWAY_BEDROCK");
   if (!b) return { url: awsUrl.toString(), headers: {} };
   const token = String(gatewayToken ?? "").trim();
+  /*
+   * Half-configured is the same as unconfigured, and goes direct.
+   *
+   * An earlier version routed without the token and only warned, which is the
+   * one outcome this file exists to prevent: Cloudflare's Authenticated
+   * Gateway rejects anything without `cf-aig-authorization`, so a base set
+   * without a token is a 401 on every model call in the product — drafting,
+   * scoring, research, the agent — reported to the user as a total outage.
+   *
+   * Going direct costs the analytics and nothing else, and the warning says
+   * what to do. The reverse is not true, which is the whole argument: the
+   * failure modes here are not symmetric, and the one that still serves
+   * customers wins.
+   *
+   * It also means the setting is never worth turning on without a token,
+   * which is the right default anyway — an unauthenticated AI Gateway is a
+   * URL that spends your credits for anyone who finds it.
+   */
   if (!token) {
     console.warn(
-      "[ai-gateway] CF_AI_GATEWAY_BEDROCK is set without CF_AI_GATEWAY_TOKEN; " +
-        "an authenticated gateway will reject these calls",
+      "[ai-gateway] CF_AI_GATEWAY_BEDROCK is set without CF_AI_GATEWAY_TOKEN, " +
+        "so Bedrock calls are going direct to AWS. An authenticated gateway " +
+        "would reject them. Set the token to route through the gateway.",
     );
+    return { url: awsUrl.toString(), headers: {} };
   }
   return {
     url: `${b}/bedrock-runtime/${region}${awsUrl.pathname}${awsUrl.search}`,
-    headers: token ? { "cf-aig-authorization": `Bearer ${token}` } : {},
+    headers: { "cf-aig-authorization": `Bearer ${token}` },
   };
 }

@@ -119,20 +119,37 @@ describe("the credential travels with the URL", () => {
    * not an error — but it is the shape of a half-finished setup, and the
    * symptom (401 on every call) does not name its own cause.
    */
-  it("still routes without a token, and says so", () => {
+  /*
+   * Cloudflare's Authenticated Gateway is on for this account, so a base
+   * without a token is not a degraded mode — it is every model call in the
+   * product answering 401 at once, which reads as a total outage.
+   *
+   * The two ways of being wrong are not symmetric. Going direct loses the
+   * analytics the gateway was for. Routing without the credential loses the
+   * product. So half-configured goes direct and says why.
+   */
+  it("goes direct when the base is set without a token, rather than 401ing", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     try {
       const route = bedrockRoute(awsUrl(), "us-east-1", BEDROCK_GW, undefined);
+      expect(route.url).toBe(awsUrl().toString());
       expect(route.headers).toEqual({});
-      expect(route.url).toContain("/aws-bedrock/bedrock-runtime/us-east-1/");
       expect(warn).toHaveBeenCalledWith(expect.stringContaining("CF_AI_GATEWAY_TOKEN"));
+      // And says what to do about it, not just that something is wrong.
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining("direct to AWS"));
     } finally {
       warn.mockRestore();
     }
   });
 
-  it("ignores a token that is only whitespace", () => {
-    expect(bedrockRoute(awsUrl(), "us-east-1", BEDROCK_GW, "   ").headers).toEqual({});
+  it("treats a whitespace-only token as no token", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      expect(bedrockRoute(awsUrl(), "us-east-1", BEDROCK_GW, "   ").url)
+        .toBe(awsUrl().toString());
+    } finally {
+      warn.mockRestore();
+    }
   });
 });
 

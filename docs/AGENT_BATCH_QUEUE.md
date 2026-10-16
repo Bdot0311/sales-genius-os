@@ -303,3 +303,50 @@ with SKIP LOCKED, so the pool must hold more than `passes * p_limit` claimable
 rows or the later passes come back short and throughput halves silently.
 `src/lib/agent-job-fairness.test.ts` asserts the factor stays above the pass cap
 in `trigger_agent_jobs`, because those two numbers live in different migrations.
+
+
+---
+
+## The third queue
+
+`rescore_queue` had the same two problems and a worse one of its own, found by
+looking for the first two somewhere else.
+
+**A claim nobody came back for was stuck for good.** `claim_rescore_items` set
+a row to `processing` and stamped `claimed_at`. Nothing read that column and
+nothing returned a `processing` row to `pending` — the word did not appear in
+the drain, which only ever wrote `done` or `error`. A run that died after
+claiming left those leads holding whatever score they had, with no path back
+and nothing anywhere to say so. This queue is how a lead's ICP fit and signal
+score stay current, so the symptom is a badge that quietly stops moving, for
+exactly the leads whose scores were about to change.
+
+**Global FIFO**, as before: the batch was the oldest rows by `enqueued_at`
+across the whole table.
+
+**A colliding drain did nothing.** Selection happened in the edge function —
+read the oldest N ids, then ask the RPC to claim *those* ids. Two overlapping
+drains read the same ids, `SKIP LOCKED` gave them to one, and the other claimed
+zero and returned `processed: 0` instead of taking the next N. It wastes a
+whole pass, and does it exactly when the queue is deep enough for the
+one-minute backfill job to be running alongside the five-minute one.
+
+`20261016010000_fair_rescore_claim.sql` moves selection into the claim, which
+fixes the third for free and is what lets the second be fixed at all. Measured
+on a real cluster: three simultaneous drains take 50 rows each, 150 distinct,
+where before it was 50 and two empty-handed. A bulk account's 5,000 queued
+rescores and a second account's four now share one batch, 46 to 4.
+
+The sweep parts an interrupted row from an unscoreable one by `attempts`:
+under three goes back to `pending`, three or more becomes `error` with a
+`processed_at`. Rescoring is idempotent — it recomputes from the lead and its
+signals — so unlike a send there is no risk in retrying, and the only question
+is how many times before calling it a bad row. The drain also has a wall clock
+now, and hands back what it did not reach, giving the attempt back with it: a
+run stopped by its own budget never tried those rows, and three budget stops in
+a row would otherwise retire a lead no rescore was attempted for.
+
+One note for whoever adds the fourth queue: the old claim took `uuid[]`, and
+`CREATE OR REPLACE` with a different parameter type adds an overload rather
+than replacing. It is dropped explicitly, or PostgREST would have had two
+candidates for one RPC name — one of which bypasses the fair ordering.
