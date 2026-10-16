@@ -37,6 +37,34 @@ const corsHeaders = {
 const BATCH = 200;
 /** Concurrency against process-sequence-step; it writes rows and sends nothing itself. */
 const CONCURRENCY = 5;
+/**
+ * How long one pass may run.
+ *
+ * Two things rest on this. The small one: at BATCH 200 and CONCURRENCY 5 this
+ * is forty sequential waves, each an HTTP call that reads rows and may
+ * generate, so a pass could outlive the platform's own ceiling and be killed
+ * mid-loop. A killed pass is not a disaster here — the enrollments it did not
+ * reach are still due and the next pass takes them — but being killed is not
+ * the same as stopping, and only one of the two can be relied on.
+ *
+ * The large one: nothing stops two passes advancing the same enrollment.
+ * process-sequence-step reads `current_step`, inserts the outbox row, and
+ * only then advances the step, with no compare-and-set — so two passes
+ * overlapping on one enrollment would schedule the same step twice, and
+ * nothing downstream would catch it. There is no unique index on
+ * (enrollment_id, sequence_step).
+ *
+ * That is unreachable today, and worth being precise about why: the dispatcher
+ * is this function's only caller, and its cron is every five minutes while a
+ * pass cannot outlive the platform's ~150s. Safety by arithmetic rather than
+ * by construction. This budget is what keeps the arithmetic true from this
+ * side, and src/lib/sequence-dispatch.test.ts holds it against the schedule
+ * from the other. Shorten that cron past this budget and the duplicate becomes
+ * reachable — which is not hypothetical, since the rescore backfill in this
+ * same repo was moved to every minute for exactly the reason someone would do
+ * it here: to drain a backlog faster.
+ */
+const BUDGET_MS = 110_000;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -96,8 +124,20 @@ serve(async (req) => {
     let advanced = 0;
     let skipped = 0;
     let failed = 0;
+    let deferred = 0;
 
+    const startedAt = Date.now();
     for (let i = 0; i < runnable.length; i += CONCURRENCY) {
+      /*
+       * Stop of our own accord rather than being killed. The enrollments not
+       * reached are still due and still active, so the next pass takes them —
+       * nothing here needs releasing, because nothing here was claimed.
+       */
+      if (Date.now() - startedAt > BUDGET_MS) {
+        deferred = runnable.length - i;
+        console.log(`[dispatch-sequence-steps] budget reached; ${deferred} left for the next pass`);
+        break;
+      }
       const slice = runnable.slice(i, i + CONCURRENCY);
       const results = await Promise.all(
         slice.map(async (row) => {
@@ -136,7 +176,7 @@ serve(async (req) => {
 
     console.log(
       `[dispatch-sequence-steps] due=${due?.length ?? 0} runnable=${runnable.length} ` +
-        `advanced=${advanced} skipped=${skipped} failed=${failed}`,
+        `advanced=${advanced} skipped=${skipped} failed=${failed} deferred=${deferred}`,
     );
 
     return new Response(
@@ -146,6 +186,7 @@ serve(async (req) => {
         advanced,
         skipped,
         failed,
+        deferred,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );

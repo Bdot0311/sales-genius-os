@@ -173,4 +173,58 @@ describe("the answers to what was asked", () => {
     const all = migs.map((f) => readFileSync(`supabase/migrations/${f}`, "utf8")).join("\n");
     expect(all).not.toContain("functions/v1/process-sequence-step");
   });
+
+  it("cannot have two passes alive at once", () => {
+    /*
+     * The property every enrollment's step count rests on, and it rests on
+     * arithmetic rather than on a lock.
+     *
+     * process-sequence-step reads `current_step`, inserts the outbox row, and
+     * only then advances the step — with no compare-and-set, and no unique
+     * index on (enrollment_id, sequence_step). Two passes overlapping on one
+     * enrollment would schedule the same step twice and nothing downstream
+     * would catch it.
+     *
+     * What makes that unreachable is that the dispatcher is the only caller
+     * and one pass cannot outlive the gap to the next. So the budget and the
+     * schedule are a pair, and they live in different files. Shorten the cron
+     * past the budget and the duplicate becomes reachable — which is not
+     * hypothetical: the rescore backfill in this same repo was moved to every
+     * minute, for exactly the reason someone would do it here.
+     */
+    const DISPATCHER = readFileSync(
+      "supabase/functions/dispatch-sequence-steps/index.ts",
+      "utf8",
+    );
+    const budget = DISPATCHER.match(/const BUDGET_MS = ([\d_]+);/);
+    expect(budget, "the dispatcher should stop of its own accord").toBeTruthy();
+    const budgetMs = Number(budget![1].replace(/_/g, ""));
+    expect(budgetMs).toBeGreaterThan(0);
+
+    /*
+     * The live schedule: the last line that sets one for *this* job wins.
+     *
+     * Scoped to the line, not the file. The first version of this scanned
+     * whole migrations, and the migration that sets this schedule alters
+     * nineteen other jobs in the same file — so it read a daily job's cadence
+     * and the assertion below passed with a budget twice the real interval.
+     * Found by raising the budget past the interval and watching it stay
+     * green.
+     */
+    const migs = readdirSync("supabase/migrations").filter((f) => f.endsWith(".sql")).sort();
+    let everyMinutes = 0;
+    for (const f of migs) {
+      for (const line of readFileSync(`supabase/migrations/${f}`, "utf8").split("\n")) {
+        if (!line.includes("dispatch-sequence-steps")) continue;
+        const m = line.match(/'(?:\*|\d+(?:-\d+)?)\/(\d+) \* \* \* \*'/);
+        if (m) everyMinutes = Number(m[1]);
+      }
+    }
+    expect(everyMinutes, "could not read the dispatcher's schedule").toBeGreaterThan(0);
+    // A cadence read as hours or days is the signature of that misparse.
+    expect(everyMinutes, "schedule read from the wrong job").toBeLessThan(60);
+
+    // A pass must finish before the next one starts, with room to spare.
+    expect(budgetMs).toBeLessThan(everyMinutes * 60_000);
+  });
 });

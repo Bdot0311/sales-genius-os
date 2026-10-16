@@ -465,7 +465,22 @@ serve(async (req) => {
         const leadFunction = LEAD_FUNCTION[String(job.kind)];
         if (leadFunction) {
           const leadForInvoke = lead || (leads.get(String(item.lead_id)) as Record<string, any>);
-          const r = await invokeFn(leadFunction, { leadId: item.lead_id, lead_id: item.lead_id, lead: leadForInvoke });
+          /*
+           * Options the lead row does not carry.
+           *
+           * research-lead takes a `force` that means "ignore the cached brief
+           * and scrape again". Dropping it here turned an overflowing forced
+           * refresh into the very brief the user asked to replace, returned
+           * without error, and the item settled as done — a wrong answer that
+           * looked like a right one.
+           */
+          const itemOptions = (item.payload ?? {}) as Record<string, unknown>;
+          const r = await invokeFn(leadFunction, {
+            leadId: item.lead_id,
+            lead_id: item.lead_id,
+            lead: leadForInvoke,
+            ...(itemOptions.force === true ? { force: true } : {}),
+          });
           // The generator reports failure in the body with a 200, so a missing
           // error is not the same as success — each of these writes the lead
           // row, and `error` is how they say they did not.

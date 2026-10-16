@@ -111,7 +111,7 @@ describe("a lead that has a draft is not drafted again", () => {
   });
 
   it("does not queue a lead that is already waiting in the queue", () => {
-    // The dedupe lives in queueForDrafting now, so the sweep gets it too —
+    // The dedupe lives in queueWork now, so the sweep gets it too —
     // it runs over the whole outstanding set and most of it is already queued.
     expect(CODE).toContain('.eq("status", "pending")');
     expect(CODE).toContain("const toQueue = fresh.filter((id) => !alreadyQueued.has(id));");
@@ -312,7 +312,7 @@ describe("the turn finishes the set it was given", () => {
 
   it("queues whatever the model left out, after it has finished", () => {
     expect(CODE).toContain("const missed = outstandingPool.filter((id) => !handledLeadIds.has(id));");
-    expect(CODE).toContain("await queueForDrafting(sweeping, outstandingGoal, outstandingFeedback)");
+    expect(CODE).toContain('await queueWork("draft", sweeping, outstandingGoal, outstandingFeedback)');
     expect(AGENT).toContain('label: "Queued the leads it skipped"');
   });
 
@@ -349,7 +349,7 @@ describe("the turn finishes the set it was given", () => {
 
 describe("one batch job for the turn, not one per call", () => {
   it("opens the job once and appends to it", () => {
-    expect(CODE).toContain("let batchJobId: string | null = null;");
+    expect(CODE).toContain("const batchJobIds = new Map<string, string>();");
     expect(CODE).toContain("if (!batchJobId) {");
     // Five calls used to mean five jobs, and the card counted one of them.
     expect(CODE).not.toMatch(/let queuedJobId: string \| null = null;/);
@@ -365,9 +365,9 @@ describe("one batch job for the turn, not one per call", () => {
   });
 
   it("never queues a lead this turn already handled", () => {
-    expect(CODE).toContain("const fresh = leadIds.filter((id) => !handledLeadIds.has(id));");
+    expect(CODE).toContain("const fresh = leadIds.filter((id) => !handled.has(id));");
     expect(CODE).toContain("const toQueue = fresh.filter((id) => !alreadyQueued.has(id));");
-    expect(CODE).toContain("for (const id of toQueue) handledLeadIds.add(id);");
+    expect(CODE).toContain("for (const id of toQueue) handled.add(id);");
   });
 
   it("only deletes the job when the failure left it empty", () => {
