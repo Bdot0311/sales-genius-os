@@ -71,16 +71,38 @@ export const ROADMAP: RoadmapItem[] = [
       "Today every enrolled lead walks the same steps. Next, a reply that says \"not now\" pauses the sequence and schedules a check-back, and one that asks a question hands you a draft answer instead of sending step three.",
   },
   {
+    /*
+     * This promised something that already works.
+     *
+     * Selecting saved leads and enriching them in one pass, with a live count
+     * of what was found, skipped and failed, has shipped — it is billed for in
+     * the pricing entry below. Leaving it on the roadmap as "up next" tells
+     * someone a feature they used this morning is not built yet, which is a
+     * worse thing for this page to say than nothing. What is genuinely
+     * missing is the half about money.
+     */
     status: "next",
-    title: "Enrich a whole list at once",
+    title: "See what a bulk run will cost before it runs",
     description:
-      "Select any number of saved leads and fill in their missing emails, titles and company data in one pass, with a running count of what was found and what it cost.",
+      "Enriching a selection spends a credit for each contact it finds, and today you watch the count rather than the bill. Next, an estimate before you start and a running total as it goes, so a thousand-lead run is a decision rather than a surprise.",
   },
   {
     status: "next",
     title: "Your own sending domains, end to end",
     description:
       "Buy a domain, warm it, and route sending through it without leaving OutReign — with the DNS records checked for you rather than handed to you as a list.",
+  },
+  {
+    status: "next",
+    title: "Inboxes made for you, not by you",
+    description:
+      "Create the mailboxes on your sending domain from inside OutReign, with signatures, display names and warmup set up as they are created — instead of making each one by hand in Google and connecting them back one at a time.",
+  },
+  {
+    status: "exploring",
+    title: "Outreach that is not only email",
+    description:
+      "A sequence that can open with a LinkedIn connection, follow with an email, and leave a call task on the day the lead opens it — with replies on any of them stopping the rest, the way they already do for email.",
   },
   {
     status: "exploring",
@@ -95,14 +117,69 @@ export const CHANGELOG: ChangelogEntry[] = [
     id: "2026-10-16-failed-payments",
     date: "2026-10-16",
     title: "Clearer handling when a payment fails",
-    summary: "One day of full access, then Free until your card goes through, with a one-click fix.",
+    summary:
+      "A failed payment now has one day of grace and a one-click fix, and a scheduled email can never be sent twice.",
     items: [
       {
         tag: "billing",
         title: "What happens when your card is declined",
         description:
           "Your plan stays on for one day after a failed payment. After that the account moves to Free until the payment succeeds, and paying restores your plan straight away. We retry the card for three days; if it still hasn't gone through, the subscription ends and the account stays on Free. A bar at the top of the dashboard shows where you are and has a Fix payment button.",
-        href: "/dashboard/settings",
+        // Settings is mounted at /settings, not under /dashboard. This arrived
+        // pointing at /dashboard/settings, which has no route and lands on Not
+        // Found — the one link in the entry someone follows because their card
+        // was declined, and the exact dead path the route check was written
+        // after two earlier items took.
+        href: "/settings",
+      },
+      {
+        tag: "fixed",
+        title: "A scheduled email is sent once",
+        description:
+          "When two send runs overlapped, both could pick up the same queued email and deliver it twice. Each email is now claimed before it is sent, so a prospect receives it once however the sends are scheduled.",
+        href: "/dashboard/outreach",
+      },
+      {
+        tag: "fixed",
+        title: "Cancelling tells you if it already went",
+        description:
+          "Cancelling an email that was already on its way said \"cancelled\" and sent it anyway. Cancelling now stops anything that has not started, and says plainly when it is too late rather than claiming otherwise. Editing behaves the same way.",
+        href: "/dashboard/outreach",
+      },
+      {
+        tag: "fixed",
+        title: "Lead scores no longer quietly stop updating",
+        description:
+          "If a scoring run was interrupted, the leads it was working on were left in a state nothing picked up again — so their ICP fit and signal scores stayed frozen at whatever they were, with nothing to show it. Interrupted work is now picked up on the next pass.",
+        href: "/dashboard/leads/saved",
+      },
+      {
+        tag: "improved",
+        title: "Drafts, and the checks on them, use a stronger model",
+        description:
+          "Writing an email, grading it against the rules, and the research behind the personalisation now all run on a more capable model. The checks matter as much as the writing: a weak grader passes copy a strong writer would not have sent.",
+        href: "/dashboard/outreach",
+      },
+      {
+        tag: "improved",
+        title: "A long enrich or score run finishes in the background",
+        description:
+          "Asking the agent to enrich, score or research more leads than one reply could cover used to leave the remainder undone, reported only as \"skipped\". The rest is now queued and worked through in the background, and the agent tells you which leads are still outstanding.",
+        href: "/dashboard/agent/chat",
+      },
+      {
+        tag: "improved",
+        title: "One busy account no longer holds up everyone else",
+        description:
+          "Background drafting, scoring and sending took work strictly oldest-first across the whole product, so a large import could sit in front of everybody else's queue. Each account now takes turns, and a small batch is picked up in the same minute it is queued.",
+        href: "/dashboard/leads/saved",
+      },
+      {
+        tag: "new",
+        title: "Learn your ICP from the deals you have won",
+        description:
+          "Point the agent at your closed-won deals and it looks for what they have in common — industry, company size, seniority — and offers to write those back into your ICP. It needs a handful of wins before it will say anything, so an early account is told it does not have enough yet rather than given a pattern made of two deals.",
+        href: "/dashboard/icp",
       },
     ],
   },

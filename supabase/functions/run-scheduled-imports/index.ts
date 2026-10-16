@@ -1,4 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import {
+  chunk,
+  companiesToCheck,
+  dropAlreadyHeld,
+  emailsToCheck,
+  indexHeld,
+  orIlike,
+} from "../_shared/lead-dedupe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isInternalCaller } from '../_shared/internal-auth.ts';
 
@@ -151,26 +159,137 @@ serve(async (req) => {
           return mappedLead;
         });
 
+        /*
+         * Drop the ones this account already has, before inserting.
+         *
+         * `next_run_at` is advanced after the insert, so a run killed in
+         * between — this function has no wall clock and the platform stops it
+         * around 150s — leaves the leads in and the schedule un-advanced, and
+         * the next hourly pass imports the same search again. There is no
+         * unique constraint on leads to catch that, so it produced duplicate
+         * rows for the same person. Two rows for one prospect is not untidy
+         * data, it is two sequences and two emails to someone who was
+         * contacted once.
+         *
+         * The fix is idempotence rather than reordering. Advancing the
+         * schedule first would turn a killed run into a silently skipped
+         * import, which trades duplicate leads for missing ones.
+         *
+         * ── Sized by the import, not by the account ─────────────────────
+         *
+         * The first version read the account's leads with a 5,000 row cap,
+         * which is a correctness hole rather than a soft limit: an account
+         * past that has an incomplete picture of what it holds, and the
+         * leads outside the window come back as new. So the lookup asks only
+         * about the people actually arriving. A fifty-lead import asks about
+         * fifty addresses however many leads the account has.
+         */
+        const wantEmails = emailsToCheck(formattedLeads);
+        const wantCompanies = companiesToCheck(formattedLeads);
+
+        const heldRows: any[] = [];
+        let lookupFailed: string | null = null;
+
+        /*
+         * Compared the way the filter compares.
+         *
+         * `in` is case-sensitive in Postgres, and these values are normalised
+         * before they are matched — so asking for "jo@x.com" misses a stored
+         * "Jo@X.com" and the lead is inserted again. The account-wide scan
+         * this replaced did not have that problem, because it normalised in
+         * memory; sizing the query by the import reintroduced it. Chunked,
+         * because the filter goes in the URL.
+         */
+        const lookupBy = async (column: string, values: string[]) => {
+          for (const run of chunk(values)) {
+            if (lookupFailed) return;
+            const { data, error } = await supabase
+              .from('leads')
+              .select('contact_email, contact_name, company_name')
+              .eq('user_id', schedule.user_id)
+              .or(orIlike(column, run));
+            if (error) { lookupFailed = error.message; return; }
+            heldRows.push(...(data ?? []));
+          }
+        };
+
+        await lookupBy('contact_email', wantEmails);
+        /*
+         * The companies are for the fallback key, which only applies to leads
+         * arriving without an address. A partial answer here lets a nameless
+         * duplicate through; a partial answer on the addresses above would let
+         * a real one through, which is why that one is not capped.
+         */
+        if (!lookupFailed) await lookupBy('company_name', wantCompanies.slice(0, 200));
+
+        /*
+         * A failed lookup is not an empty account.
+         *
+         * Ignoring this error was the same mistake as ignoring the insert's,
+         * committed in the same change: a transient read failure made every
+         * arriving prospect look new, and the insert that followed wrote the
+         * duplicates this whole guard exists to prevent. So the schedule is
+         * skipped without advancing, and the next hourly pass retries it —
+         * the one direction that cannot do harm.
+         */
+        if (lookupFailed) {
+          console.error(
+            `[run-scheduled-imports] schedule ${schedule.id} skipped: could not read existing leads:`,
+            lookupFailed,
+          );
+          continue;
+        }
+
+        const freshLeads = dropAlreadyHeld(formattedLeads as any[], indexHeld(heldRows));
+        const alreadyHeldCount = formattedLeads.length - freshLeads.length;
+
         // Insert leads
-        const { data: insertedLeads, error: insertError } = await supabase
-          .from('leads')
-          .insert(formattedLeads)
-          .select();
+        const { data: insertedLeads, error: insertError } = freshLeads.length
+          ? await supabase.from('leads').insert(freshLeads).select()
+          : { data: [] as any[], error: null };
+
+        /*
+         * The error used to be destructured and never read.
+         *
+         * A failed insert still advanced the schedule and still wrote a
+         * history row, so a search whose mapping no longer matches imported
+         * nothing, every hour, with the reason recorded nowhere. The count was
+         * honest and the cause was invisible, which is the combination that
+         * keeps something broken for weeks.
+         */
+        if (insertError) {
+          console.error(
+            `[run-scheduled-imports] schedule ${schedule.id} insert failed:`,
+            insertError.message,
+          );
+        }
 
         const successCount = insertedLeads?.length || 0;
-        const failedCount = formattedLeads.length - successCount;
+        const failedCount = freshLeads.length - successCount;
 
         // Log import history
         await supabase.from('import_history').insert({
           user_id: schedule.user_id,
           source: 'OutReign',
+          // What the search returned, not what survived the dedupe: a run that
+          // found fifty and held fifty already did not find nothing.
           leads_count: formattedLeads.length,
           success_count: successCount,
           failed_count: failedCount,
           import_type: 'scheduled',
-          search_query: schedule.search_query,
+          // The reason first: a long saved query would otherwise push the
+          // whole message out of the field and leave the honest count with an
+          // invisible cause again.
+          search_query: insertError
+            ? `[import failed: ${insertError.message}] ${schedule.search_query ?? ''}`.slice(0, 500)
+            : schedule.search_query,
           field_mappings: schedule.field_mappings
         });
+        if (alreadyHeldCount > 0) {
+          console.log(
+            `[run-scheduled-imports] schedule ${schedule.id}: ${alreadyHeldCount} already held, ${freshLeads.length} new`,
+          );
+        }
 
         // Update schedule for next run
         const now = new Date();

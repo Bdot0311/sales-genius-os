@@ -4,7 +4,20 @@
 // forever otherwise. Runs hourly on cron; an admin can also trigger it.
 
 import Stripe from "https://esm.sh/stripe@18.5.0";
-import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+/*
+ * The same specifier the rest of the product uses.
+ *
+ * This arrived as `npm:@supabase/supabase-js@2.57.2`, the only file in the
+ * repo to import it that way — everywhere else, including the shared billing
+ * helpers this calls into, uses the esm.sh copy. Deno treats the two as
+ * different modules, so the client built here was not the client
+ * `process-stripe-event` types its parameters against, and every call into it
+ * failed to type-check on a protected member.
+ *
+ * Nothing about the runtime behaviour changes; it is the same library at the
+ * same version. What changes is that the type checker can see that.
+ */
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { corsHeaders, isInternalCaller } from "../_shared/internal-auth.ts";
 import { logSystemAlert } from "../_shared/alerts.ts";
 import { PRICE_TO_PLAN, PRODUCT_TO_PLAN, finalizeFailedPayment } from "../_shared/process-stripe-event.ts";
