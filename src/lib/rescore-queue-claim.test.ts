@@ -37,7 +37,33 @@ function liveFile(name: string): string {
     .replace(/^\s*--.*$/gm, "");
 }
 
-const sql = liveFile("release_stale_rescore_items");
+
+/**
+ * One function's body, not the file it lives in.
+ *
+ * `liveFile` returns the whole migration, and this migration defines three
+ * functions. An assertion matched against the file is satisfied by any of
+ * them — reverting `release_rescore_items` to a single set-based UPDATE left
+ * the loop and the exception handler in `release_stale_rescore_items` in the
+ * same file, and the test stayed green on exactly the regression it exists to
+ * catch. Found by making that change and watching it pass.
+ *
+ * Anchored on the CREATE, because `FUNCTION public.<name>` also appears in
+ * the REVOKE and GRANT that follow each definition.
+ */
+function liveBody(name: string): string {
+  const create = `CREATE OR REPLACE FUNCTION public.${name}(`;
+  const whole = liveFile(name);
+  const from = whole.lastIndexOf(create);
+  expect(from, `${name} is not defined where its file says`).toBeGreaterThan(-1);
+  const end = whole.indexOf("\n$$;", from);
+  expect(end, `${name} has no closing $$;`).toBeGreaterThan(from);
+  const body = whole.slice(from, end);
+  expect(body, `${name} slice does not look like a function body`).toContain("LANGUAGE");
+  return body;
+}
+
+const sql = liveBody("release_stale_rescore_items");
 
 describe("a claim nobody came back for is recovered", () => {
   it("has a sweep at all", () => {
@@ -45,7 +71,11 @@ describe("a claim nobody came back for is recovered", () => {
   });
 
   it("hands an interrupted row back to pending", () => {
-    expect(sql).toMatch(/SET status = 'pending', claimed_at = NULL[\s\S]{0,200}?attempts < 3/);
+    // The stale, not-yet-exhausted rows are what the loop selects, and the
+    // body puts them back. Asserted as the pair rather than as one statement,
+    // because the release became row-by-row to contain a unique violation.
+    expect(sql).toMatch(/claimed_at < now\(\) - interval '15 minutes'\s*\n\s*AND attempts < 3/);
+    expect(sql).toMatch(/SET status = 'pending', claimed_at = NULL/);
   });
 
   it("retires a row that fails every time instead of looping forever", () => {
@@ -66,7 +96,7 @@ describe("a claim nobody came back for is recovered", () => {
      * ever attempted for — the exact bug 20261003120000 fixed for the
      * drafting queue.
      */
-    expect(liveFile("release_rescore_items"))
+    expect(liveBody("release_rescore_items"))
       .toMatch(/attempts = GREATEST\(attempts - 1, 0\)/);
   });
 });
@@ -94,14 +124,14 @@ describe("the drain claims rather than choosing", () => {
   });
 
   it("takes turns across accounts, like the other two queues", () => {
-    const claim = liveFile("claim_rescore_items");
+    const claim = liveBody("claim_rescore_items");
     expect(claim).toMatch(/r\.queue = 'rescore_queue'/);
     expect(claim).toMatch(/ORDER BY CASE\s*\n\s*WHEN r\.last_served_at > now\(\) - interval/);
     expect(claim).toContain("FOR UPDATE OF c SKIP LOCKED");
   });
 
   it("still takes an account's own rows oldest first", () => {
-    expect(liveFile("claim_rescore_items"))
+    expect(liveBody("claim_rescore_items"))
       .toMatch(/row_number\(\) OVER \(ORDER BY c\.enqueued_at, c\.id\) AS turn/);
   });
 });
@@ -115,5 +145,67 @@ describe("a run that overruns does not strand its claims", () => {
 
   it("hands back what it did not reach", () => {
     expect(code).toMatch(/rpc\("release_rescore_items", \{ p_ids: releaseLater \}\)/);
+  });
+});
+
+describe("the recovery path is reachable, and one lead cannot abort it", () => {
+  /*
+   * Both found in review of the migration above, both reproduced on a real
+   * cluster before being fixed.
+   */
+  const trigger = liveBody("trigger_rescore_queue");
+  const releaseStale = liveBody("release_stale_rescore_items");
+  const release = liveBody("release_rescore_items");
+
+  it("sweeps before deciding there is nothing to do", () => {
+    /*
+     * The sweep lives in the drain, and the drain is only called by this
+     * trigger — which returned early on a pending count of zero. A run that
+     * died after claiming the last batch left rows 'processing' and none
+     * 'pending', so the count was zero, the drain was never called, and the
+     * recovery inside it never ran. Reachable only while something else was
+     * already queued, which is precisely not the stuck case.
+     */
+    const sweepAt = trigger.indexOf("PERFORM public.release_stale_rescore_items()");
+    const countAt = trigger.indexOf("INTO pending_ct");
+    expect(sweepAt).toBeGreaterThan(-1);
+    expect(countAt).toBeGreaterThan(-1);
+    expect(sweepAt).toBeLessThan(countAt);
+  });
+
+  it("still signs the drain with the internal job key", () => {
+    /*
+     * A regression guard on this very rewrite. The copy of this function in
+     * supabase/migrations signs with the anon key; the live one signs with
+     * internal_job_key(). The drain is behind requireServiceRole, which
+     * rejects the anon key outright, so rebuilding this from the older copy
+     * would have 401'd the whole queue.
+     */
+    expect(trigger).toContain("public.internal_job_key()");
+    expect(trigger).not.toContain("supabase_anon_key");
+  });
+
+  it("releases row by row so a conflict cannot take the batch with it", () => {
+    /*
+     * uq_rescore_queue_pending_lead is unique on lead_id WHERE status =
+     * 'pending' and does not cover 'processing', so a new signal can enqueue
+     * a second row for a lead whose first row is claimed. Handing the claimed
+     * one back then violates the index — and as one set-based UPDATE, that
+     * raised and rolled back every other lead's recovery too.
+     */
+    for (const fn of [release, releaseStale]) {
+      expect(fn).toMatch(/FOR r IN[\s\S]*?LOOP/);
+      expect(fn).toMatch(/EXCEPTION WHEN unique_violation THEN/);
+      expect(fn).toMatch(/DELETE FROM public\.rescore_queue WHERE id = r\.id/);
+    }
+  });
+
+  it("retires exhausted rows whatever happened to the rest", () => {
+    // In the old shape this UPDATE was rolled back by one unlucky lead, so
+    // nothing ever reached 'error'. 'error' is not in the unique index, so
+    // this branch cannot conflict on its own.
+    const errorAt = releaseStale.indexOf("SET status = 'error'");
+    const loopEnd = releaseStale.indexOf("END LOOP;");
+    expect(errorAt).toBeGreaterThan(loopEnd);
   });
 });

@@ -350,3 +350,43 @@ One note for whoever adds the fourth queue: the old claim took `uuid[]`, and
 `CREATE OR REPLACE` with a different parameter type adds an overload rather
 than replacing. It is dropped explicitly, or PostgREST would have had two
 candidates for one RPC name — one of which bypasses the fair ordering.
+
+### The recovery that could not be reached
+
+Two findings from review of the migration above, both reproduced on a cluster
+before being fixed.
+
+**The sweep never ran when it mattered most.** It lives at the top of the
+drain, and the drain is only ever called by `trigger_rescore_queue`, which
+opened by counting pending rows and returning if there were none. A run that
+died after claiming the *last* batch leaves rows `processing` and none
+`pending` — so the count is zero, the trigger returns, the drain is never
+called, and the recovery inside it never runs. The fix was reachable only
+while something else was already queued, which is precisely not the stuck
+case. The sweep now runs before the count, so recovered rows are counted and
+drained on the same tick, matching what `trigger_agent_jobs` already does.
+
+**One conflicting lead aborted recovery for every other.**
+`uq_rescore_queue_pending_lead` is unique on `lead_id` WHERE `status =
+'pending'`. It does not cover `processing`, so while a lead's row is claimed a
+new signal can legitimately enqueue a second, pending row for it. Handing the
+claimed row back then violates the index — and as one set-based UPDATE, that
+raised and rolled back every other lead's recovery, including the later move
+of exhausted rows to `error`. Measured before the fix: four stale rows, one of
+them conflicting, and the sweep recovered **none** of them.
+
+The release is now per row with its own exception block, so a conflict is
+contained to the row that caused it, and that row is dropped rather than left
+stuck — a newer pending row already covers the lead, which is exactly what the
+unique index means. Handling it in the exception rather than behind an EXISTS
+check is deliberate: a check still loses to an enqueue landing between the
+check and the update. After the fix, the same four rows: two recovered, the
+subsumed one dropped, the exhausted one retired to `error`.
+
+One trap for whoever edits `trigger_rescore_queue` next. There are two copies
+in the repo. The one in `supabase/migrations` signs the drain with the **anon
+key**; the live one, mirrored into `drizzle/migrations`, signs with
+`internal_job_key()`. The drain is behind `requireServiceRole`, which rejects
+the anon key outright, so rebuilding the function from the older copy would
+401 the entire queue. `src/lib/rescore-queue-claim.test.ts` asserts the live
+definition keeps the internal key.
