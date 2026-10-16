@@ -288,6 +288,20 @@
       "when": 1792103148747,
       "tag": "0040_schema_contract_send_claims",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1792125675064,
+      "tag": "0041_fair_rescore_claim",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1792125696017,
+      "tag": "0042_rescore_recovery_reachable",
+      "breakpoints": true
     }
   ]
 }

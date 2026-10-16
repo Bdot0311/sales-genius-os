@@ -6697,7 +6697,11 @@ export type Database = {
       }
       claim_rescore_items: {
         Args: { p_limit?: number }
-        Returns: { id: string; user_id: string; lead_id: string }[]
+        Returns: {
+          id: string
+          lead_id: string
+          user_id: string
+        }[]
       }
       claim_stripe_webhook_event: {
         Args: {
@@ -6959,19 +6963,13 @@ export type Database = {
         }[]
       }
       release_agent_job_items: { Args: { p_ids: string[] }; Returns: number }
-      release_rescore_items: {
-        Args: { p_ids: string[] }
-        Returns: number
-      }
-      release_stale_rescore_items: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
+      release_rescore_items: { Args: { p_ids: string[] }; Returns: number }
       release_scheduled_email_claims: {
         Args: { p_ids: string[] }
         Returns: number
       }
       release_stale_agent_job_items: { Args: never; Returns: number }
+      release_stale_rescore_items: { Args: never; Returns: number }
       release_stale_scheduled_email_claims: { Args: never; Returns: number }
       reset_daily_email_counters: { Args: never; Returns: undefined }
       saved_lead_facets: { Args: never; Returns: Json }
