@@ -73,7 +73,7 @@ to the Lovable gateway.
 | `AWS_BEARER_TOKEN_BEDROCK` / `BEDROCK_API_KEY` | `_shared/bedrock.ts` | Falls back to the Lovable gateway |
 | `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_SESSION_TOKEN` | `_shared/bedrock.ts` | SigV4 path unavailable; bearer token used instead |
 | `AWS_REGION` / `BEDROCK_REGION` | `_shared/bedrock.ts` | Defaults apply |
-| `BEDROCK_MODEL_ID` / `BEDROCK_MODEL_ID_PRO` | `_shared/bedrock.ts` | Built-in model ids used |
+| `BEDROCK_MODEL_ID` / `BEDROCK_MODEL_ID_PRO` | `_shared/bedrock.ts` | Built-in model ids used — Haiku 4.5 and Sonnet 4.5. These are the two tiers every AI call in the product lands on; see **Which model a call runs on** below |
 | `LOVABLE_API_KEY` | ~29 functions | **With no Bedrock key either: every AI call returns "No AI provider key configured"** — drafting, scoring, research, the agent |
 | `CF_AI_GATEWAY_BEDROCK` | `_shared/ai-gateway.ts` | Bedrock traffic goes direct to AWS, as it always has. Set it to everything up to and including `/aws-bedrock` — `https://gateway.ai.cloudflare.com/v1/<account_id>/<gateway_id>/aws-bedrock` — and every Bedrock call routes through the gateway for spend analytics, caching and rate limiting. The rest of the path (`/bedrock-runtime/<region>/<aws path>`) is appended from the URL the signer saw, so the signature keeps covering the AWS host. Find the base under **AI → AI Gateway → your gateway → API**. Anything that is not an https URL is ignored with a warning rather than sending model traffic somewhere unreachable |
 | `CF_AI_GATEWAY_TOKEN` | `_shared/ai-gateway.ts` | Sent as `cf-aig-authorization` when `CF_AI_GATEWAY_BEDROCK` is in use, never on a direct-to-AWS call. Required whenever the gateway has **Authenticated Gateway** turned on, which rejects anything without it. Create one under **AI → AI Gateway → your gateway → Settings → Authenticated Gateway**. **A base set without a token does not route at all** — it logs a warning and goes direct to AWS, because losing the analytics is recoverable and 401ing every model call in the product is not |
@@ -102,6 +102,43 @@ which work either way.
 uses the `default` alias when no alias header is sent.
 
 | *(the fallback provider is not configurable)* | `_shared/ai-gateway.ts` | Lovable's gateway takes `LOVABLE_API_KEY` and gateway-style model ids, so it cannot be repointed at another provider's route without a credential and a model map for whatever is on the other end. Bedrock is the primary provider and the one worth observing |
+
+
+## Which model a call runs on
+
+Bedrock serves none of the gateway model ids, so `routeFor` collapses whatever
+a caller asks for onto two models: `BEDROCK_MODEL_ID` (Haiku, ~$1/$5 per
+million tokens) and `BEDROCK_MODEL_ID_PRO` (Sonnet, ~$3/$15). The test it
+applies is a regex over the requested id — a call gets the stronger model only
+if its string contains `pro`, `sonnet`, `opus` or a gpt-5 id.
+
+That made the choice invisible at the call site, and twenty-four of
+twenty-eight call sites wrote `"google/gemini-2.5-flash"` and ran on Haiku
+without saying so — including the function that writes the emails, the two
+that grade them, and the agent path that drafts and replies to real prospects.
+
+Call sites now ask for a tier by name, from `_shared/ai-provider.ts`:
+
+| constant | tier | used by |
+|---|---|---|
+| `AI_SMART` | Sonnet | `generate-email`, `generate-sequence`, `generate-followup-suggestion`, `check-email-rubric`, `check-copy-risk`, `research-lead`, `research-account`, `ai-coach`, `agent-run` |
+| `AI_FAST` | Haiku | `score-lead-v2`, `map-account-committee`, `build-agent`, `refill-blog-topics`, `apply-rubric-suggestion` |
+
+The split is "is the output the product". Drafting and the research that feeds
+personalisation are; rubric-driven scoring and structured extraction are not.
+The two graders are on the strong tier for a reason worth stating: a weak
+grader is the worse half of that pair, because it green-lights copy the writer
+should not have produced.
+
+The constants are real gateway ids rather than labels, because when Bedrock is
+unconfigured the requested id is passed through to the fallback gateway
+verbatim.
+
+To move everything at once without touching code, point `BEDROCK_MODEL_ID` at
+a stronger model — that is the knob, and it costs roughly three times as much
+per token across every call in the product, including the bulk paths.
+`src/lib/ai-model-tier.test.ts` lifts the live regex out of `routeFor` and
+checks each constant still lands on the tier it claims.
 
 ---
 

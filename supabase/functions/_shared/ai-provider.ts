@@ -50,6 +50,31 @@ const DEFAULT_PRICE = { in: 0.3, out: 2.5 };
  * Amazon Bedrock is the only connected AI provider; the Lovable gateway is the
  * fallback used only when Bedrock is not configured.
  */
+/**
+ * The two tiers, named.
+ *
+ * Bedrock serves none of the gateway model ids, so `routeFor` collapses
+ * whatever a caller asks for onto one of two models — and the test it applies
+ * is a regex over the requested id. That means a call site gets the cheap
+ * model unless its string happens to contain "pro", "sonnet", "opus" or a
+ * gpt-5 id, which is a trap: twenty-four call sites wrote
+ * "google/gemini-2.5-flash" and silently ran on Haiku, including the one that
+ * writes the emails and the two that grade them.
+ *
+ * Asking for a tier by name instead makes the choice visible in the diff. The
+ * values are still real gateway ids, because when Bedrock is unconfigured the
+ * requested id is passed through to the fallback gateway verbatim.
+ */
+/** The cheap workhorse. Extraction, classification, structured rewrites. */
+export const AI_FAST = "google/gemini-2.5-flash";
+/**
+ * The stronger model, for calls where the output *is* the product.
+ *
+ * Costs about three times as much per token (3/15 per million against 1/5),
+ * which is the whole reason it is not the default everywhere.
+ */
+export const AI_SMART = "google/gemini-2.5-pro";
+
 export function routeFor(model: string): { provider: AiProvider; url: string; model: string; key: string } {
   const gatewayId = model || "google/gemini-2.5-flash";
   const [, ...rest] = gatewayId.split("/");

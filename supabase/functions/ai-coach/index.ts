@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { aiFetch } from "../_shared/ai-provider.ts";
+import { AI_SMART, aiFetch } from "../_shared/ai-provider.ts";
 import { findUnverifiedClaims } from "../_shared/email-rules.ts";
 
 const corsHeaders = {
@@ -259,7 +259,7 @@ Keep responses concise (2-3 focused paragraphs) unless they ask for detailed ana
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: AI_SMART,
         messages,
         stream: false, // Changed to false for validation
       }),

@@ -22,7 +22,7 @@ import {
   type LeadResearchBrief,
   researchInputs,
 } from "../_shared/lead-research.ts";
-import { aiFetch } from "../_shared/ai-provider.ts";
+import { AI_SMART, aiFetch } from "../_shared/ai-provider.ts";
 import { diffBriefs } from "../_shared/brief-diff.ts";
 import {
   FALLBACK_PATHS,
@@ -174,7 +174,7 @@ async function generateBrief(
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
+      model: AI_SMART,
       temperature: 0.1,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
@@ -193,7 +193,7 @@ async function generateBrief(
     if (isAiCreditError(response.status, errorText)) {
       await reportAiCreditsExhausted({
         fn: "research-lead",
-        model: "google/gemini-2.5-flash",
+        model: AI_SMART,
         status: response.status,
         detail: errorText,
       });

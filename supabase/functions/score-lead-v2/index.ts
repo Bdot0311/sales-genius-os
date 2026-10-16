@@ -8,7 +8,7 @@ import {
   SignalEventInput,
 } from "../_shared/lead-scoring.ts";
 import { REASON_SYSTEM_PROMPT, reasonUserPayload } from "./prompt.ts";
-import { aiFetch } from "../_shared/ai-provider.ts";
+import { AI_FAST, aiFetch } from "../_shared/ai-provider.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -41,7 +41,7 @@ async function polishReason(payload: string, apiKey: string): Promise<string | n
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: AI_FAST,
         temperature: 0,
         messages: [
           { role: "system", content: REASON_SYSTEM_PROMPT },
