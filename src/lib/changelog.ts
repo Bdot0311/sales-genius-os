@@ -92,6 +92,21 @@ export const ROADMAP: RoadmapItem[] = [
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-16-failed-payments",
+    date: "2026-10-16",
+    title: "Clearer handling when a payment fails",
+    summary: "One day of full access, then Free until your card goes through, with a one-click fix.",
+    items: [
+      {
+        tag: "billing",
+        title: "What happens when your card is declined",
+        description:
+          "Your plan stays on for one day after a failed payment. After that the account moves to Free until the payment succeeds, and paying restores your plan straight away. We retry the card for three days; if it still hasn't gone through, the subscription ends and the account stays on Free. A bar at the top of the dashboard shows where you are and has a Fix payment button.",
+        href: "/dashboard/settings",
+      },
+    ],
+  },
+  {
     id: "2026-10-15-working-unsubscribe",
     date: "2026-10-15",
     title: "Every email carries a working unsubscribe",

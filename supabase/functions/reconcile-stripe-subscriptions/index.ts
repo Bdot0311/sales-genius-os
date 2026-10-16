@@ -7,7 +7,8 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { corsHeaders, isInternalCaller } from "../_shared/internal-auth.ts";
 import { logSystemAlert } from "../_shared/alerts.ts";
-import { PRICE_TO_PLAN, PRODUCT_TO_PLAN } from "../_shared/process-stripe-event.ts";
+import { PRICE_TO_PLAN, PRODUCT_TO_PLAN, finalizeFailedPayment } from "../_shared/process-stripe-event.ts";
+import { dunningStage } from "../_shared/dunning-policy.ts";
 import { getSubscriptionPeriod, toIsoUnix } from "../_shared/stripe-period.ts";
 
 const log = (s: string, d?: unknown) =>
@@ -21,6 +22,7 @@ interface SubRow {
   stripe_subscription_id: string | null;
   trial_end_date: string | null;
   previous_plan: string | null;
+  grace_started_at: string | null;
 }
 
 function planFor(sub: Stripe.Subscription) {
@@ -81,7 +83,7 @@ Deno.serve(async (req) => {
     // a paid plan without a live subscription.
     const { data: rows, error } = await supabase
       .from("subscriptions")
-      .select("user_id, plan, status, account_status, stripe_subscription_id, trial_end_date, previous_plan")
+      .select("user_id, plan, status, account_status, stripe_subscription_id, trial_end_date, previous_plan, grace_started_at")
       .or("stripe_subscription_id.not.is.null,plan.neq.free");
     if (error) throw new Error(error.message);
 
@@ -156,6 +158,23 @@ Deno.serve(async (req) => {
           });
           continue;
         }
+
+        // Failed-payment run past its recovery window: end it for good.
+        if (sub && sub.status === "past_due" && row.grace_started_at &&
+            dunningStage(row.grace_started_at, 1) === "final") {
+          await finalizeFailedPayment(stripe, supabase, row.user_id, email, sub.id, 0);
+          stats.corrected++; stats.downgraded++;
+          await logSystemAlert({
+            category: "billing_payment_failed", severity: "critical",
+            message: `${email ?? row.user_id} did not fix their payment within 3 days — subscription cancelled, account moved to the free plan`,
+            details: { email, stripe_subscription_id: sub.id, trigger: "dunning_final" },
+            user_id: row.user_id, related_entity: sub.id,
+          });
+          continue;
+        }
+        // Inside the grace day the paid plan stays on.
+        if (sub && sub.status === "past_due" && row.grace_started_at &&
+            dunningStage(row.grace_started_at, 1) === "grace") continue;
 
         // Not entitled in Stripe (cancelled, unpaid, or gone).
         if (row.plan === "free" && !row.stripe_subscription_id) continue;
