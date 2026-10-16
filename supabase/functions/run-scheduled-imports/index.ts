@@ -1,4 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import {
+  companiesToCheck,
+  dropAlreadyHeld,
+  emailsToCheck,
+  indexHeld,
+} from "../_shared/lead-dedupe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isInternalCaller } from '../_shared/internal-auth.ts';
 
@@ -165,37 +171,75 @@ serve(async (req) => {
          *
          * The fix is idempotence rather than reordering. Advancing the
          * schedule first would turn a killed run into a silently skipped
-         * import, which trades duplicate leads for missing ones. Making the
-         * insert a no-op on a repeat keeps the at-least-once behaviour and
-         * removes the harm.
+         * import, which trades duplicate leads for missing ones.
          *
-         * The rule is the repo's own, from `dropSeenLeads` in
-         * fetch-external-leads: the same contact_email, or failing that the
-         * same contact_name and company_name.
+         * ── Sized by the import, not by the account ─────────────────────
+         *
+         * The first version read the account's leads with a 5,000 row cap,
+         * which is a correctness hole rather than a soft limit: an account
+         * past that has an incomplete picture of what it holds, and the
+         * leads outside the window come back as new. So the lookup asks only
+         * about the people actually arriving. A fifty-lead import asks about
+         * fifty addresses however many leads the account has.
          */
-        const { data: seenRows } = await supabase
-          .from('leads')
-          .select('contact_email, contact_name, company_name')
-          .eq('user_id', schedule.user_id)
-          .limit(5000);
-        const norm = (v: unknown) => String(v ?? '').trim().toLowerCase();
-        const seenEmails = new Set(
-          (seenRows ?? []).map((r: any) => norm(r.contact_email)).filter(Boolean)
-        );
-        const seenPairs = new Set(
-          (seenRows ?? []).map((r: any) => `${norm(r.contact_name)}|${norm(r.company_name)}`)
-        );
-        const freshLeads = formattedLeads.filter((l: any) => {
-          const email = norm(l.contact_email);
-          if (email && seenEmails.has(email)) return false;
-          return !seenPairs.has(`${norm(l.contact_name)}|${norm(l.company_name)}`);
-        });
-        const alreadyHeld = formattedLeads.length - freshLeads.length;
+        const wantEmails = emailsToCheck(formattedLeads);
+        const wantCompanies = companiesToCheck(formattedLeads);
+
+        const heldRows: any[] = [];
+        let lookupFailed: string | null = null;
+
+        if (wantEmails.length > 0) {
+          const { data, error } = await supabase
+            .from('leads')
+            .select('contact_email, contact_name, company_name')
+            .eq('user_id', schedule.user_id)
+            .in('contact_email', wantEmails);
+          if (error) lookupFailed = error.message;
+          else heldRows.push(...(data ?? []));
+        }
+        if (!lookupFailed && wantCompanies.length > 0) {
+          /*
+           * The fallback key needs the rows at these companies, for leads
+           * arriving without an address. Bounded by the import's company
+           * count rather than the account, and capped: this is the weaker
+           * key, and a partial answer here only means a nameless duplicate
+           * slips through, where a partial answer on email means a real one.
+           */
+          const { data, error } = await supabase
+            .from('leads')
+            .select('contact_email, contact_name, company_name')
+            .eq('user_id', schedule.user_id)
+            .in('company_name', wantCompanies)
+            .limit(5000);
+          if (error) lookupFailed = error.message;
+          else heldRows.push(...(data ?? []));
+        }
+
+        /*
+         * A failed lookup is not an empty account.
+         *
+         * Ignoring this error was the same mistake as ignoring the insert's,
+         * committed in the same change: a transient read failure made every
+         * arriving prospect look new, and the insert that followed wrote the
+         * duplicates this whole guard exists to prevent. So the schedule is
+         * skipped without advancing, and the next hourly pass retries it —
+         * the one direction that cannot do harm.
+         */
+        if (lookupFailed) {
+          console.error(
+            `[run-scheduled-imports] schedule ${schedule.id} skipped: could not read existing leads:`,
+            lookupFailed,
+          );
+          continue;
+        }
+
+        const freshLeads = dropAlreadyHeld(formattedLeads as any[], indexHeld(heldRows));
+        const alreadyHeldCount = formattedLeads.length - freshLeads.length;
 
         // Insert leads
         const { data: insertedLeads, error: insertError } = freshLeads.length
           ? await supabase.from('leads').insert(freshLeads).select()
-          : { data: [], error: null };
+          : { data: [] as any[], error: null };
 
         /*
          * The error used to be destructured and never read.
@@ -226,14 +270,17 @@ serve(async (req) => {
           success_count: successCount,
           failed_count: failedCount,
           import_type: 'scheduled',
+          // The reason first: a long saved query would otherwise push the
+          // whole message out of the field and leave the honest count with an
+          // invisible cause again.
           search_query: insertError
-            ? `${schedule.search_query ?? ''} [import failed: ${insertError.message}]`.slice(0, 500)
+            ? `[import failed: ${insertError.message}] ${schedule.search_query ?? ''}`.slice(0, 500)
             : schedule.search_query,
           field_mappings: schedule.field_mappings
         });
-        if (alreadyHeld > 0) {
+        if (alreadyHeldCount > 0) {
           console.log(
-            `[run-scheduled-imports] schedule ${schedule.id}: ${alreadyHeld} already held, ${freshLeads.length} new`,
+            `[run-scheduled-imports] schedule ${schedule.id}: ${alreadyHeldCount} already held, ${freshLeads.length} new`,
           );
         }
 

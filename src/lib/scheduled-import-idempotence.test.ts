@@ -18,40 +18,58 @@ const IMPORT = readFileSync("supabase/functions/run-scheduled-imports/index.ts",
 /** Body only: a comment quoting code must not satisfy an assertion about it. */
 const code = IMPORT.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
 
-describe("importing the same search twice adds nothing twice", () => {
-  it("drops leads the account already holds", () => {
-    expect(code).toMatch(/const freshLeads = formattedLeads\.filter/);
+describe("the import uses the shared rule rather than its own", () => {
+  /*
+   * The behaviour of the rule itself is covered by running it, in
+   * lead-dedupe.test.ts. What is left here is what a behavioural test cannot
+   * see: that this function actually calls it, and in the right order.
+   */
+  it("filters before inserting, and inserts only what survived", () => {
+    expect(code).toMatch(/const freshLeads = dropAlreadyHeld\(/);
     expect(code).toMatch(/\.insert\(freshLeads\)/);
-    // The raw list must not reach the insert any more.
     expect(code).not.toMatch(/\.insert\(formattedLeads\)/);
   });
 
-  it("uses the same notion of a duplicate as the rest of the product", () => {
+  it("sizes the lookup by the import rather than the account", () => {
     /*
-     * The rule is lifted from `dropSeenLeads` in fetch-external-leads rather
-     * than invented here: the same contact_email, or failing that the same
-     * contact_name and company_name. Two definitions of "the same lead" in
-     * one product is how one of them quietly stops matching.
+     * A 5,000 row cap on the account's leads is a correctness hole rather
+     * than a soft limit: past it the picture of what the account holds is
+     * incomplete, and the leads outside the window come back as new.
      */
-    const SEARCH = readFileSync("supabase/functions/fetch-external-leads/index.ts", "utf8");
-    for (const src of [code, SEARCH]) {
-      expect(src).toMatch(/contact_email, contact_name, company_name/);
-    }
-    expect(code).toMatch(/seenEmails\.has\(email\)/);
-    expect(code).toMatch(/seenPairs\.has\(/);
+    expect(code).toMatch(/emailsToCheck\(formattedLeads\)/);
+    expect(code).toMatch(/\.in\('contact_email', wantEmails\)/);
   });
 
-  it("compares case- and whitespace-insensitively", () => {
-    // "Jo@X.com " and "jo@x.com" are one person.
-    expect(code).toMatch(/String\(v \?\? ''\)\.trim\(\)\.toLowerCase\(\)/);
+  it("treats a failed lookup as unknown, not as an empty account", () => {
+    /*
+     * Ignoring this error was the same mistake as ignoring the insert's,
+     * committed in the same change: a transient read failure made every
+     * arriving prospect look new, and the insert that followed wrote the
+     * duplicates the guard exists to prevent.
+     */
+    expect(code).toMatch(/if \(lookupFailed\)/);
+    /*
+     * Sliced by distance, not to the next brace: the block logs the schedule
+     * id through a template literal, so the first `}` is inside `${...}` and
+     * the branch looks empty.
+     */
+    const guard = code.slice(code.indexOf("if (lookupFailed)"), code.indexOf("if (lookupFailed)") + 400);
+    expect(guard).toContain("continue;");
+  });
+
+  it("skips without advancing the schedule, so the next pass retries", () => {
+    // The one direction that cannot do harm.
+    const skipAt = code.indexOf("if (lookupFailed)");
+    const advanceAt = code.indexOf("next_run_at: nextRun.toISOString()");
+    expect(skipAt).toBeGreaterThan(-1);
+    expect(advanceAt).toBeGreaterThan(skipAt);
   });
 
   it("keeps at-least-once rather than trading it for at-most-once", () => {
     /*
      * Advancing the schedule before the import would also stop the duplicate,
      * by turning a killed run into a silently skipped import — duplicate
-     * leads traded for missing ones. The schedule still advances after the
-     * work, and the work is now a no-op on a repeat.
+     * leads traded for missing ones.
      */
     const insertAt = code.indexOf(".insert(freshLeads)");
     const advanceAt = code.indexOf("next_run_at: nextRun.toISOString()");
@@ -77,6 +95,15 @@ describe("a failed import says so", () => {
     // import_history has no error column, so it rides on the one free-text
     // field the row already carries rather than only in a function log.
     expect(code).toMatch(/import failed: \$\{insertError\.message\}/);
+  });
+
+  it("puts the reason before the query, so a long query cannot bury it", () => {
+    // The field is sliced to 500. With the query first, a saved query that
+    // long pushed the whole message out and left the honest count with an
+    // invisible cause again.
+    const line = code.slice(code.indexOf("search_query: insertError"));
+    const tmpl = line.slice(0, line.indexOf("\n", line.indexOf("`")));
+    expect(tmpl.indexOf("import failed")).toBeLessThan(tmpl.indexOf("schedule.search_query"));
   });
 
   it("still counts what the search found, not what survived the dedupe", () => {
