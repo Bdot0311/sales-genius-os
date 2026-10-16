@@ -303,3 +303,109 @@ with SKIP LOCKED, so the pool must hold more than `passes * p_limit` claimable
 rows or the later passes come back short and throughput halves silently.
 `src/lib/agent-job-fairness.test.ts` asserts the factor stays above the pass cap
 in `trigger_agent_jobs`, because those two numbers live in different migrations.
+
+
+---
+
+## The third queue
+
+`rescore_queue` had the same two problems and a worse one of its own, found by
+looking for the first two somewhere else.
+
+**A claim nobody came back for was stuck for good.** `claim_rescore_items` set
+a row to `processing` and stamped `claimed_at`. Nothing read that column and
+nothing returned a `processing` row to `pending` — the word did not appear in
+the drain, which only ever wrote `done` or `error`. A run that died after
+claiming left those leads holding whatever score they had, with no path back
+and nothing anywhere to say so. This queue is how a lead's ICP fit and signal
+score stay current, so the symptom is a badge that quietly stops moving, for
+exactly the leads whose scores were about to change.
+
+**Global FIFO**, as before: the batch was the oldest rows by `enqueued_at`
+across the whole table.
+
+**A colliding drain did nothing.** Selection happened in the edge function —
+read the oldest N ids, then ask the RPC to claim *those* ids. Two overlapping
+drains read the same ids, `SKIP LOCKED` gave them to one, and the other claimed
+zero and returned `processed: 0` instead of taking the next N. It wastes a
+whole pass, and does it exactly when the queue is deep enough for the
+one-minute backfill job to be running alongside the five-minute one.
+
+`20261016010000_fair_rescore_claim.sql` moves selection into the claim, which
+fixes the third for free and is what lets the second be fixed at all. Measured
+on a real cluster: three simultaneous drains take 50 rows each, 150 distinct,
+where before it was 50 and two empty-handed. A bulk account's 5,000 queued
+rescores and a second account's four now share one batch, 46 to 4.
+
+The sweep parts an interrupted row from an unscoreable one by `attempts`:
+under three goes back to `pending`, three or more becomes `error` with a
+`processed_at`. Rescoring is idempotent — it recomputes from the lead and its
+signals — so unlike a send there is no risk in retrying, and the only question
+is how many times before calling it a bad row. The drain also has a wall clock
+now, and hands back what it did not reach, giving the attempt back with it: a
+run stopped by its own budget never tried those rows, and three budget stops in
+a row would otherwise retire a lead no rescore was attempted for.
+
+One note for whoever adds the fourth queue: the old claim took `uuid[]`, and
+`CREATE OR REPLACE` with a different parameter type adds an overload rather
+than replacing. It is dropped explicitly, or PostgREST would have had two
+candidates for one RPC name — one of which bypasses the fair ordering.
+
+### The recovery that could not be reached
+
+Two findings from review of the migration above, both reproduced on a cluster
+before being fixed.
+
+**The sweep never ran when it mattered most.** It lives at the top of the
+drain, and the drain is only ever called by `trigger_rescore_queue`, which
+opened by counting pending rows and returning if there were none. A run that
+died after claiming the *last* batch leaves rows `processing` and none
+`pending` — so the count is zero, the trigger returns, the drain is never
+called, and the recovery inside it never runs. The fix was reachable only
+while something else was already queued, which is precisely not the stuck
+case. The sweep now runs before the count, so recovered rows are counted and
+drained on the same tick, matching what `trigger_agent_jobs` already does.
+
+**One conflicting lead aborted recovery for every other.**
+`uq_rescore_queue_pending_lead` is unique on `lead_id` WHERE `status =
+'pending'`. It does not cover `processing`, so while a lead's row is claimed a
+new signal can legitimately enqueue a second, pending row for it. Handing the
+claimed row back then violates the index — and as one set-based UPDATE, that
+raised and rolled back every other lead's recovery, including the later move
+of exhausted rows to `error`. Measured before the fix: four stale rows, one of
+them conflicting, and the sweep recovered **none** of them.
+
+The release is now per row with its own exception block, so a conflict is
+contained to the row that caused it, and that row is dropped rather than left
+stuck — a newer pending row already covers the lead, which is exactly what the
+unique index means. Handling it in the exception rather than behind an EXISTS
+check is deliberate: a check still loses to an enqueue landing between the
+check and the update. After the fix, the same four rows: two recovered, the
+subsumed one dropped, the exhausted one retired to `error`.
+
+One trap for whoever edits `trigger_rescore_queue` next. There are two copies
+in the repo. The one in `supabase/migrations` signs the drain with the **anon
+key**; the live one, mirrored into `drizzle/migrations`, signs with
+`internal_job_key()`. The drain is behind `requireServiceRole`, which rejects
+the anon key outright, so rebuilding the function from the older copy would
+401 the entire queue. `src/lib/rescore-queue-claim.test.ts` asserts the live
+definition keeps the internal key.
+
+**And a sweep must not take a claim another run is working.** The per-row loop
+above reads a snapshot, and two sweeps overlap routinely: the trigger calls
+one, the drain calls another, and the one-minute backfill job runs alongside
+the five-minute one. Between a sweep selecting a stale row and reaching it,
+another sweep can release it and a drain can claim it fresh — and an UPDATE
+keyed on `id` and `status` alone still matches that active claim. Two drains
+then score the same lead at once, one overwriting the other and one settling a
+row the other owns. Reproduced: without the recheck the freshly claimed row
+went straight back to `pending`. The UPDATE now repeats the staleness
+conditions, so it releases nothing and the row is untouched.
+
+`release_rescore_items` needs no such recheck, and that is an invariant rather
+than an accident: a row it releases was claimed by that same invocation moments
+earlier, so for another run to hold it the sweep must have released it first,
+which needs a claim older than the fifteen-minute fence. The drain's budget is
+100s. The two numbers live in different files, so the test asserts the budget
+stays below the fence — raise it past fifteen minutes and that function needs a
+claim token, not a comment.

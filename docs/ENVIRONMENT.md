@@ -76,7 +76,31 @@ to the Lovable gateway.
 | `BEDROCK_MODEL_ID` / `BEDROCK_MODEL_ID_PRO` | `_shared/bedrock.ts` | Built-in model ids used |
 | `LOVABLE_API_KEY` | ~29 functions | **With no Bedrock key either: every AI call returns "No AI provider key configured"** — drafting, scoring, research, the agent |
 | `CF_AI_GATEWAY_BEDROCK` | `_shared/ai-gateway.ts` | Bedrock traffic goes direct to AWS, as it always has. Set it to everything up to and including `/aws-bedrock` — `https://gateway.ai.cloudflare.com/v1/<account_id>/<gateway_id>/aws-bedrock` — and every Bedrock call routes through the gateway for spend analytics, caching and rate limiting. The rest of the path (`/bedrock-runtime/<region>/<aws path>`) is appended from the URL the signer saw, so the signature keeps covering the AWS host. Find the base under **AI → AI Gateway → your gateway → API**. Anything that is not an https URL is ignored with a warning rather than sending model traffic somewhere unreachable |
-| `CF_AI_GATEWAY_TOKEN` | `_shared/ai-gateway.ts` | Sent as `cf-aig-authorization` **only** when `CF_AI_GATEWAY_BEDROCK` is in use, never on a direct-to-AWS call. If the gateway has Authenticated Gateway turned on and this is unset, **every model call in the product gets a 401** — drafting, scoring, research, the agent — so the helper logs a warning when the base is set without it. Unauthenticated gateways need no token |
+| `CF_AI_GATEWAY_TOKEN` | `_shared/ai-gateway.ts` | Sent as `cf-aig-authorization` when `CF_AI_GATEWAY_BEDROCK` is in use, never on a direct-to-AWS call. Required whenever the gateway has **Authenticated Gateway** turned on, which rejects anything without it. Create one under **AI → AI Gateway → your gateway → Settings → Authenticated Gateway**. **A base set without a token does not route at all** — it logs a warning and goes direct to AWS, because losing the analytics is recoverable and 401ing every model call in the product is not |
+
+### Stored provider keys (BYOK) do nothing for us, by design
+
+The gateway can hold an Amazon Bedrock key of its own under **Provider Keys**.
+It will not be used. Cloudflare's rule is that *the stored key applies only
+when the provider authorization header is missing; when the client sends one,
+the gateway forwards that value to the provider instead* — and we always send
+one, either the SigV4 `Authorization` the signer builds or the `Bearer` from
+`BEDROCK_API_KEY`.
+
+That is the safe side to be on: our AWS credential stays in Supabase function
+secrets and nowhere else, and a wrong or expired key stored in Cloudflare
+cannot take model calls down. The cost is that rotation stays a Supabase
+change rather than a dashboard one.
+
+Switching to BYOK would mean sending no provider authorization at all when the
+gateway is configured, which moves the credential into Cloudflare's Secrets
+Store and makes every Bedrock call depend on it. Worth doing only if central
+rotation is the goal; it buys nothing for analytics, caching or rate limiting,
+which work either way.
+
+`cf-aig-byok-alias` is not needed while a single key is stored: the gateway
+uses the `default` alias when no alias header is sent.
+
 | *(the fallback provider is not configurable)* | `_shared/ai-gateway.ts` | Lovable's gateway takes `LOVABLE_API_KEY` and gateway-style model ids, so it cannot be repointed at another provider's route without a credential and a model map for whatever is on the other end. Bedrock is the primary provider and the one worth observing |
 
 ---

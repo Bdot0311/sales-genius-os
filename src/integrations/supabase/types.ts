@@ -4160,6 +4160,7 @@ export type Database = {
       }
       rescore_queue: {
         Row: {
+          attempts: number
           claimed_at: string | null
           enqueued_at: string
           id: string
@@ -4170,6 +4171,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          attempts?: number
           claimed_at?: string | null
           enqueued_at?: string
           id?: string
@@ -4180,6 +4182,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          attempts?: number
           claimed_at?: string | null
           enqueued_at?: string
           id?: string
@@ -6693,12 +6696,8 @@ export type Database = {
         }
       }
       claim_rescore_items: {
-        Args: { p_row_ids: string[] }
-        Returns: {
-          id: string
-          lead_id: string
-          user_id: string
-        }[]
+        Args: { p_limit?: number }
+        Returns: { id: string; user_id: string; lead_id: string }[]
       }
       claim_stripe_webhook_event: {
         Args: {
@@ -6960,6 +6959,14 @@ export type Database = {
         }[]
       }
       release_agent_job_items: { Args: { p_ids: string[] }; Returns: number }
+      release_rescore_items: {
+        Args: { p_ids: string[] }
+        Returns: number
+      }
+      release_stale_rescore_items: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       release_scheduled_email_claims: {
         Args: { p_ids: string[] }
         Returns: number
