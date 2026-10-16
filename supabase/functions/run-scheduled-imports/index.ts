@@ -151,26 +151,91 @@ serve(async (req) => {
           return mappedLead;
         });
 
-        // Insert leads
-        const { data: insertedLeads, error: insertError } = await supabase
+        /*
+         * Drop the ones this account already has, before inserting.
+         *
+         * `next_run_at` is advanced after the insert, so a run killed in
+         * between — this function has no wall clock and the platform stops it
+         * around 150s — leaves the leads in and the schedule un-advanced, and
+         * the next hourly pass imports the same search again. There is no
+         * unique constraint on leads to catch that, so it produced duplicate
+         * rows for the same person. Two rows for one prospect is not untidy
+         * data, it is two sequences and two emails to someone who was
+         * contacted once.
+         *
+         * The fix is idempotence rather than reordering. Advancing the
+         * schedule first would turn a killed run into a silently skipped
+         * import, which trades duplicate leads for missing ones. Making the
+         * insert a no-op on a repeat keeps the at-least-once behaviour and
+         * removes the harm.
+         *
+         * The rule is the repo's own, from `dropSeenLeads` in
+         * fetch-external-leads: the same contact_email, or failing that the
+         * same contact_name and company_name.
+         */
+        const { data: seenRows } = await supabase
           .from('leads')
-          .insert(formattedLeads)
-          .select();
+          .select('contact_email, contact_name, company_name')
+          .eq('user_id', schedule.user_id)
+          .limit(5000);
+        const norm = (v: unknown) => String(v ?? '').trim().toLowerCase();
+        const seenEmails = new Set(
+          (seenRows ?? []).map((r: any) => norm(r.contact_email)).filter(Boolean)
+        );
+        const seenPairs = new Set(
+          (seenRows ?? []).map((r: any) => `${norm(r.contact_name)}|${norm(r.company_name)}`)
+        );
+        const freshLeads = formattedLeads.filter((l: any) => {
+          const email = norm(l.contact_email);
+          if (email && seenEmails.has(email)) return false;
+          return !seenPairs.has(`${norm(l.contact_name)}|${norm(l.company_name)}`);
+        });
+        const alreadyHeld = formattedLeads.length - freshLeads.length;
+
+        // Insert leads
+        const { data: insertedLeads, error: insertError } = freshLeads.length
+          ? await supabase.from('leads').insert(freshLeads).select()
+          : { data: [], error: null };
+
+        /*
+         * The error used to be destructured and never read.
+         *
+         * A failed insert still advanced the schedule and still wrote a
+         * history row, so a search whose mapping no longer matches imported
+         * nothing, every hour, with the reason recorded nowhere. The count was
+         * honest and the cause was invisible, which is the combination that
+         * keeps something broken for weeks.
+         */
+        if (insertError) {
+          console.error(
+            `[run-scheduled-imports] schedule ${schedule.id} insert failed:`,
+            insertError.message,
+          );
+        }
 
         const successCount = insertedLeads?.length || 0;
-        const failedCount = formattedLeads.length - successCount;
+        const failedCount = freshLeads.length - successCount;
 
         // Log import history
         await supabase.from('import_history').insert({
           user_id: schedule.user_id,
           source: 'OutReign',
+          // What the search returned, not what survived the dedupe: a run that
+          // found fifty and held fifty already did not find nothing.
           leads_count: formattedLeads.length,
           success_count: successCount,
           failed_count: failedCount,
           import_type: 'scheduled',
-          search_query: schedule.search_query,
+          search_query: insertError
+            ? `${schedule.search_query ?? ''} [import failed: ${insertError.message}]`.slice(0, 500)
+            : schedule.search_query,
           field_mappings: schedule.field_mappings
         });
+        if (alreadyHeld > 0) {
+          console.log(
+            `[run-scheduled-imports] schedule ${schedule.id}: ${alreadyHeld} already held, ${freshLeads.length} new`,
+          );
+        }
 
         // Update schedule for next run
         const now = new Date();
