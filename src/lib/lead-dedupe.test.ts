@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   alreadyHeld,
+  chunk,
   companiesToCheck,
   dropAlreadyHeld,
   emailsToCheck,
+  identifying,
   indexHeld,
   namePair,
+  orIlike,
 } from "../../supabase/functions/_shared/lead-dedupe";
 
 /**
@@ -111,5 +114,102 @@ describe("the lookup is sized by the import, not the account", () => {
   it("asks about nothing when nothing arrives", () => {
     expect(emailsToCheck([])).toEqual([]);
     expect(companiesToCheck([])).toEqual([]);
+  });
+});
+
+describe("an address is an identity", () => {
+  /*
+   * The hole that running the rule did not find on its own, because the test
+   * for repeats-within-a-batch used the same address twice.
+   *
+   * The scheduled import writes "Unknown Contact" and "Unknown Company" when
+   * a row arrives without them. With the pair consulted for addressed leads,
+   * every nameless prospect in a batch shared one pair, and each accepted
+   * lead taught the filter to reject the next: fifty real people, fifty
+   * distinct addresses, one inserted row — and the other forty-nine counted
+   * as already held rather than failed, so nothing said a word.
+   */
+  const nameless = (email: string) => ({
+    contact_email: email,
+    contact_name: "Unknown Contact",
+    company_name: "Unknown Company",
+  });
+
+  it("keeps every distinct address even when none of them have names", () => {
+    const batch = [nameless("a@x.com"), nameless("b@x.com"), nameless("c@x.com")];
+    expect(dropAlreadyHeld(batch, indexHeld([]))).toHaveLength(3);
+  });
+
+  it("still drops a repeat of the same address in that batch", () => {
+    const batch = [nameless("a@x.com"), nameless("A@X.com")];
+    expect(dropAlreadyHeld(batch, indexHeld([]))).toHaveLength(1);
+  });
+
+  it("does not treat a placeholder as a name", () => {
+    expect(identifying({ contact_name: "Unknown Contact", company_name: "Acme" })).toBe(false);
+    expect(identifying({ contact_name: "Jo", company_name: "Unknown Company" })).toBe(false);
+    expect(identifying({ contact_name: "Jo", company_name: "Acme" })).toBe(true);
+    expect(identifying({ contact_name: "Jo" })).toBe(false);
+  });
+
+  it("two people with the same name at one company are not merged by address", () => {
+    // Different addresses mean different records. The pair is a fallback for
+    // rows that have no address, not a second opinion about ones that do.
+    const held = indexHeld([{ contact_email: "jo@acme.com", contact_name: "Jo", company_name: "Acme" }]);
+    expect(alreadyHeld({ contact_email: "jo.s@acme.com", contact_name: "Jo", company_name: "Acme" }, held))
+      .toBe(false);
+  });
+
+  it("but an addressed lead still matches a held row that has no address", () => {
+    // The one case the fallback is for: an address is missing on one side.
+    const held = indexHeld([{ contact_name: "Jo", company_name: "Acme" }]);
+    expect(alreadyHeld({ contact_email: "jo@acme.com", contact_name: "Jo", company_name: "Acme" }, held))
+      .toBe(true);
+  });
+
+  it("an unaddressed lead matches a held row by name and company", () => {
+    const held = indexHeld([{ contact_email: "jo@acme.com", contact_name: "Jo", company_name: "Acme" }]);
+    expect(alreadyHeld({ contact_name: "jo", company_name: " ACME " }, held)).toBe(true);
+  });
+
+  it("keeps a lead that can be matched on nothing at all", () => {
+    // No address and no usable name: we cannot say it is a duplicate, so we
+    // do not silently drop a real prospect.
+    const held = indexHeld([nameless("a@x.com")]);
+    expect(alreadyHeld({ contact_name: "Unknown Contact", company_name: "Unknown Company" }, held))
+      .toBe(false);
+  });
+});
+
+describe("the lookup compares the way the filter does", () => {
+  /*
+   * `in` is case-sensitive in Postgres. Asking for "jo@x.com" misses a stored
+   * "Jo@X.com", so the lead comes back as new and is inserted again — which
+   * the account-wide scan this replaced did not do, because it normalised in
+   * memory.
+   */
+  it("asks case-insensitively", () => {
+    expect(orIlike("contact_email", ["jo@x.com"])).toBe('contact_email.ilike."jo@x.com"');
+  });
+
+  it("quotes values, because a company name may contain a comma", () => {
+    // The filter syntax is built from commas and parentheses.
+    expect(orIlike("company_name", ["Smith, Jones & Co"]))
+      .toBe('company_name.ilike."Smith, Jones & Co"');
+  });
+
+  it("escapes a quote inside a value", () => {
+    expect(orIlike("company_name", ['O"Brien'])).toContain('O\\"Brien');
+  });
+
+  it("drops blanks rather than matching everything", () => {
+    expect(orIlike("contact_email", ["", "  ", "a@x.com"])).toBe('contact_email.ilike."a@x.com"');
+  });
+
+  it("splits a long list into runs that fit a URL", () => {
+    const many = Array.from({ length: 120 }, (_, i) => `l${i}@x.com`);
+    const runs = chunk(many);
+    expect(runs).toHaveLength(3);
+    expect(runs.flat()).toEqual(many);
   });
 });

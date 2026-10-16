@@ -1,9 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import {
+  chunk,
   companiesToCheck,
   dropAlreadyHeld,
   emailsToCheck,
   indexHeld,
+  orIlike,
 } from "../_shared/lead-dedupe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isInternalCaller } from '../_shared/internal-auth.ts';
@@ -188,32 +190,37 @@ serve(async (req) => {
         const heldRows: any[] = [];
         let lookupFailed: string | null = null;
 
-        if (wantEmails.length > 0) {
-          const { data, error } = await supabase
-            .from('leads')
-            .select('contact_email, contact_name, company_name')
-            .eq('user_id', schedule.user_id)
-            .in('contact_email', wantEmails);
-          if (error) lookupFailed = error.message;
-          else heldRows.push(...(data ?? []));
-        }
-        if (!lookupFailed && wantCompanies.length > 0) {
-          /*
-           * The fallback key needs the rows at these companies, for leads
-           * arriving without an address. Bounded by the import's company
-           * count rather than the account, and capped: this is the weaker
-           * key, and a partial answer here only means a nameless duplicate
-           * slips through, where a partial answer on email means a real one.
-           */
-          const { data, error } = await supabase
-            .from('leads')
-            .select('contact_email, contact_name, company_name')
-            .eq('user_id', schedule.user_id)
-            .in('company_name', wantCompanies)
-            .limit(5000);
-          if (error) lookupFailed = error.message;
-          else heldRows.push(...(data ?? []));
-        }
+        /*
+         * Compared the way the filter compares.
+         *
+         * `in` is case-sensitive in Postgres, and these values are normalised
+         * before they are matched — so asking for "jo@x.com" misses a stored
+         * "Jo@X.com" and the lead is inserted again. The account-wide scan
+         * this replaced did not have that problem, because it normalised in
+         * memory; sizing the query by the import reintroduced it. Chunked,
+         * because the filter goes in the URL.
+         */
+        const lookupBy = async (column: string, values: string[]) => {
+          for (const run of chunk(values)) {
+            if (lookupFailed) return;
+            const { data, error } = await supabase
+              .from('leads')
+              .select('contact_email, contact_name, company_name')
+              .eq('user_id', schedule.user_id)
+              .or(orIlike(column, run));
+            if (error) { lookupFailed = error.message; return; }
+            heldRows.push(...(data ?? []));
+          }
+        };
+
+        await lookupBy('contact_email', wantEmails);
+        /*
+         * The companies are for the fallback key, which only applies to leads
+         * arriving without an address. A partial answer here lets a nameless
+         * duplicate through; a partial answer on the addresses above would let
+         * a real one through, which is why that one is not capped.
+         */
+        if (!lookupFailed) await lookupBy('company_name', wantCompanies.slice(0, 200));
 
         /*
          * A failed lookup is not an empty account.

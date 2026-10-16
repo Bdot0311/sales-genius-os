@@ -37,7 +37,15 @@ describe("the import uses the shared rule rather than its own", () => {
      * incomplete, and the leads outside the window come back as new.
      */
     expect(code).toMatch(/emailsToCheck\(formattedLeads\)/);
-    expect(code).toMatch(/\.in\('contact_email', wantEmails\)/);
+    expect(code).toMatch(/lookupBy\('contact_email', wantEmails\)/);
+    /*
+     * And compares the way the filter does. `in` is case-sensitive in
+     * Postgres, so asking for "jo@x.com" misses a stored "Jo@X.com" and the
+     * lead is inserted again — which the account-wide scan this replaced did
+     * not do, because it normalised in memory.
+     */
+    expect(code).toMatch(/\.or\(orIlike\(column, run\)\)/);
+    expect(code).not.toMatch(/\.in\(column, run\)/);
   });
 
   it("treats a failed lookup as unknown, not as an empty account", () => {
@@ -47,19 +55,24 @@ describe("the import uses the shared rule rather than its own", () => {
      * arriving prospect look new, and the insert that followed wrote the
      * duplicates the guard exists to prevent.
      */
-    expect(code).toMatch(/if \(lookupFailed\)/);
     /*
-     * Sliced by distance, not to the next brace: the block logs the schedule
-     * id through a template literal, so the first `}` is inside `${...}` and
-     * the branch looks empty.
+     * The outer guard, not the inner one.
+     *
+     * There are two `if (lookupFailed)` now: one inside the per-chunk helper,
+     * which returns from it, and the one that decides what the schedule does.
+     * Anchored on the brace so the helper's early return cannot stand in for
+     * the skip — and sliced by distance rather than to the next brace, since
+     * the block logs the schedule id through a template literal and the first
+     * `}` is inside `${...}`.
      */
-    const guard = code.slice(code.indexOf("if (lookupFailed)"), code.indexOf("if (lookupFailed)") + 400);
-    expect(guard).toContain("continue;");
+    const at = code.indexOf("if (lookupFailed) {");
+    expect(at, "the schedule should be skipped when the lookup fails").toBeGreaterThan(-1);
+    expect(code.slice(at, at + 400)).toContain("continue;");
   });
 
   it("skips without advancing the schedule, so the next pass retries", () => {
     // The one direction that cannot do harm.
-    const skipAt = code.indexOf("if (lookupFailed)");
+    const skipAt = code.indexOf("if (lookupFailed) {");
     const advanceAt = code.indexOf("next_run_at: nextRun.toISOString()");
     expect(skipAt).toBeGreaterThan(-1);
     expect(advanceAt).toBeGreaterThan(skipAt);
