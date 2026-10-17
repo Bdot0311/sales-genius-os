@@ -4475,6 +4475,24 @@ export type Database = {
         }
         Relationships: []
       }
+      send_allowance_usage: {
+        Row: {
+          id: number
+          sent_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: number
+          sent_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: number
+          sent_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       sending_accounts: {
         Row: {
           auto_pause_threshold: number
@@ -5837,6 +5855,7 @@ export type Database = {
           gmail_thread_id: string | null
           id: string
           recipient_message_id: string | null
+          recovered_at: string | null
           replied_at: string | null
           sent_at: string
           subject: string | null
@@ -5852,6 +5871,7 @@ export type Database = {
           gmail_thread_id?: string | null
           id?: string
           recipient_message_id?: string | null
+          recovered_at?: string | null
           replied_at?: string | null
           sent_at?: string
           subject?: string | null
@@ -5867,6 +5887,7 @@ export type Database = {
           gmail_thread_id?: string | null
           id?: string
           recipient_message_id?: string | null
+          recovered_at?: string | null
           replied_at?: string | null
           sent_at?: string
           subject?: string | null

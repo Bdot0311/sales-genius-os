@@ -777,16 +777,26 @@ ${unsubscribeFooterHtml}
         // Don't fail the request, email was sent successfully
       }
 
-      // Increment daily email counter
+      /*
+       * Record the send against the allowance.
+       *
+       * This writes the append-only send_allowance_usage row the daily and
+       * monthly caps count, and the counter column the Outreach and
+       * Deliverability panels display. The old fallback wrote the counter
+       * directly, which is no longer the number that matters — so a failure
+       * here is a send that went out uncounted, and it says so rather than
+       * papering over it with a write that no cap reads.
+       */
       const { error: rpcError } = await supabase.rpc('increment_daily_emails_sent', { _user_id: user.id });
       if (rpcError) {
-        console.error('RPC increment failed, using fallback:', rpcError.message);
-        await supabase
-          .from('subscriptions')
-          .update({ daily_emails_sent: (subscription?.daily_emails_sent || 0) + 1 } as any)
-          .eq('user_id', user.id);
+        console.error('[send-email] allowance not recorded for a send that went out:', rpcError.message);
+        await logSystemAlert({
+          category: "outreach_send_error", severity: "error",
+          message: "A send went out without being recorded against the allowance",
+          details: { user_id: user.id, error: rpcError.message },
+          user_id: user.id,
+        });
       }
-      // Monthly usage is derived from sent_emails — no counter column to update.
 
 
       // Update lead's last_contacted_at if leadId is provided

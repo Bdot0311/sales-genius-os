@@ -48,28 +48,66 @@ describe("placement is observed once, not re-judged every hour", () => {
     expect(stmt).toContain('.eq("to_account_id", acct.account_id)');
   });
 
-  it("skips messages it has already handled", () => {
-    expect(code).toContain('.select("recipient_message_id")');
-    // The list is filtered before any per-message Gmail GET is paid for.
-    const at = code.indexOf("list.messages ?? []");
+  it("skips only messages with nothing left to do", () => {
+    /*
+     * "Already seen" is not "settled", and using the first for the second
+     * drops work: a message whose reply hit the per-run cap, or whose
+     * recovery failed, had still been seen — and was then filtered out of
+     * every later run before anything checked what it still owed.
+     */
+    expect(code).toContain('.select("id, recipient_message_id, folder_detected, recovered_at, replied_at")');
+    const at = code.indexOf("const settled = new Set(");
     expect(at).toBeGreaterThan(-1);
-    expect(code.slice(at, code.indexOf(";", at))).toContain("seen.has(m.id)");
-    // And handled is written with the placement, in the same statement.
-    expect(code).toMatch(/recipient_message_id: msgs\[m\]\.id/);
+    const filter = code.slice(at, code.indexOf("list.messages", at));
+    expect(filter).toContain("!!r.folder_detected");
+    // Recorded as spam but not yet moved: still owed a recovery.
+    expect(filter).toMatch(/r\.folder_detected !== "spam" \|\| !!r\.recovered_at/);
+    // Picked to reply to but not yet replied: still owed a reply.
+    expect(filter).toMatch(/!owesReply\(r\.id as string\) \|\| !!r\.replied_at/);
+    // And the list is filtered on that, before any per-message Gmail GET.
+    const list = code.slice(code.indexOf("list.messages ?? []"));
+    expect(list.slice(0, 160)).toContain("settled.has(m.id)");
   });
 
-  it("recovers from spam before marking the message handled", () => {
+  it("leaves the mailbox alone when it cannot tell what is settled", () => {
+    // Without the set every message is re-judged, which is the defect itself.
+    const at = code.indexOf("if (seenErr)");
+    expect(at).toBeGreaterThan(-1);
+    expect(code.slice(at, at + 300)).toContain("continue;");
+  });
+
+  it("records the reading before acting on it", () => {
     /*
-     * Order matters in one direction only: marked handled first and the
-     * recovery would never be retried, because the next run skips it.
+     * Recovering first was the wrong order. The recovery moves the message to
+     * the inbox, so a write that then fails — or a concurrent run writing
+     * 'inbox' in between — leaves the next pass looking at a message in the
+     * inbox because we put it there, with 'spam' never recorded and the
+     * `is null` guard making that permanent.
      */
-    const recoverAt = code.indexOf("removeLabelIds");
     const recordAt = code.indexOf("folder_detected: folder");
+    const recoverAt = code.indexOf("removeLabelIds");
+    expect(recordAt).toBeGreaterThan(-1);
     expect(recoverAt).toBeGreaterThan(-1);
-    expect(recoverAt).toBeLessThan(recordAt);
-    // A failed recovery leaves the message for the next run.
-    const branch = code.slice(code.indexOf("if (!modRes.ok)"), recordAt);
+    expect(recordAt).toBeLessThan(recoverAt);
+    // A reading that was not kept settles nothing; the run stops on it.
+    const branch = code.slice(code.indexOf("if (placeErr)"), recoverAt);
     expect(branch).toContain("continue;");
+  });
+
+  it("tracks the recovery apart from the reading, so it can retry", () => {
+    const at = code.indexOf("recovered_at: new Date().toISOString()");
+    expect(at, "nothing distinguished moved-from-spam from still-in-spam").toBeGreaterThan(-1);
+    const stmt = code.slice(at, code.indexOf(";", at));
+    expect(stmt).toContain('.eq("to_account_id", acct.account_id)');
+    expect(stmt).toContain('.is("recovered_at", null)');
+    // A failed recovery leaves the message for the next run.
+    const fail = code.slice(code.indexOf("if (!modRes.ok)"), at);
+    expect(fail).toContain("continue;");
+  });
+
+  it("the migration adds both columns the ordering needs", () => {
+    expect(MIGRATION).toMatch(/ADD COLUMN IF NOT EXISTS recipient_message_id text;/);
+    expect(MIGRATION).toMatch(/ADD COLUMN IF NOT EXISTS recovered_at timestamptz;/);
   });
 
   it("the column it protects is the one the score reads", () => {
@@ -152,10 +190,22 @@ describe("replies are sends, and are capped like sends", () => {
   it("has a per-day and per-run allowance", () => {
     const at = code.indexOf("let replyAllowance");
     expect(at, "replies had no cap at all: 25 a run, every hour").toBeGreaterThan(-1);
-    const line = code.slice(at, code.indexOf(";", at));
-    expect(line).toContain("acct.daily_target");
-    expect(line).toContain("repliedToday");
-    expect(line).toMatch(/Math\.min\(2,/);
+    const stmt = code.slice(at, code.indexOf(";", at));
+    expect(stmt).toContain("acct.daily_target");
+    expect(stmt).toContain("repliedToday");
+    expect(stmt).toMatch(/Math\.min\(2,/);
+  });
+
+  it("an unreadable count means no replies, not a fresh allowance", () => {
+    /*
+     * `repliedToday ?? 0` handed the mailbox its whole allowance back every
+     * time the query failed, which is the cap failing open — a transient
+     * database error buying more Gmail sends after the cap was spent.
+     */
+    const at = code.indexOf("let replyAllowance");
+    const stmt = code.slice(at, code.indexOf(";", at));
+    expect(stmt).toMatch(/repliedErr \|\| typeof repliedToday !== "number"/);
+    expect(code).not.toMatch(/repliedToday \?\? 0/);
   });
 
   it("counts this mailbox's own replies for today", () => {
@@ -174,9 +224,14 @@ describe("replies are sends, and are capped like sends", () => {
   });
 
   it("chooses which to reply to by the message, not by list position", () => {
-    // `m % 2 === 0` keyed the decision to a position that shifts between runs.
+    /*
+     * `m % 2 === 0` keyed the decision to a position that shifts between runs,
+     * so nothing later could ask whether a given message was owed a reply.
+     * One named predicate now, used by the sender and by the skip set.
+     */
     expect(code).not.toMatch(/m % 2 === 0/);
-    expect(code).toMatch(/parseInt\(wmId\.slice\(0, 8\), 16\) % 2 === 0/);
+    expect(code).toMatch(/function owesReply\(wmId: string\): boolean \{\s*return parseInt\(wmId\.slice\(0, 8\), 16\) % 2 === 0;/);
+    expect(code).toMatch(/if \(wmId && owesReply\(wmId\) && replyAllowance > 0\)/);
   });
 });
 

@@ -63,6 +63,20 @@ CREATE INDEX IF NOT EXISTS idx_warmup_messages_recipient_seen
   ON public.warmup_messages (to_account_id, recipient_message_id)
   WHERE recipient_message_id IS NOT NULL;
 
+/*
+ * When this message was moved out of spam, if it ever was.
+ *
+ * Recovery and placement have to be tracked apart. Recording placement and
+ * then recovering, in that order, is the only order that cannot lose the
+ * reading — but it means a message can be recorded as 'spam' and still be
+ * waiting to be moved, and nothing in the row said which. Without this
+ * column, a run that recovered a message and then failed to write the reading
+ * left the next run looking at a message sitting in the inbox because we put
+ * it there, with 'spam' never recorded.
+ */
+ALTER TABLE public.warmup_messages
+  ADD COLUMN IF NOT EXISTS recovered_at timestamptz;
+
 ALTER TABLE public.warmup_pool
   -- When the receive phase last scanned this mailbox. The scan is bounded by a
   -- wall-clock budget, so without an order the same few mailboxes at the front

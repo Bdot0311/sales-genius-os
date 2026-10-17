@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 
 /**
  * The accounts that should have sent least were sending with no cap at all.
@@ -108,53 +108,77 @@ describe("the statuses this guards against are real", () => {
  * then have let a lapsed account spend its whole monthly allowance in a
  * single day, which is the send spike a daily cap exists to prevent.
  *
- * Both caps are now live counts of sent_emails, through the same two
- * functions in both senders.
+ * Both caps are now counted rather than remembered, in both senders.
  */
-const DAILY_MIGRATION = readFileSync(
-  "supabase/migrations/20261017000000_daily_send_count_covers_lapsed.sql",
-  "utf8",
-).replace(/\/\*[\s\S]*?\*\//g, "");
+const MIGRATIONS = "supabase/migrations";
 
-/** The one CREATE body for a function, not the REVOKE/GRANT that follow it. */
-function sqlFunctionBody(sql: string, name: string): string {
-  const at = sql.indexOf(`CREATE OR REPLACE FUNCTION public.${name}(`);
-  expect(at, `${name} should be defined in the migration`).toBeGreaterThan(-1);
-  const body = sql.slice(at);
-  const end = body.indexOf("$$;");
-  expect(end).toBeGreaterThan(-1);
-  return body.slice(0, end);
+/**
+ * The migration that defines `name` last, which is the one that runs.
+ *
+ * Reading the file that first added a function pins a definition a later
+ * migration may have replaced — the assertion then passes while production
+ * runs something else. Anchored on the CREATE rather than on
+ * `FUNCTION public.<name>`, which also appears in the REVOKE that follows and
+ * slices from there into the next function's body.
+ */
+function liveDefinition(name: string): { file: string; sql: string; whole: string } {
+  const create = `CREATE OR REPLACE FUNCTION public.${name}(`;
+  const files = readdirSync(MIGRATIONS)
+    .filter((f) => f.endsWith(".sql"))
+    .sort()
+    .filter((f) => readFileSync(`${MIGRATIONS}/${f}`, "utf8").includes(create));
+  expect(files.length, `nothing defines ${name}`).toBeGreaterThan(0);
+  const file = files[files.length - 1];
+  const whole = readFileSync(`${MIGRATIONS}/${file}`, "utf8");
+  const from = whole.lastIndexOf(create);
+  const end = whole.indexOf("\n$$;", from);
+  expect(end, `${name} in ${file} has no closing $$;`).toBeGreaterThan(from);
+  const strip = (t: string) => t.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*--.*$/gm, "");
+  return { file, sql: strip(whole.slice(from, end)), whole: strip(whole) };
 }
 
 describe("today's sends are counted, not remembered", () => {
   it("the counter no longer skips lapsed accounts", () => {
-    const body = sqlFunctionBody(DAILY_MIGRATION, "increment_daily_emails_sent");
-    expect(body).toContain("UPDATE public.subscriptions");
+    const { sql } = liveDefinition("increment_daily_emails_sent");
+    expect(sql).toContain("UPDATE public.subscriptions");
     // The filter is the whole defect: zero rows updated, and no error raised.
-    expect(body).not.toMatch(/status\s*=\s*'active'/);
+    expect(sql).not.toMatch(/status\s*=\s*'active'/);
   });
 
   it("counts a day the same way the month is counted", () => {
     /*
-     * Compared against the live monthly function rather than restated, so
-     * the two caps cannot drift apart on what counts as a send.
+     * Compared against the live monthly function rather than restated, so the
+     * two caps cannot drift apart on what counts as a send.
      */
-    const MONTHLY = readFileSync(
-      "drizzle/migrations/0034_agent_run_steps_and_send_helpers.sql",
-      "utf8",
-    );
-    const monthly = sqlFunctionBody(MONTHLY, "get_monthly_email_count");
-    const daily = sqlFunctionBody(DAILY_MIGRATION, "get_daily_email_count");
+    const daily = liveDefinition("get_daily_email_count").sql;
+    const monthly = liveDefinition("get_monthly_email_count").sql;
     const statuses = (sql: string) => sql.match(/status IN \(([^)]*)\)/)?.[1];
     expect(statuses(daily)).toBeTruthy();
     expect(statuses(daily)).toBe(statuses(monthly));
-    // Same caller check, so neither can be read for somebody else's account.
-    expect(daily).toContain("auth.role() = 'service_role' OR auth.uid() = p_user_id");
     expect(daily).toContain("date_trunc('day', now())");
+    expect(monthly).toContain("date_trunc('month', now())");
+  });
+
+  it("refuses rather than returning zero to a caller it cannot place", () => {
+    /*
+     * Both senders treat a non-number as unreadable and refuse the send, so a
+     * quiet zero would read as "nothing sent today" and wave the send through.
+     *
+     * IS DISTINCT FROM, not `<>`: against a null auth.uid() the comparison is
+     * null, the IF never fires and the check passes. That is how an early
+     * draft of this read any account's usage, caught by a test with a null uid.
+     */
+    for (const name of ["get_daily_email_count", "get_monthly_email_count"]) {
+      const { sql } = liveDefinition(name);
+      expect(sql, name).toMatch(/auth\.role\(\) IS DISTINCT FROM 'service_role'/);
+      expect(sql, name).toMatch(/auth\.uid\(\) IS DISTINCT FROM p_user_id/);
+      expect(sql, name).toMatch(/RAISE EXCEPTION/);
+    }
   });
 
   it("stays unreachable from the browser", () => {
-    expect(DAILY_MIGRATION).toMatch(
+    const { whole } = liveDefinition("get_daily_email_count");
+    expect(whole).toMatch(
       /REVOKE ALL ON FUNCTION public\.get_daily_email_count\(UUID\) FROM PUBLIC, anon;/,
     );
   });

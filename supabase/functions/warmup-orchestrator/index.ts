@@ -56,6 +56,18 @@ function pick<T>(arr: T[], i: number): T {
   return arr[Math.abs(i) % arr.length];
 }
 
+/**
+ * Does this message owe a reply?
+ *
+ * Roughly half of received warmup mail gets one. Keyed to the row id rather
+ * than to its position in the run's list, so the answer is the same on every
+ * run — which is what lets the skip set know whether a message is finished or
+ * still waiting for its reply.
+ */
+function owesReply(wmId: string): boolean {
+  return parseInt(wmId.slice(0, 8), 16) % 2 === 0;
+}
+
 async function refreshedToken(supabase: any, integrationId: string): Promise<string | null> {
   const { data: integ } = await supabase.from("integrations").select("id, config").eq("id", integrationId).maybeSingle();
   if (!integ) return null;
@@ -300,32 +312,62 @@ serve(async (req) => {
       const token = tokens.get(acct.account_id)!;
 
       /*
-       * Messages this mailbox has already handled, by their id in THIS
-       * mailbox. A warmup message keeps matching the search for three days, so
-       * without this the run re-fetched and re-judged every one of them every
+       * Messages this mailbox has nothing left to do with.
+       *
+       * A warmup message keeps matching the search for three days, so without
+       * a skip set the run re-fetched and re-judged every one of them every
        * hour — and re-judging is what destroyed the placement signal, because
        * a message recovered from spam reads as 'inbox' on the next pass.
+       *
+       * "Already seen" is not the same as "settled", and using the first for
+       * the second drops work: a message whose reply hit the per-run cap, or
+       * whose recovery failed, had still been seen. So a row is skipped only
+       * when every step it owes is done — placement recorded, spam recovered
+       * if it was in spam, and replied to if it was the one picked to reply
+       * to. Everything else comes back on the next run.
        */
-      const { data: seenRows } = await supabase
+      const { data: seenRows, error: seenErr } = await supabase
         .from("warmup_messages")
-        .select("recipient_message_id")
+        .select("id, recipient_message_id, folder_detected, recovered_at, replied_at")
         .eq("to_account_id", acct.account_id)
         .not("recipient_message_id", "is", null)
         .gte("sent_at", new Date(Date.now() - 5 * 86400_000).toISOString());
-      const seen = new Set((seenRows ?? []).map((r: Record<string, unknown>) => r.recipient_message_id as string));
+      if (seenErr) {
+        // Without the skip set every message would be re-judged, which is the
+        // defect. Better to leave this mailbox for the next run.
+        console.error("[warmup-orchestrator] settled lookup failed:", acct.account_id, seenErr.message);
+        continue;
+      }
+      const settled = new Set(
+        (seenRows ?? [])
+          .filter((r: Record<string, unknown>) =>
+            !!r.folder_detected &&
+            (r.folder_detected !== "spam" || !!r.recovered_at) &&
+            (!owesReply(r.id as string) || !!r.replied_at))
+          .map((r: Record<string, unknown>) => r.recipient_message_id as string),
+      );
 
       /*
        * Replies are real sends from this mailbox, and nothing capped them: up
        * to 25 per run, every hour, against a daily target of four. One
        * mailbox's own allowance for replying, counted the same way.
+       *
+       * An unreadable count means no replies this run, not a fresh allowance:
+       * `?? 0` on a failed read handed the mailbox its whole allowance back
+       * every time the query failed, which is the cap failing open.
        */
-      const { count: repliedToday } = await supabase
+      const { count: repliedToday, error: repliedErr } = await supabase
         .from("warmup_messages")
         .select("id", { count: "exact", head: true })
         .eq("to_account_id", acct.account_id)
         .not("replied_at", "is", null)
         .gte("replied_at", `${today}T00:00:00Z`);
-      let replyAllowance = Math.max(0, Math.min(2, acct.daily_target - (repliedToday ?? 0)));
+      let replyAllowance = repliedErr || typeof repliedToday !== "number"
+        ? 0
+        : Math.max(0, Math.min(2, acct.daily_target - repliedToday));
+      if (repliedErr) {
+        console.error("[warmup-orchestrator] reply count unavailable:", acct.account_id, repliedErr.message);
+      }
 
       // Find warmup mail this mailbox RECEIVED (inbox/spam/promotions). Exclude
       // -in:sent / -in:chats so we never classify or "reply to" our own sent
@@ -338,7 +380,7 @@ serve(async (req) => {
       });
       if (!listRes.ok) continue;
       const list = await listRes.json();
-      const msgs: { id: string }[] = (list.messages ?? []).filter((m: { id: string }) => !seen.has(m.id));
+      const msgs: { id: string }[] = (list.messages ?? []).filter((m: { id: string }) => !settled.has(m.id));
       scanned++;
 
       for (let m = 0; m < msgs.length; m++) {
@@ -356,9 +398,38 @@ serve(async (req) => {
         const folder = labels.includes("SPAM") ? "spam" : labels.includes("CATEGORY_PROMOTIONS") ? "promotions" : "inbox";
 
         /*
-         * Recover first, record second. Marking the message handled before the
-         * recovery succeeded would leave it in spam for good, because the next
-         * run skips anything already handled.
+         * Record the reading first, then act on it.
+         *
+         * Recovering first was the wrong order. The recovery moves the message
+         * to the inbox, so if the write that follows it fails — or a
+         * concurrent run writes 'inbox' in between — the next pass sees a
+         * message sitting in the inbox because we put it there, and the only
+         * evidence it was ever filtered is gone. Written first, the reading
+         * survives a failed recovery, a failed reply and a killed run.
+         *
+         * `is('folder_detected', null)` keeps it to one observation:
+         * get_deliverability_live_stats counts this column for warmup_spam,
+         * and the reputation score deducts up to 25 points on it.
+         */
+        if (wmId) {
+          const { error: placeErr } = await supabase
+            .from("warmup_messages")
+            .update({ folder_detected: folder, recipient_message_id: msgs[m].id })
+            .eq("id", wmId)
+            .eq("to_account_id", acct.account_id)
+            .is("folder_detected", null);
+          if (placeErr) {
+            // Nothing below is worth doing if the reading was not kept: the
+            // message stays unsettled and the next run tries again.
+            console.error("[warmup-orchestrator] placement write failed:", wmId, placeErr.message);
+            continue;
+          }
+        }
+
+        /*
+         * Spam recovery, tracked apart from the reading so it can be retried.
+         * `recovered_at` is what distinguishes "recorded as spam and moved"
+         * from "recorded as spam and still sitting there".
          */
         if (folder === "spam") {
           const modRes = await fetch(`${GMAIL_API}/messages/${msgs[m].id}/modify`, {
@@ -370,24 +441,15 @@ serve(async (req) => {
             console.error("[warmup-orchestrator] spam recovery failed:", msgs[m].id, modRes.status);
             continue;
           }
+          if (wmId) {
+            await supabase
+              .from("warmup_messages")
+              .update({ recovered_at: new Date().toISOString() })
+              .eq("id", wmId)
+              .eq("to_account_id", acct.account_id)
+              .is("recovered_at", null);
+          }
           recovered++;
-        }
-
-        if (wmId) {
-          /*
-           * One observation, kept. `folder_detected` is where the recipient's
-           * mailbox put the message on arrival, which is a fact about one
-           * moment: the `is null` guard means a later pass can never rewrite a
-           * recorded 'spam' as 'inbox' after we moved it there ourselves.
-           * get_deliverability_live_stats reads this column for warmup_spam,
-           * and the reputation score deducts up to 25 points on it.
-           */
-          await supabase
-            .from("warmup_messages")
-            .update({ folder_detected: folder, recipient_message_id: msgs[m].id })
-            .eq("id", wmId)
-            .eq("to_account_id", acct.account_id)
-            .is("folder_detected", null);
         }
 
         /*
@@ -395,8 +457,7 @@ serve(async (req) => {
          * than by position in the list, so the choice is stable per message
          * instead of shifting as the list changes.
          */
-        const replyThis = wmId ? parseInt(wmId.slice(0, 8), 16) % 2 === 0 : false;
-        if (wmId && replyThis && replyAllowance > 0) {
+        if (wmId && owesReply(wmId) && replyAllowance > 0) {
           const { data: wm } = await supabase.from("warmup_messages").select("replied_at, from_account_id").eq("id", wmId).maybeSingle();
           if (wm && !wm.replied_at) {
             const headersArr: { name: string; value: string }[] = msg.payload?.headers ?? [];
