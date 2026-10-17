@@ -2246,6 +2246,7 @@ export type Database = {
       email_send_log: {
         Row: {
           created_at: string
+          dedupe_key: string | null
           error_message: string | null
           id: string
           last_opened_at: string | null
@@ -2261,6 +2262,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          dedupe_key?: string | null
           error_message?: string | null
           id?: string
           last_opened_at?: string | null
@@ -2276,6 +2278,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          dedupe_key?: string | null
           error_message?: string | null
           id?: string
           last_opened_at?: string | null
@@ -4472,6 +4475,30 @@ export type Database = {
         }
         Relationships: []
       }
+      send_allowance_usage: {
+        Row: {
+          credited_at: string | null
+          id: number
+          sent_at: string
+          sent_email_id: string | null
+          user_id: string
+        }
+        Insert: {
+          credited_at?: string | null
+          id?: number
+          sent_at?: string
+          sent_email_id?: string | null
+          user_id: string
+        }
+        Update: {
+          credited_at?: string | null
+          id?: number
+          sent_at?: string
+          sent_email_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       sending_accounts: {
         Row: {
           auto_pause_threshold: number
@@ -5833,6 +5860,8 @@ export type Database = {
           gmail_message_id: string | null
           gmail_thread_id: string | null
           id: string
+          recipient_message_id: string | null
+          recovered_at: string | null
           replied_at: string | null
           sent_at: string
           subject: string | null
@@ -5847,6 +5876,8 @@ export type Database = {
           gmail_message_id?: string | null
           gmail_thread_id?: string | null
           id?: string
+          recipient_message_id?: string | null
+          recovered_at?: string | null
           replied_at?: string | null
           sent_at?: string
           subject?: string | null
@@ -5861,6 +5892,8 @@ export type Database = {
           gmail_message_id?: string | null
           gmail_thread_id?: string | null
           id?: string
+          recipient_message_id?: string | null
+          recovered_at?: string | null
           replied_at?: string | null
           sent_at?: string
           subject?: string | null
@@ -5891,6 +5924,7 @@ export type Database = {
           email: string
           id: string
           joined_at: string
+          last_scan_at: string | null
           reputation_score: number | null
           sending_account_id: string
           updated_at: string
@@ -5902,6 +5936,7 @@ export type Database = {
           email: string
           id?: string
           joined_at?: string
+          last_scan_at?: string | null
           reputation_score?: number | null
           sending_account_id: string
           updated_at?: string
@@ -5913,6 +5948,7 @@ export type Database = {
           email?: string
           id?: string
           joined_at?: string
+          last_scan_at?: string | null
           reputation_score?: number | null
           sending_account_id?: string
           updated_at?: string
@@ -6719,6 +6755,18 @@ export type Database = {
           row_id: string
         }[]
       }
+      claim_warmup_sends: {
+        Args: {
+          p_daily_target: number
+          p_from_account: string
+          p_per_run: number
+          p_to_accounts: string[]
+        }
+        Returns: {
+          id: string
+          to_account_id: string
+        }[]
+      }
       cleanup_expired_cache: { Args: never; Returns: undefined }
       cleanup_rl_buckets: { Args: never; Returns: undefined }
       cleanup_user_activity: { Args: never; Returns: undefined }
@@ -6729,6 +6777,10 @@ export type Database = {
       consume_research: {
         Args: { p_cap: number; p_user_id: string }
         Returns: number
+      }
+      credit_bounced_send: {
+        Args: { _sent_email_id: string }
+        Returns: undefined
       }
       current_month_start_utc: { Args: never; Returns: string }
       deduct_search_credits: {
@@ -6744,6 +6796,7 @@ export type Database = {
         Returns: number
       }
       get_api_key_value: { Args: { _id: string }; Returns: string }
+      get_daily_email_count: { Args: { p_user_id: string }; Returns: number }
       get_deliverability_live_stats: {
         Args: { p_days?: number }
         Returns: {
@@ -6885,7 +6938,7 @@ export type Database = {
         Returns: undefined
       }
       increment_daily_emails_sent: {
-        Args: { _user_id: string }
+        Args: { _sent_email_id?: string; _user_id: string }
         Returns: undefined
       }
       internal_job_key: { Args: never; Returns: string }
