@@ -232,6 +232,25 @@ describe("stopping reaches the mail already queued", () => {
     expect(block).toContain("defer(email,");
   });
 
+  it("the agent's own pause, resume and stop clear it too", () => {
+    /*
+     * runOutboundTool is the executor behind the update_enrollment tool. Its
+     * pause set only status and paused_reason, so an agent pausing a
+     * reply-held enrollment left the old date for the sweep to act on and the
+     * pause undid itself.
+     *
+     * I told the review I could not find this executor. My grep for
+     * update_enrollment excluded agent-outbound-tools.ts — the file that
+     * declares the tool AND implements it — so I filtered out the answer.
+     */
+    const TOOLS = body("supabase/functions/_shared/agent-outbound-tools.ts");
+    const at = TOOLS.indexOf('case "update_enrollment"');
+    expect(at).toBeGreaterThan(-1);
+    const block = TOOLS.slice(at, TOOLS.indexOf("return updateOwned", at));
+    // All three branches, not just the pause that is reachable by the sweep.
+    expect([...block.matchAll(/paused_until: null/g)].length).toBe(3);
+  });
+
   it("a pause applied for another reason clears the check-back date", () => {
     // An enrollment held until March and then paused for a handoff was
     // resumed in March by the sweep, undoing a pause set for another reason.
