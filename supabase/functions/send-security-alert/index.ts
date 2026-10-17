@@ -124,9 +124,13 @@ serve(async (req) => {
           html: emailHtml,
           text: `Security Alert: ${event_type} (${severity})`,
           label: 'security-alert',
-          // Hourly per event kind per recipient: the same alert firing in a
-          // loop should be one email an hour, not one per occurrence.
-          idempotencyKey: `security-${event_type}-${recipient}-${new Date().toISOString().slice(0, 13)}`,
+          /*
+           * Hourly per event kind per subject: the same alert firing in a loop
+           * is one email an hour, but two different users — or two different
+           * source addresses — tripping the same rule are two incidents, and
+           * keying only on the kind would have hidden the second one.
+           */
+          idempotencyKey: `security-${event_type}-${user_id ?? ip_address ?? "platform"}-${recipient}-${new Date().toISOString().slice(0, 13)}`.slice(0, 200),
         });
       } catch (sendError) {
         console.error('security-alert send failed', sendError instanceof Error ? sendError.message : sendError);

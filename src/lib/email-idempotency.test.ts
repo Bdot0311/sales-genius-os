@@ -111,9 +111,56 @@ describe("the keys that must be stable are", () => {
     }
   });
 
-  it("a deduped alert is not reported as a delivery failure", () => {
+  it("an alert key names the incident, not just its shape", () => {
+    /*
+     * An hourly bucket of kind + recipient collapses two *different* accounts
+     * tripping the same condition in one hour into a single email: support
+     * hears about the first and never about the second. The bucket is for
+     * repeats of one incident, so the key has to carry whatever identifies
+     * which incident it is.
+     */
+    expect(key("send-system-alert")).toContain("${alertAbout}");
+    expect(body(`${FN_ROOT}/send-system-alert/index.ts`))
+      .toMatch(/const alertAbout = typeof d\.user_id === "string" \? d\.user_id : \(customerEmail \?\? "platform"\)/);
+
+    expect(key("send-security-alert")).toContain('${user_id ?? ip_address ?? "platform"}');
+
+    // The per-user alert goes to the subject, so the recipient identifies it;
+    // the admin digest covers whoever tripped a rule this run, and two runs an
+    // hour apart can cover different people entirely.
+    const SUS = body(`${FN_ROOT}/detect-suspicious-activity/index.ts`);
+    expect(key("detect-suspicious-activity")).toContain("${about}");
+    expect(SUS).toMatch(/criticalAlerts\.map\(\(a: any\) => `\$\{a\.type\}:\$\{a\.target\}`\)/);
+    expect(SUS).toContain("'suspicious-activity-admin', about)");
+  });
+
+  it("the digest is a hash, not a truncation", () => {
+    /*
+     * Two different sets of affected accounts can share a 200-character
+     * prefix, and a key that collides is a second incident that never reaches
+     * anyone.
+     */
+    const SUS = body(`${FN_ROOT}/detect-suspicious-activity/index.ts`);
+    const at = SUS.indexOf("const digest = (s: string): string => {");
+    expect(at).toBeGreaterThan(-1);
+    const fn = SUS.slice(at, SUS.indexOf("};", at));
+    expect(fn).toContain("0x811c9dc5");
+    expect(fn).toContain("Math.imul(h, 0x01000193)");
+    expect(fn).not.toContain(".slice(");
+  });
+
+  it("a deduped alert is neither an error nor a delivery failure", () => {
     const src = body(`${FN_ROOT}/send-system-alert/index.ts`);
-    expect(src).toMatch(/result\.reason !== 'already_sent'/);
+    // Out of `errors`...
+    expect(src).toMatch(/else if \(result\.reason === 'already_sent'\) deduped\+\+;/);
+    /*
+     * ...and out of the failure check. With every recipient already covered,
+     * `emailed` stays zero, and the old check then logged an outage and
+     * returned `send_failed` — inventing a delivery failure out of the dedupe
+     * working, in the one system whose job is to report outages honestly.
+     */
+    expect(src).toMatch(/if \(emailed === 0 && deduped === 0\) \{/);
+    expect(src).toMatch(/emailed: emailed > 0/);
   });
 });
 

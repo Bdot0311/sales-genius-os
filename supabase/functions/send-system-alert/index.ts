@@ -144,7 +144,26 @@ serve(async (req) => {
       { auth: { persistSession: false } },
     );
 
+    /*
+     * The incident, not the shape of the incident.
+     *
+     * An hourly bucket of category + severity + recipient collapses two
+     * *different* customers hitting the same condition in one hour into a
+     * single email, so support hears about the first and never about the
+     * second. The bucket is meant to absorb repeats of one incident —
+     * logSystemAlert mails on every error and critical, and some of those fire
+     * per request — so the key carries what identifies the account it is about.
+     *
+     * With no account in the details the alert is platform-wide (a failing
+     * cron, a provider outage), and category-plus-hour is then the right
+     * identity: that IS the one incident.
+     */
+    const alertAbout = typeof d.user_id === "string" ? d.user_id : (customerEmail ?? "platform");
+
     let emailed = 0;
+    // Recipients whose alert was already covered by an earlier send under this
+    // key. Not delivered by this call, but delivered.
+    let deduped = 0;
     const errors: string[] = [];
     for (const recipient of recipients) {
       try {
@@ -154,25 +173,30 @@ serve(async (req) => {
           html,
           text: `${subject}\n\n${String(message ?? "")}`,
           label: "system-alert",
-          // Hourly, matching system-health-alert. logSystemAlert mails on
-          // every error and critical, and some of those fire per request.
-          idempotencyKey: `system-alert-${cat}-${severity}-${recipient}-${new Date().toISOString().slice(0, 13)}`.slice(0, 200),
+          idempotencyKey: `system-alert-${cat}-${severity}-${alertAbout}-${recipient}-${new Date().toISOString().slice(0, 13)}`.slice(0, 200),
         });
         if (result.sent) emailed++;
         // An alert already sent under this hour's key is the dedupe working,
-        // not a delivery problem, so it does not belong in `errors`.
-        else if (result.reason !== 'already_sent') errors.push(`${recipient}: ${result.reason}`);
+        // not a delivery problem, so it is neither an error nor a failure.
+        else if (result.reason === 'already_sent') deduped++;
+        else errors.push(`${recipient}: ${result.reason}`);
       } catch (err) {
         errors.push(`${recipient}: ${(err as Error).message}`);
       }
     }
 
-    if (emailed === 0) {
+    /*
+     * Nothing sent *and* nothing already covered is a delivery failure. A
+     * request every recipient had already been mailed for is not: reporting
+     * `send_failed` there invents an outage out of the dedupe working, in the
+     * one system whose job is to tell the truth about outages.
+     */
+    if (emailed === 0 && deduped === 0) {
       console.error("[SEND-SYSTEM-ALERT] no alert email delivered", errors);
       return json({ ok: false, error: "send_failed", details: errors });
     }
 
-    return json({ ok: true, emailed: true, recipients: emailed, errors });
+    return json({ ok: true, emailed: emailed > 0, recipients: emailed, deduped, errors });
   } catch (err) {
     console.error("[SEND-SYSTEM-ALERT] Exception", err);
     return json({ ok: false, error: (err as Error).message });

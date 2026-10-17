@@ -9,7 +9,34 @@ const logStep = (step: string, details?: any) => {
   console.log(`[SUSPICIOUS-ACTIVITY] ${step}${detailsStr}`);
 };
 
-const enqueueAlert = async (supabase: any, to: string, subject: string, html: string, label: string) => {
+/**
+ * A short, stable digest of what an alert is about.
+ *
+ * FNV-1a, not a slice of the joined text: two different sets of affected
+ * accounts can share a 200-character prefix, and a key that collides is a
+ * second incident that never reaches anyone.
+ */
+const digest = (s: string): string => {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h.toString(36);
+};
+
+/**
+ * One alert per hour per recipient for a given kind *about a given subject*.
+ *
+ * The detector runs on a schedule, so a condition that persists used to mail
+ * on every pass — and an alert inbox nobody can read is an alert inbox nobody
+ * reads. The subject is what keeps that bucket from swallowing a second,
+ * different incident in the same hour: for the per-user alert the recipient is
+ * the subject and nothing more is needed, but the admin digest covers whoever
+ * tripped a rule this run, and two runs an hour apart can cover different
+ * people entirely.
+ */
+const enqueueAlert = async (supabase: any, to: string, subject: string, html: string, label: string, about = "") => {
   try {
     await sendManagedEmail(supabase, {
       to,
@@ -18,11 +45,7 @@ const enqueueAlert = async (supabase: any, to: string, subject: string, html: st
       html,
       text: subject,
       label,
-      // One alert per hour per recipient for a given kind. The detector runs
-      // on a schedule, so a condition that persists used to mail on every
-      // pass — and an alert inbox nobody can read is an alert inbox nobody
-      // reads.
-      idempotencyKey: `${label}-${to}-${new Date().toISOString().slice(0, 13)}`,
+      idempotencyKey: `${label}-${to}-${about}-${new Date().toISOString().slice(0, 13)}`,
     });
   } catch (error) {
     console.error('[SUSPICIOUS-ACTIVITY] alert send failed', error instanceof Error ? error.message : error);
@@ -192,8 +215,13 @@ serve(async (req) => {
           </div>
         </body></html>`;
 
+        // Keyed to who this digest is about, so the next hour's digest is
+        // suppressed only when it covers the same people.
+        const about = digest(
+          [...new Set(criticalAlerts.map((a: any) => `${a.type}:${a.target}`))].sort().join(","),
+        );
         for (const adminEmail of allRecipients) {
-          await enqueueAlert(supabaseClient, adminEmail, '🚨 [CRITICAL] Platform Security Alert - Immediate Action Required', adminEmailHtml, 'suspicious-activity-admin');
+          await enqueueAlert(supabaseClient, adminEmail, '🚨 [CRITICAL] Platform Security Alert - Immediate Action Required', adminEmailHtml, 'suspicious-activity-admin', about);
         }
         logStep("Admin alerts enqueued", { adminCount: allRecipients.length, criticalAlerts: criticalAlerts.length });
       }
