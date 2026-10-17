@@ -136,6 +136,83 @@ describe("the roadmap", () => {
   it("is pinned above the history", () => {
     expect(PAGE.indexOf("Coming next")).toBeLessThan(PAGE.indexOf("entries.map"));
   });
+
+  it("does not promise one feature twice", () => {
+    /*
+     * "Your own sending domains, end to end" and "Inboxes made for you, not
+     * by you" sat next to each other as two items. They were one promise from
+     * two angles — both ended at a warmed mailbox you can send from, and both
+     * said warmup. Side by side that inflates the roadmap and tells a reader
+     * the domain arrives before the inboxes do.
+     *
+     * Meaning is not checkable, but a shared subject is: two items that both
+     * turn on the same handful of subjects are describing the same thing.
+     *
+     * Subjects, not words. The first version of this guard listed tokens and
+     * missed the very pair it was written for — one item said "warm it" and
+     * the other "warmup", so it counted them as two different subjects and
+     * found only one in common. Each subject is the set of ways it gets said.
+     */
+    const SUBJECTS: Record<string, RegExp> = {
+      domain: /sending domain|buy (a |the )?domain|own domain/,
+      mailbox: /mailbox|inbox(es)?\b/,
+      warmup: /warm(up|ed| it| them)/,
+      sequence: /sequence|follow-up|step three/,
+    };
+    const signature = (item: { title: string; description: string }) => {
+      const text = `${item.title} ${item.description}`.toLowerCase();
+      return new Set(Object.keys(SUBJECTS).filter((k) => SUBJECTS[k].test(text)));
+    };
+    for (let i = 0; i < ROADMAP.length; i++) {
+      for (let j = i + 1; j < ROADMAP.length; j++) {
+        const shared = [...signature(ROADMAP[i])].filter((w) => signature(ROADMAP[j]).has(w));
+        expect(
+          shared.length,
+          `"${ROADMAP[i].title}" and "${ROADMAP[j].title}" both turn on ${shared.join(", ")}`,
+        ).toBeLessThan(2);
+      }
+    }
+  });
+
+  it("does not offer something the product already does", () => {
+    /*
+     * This file has made the same mistake twice. It offered bulk enrichment
+     * as "up next" while people were using it, and it opened the reply item
+     * with "today every enrolled lead walks the same steps" while
+     * update-lead-engagement-state was already marking the enrollment
+     * `completed` the moment a reply landed.
+     *
+     * Each pair below is a behaviour that ships, asserted against the code so
+     * this cannot drift into guarding a situation that no longer exists, and
+     * a phrase that would be a lie about it. The roadmap may name a shipped
+     * feature — the honest items here do, to say where the new part starts —
+     * it just may not claim it is missing.
+     */
+    const SHIPPED: { what: string; file: string; proof: string; mustNotSay: RegExp }[] = [
+      {
+        what: "a reply stops the rest of the sequence",
+        file: "supabase/functions/update-lead-engagement-state/index.ts",
+        proof: "status: 'completed'",
+        mustNotSay: /every enrolled lead walks the same steps/i,
+      },
+      {
+        what: "the SPF and DMARC records are written for you",
+        file: "supabase/functions/apply-cloudflare-dns/index.ts",
+        proof: "_dmarc",
+        mustNotSay: /handed to you as a list/i,
+      },
+    ];
+
+    for (const { what, file, proof, mustNotSay } of SHIPPED) {
+      expect(readFileSync(file, "utf8"), `${what} should still be true of the code`).toContain(proof);
+      for (const item of ROADMAP) {
+        expect(
+          `${item.title} ${item.description}`,
+          `"${item.title}" says ${what} is missing`,
+        ).not.toMatch(mustNotSay);
+      }
+    }
+  });
 });
 
 describe("the page scales past five entries", () => {

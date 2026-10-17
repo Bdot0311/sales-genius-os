@@ -65,10 +65,26 @@ export interface RoadmapItem {
 
 export const ROADMAP: RoadmapItem[] = [
   {
-    status: "building",
-    title: "Follow-ups that read the reply",
+    /*
+     * Half of this already shipped, and the status overstated the rest.
+     *
+     * "Today every enrolled lead walks the same steps" was not true:
+     * update-lead-engagement-state already marks the enrollment `completed`
+     * the moment a reply lands, and process-sequence-step exits on
+     * `engagement_state === 'replied'`. A reply has stopped the rest for a
+     * while. Saying otherwise tells someone a thing they rely on is missing —
+     * the same mistake this file made about bulk enrichment, one item down.
+     *
+     * And "building now" is the strongest claim this page makes. What it was
+     * claiming for is the half that does not exist: analyze-reply scores
+     * intent HIGH / LOW / NEUTRAL and nothing acts on the score. There is no
+     * check-back scheduling anywhere in the repo, and no draft written from a
+     * reply. So it reads as next, and it says what is actually missing.
+     */
+    status: "next",
+    title: "A reply that does more than stop the sequence",
     description:
-      "Today every enrolled lead walks the same steps. Next, a reply that says \"not now\" pauses the sequence and schedules a check-back, and one that asks a question hands you a draft answer instead of sending step three.",
+      "A reply already stops the rest of the sequence. Next, it decides what happens instead: \"not now\" schedules a check-back for the month they named, and a question comes with a draft answer ready to edit rather than a thread you have to pick up cold.",
   },
   {
     /*
@@ -87,16 +103,24 @@ export const ROADMAP: RoadmapItem[] = [
       "Enriching a selection spends a credit for each contact it finds, and today you watch the count rather than the bill. Next, an estimate before you start and a running total as it goes, so a thousand-lead run is a decision rather than a surprise.",
   },
   {
+    /*
+     * One item, because it was one feature written twice.
+     *
+     * "Your own sending domains, end to end" and "Inboxes made for you, not
+     * by you" were the same promise from two angles — both ended at a warmed
+     * mailbox you can send from, and both said warmup. Side by side on the
+     * page they read as two things coming, which inflates the roadmap and
+     * tells a reader the domain arrives before the inboxes do.
+     *
+     * The description also has to stop re-promising the part that works:
+     * apply-cloudflare-dns already writes the SPF and DMARC records, and
+     * check-domain-auth and verify-domain already check them. What is missing
+     * is the ends — buying the domain, and creating the mailboxes on it.
+     */
     status: "next",
-    title: "Your own sending domains, end to end",
+    title: "A sending domain you never have to leave to set up",
     description:
-      "Buy a domain, warm it, and route sending through it without leaving OutReign — with the DNS records checked for you rather than handed to you as a list.",
-  },
-  {
-    status: "next",
-    title: "Inboxes made for you, not by you",
-    description:
-      "Create the mailboxes on your sending domain from inside OutReign, with signatures, display names and warmup set up as they are created — instead of making each one by hand in Google and connecting them back one at a time.",
+      "Today you bring a domain you own and OutReign writes and checks its records for you. Next, the two ends either side of that: buy the domain here, and have the mailboxes on it created with their signatures, display names and warmup already running — instead of making each one by hand in Google and connecting them back one at a time.",
   },
   {
     status: "exploring",
