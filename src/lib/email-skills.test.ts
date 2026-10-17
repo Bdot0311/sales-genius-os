@@ -30,14 +30,18 @@ describe("skillsForGoal", () => {
     }
   });
 
-  it("ranks the core skill above the material no goal asked for", () => {
+  it("ranks the goal's own material above the core", () => {
+    /*
+     * This used to end by checking the core outranked cold-email-strategist.
+     * It could only assert that because every goal carried every skill — the
+     * behaviour three tests here were pinning and the thing that made a draft
+     * list ten playbooks and follow none. There is no unrequested material to
+     * outrank now; what is left to hold is that the goal's own shapes lead.
+     */
     const picked = skillsForGoal({ goal: "4ts" });
-
     expect(picked[0]).toBe("email-writing-frameworks");
-    // The core sits after the goal's own material and ahead of the rest.
-    const core = picked.indexOf("b2b-cold-email-copywriting");
-    expect(core).toBeGreaterThan(picked.indexOf("email-writing-frameworks"));
-    expect(core).toBeLessThan(picked.indexOf("cold-email-strategist"));
+    expect(picked.indexOf("b2b-cold-email-copywriting"))
+      .toBeGreaterThan(picked.indexOf("email-writing-frameworks"));
   });
 
   it("routes trigger-led first touches to the framework skill", () => {
@@ -54,17 +58,18 @@ describe("skillsForGoal", () => {
     }
   });
 
-  it("promotes the template library when a template is in play", () => {
-    // Every skill ships on every path now, so a template request cannot add one
-    // that was missing. What it changes is rank: the library moves ahead of the
-    // material that was not asked for.
+  it("adds the template library only when a template is in play", () => {
+    /*
+     * The old version asserted the library was present WITHOUT a template too,
+     * which is the opposite of what its own name says. It passed because every
+     * path carried everything; a draft that named no template still got 34
+     * templates to choose between.
+     */
     const without = skillsForGoal({ goal: "4ts" });
     const with_ = skillsForGoal({ goal: "4ts", usesTemplate: true });
 
-    expect(without).toContain("cold-email-templates-34");
+    expect(without).not.toContain("cold-email-templates-34");
     expect(with_).toContain("cold-email-templates-34");
-    expect(with_.indexOf("cold-email-templates-34"))
-      .toBeLessThan(without.indexOf("cold-email-templates-34"));
   });
 
   it("falls back to the orchestrator when the goal is unrecognised", () => {
@@ -74,14 +79,59 @@ describe("skillsForGoal", () => {
     expect(skillsForGoal({})).toContain("cold-email-strategist");
   });
 
-  it("hands every path the whole bundle, routed goal or not", () => {
-    // The old behaviour filtered by goal, so a "meeting" email never saw the
-    // frameworks and a "4ts" email never saw the strategist — each path getting
-    // a partial copy of how this company writes. Nothing opts out now.
-    const all = Object.keys(EMAIL_SKILLS).filter((n) => n !== "anti-ai-slop-writing");
-    for (const goal of ["4ts", "meeting", "demo", "proposal", "sequence", "not-a-goal", ""]) {
-      expect([...skillsForGoal({ goal })].sort(), goal).toEqual([...all].sort());
+  it("gives no path the whole bundle", () => {
+    /*
+     * This test used to assert the exact opposite — that every goal received
+     * every skill — on the reasoning that a routed path would otherwise get "a
+     * partial copy of how this company writes".
+     *
+     * The gap it was fixing was real: "meeting" saw no frameworks at all. But
+     * giving everything to everyone fixed it by making the routing meaningless,
+     * and the symptom reached the product. A first touch arrived carrying the
+     * shapes it needed, plus how to answer an objection nobody had raised, plus
+     * what touch five of a sequence does that touch one did not, plus a second
+     * generalist restating the core: ten playbooks named in the run log and
+     * none of them visible in the email.
+     *
+     * So the gap is closed where it actually was — BY_GOAL gives the
+     * conversation-advancing goals their shapes, and an unmapped goal falls
+     * back to the generalist — and this holds the line that made it a bug.
+     */
+    const all = Object.keys(EMAIL_SKILLS).length;
+    for (const goal of ["4ts", "meeting", "demo", "proposal", "sequence", "objection", "not-a-goal", ""]) {
+      const picked = skillsForGoal({ goal });
+      expect(picked.length, `${goal} carries ${picked.join(", ")}`).toBeLessThan(all - 2);
     }
+  });
+
+  it("keeps material for a different job out of a first touch", () => {
+    // The three that made the dump obvious in the run log.
+    for (const goal of ["4ts", "elusive", "proximity", "introduction"]) {
+      const picked = skillsForGoal({ goal });
+      expect(picked, goal).not.toContain("objection-replies");
+      expect(picked, goal).not.toContain("six-email-sequence");
+      expect(picked, goal).not.toContain("cold-email-4-sequence");
+    }
+  });
+
+  it("gives the conversation-advancing goals a shape as well as a framing", () => {
+    /*
+     * This is the gap the catch-all loop was papering over: "meeting" routed
+     * to outreach-messaging alone, so it got R.E.P.L.Y. and no structure to
+     * hang it on. Closing it here is what made removing the loop safe, so it
+     * is held here rather than left implied.
+     */
+    for (const goal of ["meeting", "demo", "proposal"]) {
+      const picked = skillsForGoal({ goal });
+      expect(picked, goal).toContain("outreach-messaging");
+      expect(picked, goal).toContain("email-writing-frameworks");
+    }
+  });
+
+  it("still gives the objection path the objection material", () => {
+    // agent-run classifies the objection and asks for this goal. It is the one
+    // place the skill belongs, and the reason it is routed nowhere else.
+    expect(skillsForGoal({ goal: "objection" })).toContain("objection-replies");
   });
 
   it("still ranks the goal's own material first", () => {

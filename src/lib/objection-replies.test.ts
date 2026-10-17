@@ -17,11 +17,19 @@ describe("the objection skill is real and bundled", () => {
     expect(EMAIL_SKILLS).toHaveProperty("objection-replies");
   });
 
-  it("reaches every path, like the rest of the bundle", () => {
-    for (const goal of ["objection", "introduction", "follow-up", "meeting"]) {
-      expect(skillNamesUsed({ goal }), goal).toContain("objection-replies");
-    }
+  it("reaches the path that answers objections, and only that one", () => {
+    /*
+     * This asserted it reached every path, which is how it came to be injected
+     * into first touches: guidance on answering a pricing objection, in a
+     * prompt writing to someone who has said nothing, reads as licence to
+     * pre-argue. agent-run classifies the objection and asks for this goal,
+     * so the material arrives exactly where it is the material.
+     */
+    expect(skillNamesUsed({ goal: "objection" })).toContain("objection-replies");
     expect(composeSkillContext({ goal: "objection" })).toContain("--- SKILL: objection-replies ---");
+    for (const goal of ["introduction", "4ts", "meeting"]) {
+      expect(skillNamesUsed({ goal }), goal).not.toContain("objection-replies");
+    }
   });
 
   it("covers the types agent-run actually classifies", () => {
