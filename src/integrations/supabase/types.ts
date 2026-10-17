@@ -5833,6 +5833,7 @@ export type Database = {
           gmail_message_id: string | null
           gmail_thread_id: string | null
           id: string
+          recipient_message_id: string | null
           replied_at: string | null
           sent_at: string
           subject: string | null
@@ -5847,6 +5848,7 @@ export type Database = {
           gmail_message_id?: string | null
           gmail_thread_id?: string | null
           id?: string
+          recipient_message_id?: string | null
           replied_at?: string | null
           sent_at?: string
           subject?: string | null
@@ -5861,6 +5863,7 @@ export type Database = {
           gmail_message_id?: string | null
           gmail_thread_id?: string | null
           id?: string
+          recipient_message_id?: string | null
           replied_at?: string | null
           sent_at?: string
           subject?: string | null
@@ -5891,6 +5894,7 @@ export type Database = {
           email: string
           id: string
           joined_at: string
+          last_scan_at: string | null
           reputation_score: number | null
           sending_account_id: string
           updated_at: string
@@ -5902,6 +5906,7 @@ export type Database = {
           email: string
           id?: string
           joined_at?: string
+          last_scan_at?: string | null
           reputation_score?: number | null
           sending_account_id: string
           updated_at?: string
@@ -5913,6 +5918,7 @@ export type Database = {
           email?: string
           id?: string
           joined_at?: string
+          last_scan_at?: string | null
           reputation_score?: number | null
           sending_account_id?: string
           updated_at?: string
@@ -6718,6 +6724,15 @@ export type Database = {
           max_attempts: number
           row_id: string
         }[]
+      }
+      claim_warmup_sends: {
+        Args: {
+          p_daily_target: number
+          p_from_account: string
+          p_per_run: number
+          p_to_accounts: string[]
+        }
+        Returns: { id: string; to_account_id: string }[]
       }
       cleanup_expired_cache: { Args: never; Returns: undefined }
       cleanup_rl_buckets: { Args: never; Returns: undefined }
