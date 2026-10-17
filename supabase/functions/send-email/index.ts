@@ -239,27 +239,93 @@ serve(async (req) => {
     }
 
     // --- Daily + Monthly email limit enforcement ---
+    /*
+     * Read the row, not only the active one.
+     *
+     * This asked for `.eq('status', 'active').single()` and kept `subError`
+     * without ever reading it. `.single()` errors when there are no rows, so
+     * an account that is `past_due`, `paused` or `cancelled` — all three of
+     * which the billing path writes — produced a null subscription. Everything
+     * below hung off `if (subscription)`, and the send happens three hundred
+     * lines further down, outside it. The accounts that should send least were
+     * the ones sending with no plan cap at all.
+     *
+     * The same was true of a transient failure on this read, which is the
+     * shape the monthly count below already guards against, in this same
+     * function, with a comment saying a cap that reads zero on error is no cap.
+     * That reasoning was one level too deep.
+     */
     const { data: subscription, error: subError } = await supabase
       .from('subscriptions')
-      .select('plan, daily_email_limit, daily_emails_sent, daily_emails_reset_at')
+      .select('plan, status, daily_email_limit, daily_emails_sent, daily_emails_reset_at')
       .eq('user_id', user.id)
-      .eq('status', 'active')
-      .single();
+      .maybeSingle();
+
+    if (subError) {
+      console.error('[send-email] subscription unavailable', subError);
+      return new Response(
+        JSON.stringify({
+          error: "We couldn't check your send allowance. Please try again in a moment.",
+          code: 'allowance_unavailable',
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
 
     const MONTHLY_EMAIL_LIMITS: Record<string, number> = {
       free: 100, starter: 50000, growth: 250000, pro: 1000000, elite: 1000000, agency: -1,
     };
 
-    if (subscription) {
+    /*
+     * An account without an active plan is on Free, not on unlimited.
+     *
+     * A missing row, or one that is past_due, paused or cancelled, falls back
+     * to the Free allowance — 10 a day and 100 a month — rather than skipping
+     * the check. That is the most restrictive reading of "no current plan",
+     * and it is the right one for the accounts it covers: a card that failed
+     * is a reason to send less.
+     */
+    const planActive = subscription?.status === 'active';
+    const effectivePlan = planActive ? String(subscription?.plan ?? 'free') : 'free';
+    const effectiveDailyLimit = planActive ? (subscription?.daily_email_limit || 10) : 10;
+
+    {
       const now = new Date();
       const todayMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
       const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
 
-      // Daily reset
-      const dailyResetAt = subscription.daily_emails_reset_at ? new Date(subscription.daily_emails_reset_at) : new Date(0);
-      let dailySent = subscription.daily_emails_sent || 0;
-      if (dailyResetAt < todayMidnight) {
-        dailySent = 0;
+      /*
+       * Today's sends, counted rather than remembered.
+       *
+       * The counter column cannot carry this. `increment_daily_emails_sent`
+       * filtered on `status = 'active'`, so for a lapsed account the UPDATE
+       * matched nothing and *succeeded* — no error, so the caller's
+       * error-only fallback never ran and the number stayed at zero for good.
+       * Capping against that is capping against zero: the Free fallback added
+       * alongside it would have let a lapsed account spend its whole monthly
+       * allowance in one day, which is the send spike a daily cap exists to
+       * prevent.
+       *
+       * Fails closed, for the same reason the monthly count below does.
+       */
+      const { data: dailyCount, error: dailyErr } = await supabase
+        .rpc('get_daily_email_count', { p_user_id: user.id });
+      if (dailyErr || typeof dailyCount !== 'number') {
+        console.error('[send-email] daily count unavailable', dailyErr);
+        return new Response(
+          JSON.stringify({ error: "We couldn't check today's send allowance. Please try again in a moment.", code: 'daily_count_unavailable' }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
+      const dailySent = dailyCount;
+
+      // The counter column is what the Outreach and Deliverability panels
+      // show, so its daily rollover still happens here — it just no longer
+      // decides whether a send is allowed.
+      const dailyResetAt = subscription?.daily_emails_reset_at
+        ? new Date(subscription.daily_emails_reset_at)
+        : new Date(0);
+      if (subscription && dailyResetAt < todayMidnight) {
         await supabase.from('subscriptions')
           .update({ daily_emails_sent: 0, daily_emails_reset_at: todayMidnight.toISOString() })
           .eq('user_id', user.id);
@@ -279,7 +345,7 @@ serve(async (req) => {
       const monthlySent = monthlyCount;
 
 
-      const dailyLimit = subscription.daily_email_limit || 10;
+      const dailyLimit = effectiveDailyLimit;
       const nextMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
       if (dailySent >= dailyLimit) {
         await logSystemAlert({
@@ -298,20 +364,20 @@ serve(async (req) => {
         );
       }
 
-      const monthlyLimit = MONTHLY_EMAIL_LIMITS[subscription.plan as string] ?? 0;
+      const monthlyLimit = MONTHLY_EMAIL_LIMITS[effectivePlan] ?? 0;
       if (monthlyLimit !== -1 && monthlySent >= monthlyLimit) {
         await logSystemAlert({
           category: "outreach_send_limit", severity: "warning",
           message: `User hit monthly email send limit (${monthlyLimit})`,
-          details: { user_id: user.id, plan: subscription.plan, monthly_emails_sent: monthlySent },
+          details: { user_id: user.id, plan: effectivePlan, monthly_emails_sent: monthlySent },
           user_id: user.id,
         });
         return new Response(
           JSON.stringify({
-            error: `Monthly email send cap reached on your ${subscription.plan} plan.`,
+            error: `Monthly email send cap reached on your ${effectivePlan} plan.`,
             code: 'monthly_cap_reached',
             upgradeRequired: true,
-            plan: subscription.plan,
+            plan: effectivePlan,
             monthlyLimit,
             monthlySent,
             monthlyRemaining: 0,
@@ -688,8 +754,10 @@ ${unsubscribeFooterHtml}
       const gmailResult = await gmailResponse.json();
       console.log('Email sent successfully via Gmail. Message ID:', gmailResult.id);
 
-      // Store sent email in sent_emails table
-      const { error: insertError } = await supabase.from('sent_emails').insert({
+      // Store sent email in sent_emails table. The id comes back because the
+      // allowance row is keyed to it: that is what lets a bounce give the
+      // allowance back, and what stops a retry charging twice for one send.
+      const { data: sentRow, error: insertError } = await supabase.from('sent_emails').insert({
         user_id: user.id,
         lead_id: leadId || null,
         template_id: templateId || null,
@@ -704,23 +772,38 @@ ${unsubscribeFooterHtml}
         sent_at: new Date().toISOString(),
         tracking_pixel_id: trackingPixelId,
         sending_account_id: sendingAccountId,
-      });
+      }).select('id').maybeSingle();
 
       if (insertError) {
         console.error('Failed to store sent email:', insertError);
         // Don't fail the request, email was sent successfully
       }
 
-      // Increment daily email counter
-      const { error: rpcError } = await supabase.rpc('increment_daily_emails_sent', { _user_id: user.id });
+      /*
+       * Record the send against the allowance.
+       *
+       * This writes the append-only send_allowance_usage row the daily and
+       * monthly caps count, and the counter column the Outreach and
+       * Deliverability panels display. The old fallback wrote the counter
+       * directly, which is no longer the number that matters — so a failure
+       * here is a send that went out uncounted, and it says so rather than
+       * papering over it with a write that no cap reads.
+       */
+      const { error: rpcError } = await supabase.rpc('increment_daily_emails_sent', {
+        _user_id: user.id,
+        // Null when the row above failed to store: that send then stays
+        // charged for good, which is the safe direction for a cap.
+        _sent_email_id: sentRow?.id ?? null,
+      });
       if (rpcError) {
-        console.error('RPC increment failed, using fallback:', rpcError.message);
-        await supabase
-          .from('subscriptions')
-          .update({ daily_emails_sent: (subscription?.daily_emails_sent || 0) + 1 } as any)
-          .eq('user_id', user.id);
+        console.error('[send-email] allowance not recorded for a send that went out:', rpcError.message);
+        await logSystemAlert({
+          category: "outreach_send_error", severity: "error",
+          message: "A send went out without being recorded against the allowance",
+          details: { user_id: user.id, error: rpcError.message },
+          user_id: user.id,
+        });
       }
-      // Monthly usage is derived from sent_emails — no counter column to update.
 
 
       // Update lead's last_contacted_at if leadId is provided

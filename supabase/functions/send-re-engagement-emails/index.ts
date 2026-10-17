@@ -108,7 +108,14 @@ serve(async (req) => {
       idempotencyKey: `reengage-${user.id}-${new Date().toISOString().slice(0, 10)}${opts.manual ? '-manual' : ''}`,
       templateData: { name: firstName, daysInactive: daysInactive ?? undefined, neverSignedIn },
     });
-    const sendErr = sendRes.sent ? null : { message: sendRes.error ?? sendRes.reason };
+    /*
+     * A send the key already covered is a skip, not a failure. Recorded as
+     * 'failed' it would put a red row in the admin panel for someone who was
+     * emailed successfully — the re-run reporting the first run's success as
+     * an error.
+     */
+    const alreadySent = !sendRes.sent && sendRes.reason === 'already_sent';
+    const sendErr = sendRes.sent || alreadySent ? null : { message: sendRes.error ?? sendRes.reason };
     const wasSuppressed = !sendRes.sent && sendRes.reason === 'recipient_suppressed';
 
     await recordAttempt({
@@ -116,8 +123,8 @@ serve(async (req) => {
       recipient_email: user.email,
       last_sign_in_at: user.last_sign_in_at,
       days_inactive: daysInactive,
-      eligibility_reason: wasSuppressed ? 'recipient_suppressed' : opts.reason,
-      status: wasSuppressed ? 'skipped' : sendErr ? 'failed' : 'sent',
+      eligibility_reason: wasSuppressed ? 'recipient_suppressed' : alreadySent ? 'already_sent' : opts.reason,
+      status: wasSuppressed || alreadySent ? 'skipped' : sendErr ? 'failed' : 'sent',
       error_message: wasSuppressed ? null : sendErr ? sendErr.message : null,
       triggered_manually: opts.manual,
       triggered_by: opts.manual ? callerId : null,

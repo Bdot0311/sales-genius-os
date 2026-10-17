@@ -156,7 +156,7 @@ serve(async (req) => {
         html: resetHtml,
         text: `Your OutReign admin sent you a password reset. Visit this link to reset: ${resetLink}. If you weren't expecting this, ignore this email.`,
         label: "admin-password-reset",
-        idempotencyKey: `admin-password-reset-${email}-${Date.now()}`,
+        // No key on purpose: an admin resending a reset means to resend it.
       });
     } catch (err) {
       emailError = err;

@@ -5,6 +5,7 @@
 // admin/health surfaces read. Import from edge functions only.
 import { EmailAPIError } from 'npm:@lovable.dev/email-js@0.1.0'
 import {
+  alreadySentUnderKey,
   isReservedTestRecipient,
   logEmailEvent,
   isRateLimited,
@@ -18,7 +19,7 @@ import { TEMPLATES } from './registry.ts'
 
 export type SendAppEmailResult =
   | { sent: true }
-  | { sent: false; reason: 'recipient_suppressed' | 'test_domain_skipped' | 'failed'; error?: string }
+  | { sent: false; reason: 'recipient_suppressed' | 'test_domain_skipped' | 'failed' | 'already_sent'; error?: string }
 
 export interface SendAppEmailOptions {
   templateData?: Record<string, unknown>
@@ -51,6 +52,12 @@ export async function sendAppEmail(
     // No log row: 'skipped' is not an accepted email_send_log status.
     console.log('App email skipped (reserved test domain)', { templateName })
     return { sent: false, reason: 'test_domain_skipped' }
+  }
+
+  // Same at-most-once rule as the plain sender, through the same check, so an
+  // idempotency key means one thing whichever transport a feature uses.
+  if (await alreadySentUnderKey(supabase, options.idempotencyKey, templateName)) {
+    return { sent: false, reason: 'already_sent' }
   }
 
   // One pixel id per logical send, minted before the send so the id embedded in
@@ -87,6 +94,7 @@ export async function sendAppEmail(
         template_name: templateName,
         recipient_email: recipient,
         status: 'suppressed',
+        dedupe_key: options.idempotencyKey ?? null,
       })
       return { sent: false, reason: 'recipient_suppressed' }
     }
@@ -98,6 +106,7 @@ export async function sendAppEmail(
       status: 'sent',
       pixel_id: pixelId,
       reply_to: replyTo,
+      dedupe_key: options.idempotencyKey ?? null,
     })
 
     return { sent: true }

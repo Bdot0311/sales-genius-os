@@ -114,6 +114,42 @@ export const ROADMAP: RoadmapItem[] = [
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-17-deliverability-honesty",
+    date: "2026-10-17",
+    title: "Warmup now reports what it finds",
+    summary:
+      "Inbox placement is recorded as it arrives rather than after we fix it, warmup keeps to its daily ramp, and daily send limits are counted from your actual sends.",
+    items: [
+      {
+        tag: "fixed",
+        title: "Your inbox placement number is real",
+        description:
+          "When a warmup email landed in spam we recorded that, then moved it to the inbox for you. On the next pass we found it in the inbox and overwrote the original reading, so every mailbox showed perfect placement no matter how much mail was being filtered. Placement is now recorded once, where the message actually arrived, and your reputation score reflects it.",
+        href: "/dashboard/deliverability",
+      },
+      {
+        tag: "fixed",
+        title: "Warmup keeps to its daily ramp",
+        description:
+          "Running warmup by hand while the hourly run was already going could send twice the daily target for a mailbox. Each mailbox's allowance is now claimed before anything is sent, so extra runs do nothing instead of doubling the volume. Warmup replies are capped the same way.",
+        href: "/dashboard/deliverability",
+      },
+      {
+        tag: "fixed",
+        title: "One confirmation email, not one per reload",
+        description:
+          "Reloading the page after checkout, or opening the confirmation link in a second tab, sent another \"Subscription Confirmed\" email. Platform emails now carry a key that is checked before anything is sent, so a repeat arrives once. Password reset emails are deliberately exempt: asking for another one still sends another one.",
+      },
+      {
+        tag: "fixed",
+        title: "Daily send limits count your actual sends",
+        description:
+          "Your daily limit was checked against a stored counter that could stop moving, most often after a failed payment — so the number on the Outreach page read zero while mail was going out. Both the daily and the monthly limit are now counted from the emails you have actually sent, and an account with no active plan sends on the Free allowance as the billing notice says.",
+        href: "/dashboard/outreach",
+      },
+    ],
+  },
+  {
     id: "2026-10-16-failed-payments",
     date: "2026-10-16",
     title: "Clearer handling when a payment fails",

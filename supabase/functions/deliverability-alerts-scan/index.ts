@@ -7,6 +7,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { notifyDeliverabilityAlert } from "../_shared/notify-events.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
+import { dedupeKey } from "../_shared/managed-email.ts";
 import { sendAppEmail } from "../_shared/transactional-email-templates/send-app-email.ts";
 import { bounceSeverity, complaintSeverity } from "../_shared/deliverability-thresholds.ts";
 import { requireServiceRole } from "../_shared/internal-auth.ts";
@@ -342,7 +343,16 @@ async function notifyCritical(supabase: any): Promise<number> {
         // Alert ids rather than a timestamp: a retry after a partial failure
         // must be recognised as the same message, and the set of ids is what
         // actually identifies this notification.
-        idempotencyKey: `deliverability-${alerts.map((a: any) => a.id).sort().join("-")}`.slice(0, 200),
+        /*
+         * Hashed, not truncated. Joining the alert ids and cutting at 200
+         * characters fits about five uuids, so any sixth alert fell off the
+         * end and two different six-alert scans shared one key — the second
+         * scan's digest then reached nobody.
+         */
+        idempotencyKey: await dedupeKey(
+          "deliverability",
+          ...alerts.map((a: any) => String(a.id)).sort(),
+        ),
         templateData: {
           name: (profile.full_name || "").split(" ")[0] || undefined,
           issues: alerts.map((a: any) => ({

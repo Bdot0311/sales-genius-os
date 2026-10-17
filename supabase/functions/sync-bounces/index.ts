@@ -212,6 +212,25 @@ serve(async (req) => {
             continue;
           }
 
+          /*
+           * Give the allowance back.
+           *
+           * Both caps leave 'bounced' out of the statuses they count, so a
+           * bounce has never been meant to spend a paid allowance. Flipping
+           * the status alone stopped achieving that once the allowance moved
+           * to an append-only ledger: the ledger row outlived the bounce and
+           * greatest() kept the higher number, so the account least able to
+           * fix the problem burned its day's sends on mail nobody received.
+           *
+           * Idempotent on the server, so a DSN delivered twice credits once.
+           */
+          const { error: creditErr } = await adminClient.rpc("credit_bounced_send", {
+            _sent_email_id: send.id,
+          });
+          if (creditErr) {
+            console.error(`Failed to credit the allowance for ${send.id}:`, creditErr.message);
+          }
+
           await adminClient.from("bounce_events").insert({
             user_id: user.id,
             sending_account_id: send.sending_account_id,
