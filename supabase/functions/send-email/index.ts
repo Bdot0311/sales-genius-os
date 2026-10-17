@@ -754,8 +754,10 @@ ${unsubscribeFooterHtml}
       const gmailResult = await gmailResponse.json();
       console.log('Email sent successfully via Gmail. Message ID:', gmailResult.id);
 
-      // Store sent email in sent_emails table
-      const { error: insertError } = await supabase.from('sent_emails').insert({
+      // Store sent email in sent_emails table. The id comes back because the
+      // allowance row is keyed to it: that is what lets a bounce give the
+      // allowance back, and what stops a retry charging twice for one send.
+      const { data: sentRow, error: insertError } = await supabase.from('sent_emails').insert({
         user_id: user.id,
         lead_id: leadId || null,
         template_id: templateId || null,
@@ -770,7 +772,7 @@ ${unsubscribeFooterHtml}
         sent_at: new Date().toISOString(),
         tracking_pixel_id: trackingPixelId,
         sending_account_id: sendingAccountId,
-      });
+      }).select('id').maybeSingle();
 
       if (insertError) {
         console.error('Failed to store sent email:', insertError);
@@ -787,7 +789,12 @@ ${unsubscribeFooterHtml}
        * here is a send that went out uncounted, and it says so rather than
        * papering over it with a write that no cap reads.
        */
-      const { error: rpcError } = await supabase.rpc('increment_daily_emails_sent', { _user_id: user.id });
+      const { error: rpcError } = await supabase.rpc('increment_daily_emails_sent', {
+        _user_id: user.id,
+        // Null when the row above failed to store: that send then stays
+        // charged for good, which is the safe direction for a cap.
+        _sent_email_id: sentRow?.id ?? null,
+      });
       if (rpcError) {
         console.error('[send-email] allowance not recorded for a send that went out:', rpcError.message);
         await logSystemAlert({

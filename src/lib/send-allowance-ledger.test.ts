@@ -43,6 +43,9 @@ function liveDefinition(name: string): { file: string; sql: string; whole: strin
 const LEDGER = strip(
   readFileSync(`${MIGRATIONS}/20261017030000_send_allowance_ledger.sql`, "utf8"),
 );
+const LEDGER_CREDITS = strip(
+  readFileSync(`${MIGRATIONS}/20261017040000_send_allowance_credits_bounces.sql`, "utf8"),
+);
 
 describe("usage is recorded where deleting history cannot reach it", () => {
   it("the ledger is append-only from the app's side", () => {
@@ -64,9 +67,30 @@ describe("usage is recorded where deleting history cannot reach it", () => {
 
   it("every send writes one row, through the call the senders already make", () => {
     const { sql } = liveDefinition("increment_daily_emails_sent");
-    expect(sql).toContain("INSERT INTO public.send_allowance_usage (user_id) VALUES (_user_id)");
+    expect(sql).toContain("INSERT INTO public.send_allowance_usage (user_id, sent_email_id)");
     // The display counter is still maintained, for the Outreach panel.
     expect(sql).toContain("UPDATE public.subscriptions");
+  });
+
+  it("one row per send, however many times the sender retries", () => {
+    // The Gmail send succeeded, the row was written, the call came again.
+    // Charging twice for one send is the same wrong as charging for a bounce.
+    const { sql } = liveDefinition("increment_daily_emails_sent");
+    expect(sql).toMatch(/ON CONFLICT \(sent_email_id\) WHERE sent_email_id IS NOT NULL DO NOTHING/);
+    expect(LEDGER_CREDITS).toContain("CREATE UNIQUE INDEX IF NOT EXISTS idx_send_allowance_usage_sent_email");
+  });
+
+  it("both senders name the send they are recording", () => {
+    /*
+     * Without the id a ledger row is anonymous and a bounce has nothing to
+     * find. Null is allowed and stays charged, which is the safe direction
+     * for a number that gates sending.
+     */
+    const SEND = strip(readFileSync("supabase/functions/send-email/index.ts", "utf8"));
+    expect(SEND).toMatch(/_sent_email_id: sentRow\?\.id \?\? null/);
+    expect(SEND).toContain(".select('id').maybeSingle()");
+    const CRON = strip(readFileSync("supabase/functions/process-scheduled-emails/index.ts", "utf8"));
+    expect(CRON).toMatch(/_sent_email_id: email\.id/);
   });
 
   it("cannot be used by one account against another", () => {
@@ -79,8 +103,52 @@ describe("usage is recorded where deleting history cannot reach it", () => {
     expect(sql).toMatch(/IF auth\.role\(\) <> 'service_role' THEN/);
     expect(sql).toMatch(/RAISE EXCEPTION/);
     expect(whole).toMatch(
-      /REVOKE ALL ON FUNCTION public\.increment_daily_emails_sent\(uuid\) FROM PUBLIC, anon, authenticated;/,
+      /REVOKE ALL ON FUNCTION public\.increment_daily_emails_sent\(uuid, uuid\) FROM PUBLIC, anon, authenticated;/,
     );
+    /*
+     * The one-argument form is dropped rather than left beside the new one:
+     * with a defaulted second parameter both would match a one-argument call
+     * and Postgres would refuse it as ambiguous.
+     */
+    expect(whole).toContain("DROP FUNCTION IF EXISTS public.increment_daily_emails_sent(uuid);");
+  });
+
+  it("a bounce gives the allowance back", () => {
+    /*
+     * Both caps leave 'bounced' out of the statuses they count, and have since
+     * get_monthly_email_count was written: a bounce left the building, but the
+     * product does not spend a paid allowance on a message nobody received.
+     * The ledger broke that rule by outliving the bounce — greatest() kept the
+     * higher number, so the account least able to fix a bad list burned its
+     * day's sends on mail that never arrived.
+     *
+     * Measured on Postgres 16: five recorded sends read 5; two bounced and
+     * credited read 3; the same two DSNs redelivered still read 3.
+     */
+    const { sql, whole } = liveDefinition("credit_bounced_send");
+    expect(sql).toContain("UPDATE public.send_allowance_usage");
+    expect(sql).toContain("SET credited_at = now()");
+    expect(sql).toContain("WHERE sent_email_id = _sent_email_id");
+    // Idempotent, so a DSN delivered twice credits once.
+    expect(sql).toContain("AND credited_at IS NULL");
+    expect(sql).toMatch(/IF auth\.role\(\) <> 'service_role' THEN/);
+    expect(whole).toMatch(
+      /REVOKE ALL ON FUNCTION public\.credit_bounced_send\(uuid\) FROM PUBLIC, anon, authenticated;/,
+    );
+
+    // And the bounce path actually calls it, or the rule is only documented.
+    const SYNC = strip(readFileSync("supabase/functions/sync-bounces/index.ts", "utf8"));
+    expect(SYNC).toMatch(/\.rpc\("credit_bounced_send", \{\s*_sent_email_id: send\.id,\s*\}\)/);
+    // Credited before the bounce_events row, so a failure there cannot leave
+    // the allowance spent with nothing recording why.
+    expect(SYNC.indexOf("credit_bounced_send")).toBeLessThan(SYNC.indexOf('from("bounce_events")'));
+  });
+
+  it("a credited row stops counting against either cap", () => {
+    for (const name of ["get_daily_email_count", "get_monthly_email_count"]) {
+      const { sql } = liveDefinition(name);
+      expect(sql, name).toContain("u.credited_at IS NULL");
+    }
   });
 
   it("both caps take the larger of the ledger and the surviving history", () => {

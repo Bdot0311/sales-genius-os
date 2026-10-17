@@ -4477,18 +4477,24 @@ export type Database = {
       }
       send_allowance_usage: {
         Row: {
+          credited_at: string | null
           id: number
           sent_at: string
+          sent_email_id: string | null
           user_id: string
         }
         Insert: {
+          credited_at?: string | null
           id?: number
           sent_at?: string
+          sent_email_id?: string | null
           user_id: string
         }
         Update: {
+          credited_at?: string | null
           id?: number
           sent_at?: string
+          sent_email_id?: string | null
           user_id?: string
         }
         Relationships: []
@@ -6769,6 +6775,10 @@ export type Database = {
         Args: { p_cap: number; p_user_id: string }
         Returns: number
       }
+      credit_bounced_send: {
+        Args: { _sent_email_id: string }
+        Returns: undefined
+      }
       current_month_start_utc: { Args: never; Returns: string }
       deduct_search_credits: {
         Args: { _amount: number; _description?: string }
@@ -6925,7 +6935,7 @@ export type Database = {
         Returns: undefined
       }
       increment_daily_emails_sent: {
-        Args: { _user_id: string }
+        Args: { _sent_email_id?: string | null; _user_id: string }
         Returns: undefined
       }
       internal_job_key: { Args: never; Returns: string }

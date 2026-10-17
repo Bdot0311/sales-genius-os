@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { FROM_DOMAIN, sendManagedEmail } from "../_shared/managed-email.ts";
+import { alertHour, dedupeKey, FROM_DOMAIN, sendManagedEmail } from "../_shared/managed-email.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
@@ -130,7 +130,7 @@ serve(async (req) => {
            * source addresses — tripping the same rule are two incidents, and
            * keying only on the kind would have hidden the second one.
            */
-          idempotencyKey: `security-${event_type}-${user_id ?? ip_address ?? "platform"}-${recipient}-${new Date().toISOString().slice(0, 13)}`.slice(0, 200),
+          idempotencyKey: await dedupeKey("security-alert", event_type, user_id ?? ip_address ?? "platform", recipient, alertHour()),
         });
       } catch (sendError) {
         console.error('security-alert send failed', sendError instanceof Error ? sendError.message : sendError);

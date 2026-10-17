@@ -577,7 +577,11 @@ serve(async (req) => {
            * `read + 1` lost updates whenever two runs, or a run and an
            * interactive send, overlapped on one account.
            */
-          const { error: incErr } = await supabase.rpc('increment_daily_emails_sent', { _user_id: email.user_id });
+          const { error: incErr } = await supabase.rpc('increment_daily_emails_sent', {
+            _user_id: email.user_id,
+            // Keyed to the send, so a bounce can give the allowance back.
+            _sent_email_id: email.id,
+          });
           if (incErr) console.warn('daily counter increment failed (non-fatal):', incErr.message);
 
           // Keep this batch's own view of the caps moving, so a single run

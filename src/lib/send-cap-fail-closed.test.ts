@@ -254,7 +254,8 @@ describe("the scheduled sender caps lapsed accounts too", () => {
 
   it("increments the display counter atomically", () => {
     // `read + 1` lost updates whenever two runs overlapped on one account.
-    expect(cron).toMatch(/\.rpc\('increment_daily_emails_sent', \{ _user_id: email\.user_id \}\)/);
+    expect(cron).toMatch(/\.rpc\('increment_daily_emails_sent', \{/);
+    expect(cron).toMatch(/_user_id: email\.user_id,/);
     expect(cron).not.toMatch(/daily_emails_sent: \(ul\?\.dailySent \|\| 0\) \+ 1/);
     // The batch's own view still advances, so one run cannot outrun its cap.
     expect(cron).toMatch(/ul\.dailySent \+= 1;/);

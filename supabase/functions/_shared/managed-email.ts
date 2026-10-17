@@ -126,6 +126,45 @@ export async function alreadySentUnderKey(
   return false
 }
 
+/**
+ * An at-most-once key built from its parts, bounded by construction.
+ *
+ * Every key this replaces was assembled by template and then truncated with
+ * `.slice(0, 200)`, which fails in two directions at once. A long part — a
+ * 150-character customer email in a billing alert — eats the end of the
+ * string, and the end is where the hour bucket lives: the key stops varying
+ * by hour, so the *first* alert of its kind is the last one ever sent. And two
+ * different identities sharing a 200-character prefix become one key, so the
+ * second incident reaches nobody. In an alert channel both of those are
+ * silence, which is the one failure a monitoring path must not have.
+ *
+ * Hashing the whole identity removes the truncation rather than moving it: the
+ * result is a short label plus a 128-bit digest, so no input length can push
+ * any part of the identity out of the key. The label stays readable because
+ * `email_send_log.template_name` is what a human greps, and `created_at` says
+ * which hour it was.
+ *
+ * Parts are joined with NUL, which cannot appear in any of them, so
+ * ("a", "bc") and ("ab", "c") are different identities rather than one.
+ */
+export async function dedupeKey(
+  label: string,
+  ...parts: (string | number | null | undefined)[]
+): Promise<string> {
+  const material = parts.map((p) => (p === null || p === undefined ? "" : String(p))).join("\u0000")
+  const bytes = new Uint8Array(
+    await crypto.subtle.digest("SHA-256", new TextEncoder().encode(material)),
+  )
+  let hex = ""
+  for (const b of bytes.subarray(0, 16)) hex += b.toString(16).padStart(2, "0")
+  return `${label.slice(0, 40)}-${hex}`
+}
+
+/** The hour an alert belongs to, as the bucket every alert key shares. */
+export function alertHour(): string {
+  return new Date().toISOString().slice(0, 13)
+}
+
 export function isRateLimited(error: unknown): boolean {
   if (error instanceof EmailAPIError) return error.status === 429
   return false

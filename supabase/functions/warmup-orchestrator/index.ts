@@ -338,6 +338,18 @@ serve(async (req) => {
         console.error("[warmup-orchestrator] settled lookup failed:", acct.account_id, seenErr.message);
         continue;
       }
+      /*
+       * Keyed by the id the message has in this mailbox, so the per-message
+       * loop below can ask what a row has already recorded. Without it a
+       * recovery whose stamp failed to write looked identical to one that had
+       * never been attempted — and since the message was by then out of spam,
+       * the only block that writes the stamp never ran again, so the message
+       * was re-fetched on every run for three days and spent budget other
+       * mailboxes needed.
+       */
+      const priorByMessageId = new Map<string, Record<string, unknown>>(
+        (seenRows ?? []).map((r: Record<string, unknown>) => [r.recipient_message_id as string, r]),
+      );
       const settled = new Set(
         (seenRows ?? [])
           .filter((r: Record<string, unknown>) =>
@@ -430,17 +442,31 @@ serve(async (req) => {
          * Spam recovery, tracked apart from the reading so it can be retried.
          * `recovered_at` is what distinguishes "recorded as spam and moved"
          * from "recorded as spam and still sitting there".
+         *
+         * Whether one is owed comes from the recorded reading, not from where
+         * the message is right now. Those differ in exactly the case that
+         * mattered: a run that moved the message and then failed to write the
+         * stamp leaves a row reading 'spam' with no stamp, while the message
+         * itself now sits in the inbox — so a check on the current folder
+         * would never stamp it, and the row would never settle.
          */
-        if (folder === "spam") {
-          const modRes = await fetch(`${GMAIL_API}/messages/${msgs[m].id}/modify`, {
-            method: "POST",
-            headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ addLabelIds: ["INBOX"], removeLabelIds: ["SPAM"] }),
-          });
-          if (!modRes.ok) {
-            console.error("[warmup-orchestrator] spam recovery failed:", msgs[m].id, modRes.status);
-            continue;
+        const prior = priorByMessageId.get(msgs[m].id);
+        const recordedFolder = (prior?.folder_detected as string | null) ?? folder;
+        if (recordedFolder === "spam" && !prior?.recovered_at) {
+          if (folder === "spam") {
+            const modRes = await fetch(`${GMAIL_API}/messages/${msgs[m].id}/modify`, {
+              method: "POST",
+              headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+              body: JSON.stringify({ addLabelIds: ["INBOX"], removeLabelIds: ["SPAM"] }),
+            });
+            if (!modRes.ok) {
+              console.error("[warmup-orchestrator] spam recovery failed:", msgs[m].id, modRes.status);
+              continue;
+            }
+            recovered++;
           }
+          // Either the move just happened, or an earlier run made it and only
+          // the stamp was outstanding. Both end the same way.
           if (wmId) {
             await supabase
               .from("warmup_messages")
@@ -449,7 +475,6 @@ serve(async (req) => {
               .eq("to_account_id", acct.account_id)
               .is("recovered_at", null);
           }
-          recovered++;
         }
 
         /*

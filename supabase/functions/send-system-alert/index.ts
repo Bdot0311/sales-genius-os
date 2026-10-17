@@ -4,7 +4,7 @@
 // setting: an on/off switch, a per-event switch, and a recipient list.
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
-import { sendManagedEmail } from "../_shared/managed-email.ts";
+import { alertHour, dedupeKey, sendManagedEmail } from "../_shared/managed-email.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -173,7 +173,7 @@ serve(async (req) => {
           html,
           text: `${subject}\n\n${String(message ?? "")}`,
           label: "system-alert",
-          idempotencyKey: `system-alert-${cat}-${severity}-${alertAbout}-${recipient}-${new Date().toISOString().slice(0, 13)}`.slice(0, 200),
+          idempotencyKey: await dedupeKey("system-alert", cat, severity, alertAbout, recipient, alertHour()),
         });
         if (result.sent) emailed++;
         // An alert already sent under this hour's key is the dedupe working,

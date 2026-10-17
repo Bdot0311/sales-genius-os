@@ -1,28 +1,12 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { corsHeaders, requireServiceRole } from "../_shared/internal-auth.ts";
-import { FROM_DOMAIN, sendManagedEmail } from "../_shared/managed-email.ts";
+import { alertHour, dedupeKey, FROM_DOMAIN, sendManagedEmail } from "../_shared/managed-email.ts";
 
 
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[SUSPICIOUS-ACTIVITY] ${step}${detailsStr}`);
-};
-
-/**
- * A short, stable digest of what an alert is about.
- *
- * FNV-1a, not a slice of the joined text: two different sets of affected
- * accounts can share a 200-character prefix, and a key that collides is a
- * second incident that never reaches anyone.
- */
-const digest = (s: string): string => {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 0x01000193) >>> 0;
-  }
-  return h.toString(36);
 };
 
 /**
@@ -45,7 +29,7 @@ const enqueueAlert = async (supabase: any, to: string, subject: string, html: st
       html,
       text: subject,
       label,
-      idempotencyKey: `${label}-${to}-${about}-${new Date().toISOString().slice(0, 13)}`,
+      idempotencyKey: await dedupeKey(label, to, about, alertHour()),
     });
   } catch (error) {
     console.error('[SUSPICIOUS-ACTIVITY] alert send failed', error instanceof Error ? error.message : error);
@@ -216,10 +200,9 @@ serve(async (req) => {
         </body></html>`;
 
         // Keyed to who this digest is about, so the next hour's digest is
-        // suppressed only when it covers the same people.
-        const about = digest(
-          [...new Set(criticalAlerts.map((a: any) => `${a.type}:${a.target}`))].sort().join(","),
-        );
+        // suppressed only when it covers the same people. Hashed whole by
+        // dedupeKey, so the list's length cannot push the hour out of the key.
+        const about = [...new Set(criticalAlerts.map((a: any) => `${a.type}:${a.target}`))].sort().join(",");
         for (const adminEmail of allRecipients) {
           await enqueueAlert(supabaseClient, adminEmail, '🚨 [CRITICAL] Platform Security Alert - Immediate Action Required', adminEmailHtml, 'suspicious-activity-admin', about);
         }

@@ -105,6 +105,47 @@ describe("placement is observed once, not re-judged every hour", () => {
     expect(fail).toContain("continue;");
   });
 
+  it("finishes a recovery whose stamp never landed", () => {
+    /*
+     * The move succeeds, the `recovered_at` write fails, and the message is
+     * now in the inbox — so a check on the *current* folder never enters the
+     * recovery block again, the stamp is never written, the row never settles,
+     * and the message is re-fetched every run for three days, spending budget
+     * other mailboxes need.
+     *
+     * So whether a recovery is owed comes from the recorded reading, which
+     * still says 'spam', not from where the message sits now.
+     */
+    expect(code).toContain("const priorByMessageId = new Map<string, Record<string, unknown>>(");
+    expect(code).toMatch(
+      /const recordedFolder = \(prior\?\.folder_detected as string \| null\) \?\? folder;/,
+    );
+    expect(code).toMatch(/if \(recordedFolder === "spam" && !prior\?\.recovered_at\) \{/);
+
+    // The Gmail move only runs when it is still in spam...
+    const owed = code.indexOf('if (recordedFolder === "spam" && !prior?.recovered_at)');
+    const block = code.slice(owed, code.indexOf("recovered_at: new Date().toISOString()", owed));
+    expect(block).toContain('if (folder === "spam") {');
+    /*
+     * ...but the stamp sits outside that block, which is the whole point. An
+     * ordering assertion cannot tell "after the move" from "inside the move",
+     * so this counts braces: nested, the balance would still be open.
+     */
+    const stampAt = code.indexOf("recovered_at: new Date().toISOString()");
+    expect(stampAt).toBeGreaterThan(-1);
+    const inner = code.indexOf('if (folder === "spam") {', owed);
+    expect(inner).toBeGreaterThan(-1);
+    // The statement that performs the stamp, measured where it opens.
+    const stampStmt = code.lastIndexOf("if (wmId) {", stampAt);
+    expect(stampStmt).toBeGreaterThan(inner);
+    let depth = 0;
+    for (const ch of code.slice(inner, stampStmt)) {
+      if (ch === "{") depth++;
+      else if (ch === "}") depth--;
+    }
+    expect(depth, "the stamp is nested inside the Gmail move").toBe(0);
+  });
+
   it("the migration adds both columns the ordering needs", () => {
     expect(MIGRATION).toMatch(/ADD COLUMN IF NOT EXISTS recipient_message_id text;/);
     expect(MIGRATION).toMatch(/ADD COLUMN IF NOT EXISTS recovered_at timestamptz;/);

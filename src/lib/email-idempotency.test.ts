@@ -107,7 +107,7 @@ describe("the keys that must be stable are", () => {
   it("alerts collapse to one an hour", () => {
     // Hour buckets, matching system-health-alert, which already did this.
     for (const file of ["send-system-alert", "send-security-alert", "detect-suspicious-activity"]) {
-      expect(key(file), file).toContain("toISOString().slice(0, 13)");
+      expect(key(file), file).toContain("alertHour()");
     }
   });
 
@@ -119,34 +119,55 @@ describe("the keys that must be stable are", () => {
      * repeats of one incident, so the key has to carry whatever identifies
      * which incident it is.
      */
-    expect(key("send-system-alert")).toContain("${alertAbout}");
+    expect(key("send-system-alert")).toContain("alertAbout");
     expect(body(`${FN_ROOT}/send-system-alert/index.ts`))
       .toMatch(/const alertAbout = typeof d\.user_id === "string" \? d\.user_id : \(customerEmail \?\? "platform"\)/);
 
-    expect(key("send-security-alert")).toContain('${user_id ?? ip_address ?? "platform"}');
+    expect(key("send-security-alert")).toContain('user_id ?? ip_address ?? "platform"');
 
     // The per-user alert goes to the subject, so the recipient identifies it;
     // the admin digest covers whoever tripped a rule this run, and two runs an
     // hour apart can cover different people entirely.
     const SUS = body(`${FN_ROOT}/detect-suspicious-activity/index.ts`);
-    expect(key("detect-suspicious-activity")).toContain("${about}");
+    expect(key("detect-suspicious-activity")).toContain("about");
     expect(SUS).toMatch(/criticalAlerts\.map\(\(a: any\) => `\$\{a\.type\}:\$\{a\.target\}`\)/);
     expect(SUS).toContain("'suspicious-activity-admin', about)");
   });
 
-  it("the digest is a hash, not a truncation", () => {
+  it("no key is built by truncation", () => {
     /*
-     * Two different sets of affected accounts can share a 200-character
-     * prefix, and a key that collides is a second incident that never reaches
-     * anyone.
+     * Every one of these was assembled by template and cut with
+     * `.slice(0, 200)`, which fails in two directions at once. A long part — a
+     * 150-character customer email in a billing alert — eats the end of the
+     * string, and the end is where the hour lives: the key stops varying by
+     * hour, so the first alert of its kind is the last one ever sent. And two
+     * identities sharing a 200-character prefix become one key, so the second
+     * incident reaches nobody. In an alert channel both are silence.
      */
-    const SUS = body(`${FN_ROOT}/detect-suspicious-activity/index.ts`);
-    const at = SUS.indexOf("const digest = (s: string): string => {");
-    expect(at).toBeGreaterThan(-1);
-    const fn = SUS.slice(at, SUS.indexOf("};", at));
-    expect(fn).toContain("0x811c9dc5");
-    expect(fn).toContain("Math.imul(h, 0x01000193)");
-    expect(fn).not.toContain(".slice(");
+    for (const file of [
+      "send-system-alert",
+      "send-security-alert",
+      "detect-suspicious-activity",
+      "deliverability-alerts-scan",
+    ]) {
+      const k = key(file);
+      expect(k, file).toContain("await dedupeKey(");
+      expect(k, file).not.toContain(".slice(0, 200)");
+    }
+  });
+
+  it("the key builder hashes the whole identity", () => {
+    const TRANSPORT = body(`${FN_ROOT}/_shared/managed-email.ts`);
+    const at = TRANSPORT.indexOf("export async function dedupeKey(");
+    expect(at, "one builder, so no caller has to get this right again").toBeGreaterThan(-1);
+    const fn = TRANSPORT.slice(at, TRANSPORT.indexOf("\nexport ", at + 1));
+    expect(fn).toContain('crypto.subtle.digest("SHA-256"');
+    // NUL between the parts, which cannot appear in any of them, so ("a","bc")
+    // and ("ab","c") stay two identities rather than one.
+    expect(fn).toMatch(/\.join\("\\u0000"\)/);
+    // Bounded by construction: only the label is cut, never the identity.
+    expect(fn).toContain("label.slice(0, 40)");
+    expect(fn).not.toMatch(/material\.slice|parts\.slice/);
   });
 
   it("a deduped alert is neither an error nor a delivery failure", () => {
