@@ -136,6 +136,12 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         tag: "fixed",
+        title: "One confirmation email, not one per reload",
+        description:
+          "Reloading the page after checkout, or opening the confirmation link in a second tab, sent another \"Subscription Confirmed\" email. Platform emails now carry a key that is checked before anything is sent, so a repeat arrives once. Password reset emails are deliberately exempt: asking for another one still sends another one.",
+      },
+      {
+        tag: "fixed",
         title: "Daily send limits count your actual sends",
         description:
           "Your daily limit was checked against a stored counter that could stop moving, most often after a failed payment — so the number on the Outreach page read zero while mail was going out. Both the daily and the monthly limit are now counted from the emails you have actually sent, and an account with no active plan sends on the Free allowance as the billing notice says.",

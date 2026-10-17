@@ -124,7 +124,9 @@ serve(async (req) => {
           html: emailHtml,
           text: `Security Alert: ${event_type} (${severity})`,
           label: 'security-alert',
-          idempotencyKey: `security-${event_type}-${recipient}-${Date.now()}`,
+          // Hourly per event kind per recipient: the same alert firing in a
+          // loop should be one email an hour, not one per occurrence.
+          idempotencyKey: `security-${event_type}-${recipient}-${new Date().toISOString().slice(0, 13)}`,
         });
       } catch (sendError) {
         console.error('security-alert send failed', sendError instanceof Error ? sendError.message : sendError);

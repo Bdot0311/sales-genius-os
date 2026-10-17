@@ -154,10 +154,14 @@ serve(async (req) => {
           html,
           text: `${subject}\n\n${String(message ?? "")}`,
           label: "system-alert",
-          idempotencyKey: `system-alert-${cat}-${severity}-${recipient}-${Date.now()}`.slice(0, 200),
+          // Hourly, matching system-health-alert. logSystemAlert mails on
+          // every error and critical, and some of those fire per request.
+          idempotencyKey: `system-alert-${cat}-${severity}-${recipient}-${new Date().toISOString().slice(0, 13)}`.slice(0, 200),
         });
         if (result.sent) emailed++;
-        else errors.push(`${recipient}: ${result.reason}`);
+        // An alert already sent under this hour's key is the dedupe working,
+        // not a delivery problem, so it does not belong in `errors`.
+        else if (result.reason !== 'already_sent') errors.push(`${recipient}: ${result.reason}`);
       } catch (err) {
         errors.push(`${recipient}: ${(err as Error).message}`);
       }

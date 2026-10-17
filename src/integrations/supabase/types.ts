@@ -2246,6 +2246,7 @@ export type Database = {
       email_send_log: {
         Row: {
           created_at: string
+          dedupe_key: string | null
           error_message: string | null
           id: string
           last_opened_at: string | null
@@ -2261,6 +2262,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          dedupe_key?: string | null
           error_message?: string | null
           id?: string
           last_opened_at?: string | null
@@ -2276,6 +2278,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          dedupe_key?: string | null
           error_message?: string | null
           id?: string
           last_opened_at?: string | null

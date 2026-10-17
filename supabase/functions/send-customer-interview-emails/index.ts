@@ -105,7 +105,12 @@ serve(async (req) => {
 
       if (res.sent) {
         sent++;
-      } else if (res.reason === 'recipient_suppressed' || res.reason === 'test_domain_skipped') {
+      } else if (
+        res.reason === 'recipient_suppressed' ||
+        res.reason === 'test_domain_skipped' ||
+        // Already covered by this user's key: a skip, not an error.
+        res.reason === 'already_sent'
+      ) {
         skipped++;
       } else {
         errors.push(`${user.email}: ${res.error ?? res.reason}`);

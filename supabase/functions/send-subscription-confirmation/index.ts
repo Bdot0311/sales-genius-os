@@ -99,7 +99,14 @@ serve(async (req) => {
       html,
       text: `Hey ${displayName}! Your ${planName} Plan is now active. Start using OutReign at ${appUrl}/dashboard`,
       label: 'subscription-confirmation',
-      idempotencyKey: `sub-confirm-${email}-${Date.now()}`,
+      /*
+       * Per customer, plan and day. The Confirmation page invokes this from an
+       * effect guarded by a React ref, which lives only as long as the mounted
+       * component — reload after the Stripe redirect, or open the link in a
+       * second tab, and it fires again. Dated so a genuine plan change later
+       * still confirms.
+       */
+      idempotencyKey: `sub-confirm-${email}-${planName}-${new Date().toISOString().slice(0, 10)}`,
     });
 
     console.log("Subscription confirmation email sent successfully");

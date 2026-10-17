@@ -108,28 +108,44 @@ serve(async (req) => {
         signupDate: signupTime,
       },
     });
-    if (!notifyRes.sent) console.error('signup-notification not sent:', notifyRes.reason, notifyRes.error ?? '');
+    if (!notifyRes.sent) {
+      // 'already_sent' is this key doing its job, not a delivery problem.
+      const say = notifyRes.reason === 'already_sent' ? console.log : console.error;
+      say('signup-notification not sent:', notifyRes.reason, notifyRes.error ?? '');
+    }
 
     // 2. Welcome email to the new user
     const welcomeRes = await sendAppEmail(supabase, 'welcome-email', userEmail, {
       idempotencyKey: `welcome-${userId}`,
       templateData: { name: displayName },
     });
-    if (!welcomeRes.sent) console.error('welcome-email not sent:', welcomeRes.reason, welcomeRes.error ?? '');
+    if (!welcomeRes.sent) {
+      // 'already_sent' is this key doing its job, not a delivery problem.
+      const say = welcomeRes.reason === 'already_sent' ? console.log : console.error;
+      say('welcome-email not sent:', welcomeRes.reason, welcomeRes.error ?? '');
+    }
 
     // 3. Personal founder note
     const founderRes = await sendAppEmail(supabase, 'founder-note', userEmail, {
       idempotencyKey: `founder-note-${userId}`,
       templateData: { name: displayName },
     });
-    if (!founderRes.sent) console.error('founder-note not sent:', founderRes.reason, founderRes.error ?? '');
+    if (!founderRes.sent) {
+      // 'already_sent' is this key doing its job, not a delivery problem.
+      const say = founderRes.reason === 'already_sent' ? console.log : console.error;
+      say('founder-note not sent:', founderRes.reason, founderRes.error ?? '');
+    }
 
     // 4. Nurturing onboarding offer — free help launching first campaign
     const onboardingRes = await sendAppEmail(supabase, 'onboarding-offer', userEmail, {
       idempotencyKey: `onboarding-offer-${userId}`,
       templateData: { name: displayName },
     });
-    if (!onboardingRes.sent) console.error('onboarding-offer not sent:', onboardingRes.reason, onboardingRes.error ?? '');
+    if (!onboardingRes.sent) {
+      // 'already_sent' is this key doing its job, not a delivery problem.
+      const say = onboardingRes.reason === 'already_sent' ? console.log : console.error;
+      say('onboarding-offer not sent:', onboardingRes.reason, onboardingRes.error ?? '');
+    }
 
     console.log('Signup emails processed for:', userEmail);
     return new Response(JSON.stringify({ success: true }), {

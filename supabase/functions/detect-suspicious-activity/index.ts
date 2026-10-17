@@ -18,7 +18,11 @@ const enqueueAlert = async (supabase: any, to: string, subject: string, html: st
       html,
       text: subject,
       label,
-      idempotencyKey: `${label}-${to}-${Date.now()}`,
+      // One alert per hour per recipient for a given kind. The detector runs
+      // on a schedule, so a condition that persists used to mail on every
+      // pass — and an alert inbox nobody can read is an alert inbox nobody
+      // reads.
+      idempotencyKey: `${label}-${to}-${new Date().toISOString().slice(0, 13)}`,
     });
   } catch (error) {
     console.error('[SUSPICIOUS-ACTIVITY] alert send failed', error instanceof Error ? error.message : error);

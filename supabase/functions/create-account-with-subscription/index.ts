@@ -199,7 +199,9 @@ serve(async (req) => {
         html: credentialsHtml,
         text: `Welcome to OutReign! Email: ${email}, Temporary Password: ${tempPassword}. Sign in at ${appUrl}/auth. Please change your password after first login.`,
         label: 'account-credentials',
-        idempotencyKey: `account-creds-${userData.user?.id}-${Date.now()}`,
+        // Per created account, for good: a retried request must not mail a
+        // second set of credentials.
+        idempotencyKey: `account-creds-${userData.user?.id}`,
       });
     } catch (emailError) {
       console.error("Error sending credentials email:", emailError);

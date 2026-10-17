@@ -34,7 +34,11 @@ serve(async (req) => {
         html,
         text: subject,
         label,
-        idempotencyKey: `${label}-${to}-${Date.now()}`,
+        // The label already names the stage (7d / 3d / 1d), so one warning
+        // per stage per recipient, ever. The trial_warning_*_sent flags are
+        // read before the send and written after it, which two runs can both
+        // pass; this is what makes the guarantee hold rather than the flag.
+        idempotencyKey: `${label}-${to}`,
       });
     };
 

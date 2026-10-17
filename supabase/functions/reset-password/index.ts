@@ -205,7 +205,8 @@ serve(async (req) => {
           html: resetHtml,
           text: `We received a request to reset your password. Visit this link to reset: ${resetLink}. If you didn't request this, ignore this email.`,
           label: 'password-reset',
-          idempotencyKey: `password-reset-${email}-${Date.now()}`,
+          // No key on purpose. Someone who asks for the reset email again
+          // must receive it; the transport falls back to a fresh id.
         });
       } catch (emailError) {
         console.error("Error sending password reset email:", emailError);

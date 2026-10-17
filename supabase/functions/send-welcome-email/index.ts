@@ -105,7 +105,9 @@ serve(async (req) => {
       html,
       text: `Welcome to OutReign, ${displayName}! Sign in at ${appUrl}/auth`,
       label: 'welcome-email',
-      idempotencyKey: `welcome-${email}-${Date.now()}`,
+      // One welcome per address per day. Dated rather than permanent so
+      // someone who signs up again next year is still welcomed.
+      idempotencyKey: `welcome-${email}-${new Date().toISOString().slice(0, 10)}`,
     });
 
     console.log("Welcome email sent successfully");
