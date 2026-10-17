@@ -269,6 +269,42 @@ serve(async (req) => {
           continue;
         }
 
+        /*
+         * Is this email still wanted?
+         *
+         * The row was queued when the step ran, and a lot can happen between
+         * then and now: the prospect replies and the sequence stops, or they
+         * ask to be left until March and it is held. Cancelling at the moment
+         * of the decision closes the common case, but the row may already have
+         * been claimed by this run — so the last thing before sending is to
+         * ask the enrollment whether it still wants this sent.
+         *
+         * Only 'active' passes. A completed, paused or cancelled enrollment
+         * has said otherwise, and sending anyway is the thing the reply
+         * handling exists to prevent.
+         */
+        if (email.enrollment_id) {
+          const { data: enr, error: enrErr } = await supabase
+            .from("sequence_enrollments")
+            .select("status, paused_reason")
+            .eq("id", email.enrollment_id)
+            .maybeSingle();
+          if (enrErr) {
+            defer(email, "We couldn't confirm this sequence is still running, so it was left queued. It retries on the next run.");
+            continue;
+          }
+          if (enr && enr.status !== "active") {
+            await failEmail(
+              email.id,
+              enr.status === "paused"
+                ? `This sequence is on hold${enr.paused_reason ? ` — ${enr.paused_reason}` : ""}, so the step was not sent.`
+                : "The sequence ended before this step was due, so it was not sent.",
+            );
+            failed++;
+            continue;
+          }
+        }
+
         // Check daily + monthly limits
         const ul = userLimits[email.user_id];
         if (!ul) {

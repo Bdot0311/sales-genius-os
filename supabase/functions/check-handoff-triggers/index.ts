@@ -146,6 +146,13 @@ serve(async (req) => {
         .from('sequence_enrollments')
         .update({
           status: 'paused',
+          /*
+           * This pause is not time-boxed, so it clears any check-back date a
+           * reply left behind. Without that, an enrollment held until March
+           * and then paused here for a handoff was resumed in March by the
+           * sweep, undoing a pause applied for an entirely different reason.
+           */
+          paused_until: null,
           paused_reason: `${highestPriority.type}: ${highestPriority.reason}`,
           updated_at: new Date().toISOString(),
         })

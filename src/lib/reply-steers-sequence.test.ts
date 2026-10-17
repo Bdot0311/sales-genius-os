@@ -168,6 +168,110 @@ describe("a held sequence comes back, and a paused one does not", () => {
   });
 });
 
+describe("stopping reaches the mail already queued", () => {
+  /*
+   * process-sequence-step writes a sent_emails row at 'scheduled' BEFORE the
+   * enrollment moves on, and process-scheduled-emails sends whatever is
+   * scheduled and due. That function contained no reference to
+   * sequence_enrollments at all, so a reply that stopped a sequence did not
+   * stop the follow-up already in the queue.
+   *
+   * Measured on Postgres 16: a reply stops the enrollment and cancels its one
+   * scheduled row while leaving the sent one alone; a hold cancels tomorrow's
+   * queued step; a later hard_no stops a held enrollment and clears the date;
+   * and the sweep cannot then resurrect it.
+   */
+  it("cancels the queued rows when the sequence stops or holds", () => {
+    const { sql } = liveDefinition("cancel_queued_sequence_mail");
+    expect(sql).toContain("UPDATE public.sent_emails");
+    expect(sql).toContain("status = 'cancelled'");
+    // Only what has not gone out. Anything sent is history, not a plan.
+    expect(sql).toContain("AND status = 'scheduled'");
+
+    const apply = liveDefinition("apply_reply_to_sequence").sql;
+    expect([...apply.matchAll(/cancel_queued_sequence_mail/g)].length,
+      "both the stop and the hold have queued mail to cancel").toBe(2);
+  });
+
+  it("a later reply can stop an enrollment that is on hold", () => {
+    /*
+     * The stop matched `status = 'active'` only, so once a dated soft_no had
+     * held an enrollment a later hard_no could not end it — and the sweep
+     * restarted it on the old date with the enrollment never marked replied.
+     */
+    const { sql } = liveDefinition("apply_reply_to_sequence");
+    const elseAt = sql.indexOf("ELSE");
+    const stop = sql.slice(elseAt, sql.indexOf("END IF;", elseAt));
+    expect(stop).toMatch(/status IN \('active', 'paused'\)/);
+    // And the hold is cleared, or the sweep brings back what the reply ended.
+    expect(stop).toContain("paused_until = NULL");
+  });
+
+  it("the sender asks the enrollment before it sends", () => {
+    /*
+     * Cancelling at the decision closes the common case; this closes the
+     * window between a row being claimed and the decision landing, and covers
+     * every other way an enrollment can stop.
+     */
+    const CRON = body("supabase/functions/process-scheduled-emails/index.ts");
+    const at = CRON.indexOf("if (email.enrollment_id)");
+    expect(at, "the sender never looked at the enrollment").toBeGreaterThan(-1);
+    /*
+     * Ended on real code, not on the comment that used to mark this spot:
+     * `body()` strips comments, so indexOf returned -1, the slice ran to the
+     * end of the file, and the assertion below was satisfied by an unrelated
+     * `defer` three hundred lines away. The mutation that deleted this very
+     * branch passed because of it.
+     */
+    const end = CRON.indexOf("const ul = userLimits[email.user_id];", at);
+    expect(end, "anchor the slice on code, not on a comment").toBeGreaterThan(at);
+    const block = CRON.slice(at, end);
+    expect(block).toContain('.from("sequence_enrollments")');
+    expect(block).toMatch(/enr\.status !== "active"/);
+    // An unreadable enrollment defers rather than sending blind.
+    expect(block).toContain("defer(email,");
+  });
+
+  it("a pause applied for another reason clears the check-back date", () => {
+    // An enrollment held until March and then paused for a handoff was
+    // resumed in March by the sweep, undoing a pause set for another reason.
+    const HANDOFF = body("supabase/functions/check-handoff-triggers/index.ts");
+    const at = HANDOFF.indexOf("status: 'paused'");
+    expect(at).toBeGreaterThan(-1);
+    expect(HANDOFF.slice(at, at + 200)).toContain("paused_until: null");
+  });
+});
+
+describe("every path that reads a reply tells the sequence", () => {
+  it("the agent path applies the decision too", () => {
+    /*
+     * agent-run calls inbox-sync with no body, so `analyzeReplies` is
+     * undefined and analyze-reply never runs. It classifies the reply itself
+     * and writes reply_analysis directly — and a later scheduled sync skips
+     * the message because a row already exists. Without this call a reply the
+     * agent read never stopped its sequence.
+     */
+    const AGENT = body("supabase/functions/agent-run/index.ts");
+    expect(AGENT).toContain('rpc("apply_reply_to_sequence"');
+    expect(AGENT).toMatch(/p_lead_id: reply\.leadId/);
+  });
+
+  it("maps the agent's own taxonomy rather than passing it through", () => {
+    // Its vocabulary is interested | objection | meeting_request |
+    // not_interested | unsubscribe | out_of_office | auto_reply | unknown.
+    const AGENT = body("supabase/functions/agent-run/index.ts");
+    const at = AGENT.indexOf("const triageForSequence");
+    expect(at).toBeGreaterThan(-1);
+    const map = AGENT.slice(at, AGENT.indexOf("if (reply.leadId)", at));
+    // Only the automated ones are ignored; a person who wrote back stops it.
+    expect(map).toContain('"out_of_office"');
+    expect(map).toContain('"auto_reply"');
+    expect(map).toContain('"ooo"');
+    expect(map).toContain('"hard_no"');
+    expect(map).toContain('"positive"');
+  });
+});
+
 describe("a question comes back with an answer drafted", () => {
   it("the draft is stored, not sent", () => {
     const at = ANALYZE.indexOf("from('email_drafts')");
@@ -183,6 +287,28 @@ describe("a question comes back with an answer drafted", () => {
     const at = ANALYZE.indexOf("const suggestedReply");
     expect(at).toBeGreaterThan(-1);
     expect(ANALYZE.slice(at, ANALYZE.indexOf(";", at))).toContain("!isAutoReply");
+  });
+
+  it("the draft survives an existing one for the same lead", () => {
+    /*
+     * `email_drafts_user_lead_key` allows one draft per user per lead, so a
+     * plain insert raised a unique violation whenever an outreach draft
+     * already existed — the common case, since the lead was being emailed —
+     * and the branch below only logged it. The answer was lost in silence.
+     */
+    const at = ANALYZE.indexOf("from('email_drafts')");
+    expect(at).toBeGreaterThan(-1);
+    const block = ANALYZE.slice(at, at + 700);
+    expect(block).toContain(".upsert(");
+    expect(block).toMatch(/onConflict: 'user_id,lead_id'/);
+    expect(block).not.toMatch(/\.insert\(\{/);
+  });
+
+  it("the model is given a date to count from", () => {
+    // "next quarter" and "in a couple of months" mean nothing without one,
+    // and the provider does not add it.
+    const SRC = readFileSync("supabase/functions/analyze-reply/index.ts", "utf8");
+    expect(SRC).toMatch(/TODAY IS \$\{new Date\(\)\.toISOString\(\)\.slice\(0, 10\)\}/);
   });
 
   it("a date the model invents cannot extend a hold", () => {

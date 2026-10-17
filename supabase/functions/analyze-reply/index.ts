@@ -110,6 +110,7 @@ Analyze and respond with ONLY a JSON object (no markdown, no explanation):
 }
 
 check_back_at rules:
+- TODAY IS ${new Date().toISOString().slice(0, 10)}. Count every relative time from that date — "next quarter", "in a couple of months", "after the summer" mean nothing without it.
 - Only when the prospect named a time: "March", "after Q2", "next quarter", "in a couple of months". Resolve it to a date.
 - A bare "not right now" with no time in it is null. Guessing one invents permission to mail them again, and the sequence treats a dateless no as a no.
 - Never a date in the past, and never further out than a year.
@@ -293,13 +294,26 @@ Priority rules:
     if (suggestedReply && leadId) {
       const { data: draft, error: draftError } = await supabase
         .from('email_drafts')
-        .insert({
+        /*
+         * Upsert, because `email_drafts_user_lead_key` allows one draft per
+         * user per lead. A plain insert raised a unique violation whenever an
+         * outreach draft already existed for this lead — which is the common
+         * case, since the lead was being emailed — and the branch below only
+         * logged it, so the answer was lost in silence.
+         *
+         * The reply supersedes: an unsent first-touch draft to someone who has
+         * now written to you is no longer the thing to send, and their
+         * question is. trigger_context says where it came from so the previous
+         * draft's absence is explainable.
+         */
+        .upsert({
           user_id: user.id,
           lead_id: leadId,
           subject: `Re: ${(analysis.summary ?? 'your reply').toString().slice(0, 120)}`,
           body: suggestedReply,
           trigger_context: `Drafted from their reply — ${triage}`,
-        })
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id,lead_id' })
         .select('id')
         .maybeSingle();
       if (draftError) {
