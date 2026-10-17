@@ -190,9 +190,16 @@ describe("the roadmap", () => {
      */
     const SHIPPED: { what: string; file: string; proof: string; mustNotSay: RegExp }[] = [
       {
+        /*
+         * This originally pointed at update-lead-engagement-state, which does
+         * hold the write — and has no caller. The guard passed while the
+         * behaviour did not exist, because I checked that code implementing it
+         * was present rather than that anything reached it. It points at the
+         * function analyze-reply actually calls now.
+         */
         what: "a reply stops the rest of the sequence",
-        file: "supabase/functions/update-lead-engagement-state/index.ts",
-        proof: "status: 'completed'",
+        file: "supabase/functions/analyze-reply/index.ts",
+        proof: "apply_reply_to_sequence",
         mustNotSay: /every enrolled lead walks the same steps/i,
       },
       {

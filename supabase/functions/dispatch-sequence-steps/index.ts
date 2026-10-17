@@ -99,6 +99,24 @@ serve(async (req) => {
     // row written by a path that forgot to would otherwise be invisible
     // forever — and invisible-forever is the bug this function exists to fix,
     // so it must not reintroduce a narrower version of it.
+    /*
+     * Bring back anything whose check-back date has arrived, before asking
+     * what is due — otherwise a held enrollment waits a whole extra cycle
+     * past the day the prospect named.
+     *
+     * No cron of its own: this function already runs on a schedule and
+     * already owns the question of what is due, and a second schedule is a
+     * second thing to go wrong. A sweep that fails is logged and the run
+     * continues, because the enrollments that are already active still have
+     * work owed and should not wait on it.
+     */
+    const { data: resumed, error: resumeError } = await supabase.rpc("resume_due_enrollments");
+    if (resumeError) {
+      console.error("[dispatch-sequence-steps] resume sweep failed:", resumeError.message);
+    } else if (typeof resumed === "number" && resumed > 0) {
+      console.log(`[dispatch-sequence-steps] resumed ${resumed} held enrollment(s)`);
+    }
+
     const { data: due, error } = await supabase
       .from("sequence_enrollments")
       .select("id, user_id, sequence_id, next_action_at, sequence:email_sequences(status)")

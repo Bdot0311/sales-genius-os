@@ -985,7 +985,7 @@ Full sync between OutReign activities and Google Calendar.
   {
     id: 'int-4',
     slug: 'email-provider-setup',
-    title: 'Email Provider Setup (Gmail, SMTP)',
+    title: 'Email Provider Setup (Gmail)',
     category: 'integrations',
     description: 'Configure email sending for outreach',
     content: `
@@ -1011,28 +1011,12 @@ Connect your email account to send personalized outreach from OutReign.
 - 500 emails/day (Gmail limit)
 - Tracked in Settings → Usage
 
-### Option 2: Custom SMTP
+### Custom SMTP
 
-For advanced users or company email servers.
-
-**Setup:**
-1. Go to Settings → Integrations
-2. Select "Custom SMTP"
-3. Enter server details:
-   - SMTP Host
-   - Port (usually 587 or 465)
-   - Username
-   - Password
-4. Test connection
-5. Save
-
-**Common SMTP Settings:**
-
-| Provider | Host | Port |
-|----------|------|------|
-| Gmail | smtp.gmail.com | 587 |
-| Outlook | smtp.office365.com | 587 |
-| Yahoo | smtp.mail.yahoo.com | 465 |
+Not supported yet. Sending goes through a connected Google account, and there
+is no SMTP host, port or password to enter anywhere in Settings. If you need
+to send from a mailbox Google does not host, tell us which provider and we
+will tell you where it is in the queue.
 
 ### Best Practices
 

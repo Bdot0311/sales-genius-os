@@ -104,8 +104,21 @@ Analyze and respond with ONLY a JSON object (no markdown, no explanation):
     "has_auto_reply": <boolean - out of office, automated response>
   },
   "requires_human_action": <boolean>,
-  "summary": "<one sentence summary of the reply intent>"
+  "summary": "<one sentence summary of the reply intent>",
+  "check_back_at": "<ISO date (YYYY-MM-DD) the prospect asked to be contacted, or null>",
+  "suggested_reply": "<a short draft answer, or null — see the rules below>"
 }
+
+check_back_at rules:
+- Only when the prospect named a time: "March", "after Q2", "next quarter", "in a couple of months". Resolve it to a date.
+- A bare "not right now" with no time in it is null. Guessing one invents permission to mail them again, and the sequence treats a dateless no as a no.
+- Never a date in the past, and never further out than a year.
+
+suggested_reply rules:
+- Only when they asked something a reply can answer. Otherwise null.
+- Answer the question they asked, in under four sentences, in their register.
+- Never invent a price, a customer name, a metric or a case study. If the answer needs one you do not have, write the reply that asks for what you need to answer properly.
+- It is a draft for a person to edit and send, not an email being sent now.
 
 Classification rules:
 - HIGH_INTENT (70-100): Questions about pricing/features, meeting requests, timeline mentions, comparisons with competitors
@@ -189,6 +202,31 @@ Priority rules:
       };
     }
 
+    const triage: string = analysis.triage_category || 'soft_no';
+
+    /*
+     * A date the model named, trusted only when it is one.
+     *
+     * An unparseable string, a date in the past, or one more than a year out
+     * is treated as no date at all — and a dateless "not now" stops the
+     * sequence rather than holding it, so a bad parse can only ever stop mail
+     * going out. That is the direction this guess is allowed to fail in.
+     */
+    const MAX_HOLD_MS = 365 * 24 * 60 * 60 * 1000;
+    let checkBackAt: string | null = null;
+    if (typeof analysis.check_back_at === 'string') {
+      const parsed = Date.parse(analysis.check_back_at);
+      if (Number.isFinite(parsed) && parsed > Date.now() && parsed - Date.now() <= MAX_HOLD_MS) {
+        checkBackAt = new Date(parsed).toISOString();
+      }
+    }
+
+    // An auto-reply asks nothing, so it gets no draft however the model felt.
+    const suggestedReply: string | null =
+      !isAutoReply && typeof analysis.suggested_reply === 'string' && analysis.suggested_reply.trim()
+        ? analysis.suggested_reply.trim().slice(0, 4000)
+        : null;
+
     // Store the analysis in the database
     const { data: replyAnalysis, error: insertError } = await supabase
       .from('reply_analysis')
@@ -206,6 +244,8 @@ Priority rules:
           ...(gmailMessageId ? { gmail_message_id: gmailMessageId } : {}),
         },
         requires_human_action: analysis.requires_human_action,
+        check_back_at: checkBackAt,
+        suggested_reply: suggestedReply,
         analyzed_at: new Date().toISOString(),
       })
       .select()
@@ -215,14 +255,72 @@ Priority rules:
       console.error('Error storing reply analysis:', insertError);
     }
 
+    /*
+     * Act on the reply, rather than only recording it.
+     *
+     * Until now this function ended here. `process-sequence-step` has always
+     * carried `if (enrollment.engagement_state === 'replied')`, and that read
+     * was the only reference to the value in the repository — nothing wrote
+     * it, so the guard never fired and a prospect who answered kept receiving
+     * the rest of the sequence.
+     *
+     * The decision itself lives in one SQL function because it is three writes
+     * that have to agree. Failure is logged and not thrown: the classification
+     * is already stored, and losing it as well would leave no record at all.
+     */
+    let sequenceOutcome: unknown = null;
+    if (leadId) {
+      const { data: applied, error: applyError } = await supabase.rpc('apply_reply_to_sequence', {
+        p_user_id: user.id,
+        p_lead_id: leadId,
+        p_triage: triage,
+        p_check_back_at: checkBackAt,
+      });
+      if (applyError) {
+        console.error('[analyze-reply] reply not applied to the sequence:', applyError.message);
+      } else {
+        sequenceOutcome = applied;
+        console.log('[analyze-reply] sequence outcome:', JSON.stringify(applied));
+      }
+    }
+
+    /*
+     * A question gets an answer waiting, not a notification saying one is
+     * owed. The draft is stored for the user to edit and send — nothing here
+     * sends it, and nothing here decides it is good enough to send.
+     */
+    let draftId: string | null = null;
+    if (suggestedReply && leadId) {
+      const { data: draft, error: draftError } = await supabase
+        .from('email_drafts')
+        .insert({
+          user_id: user.id,
+          lead_id: leadId,
+          subject: `Re: ${(analysis.summary ?? 'your reply').toString().slice(0, 120)}`,
+          body: suggestedReply,
+          trigger_context: `Drafted from their reply — ${triage}`,
+        })
+        .select('id')
+        .maybeSingle();
+      if (draftError) {
+        console.error('[analyze-reply] draft answer not stored:', draftError.message);
+      } else {
+        draftId = draft?.id ?? null;
+      }
+    }
+
     return new Response(JSON.stringify({
       success: true,
       analysis: {
         ...analysis,
-        triage_category: analysis.triage_category || 'soft_no',
+        triage_category: triage,
         priority: analysis.priority ?? 2,
         id: replyAnalysis?.id,
+        check_back_at: checkBackAt,
+        suggested_reply: suggestedReply,
       },
+      sequence: sequenceOutcome,
+      draft_id: draftId,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
