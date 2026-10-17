@@ -294,13 +294,38 @@ serve(async (req) => {
       const todayMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
       const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
 
-      // Daily reset
+      /*
+       * Today's sends, counted rather than remembered.
+       *
+       * The counter column cannot carry this. `increment_daily_emails_sent`
+       * filtered on `status = 'active'`, so for a lapsed account the UPDATE
+       * matched nothing and *succeeded* — no error, so the caller's
+       * error-only fallback never ran and the number stayed at zero for good.
+       * Capping against that is capping against zero: the Free fallback added
+       * alongside it would have let a lapsed account spend its whole monthly
+       * allowance in one day, which is the send spike a daily cap exists to
+       * prevent.
+       *
+       * Fails closed, for the same reason the monthly count below does.
+       */
+      const { data: dailyCount, error: dailyErr } = await supabase
+        .rpc('get_daily_email_count', { p_user_id: user.id });
+      if (dailyErr || typeof dailyCount !== 'number') {
+        console.error('[send-email] daily count unavailable', dailyErr);
+        return new Response(
+          JSON.stringify({ error: "We couldn't check today's send allowance. Please try again in a moment.", code: 'daily_count_unavailable' }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
+      const dailySent = dailyCount;
+
+      // The counter column is what the Outreach and Deliverability panels
+      // show, so its daily rollover still happens here — it just no longer
+      // decides whether a send is allowed.
       const dailyResetAt = subscription?.daily_emails_reset_at
         ? new Date(subscription.daily_emails_reset_at)
         : new Date(0);
-      let dailySent = subscription?.daily_emails_sent || 0;
-      if (dailyResetAt < todayMidnight) {
-        dailySent = 0;
+      if (subscription && dailyResetAt < todayMidnight) {
         await supabase.from('subscriptions')
           .update({ daily_emails_sent: 0, daily_emails_reset_at: todayMidnight.toISOString() })
           .eq('user_id', user.id);

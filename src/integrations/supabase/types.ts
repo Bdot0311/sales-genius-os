@@ -6744,6 +6744,7 @@ export type Database = {
         Returns: number
       }
       get_api_key_value: { Args: { _id: string }; Returns: string }
+      get_daily_email_count: { Args: { p_user_id: string }; Returns: number }
       get_deliverability_live_stats: {
         Args: { p_days?: number }
         Returns: {

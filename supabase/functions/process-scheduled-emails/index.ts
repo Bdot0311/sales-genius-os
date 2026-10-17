@@ -179,38 +179,68 @@ serve(async (req) => {
       free: 100, starter: 50000, growth: 250000, pro: 1000000, elite: 1000000, agency: -1,
     };
     const userLimits: Record<string, { dailyLimit: number; dailySent: number; monthlyLimit: number; monthlySent: number }> = {};
+    /*
+     * Every sender in the batch gets an allowance, lapsed accounts included.
+     *
+     * The old shape filtered on `status = 'active'` and then built an entry
+     * only `if (sub)`, so a past_due, paused or cancelled account — and an
+     * account with no subscriptions row at all — fell through every `if (ul)`
+     * guard below and sent with no cap of any kind. The accounts whose
+     * billing has stopped are precisely the ones a cap should still hold.
+     *
+     * A sender whose allowance cannot be read is deliberately left out of
+     * userLimits and deferred below, rather than sent uncapped.
+     */
     for (const uid of userIds) {
-      const { data: sub } = await supabase
+      const { data: sub, error: subErr } = await supabase
         .from('subscriptions')
-        .select('plan, daily_email_limit, daily_emails_sent, daily_emails_reset_at')
+        .select('plan, status, daily_email_limit, daily_emails_sent, daily_emails_reset_at')
         .eq('user_id', uid)
-        .eq('status', 'active')
-        .single();
-      if (sub) {
-        const now = new Date();
-        const todayMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-        const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-        const dailyResetAt = sub.daily_emails_reset_at ? new Date(sub.daily_emails_reset_at) : new Date(0);
-        let dailySent = sub.daily_emails_sent || 0;
-        if (dailyResetAt < todayMidnight) {
-          dailySent = 0;
-          await supabase.from('subscriptions').update({ daily_emails_sent: 0, daily_emails_reset_at: todayMidnight.toISOString() }).eq('user_id', uid);
-        }
-        // Monthly usage derived from sent_emails (counter columns were removed).
-        const { count: monthlyCount } = await supabase
-          .from('sent_emails')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_id', uid)
-          .in('status', ['sent', 'delivered', 'opened', 'clicked', 'replied', 'bounced'])
-          .gte('sent_at', monthStart.toISOString());
-        userLimits[uid] = {
-          dailyLimit: sub.daily_email_limit || 10,
-          dailySent,
-          monthlyLimit: MONTHLY_EMAIL_LIMITS[sub.plan as string] ?? 0,
-          monthlySent: monthlyCount ?? 0,
-        };
+        .maybeSingle();
+      if (subErr) {
+        console.error(`[process-scheduled-emails] allowance unreadable for ${uid}:`, subErr.message);
+        continue;
+      }
+      const planActive = sub?.status === 'active';
+      const plan = planActive ? String(sub?.plan ?? 'free') : 'free';
+
+      /*
+       * Both caps are live counts of sent_emails, through the same two
+       * functions send-email uses, so the two senders cannot drift apart on
+       * what they consider a send. The daily counter column could not carry
+       * this: increment_daily_emails_sent filtered on `status = 'active'`, so
+       * on a lapsed row the UPDATE matched nothing and *succeeded*, leaving
+       * the number at zero for good.
+       */
+      const { data: dailyCount, error: dailyErr } = await supabase
+        .rpc('get_daily_email_count', { p_user_id: uid });
+      if (dailyErr || typeof dailyCount !== 'number') {
+        console.error(`[process-scheduled-emails] daily count unavailable for ${uid}:`, dailyErr?.message);
+        continue;
+      }
+      const { data: monthlyCount, error: monthlyErr } = await supabase
+        .rpc('get_monthly_email_count', { p_user_id: uid });
+      if (monthlyErr || typeof monthlyCount !== 'number') {
+        console.error(`[process-scheduled-emails] monthly count unavailable for ${uid}:`, monthlyErr?.message);
+        continue;
       }
 
+      // The counter column is what the Outreach and Deliverability panels
+      // read, so its daily rollover still happens here — it just no longer
+      // decides whether a send is allowed.
+      const now = new Date();
+      const todayMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+      const dailyResetAt = sub?.daily_emails_reset_at ? new Date(sub.daily_emails_reset_at) : new Date(0);
+      if (sub && dailyResetAt < todayMidnight) {
+        await supabase.from('subscriptions').update({ daily_emails_sent: 0, daily_emails_reset_at: todayMidnight.toISOString() }).eq('user_id', uid);
+      }
+
+      userLimits[uid] = {
+        dailyLimit: planActive ? (sub?.daily_email_limit || 10) : 10,
+        dailySent: dailyCount,
+        monthlyLimit: MONTHLY_EMAIL_LIMITS[plan] ?? 0,
+        monthlySent: monthlyCount,
+      };
     }
 
     for (const email of scheduledEmails) {
@@ -241,11 +271,18 @@ serve(async (req) => {
 
         // Check daily + monthly limits
         const ul = userLimits[email.user_id];
-        if (ul && ul.dailySent >= ul.dailyLimit) {
+        if (!ul) {
+          // The allowance lookup above failed for this sender. Deferring keeps
+          // the email queued for the next run; the alternative is sending
+          // without knowing whether the account has anything left to spend.
+          defer(email, "We couldn't check your send allowance, so this was left queued. It retries on the next run.");
+          continue;
+        }
+        if (ul.dailySent >= ul.dailyLimit) {
           defer(email, `Your daily send limit is reached (${ul.dailySent}/${ul.dailyLimit}). It retries after the counter resets, or raise the limit in Outreach settings.`);
           continue;
         }
-        if (ul && ul.monthlyLimit !== -1 && ul.monthlySent >= ul.monthlyLimit) {
+        if (ul.monthlyLimit !== -1 && ul.monthlySent >= ul.monthlyLimit) {
           defer(email, `Your monthly send cap is reached (${ul.monthlySent}/${ul.monthlyLimit}). It retries next month, or upgrade the plan.`);
           continue;
         }
@@ -535,12 +572,18 @@ serve(async (req) => {
               .eq("user_id", email.user_id);
           }
 
-          // Increment daily counter (monthly usage is derived from sent_emails)
-          await supabase.from('subscriptions').update({
-            daily_emails_sent: (ul?.dailySent || 0) + 1,
-          }).eq('user_id', email.user_id);
+          /*
+           * Increment the display counter atomically. Writing an absolute
+           * `read + 1` lost updates whenever two runs, or a run and an
+           * interactive send, overlapped on one account.
+           */
+          const { error: incErr } = await supabase.rpc('increment_daily_emails_sent', { _user_id: email.user_id });
+          if (incErr) console.warn('daily counter increment failed (non-fatal):', incErr.message);
 
-          if (ul) { ul.dailySent += 1; ul.monthlySent += 1; }
+          // Keep this batch's own view of the caps moving, so a single run
+          // cannot blow past the limit it checked at the top.
+          ul.dailySent += 1;
+          ul.monthlySent += 1;
 
           processed++;
           console.log(`Sent scheduled email ${email.id} to ${email.to_email}`);

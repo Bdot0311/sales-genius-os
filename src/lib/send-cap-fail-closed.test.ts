@@ -97,3 +97,142 @@ describe("the statuses this guards against are real", () => {
     expect([...written].filter((s) => s !== "active").length).toBeGreaterThan(0);
   });
 });
+
+/**
+ * The daily cap was being enforced against a number that could never rise.
+ *
+ * `increment_daily_emails_sent` carried `AND status = 'active'`. On a
+ * past_due, paused or cancelled row the UPDATE matched zero rows and
+ * *succeeded* — no error, so the caller's error-only fallback never ran and
+ * `daily_emails_sent` stayed at zero for good. The Free fallback above would
+ * then have let a lapsed account spend its whole monthly allowance in a
+ * single day, which is the send spike a daily cap exists to prevent.
+ *
+ * Both caps are now live counts of sent_emails, through the same two
+ * functions in both senders.
+ */
+const DAILY_MIGRATION = readFileSync(
+  "supabase/migrations/20261017000000_daily_send_count_covers_lapsed.sql",
+  "utf8",
+).replace(/\/\*[\s\S]*?\*\//g, "");
+
+/** The one CREATE body for a function, not the REVOKE/GRANT that follow it. */
+function sqlFunctionBody(sql: string, name: string): string {
+  const at = sql.indexOf(`CREATE OR REPLACE FUNCTION public.${name}(`);
+  expect(at, `${name} should be defined in the migration`).toBeGreaterThan(-1);
+  const body = sql.slice(at);
+  const end = body.indexOf("$$;");
+  expect(end).toBeGreaterThan(-1);
+  return body.slice(0, end);
+}
+
+describe("today's sends are counted, not remembered", () => {
+  it("the counter no longer skips lapsed accounts", () => {
+    const body = sqlFunctionBody(DAILY_MIGRATION, "increment_daily_emails_sent");
+    expect(body).toContain("UPDATE public.subscriptions");
+    // The filter is the whole defect: zero rows updated, and no error raised.
+    expect(body).not.toMatch(/status\s*=\s*'active'/);
+  });
+
+  it("counts a day the same way the month is counted", () => {
+    /*
+     * Compared against the live monthly function rather than restated, so
+     * the two caps cannot drift apart on what counts as a send.
+     */
+    const MONTHLY = readFileSync(
+      "drizzle/migrations/0034_agent_run_steps_and_send_helpers.sql",
+      "utf8",
+    );
+    const monthly = sqlFunctionBody(MONTHLY, "get_monthly_email_count");
+    const daily = sqlFunctionBody(DAILY_MIGRATION, "get_daily_email_count");
+    const statuses = (sql: string) => sql.match(/status IN \(([^)]*)\)/)?.[1];
+    expect(statuses(daily)).toBeTruthy();
+    expect(statuses(daily)).toBe(statuses(monthly));
+    // Same caller check, so neither can be read for somebody else's account.
+    expect(daily).toContain("auth.role() = 'service_role' OR auth.uid() = p_user_id");
+    expect(daily).toContain("date_trunc('day', now())");
+  });
+
+  it("stays unreachable from the browser", () => {
+    expect(DAILY_MIGRATION).toMatch(
+      /REVOKE ALL ON FUNCTION public\.get_daily_email_count\(UUID\) FROM PUBLIC, anon;/,
+    );
+  });
+
+  it("send-email caps on the count and fails closed", () => {
+    expect(code).toMatch(/\.rpc\('get_daily_email_count', \{ p_user_id: user\.id \}\)/);
+    const at = code.indexOf("if (dailyErr || typeof dailyCount !== 'number')");
+    expect(at, "an unreadable daily count must not read as zero").toBeGreaterThan(-1);
+    const branch = code.slice(at, at + 400);
+    expect(branch).toContain("return new Response");
+    expect(branch).toContain("daily_count_unavailable");
+    // And the cap must compare the count, not the counter column.
+    expect(code).toMatch(/const dailySent = dailyCount;/);
+    expect(code).not.toMatch(/dailySent = subscription\?\.daily_emails_sent/);
+  });
+});
+
+/**
+ * The cron sender had the identical hole, and it is the one that sends in bulk.
+ *
+ * `.eq('status', 'active').single()` then `if (sub) { userLimits[uid] = ... }`
+ * left no entry for a lapsed account, and every cap below was written
+ * `if (ul && ...)` — so a missing entry meant no daily cap and no monthly cap
+ * on exactly the accounts that should have been held tightest.
+ */
+const CRON = readFileSync("supabase/functions/process-scheduled-emails/index.ts", "utf8");
+const cron = CRON.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+
+describe("the scheduled sender caps lapsed accounts too", () => {
+  it("does not ask only for the active row", () => {
+    const read = cron.slice(cron.indexOf("from('subscriptions')"));
+    const stmt = read.slice(0, read.indexOf(";"));
+    expect(stmt).not.toMatch(/\.eq\('status', 'active'\)/);
+    expect(stmt).toContain("maybeSingle()");
+    expect(stmt).toMatch(/select\('plan, status,/);
+  });
+
+  it("resolves an allowance whether or not a row came back", () => {
+    // The defect in one line: the entry was built only when a row existed.
+    expect(cron).not.toMatch(/if \(sub\) \{/);
+    expect(cron).toMatch(/const planActive = sub\?\.status === 'active'/);
+    expect(cron).toMatch(/dailyLimit: planActive \? \(sub\?\.daily_email_limit \|\| 10\) : 10/);
+    expect(cron).toMatch(/const plan = planActive \? String\(sub\?\.plan \?\? 'free'\) : 'free'/);
+    expect(cron).toMatch(/MONTHLY_EMAIL_LIMITS\[plan\]/);
+  });
+
+  it("enforces both caps unconditionally once resolved", () => {
+    /*
+     * `if (ul && ...)` is what let an unresolved sender through. The guard is
+     * now a missing entry stopping the send outright.
+     */
+    expect(cron).not.toMatch(/if \(ul &&/);
+    expect(cron).toMatch(/if \(ul\.dailySent >= ul\.dailyLimit\)/);
+    expect(cron).toMatch(/if \(ul\.monthlyLimit !== -1 && ul\.monthlySent >= ul\.monthlyLimit\)/);
+  });
+
+  it("defers rather than sending on an unreadable allowance", () => {
+    const at = cron.indexOf("if (!ul)");
+    expect(at).toBeGreaterThan(-1);
+    const branch = cron.slice(at, at + 400);
+    expect(branch).toContain("defer(email,");
+    expect(branch).toContain("continue;");
+  });
+
+  it("uses the same two counts as send-email", () => {
+    expect(cron).toMatch(/\.rpc\('get_daily_email_count', \{ p_user_id: uid \}\)/);
+    expect(cron).toMatch(/\.rpc\('get_monthly_email_count', \{ p_user_id: uid \}\)/);
+    // The hand-rolled monthly count counted 'bounced' as a send; the shared
+    // function does not. One sender charging for a bounce and the other not
+    // is the same account getting two different allowances.
+    expect(cron).not.toMatch(/'replied', 'bounced'/);
+  });
+
+  it("increments the display counter atomically", () => {
+    // `read + 1` lost updates whenever two runs overlapped on one account.
+    expect(cron).toMatch(/\.rpc\('increment_daily_emails_sent', \{ _user_id: email\.user_id \}\)/);
+    expect(cron).not.toMatch(/daily_emails_sent: \(ul\?\.dailySent \|\| 0\) \+ 1/);
+    // The batch's own view still advances, so one run cannot outrun its cap.
+    expect(cron).toMatch(/ul\.dailySent \+= 1;/);
+  });
+});
