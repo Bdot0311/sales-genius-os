@@ -227,9 +227,40 @@ describe("stopping reaches the mail already queued", () => {
     expect(end, "anchor the slice on code, not on a comment").toBeGreaterThan(at);
     const block = CRON.slice(at, end);
     expect(block).toContain('.from("sequence_enrollments")');
-    expect(block).toMatch(/enr\.status !== "active"/);
     // An unreadable enrollment defers rather than sending blind.
     expect(block).toContain("defer(email,");
+  });
+
+  it("a sequence that merely ran out of steps still sends its last email", () => {
+    /*
+     * The first version of the guard rejected anything not 'active', which
+     * kills a legitimate send: process-sequence-step marks an enrollment
+     * 'completed' on the pass AFTER the final email is queued, so the last
+     * step of every sequence sits against a completed enrollment. A cap or a
+     * paused mailbox deferring it that long made the rejection permanent.
+     *
+     * What stops a send has to be a decision, not an ending.
+     */
+    const CRON = body("supabase/functions/process-scheduled-emails/index.ts");
+    const at = CRON.indexOf("const blocked = enr");
+    expect(at, "status alone cannot tell a finish from a stop").toBeGreaterThan(-1);
+    const rule = CRON.slice(at, CRON.indexOf("if (blocked)", at));
+    expect(rule).toMatch(/enr\.status === "paused"/);
+    expect(rule).toMatch(/enr\.status === "stopped"/);
+    // Completed only counts when the lead actually replied.
+    expect(rule).toMatch(/enr\.status === "completed" && enr\.engagement_state === "replied"/);
+    // A bare status check would send nothing after any sequence ended.
+    expect(rule).not.toMatch(/enr\.status !== "active"/);
+  });
+
+  it("the signal it leans on is one apply_reply_to_sequence actually writes", () => {
+    // Asserted against the function rather than assumed: if the stop stopped
+    // setting engagement_state, the rule above would quietly let replied
+    // sequences send their queued mail.
+    const { sql } = liveDefinition("apply_reply_to_sequence");
+    const elseAt = sql.indexOf("ELSE");
+    const stop = sql.slice(elseAt, sql.indexOf("END IF;", elseAt));
+    expect(stop).toContain("engagement_state = 'replied'");
   });
 
   it("the agent's own pause, resume and stop clear it too", () => {

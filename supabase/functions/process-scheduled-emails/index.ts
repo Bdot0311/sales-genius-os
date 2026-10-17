@@ -286,19 +286,48 @@ serve(async (req) => {
         if (email.enrollment_id) {
           const { data: enr, error: enrErr } = await supabase
             .from("sequence_enrollments")
-            .select("status, paused_reason")
+            .select("status, paused_reason, engagement_state")
             .eq("id", email.enrollment_id)
             .maybeSingle();
           if (enrErr) {
             defer(email, "We couldn't confirm this sequence is still running, so it was left queued. It retries on the next run.");
             continue;
           }
-          if (enr && enr.status !== "active") {
+          /*
+           * Not active is not the same as not wanted.
+           *
+           * A sequence that simply ran out of steps is marked 'completed' by
+           * process-sequence-step on the pass AFTER the last email was queued
+           * — so the final step of every sequence is routinely sitting in the
+           * queue against a completed enrollment. Rejecting on status alone
+           * killed it permanently whenever a cap or a paused mailbox had
+           * deferred it that long, which is a legitimate send lost to a guard
+           * meant for a different situation.
+           *
+           * What has to stop it is a decision, not an ending:
+           *
+           *   paused     held, by a reply that named a date or by a handoff.
+           *              The hold is a promise about when they next hear from
+           *              us and this would break it.
+           *   stopped    stopped outright, by the agent or by a person.
+           *   completed  only when the lead replied. apply_reply_to_sequence
+           *              sets engagement_state alongside the status, so a
+           *              reply-ended sequence is distinguishable from one that
+           *              merely finished.
+           */
+          const blocked = enr
+            ? enr.status === "paused" ||
+              enr.status === "stopped" ||
+              (enr.status === "completed" && enr.engagement_state === "replied")
+            : false;
+          if (blocked) {
             await failEmail(
               email.id,
-              enr.status === "paused"
-                ? `This sequence is on hold${enr.paused_reason ? ` — ${enr.paused_reason}` : ""}, so the step was not sent.`
-                : "The sequence ended before this step was due, so it was not sent.",
+              enr!.status === "paused"
+                ? `This sequence is on hold${enr!.paused_reason ? ` — ${enr!.paused_reason}` : ""}, so the step was not sent.`
+                : enr!.engagement_state === "replied"
+                  ? "They replied before this step was due, so it was not sent."
+                  : "The sequence was stopped before this step was due, so it was not sent.",
             );
             failed++;
             continue;
