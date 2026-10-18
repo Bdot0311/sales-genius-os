@@ -26,7 +26,33 @@ interface ProbeResult {
   /** The server's opening line, which proves it is really an SMTP server. */
   greeting?: string;
   error?: string;
+  /**
+   * Whether the failure says anything about THIS RUNTIME's permission to open
+   * a socket, as opposed to the network or the far end having a bad day.
+   */
+  indicatesPlatformBlock?: boolean;
   ms: number;
+}
+
+/**
+ * Does this error mean the runtime refused, or that the internet did?
+ *
+ * The distinction is the whole point of the probe. A DNS failure, a TLS
+ * handshake error, a timeout or Gmail having an outage all produce a failed
+ * connect, and none of them says anything about whether Supabase permits
+ * submission sockets. Only a refusal from the sandbox does — which Deno
+ * raises as PermissionDenied or NotCapable, and older runtimes as a plain
+ * message about the API being unavailable.
+ *
+ * Treating the other failures as a platform restriction would send us down
+ * the relay path for a reason that was never true, which is a worse outcome
+ * than not knowing.
+ */
+function looksLikePlatformBlock(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  if (err.name === "PermissionDenied" || err.name === "NotCapable") return true;
+  return /not (supported|implemented|available|capable)|requires .*--allow-net|permission denied/i
+    .test(err.message);
 }
 
 async function probe(hostname: string, port: number, tls: boolean): Promise<ProbeResult> {
@@ -34,16 +60,34 @@ async function probe(hostname: string, port: number, tls: boolean): Promise<Prob
   const startedAt = Date.now();
   let conn: Deno.Conn | null = null;
   try {
-    // A short deadline: a runtime that forbids this usually fails fast, and a
-    // network that silently drops the SYN should not hold the function open.
+    /*
+     * The connect promise is kept rather than discarded, because a race only
+     * decides which result is reported — it does not cancel the loser. A
+     * connection that arrives after the timer wins was never assigned to
+     * `conn`, so the finally block below could not close it and the socket
+     * stayed open for the rest of the invocation.
+     */
+    const connecting = tls
+      ? Deno.connectTls({ hostname, port })
+      : Deno.connect({ hostname, port, transport: "tcp" });
+
+    let timedOut = false;
     conn = await Promise.race([
-      tls
-        ? Deno.connectTls({ hostname, port })
-        : Deno.connect({ hostname, port, transport: "tcp" }),
+      connecting,
       new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("timed out after 5s")), 5_000)
+        setTimeout(() => {
+          timedOut = true;
+          reject(new Error("timed out after 5s"));
+        }, 5_000)
       ),
-    ]);
+    ]).catch((err) => {
+      if (timedOut) {
+        // Clean up whatever the loser eventually produces.
+        connecting.then((late) => { try { late.close(); } catch { /* already gone */ } })
+          .catch(() => { /* it failed too; nothing to close */ });
+      }
+      throw err;
+    });
 
     const buf = new Uint8Array(512);
     const read = await Promise.race([
@@ -60,6 +104,7 @@ async function probe(hostname: string, port: number, tls: boolean): Promise<Prob
       target,
       reachable: false,
       error: err instanceof Error ? `${err.name}: ${err.message}` : String(err),
+      indicatesPlatformBlock: looksLikePlatformBlock(err),
       ms: Date.now() - startedAt,
     };
   } finally {
@@ -83,9 +128,18 @@ Deno.serve(async (req) => {
     await probe("smtp.gmail.com", 465, true),
   ];
 
+  /*
+   * Three answers, not two. "Both attempts failed" is not the same as "the
+   * runtime forbids this": a DNS hiccup or a Gmail outage fails identically,
+   * and reporting that as a platform restriction would retire a buildable
+   * design for a reason that was never true.
+   */
   const verdict = results.some((r) => r.reachable)
-    ? "SMTP sending is buildable here: the runtime opened a submission socket."
-    : "SMTP sending is NOT buildable in an edge function: every submission socket was refused.";
+    ? "YES — SMTP sending is buildable here: the runtime opened a submission socket."
+    : results.some((r) => r.indicatesPlatformBlock)
+      ? "NO — the runtime refused to open a socket. SMTP sending cannot live in an edge function."
+      : "INCONCLUSIVE — every attempt failed, but none of the errors came from the sandbox. "
+        + "That is a network or far-end problem, not proof either way. Run it again.";
 
   console.log(`[smtp-capability-probe] ${verdict}`, JSON.stringify(results));
 

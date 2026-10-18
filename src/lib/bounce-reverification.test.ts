@@ -1,0 +1,167 @@
+import { describe, expect, it } from "vitest";
+import { readFileSync, readdirSync } from "node:fs";
+
+/**
+ * A bounce is refunded, and the refund is spent on finding out whether the
+ * address is actually bad.
+ *
+ * The refund shipped first; this is the half that makes it worth something.
+ * The three bounce types mean different things and only some are worth a paid
+ * check, and the whole thing turns on not trusting a classification further
+ * than it goes.
+ */
+
+const SRC = readFileSync("supabase/functions/sync-bounces/index.ts", "utf8");
+const code = SRC.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+const VERIFY = readFileSync("supabase/functions/_shared/email-verify.ts", "utf8");
+
+describe("a bounce is not trusted further than it goes", () => {
+  it("only a 5xx condemns an address without checking", () => {
+    /*
+     * classifyBounce tests its hard regex BEFORE its 4xx test, and that regex
+     * contains "mailbox unavailable" — the wording of a temporary 450. So a
+     * merely-full mailbox arrives classified hard, and marking the lead
+     * invalid on that discards a real prospect for good.
+     */
+    expect(code).toMatch(/const permanentlyBad = type === "hard" && \/\^5\/\.test\(code \?\? ""\)/);
+    // The classifier really does route a temporary failure to "hard".
+    const classifier = SRC.slice(SRC.indexOf("export function classifyBounce"));
+    const hardLine = classifier.slice(classifier.indexOf("hard"), classifier.indexOf('return { type: "hard", code };'));
+    expect(hardLine, "if this stops matching, the 5xx guard is unnecessary")
+      .toContain("mailbox unavailable");
+  });
+
+  it("an unprovable verdict is not written over a real one", () => {
+    const at = code.indexOf('if (verdict.status === "unknown") return false;');
+    expect(at, "'unknown' means the check proved nothing").toBeGreaterThan(-1);
+  });
+
+  it("the verdict goes to the address that bounced, not just the lead", () => {
+    /*
+     * A bounce can arrive days after the send. If the address was corrected
+     * in the meantime, writing this verdict condemns the replacement for its
+     * predecessor's failure.
+     */
+    const at = code.indexOf('.from("leads")');
+    expect(at).toBeGreaterThan(-1);
+    const stmt = code.slice(at, code.indexOf("if (leadErr)", at));
+    expect(stmt).toContain('.eq("id", leadId)');
+    expect(stmt).toContain('.eq("user_id", user.id)');
+    expect(stmt).toMatch(/\.ilike\("contact_email", email\)/);
+  });
+
+  it("a failed write is not counted as a success", () => {
+    const at = code.indexOf("if (leadErr)");
+    expect(at).toBeGreaterThan(-1);
+    expect(code.slice(at, at + 200)).toContain("return false");
+    // Counted from what the database confirmed, not from having attempted it.
+    expect(code).toMatch(/if \(\(count \?\? 0\) > 0\) reverified\+\+/);
+  });
+});
+
+describe("the cached verdict is not mistaken for a new one", () => {
+  it("the cache is cleared before a bounce re-check", () => {
+    /*
+     * verifyEmail caches for thirty days. The cached answer was formed before
+     * the bounce — reusing it stamps today's date on a check that never
+     * happened, and on the one verdict the bounce has already contradicted.
+     */
+    expect(code).toContain("await invalidateEmailVerification(");
+    const inv = code.indexOf("invalidateEmailVerification");
+    const ver = code.indexOf("await verifyEmail(", inv);
+    expect(ver, "clearing after the check would be pointless").toBeGreaterThan(inv);
+  });
+
+  it("the invalidator targets the key verifyEmail actually reads", () => {
+    // Asserted against the reader rather than assumed: a key that drifted
+    // would leave the cache untouched and the bug silently back.
+    expect(VERIFY).toContain("const cacheKey = `email_verify:${email}`");
+    const at = VERIFY.indexOf("export async function invalidateEmailVerification");
+    expect(at).toBeGreaterThan(-1);
+    const fn = VERIFY.slice(at, VERIFY.indexOf("\nexport ", at + 1));
+    expect(fn).toContain("`email_verify:${email}`");
+    // Same normalisation, or the two compute different keys for one address.
+    expect(fn).toContain(".trim().toLowerCase()");
+  });
+});
+
+describe("work the budget skips is deferred, not dropped", () => {
+  it("every bounce is recorded as owing a re-check", () => {
+    /*
+     * sync-bounces marks the send 'bounced' as it goes and the next run only
+     * looks at sends that are not — so anything skipped was never revisited.
+     */
+    expect(code).toMatch(/reverified_at: null/);
+    expect(code).toMatch(/\.update\(\{ reverified_at: new Date\(\)\.toISOString\(\) \}\)/);
+  });
+
+  it("a later run picks up what an earlier one could not reach", () => {
+    const at = code.indexOf('.is("reverified_at", null)');
+    expect(at, "nothing would ever revisit a skipped bounce").toBeGreaterThan(-1);
+    const sweep = code.slice(code.indexOf("const { data: backlog }"), at + 300);
+    expect(sweep).toContain('.from("bounce_events")');
+    expect(sweep).toMatch(/\.order\("detected_at", \{ ascending: true \}\)/);
+  });
+
+  it("both paths go through one implementation", () => {
+    /*
+     * The repeated failure this week has been a decision implemented
+     * correctly in one place and not in the other, so the inline path and the
+     * sweep share a single function rather than two copies of the rules.
+     */
+    // One definition...
+    expect([...code.matchAll(/const applyBounceToLead = async \(/g)].length).toBe(1);
+    // ...and both the inline drain and the backlog sweep call it.
+    expect([...code.matchAll(/await applyBounceToLead\(/g)].length).toBe(2);
+    // No second copy of the rules that could drift from the first.
+    expect([...code.matchAll(/permanentlyBad/g)].length).toBe(2);
+  });
+
+  it("the migration gives the queue somewhere to record done", () => {
+    const sql = readdirSync("supabase/migrations")
+      .filter((f) => f.includes("bounce_reverification_queue"))
+      .map((f) => readFileSync(`supabase/migrations/${f}`, "utf8"))
+      .join("");
+    expect(sql).toMatch(/ADD COLUMN IF NOT EXISTS reverified_at timestamptz/);
+    // Partial, so the index is the size of the backlog, not of all history.
+    expect(sql).toMatch(/WHERE reverified_at IS NULL/);
+  });
+});
+
+describe("the SMTP probe answers honestly or not at all", () => {
+  const PROBE = readFileSync("supabase/functions/smtp-capability-probe/index.ts", "utf8");
+
+  it("a failed connection is not proof the platform forbids it", () => {
+    /*
+     * DNS errors, TLS errors, timeouts and a Gmail outage all fail
+     * identically. Reporting those as a platform restriction would retire a
+     * buildable design for a reason that was never true.
+     */
+    /*
+     * Three outcomes, and the middle one has to be reachable. Asserting the
+     * word "INCONCLUSIVE" appears is not enough — the first version of this
+     * passed with the branch hard-wired so the "NO" verdict could never be
+     * reached at all.
+     */
+    const verdict = PROBE.slice(PROBE.indexOf("const verdict ="), PROBE.indexOf("console.log("));
+    expect(verdict).toMatch(/results\.some\(\(r\) => r\.reachable\)/);
+    expect(verdict).toMatch(/results\.some\(\(r\) => r\.indicatesPlatformBlock\)/);
+    expect(verdict).toContain("YES");
+    expect(verdict).toContain("NO");
+    expect(verdict).toContain("INCONCLUSIVE");
+
+    const at = PROBE.indexOf("function looksLikePlatformBlock");
+    expect(at).toBeGreaterThan(-1);
+    const fn = PROBE.slice(at, PROBE.indexOf("\nasync function probe", at));
+    expect(fn).toContain("PermissionDenied");
+    expect(fn).toContain("NotCapable");
+  });
+
+  it("a socket that arrives after the timeout is closed", () => {
+    // Promise.race picks a winner; it does not cancel the loser. The late
+    // connection was never assigned, so `finally` could not close it.
+    const at = PROBE.indexOf("const connecting =");
+    expect(at, "the connect promise has to be kept to be closed").toBeGreaterThan(-1);
+    expect(PROBE).toMatch(/connecting\.then\(\(late\) => \{ try \{ late\.close\(\)/);
+  });
+});

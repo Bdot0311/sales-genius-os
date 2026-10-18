@@ -1,6 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { type CacheClient, hasPaidVerifier, verifyEmail } from "../_shared/email-verify.ts";
+import {
+  type CacheClient,
+  hasPaidVerifier,
+  invalidateEmailVerification,
+  verifyEmail,
+} from "../_shared/email-verify.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -138,10 +143,7 @@ serve(async (req) => {
 
     /*
      * A wall-clock budget, because re-verification is a network call per
-     * address and this function had none. Soft and blocked bounces are a
-     * minority of a minority, but a bad afternoon produces a lot of them, and
-     * being killed part-way would leave bounces marked with no verdict and no
-     * record of why.
+     * address and this function had none.
      */
     const startedAt = Date.now();
     const BUDGET_MS = 50_000;
@@ -150,6 +152,102 @@ serve(async (req) => {
     const MAX_VERIFICATIONS = 50;
     let verifications = 0;
     let reverified = 0;
+    const pending: { bounceId: string; leadId: string | null; email: string; type: string; code: string | null }[] = [];
+
+    /*
+     * What one bounce teaches us about one address, in one place.
+     *
+     * The inline path and the catch-up sweep both come through here so the
+     * two cannot drift — the thing that has gone wrong repeatedly today is a
+     * decision implemented correctly in one place and not the other.
+     *
+     * Returns whether the lead was updated, so the caller counts confirmed
+     * writes rather than attempts.
+     */
+    const applyBounceToLead = async (
+      bounceId: string,
+      leadId: string | null,
+      email: string,
+      type: string,
+      code: string | null,
+    ): Promise<boolean> => {
+      /*
+       * "hard" is not the same as "proven bad".
+       *
+       * classifyBounce tests the hard regex before the 4xx test, and that
+       * regex contains "mailbox unavailable" — which is exactly the wording
+       * of a TEMPORARY 450. So a mailbox that is merely full arrives here
+       * classified hard, and marking the lead invalid on it discards a real
+       * prospect permanently. Only a 5xx says the address is gone; anything
+       * else gets checked rather than assumed.
+       */
+      const permanentlyBad = type === "hard" && /^5/.test(code ?? "");
+
+      let status: string | null = null;
+      if (permanentlyBad) {
+        status = "invalid";
+      } else if (verifications < MAX_VERIFICATIONS && !outOfTime()) {
+        verifications++;
+        try {
+          /*
+           * Clear the cached verdict first. It holds for thirty days and was
+           * formed before the bounce, so reusing it would stamp a fresh date
+           * on a check that never happened — and on the one piece of evidence
+           * the bounce has already contradicted.
+           */
+          await invalidateEmailVerification(adminClient as unknown as CacheClient, email);
+          const verdict = await verifyEmail(adminClient as unknown as CacheClient, email);
+          /*
+           * 'unknown' proves nothing — the provider was down, or the domain
+           * accepts everything. Writing it would replace a real earlier
+           * answer with an absence, so the previous verdict stands and this
+           * bounce stays queued for another run to try again.
+           */
+          if (verdict.status === "unknown") return false;
+          status = verdict.status;
+        } catch (verifyErr) {
+          console.error(
+            `Re-verification failed for ${email}:`,
+            verifyErr instanceof Error ? verifyErr.message : verifyErr,
+          );
+          return false;
+        }
+      } else {
+        // Out of budget or over the ceiling. Left queued, not dropped.
+        return false;
+      }
+
+      if (leadId && status) {
+        /*
+         * Matched on the address as well as the lead. A bounce can arrive
+         * days after the send, and if the address has been corrected in the
+         * meantime this verdict belongs to the old one — writing it would
+         * condemn the replacement for the predecessor's failure.
+         */
+        const { error: leadErr, count } = await adminClient
+          .from("leads")
+          .update({
+            email_verification_status: status,
+            email_verified: status === "valid",
+            email_verified_at: new Date().toISOString(),
+          }, { count: "exact" })
+          .eq("id", leadId)
+          .eq("user_id", user.id)
+          .ilike("contact_email", email);
+        if (leadErr) {
+          // Counted as unfinished so the sweep retries it.
+          console.error(`Lead verdict not written for ${email}:`, leadErr.message);
+          return false;
+        }
+        if ((count ?? 0) > 0) reverified++;
+      }
+
+      await adminClient
+        .from("bounce_events")
+        .update({ reverified_at: new Date().toISOString() })
+        .eq("id", bounceId);
+      return true;
+    };
 
     // Recent sends we could still learn a bounce for.
     const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
@@ -249,77 +347,6 @@ serve(async (req) => {
             console.error(`Failed to credit the allowance for ${send.id}:`, creditErr.message);
           }
 
-          /*
-           * Spend the refund on finding out whether the address is actually
-           * bad, and tell the lead.
-           *
-           * The three bounce types mean different things, and only two of
-           * them are worth a verification call:
-           *
-           *   hard   the receiving server says this mailbox does not exist.
-           *          That IS the verification, and a stronger one than a
-           *          handshake — paying to re-confirm a definitive answer is
-           *          the waste the refund exists to avoid. Marked invalid
-           *          straight away.
-           *   soft   quota, mailbox full, a 4xx. The address may be perfectly
-           *          good, and discarding the lead over a full inbox loses a
-           *          real prospect. Worth checking.
-           *   block  a reputation or policy rejection — that is about the
-           *          sender, not the recipient. Checking confirms the address
-           *          is still good so a deliverability problem does not get
-           *          mistaken for a bad list.
-           *
-           * verifyEmail caches per address, so a bounce storm against one
-           * domain does not pay repeatedly, and the budget below keeps a big
-           * batch from being killed part-way.
-           */
-          if (send.lead_id && !outOfTime()) {
-            if (type === "hard") {
-              await adminClient
-                .from("leads")
-                .update({
-                  email_verification_status: "invalid",
-                  email_verified: false,
-                  email_verified_at: new Date().toISOString(),
-                })
-                .eq("id", send.lead_id)
-                .eq("user_id", user.id);
-              reverified++;
-            } else if (verifications < MAX_VERIFICATIONS) {
-              verifications++;
-              try {
-                // Cast as enrich-lead does: the generated Supabase client
-                // type is deep enough that passing it straight in blows the
-                // type instantiation limit.
-                const verdict = await verifyEmail(adminClient as unknown as CacheClient, recipient);
-                /*
-                 * 'unknown' means the check proved nothing — the provider was
-                 * down, or the domain accepts everything. Writing it would
-                 * replace a real earlier verdict with an absence, so the
-                 * previous one stands and the bounce_events row below is the
-                 * record that something happened.
-                 */
-                if (verdict.status !== "unknown") {
-                  await adminClient
-                    .from("leads")
-                    .update({
-                      email_verification_status: verdict.status,
-                      email_verified: verdict.status === "valid",
-                      email_verified_at: new Date().toISOString(),
-                    })
-                    .eq("id", send.lead_id)
-                    .eq("user_id", user.id);
-                  reverified++;
-                }
-              } catch (verifyErr) {
-                console.error(
-                  `Re-verification failed for ${recipient}:`,
-                  verifyErr instanceof Error ? verifyErr.message : verifyErr,
-                );
-              }
-            }
-          }
-
           await adminClient.from("bounce_events").insert({
             user_id: user.id,
             sending_account_id: send.sending_account_id,
@@ -329,6 +356,15 @@ serve(async (req) => {
             reason: (message.snippet || "").slice(0, 500),
             smtp_code: code,
             detected_at: detectedAt,
+            /*
+             * Null until the address has been re-checked because of this
+             * bounce. The sweep at the top of the next run picks up whatever
+             * this one could not reach, so budgeted-out work is deferred
+             * rather than lost.
+             */
+            reverified_at: null,
+          }).select("id").maybeSingle().then(({ data }) => {
+            if (data?.id) pending.push({ bounceId: data.id, leadId: send.lead_id, email: recipient, type, code });
           });
 
           if (type === "hard") {
@@ -351,10 +387,61 @@ serve(async (req) => {
       }
     }
 
+    /*
+     * This run's own bounces first, then the backlog.
+     *
+     * Order matters: a bounce detected moments ago is the one whose lead is
+     * most likely to be mailed again soon, so it gets the budget before older
+     * work that has already waited.
+     */
+    for (const p of pending) {
+      if (outOfTime()) break;
+      await applyBounceToLead(p.bounceId, p.leadId, p.email, p.type, p.code);
+    }
+
+    /*
+     * The catch-up sweep: bounces a previous run recorded but could not
+     * re-verify. Without this, anything the budget or the ceiling skipped was
+     * lost for good — the send is already marked 'bounced', and the query at
+     * the top of this function only looks at sends that are not.
+     */
+    let sweptBacklog = 0;
+    if (!outOfTime() && verifications < MAX_VERIFICATIONS) {
+      const { data: backlog } = await adminClient
+        .from("bounce_events")
+        .select("id, to_email, bounce_type, smtp_code, sent_email_id")
+        .eq("user_id", user.id)
+        .is("reverified_at", null)
+        .gte("detected_at", since)
+        .order("detected_at", { ascending: true })
+        .limit(MAX_VERIFICATIONS);
+
+      for (const b of backlog ?? []) {
+        if (outOfTime() || verifications >= MAX_VERIFICATIONS) break;
+        // The lead is on the send this bounce belongs to.
+        const { data: src } = await adminClient
+          .from("sent_emails")
+          .select("lead_id")
+          .eq("id", b.sent_email_id)
+          .maybeSingle();
+        const done = await applyBounceToLead(
+          b.id as string,
+          (src?.lead_id as string | null) ?? null,
+          b.to_email as string,
+          b.bounce_type as string,
+          (b.smtp_code as string | null) ?? null,
+        );
+        if (done) sweptBacklog++;
+      }
+    }
+
     return new Response(JSON.stringify({
       success: true,
       bounces,
       detected,
+      // What the backlog sweep got through, so a growing queue is visible
+      // rather than something you learn about from stale lead data.
+      swept_backlog: sweptBacklog,
       // Said out loud rather than left to be inferred from the lead rows:
       // how many addresses a bounce taught us something about, and whether
       // the paid handshake was available to teach it.

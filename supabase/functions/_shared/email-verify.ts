@@ -495,6 +495,29 @@ async function callProviderWithFallback(email: string): Promise<VerificationResu
 }
 
 /** Verify one address. Cached across searches and across users. */
+/**
+ * Force the next verification of this address to be a real one.
+ *
+ * The cache holds a verdict for thirty days, which is right when nothing has
+ * happened to the mailbox and wrong the moment something has. A bounce is
+ * exactly that: the newest evidence about an address, and it arrives after
+ * the cached answer was formed. Re-verifying without clearing the entry
+ * returns the pre-bounce verdict and stamps it with today's date, which tells
+ * the reader a check happened that did not.
+ *
+ * Expiring the entry rather than deleting it keeps this to the two operations
+ * CacheClient already has, so nothing else has to widen for it.
+ */
+export async function invalidateEmailVerification(
+  supabase: CacheClient,
+  rawEmail: string,
+): Promise<void> {
+  const email = rawEmail.trim().toLowerCase();
+  if (!email) return;
+  // A negative TTL puts expires_at in the past, so the next cacheGet misses.
+  await cacheSet(supabase, `email_verify:${email}`, { invalidated: true }, -1);
+}
+
 export async function verifyEmail(supabase: CacheClient, rawEmail: string): Promise<VerificationResult> {
   const email = (rawEmail ?? "").trim().toLowerCase();
   if (!email) {

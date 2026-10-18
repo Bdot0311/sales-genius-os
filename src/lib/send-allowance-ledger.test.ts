@@ -139,9 +139,19 @@ describe("usage is recorded where deleting history cannot reach it", () => {
     // And the bounce path actually calls it, or the rule is only documented.
     const SYNC = strip(readFileSync("supabase/functions/sync-bounces/index.ts", "utf8"));
     expect(SYNC).toMatch(/\.rpc\("credit_bounced_send", \{\s*_sent_email_id: send\.id,\s*\}\)/);
-    // Credited before the bounce_events row, so a failure there cannot leave
-    // the allowance spent with nothing recording why.
-    expect(SYNC.indexOf("credit_bounced_send")).toBeLessThan(SYNC.indexOf('from("bounce_events")'));
+    /*
+     * Credited before the bounce_events row is written, so a failure there
+     * cannot leave the allowance spent with nothing recording why.
+     *
+     * Anchored on the INSERT specifically. This compared against the first
+     * `from("bounce_events")` in the file, and once a helper above the loop
+     * started updating that table the comparison silently became one between
+     * two unrelated references.
+     */
+    const insertAt = SYNC.indexOf('from("bounce_events")\n            .insert(');
+    const insertFallback = insertAt > -1 ? insertAt : SYNC.indexOf('.from("bounce_events").insert(');
+    expect(insertFallback, "the bounce_events insert should still exist").toBeGreaterThan(-1);
+    expect(SYNC.indexOf("credit_bounced_send")).toBeLessThan(insertFallback);
   });
 
   it("a credited row stops counting against either cap", () => {

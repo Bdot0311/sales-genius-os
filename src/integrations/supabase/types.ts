@@ -1305,6 +1305,7 @@ export type Database = {
           detected_at: string
           id: string
           reason: string | null
+          reverified_at: string | null
           sending_account_id: string | null
           sent_email_id: string | null
           smtp_code: string | null
@@ -1317,6 +1318,7 @@ export type Database = {
           detected_at?: string
           id?: string
           reason?: string | null
+          reverified_at?: string | null
           sending_account_id?: string | null
           sent_email_id?: string | null
           smtp_code?: string | null
@@ -1329,6 +1331,7 @@ export type Database = {
           detected_at?: string
           id?: string
           reason?: string | null
+          reverified_at?: string | null
           sending_account_id?: string | null
           sent_email_id?: string | null
           smtp_code?: string | null
