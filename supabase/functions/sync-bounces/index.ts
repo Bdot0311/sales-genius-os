@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { type CacheClient, hasPaidVerifier, verifyEmail } from "../_shared/email-verify.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -135,11 +136,28 @@ serve(async (req) => {
       });
     }
 
+    /*
+     * A wall-clock budget, because re-verification is a network call per
+     * address and this function had none. Soft and blocked bounces are a
+     * minority of a minority, but a bad afternoon produces a lot of them, and
+     * being killed part-way would leave bounces marked with no verdict and no
+     * record of why.
+     */
+    const startedAt = Date.now();
+    const BUDGET_MS = 50_000;
+    const outOfTime = () => Date.now() - startedAt > BUDGET_MS;
+    // Belt as well as braces: a hard ceiling on paid checks per run.
+    const MAX_VERIFICATIONS = 50;
+    let verifications = 0;
+    let reverified = 0;
+
     // Recent sends we could still learn a bounce for.
     const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
     const { data: recentSends } = await adminClient
       .from("sent_emails")
-      .select("id, to_email, sent_at, sending_account_id, status")
+      // lead_id, because a bounce teaches us something about the lead's
+      // address and the verdict has to have somewhere to go.
+      .select("id, lead_id, to_email, sent_at, sending_account_id, status")
       .eq("user_id", user.id)
       .gte("sent_at", since)
       .in("status", ["sent", "delivered", "opened", "clicked"])
@@ -231,6 +249,77 @@ serve(async (req) => {
             console.error(`Failed to credit the allowance for ${send.id}:`, creditErr.message);
           }
 
+          /*
+           * Spend the refund on finding out whether the address is actually
+           * bad, and tell the lead.
+           *
+           * The three bounce types mean different things, and only two of
+           * them are worth a verification call:
+           *
+           *   hard   the receiving server says this mailbox does not exist.
+           *          That IS the verification, and a stronger one than a
+           *          handshake — paying to re-confirm a definitive answer is
+           *          the waste the refund exists to avoid. Marked invalid
+           *          straight away.
+           *   soft   quota, mailbox full, a 4xx. The address may be perfectly
+           *          good, and discarding the lead over a full inbox loses a
+           *          real prospect. Worth checking.
+           *   block  a reputation or policy rejection — that is about the
+           *          sender, not the recipient. Checking confirms the address
+           *          is still good so a deliverability problem does not get
+           *          mistaken for a bad list.
+           *
+           * verifyEmail caches per address, so a bounce storm against one
+           * domain does not pay repeatedly, and the budget below keeps a big
+           * batch from being killed part-way.
+           */
+          if (send.lead_id && !outOfTime()) {
+            if (type === "hard") {
+              await adminClient
+                .from("leads")
+                .update({
+                  email_verification_status: "invalid",
+                  email_verified: false,
+                  email_verified_at: new Date().toISOString(),
+                })
+                .eq("id", send.lead_id)
+                .eq("user_id", user.id);
+              reverified++;
+            } else if (verifications < MAX_VERIFICATIONS) {
+              verifications++;
+              try {
+                // Cast as enrich-lead does: the generated Supabase client
+                // type is deep enough that passing it straight in blows the
+                // type instantiation limit.
+                const verdict = await verifyEmail(adminClient as unknown as CacheClient, recipient);
+                /*
+                 * 'unknown' means the check proved nothing — the provider was
+                 * down, or the domain accepts everything. Writing it would
+                 * replace a real earlier verdict with an absence, so the
+                 * previous one stands and the bounce_events row below is the
+                 * record that something happened.
+                 */
+                if (verdict.status !== "unknown") {
+                  await adminClient
+                    .from("leads")
+                    .update({
+                      email_verification_status: verdict.status,
+                      email_verified: verdict.status === "valid",
+                      email_verified_at: new Date().toISOString(),
+                    })
+                    .eq("id", send.lead_id)
+                    .eq("user_id", user.id);
+                  reverified++;
+                }
+              } catch (verifyErr) {
+                console.error(
+                  `Re-verification failed for ${recipient}:`,
+                  verifyErr instanceof Error ? verifyErr.message : verifyErr,
+                );
+              }
+            }
+          }
+
           await adminClient.from("bounce_events").insert({
             user_id: user.id,
             sending_account_id: send.sending_account_id,
@@ -262,7 +351,17 @@ serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ success: true, bounces, detected }), {
+    return new Response(JSON.stringify({
+      success: true,
+      bounces,
+      detected,
+      // Said out loud rather than left to be inferred from the lead rows:
+      // how many addresses a bounce taught us something about, and whether
+      // the paid handshake was available to teach it.
+      reverified,
+      verification_available: hasPaidVerifier(),
+      budget_hit: outOfTime(),
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: any) {

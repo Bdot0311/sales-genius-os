@@ -42,6 +42,10 @@ project_id = "ghgfjnepvxvxrncmskys"
     verify_jwt = false
   [functions.warmup-orchestrator]
     verify_jwt = false
+  # Answers one question — whether this runtime may open an SMTP submission
+  # socket — and is gated to the service role inside the function.
+  [functions.smtp-capability-probe]
+    verify_jwt = false
   [functions.compute-reputation]
     verify_jwt = false
   [functions.deliverability-alerts-scan]
