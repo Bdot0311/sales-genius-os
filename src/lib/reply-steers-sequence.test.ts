@@ -231,6 +231,63 @@ describe("stopping reaches the mail already queued", () => {
     expect(block).toContain("defer(email,");
   });
 
+  it("states what may send, rather than what may not", () => {
+    /*
+     * This check has now been wrong in both directions. First it rejected
+     * anything not 'active', killing the final step of every sequence. Then
+     * it listed the statuses that block and let the rest through — a
+     * denylist, which missed 'exited', the status the Archive button writes:
+     * a user archived a lead, was told it was removed from the sequence, and
+     * the queued mail went out anyway.
+     *
+     * An allowlist is the only shape that is safe here, because the cost of
+     * the wrong answer is a send to someone who should not get one. A status
+     * nobody has invented yet must block, not send.
+     */
+    const CRON = body("supabase/functions/process-scheduled-emails/index.ts");
+    const at = CRON.indexOf("const sendable =");
+    expect(at, "a denylist lets every future status through").toBeGreaterThan(-1);
+    const rule = CRON.slice(at, CRON.indexOf("if (!sendable)", at));
+    expect(rule).toMatch(/enr !== null/);
+    expect(rule).toMatch(/enr\.status === "active"/);
+    expect(rule).toMatch(/enr\.status === "completed" && enr\.engagement_state !== "replied"/);
+    // Nothing else may appear as a thing that permits a send.
+    expect(rule).not.toMatch(/exited|stopped|paused/);
+  });
+
+  it("archived and orphaned mail does not send", () => {
+    // 'exited' is what Archive writes, and it cancels no queued mail.
+    const PANEL = readFileSync("src/components/sequences/HandoffActionPanel.tsx", "utf8");
+    expect(PANEL, "if Archive stopped writing 'exited', this guard is stale")
+      .toMatch(/status: 'exited'/);
+    const CRON = body("supabase/functions/process-scheduled-emails/index.ts");
+    const at = CRON.indexOf("if (!sendable)");
+    const branch = CRON.slice(at, CRON.indexOf("continue;", at));
+    expect(branch).toContain("no longer exists");
+  });
+
+  it("a reply reaches a sequence that finished with mail still queued", () => {
+    /*
+     * process-sequence-step marks an enrollment 'completed' on the pass after
+     * the last email is queued. A cap deferring that email leaves a completed
+     * enrollment with mail outstanding, and the stop matched only active and
+     * paused — so a reply in that window neither marked it replied nor
+     * cancelled the mail, and the final follow-up went out after the answer.
+     *
+     * Measured: the reply marks it, cancels the queued row, and leaves the
+     * original completed_at alone; a sequence that finished and sent
+     * everything is not touched at all.
+     */
+    const { sql } = liveDefinition("apply_reply_to_sequence");
+    const elseAt = sql.indexOf("ELSE");
+    const stop = sql.slice(elseAt, sql.indexOf("END IF;", elseAt));
+    expect(stop).toMatch(/e\.status IN \('active', 'paused'\)/);
+    expect(stop).toMatch(/OR \(e\.status = 'completed' AND EXISTS/);
+    expect(stop).toContain("s.status = 'scheduled'");
+    // Not every completed enrollment: one that sent everything is history.
+    expect(stop).toContain("coalesce(e.completed_at, now())");
+  });
+
   it("a sequence that merely ran out of steps still sends its last email", () => {
     /*
      * The first version of the guard rejected anything not 'active', which
@@ -242,13 +299,11 @@ describe("stopping reaches the mail already queued", () => {
      * What stops a send has to be a decision, not an ending.
      */
     const CRON = body("supabase/functions/process-scheduled-emails/index.ts");
-    const at = CRON.indexOf("const blocked = enr");
+    const at = CRON.indexOf("const sendable =");
     expect(at, "status alone cannot tell a finish from a stop").toBeGreaterThan(-1);
-    const rule = CRON.slice(at, CRON.indexOf("if (blocked)", at));
-    expect(rule).toMatch(/enr\.status === "paused"/);
-    expect(rule).toMatch(/enr\.status === "stopped"/);
-    // Completed only counts when the lead actually replied.
-    expect(rule).toMatch(/enr\.status === "completed" && enr\.engagement_state === "replied"/);
+    const rule = CRON.slice(at, CRON.indexOf("if (!sendable)", at));
+    // A finish is sendable; a reply-ended sequence is not.
+    expect(rule).toMatch(/enr\.status === "completed" && enr\.engagement_state !== "replied"/);
     // A bare status check would send nothing after any sequence ended.
     expect(rule).not.toMatch(/enr\.status !== "active"/);
   });

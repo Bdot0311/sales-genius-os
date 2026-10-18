@@ -294,40 +294,46 @@ serve(async (req) => {
             continue;
           }
           /*
-           * Not active is not the same as not wanted.
+           * Only send when the enrollment still wants this sent.
            *
-           * A sequence that simply ran out of steps is marked 'completed' by
-           * process-sequence-step on the pass AFTER the last email was queued
-           * — so the final step of every sequence is routinely sitting in the
-           * queue against a completed enrollment. Rejecting on status alone
-           * killed it permanently whenever a cap or a paused mailbox had
-           * deferred it that long, which is a legitimate send lost to a guard
-           * meant for a different situation.
+           * Two versions of this check were wrong in opposite directions. The
+           * first rejected anything not 'active', which killed the final step
+           * of every sequence: process-sequence-step marks an enrollment
+           * 'completed' on the pass AFTER the last email is queued, so that
+           * email routinely sits against a completed enrollment and a cap
+           * deferring it that long made the rejection permanent.
            *
-           * What has to stop it is a decision, not an ending:
+           * The second listed the statuses that block — paused, stopped,
+           * completed-and-replied — and let everything else through. That is
+           * a denylist, and it missed 'exited', which is what the Archive
+           * button writes: a user archived a lead, was told it had been
+           * removed from the sequence, and the queued mail went out anyway.
+           * Any status added later would have defaulted to sending too.
            *
-           *   paused     held, by a reply that named a date or by a handoff.
-           *              The hold is a promise about when they next hear from
-           *              us and this would break it.
-           *   stopped    stopped outright, by the agent or by a person.
-           *   completed  only when the lead replied. apply_reply_to_sequence
-           *              sets engagement_state alongside the status, so a
-           *              reply-ended sequence is distinguishable from one that
-           *              merely finished.
+           * So it is stated as what may send, and everything else — including
+           * a status nobody has invented yet, and an enrollment row that has
+           * been deleted out from under its mail — stops. The cost of the
+           * wrong answer is a send to someone who should not get one, so the
+           * default has to be silence.
            */
-          const blocked = enr
-            ? enr.status === "paused" ||
-              enr.status === "stopped" ||
-              (enr.status === "completed" && enr.engagement_state === "replied")
-            : false;
-          if (blocked) {
+          const sendable =
+            enr !== null &&
+            (enr.status === "active" ||
+              // Ran out of steps rather than being stopped. apply_reply_to_sequence
+              // writes engagement_state alongside the status, so a sequence a
+              // reply ended is distinguishable from one that simply finished.
+              (enr.status === "completed" && enr.engagement_state !== "replied"));
+
+          if (!sendable) {
             await failEmail(
               email.id,
-              enr!.status === "paused"
-                ? `This sequence is on hold${enr!.paused_reason ? ` — ${enr!.paused_reason}` : ""}, so the step was not sent.`
-                : enr!.engagement_state === "replied"
-                  ? "They replied before this step was due, so it was not sent."
-                  : "The sequence was stopped before this step was due, so it was not sent.",
+              !enr
+                ? "The sequence this was queued against no longer exists, so it was not sent."
+                : enr.status === "paused"
+                  ? `This sequence is on hold${enr.paused_reason ? ` — ${enr.paused_reason}` : ""}, so the step was not sent.`
+                  : enr.engagement_state === "replied"
+                    ? "They replied before this step was due, so it was not sent."
+                    : "The sequence was stopped before this step was due, so it was not sent.",
             );
             failed++;
             continue;
