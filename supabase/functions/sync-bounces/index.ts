@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   type CacheClient,
+  emailVerificationCheckedAt,
   hasPaidVerifier,
   invalidateEmailVerification,
   verifyEmail,
@@ -161,6 +162,9 @@ serve(async (req) => {
       detectedAt: string;
     }[] = [];
 
+    /** Addresses this run has already re-checked. See the use below. */
+    const checkedThisRun = new Set<string>();
+
     /*
      * What one bounce teaches us about one address, in one place.
      *
@@ -168,54 +172,9 @@ serve(async (req) => {
      * two cannot drift — the thing that has gone wrong repeatedly today is a
      * decision implemented correctly in one place and not the other.
      *
-     * Returns whether the lead was updated, so the caller counts confirmed
-     * writes rather than attempts.
+     * Returns whether the bounce is finished with, so the caller counts
+     * confirmed work rather than attempts.
      */
-    /*
-     * Addresses already re-checked in this run.
-     *
-     * Two bounces for one address — a DSN per recipient, or a backlog entry
-     * alongside a fresh one — would otherwise each clear the cache and buy
-     * the same answer twice, spending the budget on a question just asked.
-     */
-    const checkedThisRun = new Set<string>();
-
-    /*
-     * Whether a verdict newer than this bounce already exists.
-     *
-     * `checkedThisRun` collapses duplicates inside one run, and this covers
-     * the case it cannot see: two bounces for one address reaching the queue
-     * on different runs — a DSN per recipient, or a backlog entry picked up
-     * after a fresh one. The lead's `email_verified_at` is the durable record
-     * of when the address was last answered for, so a stamp later than the
-     * failure means the post-bounce check has already been bought.
-     *
-     * Deliberately narrow. The verdict has to belong to THIS address (the
-     * lead may have been corrected since) and has to be a real answer:
-     * 'unknown' is an absence, and an absence is not something to reuse.
-     */
-    const answerPostdatesBounce = async (
-      leadId: string | null,
-      email: string,
-      detectedAt: string,
-    ): Promise<boolean> => {
-      if (!leadId) return false;
-      const { data: lead, error } = await adminClient
-        .from("leads")
-        .select("contact_email, email_verification_status, email_verified_at")
-        .eq("id", leadId)
-        .eq("user_id", user.id)
-        .maybeSingle();
-      // A failed read is not evidence of anything. Fall through and check.
-      if (error || !lead) return false;
-      const status = lead.email_verification_status as string | null;
-      const verifiedAt = lead.email_verified_at as string | null;
-      const current = (lead.contact_email as string | null) ?? "";
-      if (!status || status === "unknown" || !verifiedAt) return false;
-      if (current.trim().toLowerCase() !== email.trim().toLowerCase()) return false;
-      return Date.parse(verifiedAt) > Date.parse(detectedAt);
-    };
-
     const applyBounceToLead = async (
       bounceId: string,
       leadId: string | null,
@@ -239,36 +198,51 @@ serve(async (req) => {
       let status: string | null = null;
       if (permanentlyBad) {
         status = "invalid";
-      } else if (await answerPostdatesBounce(leadId, email, detectedAt)) {
+      } else {
+        const cacheClient = adminClient as unknown as CacheClient;
         /*
-         * Already answered since this bounce. Nothing to buy: finished.
+         * One question decides everything here: was the stored verdict
+         * obtained before this bounce, or after it?
          *
-         * The lead's verdict was written after the failure, so it is the
-         * post-bounce check this row exists to obtain. Paying again would
-         * ask a question that has an answer — and the budget is a fixed
-         * number of addresses per run, so it would come out of some other
-         * lead's turn.
+         * Before — which is the ordinary case, since the cache holds for
+         * thirty days and the bounce is the newest evidence there is — the
+         * entry has to go, or verifyEmail hands back the pre-bounce answer
+         * and a fresh date gets stamped on a check that never happened, on
+         * the one piece of evidence the bounce has already contradicted.
+         *
+         * After, the answer this row exists to obtain has already been
+         * bought: by another bounce for the same address, this run or an
+         * earlier one, or by an earlier attempt on this very row that
+         * answered the address and then failed to record that it had.
+         * Leaving the entry alone makes the verifyEmail call below a cache
+         * read — free, no credit, no budget slot — and the verdict still
+         * reaches the lead and the row still leaves the queue.
          */
-        return true;
-      } else if (verifications < MAX_VERIFICATIONS && !outOfTime()) {
-        verifications++;
+        const checkedAt = await emailVerificationCheckedAt(cacheClient, email);
+        const needsFreshCheck = !checkedAt || checkedAt.getTime() <= Date.parse(detectedAt);
+
+        if (needsFreshCheck && (verifications >= MAX_VERIFICATIONS || outOfTime())) {
+          // Out of budget or over the ceiling. Left queued, not dropped.
+          return false;
+        }
+        // Only a real check is charged against the run's budget.
+        if (needsFreshCheck) verifications++;
+
         try {
           /*
-           * Clear the cached verdict first, but only for the first bounce
-           * this run names an address.
+           * `checkedThisRun` is a second line, not the first one.
            *
-           * The cache holds for thirty days, so without this the verdict
-           * formed BEFORE the bounce comes back and stamps a fresh date on a
-           * check that never happened — on the one piece of evidence the
-           * bounce has already contradicted. A second bounce for the same
-           * address this run is the opposite case: the entry there now was
-           * written moments ago, after the bounce, which is all the
-           * invalidation was ever for.
+           * The timestamp above already collapses repeats, because the first
+           * check of the run rewrites the entry. It only fails to if that
+           * write itself failed — cacheSet swallows its errors — and then
+           * every later bounce for the address would invalidate and pay
+           * again. This set holds that line without depending on the cache
+           * having worked.
            */
-          if (!checkedThisRun.has(email)) {
-            await invalidateEmailVerification(adminClient as unknown as CacheClient, email);
+          if (needsFreshCheck && !checkedThisRun.has(email)) {
+            await invalidateEmailVerification(cacheClient, email);
           }
-          const verdict = await verifyEmail(adminClient as unknown as CacheClient, email);
+          const verdict = await verifyEmail(cacheClient, email);
           checkedThisRun.add(email);
           /*
            * 'unknown' proves nothing — the provider was down, or the domain
@@ -285,9 +259,6 @@ serve(async (req) => {
           );
           return false;
         }
-      } else {
-        // Out of budget or over the ceiling. Left queued, not dropped.
-        return false;
       }
 
       if (leadId && status) {

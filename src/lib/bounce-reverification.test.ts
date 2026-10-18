@@ -137,47 +137,123 @@ describe("work the budget skips is deferred, not dropped", () => {
   });
 
   it("a second bounce for one address does not buy the answer twice", () => {
-    // Clearing the cache again would discard the answer the first just paid
-    // for — and it was taken after the bounce, which is all that mattered.
+    /*
+     * Two layers, and the second is not redundant.
+     *
+     * The obtained-at comparison already collapses repeats, because the first
+     * check of the run rewrites the cache entry. It only fails to do so if
+     * that write itself failed — cacheSet swallows its own errors — and then
+     * every later bounce for the address would clear and pay again. This set
+     * holds the line without depending on the cache having worked.
+     */
     expect(code).toContain("const checkedThisRun = new Set<string>();");
-    const at = code.indexOf("if (!checkedThisRun.has(email))");
+    const at = code.indexOf("if (needsFreshCheck && !checkedThisRun.has(email))");
     expect(at).toBeGreaterThan(-1);
     const block = code.slice(at, code.indexOf("checkedThisRun.add(email)", at));
     expect(block).toContain("invalidateEmailVerification");
+    // Recorded whether the answer was bought or read, or the set never fills.
+    const add = code.indexOf("checkedThisRun.add(email)");
+    expect(code.slice(add - 200, add)).toContain("await verifyEmail(");
   });
 
-  it("an answer taken after the bounce is reused, not bought again", () => {
+  it("the stored verdict is only cleared when it predates the bounce", () => {
     /*
-     * `checkedThisRun` only sees one run. Two bounces for one address reach
-     * the queue on different runs often enough — a DSN per recipient, or a
-     * backlog entry picked up after a fresh one — and each would clear the
-     * cache and pay for a question the other already answered. The budget is
-     * a fixed number of addresses per run, so that comes out of some other
-     * lead's turn.
+     * The ordinary case is a verdict formed before the bounce, and that entry
+     * has to go or verifyEmail hands back the answer the bounce has already
+     * contradicted. The opposite case is an answer obtained AFTER the bounce
+     * — by another bounce for the same address, or by an earlier attempt on
+     * this row that answered it and then failed to record that it had. There,
+     * clearing it would throw away the very thing this row exists to get.
      */
-    const at = code.indexOf("const answerPostdatesBounce = async");
-    expect(at, "the cross-run guard should exist").toBeGreaterThan(-1);
-    const fn = code.slice(at, code.indexOf("const applyBounceToLead", at));
-    // Compared against the bounce's own detection date, not just "recent".
-    expect(fn).toContain("Date.parse(verifiedAt) > Date.parse(detectedAt)");
-    /*
-     * Three ways reuse would be wrong, each refused:
-     * the verdict belongs to an address the lead no longer has; there is no
-     * verdict; the verdict is 'unknown', which is an absence, not an answer.
-     */
-    expect(fn).toContain('current.trim().toLowerCase() !== email.trim().toLowerCase()');
-    expect(fn).toMatch(/if \(!status \|\| status === "unknown" \|\| !verifiedAt\) return false;/);
-    // A failed read proves nothing either, so it checks rather than skips.
-    expect(fn).toMatch(/if \(error \|\| !lead\) return false;/);
+    expect(code).toContain("const checkedAt = await emailVerificationCheckedAt(cacheClient, email);");
+    expect(code).toContain(
+      "const needsFreshCheck = !checkedAt || checkedAt.getTime() <= Date.parse(detectedAt);",
+    );
+    // The invalidation is gated on it, which is the whole point.
+    expect(code).toContain("if (needsFreshCheck && !checkedThisRun.has(email)) {");
+    const gate = code.indexOf("if (needsFreshCheck && !checkedThisRun.has(email))");
+    const inv = code.indexOf("invalidateEmailVerification(cacheClient, email)", gate);
+    expect(inv).toBeGreaterThan(gate);
+  });
 
+  it("an answer that is already paid for costs nothing to reuse", () => {
     /*
-     * And it is consulted BEFORE the paid call, not after — the point is to
-     * not spend the credit.
+     * No credit and no budget slot. The budget is a fixed number of addresses
+     * per run, so charging for a cache read would come out of some other
+     * lead's turn, and the ceiling would start cutting runs short over work
+     * that never cost anything.
      */
-    const guardAt = code.indexOf("await answerPostdatesBounce(leadId, email, detectedAt)");
-    const payAt = code.indexOf("verifications++");
-    expect(guardAt).toBeGreaterThan(-1);
-    expect(guardAt).toBeLessThan(payAt);
+    expect(code).toContain(
+      "if (needsFreshCheck && (verifications >= MAX_VERIFICATIONS || outOfTime())) {",
+    );
+    expect(code).toContain("if (needsFreshCheck) verifications++;");
+  });
+
+  it("a reused answer still takes the row out of the queue", () => {
+    /*
+     * The first version of this returned early on a reused answer, which left
+     * `reverified_at` unset: the row kept its slot in every later sweep and
+     * kept being counted as swept. The reuse path has to reach the same
+     * checked completion write as every other path, so the only `return
+     * true` in the function is the one after that write.
+     */
+    const at = code.indexOf("const applyBounceToLead = async");
+    const fn = code.slice(at, code.indexOf("const attemptBounce = async", at));
+    expect([...fn.matchAll(/return true;/g)].length, "one way out, after the write").toBe(1);
+    const done = fn.indexOf('.update({ reverified_at: new Date().toISOString() })');
+    expect(done).toBeGreaterThan(-1);
+    expect(fn.indexOf("return true;")).toBeGreaterThan(done);
+  });
+
+  it("the obtained-at date is the cache's own, not a stamp someone copied", () => {
+    /*
+     * This replaced a guard that read the lead's `email_verified_at`, which
+     * does not mean what it looks like: enrich-lead stamps it with now() even
+     * when verifyEmail answered from a weeks-old cache entry. A lead enriched
+     * after its bounce could therefore carry a post-bounce-looking stamp over
+     * a pre-bounce verdict, and the bounce would skip the check it was owed —
+     * leaving a bounced address sitting on a stale `valid`.
+     *
+     * The cache entry's expiry only moves when something writes the entry,
+     * and the entry is only written when an answer is obtained.
+     */
+    // Still written to the lead; never read back out of it as evidence.
+    expect(code).toContain("email_verified_at: new Date().toISOString()");
+    for (const sel of code.matchAll(/\.select\("([^"]*)"\)/g)) {
+      expect(sel[1], "the lead's stamp is not evidence of a check").not.toContain(
+        "email_verified_at",
+      );
+    }
+    const at = VERIFY.indexOf("export async function emailVerificationCheckedAt");
+    expect(at, "the reader should exist").toBeGreaterThan(-1);
+    const fn = VERIFY.slice(at, VERIFY.indexOf("\nexport ", at + 1));
+    expect(fn).toContain('.select("cache_value, expires_at")');
+    expect(fn).toContain("`email_verify:${email}`");
+    expect(fn).toContain("new Date(expiresAt - CACHE_TTL_SECONDS * 1000)");
+    // An expired entry, or one expired on purpose, dates nothing.
+    expect(fn).toMatch(/if \(!Number\.isFinite\(expiresAt\) \|\| expiresAt <= Date\.now\(\)\) return null;/);
+    // Nor does the invalidation marker, which is not a verdict.
+    expect(fn).toContain('!("status" in (value as Record<string, unknown>))');
+    // A cache that cannot be read is not evidence of a recent check.
+    expect(fn).toMatch(/catch \{[\s\S]*?return null;[\s\S]*?\}/);
+  });
+
+  it("every stored verdict is written with the one TTL the date assumes", () => {
+    /*
+     * `expires_at - CACHE_TTL_SECONDS` only dates the answer while that is
+     * the TTL every verdict is written with. A second TTL on any of these
+     * writes would make the subtraction quietly wrong, and wrong in the
+     * dangerous direction — an answer looking newer than it is skips a check.
+     */
+    const calls = [...VERIFY.matchAll(/cacheSet\(([\s\S]*?)\);/g)].map((m) => m[1]);
+    expect(calls.length).toBeGreaterThan(3);
+    const verdictWrites = calls.filter((c) => c.includes("email_verify:") || c.includes("cacheKey"));
+    expect(verdictWrites.length, "the verdict writes should be found").toBeGreaterThan(3);
+    for (const call of verdictWrites) {
+      const ttl = call.slice(call.lastIndexOf(",") + 1).trim();
+      // -1 is the invalidation, which reads as expired rather than as a date.
+      expect(["CACHE_TTL_SECONDS", "-1"], call.slice(0, 60)).toContain(ttl);
+    }
   });
 
   it("the bounce's detection date reaches the rules that need it", () => {

@@ -518,6 +518,47 @@ export async function invalidateEmailVerification(
   await cacheSet(supabase, `email_verify:${email}`, { invalidated: true }, -1);
 }
 
+/**
+ * When the stored verdict for this address was actually obtained, or null if
+ * there is no live one.
+ *
+ * Read off the cache entry's own expiry, deliberately, rather than off a
+ * timestamp some caller wrote next to the verdict. Those do not answer this
+ * question: `enrich-lead` stamps `email_verified_at = now()` on the lead even
+ * when this cache handed it an answer formed weeks earlier, so a lead
+ * enriched after a bounce can carry a stamp that looks post-bounce over a
+ * verdict that is not. The expiry moves only when something writes the entry,
+ * which only happens when an answer is obtained.
+ *
+ * Every `email_verify:` entry is written with the same TTL — the one
+ * exception is invalidateEmailVerification, which writes a negative one, and
+ * that reads as expired here. A test pins that so this subtraction cannot
+ * silently start lying.
+ */
+export async function emailVerificationCheckedAt(
+  supabase: CacheClient,
+  rawEmail: string,
+): Promise<Date | null> {
+  const email = (rawEmail ?? "").trim().toLowerCase();
+  if (!email) return null;
+  try {
+    const { data } = await supabase.from("api_cache")
+      .select("cache_value, expires_at").eq("cache_key", `email_verify:${email}`).maybeSingle();
+    if (!data?.expires_at) return null;
+    const expiresAt = new Date(data.expires_at).getTime();
+    if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) return null;
+    const value = data.cache_value;
+    // Only a real verdict dates anything. An invalidation marker is not one.
+    if (!value || typeof value !== "object" || !("status" in (value as Record<string, unknown>))) {
+      return null;
+    }
+    return new Date(expiresAt - CACHE_TTL_SECONDS * 1000);
+  } catch {
+    // A cache that cannot be read is not evidence of a recent check.
+    return null;
+  }
+}
+
 export async function verifyEmail(supabase: CacheClient, rawEmail: string): Promise<VerificationResult> {
   const email = (rawEmail ?? "").trim().toLowerCase();
   if (!email) {
