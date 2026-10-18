@@ -152,7 +152,14 @@ serve(async (req) => {
     const MAX_VERIFICATIONS = 50;
     let verifications = 0;
     let reverified = 0;
-    const pending: { bounceId: string; leadId: string | null; email: string; type: string; code: string | null }[] = [];
+    const pending: {
+      bounceId: string;
+      leadId: string | null;
+      email: string;
+      type: string;
+      code: string | null;
+      detectedAt: string;
+    }[] = [];
 
     /*
      * What one bounce teaches us about one address, in one place.
@@ -173,12 +180,49 @@ serve(async (req) => {
      */
     const checkedThisRun = new Set<string>();
 
+    /*
+     * Whether a verdict newer than this bounce already exists.
+     *
+     * `checkedThisRun` collapses duplicates inside one run, and this covers
+     * the case it cannot see: two bounces for one address reaching the queue
+     * on different runs — a DSN per recipient, or a backlog entry picked up
+     * after a fresh one. The lead's `email_verified_at` is the durable record
+     * of when the address was last answered for, so a stamp later than the
+     * failure means the post-bounce check has already been bought.
+     *
+     * Deliberately narrow. The verdict has to belong to THIS address (the
+     * lead may have been corrected since) and has to be a real answer:
+     * 'unknown' is an absence, and an absence is not something to reuse.
+     */
+    const answerPostdatesBounce = async (
+      leadId: string | null,
+      email: string,
+      detectedAt: string,
+    ): Promise<boolean> => {
+      if (!leadId) return false;
+      const { data: lead, error } = await adminClient
+        .from("leads")
+        .select("contact_email, email_verification_status, email_verified_at")
+        .eq("id", leadId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      // A failed read is not evidence of anything. Fall through and check.
+      if (error || !lead) return false;
+      const status = lead.email_verification_status as string | null;
+      const verifiedAt = lead.email_verified_at as string | null;
+      const current = (lead.contact_email as string | null) ?? "";
+      if (!status || status === "unknown" || !verifiedAt) return false;
+      if (current.trim().toLowerCase() !== email.trim().toLowerCase()) return false;
+      return Date.parse(verifiedAt) > Date.parse(detectedAt);
+    };
+
     const applyBounceToLead = async (
       bounceId: string,
       leadId: string | null,
       email: string,
       type: string,
       code: string | null,
+      detectedAt: string,
     ): Promise<boolean> => {
       /*
        * "hard" is not the same as "proven bad".
@@ -195,20 +239,31 @@ serve(async (req) => {
       let status: string | null = null;
       if (permanentlyBad) {
         status = "invalid";
+      } else if (await answerPostdatesBounce(leadId, email, detectedAt)) {
+        /*
+         * Already answered since this bounce. Nothing to buy: finished.
+         *
+         * The lead's verdict was written after the failure, so it is the
+         * post-bounce check this row exists to obtain. Paying again would
+         * ask a question that has an answer — and the budget is a fixed
+         * number of addresses per run, so it would come out of some other
+         * lead's turn.
+         */
+        return true;
       } else if (verifications < MAX_VERIFICATIONS && !outOfTime()) {
         verifications++;
         try {
           /*
-           * Clear the cached verdict first. It holds for thirty days and was
-           * formed before the bounce, so reusing it would stamp a fresh date
-           * on a check that never happened — and on the one piece of evidence
-           * the bounce has already contradicted.
-           */
-          /*
-           * Only the first bounce for an address clears the cache. A second
-           * one this run reuses the answer the first just paid for — it was
-           * taken after the bounce, which is the only thing the invalidation
-           * was there to guarantee.
+           * Clear the cached verdict first, but only for the first bounce
+           * this run names an address.
+           *
+           * The cache holds for thirty days, so without this the verdict
+           * formed BEFORE the bounce comes back and stamps a fresh date on a
+           * check that never happened — on the one piece of evidence the
+           * bounce has already contradicted. A second bounce for the same
+           * address this run is the opposite case: the entry there now was
+           * written moments ago, after the bounce, which is all the
+           * invalidation was ever for.
            */
           if (!checkedThisRun.has(email)) {
             await invalidateEmailVerification(adminClient as unknown as CacheClient, email);
@@ -290,8 +345,9 @@ serve(async (req) => {
       email: string,
       type: string,
       code: string | null,
+      detectedAt: string,
     ): Promise<boolean> => {
-      const done = await applyBounceToLead(bounceId, leadId, email, type, code);
+      const done = await applyBounceToLead(bounceId, leadId, email, type, code, detectedAt);
       await adminClient
         .from("bounce_events")
         .update({ reverification_attempted_at: new Date().toISOString() })
@@ -414,7 +470,7 @@ serve(async (req) => {
             }
             bounceId = inserted.id as string;
           }
-          pending.push({ bounceId, leadId: send.lead_id, email: recipient, type, code });
+          pending.push({ bounceId, leadId: send.lead_id, email: recipient, type, code, detectedAt });
 
           const { error: upErr } = await adminClient
             .from("sent_emails")
@@ -479,7 +535,7 @@ serve(async (req) => {
      */
     for (const p of pending) {
       if (outOfTime()) break;
-      await attemptBounce(p.bounceId, p.leadId, p.email, p.type, p.code);
+      await attemptBounce(p.bounceId, p.leadId, p.email, p.type, p.code, p.detectedAt);
     }
 
     /*
@@ -492,7 +548,7 @@ serve(async (req) => {
     if (!outOfTime() && verifications < MAX_VERIFICATIONS) {
       const { data: backlog } = await adminClient
         .from("bounce_events")
-        .select("id, to_email, bounce_type, smtp_code, sent_email_id")
+        .select("id, to_email, bounce_type, smtp_code, sent_email_id, detected_at")
         .eq("user_id", user.id)
         .is("reverified_at", null)
         .gte("detected_at", since)
@@ -516,6 +572,7 @@ serve(async (req) => {
           b.to_email as string,
           b.bounce_type as string,
           (b.smtp_code as string | null) ?? null,
+          b.detected_at as string,
         );
         if (done) sweptBacklog++;
       }

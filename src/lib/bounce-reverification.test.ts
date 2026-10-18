@@ -146,6 +146,53 @@ describe("work the budget skips is deferred, not dropped", () => {
     expect(block).toContain("invalidateEmailVerification");
   });
 
+  it("an answer taken after the bounce is reused, not bought again", () => {
+    /*
+     * `checkedThisRun` only sees one run. Two bounces for one address reach
+     * the queue on different runs often enough — a DSN per recipient, or a
+     * backlog entry picked up after a fresh one — and each would clear the
+     * cache and pay for a question the other already answered. The budget is
+     * a fixed number of addresses per run, so that comes out of some other
+     * lead's turn.
+     */
+    const at = code.indexOf("const answerPostdatesBounce = async");
+    expect(at, "the cross-run guard should exist").toBeGreaterThan(-1);
+    const fn = code.slice(at, code.indexOf("const applyBounceToLead", at));
+    // Compared against the bounce's own detection date, not just "recent".
+    expect(fn).toContain("Date.parse(verifiedAt) > Date.parse(detectedAt)");
+    /*
+     * Three ways reuse would be wrong, each refused:
+     * the verdict belongs to an address the lead no longer has; there is no
+     * verdict; the verdict is 'unknown', which is an absence, not an answer.
+     */
+    expect(fn).toContain('current.trim().toLowerCase() !== email.trim().toLowerCase()');
+    expect(fn).toMatch(/if \(!status \|\| status === "unknown" \|\| !verifiedAt\) return false;/);
+    // A failed read proves nothing either, so it checks rather than skips.
+    expect(fn).toMatch(/if \(error \|\| !lead\) return false;/);
+
+    /*
+     * And it is consulted BEFORE the paid call, not after — the point is to
+     * not spend the credit.
+     */
+    const guardAt = code.indexOf("await answerPostdatesBounce(leadId, email, detectedAt)");
+    const payAt = code.indexOf("verifications++");
+    expect(guardAt).toBeGreaterThan(-1);
+    expect(guardAt).toBeLessThan(payAt);
+  });
+
+  it("the bounce's detection date reaches the rules that need it", () => {
+    /*
+     * The comparison is only as good as the date it gets. Both entry points
+     * have to supply it: the inline path from the DSN's own internalDate,
+     * and the sweep from the stored row.
+     */
+    expect(code).toContain("detectedAt });");
+    expect(code).toContain("p.detectedAt)");
+    const sweep = code.slice(code.indexOf("const { data: backlog }"));
+    expect(sweep).toContain("sent_email_id, detected_at");
+    expect(sweep).toContain("b.detected_at as string");
+  });
+
   it("an unanswerable address cannot starve the queue", () => {
     /*
      * 'unknown' leaves the row queued on purpose. Ordered only by detection
