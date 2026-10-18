@@ -985,7 +985,7 @@ Full sync between OutReign activities and Google Calendar.
   {
     id: 'int-4',
     slug: 'email-provider-setup',
-    title: 'Email Provider Setup (Gmail, SMTP)',
+    title: 'Email Provider Setup (Gmail)',
     category: 'integrations',
     description: 'Configure email sending for outreach',
     content: `
@@ -1011,28 +1011,16 @@ Connect your email account to send personalized outreach from OutReign.
 - 500 emails/day (Gmail limit)
 - Tracked in Settings → Usage
 
-### Option 2: Custom SMTP
+### Custom SMTP — not supported
 
-For advanced users or company email servers.
+Sending goes through a connected Google account. There is no SMTP host, port
+or password to enter anywhere in Settings, and nothing in OutReign sends over
+SMTP. If you need to send from a mailbox Google does not host, tell us which
+provider and we will tell you where it is in the queue.
 
-**Setup:**
-1. Go to Settings → Integrations
-2. Select "Custom SMTP"
-3. Enter server details:
-   - SMTP Host
-   - Port (usually 587 or 465)
-   - Username
-   - Password
-4. Test connection
-5. Save
-
-**Common SMTP Settings:**
-
-| Provider | Host | Port |
-|----------|------|------|
-| Gmail | smtp.gmail.com | 587 |
-| Outlook | smtp.office365.com | 587 |
-| Yahoo | smtp.mail.yahoo.com | 465 |
+(SMTP *verification* is a different thing and is real: every business email we
+hand you is checked with an SMTP handshake first. That is about whether an
+address accepts mail, not about how yours is sent.)
 
 ### Best Practices
 
@@ -1042,7 +1030,10 @@ For advanced users or company email servers.
 - Keep your sender reputation clean
     `,
     readTime: 4,
-    tags: ['email', 'gmail', 'SMTP', 'setup'],
+    // 'SMTP' stays so searching for it finds this article, which now says it
+    // is not supported. Paired with 'gmail' in a rendered tag list it read as
+    // two supported providers, which is what scrapers were repeating back.
+    tags: ['email', 'gmail', 'google-workspace', 'setup', 'smtp-not-supported'],
     relatedArticles: ['gs-4', 'ts-1'],
     popular: true
   },

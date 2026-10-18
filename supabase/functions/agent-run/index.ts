@@ -125,6 +125,15 @@ interface Reply {
   bodyText: string;
   receivedAt: string;
   gmailThreadId: string;
+  /**
+   * The lead this reply belongs to, when inbox-sync could resolve one.
+   *
+   * It has always been on the wire — inbox-sync sends `leadId: thread.lead_id
+   * ?? null` with every reply — and this interface simply did not say so, so
+   * nothing here could use it without the type checker objecting. It is what
+   * lets a reply the agent reads reach the sequence it belongs to.
+   */
+  leadId: string | null;
 }
 
 interface AgentConfig {
@@ -1396,6 +1405,45 @@ Return JSON: { "classification": one of ["interested","objection","meeting_reque
             processed_by_agent: true,
             triage_category: classification,
           });
+        }
+
+        /*
+         * Tell the sequence what the reply said.
+         *
+         * This path never reaches analyze-reply: agent-run calls inbox-sync
+         * with no body, so `analyzeReplies` is undefined, and it classifies
+         * the reply itself and writes reply_analysis directly. A later
+         * scheduled sync then skips the message because a row already exists
+         * for it — so without this call, a reply the agent read would never
+         * stop its sequence, and the follow-ups kept going out.
+         *
+         * The agent's taxonomy is its own, so it is mapped rather than passed
+         * through. Everything that is not an automated bounce-back stops the
+         * sequence: that was the product's intent before any of this existed,
+         * and an unclassifiable reply is still a person who wrote back.
+         *
+         * No check-back date: this classifier does not extract one, and the
+         * stop branch is the honest answer to a deferral we cannot date.
+         */
+        const triageForSequence =
+          classification === "out_of_office" || classification === "auto_reply"
+            ? "ooo"
+            : classification === "not_interested" || classification === "unsubscribe"
+              ? "hard_no"
+              : classification === "interested" || classification === "meeting_request"
+                ? "positive"
+                : "soft_no";
+
+        if (reply.leadId) {
+          const { error: applyErr } = await adminClient.rpc("apply_reply_to_sequence", {
+            p_user_id: user.id,
+            p_lead_id: reply.leadId,
+            p_triage: triageForSequence,
+            p_check_back_at: null,
+          });
+          if (applyErr) {
+            console.error("[agent-run] reply not applied to the sequence:", applyErr.message);
+          }
         }
 
         if (classification === "interested" && config.can_reply_interested) {

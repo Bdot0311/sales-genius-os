@@ -66,15 +66,37 @@ const BY_GOAL: Record<string, EmailSkillName[]> = {
 
   // Conversation-advancing goals. R.E.P.L.Y. and the value-first framing in
   // outreach-messaging are about earning the next step.
-  meeting: ["outreach-messaging"],
-  demo: ["outreach-messaging"],
-  proposal: ["outreach-messaging"],
+  meeting: ["outreach-messaging", "email-writing-frameworks"],
+  demo: ["outreach-messaging", "email-writing-frameworks"],
+  proposal: ["outreach-messaging", "email-writing-frameworks"],
 
   // The autonomous agent's multi-touch sequences. It needs both the position
   // logic (what touch 3 does that touch 1 did not) and the shapes to draw each
   // individual touch from.
   sequence: ["six-email-sequence", "cold-email-4-sequence", "email-writing-frameworks"],
+
+  // A prospect who has already pushed back. agent-run classifies the objection
+  // and asks for this goal, which is the one path where objection-replies is
+  // the material rather than noise — and the reason it is routed nowhere else.
+  objection: ["objection-replies"],
 };
+
+/*
+ * What an unmapped goal gets.
+ *
+ * cold-email-strategist is the generalist — first touch, follow-up,
+ * re-engagement, subject lines — which is the right shape of material when we
+ * do not know which job this is. It is deliberately NOT given to goals that
+ * are mapped: next to CORE it restates most of it, and a second voice saying
+ * nearly the same thing is the dilution this file exists to avoid.
+ */
+const DEFAULT_GOAL_SKILLS: EmailSkillName[] = ["cold-email-strategist"];
+
+/*
+ * objection-replies answers an objection that has already arrived. In a first
+ * touch it reads as permission to pre-argue with a prospect who has said
+ * nothing, so it routes to the objection goal and nowhere else.
+ */
 
 /** Rough token estimate — enough to keep a prompt from silently ballooning. */
 const approxTokens = (text: string): number => Math.ceil(text.length / 4);
@@ -114,22 +136,36 @@ export function skillsForGoal(options: SkillContextOptions = {}): EmailSkillName
   // different words do not tell the sender which shape works.
   if ((variantNum ?? 0) > 0) add("frontal-messaging-templates");
 
-  // Goal-specific material first — not because the others are withheld, but
-  // because order is emphasis, and because if a budget ever does bite, the
-  // material closest to what is being written should be the last thing cut.
-  for (const name of BY_GOAL[String(goal ?? "").toLowerCase()] ?? []) add(name);
+  /*
+   * Goal-specific material first, because order is emphasis and because if the
+   * budget ever bites, the material closest to what is being written should be
+   * the last thing cut.
+   *
+   * An unrecognised goal takes the first-touch set rather than nothing: a goal
+   * this table has not heard of is far more likely to be someone writing a
+   * first email than anything else, and silently routing it to the core alone
+   * is how "meeting" ended up with no shapes to draw from.
+   */
+  for (const name of BY_GOAL[String(goal ?? "").toLowerCase()] ?? DEFAULT_GOAL_SKILLS) add(name);
   if (usesTemplate) add("cold-email-templates-34");
   add(CORE);
 
-  // Then everything else. These used to be filtered out by goal, which meant a
-  // "meeting" email never saw the frameworks and a "4ts" email never saw the
-  // strategist — each function effectively deciding which of the house rules
-  // applied to it. The whole bundle is ~12k tokens and every path can carry it,
-  // so no path gets a partial copy of how this company writes.
-  for (const name of Object.keys(EMAIL_SKILLS) as EmailSkillName[]) {
-    if (name !== STYLE_FLOOR) add(name);
-  }
-
+  /*
+   * And nothing else.
+   *
+   * A loop here used to add every remaining skill to every draft. It was added
+   * to fix a real gap — a "meeting" email saw no frameworks at all — but it
+   * fixed it by giving everything to everyone, which is the thing the top of
+   * this file says produces a worse email than routing does. The result was a
+   * first touch carrying all ten: the shapes it needed, plus how to answer an
+   * objection it had not received, plus what touch five of a sequence should
+   * do that touch one did not, plus a second generalist restating the core.
+   * Ten playbooks named in the run log and none of them in the email.
+   *
+   * The gap it was papering over is closed where it actually was: BY_GOAL now
+   * gives the conversation-advancing goals their shapes too, and an unmapped
+   * goal falls back to the first-touch set rather than to everything.
+   */
   return picked;
 }
 

@@ -269,6 +269,77 @@ serve(async (req) => {
           continue;
         }
 
+        /*
+         * Is this email still wanted?
+         *
+         * The row was queued when the step ran, and a lot can happen between
+         * then and now: the prospect replies and the sequence stops, or they
+         * ask to be left until March and it is held. Cancelling at the moment
+         * of the decision closes the common case, but the row may already have
+         * been claimed by this run — so the last thing before sending is to
+         * ask the enrollment whether it still wants this sent.
+         *
+         * Only 'active' passes. A completed, paused or cancelled enrollment
+         * has said otherwise, and sending anyway is the thing the reply
+         * handling exists to prevent.
+         */
+        if (email.enrollment_id) {
+          const { data: enr, error: enrErr } = await supabase
+            .from("sequence_enrollments")
+            .select("status, paused_reason, engagement_state")
+            .eq("id", email.enrollment_id)
+            .maybeSingle();
+          if (enrErr) {
+            defer(email, "We couldn't confirm this sequence is still running, so it was left queued. It retries on the next run.");
+            continue;
+          }
+          /*
+           * Only send when the enrollment still wants this sent.
+           *
+           * Two versions of this check were wrong in opposite directions. The
+           * first rejected anything not 'active', which killed the final step
+           * of every sequence: process-sequence-step marks an enrollment
+           * 'completed' on the pass AFTER the last email is queued, so that
+           * email routinely sits against a completed enrollment and a cap
+           * deferring it that long made the rejection permanent.
+           *
+           * The second listed the statuses that block — paused, stopped,
+           * completed-and-replied — and let everything else through. That is
+           * a denylist, and it missed 'exited', which is what the Archive
+           * button writes: a user archived a lead, was told it had been
+           * removed from the sequence, and the queued mail went out anyway.
+           * Any status added later would have defaulted to sending too.
+           *
+           * So it is stated as what may send, and everything else — including
+           * a status nobody has invented yet, and an enrollment row that has
+           * been deleted out from under its mail — stops. The cost of the
+           * wrong answer is a send to someone who should not get one, so the
+           * default has to be silence.
+           */
+          const sendable =
+            enr !== null &&
+            (enr.status === "active" ||
+              // Ran out of steps rather than being stopped. apply_reply_to_sequence
+              // writes engagement_state alongside the status, so a sequence a
+              // reply ended is distinguishable from one that simply finished.
+              (enr.status === "completed" && enr.engagement_state !== "replied"));
+
+          if (!sendable) {
+            await failEmail(
+              email.id,
+              !enr
+                ? "The sequence this was queued against no longer exists, so it was not sent."
+                : enr.status === "paused"
+                  ? `This sequence is on hold${enr.paused_reason ? ` — ${enr.paused_reason}` : ""}, so the step was not sent.`
+                  : enr.engagement_state === "replied"
+                    ? "They replied before this step was due, so it was not sent."
+                    : "The sequence was stopped before this step was due, so it was not sent.",
+            );
+            failed++;
+            continue;
+          }
+        }
+
         // Check daily + monthly limits
         const ul = userLimits[email.user_id];
         if (!ul) {

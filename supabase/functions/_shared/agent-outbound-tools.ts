@@ -130,10 +130,25 @@ export async function runOutboundTool(
     }
     case "update_enrollment": {
       const action = String(args.action);
+      /*
+       * Every branch clears paused_until.
+       *
+       * A reply saying "try me in March" holds an enrollment by setting that
+       * date, and resume_due_enrollments brings back anything paused whose
+       * date has come. Pausing without clearing it meant the sweep resumed an
+       * enrollment the agent had deliberately paused, on a date from an
+       * unrelated earlier decision — the agent's pause is not time-boxed, so
+       * it must not inherit someone else's clock.
+       *
+       * Resume and stop clear it too. Neither is reachable by the sweep today
+       * (it only takes 'paused'), but leaving a date on a row that is no
+       * longer holding is how the next person to pause it inherits a hold
+       * nobody asked for.
+       */
       const row: Record<string, unknown> =
-        action === "pause" ? { status: "paused", paused_reason: String(args.reason ?? "Paused by agent") }
-        : action === "resume" ? { status: "active", paused_reason: null }
-        : action === "stop" ? { status: "stopped", paused_reason: String(args.reason ?? "Stopped by agent"), completed_at: new Date().toISOString() }
+        action === "pause" ? { status: "paused", paused_until: null, paused_reason: String(args.reason ?? "Paused by agent") }
+        : action === "resume" ? { status: "active", paused_until: null, paused_reason: null }
+        : action === "stop" ? { status: "stopped", paused_until: null, paused_reason: String(args.reason ?? "Stopped by agent"), completed_at: new Date().toISOString() }
         : {};
       return updateOwned("sequence_enrollments", args.enrollment_id, row, `Enrollment ${action}`);
     }

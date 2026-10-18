@@ -40,14 +40,15 @@ describe("a failed send says why", () => {
   });
 
   it("leaves no path that fails a send silently", () => {
-    // Seven: unsubscribed, no integration, no server credentials, refresh
-    // refused, no access token, Gmail rejected it, and anything thrown.
-    expect(PROC.match(/await failEmail\(/g) ?? []).toHaveLength(7);
+    // Eight: unsubscribed, the sequence stopped or went on hold before this
+    // step was due, no integration, no server credentials, refresh refused,
+    // no access token, Gmail rejected it, and anything thrown.
+    expect(PROC.match(/await failEmail\(/g) ?? []).toHaveLength(8);
     expect(PROC).not.toMatch(/from\(["']sent_emails["']\)[\s\S]{0,80}?update\(\{ status: ["']failed["'] \}\)/);
   });
 
   it("names the cause the user can actually act on", () => {
-    // Two of the seven are the user's own Google connection having expired.
+    // Two of the eight are the user's own Google connection having expired.
     expect(PROC).toContain("invalid_grant");
     expect(PROC).toContain("Reconnect Google on the Integrations page");
   });

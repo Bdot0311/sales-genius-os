@@ -66,28 +66,6 @@ export interface RoadmapItem {
 export const ROADMAP: RoadmapItem[] = [
   {
     /*
-     * Half of this already shipped, and the status overstated the rest.
-     *
-     * "Today every enrolled lead walks the same steps" was not true:
-     * update-lead-engagement-state already marks the enrollment `completed`
-     * the moment a reply lands, and process-sequence-step exits on
-     * `engagement_state === 'replied'`. A reply has stopped the rest for a
-     * while. Saying otherwise tells someone a thing they rely on is missing —
-     * the same mistake this file made about bulk enrichment, one item down.
-     *
-     * And "building now" is the strongest claim this page makes. What it was
-     * claiming for is the half that does not exist: analyze-reply scores
-     * intent HIGH / LOW / NEUTRAL and nothing acts on the score. There is no
-     * check-back scheduling anywhere in the repo, and no draft written from a
-     * reply. So it reads as next, and it says what is actually missing.
-     */
-    status: "next",
-    title: "A reply that does more than stop the sequence",
-    description:
-      "A reply already stops the rest of the sequence. Next, it decides what happens instead: \"not now\" schedules a check-back for the month they named, and a question comes with a draft answer ready to edit rather than a thread you have to pick up cold.",
-  },
-  {
-    /*
      * This promised something that already works.
      *
      * Selecting saved leads and enriching them in one pass, with a live count
@@ -140,10 +118,31 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     id: "2026-10-17-deliverability-honesty",
     date: "2026-10-17",
-    title: "Warmup now reports what it finds",
+    title: "A reply stops the sequence, and steers it",
     summary:
-      "Inbox placement is recorded as it arrives rather than after we fix it, warmup keeps to its daily ramp, and daily send limits are counted from your actual sends.",
+      "Replying used to leave the rest of the follow-ups going out. Now a reply ends the sequence, \"try me in March\" holds it until March, and a question comes back with a draft answer. Warmup also reports its inbox placement honestly, and send limits count your actual sends.",
     items: [
+      {
+        tag: "fixed",
+        title: "Replying stops the follow-ups",
+        description:
+          "A prospect who answered kept receiving the rest of the sequence. The check for it existed, but nothing ever marked the lead as having replied, so it never ran. A reply now ends the sequence on the spot, whatever stage it had reached.",
+        href: "/dashboard/outreach",
+      },
+      {
+        tag: "new",
+        title: "\"Try me in March\" is heard as March",
+        description:
+          "When a reply names a time, the sequence pauses and comes back on that date instead of ending or carrying on regardless. A \"not right now\" with no date in it is treated as a no and stops, rather than us picking a date on your behalf.",
+        href: "/dashboard/outreach",
+      },
+      {
+        tag: "new",
+        title: "A question comes back with an answer drafted",
+        description:
+          "When a reply asks something, a draft answer is waiting with it, written from their words and ready for you to edit. Nothing is sent for you, and it will not invent a price, a customer name or a number to fill a gap.",
+        href: "/dashboard/inbox",
+      },
       {
         tag: "fixed",
         title: "Your inbox placement number is real",
