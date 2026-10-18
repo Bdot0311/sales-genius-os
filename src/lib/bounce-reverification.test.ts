@@ -109,12 +109,59 @@ describe("work the budget skips is deferred, not dropped", () => {
      * correctly in one place and not in the other, so the inline path and the
      * sweep share a single function rather than two copies of the rules.
      */
-    // One definition...
+    // One definition of the rules...
     expect([...code.matchAll(/const applyBounceToLead = async \(/g)].length).toBe(1);
-    // ...and both the inline drain and the backlog sweep call it.
-    expect([...code.matchAll(/await applyBounceToLead\(/g)].length).toBe(2);
+    // ...reached through one wrapper that stamps the attempt...
+    expect([...code.matchAll(/const attemptBounce = async \(/g)].length).toBe(1);
+    expect([...code.matchAll(/await applyBounceToLead\(/g)].length).toBe(1);
+    // ...which both the inline drain and the backlog sweep go through.
+    expect([...code.matchAll(/await attemptBounce\(/g)].length).toBe(2);
     // No second copy of the rules that could drift from the first.
     expect([...code.matchAll(/permanentlyBad/g)].length).toBe(2);
+  });
+
+  it("the bounce is recorded before the send is marked", () => {
+    /*
+     * Marking first loses the work whenever the recording fails: the send is
+     * already 'bounced', the query at the top only looks at sends that are
+     * not, and the re-check is gone with nothing left to say it was owed.
+     */
+    const insertAt = code.indexOf('.from("bounce_events")');
+    const markAt = code.indexOf('.update({ status: "bounced"');
+    expect(insertAt, "the bounce_events write should come first").toBeGreaterThan(-1);
+    expect(markAt).toBeGreaterThan(-1);
+    expect(insertAt).toBeLessThan(markAt);
+    // A failed recording leaves the send alone so the next run retries.
+    const branch = code.slice(code.indexOf("if (insErr || !inserted?.id)"), markAt);
+    expect(branch).toContain("continue;");
+  });
+
+  it("a second bounce for one address does not buy the answer twice", () => {
+    // Clearing the cache again would discard the answer the first just paid
+    // for — and it was taken after the bounce, which is all that mattered.
+    expect(code).toContain("const checkedThisRun = new Set<string>();");
+    const at = code.indexOf("if (!checkedThisRun.has(email))");
+    expect(at).toBeGreaterThan(-1);
+    const block = code.slice(at, code.indexOf("checkedThisRun.add(email)", at));
+    expect(block).toContain("invalidateEmailVerification");
+  });
+
+  it("an unanswerable address cannot starve the queue", () => {
+    /*
+     * 'unknown' leaves the row queued on purpose. Ordered only by detection
+     * date, the same addresses would take the whole budget every run while
+     * everything behind them waited for ever.
+     */
+    expect(code).toMatch(/\.update\(\{ reverification_attempted_at: new Date\(\)\.toISOString\(\) \}\)/);
+    const sweep = code.slice(code.indexOf("const { data: backlog }"));
+    expect(sweep).toMatch(/\.order\("reverification_attempted_at", \{ ascending: true, nullsFirst: true \}\)/);
+  });
+
+  it("a bounce is only counted done when the database says so", () => {
+    const at = code.indexOf("if (doneErr)");
+    expect(at, "an unwritten completion left the row queued and the run calling it finished")
+      .toBeGreaterThan(-1);
+    expect(code.slice(at, at + 200)).toContain("return false");
   });
 
   it("the migration gives the queue somewhere to record done", () => {
@@ -123,8 +170,11 @@ describe("work the budget skips is deferred, not dropped", () => {
       .map((f) => readFileSync(`supabase/migrations/${f}`, "utf8"))
       .join("");
     expect(sql).toMatch(/ADD COLUMN IF NOT EXISTS reverified_at timestamptz/);
+    expect(sql).toMatch(/ADD COLUMN IF NOT EXISTS reverification_attempted_at timestamptz/);
     // Partial, so the index is the size of the backlog, not of all history.
     expect(sql).toMatch(/WHERE reverified_at IS NULL/);
+    // And ordered for fairness, or the sweep's rotation has no index to use.
+    expect(sql).toMatch(/reverification_attempted_at NULLS FIRST/);
   });
 });
 

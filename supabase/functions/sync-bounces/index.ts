@@ -164,6 +164,15 @@ serve(async (req) => {
      * Returns whether the lead was updated, so the caller counts confirmed
      * writes rather than attempts.
      */
+    /*
+     * Addresses already re-checked in this run.
+     *
+     * Two bounces for one address — a DSN per recipient, or a backlog entry
+     * alongside a fresh one — would otherwise each clear the cache and buy
+     * the same answer twice, spending the budget on a question just asked.
+     */
+    const checkedThisRun = new Set<string>();
+
     const applyBounceToLead = async (
       bounceId: string,
       leadId: string | null,
@@ -195,8 +204,17 @@ serve(async (req) => {
            * on a check that never happened — and on the one piece of evidence
            * the bounce has already contradicted.
            */
-          await invalidateEmailVerification(adminClient as unknown as CacheClient, email);
+          /*
+           * Only the first bounce for an address clears the cache. A second
+           * one this run reuses the answer the first just paid for — it was
+           * taken after the bounce, which is the only thing the invalidation
+           * was there to guarantee.
+           */
+          if (!checkedThisRun.has(email)) {
+            await invalidateEmailVerification(adminClient as unknown as CacheClient, email);
+          }
           const verdict = await verifyEmail(adminClient as unknown as CacheClient, email);
+          checkedThisRun.add(email);
           /*
            * 'unknown' proves nothing — the provider was down, or the domain
            * accepts everything. Writing it would replace a real earlier
@@ -242,11 +260,43 @@ serve(async (req) => {
         if ((count ?? 0) > 0) reverified++;
       }
 
-      await adminClient
+      /*
+       * Only now is the work finished. Reporting completion without checking
+       * this write would count the row done while it stayed queued — and the
+       * next attempt would clear the cache it just paid to fill.
+       */
+      const { error: doneErr } = await adminClient
         .from("bounce_events")
         .update({ reverified_at: new Date().toISOString() })
         .eq("id", bounceId);
+      if (doneErr) {
+        console.error(`Bounce ${bounceId} not marked re-verified:`, doneErr.message);
+        return false;
+      }
       return true;
+    };
+
+    /*
+     * Every attempt is stamped, successful or not.
+     *
+     * An 'unknown' verdict leaves the row queued on purpose, and a queue
+     * ordered only by detection date would then hand the same unanswerable
+     * addresses the whole budget on every run while everything behind them
+     * waited for ever.
+     */
+    const attemptBounce = async (
+      bounceId: string,
+      leadId: string | null,
+      email: string,
+      type: string,
+      code: string | null,
+    ): Promise<boolean> => {
+      const done = await applyBounceToLead(bounceId, leadId, email, type, code);
+      await adminClient
+        .from("bounce_events")
+        .update({ reverification_attempted_at: new Date().toISOString() })
+        .eq("id", bounceId);
+      return done;
     };
 
     // Recent sends we could still learn a bounce for.
@@ -318,12 +368,65 @@ serve(async (req) => {
           if (!matches || matches.length === 0) continue;
           const send = matches[0];
 
+          /*
+           * The record of the bounce is written BEFORE the send is marked.
+           *
+           * Marking first and recording second loses work whenever the
+           * recording fails: the send is already 'bounced', the query at the
+           * top of this function only looks at sends that are not, and the
+           * re-check this bounce was supposed to buy is gone for good with
+           * nothing left to say it was owed.
+           *
+           * Written first, a failure here leaves the send untouched and the
+           * next run simply finds the same bounce again.
+           */
+          const { data: existing } = await adminClient
+            .from("bounce_events")
+            .select("id")
+            .eq("sent_email_id", send.id)
+            .maybeSingle();
+
+          let bounceId = existing?.id as string | undefined;
+          if (!bounceId) {
+            const { data: inserted, error: insErr } = await adminClient
+              .from("bounce_events")
+              .insert({
+                user_id: user.id,
+                sending_account_id: send.sending_account_id,
+                sent_email_id: send.id,
+                to_email: recipient,
+                bounce_type: type,
+                reason: (message.snippet || "").slice(0, 500),
+                smtp_code: code,
+                detected_at: detectedAt,
+                // Null until the address has been re-checked because of this
+                // bounce. The sweep picks up whatever a run cannot reach.
+                reverified_at: null,
+              })
+              .select("id")
+              .maybeSingle();
+            if (insErr || !inserted?.id) {
+              console.error(
+                `Bounce not recorded for ${send.id}, leaving the send unmarked so the next run retries:`,
+                insErr?.message ?? "no row returned",
+              );
+              continue;
+            }
+            bounceId = inserted.id as string;
+          }
+          pending.push({ bounceId, leadId: send.lead_id, email: recipient, type, code });
+
           const { error: upErr } = await adminClient
             .from("sent_emails")
             .update({ status: "bounced", agent_thread_status: "closed" })
             .eq("id", send.id)
             .eq("user_id", user.id);
           if (upErr) {
+            /*
+             * The bounce is recorded, so the re-check is safe; the send just
+             * is not marked. The next run finds it again and the lookup above
+             * reuses this row rather than writing a second one.
+             */
             console.error(`Failed to mark bounce on ${send.id}:`, upErr.message);
             continue;
           }
@@ -346,26 +449,6 @@ serve(async (req) => {
           if (creditErr) {
             console.error(`Failed to credit the allowance for ${send.id}:`, creditErr.message);
           }
-
-          await adminClient.from("bounce_events").insert({
-            user_id: user.id,
-            sending_account_id: send.sending_account_id,
-            sent_email_id: send.id,
-            to_email: recipient,
-            bounce_type: type,
-            reason: (message.snippet || "").slice(0, 500),
-            smtp_code: code,
-            detected_at: detectedAt,
-            /*
-             * Null until the address has been re-checked because of this
-             * bounce. The sweep at the top of the next run picks up whatever
-             * this one could not reach, so budgeted-out work is deferred
-             * rather than lost.
-             */
-            reverified_at: null,
-          }).select("id").maybeSingle().then(({ data }) => {
-            if (data?.id) pending.push({ bounceId: data.id, leadId: send.lead_id, email: recipient, type, code });
-          });
 
           if (type === "hard") {
             await adminClient
@@ -396,7 +479,7 @@ serve(async (req) => {
      */
     for (const p of pending) {
       if (outOfTime()) break;
-      await applyBounceToLead(p.bounceId, p.leadId, p.email, p.type, p.code);
+      await attemptBounce(p.bounceId, p.leadId, p.email, p.type, p.code);
     }
 
     /*
@@ -413,6 +496,9 @@ serve(async (req) => {
         .eq("user_id", user.id)
         .is("reverified_at", null)
         .gte("detected_at", since)
+        // Never tried first, then least recently tried: an address that
+        // cannot be resolved must not starve the ones behind it.
+        .order("reverification_attempted_at", { ascending: true, nullsFirst: true })
         .order("detected_at", { ascending: true })
         .limit(MAX_VERIFICATIONS);
 
@@ -424,7 +510,7 @@ serve(async (req) => {
           .select("lead_id")
           .eq("id", b.sent_email_id)
           .maybeSingle();
-        const done = await applyBounceToLead(
+        const done = await attemptBounce(
           b.id as string,
           (src?.lead_id as string | null) ?? null,
           b.to_email as string,

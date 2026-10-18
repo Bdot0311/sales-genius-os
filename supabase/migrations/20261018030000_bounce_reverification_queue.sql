@@ -25,6 +25,25 @@ ALTER TABLE public.bounce_events
  * Partial, so the index stays the size of the backlog rather than the size of
  * every bounce ever recorded — which on a mature account is most of them.
  */
+ALTER TABLE public.bounce_events
+  /*
+   * When the re-check was last tried, whatever came of it.
+   *
+   * A verdict of 'unknown' proves nothing, so the row stays queued — and a
+   * queue ordered only by detection date then hands the same unanswerable
+   * addresses the whole budget on every run while everything behind them
+   * waits for ever. Stamping every attempt lets the sweep take what it has
+   * not tried recently, so one address that cannot be resolved cannot starve
+   * the rest.
+   */
+  ADD COLUMN IF NOT EXISTS reverification_attempted_at timestamptz;
+
+/*
+ * The sweep's access path: never-tried first, then least-recently-tried.
+ *
+ * NULLS FIRST on the attempt column is the fairness: a bounce nobody has
+ * looked at outranks one that has already had its turn, however old.
+ */
 CREATE INDEX IF NOT EXISTS idx_bounce_events_awaiting_reverification
-  ON public.bounce_events (user_id, detected_at)
+  ON public.bounce_events (user_id, reverification_attempted_at NULLS FIRST, detected_at)
   WHERE reverified_at IS NULL;
