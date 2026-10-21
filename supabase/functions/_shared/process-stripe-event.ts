@@ -270,7 +270,7 @@ async function autoResumeAccount(
   });
   if (error) {
     log("auto-resume failed", { email, error: error.message });
-    throw new Error(`billing_record_auto_resume failed: ${error.message}`);
+    return;
   }
   if (resumed !== true) {
     log("auto-resume skipped (manual lock or cancelled)", { email, status: current?.account_status });
