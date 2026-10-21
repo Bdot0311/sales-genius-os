@@ -39,6 +39,7 @@
 - [x] Comparison pages for Apollo, Lusha, ZoomInfo, Instantly already exist; no new ones needed.
 - [x] Draft four weeks of LinkedIn posts (Files).
 - [x] First 10 prospects with drafted messages (Files).
-- [ ] Second batch: social-post prospects, agencies, directory listings (research running).
+- [x] Second batch: 1 confirmed social-post prospect (Caden Boatright); 2 unconfirmed leads.
+- [ ] Agency prospects and directory listing rules (first research pass ran out of time; needs another pass).
 - [ ] Send messages / publish posts / submit directory listings (needs the owner's go-ahead and accounts).
 - [ ] Paid ads (after first users stick around).
