@@ -85,6 +85,10 @@ const rows = [
 
 const faqs = [
   {
+    q: "What is the best RocketReach alternative for a small team?",
+    a: "It depends on the job. If you only need individual email or phone lookups, another contact database may be enough. If you are a founder or first sales hire who also has to decide who to contact and write the emails, a full outbound workflow like OutReign saves more time, because search, scoring, drafting, sending and replies live in one place.",
+  },
+  {
     q: "Is OutReign a RocketReach alternative?",
     a: "Yes, for teams that want more than contact data. OutReign replaces RocketReach's lookup-and-export workflow with a full discovery-to-send process: describe your ICP, get scored prospects, verify emails, and draft outreach in one place. If you only need a phone/email lookup tool and prefer the Chrome extension, RocketReach still has a role.",
   },
@@ -112,8 +116,8 @@ export default function VsRocketReach() {
   return (
     <>
       <SEOHead
-        title="OutReign vs RocketReach — Best RocketReach Alternative?"
-        description="Honest comparison of OutReign and RocketReach. RocketReach gives you contact data. OutReign tells you who to email first and writes the message."
+        title="RocketReach Alternatives for Small Teams | OutReign vs RocketReach"
+        description="Looking for a RocketReach alternative? An honest comparison for small teams: when RocketReach fits, when OutReign fits, and why teams switch from lookup tools to a full outbound workflow."
         canonicalUrl="https://outreign.io/vs-rocketreach"
       />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
@@ -135,13 +139,13 @@ export default function VsRocketReach() {
         {/* Hero */}
         <div className="max-w-3xl mx-auto px-6 pt-24 pb-16 text-center">
           <p className="font-serif italic text-base mb-4" style={{ color: "hsl(261 75% 65%)" }}>
-            Comparison
+            RocketReach alternatives
           </p>
           <h1
             className="font-display font-bold mb-6"
             style={{ fontSize: "clamp(2rem, 5vw, 3.5rem)", lineHeight: 1.08, letterSpacing: "-0.02em" }}
           >
-            OutReign vs RocketReach
+            The RocketReach alternative for small teams: OutReign vs RocketReach
           </h1>
           <p className="text-lg font-light leading-relaxed mb-8" style={{ color: "hsl(0 0% 100% / 0.7)", maxWidth: "56ch", margin: "0 auto 2rem" }}>
             RocketReach is a powerful contact lookup database. OutReign is a full outbound workflow that finds, scores, and drafts outreach to the right prospects. The best RocketReach alternative depends on where you want the work to happen.
@@ -194,6 +198,27 @@ export default function VsRocketReach() {
           </div>
 
         </div>
+
+        {/* Why switch */}
+        <div className="max-w-3xl mx-auto px-6 pb-20" style={{ borderTop: "1px solid hsl(261 75% 50% / 0.12)" }}>
+          <h2 className="font-display font-bold text-center pt-16 mb-8" style={{ fontSize: "clamp(1.5rem, 3vw, 2.25rem)", letterSpacing: "-0.02em" }}>
+            Why small teams look for RocketReach alternatives
+          </h2>
+          <div className="space-y-6 text-sm leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.7)" }}>
+            <p><strong style={{ color: "hsl(0 0% 92%)" }}>A contact list is not a pipeline.</strong> A lookup tool hands you emails and phone numbers. Deciding who is worth contacting first, and writing something worth reading, still lands on the founder or the first sales hire.</p>
+            <p><strong style={{ color: "hsl(0 0% 92%)" }}>Too many tools for a small team.</strong> Lookup in one tab, a spreadsheet in another, a sender in a third, replies in your inbox. Each hand-off costs time and loses context.</p>
+            <p><strong style={{ color: "hsl(0 0% 92%)" }}>Per-seat pricing adds up early.</strong> When one or two people do all the outbound, paying for data you never contact is hard to justify. OutReign starts free with 100 lead searches a month.</p>
+          </div>
+          <p className="text-sm mt-8 text-center" style={{ color: "hsl(0 0% 100% / 0.6)" }}>
+            Comparing other tools too? See{" "}
+            <a href="/vs-apollo" style={{ color: "hsl(261 75% 65%)" }}>OutReign vs Apollo</a>,{" "}
+            <a href="/vs-lusha" style={{ color: "hsl(261 75% 65%)" }}>vs Lusha</a>,{" "}
+            <a href="/vs-zoominfo" style={{ color: "hsl(261 75% 65%)" }}>vs ZoomInfo</a> and{" "}
+            <a href="/vs-instantly" style={{ color: "hsl(261 75% 65%)" }}>vs Instantly</a>.
+          </p>
+        </div>
+
+
 
         {/* Frame */}
         <div
