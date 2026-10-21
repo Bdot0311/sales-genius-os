@@ -43,4 +43,4 @@
 - [ ] Agency prospects and directory listing rules (first research pass ran out of time; needs another pass).
 - [ ] Send messages / publish posts / submit directory listings (needs the owner's go-ahead and accounts).
 - [ ] Paid ads (after first users stick around).
-- [ ] Add logo image to top of account emails and check them.
+- [x] Add logo image to top of account emails and check them.
