@@ -248,7 +248,7 @@ async function autoResumeAccount(
 
   const { data: current } = await supabase
     .from('subscriptions')
-    .select('account_status, auto_paused_at, grace_period_ends_at, failed_invoice_count')
+    .select('account_status, auto_paused_at, grace_started_at, grace_period_ends_at, failed_invoice_count')
     .eq('user_id', userId)
     .maybeSingle();
 
@@ -257,6 +257,7 @@ async function autoResumeAccount(
     (current.account_status === 'paused' ||
       current.account_status === 'past_due' ||
       !!current.auto_paused_at ||
+      !!current.grace_started_at ||
       !!current.grace_period_ends_at ||
       (current.failed_invoice_count ?? 0) > 0);
 
@@ -269,7 +270,7 @@ async function autoResumeAccount(
   });
   if (error) {
     log("auto-resume failed", { email, error: error.message });
-    return;
+    throw new Error(`billing_record_auto_resume failed: ${error.message}`);
   }
   if (resumed !== true) {
     log("auto-resume skipped (manual lock or cancelled)", { email, status: current?.account_status });
@@ -808,6 +809,10 @@ export async function processStripeEvent(
       current_period_start: toIsoUnix(period.startSec),
       current_period_end: toIsoUnix(period.endSec),
     });
+    if (!result.applied) {
+      log("invoice.paid not applied, skipping recovery", result);
+      return;
+    }
     await resetDunningState(supabase, userId);
 
     // Policy: a paid invoice clears the grace period and restores access.

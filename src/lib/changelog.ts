@@ -116,6 +116,20 @@ export const ROADMAP: RoadmapItem[] = [
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-21-payment-recovery",
+    date: "2026-10-21",
+    title: "Fixing a payment gives you a fresh start",
+    summary: "A recovered payment no longer lets an old card failure cut short your next renewal's grace period.",
+    items: [
+      {
+        tag: "fixed",
+        title: "Later renewals keep their payment recovery window",
+        description: "After you fix a failed payment, a later card failure gets its own one-day grace period and recovery window instead of immediately moving your account to Free.",
+        href: "/dashboard/settings",
+      },
+    ],
+  },
+  {
     id: "2026-10-17-deliverability-honesty",
     date: "2026-10-17",
     title: "A reply stops the sequence, and steers it",

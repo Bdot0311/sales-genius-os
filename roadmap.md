@@ -1,3 +1,8 @@
+# Failed-payment recovery
+
+- [ ] Clear an expired failure episode after successful payment, regardless of event order.
+- [ ] Test payment recovery followed by a later failed renewal and deploy affected functions.
+
 # Landing and pricing refresh
 
 - [x] Update homepage feature descriptions for lead intelligence, research, and automatic reply alerts.
