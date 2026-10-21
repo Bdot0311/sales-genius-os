@@ -9,6 +9,7 @@ import {
   Head,
   Heading,
   Html,
+  Img,
   Link,
   Preview,
   Text,
@@ -30,6 +31,7 @@ export const InviteEmail = ({
     <Preview>You've been invited to join {siteName}</Preview>
     <Body style={main}>
       <Container style={container}>
+        <Img src="https://ghgfjnepvxvxrncmskys.supabase.co/storage/v1/object/public/email-assets/outreign-logo.png" width="56" height="56" alt="OutReign" style={logoImg} />
         <Text style={logo}>OutReign</Text>
         <Heading style={h1}>You've been invited! 🎉</Heading>
         <Text style={text}>
@@ -54,6 +56,7 @@ export default InviteEmail
 
 const main = { backgroundColor: '#ffffff', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }
 const container = { padding: '40px 24px', maxWidth: '560px', margin: '0 auto' }
+const logoImg = { display: 'block', margin: '0 0 12px' }
 const logo = { fontSize: '22px', fontWeight: '700' as const, color: '#7c3aed', margin: '0 0 24px' }
 const h1 = { fontSize: '24px', fontWeight: '700' as const, color: '#111827', margin: '0 0 16px' }
 const text = { fontSize: '15px', color: '#374151', lineHeight: '1.6', margin: '0 0 24px' }
