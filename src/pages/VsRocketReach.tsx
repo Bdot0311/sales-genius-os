@@ -85,6 +85,10 @@ const rows = [
 
 const faqs = [
   {
+    q: "What is the best RocketReach alternative for a small team?",
+    a: "It depends on the job. If you only need individual email or phone lookups, another contact database may be enough. If you are a founder or first sales hire who also has to decide who to contact and write the emails, a full outbound workflow like OutReign saves more time, because search, scoring, drafting, sending and replies live in one place.",
+  },
+  {
     q: "Is OutReign a RocketReach alternative?",
     a: "Yes, for teams that want more than contact data. OutReign replaces RocketReach's lookup-and-export workflow with a full discovery-to-send process: describe your ICP, get scored prospects, verify emails, and draft outreach in one place. If you only need a phone/email lookup tool and prefer the Chrome extension, RocketReach still has a role.",
   },

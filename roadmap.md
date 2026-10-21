@@ -31,3 +31,14 @@
 - [x] Add regression tests at both layers (shared rule, browser send gate).
 - [x] Publish a What's New entry.
 - [ ] Live end-to-end bulk send with a generic greeting (needs a real campaign to real prospects; not run).
+
+# Search and outreach growth
+
+- [x] Rework RocketReach comparison page around "RocketReach alternatives" (title, heading, why-switch section, new FAQ, links to other comparisons).
+- [x] Add related-reading links to the four blog posts sitting on pages 3–6 of Google.
+- [x] Comparison pages for Apollo, Lusha, ZoomInfo, Instantly already exist; no new ones needed.
+- [x] Draft four weeks of LinkedIn posts (Files).
+- [x] First 10 prospects with drafted messages (Files).
+- [ ] Second batch: social-post prospects, agencies, directory listings (research running).
+- [ ] Send messages / publish posts / submit directory listings (needs the owner's go-ahead and accounts).
+- [ ] Paid ads (after first users stick around).
