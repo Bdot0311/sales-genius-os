@@ -139,9 +139,33 @@ describe("usage is recorded where deleting history cannot reach it", () => {
     // And the bounce path actually calls it, or the rule is only documented.
     const SYNC = strip(readFileSync("supabase/functions/sync-bounces/index.ts", "utf8"));
     expect(SYNC).toMatch(/\.rpc\("credit_bounced_send", \{\s*_sent_email_id: send\.id,\s*\}\)/);
-    // Credited before the bounce_events row, so a failure there cannot leave
-    // the allowance spent with nothing recording why.
-    expect(SYNC.indexOf("credit_bounced_send")).toBeLessThan(SYNC.indexOf('from("bounce_events")'));
+    /*
+     * Order: the bounce is recorded, then the send is marked, then the
+     * allowance is credited.
+     *
+     * The credit used to come first, so that a failed insert could not leave
+     * the allowance spent with nothing recording why. That traded away the
+     * more expensive thing. Marking the send 'bounced' before its
+     * bounce_events row exists drops it out of the query at the top of the
+     * function, which only looks at sends that are not bounced yet, so a
+     * failed insert lost the address re-check the bounce was meant to buy and
+     * left nothing to say it was owed. Recorded first, a failure leaves the
+     * send untouched and the next run finds the same bounce again; the credit
+     * is idempotent on the server, so finding it again cannot credit twice.
+     *
+     * Anchored on each step specifically, not on the first
+     * `from("bounce_events")` in the file: helpers above the loop update that
+     * table too, and comparing against one of those is a comparison between
+     * two unrelated references.
+     */
+    const insertAt = SYNC.search(/\.from\("bounce_events"\)\s*\.insert\(/);
+    const markAt = SYNC.indexOf('.update({ status: "bounced"');
+    const creditAt = SYNC.indexOf("credit_bounced_send");
+    expect(insertAt, "the bounce_events insert should still exist").toBeGreaterThan(-1);
+    expect(markAt, "the send should still be marked bounced").toBeGreaterThan(-1);
+    expect(insertAt, "the bounce is recorded before the send is marked").toBeLessThan(markAt);
+    expect(markAt, "the allowance is credited after the bounce is recorded")
+      .toBeLessThan(creditAt);
   });
 
   it("a credited row stops counting against either cap", () => {
