@@ -119,7 +119,7 @@ function parseFunctionConfig(text) {
  * one is worth getting right because it decides whether a function is
  * callable without a session.
  */
-export function resolveFunctionsToDeploy({ changedPaths, root = process.cwd(), configBefore = null }) {
+export function resolveFunctionsToDeploy({ changedPaths, root = process.cwd(), configVersions = null }) {
   const files = sourceFiles(root);
   const known = new Set(files);
 
@@ -186,29 +186,41 @@ export function resolveFunctionsToDeploy({ changedPaths, root = process.cwd(), c
   for (const p of changedPaths) own(resolve(root, p));
 
   // A changed config block redeploys that function even with no code change.
-  if (configBefore !== null && changedPaths.includes(CONFIG)) {
+  if (configVersions !== null && changedPaths.includes(CONFIG)) {
     let after;
     try {
       after = readFileSync(resolve(root, CONFIG), "utf8");
     } catch {
       after = "";
     }
-    /*
-     * The union of both versions' block names, not just the new one's.
-     *
-     * Iterating only the new config never visits a block that was REMOVED,
-     * and removal is a real change: the function falls back to the defaults,
-     * which a redeploy is what applies. Missing it leaves the old settings
-     * live — including a `verify_jwt = false` the config no longer grants,
-     * so the function stays callable without a session after the line saying
-     * it may be is gone.
-     */
-    const before = parseFunctionConfig(configBefore);
     const afterBlocks = parseFunctionConfig(after);
-    for (const name of new Set([...before.keys(), ...afterBlocks.keys()])) {
-      if (before.get(name) === afterBlocks.get(name)) continue;
-      if (!known.has(join(base, name, "index.ts"))) continue;
-      names.add(name);
+    /*
+     * Compared against EVERY earlier revision of config.toml in the range,
+     * not just the one at the base.
+     *
+     * The same shape as the path union above, one layer down, and reachable
+     * with the wrong settings live: marker at P where f1 has
+     * `verify_jwt = false`, commit A sets it true and also changes f2's code,
+     * f1 deploys and f2 fails so the marker stays at P, then commit B reverts
+     * the setting. P and B are byte-identical, so a base-to-HEAD comparison
+     * sees nothing — while the live f1 is the one deployed from A, answering
+     * without a session. Checked in a scratch repo: false, true, false across
+     * the three revisions, and the endpoints compare equal.
+     *
+     * Each version also contributes its block NAMES, so a block that was
+     * removed is still visited. Iterating only the new config would never see
+     * a deletion, and a function whose block is gone keeps its old settings
+     * live — again including a `verify_jwt = false` the config no longer
+     * grants.
+     */
+    const versions = Array.isArray(configVersions) ? configVersions : [configVersions];
+    for (const version of versions) {
+      const before = parseFunctionConfig(version);
+      for (const name of new Set([...before.keys(), ...afterBlocks.keys()])) {
+        if (before.get(name) === afterBlocks.get(name)) continue;
+        if (!known.has(join(base, name, "index.ts"))) continue;
+        names.add(name);
+      }
     }
   }
 
@@ -217,26 +229,29 @@ export function resolveFunctionsToDeploy({ changedPaths, root = process.cwd(), c
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const args = process.argv.slice(2);
-  const configIdx = args.indexOf("--config-before");
-  let configBefore = null;
-  if (configIdx > -1) {
-    const path = args[configIdx + 1];
-    args.splice(configIdx, 2);
+  /*
+   * Repeatable: one per earlier revision of config.toml in the range. A
+   * revision that cannot be read is skipped rather than read as empty, which
+   * would make every registered block look newly added and turn a one-line
+   * change into a deploy of all 148.
+   */
+  let configVersions = null;
+  for (;;) {
+    const at = args.indexOf("--config-before");
+    if (at === -1) break;
+    const path = args[at + 1];
+    args.splice(at, 2);
     try {
-      configBefore = readFileSync(path, "utf8");
+      const text = readFileSync(path, "utf8");
+      configVersions = [...(configVersions ?? []), text];
     } catch {
-      /*
-       * Left as null, which skips the comparison entirely. Reading it as an
-       * empty previous config would make every registered block look newly
-       * added and turn a one-line change into a deploy of all 148.
-       */
-      configBefore = null;
+      // Unreadable revision: contributes nothing.
     }
   }
   const changedPaths = args.length > 0
     ? args
     : readFileSync(0, "utf8").split("\n").map((l) => l.trim()).filter(Boolean);
-  for (const name of resolveFunctionsToDeploy({ changedPaths, configBefore })) {
+  for (const name of resolveFunctionsToDeploy({ changedPaths, configVersions })) {
     console.log(name);
   }
 }

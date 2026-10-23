@@ -157,12 +157,28 @@ jobs:
             # set, and a shared module changed in one chunk would resolve
             # against paths that are not in it.
             #
-            # The previous config is only compared when it can actually be
-            # read. Passing an empty one makes every registered block look new
-            # and turns a one-line change into 148 deploys.
-            if git show "$base:supabase/config.toml" > config-before.toml 2>/dev/null \
-               && [ -s config-before.toml ]; then
-              node scripts/functions-to-deploy.mjs --config-before config-before.toml \
+            # EVERY earlier revision of config.toml in the range, not only the
+            # one at the base, for the same reason the paths are a union: a
+            # setting that went false, true, false leaves the endpoints
+            # byte-identical while the middle value is the one a partially
+            # failed run put live.
+            #
+            # A revision is only compared when it can actually be read.
+            # Passing an empty one makes every registered block look new and
+            # turns a one-line change into 148 deploys.
+            rm -rf config-revs && mkdir -p config-revs
+            cfg_args=()
+            i=0
+            for rev in "$base" $(git rev-list "$base..${{ github.sha }}" -- supabase/config.toml); do
+              i=$((i + 1))
+              out="config-revs/$i.toml"
+              if git show "$rev:supabase/config.toml" > "$out" 2>/dev/null && [ -s "$out" ]; then
+                cfg_args+=(--config-before "$out")
+              fi
+            done
+            if [ ${#cfg_args[@]} -gt 0 ]; then
+              echo "Comparing against $((${#cfg_args[@]} / 2)) config revision(s)."
+              node scripts/functions-to-deploy.mjs "${cfg_args[@]}" \
                 < changed-paths.txt > changed-functions.txt
             else
               echo "No previous config.toml to compare; the import graph decides."

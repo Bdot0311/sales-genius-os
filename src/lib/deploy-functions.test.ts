@@ -202,14 +202,14 @@ describe("a config change takes effect", () => {
       "  [functions.smtp-capability-probe]\n    verify_jwt = true",
     );
     expect(flipped, "the probe's block should be in config.toml").not.toBe(after);
-    expect(resolveFunctionsToDeploy({ changedPaths: [CONFIG], root: ROOT, configBefore: flipped }))
+    expect(resolveFunctionsToDeploy({ changedPaths: [CONFIG], root: ROOT, configVersions: flipped }))
       .toEqual(["smtp-capability-probe"]);
   });
 
   it("a config edit that changes no function redeploys nothing", () => {
     // Comments and formatting move; that is not a reason to redeploy 148
     // functions, and a job that deploys everything gets switched off.
-    expect(resolveFunctionsToDeploy({ changedPaths: [CONFIG], root: ROOT, configBefore: after }))
+    expect(resolveFunctionsToDeploy({ changedPaths: [CONFIG], root: ROOT, configVersions: after }))
       .toEqual([]);
   });
 
@@ -232,8 +232,66 @@ describe("a config change takes effect", () => {
       .not.toContain("[functions.admin-create-user]");
     expect(existsSync(`${BASE}/admin-create-user/index.ts`)).toBe(true);
     const before = `${after}\n  [functions.admin-create-user]\n    verify_jwt = false\n`;
-    expect(resolveFunctionsToDeploy({ changedPaths: [CONFIG], root: ROOT, configBefore: before }))
+    expect(resolveFunctionsToDeploy({ changedPaths: [CONFIG], root: ROOT, configVersions: before }))
       .toEqual(["admin-create-user"]);
+  });
+
+  it("a setting that went out and came back still redeploys", () => {
+    /*
+     * The endpoints lie. Marker at P where the probe has
+     * `verify_jwt = false`, commit A sets it true and also changes another
+     * function's code, the probe deploys and that function fails so the
+     * marker stays at P, then commit B reverts the setting. P and B are
+     * byte-identical, so comparing base to HEAD sees nothing — while the live
+     * probe is the one deployed from A, answering without a session.
+     *
+     * Same shape as the path union, one layer down, and the reason the
+     * comparison takes every revision in the range rather than just the base.
+     */
+    const flippedMidRange = after.replace(
+      "  [functions.smtp-capability-probe]\n    verify_jwt = false",
+      "  [functions.smtp-capability-probe]\n    verify_jwt = true",
+    );
+    expect(flippedMidRange).not.toBe(after);
+    // [base, intermediate] — the base matches HEAD exactly, as in the bug.
+    expect(resolveFunctionsToDeploy({
+      changedPaths: [CONFIG],
+      root: ROOT,
+      configVersions: [after, flippedMidRange],
+    })).toEqual(["smtp-capability-probe"]);
+    // And the base alone is precisely what missed it.
+    expect(resolveFunctionsToDeploy({
+      changedPaths: [CONFIG],
+      root: ROOT,
+      configVersions: [after],
+    })).toEqual([]);
+    /*
+     * The mirror image, which is the ORDINARY case: the setting changed once
+     * in the range and stayed, so the base differs from HEAD and the newest
+     * revision already matches it. Asserted because the pair above alone was
+     * satisfied by comparing only the newest revision, which would then miss
+     * every plain config change — every revision has to be compared, not one
+     * end or the other.
+     */
+    expect(resolveFunctionsToDeploy({
+      changedPaths: [CONFIG],
+      root: ROOT,
+      configVersions: [flippedMidRange, after],
+    })).toEqual(["smtp-capability-probe"]);
+  });
+
+  it("the workflow passes every config revision in the range", () => {
+    /*
+     * Source-asserted: this is workflow shell that only runs on `main`.
+     * Verified end-to-end in a scratch repo instead — three revisions
+     * collected, and the resolver named the function the base-only comparison
+     * missed.
+     */
+    const wf = readFileSync(".github/workflows/deploy-functions.yml", "utf8");
+    expect(wf).toContain('git rev-list "$base..${{ github.sha }}" -- supabase/config.toml');
+    expect(wf).toContain("cfg_args+=(--config-before");
+    // The base itself is the first revision compared.
+    expect(wf).toContain('for rev in "$base" $(git rev-list');
   });
 
   it("the deploy range is every path touched, not the net diff", () => {
@@ -264,7 +322,7 @@ describe("a config change takes effect", () => {
       "",
     );
     expect(without).not.toBe(after);
-    expect(resolveFunctionsToDeploy({ changedPaths: [CONFIG], root: ROOT, configBefore: without }))
+    expect(resolveFunctionsToDeploy({ changedPaths: [CONFIG], root: ROOT, configVersions: without }))
       .toContain("smtp-capability-probe");
   });
 });
