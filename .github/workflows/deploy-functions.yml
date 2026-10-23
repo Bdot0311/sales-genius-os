@@ -1,0 +1,247 @@
+name: deploy-functions
+
+# Edge functions had no deploy path at all. `smtp-capability-probe` was merged
+# with ten green checks and answered 404 half an hour later, because none of
+# those checks deploys anything: Netlify ships the frontend, migrations ship
+# the database, and the functions shipped when somebody remembered.
+#
+# Worse than a missing function is a half-applied release. A function bundles
+# its imports at deploy time, so each carries its own copy of `_shared`;
+# changing a shared module changes every importer, and the diff names none of
+# them. `scripts/functions-to-deploy.mjs` walks the import graph backwards to
+# work out the real set, and is tested in `src/lib/deploy-functions.test.ts`.
+#
+# This job is loud by design. There is no path through it that reports success
+# without having deployed what the commit changed — a silent skip is the exact
+# failure being fixed here.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/functions/**"
+      - "supabase/config.toml"
+  workflow_dispatch:
+    inputs:
+      functions:
+        description: "Space-separated function names. Empty = resolve from the last commit."
+        required: false
+        type: string
+
+# One deploy at a time: two merges in quick succession must not race to decide
+# which version of a shared module a function ends up carrying.
+#
+# Serialising alone is not enough, and `cancel-in-progress: false` does not
+# make it enough. Actions keeps only ONE pending run per group: with A running,
+# B queued and C arriving, C evicts B. C's `github.event.before` is B's commit,
+# so anything only B changed is never resolved and never deployed, and C goes
+# green while those functions run old code.
+#
+# So the base is not the previous push — it is the last commit this workflow
+# actually finished deploying, recorded as a ref at the end of a successful
+# run. An evicted run leaves the ref where it was, so the next run's range
+# still covers the work it was carrying. That also makes a lost or failed run
+# self-healing, and gives a manual dispatch with no function names something
+# real to diff against.
+concurrency:
+  group: deploy-functions
+  cancel-in-progress: false
+
+# Only to move the deploy marker ref below.
+permissions:
+  contents: write
+
+env:
+  DEPLOY_REF: refs/deploys/functions
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The resolver diffs against the previous tip, which needs history.
+          fetch-depth: 0
+
+      - name: Check the access token is present
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          if [ -z "${SUPABASE_ACCESS_TOKEN}" ]; then
+            echo "::error::SUPABASE_ACCESS_TOKEN is not set. Add it under Settings -> Secrets and variables -> Actions. Until then, merged edge functions do not reach production."
+            exit 1
+          fi
+
+      - name: Read the project ref from config.toml
+        id: project
+        run: |
+          ref=$(sed -n 's/^project_id *= *"\(.*\)"/\1/p' supabase/config.toml | head -1)
+          if [ -z "$ref" ]; then
+            echo "::error::No project_id in supabase/config.toml, so there is nothing to deploy to."
+            exit 1
+          fi
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - name: Work out which functions changed
+        id: resolve
+        env:
+          BEFORE: ${{ github.event.before }}
+          MANUAL: ${{ inputs.functions }}
+        run: |
+          set -euo pipefail
+          # Whether the set came from a commit range or from named inputs.
+          # Only a range covers everything owed, so only a range may move the
+          # deploy marker; a dispatch of three names says nothing about the
+          # rest of the range and must not mark it deployed.
+          ranged=true
+          if [ -n "${MANUAL:-}" ]; then
+            echo "Deploying the functions named in the dispatch input."
+            printf '%s\n' ${MANUAL} > changed-functions.txt
+            ranged=false
+          else
+            base=""
+            # The last commit a run of this workflow finished deploying. This
+            # is the one that survives an evicted queued run: it does not move
+            # unless a deploy actually completed, so the next run's range
+            # still covers whatever the evicted one was carrying.
+            if git fetch --no-tags origin "+${DEPLOY_REF}:refs/deploys/last" 2>/dev/null; then
+              marker=$(git rev-parse refs/deploys/last)
+              if git merge-base --is-ancestor "$marker" HEAD 2>/dev/null; then
+                base="$marker"
+                echo "Base: last deployed commit $marker"
+              else
+                echo "Deploy marker $marker is not an ancestor of HEAD; ignoring it."
+              fi
+            else
+              echo "No deploy marker yet (first run)."
+            fi
+            # First run, or a marker from rewritten history. A push knows the
+            # commit it replaced; a dispatch can only mean "since the parent".
+            if [ -z "$base" ]; then
+              cand="${BEFORE:-}"
+              if [ -z "$cand" ] || [ "$cand" = "0000000000000000000000000000000000000000" ]; then
+                cand="${GITHUB_SHA}^"
+              fi
+              if git cat-file -e "${cand}^{commit}" 2>/dev/null; then
+                base=$(git rev-parse "$cand")
+                echo "Base: fallback $base"
+              fi
+            fi
+            # An all-zero SHA on a brand-new branch with no parent, or history
+            # that no longer contains either candidate. No honest diff exists,
+            # so say so rather than deploying a guess or nothing at all.
+            if [ -z "$base" ]; then
+              echo "::error::Cannot determine what changed. Re-run this workflow manually with the function names to deploy."
+              exit 1
+            fi
+            # Every path touched ANYWHERE in the range, not the net diff.
+            #
+            # The net diff hides a path that two commits cancelled out, and
+            # that case is reachable with the wrong thing live: marker at P, A
+            # changes f1 and f2, f1 deploys and f2 fails so the marker stays
+            # at P, then B reverts f1. P..B names only f2, so f1 is never
+            # redeployed and keeps running A's code for good while the repo
+            # says P's. Verified in a scratch repo: the net diff lists f2
+            # alone, the union lists both.
+            #
+            # `--no-merges` because a merge shows no diff of its own; its
+            # branch commits are in the range and carry the paths. The net
+            # diff is unioned in anyway, which covers a path that exists only
+            # in a conflict resolution.
+            { git diff --name-only "$base" "${{ github.sha }}";
+              git log --format= --name-only --no-merges "$base..${{ github.sha }}"; } \
+              | sort -u | sed '/^$/d' > changed-paths.txt
+            echo "Changed paths:"; sed 's/^/  /' changed-paths.txt
+            # Paths go in on stdin, not as arguments: xargs would split a long
+            # list across several invocations, each resolving its own partial
+            # set, and a shared module changed in one chunk would resolve
+            # against paths that are not in it.
+            #
+            # EVERY earlier revision of config.toml in the range, not only the
+            # one at the base, for the same reason the paths are a union: a
+            # setting that went false, true, false leaves the endpoints
+            # byte-identical while the middle value is the one a partially
+            # failed run put live.
+            #
+            # A revision is only compared when it can actually be read.
+            # Passing an empty one makes every registered block look new and
+            # turns a one-line change into 148 deploys.
+            rm -rf config-revs && mkdir -p config-revs
+            cfg_args=()
+            i=0
+            # --full-history, because a pathspec turns on history
+            # simplification: at a merge whose config.toml matches one parent,
+            # git follows only that parent and prunes the other side. So the
+            # commit that changed the setting — the one a partially failed run
+            # put live — can vanish from the list. Measured on a scratch repo
+            # with exactly that shape: the plain query returned NOTHING, not
+            # merely a short list, so only the base was compared and it equals
+            # HEAD; with --full-history it returned three revisions and the
+            # resolver named the function. The path collection above needs no
+            # such flag, having no pathspec to simplify on.
+            for rev in "$base" $(git rev-list --full-history "$base..${{ github.sha }}" -- supabase/config.toml); do
+              i=$((i + 1))
+              out="config-revs/$i.toml"
+              if git show "$rev:supabase/config.toml" > "$out" 2>/dev/null && [ -s "$out" ]; then
+                cfg_args+=(--config-before "$out")
+              fi
+            done
+            if [ ${#cfg_args[@]} -gt 0 ]; then
+              echo "Comparing against $((${#cfg_args[@]} / 2)) config revision(s)."
+              node scripts/functions-to-deploy.mjs "${cfg_args[@]}" \
+                < changed-paths.txt > changed-functions.txt
+            else
+              echo "No previous config.toml to compare; the import graph decides."
+              node scripts/functions-to-deploy.mjs < changed-paths.txt > changed-functions.txt
+            fi
+          fi
+          echo "Functions to deploy:"; sed 's/^/  /' changed-functions.txt
+          count=$(wc -l < changed-functions.txt | tr -d ' ')
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          echo "ranged=$ranged" >> "$GITHUB_OUTPUT"
+
+      - uses: supabase/setup-cli@v1
+        if: steps.resolve.outputs.count != '0'
+        with:
+          version: latest
+
+      - name: Deploy
+        if: steps.resolve.outputs.count != '0'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          # Deployed one at a time on purpose: a single batched command reports
+          # one pass or fail for the lot, and "which one of the eight failed"
+          # is the question worth being able to answer from the log.
+          failed=""
+          while read -r fn; do
+            [ -z "$fn" ] && continue
+            echo "::group::$fn"
+            if supabase functions deploy "$fn" --project-ref "${{ steps.project.outputs.ref }}"; then
+              echo "deployed $fn"
+            else
+              echo "::error::Failed to deploy $fn"
+              failed="$failed $fn"
+            fi
+            echo "::endgroup::"
+          done < changed-functions.txt
+          if [ -n "$failed" ]; then
+            echo "::error::These functions are still running their previous version:$failed"
+            exit 1
+          fi
+
+      - name: Nothing to deploy
+        if: steps.resolve.outputs.count == '0'
+        run: echo "No function reached by this commit's changes."
+
+      # Last, and only on success. A partial deploy fails the job, which skips
+      # this, which leaves the marker where it was — so the next run's range
+      # still covers what did not land. Moving it on a nothing-to-deploy run is
+      # correct too: nothing was owed up to here.
+      - name: Record what was deployed
+        if: success() && steps.resolve.outputs.ranged == 'true'
+        run: |
+          set -euo pipefail
+          git push --force origin "HEAD:${DEPLOY_REF}"
+          echo "Deploy marker moved to ${GITHUB_SHA}."
