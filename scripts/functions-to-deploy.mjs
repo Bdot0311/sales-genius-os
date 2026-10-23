@@ -158,13 +158,32 @@ export function resolveFunctionsToDeploy({ changedPaths, root = process.cwd(), c
 
   const base = resolve(root, FUNCTIONS_DIR);
   const names = new Set();
-  for (const file of reached) {
-    const [name] = relative(base, file).split("/");
+  const own = (file) => {
+    const rel = relative(base, file);
+    // Outside the functions tree entirely.
+    if (rel.startsWith("..") || rel.startsWith("/")) return;
+    const [name] = rel.split("/");
     // `_shared` is not deployable, and a function needs an entrypoint to be.
-    if (!name || name.startsWith("_")) continue;
-    if (!known.has(join(base, name, "index.ts"))) continue;
+    if (!name || name.startsWith("_")) return;
+    if (!known.has(join(base, name, "index.ts"))) return;
     names.add(name);
-  }
+  };
+
+  for (const file of reached) own(file);
+
+  /*
+   * Anything else that lives in a function's own directory counts too.
+   *
+   * The import walk starts from files it can parse, so it never sees the
+   * thirteen `deno.json` files. `auth-email-hook/deno.json` is what compiles
+   * its JSX; changing it and nothing else resolved to an empty set, the job
+   * reported nothing to deploy, and the old bundle kept running — the same
+   * silent staleness this script exists to stop, one file type over.
+   *
+   * Taken from the changed paths rather than from disk so a file deleted in
+   * the same commit still redeploys the function it was removed from.
+   */
+  for (const p of changedPaths) own(resolve(root, p));
 
   // A changed config block redeploys that function even with no code change.
   if (configBefore !== null && changedPaths.includes(CONFIG)) {

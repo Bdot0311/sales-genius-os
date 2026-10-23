@@ -108,14 +108,24 @@ describe("a merge deploys the functions it actually changed", () => {
      * true, so this says plainly what it is.
      */
     const script = readFileSync("scripts/functions-to-deploy.mjs", "utf8");
-    expect(script).toContain('if (!name || name.startsWith("_")) continue;');
+    expect(script).toContain('if (!name || name.startsWith("_")) return;');
     /*
-     * Twice: the import walk needs it and so does the config-block pass, and
-     * the two are independent sources of names. Counted rather than merely
-     * present, because the first version of this assertion was satisfied by
-     * the config pass's copy while the walk's had been deleted.
+     * Third of the same kind: a path that climbs out of the functions tree
+     * gets a `..` first segment, which is not a function name. The entrypoint
+     * check below already refuses it, since `supabase/index.ts` does not
+     * exist, so removing this changes no output today. It stays because it
+     * says what the function means, and because the entrypoint check is not
+     * guaranteed to keep covering for it.
      */
-    const entrypointGuard = /if \(!known\.has\(join\(base, name, "index\.ts"\)\)\) continue;/g;
+    expect(script).toContain('if (rel.startsWith("..") || rel.startsWith("/")) return;');
+    /*
+     * Twice: once in the shared owner check that both the import walk and the
+     * changed-path pass go through, and once in the config-block pass, which
+     * is an independent source of names. Counted rather than merely present,
+     * because the first version of this assertion was satisfied by the config
+     * pass's copy while the walk's had been deleted.
+     */
+    const entrypointGuard = /if \(!known\.has\(join\(base, name, "index\.ts"\)\)\) (return|continue);/g;
     expect([...script.matchAll(entrypointGuard)].length).toBe(2);
     /*
      * Same for dynamic imports: the tree has none today, so following them
@@ -125,10 +135,41 @@ describe("a merge deploys the functions it actually changed", () => {
     expect(script).toMatch(/\\bimport\\s\*\\\(\\s\*\["'\]/);
   });
 
+  it("a function's build settings deploy it", () => {
+    /*
+     * The import walk starts from files it can parse, so it never sees the
+     * thirteen deno.json files. `auth-email-hook/deno.json` is what compiles
+     * that function's JSX; changing it and nothing else resolved to an empty
+     * set, so the job reported nothing to deploy and the old bundle kept
+     * running — the same silent staleness this script exists to stop, one
+     * file type over.
+     */
+    const configs = execFileSync("find", [
+      BASE, "-mindepth", "2", "-maxdepth", "2", "-name", "deno.json",
+    ], { encoding: "utf8" }).split("\n").filter(Boolean);
+    expect(configs.length, "there should be deno.json files to cover").toBeGreaterThan(5);
+    for (const path of configs) {
+      const owner = path.split("/")[2];
+      expect(run(path), path).toEqual([owner]);
+    }
+  });
+
+  it("a file removed from a function still deploys it", () => {
+    /*
+     * Taken from the changed paths rather than from disk, so a commit that
+     * only deletes a helper still redeploys the function it was deleted from.
+     * Resolving against disk would find nothing there and skip it.
+     */
+    expect(run(`${BASE}/sync-bounces/removed-helper.ts`)).toEqual(["sync-bounces"]);
+  });
+
   it("a path that is not there deploys nothing", () => {
     // A deleted function, and a changed file that is not a function at all.
     expect(run(`${BASE}/removed-function/index.ts`)).toEqual([]);
     expect(run("src/App.tsx", "README.md", "supabase/migrations/20260101000000_x.sql")).toEqual([]);
+    // And paths that climb out of the functions tree, whichever guard
+    // happens to refuse them.
+    expect(run("../elsewhere/index.ts", `${BASE}/../../src/main.tsx`)).toEqual([]);
   });
 
   it("every function in the tree is reachable by its own path", () => {

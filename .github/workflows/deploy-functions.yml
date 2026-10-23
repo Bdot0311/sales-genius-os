@@ -30,9 +30,29 @@ on:
 
 # One deploy at a time: two merges in quick succession must not race to decide
 # which version of a shared module a function ends up carrying.
+#
+# Serialising alone is not enough, and `cancel-in-progress: false` does not
+# make it enough. Actions keeps only ONE pending run per group: with A running,
+# B queued and C arriving, C evicts B. C's `github.event.before` is B's commit,
+# so anything only B changed is never resolved and never deployed, and C goes
+# green while those functions run old code.
+#
+# So the base is not the previous push — it is the last commit this workflow
+# actually finished deploying, recorded as a ref at the end of a successful
+# run. An evicted run leaves the ref where it was, so the next run's range
+# still covers the work it was carrying. That also makes a lost or failed run
+# self-healing, and gives a manual dispatch with no function names something
+# real to diff against.
 concurrency:
   group: deploy-functions
   cancel-in-progress: false
+
+# Only to move the deploy marker ref below.
+permissions:
+  contents: write
+
+env:
+  DEPLOY_REF: refs/deploys/functions
 
 jobs:
   deploy:
@@ -69,17 +89,49 @@ jobs:
           MANUAL: ${{ inputs.functions }}
         run: |
           set -euo pipefail
+          # Whether the set came from a commit range or from named inputs.
+          # Only a range covers everything owed, so only a range may move the
+          # deploy marker; a dispatch of three names says nothing about the
+          # rest of the range and must not mark it deployed.
+          ranged=true
           if [ -n "${MANUAL:-}" ]; then
             echo "Deploying the functions named in the dispatch input."
             printf '%s\n' ${MANUAL} > changed-functions.txt
+            ranged=false
           else
-            base="${BEFORE:-}"
-            # An all-zero SHA is a branch creation, and a SHA that is not an
-            # ancestor is a force push. Either way there is no honest diff, so
-            # say so instead of deploying a guess or nothing at all.
-            if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ] \
-               || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
-              echo "::error::Cannot determine what changed (before='$base'). Re-run this workflow manually with the function names to deploy."
+            base=""
+            # The last commit a run of this workflow finished deploying. This
+            # is the one that survives an evicted queued run: it does not move
+            # unless a deploy actually completed, so the next run's range
+            # still covers whatever the evicted one was carrying.
+            if git fetch --no-tags origin "+${DEPLOY_REF}:refs/deploys/last" 2>/dev/null; then
+              marker=$(git rev-parse refs/deploys/last)
+              if git merge-base --is-ancestor "$marker" HEAD 2>/dev/null; then
+                base="$marker"
+                echo "Base: last deployed commit $marker"
+              else
+                echo "Deploy marker $marker is not an ancestor of HEAD; ignoring it."
+              fi
+            else
+              echo "No deploy marker yet (first run)."
+            fi
+            # First run, or a marker from rewritten history. A push knows the
+            # commit it replaced; a dispatch can only mean "since the parent".
+            if [ -z "$base" ]; then
+              cand="${BEFORE:-}"
+              if [ -z "$cand" ] || [ "$cand" = "0000000000000000000000000000000000000000" ]; then
+                cand="${GITHUB_SHA}^"
+              fi
+              if git cat-file -e "${cand}^{commit}" 2>/dev/null; then
+                base=$(git rev-parse "$cand")
+                echo "Base: fallback $base"
+              fi
+            fi
+            # An all-zero SHA on a brand-new branch with no parent, or history
+            # that no longer contains either candidate. No honest diff exists,
+            # so say so rather than deploying a guess or nothing at all.
+            if [ -z "$base" ]; then
+              echo "::error::Cannot determine what changed. Re-run this workflow manually with the function names to deploy."
               exit 1
             fi
             git diff --name-only "$base" "${{ github.sha }}" > changed-paths.txt
@@ -104,6 +156,7 @@ jobs:
           echo "Functions to deploy:"; sed 's/^/  /' changed-functions.txt
           count=$(wc -l < changed-functions.txt | tr -d ' ')
           echo "count=$count" >> "$GITHUB_OUTPUT"
+          echo "ranged=$ranged" >> "$GITHUB_OUTPUT"
 
       - uses: supabase/setup-cli@v1
         if: steps.resolve.outputs.count != '0'
@@ -139,3 +192,14 @@ jobs:
       - name: Nothing to deploy
         if: steps.resolve.outputs.count == '0'
         run: echo "No function reached by this commit's changes."
+
+      # Last, and only on success. A partial deploy fails the job, which skips
+      # this, which leaves the marker where it was — so the next run's range
+      # still covers what did not land. Moving it on a nothing-to-deploy run is
+      # correct too: nothing was owed up to here.
+      - name: Record what was deployed
+        if: success() && steps.resolve.outputs.ranged == 'true'
+        run: |
+          set -euo pipefail
+          git push --force origin "HEAD:${DEPLOY_REF}"
+          echo "Deploy marker moved to ${GITHUB_SHA}."
