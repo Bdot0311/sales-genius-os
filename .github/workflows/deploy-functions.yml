@@ -1,0 +1,141 @@
+name: deploy-functions
+
+# Edge functions had no deploy path at all. `smtp-capability-probe` was merged
+# with ten green checks and answered 404 half an hour later, because none of
+# those checks deploys anything: Netlify ships the frontend, migrations ship
+# the database, and the functions shipped when somebody remembered.
+#
+# Worse than a missing function is a half-applied release. A function bundles
+# its imports at deploy time, so each carries its own copy of `_shared`;
+# changing a shared module changes every importer, and the diff names none of
+# them. `scripts/functions-to-deploy.mjs` walks the import graph backwards to
+# work out the real set, and is tested in `src/lib/deploy-functions.test.ts`.
+#
+# This job is loud by design. There is no path through it that reports success
+# without having deployed what the commit changed — a silent skip is the exact
+# failure being fixed here.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/functions/**"
+      - "supabase/config.toml"
+  workflow_dispatch:
+    inputs:
+      functions:
+        description: "Space-separated function names. Empty = resolve from the last commit."
+        required: false
+        type: string
+
+# One deploy at a time: two merges in quick succession must not race to decide
+# which version of a shared module a function ends up carrying.
+concurrency:
+  group: deploy-functions
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The resolver diffs against the previous tip, which needs history.
+          fetch-depth: 0
+
+      - name: Check the access token is present
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          if [ -z "${SUPABASE_ACCESS_TOKEN}" ]; then
+            echo "::error::SUPABASE_ACCESS_TOKEN is not set. Add it under Settings -> Secrets and variables -> Actions. Until then, merged edge functions do not reach production."
+            exit 1
+          fi
+
+      - name: Read the project ref from config.toml
+        id: project
+        run: |
+          ref=$(sed -n 's/^project_id *= *"\(.*\)"/\1/p' supabase/config.toml | head -1)
+          if [ -z "$ref" ]; then
+            echo "::error::No project_id in supabase/config.toml, so there is nothing to deploy to."
+            exit 1
+          fi
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - name: Work out which functions changed
+        id: resolve
+        env:
+          BEFORE: ${{ github.event.before }}
+          MANUAL: ${{ inputs.functions }}
+        run: |
+          set -euo pipefail
+          if [ -n "${MANUAL:-}" ]; then
+            echo "Deploying the functions named in the dispatch input."
+            printf '%s\n' ${MANUAL} > changed-functions.txt
+          else
+            base="${BEFORE:-}"
+            # An all-zero SHA is a branch creation, and a SHA that is not an
+            # ancestor is a force push. Either way there is no honest diff, so
+            # say so instead of deploying a guess or nothing at all.
+            if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ] \
+               || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+              echo "::error::Cannot determine what changed (before='$base'). Re-run this workflow manually with the function names to deploy."
+              exit 1
+            fi
+            git diff --name-only "$base" "${{ github.sha }}" > changed-paths.txt
+            echo "Changed paths:"; sed 's/^/  /' changed-paths.txt
+            # Paths go in on stdin, not as arguments: xargs would split a long
+            # list across several invocations, each resolving its own partial
+            # set, and a shared module changed in one chunk would resolve
+            # against paths that are not in it.
+            #
+            # The previous config is only compared when it can actually be
+            # read. Passing an empty one makes every registered block look new
+            # and turns a one-line change into 148 deploys.
+            if git show "$base:supabase/config.toml" > config-before.toml 2>/dev/null \
+               && [ -s config-before.toml ]; then
+              node scripts/functions-to-deploy.mjs --config-before config-before.toml \
+                < changed-paths.txt > changed-functions.txt
+            else
+              echo "No previous config.toml to compare; the import graph decides."
+              node scripts/functions-to-deploy.mjs < changed-paths.txt > changed-functions.txt
+            fi
+          fi
+          echo "Functions to deploy:"; sed 's/^/  /' changed-functions.txt
+          count=$(wc -l < changed-functions.txt | tr -d ' ')
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+
+      - uses: supabase/setup-cli@v1
+        if: steps.resolve.outputs.count != '0'
+        with:
+          version: latest
+
+      - name: Deploy
+        if: steps.resolve.outputs.count != '0'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          # Deployed one at a time on purpose: a single batched command reports
+          # one pass or fail for the lot, and "which one of the eight failed"
+          # is the question worth being able to answer from the log.
+          failed=""
+          while read -r fn; do
+            [ -z "$fn" ] && continue
+            echo "::group::$fn"
+            if supabase functions deploy "$fn" --project-ref "${{ steps.project.outputs.ref }}"; then
+              echo "deployed $fn"
+            else
+              echo "::error::Failed to deploy $fn"
+              failed="$failed $fn"
+            fi
+            echo "::endgroup::"
+          done < changed-functions.txt
+          if [ -n "$failed" ]; then
+            echo "::error::These functions are still running their previous version:$failed"
+            exit 1
+          fi
+
+      - name: Nothing to deploy
+        if: steps.resolve.outputs.count == '0'
+        run: echo "No function reached by this commit's changes."

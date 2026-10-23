@@ -125,7 +125,7 @@ export const CHANGELOG: ChangelogEntry[] = [
         tag: "fixed",
         title: "Later renewals keep their payment recovery window",
         description: "After you fix a failed payment, a later card failure gets its own one-day grace period and recovery window instead of immediately moving your account to Free.",
-        href: "/dashboard/settings",
+        href: "/settings?tab=billing",
       },
     ],
   },
