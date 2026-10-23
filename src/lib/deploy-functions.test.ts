@@ -213,6 +213,50 @@ describe("a config change takes effect", () => {
       .toEqual([]);
   });
 
+  it("a removed config block redeploys the function too", () => {
+    /*
+     * Removal is a change. The function falls back to the defaults, and a
+     * redeploy is what applies them — so iterating only the new config, which
+     * never visits a block that is gone, leaves the old settings live. For a
+     * function that had `verify_jwt = false`, that means it keeps answering
+     * without a session after the line granting that is deleted.
+     *
+     * Tested with a real function that config.toml does NOT register
+     * (`admin-create-user`; 69 of the 148 are unregistered). Giving the
+     * previous config a block for it makes the on-disk config the version
+     * where that block is gone, which is exactly the removal case — rather
+     * than a modified block, which an earlier version of this test actually
+     * covered while claiming otherwise.
+     */
+    expect(after, "the fixture function must stay unregistered")
+      .not.toContain("[functions.admin-create-user]");
+    expect(existsSync(`${BASE}/admin-create-user/index.ts`)).toBe(true);
+    const before = `${after}\n  [functions.admin-create-user]\n    verify_jwt = false\n`;
+    expect(resolveFunctionsToDeploy({ changedPaths: [CONFIG], root: ROOT, configBefore: before }))
+      .toEqual(["admin-create-user"]);
+  });
+
+  it("the deploy range is every path touched, not the net diff", () => {
+    /*
+     * Asserted as source: this is workflow shell that only runs on `main`,
+     * so vitest cannot execute it. Verified by hand in scratch repos instead,
+     * and both halves of the union turned out to be load-bearing.
+     *
+     * Net diff alone: marker at P, commit A changes f1 and f2, f1 deploys and
+     * f2 fails so the marker stays at P, then B reverts f1. P..B names f2
+     * only, so f1 keeps running A's code for good while the repo says P's.
+     *
+     * `--no-merges` alone: a merge commit shows no diff of its own, so a
+     * change that exists only in a conflict resolution is invisible.
+     */
+    const wf = readFileSync(".github/workflows/deploy-functions.yml", "utf8");
+    expect(wf).toContain('git diff --name-only "$base" "${{ github.sha }}"');
+    expect(wf).toContain('git log --format= --name-only --no-merges "$base..${{ github.sha }}"');
+    expect(wf).toContain("sort -u");
+    // And the marker only advances when the whole range deployed.
+    expect(wf).toContain("if: success() && steps.resolve.outputs.ranged == 'true'");
+  });
+
   it("a newly registered function is deployed", () => {
     // The probe's own case: a block that did not exist before.
     const without = after.replace(

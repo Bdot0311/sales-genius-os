@@ -134,7 +134,23 @@ jobs:
               echo "::error::Cannot determine what changed. Re-run this workflow manually with the function names to deploy."
               exit 1
             fi
-            git diff --name-only "$base" "${{ github.sha }}" > changed-paths.txt
+            # Every path touched ANYWHERE in the range, not the net diff.
+            #
+            # The net diff hides a path that two commits cancelled out, and
+            # that case is reachable with the wrong thing live: marker at P, A
+            # changes f1 and f2, f1 deploys and f2 fails so the marker stays
+            # at P, then B reverts f1. P..B names only f2, so f1 is never
+            # redeployed and keeps running A's code for good while the repo
+            # says P's. Verified in a scratch repo: the net diff lists f2
+            # alone, the union lists both.
+            #
+            # `--no-merges` because a merge shows no diff of its own; its
+            # branch commits are in the range and carry the paths. The net
+            # diff is unioned in anyway, which covers a path that exists only
+            # in a conflict resolution.
+            { git diff --name-only "$base" "${{ github.sha }}";
+              git log --format= --name-only --no-merges "$base..${{ github.sha }}"; } \
+              | sort -u | sed '/^$/d' > changed-paths.txt
             echo "Changed paths:"; sed 's/^/  /' changed-paths.txt
             # Paths go in on stdin, not as arguments: xargs would split a long
             # list across several invocations, each resolving its own partial

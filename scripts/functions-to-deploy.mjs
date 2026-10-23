@@ -193,9 +193,20 @@ export function resolveFunctionsToDeploy({ changedPaths, root = process.cwd(), c
     } catch {
       after = "";
     }
+    /*
+     * The union of both versions' block names, not just the new one's.
+     *
+     * Iterating only the new config never visits a block that was REMOVED,
+     * and removal is a real change: the function falls back to the defaults,
+     * which a redeploy is what applies. Missing it leaves the old settings
+     * live — including a `verify_jwt = false` the config no longer grants,
+     * so the function stays callable without a session after the line saying
+     * it may be is gone.
+     */
     const before = parseFunctionConfig(configBefore);
-    for (const [name, settings] of parseFunctionConfig(after)) {
-      if (before.get(name) === settings) continue;
+    const afterBlocks = parseFunctionConfig(after);
+    for (const name of new Set([...before.keys(), ...afterBlocks.keys()])) {
+      if (before.get(name) === afterBlocks.get(name)) continue;
       if (!known.has(join(base, name, "index.ts"))) continue;
       names.add(name);
     }
