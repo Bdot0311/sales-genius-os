@@ -1305,6 +1305,8 @@ export type Database = {
           detected_at: string
           id: string
           reason: string | null
+          reverification_attempted_at: string | null
+          reverified_at: string | null
           sending_account_id: string | null
           sent_email_id: string | null
           smtp_code: string | null
@@ -1317,6 +1319,8 @@ export type Database = {
           detected_at?: string
           id?: string
           reason?: string | null
+          reverification_attempted_at?: string | null
+          reverified_at?: string | null
           sending_account_id?: string | null
           sent_email_id?: string | null
           smtp_code?: string | null
@@ -1329,6 +1333,8 @@ export type Database = {
           detected_at?: string
           id?: string
           reason?: string | null
+          reverification_attempted_at?: string | null
+          reverified_at?: string | null
           sending_account_id?: string | null
           sent_email_id?: string | null
           smtp_code?: string | null
@@ -3981,6 +3987,7 @@ export type Database = {
         Row: {
           agent_reply_sent_at: string | null
           analyzed_at: string
+          check_back_at: string | null
           created_at: string
           detected_signals: Json | null
           id: string
@@ -3991,12 +3998,14 @@ export type Database = {
           reply_content: string | null
           requires_human_action: boolean
           sent_email_id: string | null
+          suggested_reply: string | null
           triage_category: string | null
           user_id: string
         }
         Insert: {
           agent_reply_sent_at?: string | null
           analyzed_at?: string
+          check_back_at?: string | null
           created_at?: string
           detected_signals?: Json | null
           id?: string
@@ -4007,12 +4016,14 @@ export type Database = {
           reply_content?: string | null
           requires_human_action?: boolean
           sent_email_id?: string | null
+          suggested_reply?: string | null
           triage_category?: string | null
           user_id: string
         }
         Update: {
           agent_reply_sent_at?: string | null
           analyzed_at?: string
+          check_back_at?: string | null
           created_at?: string
           detected_signals?: Json | null
           id?: string
@@ -4023,6 +4034,7 @@ export type Database = {
           reply_content?: string | null
           requires_human_action?: boolean
           sent_email_id?: string | null
+          suggested_reply?: string | null
           triage_category?: string | null
           user_id?: string
         }
@@ -4883,6 +4895,7 @@ export type Database = {
           lead_id: string
           next_action_at: string | null
           paused_reason: string | null
+          paused_until: string | null
           sequence_id: string
           status: string
           updated_at: string
@@ -4900,6 +4913,7 @@ export type Database = {
           lead_id: string
           next_action_at?: string | null
           paused_reason?: string | null
+          paused_until?: string | null
           sequence_id: string
           status?: string
           updated_at?: string
@@ -4917,6 +4931,7 @@ export type Database = {
           lead_id?: string
           next_action_at?: string | null
           paused_reason?: string | null
+          paused_until?: string | null
           sequence_id?: string
           status?: string
           updated_at?: string
@@ -6604,6 +6619,15 @@ export type Database = {
           per_minute: number
         }[]
       }
+      apply_reply_to_sequence: {
+        Args: {
+          p_check_back_at?: string
+          p_lead_id: string
+          p_triage: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       apply_stripe_event_to_subscription: {
         Args: {
           _event_created_at: string
@@ -6661,6 +6685,10 @@ export type Database = {
           _user_id: string
         }
         Returns: string
+      }
+      cancel_queued_sequence_mail: {
+        Args: { p_enrollment_id: string; p_reason: string }
+        Returns: number
       }
       check_ai_gateway_usage_alert: { Args: never; Returns: undefined }
       check_expiring_api_keys: { Args: never; Returns: undefined }
@@ -7025,6 +7053,7 @@ export type Database = {
       release_stale_rescore_items: { Args: never; Returns: number }
       release_stale_scheduled_email_claims: { Args: never; Returns: number }
       reset_daily_email_counters: { Args: never; Returns: undefined }
+      resume_due_enrollments: { Args: never; Returns: number }
       saved_lead_facets: { Args: never; Returns: Json }
       search_saved_leads: {
         Args: {
