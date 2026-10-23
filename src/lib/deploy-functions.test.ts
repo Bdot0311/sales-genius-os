@@ -288,10 +288,25 @@ describe("a config change takes effect", () => {
      * missed.
      */
     const wf = readFileSync(".github/workflows/deploy-functions.yml", "utf8");
-    expect(wf).toContain('git rev-list "$base..${{ github.sha }}" -- supabase/config.toml');
     expect(wf).toContain("cfg_args+=(--config-before");
     // The base itself is the first revision compared.
     expect(wf).toContain('for rev in "$base" $(git rev-list');
+    /*
+     * `--full-history` is load-bearing, not tidiness. A pathspec turns on
+     * history simplification: at a merge whose config.toml matches one
+     * parent, git follows only that parent and prunes the other side, so the
+     * commit that changed the setting can disappear from the list.
+     *
+     * Measured on a scratch repo with that shape — setting flipped on main,
+     * then a merge taking config.toml from the side branch — the plain query
+     * returned NOTHING at all, so only the base was compared and it equals
+     * HEAD. With the flag it returned three revisions and the resolver named
+     * the function. The path collection needs no such flag, having no
+     * pathspec to simplify on.
+     */
+    expect(wf).toContain(
+      'git rev-list --full-history "$base..${{ github.sha }}" -- supabase/config.toml',
+    );
   });
 
   it("the deploy range is every path touched, not the net diff", () => {

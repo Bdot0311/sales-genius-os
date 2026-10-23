@@ -169,7 +169,17 @@ jobs:
             rm -rf config-revs && mkdir -p config-revs
             cfg_args=()
             i=0
-            for rev in "$base" $(git rev-list "$base..${{ github.sha }}" -- supabase/config.toml); do
+            # --full-history, because a pathspec turns on history
+            # simplification: at a merge whose config.toml matches one parent,
+            # git follows only that parent and prunes the other side. So the
+            # commit that changed the setting — the one a partially failed run
+            # put live — can vanish from the list. Measured on a scratch repo
+            # with exactly that shape: the plain query returned NOTHING, not
+            # merely a short list, so only the base was compared and it equals
+            # HEAD; with --full-history it returned three revisions and the
+            # resolver named the function. The path collection above needs no
+            # such flag, having no pathspec to simplify on.
+            for rev in "$base" $(git rev-list --full-history "$base..${{ github.sha }}" -- supabase/config.toml); do
               i=$((i + 1))
               out="config-revs/$i.toml"
               if git show "$rev:supabase/config.toml" > "$out" 2>/dev/null && [ -s "$out" ]; then
