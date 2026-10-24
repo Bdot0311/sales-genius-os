@@ -67,15 +67,34 @@ serve(async (req) => {
       if (typeof body?.limit === "number") limit = Math.min(Math.max(body.limit, 1), 2000);
     } catch { /* no body */ }
 
-    // Get all free-tier accounts that are still active (not already locked)
+    /*
+     * Free-tier accounts, then their profiles — two queries, not an embed.
+     *
+     * `profiles!inner(...)` had no relationship to resolve:
+     * `subscriptions.user_id` references `auth.users(id)` and nothing joins
+     * `subscriptions` to `public.profiles`, so PostgREST answered 400. This
+     * one threw on it rather than swallowing it, so the whole audit failed on
+     * its first query every run — the same defect as in
+     * detect-suspicious-activity, which discarded the error and silently
+     * audited nobody instead.
+     */
     const { data: subs, error: subsErr } = await supabase
       .from("subscriptions")
-      .select("user_id, account_status, plan, profiles!inner(email, full_name)")
+      .select("user_id, account_status, plan")
       .eq("plan", "free")
       .neq("account_status", "locked")
       .limit(limit);
 
     if (subsErr) throw subsErr;
+
+    const subIds = [...new Set((subs ?? []).map((s) => s.user_id).filter(Boolean))];
+    const { data: subProfiles, error: profErr } = subIds.length > 0
+      ? await supabase.from("profiles").select("id, email, full_name").in("id", subIds)
+      : { data: [], error: null };
+    // Without the addresses there is nothing to audit, so this is fatal too
+    // rather than a run that checks nobody and reports success.
+    if (profErr) throw profErr;
+    const profileById = new Map((subProfiles ?? []).map((p) => [p.id, p]));
 
     log("Auditing free-tier accounts", { count: subs?.length ?? 0, dryRun });
 
@@ -83,7 +102,7 @@ serve(async (req) => {
     let checked = 0;
 
     for (const sub of subs ?? []) {
-      const email = (sub as any).profiles?.email as string | undefined;
+      const email = profileById.get(sub.user_id)?.email as string | undefined;
       if (!email) continue;
       checked++;
 

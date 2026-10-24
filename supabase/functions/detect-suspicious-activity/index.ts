@@ -121,8 +121,37 @@ serve(async (req) => {
       alerts.push({ type: "bot_attack_detected", severity: "error", target: "application", details: { bot_attempts: botEvents.length, unique_ips: uniqueIps.size, ips: Array.from(uniqueIps).slice(0, 5) } });
     }
 
-    // Check Pro users for additional patterns
-    const { data: users } = await supabaseClient.from("subscriptions").select("user_id, profiles!inner(email, full_name)").eq("plan", "pro").eq("status", "active");
+    /*
+     * Pro users, then their profiles — two queries, not an embed.
+     *
+     * This read was `select("user_id, profiles!inner(email, full_name)")`, and
+     * PostgREST answered 400 every time: `subscriptions.user_id` references
+     * `auth.users(id)`, and nothing joins `subscriptions` to
+     * `public.profiles`, so the embed had no relationship to resolve. The
+     * error was discarded, `users` came back null, and the loop below ran
+     * zero times — so every per-user check here (API error rate, unusual
+     * hours, mass deletion, rapid key creation) silently found nothing while
+     * the scan reported success. Seen as a live 400 in the API logs.
+     *
+     * Fetched by id instead, the way the admin lookup further down this same
+     * file already does it, so no schema change is needed.
+     */
+    const { data: proSubs, error: proSubsErr } = await supabaseClient
+      .from("subscriptions")
+      .select("user_id")
+      .eq("plan", "pro")
+      .eq("status", "active");
+    if (proSubsErr) {
+      // A monitor that cannot list its subjects must not report a clean scan.
+      logStep("Pro-user scan FAILED", { message: proSubsErr.message });
+    }
+    const proIds = [...new Set((proSubs ?? []).map((s) => s.user_id).filter(Boolean))];
+    const { data: proProfiles } = proIds.length > 0
+      ? await supabaseClient.from("profiles").select("id, email, full_name").in("id", proIds)
+      : { data: [] };
+    const profileById = new Map((proProfiles ?? []).map((p) => [p.id, p]));
+    // Shaped as before so the checks below read `user.profiles` unchanged.
+    const users = proIds.map((id) => ({ user_id: id, profiles: profileById.get(id) ?? null }));
 
     for (const user of users || []) {
       const suspiciousPatterns = [];
@@ -212,7 +241,16 @@ serve(async (req) => {
 
     logStep("Scan completed", { alertCount: alerts.length, criticalCount: criticalAlerts.length });
 
-    return new Response(JSON.stringify({ message: "Suspicious activity scan completed", alertsSent: alerts.length, criticalAlerts: criticalAlerts.length, alerts }), {
+    return new Response(JSON.stringify({
+      message: "Suspicious activity scan completed",
+      alertsSent: alerts.length,
+      criticalAlerts: criticalAlerts.length,
+      // Said out loud: "no alerts" means something different when the
+      // per-user checks could not run at all.
+      pro_users_scanned: users.length,
+      pro_scan_failed: !!proSubsErr,
+      alerts,
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200,
     });
   } catch (error) {
