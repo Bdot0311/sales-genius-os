@@ -10,7 +10,7 @@ const HOMEPAGE_FAQS = [
   { question: "Do I need boolean search skills to use it?", answer: "No. OutReign is built around plain-English targeting." },
   { question: "Can I try it before paying?", answer: "Yes. You can start free and upgrade when you are ready." },
   { question: "Who is OutReign best for?", answer: "It is strongest for founder-led sales teams, outbound agencies, SDR teams, and B2B operators running outbound motions." },
-  { question: "What integrations are available?", answer: "OutReign currently supports Google Workspace and is expanding support for tools like Slack, HubSpot, Salesforce, Calendly, and Zapier." },
+  { question: "What integrations are available?", answer: "OutReign connects with Google Workspace (Gmail), HubSpot, Salesforce, Slack, Calendly, and Zapier on every plan, including the free one." },
   { question: "Is OutReign a fit for every business?", answer: "No. It is generally not the right fit for e-commerce, B2C, or companies that do not run outbound." },
 ];
 
@@ -20,6 +20,7 @@ const ProductShowcase = lazy(() => import("@/components/landing/ProductShowcase"
 const HowItWorks = lazy(() => import("@/components/landing/HowItWorks").then(m => ({ default: m.HowItWorks })));
 const ProblemSection = lazy(() => import("@/components/landing/ProblemSection").then(m => ({ default: m.ProblemSection })));
 const ModulesSection = lazy(() => import("@/components/landing/ModulesSection").then(m => ({ default: m.ModulesSection })));
+const AISdrSection = lazy(() => import("@/components/landing/AISdrSection").then(m => ({ default: m.AISdrSection })));
 const BigStatSection = lazy(() => import("@/components/landing/BigStatSection").then(m => ({ default: m.BigStatSection })));
 
 const DifferentiationSection = lazy(() => import("@/components/landing/DifferentiationSection").then(m => ({ default: m.DifferentiationSection })));
@@ -186,6 +187,8 @@ const Index = () => {
                 <DeferredSection><ProblemSection /></DeferredSection>
                 <DeferredSection><HowItWorks /></DeferredSection>
                 <DeferredSection><ModulesSection /></DeferredSection>
+                <DeferredSection><AISdrSection /></DeferredSection>
+
                 
                 <DeferredSection><BigStatSection /></DeferredSection>
                 <DeferredSection><DifferentiationSection /></DeferredSection>

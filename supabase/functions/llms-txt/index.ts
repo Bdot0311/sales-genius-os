@@ -37,7 +37,7 @@ OutReign is email-only outbound software for founder-led sales teams, SDRs, and 
 - **Email quality checker**: Pre-send scoring on spam triggers, readability, and personalization
 - **Sequence automation**: Multi-step email sequences with send-time optimization, plus branching and A/B testing on Pro and above
 - **Unified reply inbox**: AI-drafted responses and automatic reply classification on Growth and above
-- **AI SDR agent**: An autonomous email rep on Growth, Pro, and Agency that sources leads, sends the first touch, and handles replies in your voice
+- **AI SDR agent**: An autonomous email rep included on every plan, with volume and autonomy scaling by tier, that sources leads, sends the first touch, and handles replies in your voice
 
 ## Pricing
 
