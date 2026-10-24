@@ -309,6 +309,32 @@ describe("a config change takes effect", () => {
     );
   });
 
+  it("the deploy runs only when someone asks it to", () => {
+    /*
+     * Dispatch-only, on purpose, and this is the second time that decision
+     * has been made.
+     *
+     * An earlier version of this file triggered on push to main and was
+     * removed two minutes after its first run, for two reasons that still
+     * hold: Lovable deploys the backend when the owner publishes from it, so
+     * an automatic job raced it — two systems pushing the same functions,
+     * last writer wins, neither authoritative — and it turned every merge red,
+     * since it demands a token.
+     *
+     * The gap it was built for is real: `smtp-capability-probe` sat on main
+     * for six days, registered in config.toml, still answering 404. A merge
+     * genuinely deploys nothing. So the resolver earns its place; the
+     * automatic trigger does not.
+     *
+     * Asserted so the trigger cannot come back without someone reading this.
+     */
+    const wf = readFileSync(".github/workflows/deploy-functions.yml", "utf8");
+    const triggers = wf.slice(wf.indexOf("\non:"), wf.indexOf("concurrency:"));
+    expect(triggers).toContain("workflow_dispatch:");
+    expect(triggers, "a push trigger would race the Lovable publish")
+      .not.toMatch(/^\s+push:/m);
+  });
+
   it("the deploy range is every path touched, not the net diff", () => {
     /*
      * Asserted as source: this is workflow shell that only runs on `main`,
