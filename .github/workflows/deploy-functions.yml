@@ -1,48 +1,51 @@
 name: deploy-functions
 
-# Edge functions had no deploy path at all. `smtp-capability-probe` was merged
-# with ten green checks and answered 404 half an hour later, because none of
-# those checks deploys anything: Netlify ships the frontend, migrations ship
-# the database, and the functions shipped when somebody remembered.
+# Deliberate deploys of edge functions, run by hand.
 #
-# Worse than a missing function is a half-applied release. A function bundles
-# its imports at deploy time, so each carries its own copy of `_shared`;
-# changing a shared module changes every importer, and the diff names none of
-# them. `scripts/functions-to-deploy.mjs` walks the import graph backwards to
-# work out the real set, and is tested in `src/lib/deploy-functions.test.ts`.
+# Lovable deploys the backend when the owner publishes from it, so a merge to
+# main does not deploy anything on its own: `smtp-capability-probe` sat on main
+# for six days, registered in config.toml, still answering 404. That gap is
+# real and this closes it — but ON PURPOSE, never automatically.
+#
+# An earlier version of this file DID trigger on push, and was removed two
+# minutes after its first run for two good reasons that still hold: it raced
+# Lovable, so two systems pushed the same functions and neither was
+# authoritative; and it turned every merge red, since it demands a token.
+# Running only on dispatch keeps the useful half and drops both of those —
+# whoever runs it decides when, and nothing competes with a Lovable publish.
+#
+# What it gets right that a hand-rolled `supabase functions deploy` does not:
+# a function bundles its imports at deploy time, so each carries its own copy
+# of `_shared`. Changing a shared module changes every importer and the diff
+# names none of them. `scripts/functions-to-deploy.mjs` walks the import graph
+# backwards to find the real set, and is tested in
+# `src/lib/deploy-functions.test.ts`.
 #
 # This job is loud by design. There is no path through it that reports success
-# without having deployed what the commit changed — a silent skip is the exact
+# without having deployed what it resolved — a silent skip is the exact
 # failure being fixed here.
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "supabase/functions/**"
-      - "supabase/config.toml"
   workflow_dispatch:
     inputs:
       functions:
-        description: "Space-separated function names. Empty = resolve from the last commit."
+        description: "Function names, space-separated. Empty means everything owed since the last successful deploy — but on a first run there is no marker yet, so it covers only the last commit. Name them explicitly to catch up anything older."
         required: false
         type: string
 
-# One deploy at a time: two merges in quick succession must not race to decide
-# which version of a shared module a function ends up carrying.
+# One deploy at a time: two runs started close together must not race to
+# decide which version of a shared module a function ends up carrying.
 #
 # Serialising alone is not enough, and `cancel-in-progress: false` does not
 # make it enough. Actions keeps only ONE pending run per group: with A running,
-# B queued and C arriving, C evicts B. C's `github.event.before` is B's commit,
-# so anything only B changed is never resolved and never deployed, and C goes
-# green while those functions run old code.
+# B queued and C arriving, C evicts B — so whatever B was carrying is simply
+# dropped, and C goes green while those functions run old code.
 #
-# So the base is not the previous push — it is the last commit this workflow
-# actually finished deploying, recorded as a ref at the end of a successful
-# run. An evicted run leaves the ref where it was, so the next run's range
-# still covers the work it was carrying. That also makes a lost or failed run
-# self-healing, and gives a manual dispatch with no function names something
-# real to diff against.
+# So the base is the last commit this workflow actually finished deploying,
+# recorded as a ref at the end of a successful run. An evicted run leaves the
+# ref where it was, so the next run's range still covers the work it was
+# carrying. That also makes a lost or failed run self-healing, and gives a
+# dispatch with no function names a real answer to "what is still owed".
 concurrency:
   group: deploy-functions
   cancel-in-progress: false
@@ -94,6 +97,7 @@ jobs:
           # deploy marker; a dispatch of three names says nothing about the
           # rest of the range and must not mark it deployed.
           ranged=true
+          no_marker=0
           if [ -n "${MANUAL:-}" ]; then
             echo "Deploying the functions named in the dispatch input."
             printf '%s\n' ${MANUAL} > changed-functions.txt
@@ -114,9 +118,12 @@ jobs:
               fi
             else
               echo "No deploy marker yet (first run)."
+              no_marker=1
             fi
-            # First run, or a marker from rewritten history. A push knows the
-            # commit it replaced; a dispatch can only mean "since the parent".
+            # First run, or a marker from rewritten history. A dispatch has no
+            # `before`, so this means "since the parent" — one commit's worth,
+            # which is the conservative answer when there is no marker to
+            # trust. BEFORE is still read because the trigger may be put back.
             if [ -z "$base" ]; then
               cand="${BEFORE:-}"
               if [ -z "$cand" ] || [ "$cand" = "0000000000000000000000000000000000000000" ]; then
@@ -197,6 +204,14 @@ jobs:
           fi
           echo "Functions to deploy:"; sed 's/^/  /' changed-functions.txt
           count=$(wc -l < changed-functions.txt | tr -d ' ')
+          # A first run has no marker, so "everything owed" could only mean the
+          # last commit — and if that commit touched no function the honest
+          # answer is "nothing found", not "nothing owed". Said as a warning
+          # because reporting success here is how a catch-up run gets believed:
+          # this run sets the marker, so later runs are exact.
+          if [ "$no_marker" = "1" ]; then
+            echo "::warning::No deploy marker existed, so this run considered only the last commit and resolved ${count} function(s). Anything pending from earlier commits was NOT deployed — re-run naming those functions. This run sets the marker, so later runs cover everything since it."
+          fi
           echo "count=$count" >> "$GITHUB_OUTPUT"
           echo "ranged=$ranged" >> "$GITHUB_OUTPUT"
 
