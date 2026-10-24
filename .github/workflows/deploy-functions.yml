@@ -29,7 +29,7 @@ on:
   workflow_dispatch:
     inputs:
       functions:
-        description: "Space-separated function names. Empty = everything owed since the last successful deploy."
+        description: "Function names, space-separated. Empty means everything owed since the last successful deploy — but on a first run there is no marker yet, so it covers only the last commit. Name them explicitly to catch up anything older."
         required: false
         type: string
 
@@ -97,6 +97,7 @@ jobs:
           # deploy marker; a dispatch of three names says nothing about the
           # rest of the range and must not mark it deployed.
           ranged=true
+          no_marker=0
           if [ -n "${MANUAL:-}" ]; then
             echo "Deploying the functions named in the dispatch input."
             printf '%s\n' ${MANUAL} > changed-functions.txt
@@ -117,6 +118,7 @@ jobs:
               fi
             else
               echo "No deploy marker yet (first run)."
+              no_marker=1
             fi
             # First run, or a marker from rewritten history. A dispatch has no
             # `before`, so this means "since the parent" — one commit's worth,
@@ -202,6 +204,14 @@ jobs:
           fi
           echo "Functions to deploy:"; sed 's/^/  /' changed-functions.txt
           count=$(wc -l < changed-functions.txt | tr -d ' ')
+          # A first run has no marker, so "everything owed" could only mean the
+          # last commit — and if that commit touched no function the honest
+          # answer is "nothing found", not "nothing owed". Said as a warning
+          # because reporting success here is how a catch-up run gets believed:
+          # this run sets the marker, so later runs are exact.
+          if [ "$no_marker" = "1" ]; then
+            echo "::warning::No deploy marker existed, so this run considered only the last commit and resolved ${count} function(s). Anything pending from earlier commits was NOT deployed — re-run naming those functions. This run sets the marker, so later runs cover everything since it."
+          fi
           echo "count=$count" >> "$GITHUB_OUTPUT"
           echo "ranged=$ranged" >> "$GITHUB_OUTPUT"
 

@@ -329,10 +329,31 @@ describe("a config change takes effect", () => {
      * Asserted so the trigger cannot come back without someone reading this.
      */
     const wf = readFileSync(".github/workflows/deploy-functions.yml", "utf8");
-    const triggers = wf.slice(wf.indexOf("\non:"), wf.indexOf("concurrency:"));
-    expect(triggers).toContain("workflow_dispatch:");
-    expect(triggers, "a push trigger would race the Lovable publish")
-      .not.toMatch(/^\s+push:/m);
+    /*
+     * Every event under `on:`, asserted as exactly one. An earlier version of
+     * this test required `workflow_dispatch` and forbade `push`, which
+     * `schedule` or `workflow_run` would have sailed straight through — it
+     * named one mechanism instead of the property it existed to protect.
+     *
+     * Read as text rather than through a YAML parser: `yaml` is only a
+     * transitive dependency here, and the four other tests that read workflow
+     * files read them as text too.
+     */
+    const block = wf.slice(wf.indexOf("\non:") + 1);
+    const nextTopLevel = block.search(/\n(?=\S)/);
+    const onBlock = nextTopLevel > -1 ? block.slice(0, nextTopLevel) : block;
+    const events = [...onBlock.matchAll(/^ {2}([A-Za-z_][\w-]*):/gm)].map((m) => m[1]);
+    expect(events, "nothing may deploy without someone asking")
+      .toEqual(["workflow_dispatch"]);
+
+    /*
+     * And a markerless run says what it did not cover. "Everything owed" can
+     * only mean the last commit when no marker exists yet, and that commit may
+     * touch no function at all — measured on main's tip, which resolves to
+     * nothing. Reporting success there is how a catch-up run gets believed.
+     */
+    expect(wf).toContain("::warning::No deploy marker existed");
+    expect(wf).toContain("Name them explicitly to catch up anything older.");
   });
 
   it("the deploy range is every path touched, not the net diff", () => {
