@@ -1,6 +1,6 @@
 # OutReign — Complete Product Documentation for AI Agents
 # https://outreign.io/llms-full.txt
-# Last Updated: 2026-10-05
+# Last Updated: 2026-10-24
 # This file is the authoritative reference for AI agents, LLMs, and automated
 # crawlers that need complete, accurate information about OutReign.
 
