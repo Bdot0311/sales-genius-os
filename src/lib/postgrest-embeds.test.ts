@@ -157,8 +157,7 @@ describe("a PostgREST embed needs a relationship the database actually has", () 
     ]) {
       const code = stripComments(readFileSync(file, "utf8"));
       expect(code, file).not.toContain("profiles!inner");
-      expect(code, `${file} should read profiles by id`)
-        .toMatch(/from\("profiles"\)[\s\S]{0,120}\.in\("id",/);
+      expect(code, `${file} should read profiles by id`).toContain("profilesById(");
     }
   });
 
@@ -172,5 +171,57 @@ describe("a PostgREST embed needs a relationship the database actually has", () 
     expect(code).toContain("error: proSubsErr");
     expect(code).toContain("pro_scan_failed: !!proSubsErr");
     expect(code).toContain("pro_users_scanned: users.length");
+  });
+});
+
+describe("the id list that replaces the embed fits in a URL", () => {
+  const HELPER = "supabase/functions/_shared/profiles-by-id.ts";
+
+  it("profiles are fetched in batches", () => {
+    /*
+     * The obvious replacement for the embed is `.in("id", ids)`, and that
+     * rides in the query string: a UUID costs 37 characters there.
+     * `audit-free-tier-emails` reads up to 2000 subscriptions, which is a
+     * 74 KB URL, and its default of 500 is still 18 KB. Gateways reject both,
+     * so the obvious fix trades a query that always failed for one that fails
+     * on ordinary input — which is what my first version of this fix did.
+     */
+    const code = readFileSync(HELPER, "utf8");
+    const size = code.match(/export const PROFILE_ID_BATCH = (\d+);/);
+    expect(size, "the batch size should be named and explained").toBeTruthy();
+    const n = Number(size![1]);
+    expect(n).toBeGreaterThan(0);
+    // 37 chars per uuid, kept well inside the smallest limits in play.
+    expect(n * 37).toBeLessThan(8192);
+    expect(code).toContain("i += PROFILE_ID_BATCH");
+  });
+
+  it("a failed batch throws rather than returning a partial map", () => {
+    /*
+     * Both callers treat a missing profile as "skip this account", so a map
+     * missing half its rows reads as "those users have no profile" and the
+     * run audits fewer people while reporting success.
+     */
+    const code = readFileSync(HELPER, "utf8");
+    expect(code).toMatch(/if \(error\) \{[\s\S]{0,200}throw new Error\(/);
+  });
+
+  it("both callers go through the batched helper", () => {
+    for (const file of [
+      `${FUNCTIONS}/detect-suspicious-activity/index.ts`,
+      `${FUNCTIONS}/audit-free-tier-emails/index.ts`,
+    ]) {
+      const code = stripComments(readFileSync(file, "utf8"));
+      expect(code, file).toContain("profilesById(");
+      /*
+       * And no direct profile read is left beside it. Three existed in
+       * detect-suspicious-activity, not one: the pro-user list, the
+       * failed-login emails, and the admin recipients. The failed-login one
+       * was the real hazard — that list is longest during exactly the
+       * credential-stuffing run the function exists to detect.
+       */
+      expect(code, `${file} must not read profiles directly`)
+        .not.toContain('from("profiles")');
+    }
   });
 });

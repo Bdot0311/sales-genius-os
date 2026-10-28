@@ -1,5 +1,6 @@
 // Sweeps existing free-tier accounts and locks any whose email fails validation
 // (bad syntax, disposable domain, or no MX records). Reduces free-loader abuse.
+import { profilesById } from "../_shared/profiles-by-id.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { isInternalCaller } from "../_shared/internal-auth.ts";
@@ -87,14 +88,15 @@ serve(async (req) => {
 
     if (subsErr) throw subsErr;
 
-    const subIds = [...new Set((subs ?? []).map((s) => s.user_id).filter(Boolean))];
-    const { data: subProfiles, error: profErr } = subIds.length > 0
-      ? await supabase.from("profiles").select("id, email, full_name").in("id", subIds)
-      : { data: [], error: null };
-    // Without the addresses there is nothing to audit, so this is fatal too
-    // rather than a run that checks nobody and reports success.
-    if (profErr) throw profErr;
-    const profileById = new Map((subProfiles ?? []).map((p) => [p.id, p]));
+    /*
+     * Batched, because this reads up to 2000 subscriptions and `.in("id", …)`
+     * rides in the query string. See _shared/profiles-by-id.ts. It throws on a
+     * failed batch rather than returning a partial map: a missing profile
+     * means "skip this account" below, so a half-read map would silently
+     * audit fewer people and still report success.
+     */
+    const subIds = (subs ?? []).map((s) => s.user_id).filter(Boolean);
+    const profileById = await profilesById(supabase as any, subIds);
 
     log("Auditing free-tier accounts", { count: subs?.length ?? 0, dryRun });
 
