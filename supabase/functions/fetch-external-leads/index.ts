@@ -526,62 +526,6 @@ function mapRailwayLead(lead: any, icp: IcpInput | null = null): ScoredLead {
   };
 }
 
-// Fetch all cached leads from Railway as fallback
-async function fetchCacheAllFallback(railwayBaseUrl: string): Promise<{ leads: ScoredLead[], from_cache: boolean, error?: string }> {
-  try {
-    const cacheUrl = railwayBaseUrl.replace('/search', '/cache/all');
-    console.log('Fetching all cached leads from:', cacheUrl);
-    
-    const response = await fetch(cacheUrl, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    });
-    
-    if (!response.ok) {
-      console.log('Cache all not available:', response.status);
-      return { leads: [], from_cache: false };
-    }
-    
-    const data = await response.json();
-    console.log('Cache all response:', JSON.stringify(data).substring(0, 500));
-    
-    if (data.leads && Array.isArray(data.leads) && data.leads.length > 0) {
-      const leads = data.leads.map((l: any) => mapRailwayLead(l));
-      return { leads, from_cache: true };
-    }
-    
-    return { leads: [], from_cache: false };
-  } catch (error) {
-    console.error('Error fetching cache all:', error);
-    return { leads: [], from_cache: false, error: error instanceof Error ? error.message : 'Unknown error' };
-  }
-}
-
-// Fetch cached search results stats from Railway
-async function fetchCachedResults(railwayBaseUrl: string): Promise<{ searches: any[], error?: string }> {
-  try {
-    const statsUrl = railwayBaseUrl.replace('/search', '/cache/stats');
-    console.log('Fetching cache stats from:', statsUrl);
-    
-    const response = await fetch(statsUrl, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    });
-    
-    if (!response.ok) {
-      console.log('Cache stats not available:', response.status);
-      return { searches: [] };
-    }
-    
-    const data = await response.json();
-    console.log('Cache stats:', JSON.stringify(data));
-    return { searches: data.recent_searches || [] };
-  } catch (error) {
-    console.error('Error fetching cache stats:', error);
-    return { searches: [], error: error instanceof Error ? error.message : 'Unknown error' };
-  }
-}
-
 /**
  * Verify every email in a result set before it reaches the user, and drop the
  * ones proven undeliverable.
