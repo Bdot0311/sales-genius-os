@@ -1,5 +1,6 @@
 // Sweeps existing free-tier accounts and locks any whose email fails validation
 // (bad syntax, disposable domain, or no MX records). Reduces free-loader abuse.
+import { profilesById } from "../_shared/profiles-by-id.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { isInternalCaller } from "../_shared/internal-auth.ts";
@@ -67,15 +68,35 @@ serve(async (req) => {
       if (typeof body?.limit === "number") limit = Math.min(Math.max(body.limit, 1), 2000);
     } catch { /* no body */ }
 
-    // Get all free-tier accounts that are still active (not already locked)
+    /*
+     * Free-tier accounts, then their profiles — two queries, not an embed.
+     *
+     * `profiles!inner(...)` had no relationship to resolve:
+     * `subscriptions.user_id` references `auth.users(id)` and nothing joins
+     * `subscriptions` to `public.profiles`, so PostgREST answered 400. This
+     * one threw on it rather than swallowing it, so the whole audit failed on
+     * its first query every run — the same defect as in
+     * detect-suspicious-activity, which discarded the error and silently
+     * audited nobody instead.
+     */
     const { data: subs, error: subsErr } = await supabase
       .from("subscriptions")
-      .select("user_id, account_status, plan, profiles!inner(email, full_name)")
+      .select("user_id, account_status, plan")
       .eq("plan", "free")
       .neq("account_status", "locked")
       .limit(limit);
 
     if (subsErr) throw subsErr;
+
+    /*
+     * Batched, because this reads up to 2000 subscriptions and `.in("id", …)`
+     * rides in the query string. See _shared/profiles-by-id.ts. It throws on a
+     * failed batch rather than returning a partial map: a missing profile
+     * means "skip this account" below, so a half-read map would silently
+     * audit fewer people and still report success.
+     */
+    const subIds = (subs ?? []).map((s) => s.user_id).filter(Boolean);
+    const profileById = await profilesById(supabase as any, subIds);
 
     log("Auditing free-tier accounts", { count: subs?.length ?? 0, dryRun });
 
@@ -83,7 +104,7 @@ serve(async (req) => {
     let checked = 0;
 
     for (const sub of subs ?? []) {
-      const email = (sub as any).profiles?.email as string | undefined;
+      const email = profileById.get(sub.user_id)?.email as string | undefined;
       if (!email) continue;
       checked++;
 

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { profilesById } from "../_shared/profiles-by-id.ts";
 import { corsHeaders, requireServiceRole } from "../_shared/internal-auth.ts";
 import { alertHour, dedupeKey, FROM_DOMAIN, sendManagedEmail } from "../_shared/managed-email.ts";
 
@@ -66,13 +67,25 @@ serve(async (req) => {
       .gte("created_at", fifteenMinutesAgo);
 
     const failedUserIds = Array.from(new Set((failedLogins || []).map((l: any) => l.user_id).filter(Boolean)));
+    /*
+     * Batched, and this is the one that needed it most: a credential-stuffing
+     * run is exactly when `failedUserIds` gets long, so the unbatched
+     * `.in("id", …)` would build a URL the gateway rejects during the attack
+     * this pattern exists to spot.
+     *
+     * Caught rather than thrown, unlike the audit paths: without the emails
+     * the counts below fall back to per-IP grouping, which still raises the
+     * alert. Losing the lookup must not lose the alert.
+     */
     let emailByUserId: Record<string, string> = {};
-    if (failedUserIds.length > 0) {
-      const { data: emailRows } = await supabaseClient
-        .from("profiles")
-        .select("id, email")
-        .in("id", failedUserIds);
-      emailByUserId = Object.fromEntries((emailRows || []).map((r: any) => [r.id, r.email]));
+    try {
+      const rows = await profilesById(supabaseClient as any, failedUserIds);
+      emailByUserId = Object.fromEntries([...rows.values()].map((r) => [r.id, r.email]));
+    } catch (lookupErr) {
+      logStep("Failed-login email lookup failed; grouping by IP only", {
+        message: lookupErr instanceof Error ? lookupErr.message : String(lookupErr),
+        ids: failedUserIds.length,
+      });
     }
 
     const loginAttemptsByEmail: Record<string, { count: number; ips: Set<string>; lastAttempt: string }> = {};
@@ -121,8 +134,36 @@ serve(async (req) => {
       alerts.push({ type: "bot_attack_detected", severity: "error", target: "application", details: { bot_attempts: botEvents.length, unique_ips: uniqueIps.size, ips: Array.from(uniqueIps).slice(0, 5) } });
     }
 
-    // Check Pro users for additional patterns
-    const { data: users } = await supabaseClient.from("subscriptions").select("user_id, profiles!inner(email, full_name)").eq("plan", "pro").eq("status", "active");
+    /*
+     * Pro users, then their profiles — two queries, not an embed.
+     *
+     * This read was `select("user_id, profiles!inner(email, full_name)")`, and
+     * PostgREST answered 400 every time: `subscriptions.user_id` references
+     * `auth.users(id)`, and nothing joins `subscriptions` to
+     * `public.profiles`, so the embed had no relationship to resolve. The
+     * error was discarded, `users` came back null, and the loop below ran
+     * zero times — so every per-user check here (API error rate, unusual
+     * hours, mass deletion, rapid key creation) silently found nothing while
+     * the scan reported success. Seen as a live 400 in the API logs.
+     *
+     * Fetched by id instead, the way the admin lookup further down this same
+     * file already does it, so no schema change is needed.
+     */
+    const { data: proSubs, error: proSubsErr } = await supabaseClient
+      .from("subscriptions")
+      .select("user_id")
+      .eq("plan", "pro")
+      .eq("status", "active");
+    if (proSubsErr) {
+      // A monitor that cannot list its subjects must not report a clean scan.
+      logStep("Pro-user scan FAILED", { message: proSubsErr.message });
+    }
+    const proIds = (proSubs ?? []).map((s) => s.user_id).filter(Boolean);
+    // Batched: `.in("id", ids)` rides in the query string, so a long list is a
+    // URL the gateway rejects. See _shared/profiles-by-id.ts.
+    const profileById = await profilesById(supabaseClient as any, proIds);
+    // Shaped as before so the checks below read `user.profiles` unchanged.
+    const users = proIds.map((id) => ({ user_id: id, profiles: profileById.get(id) ?? null }));
 
     for (const user of users || []) {
       const suspiciousPatterns = [];
@@ -174,8 +215,17 @@ serve(async (req) => {
     if (criticalAlerts.length > 0) {
       const { data: adminRoles } = await supabaseClient.from("user_roles").select("user_id").eq("role", "admin");
       const adminIds = adminRoles?.map(r => r.user_id) || [];
-      const { data: adminProfiles } = await supabaseClient.from("profiles").select("email").in("id", adminIds);
-      const adminEmails = adminProfiles?.map(p => p.email).filter(Boolean) || [];
+      let adminEmails: string[] = [];
+      try {
+        const adminRows = await profilesById(supabaseClient as any, adminIds);
+        adminEmails = [...adminRows.values()].map((p) => p.email).filter(Boolean);
+      } catch (lookupErr) {
+        // NOTIFICATION_EMAIL below still receives it. A critical security
+        // alert must not be lost because the recipient list could not be read.
+        logStep("Admin profile lookup failed; falling back", {
+          message: lookupErr instanceof Error ? lookupErr.message : String(lookupErr),
+        });
+      }
       const NOTIFICATION_EMAIL = Deno.env.get("NOTIFICATION_EMAIL") || "brandon@bdotindustries.com";
       const allRecipients = [...new Set([...adminEmails, NOTIFICATION_EMAIL])].filter(Boolean);
 
@@ -212,7 +262,16 @@ serve(async (req) => {
 
     logStep("Scan completed", { alertCount: alerts.length, criticalCount: criticalAlerts.length });
 
-    return new Response(JSON.stringify({ message: "Suspicious activity scan completed", alertsSent: alerts.length, criticalAlerts: criticalAlerts.length, alerts }), {
+    return new Response(JSON.stringify({
+      message: "Suspicious activity scan completed",
+      alertsSent: alerts.length,
+      criticalAlerts: criticalAlerts.length,
+      // Said out loud: "no alerts" means something different when the
+      // per-user checks could not run at all.
+      pro_users_scanned: users.length,
+      pro_scan_failed: !!proSubsErr,
+      alerts,
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200,
     });
   } catch (error) {
