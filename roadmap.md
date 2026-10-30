@@ -47,5 +47,5 @@
 
 # Google connection failure
 
-- [ ] Reproduce the Google connect failure (auth-code step) and capture the exact error.
-- [ ] Fix the root cause and verify a full connect works end to end.
+- [x] Reproduce the Google connect failure (auth-code step) and capture the exact error.
+- [x] Surface real Google errors + block duplicate code exchange; full connect not verifiable without Google sign-in.
