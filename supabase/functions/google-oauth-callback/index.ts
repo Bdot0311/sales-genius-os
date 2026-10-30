@@ -200,8 +200,14 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error("Error in google-oauth-callback:", error);
+    // Surface the real reason (e.g. invalid_grant, redirect_uri_mismatch) so the
+    // connecting user can act on it. These messages come from our own throws or
+    // Google's OAuth error descriptions — no secrets included.
+    const reason = error instanceof Error && error.message
+      ? error.message
+      : "Google connection failed. Please try again.";
     return new Response(
-      JSON.stringify({ error: "Google connection failed. Please try again." }),
+      JSON.stringify({ error: `Google connection failed: ${reason}` }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
