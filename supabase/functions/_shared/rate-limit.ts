@@ -1,7 +1,7 @@
 // Shared rate-limit helper. Calls the public.consume_rate_limit RPC.
 // Returns { allowed, retryAfterSeconds }. Fails open on DB errors so a database
 // blip never takes down public endpoints.
-import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
+import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2.76.0";
 
 let cached: SupabaseClient | null = null;
 function serviceClient(): SupabaseClient {

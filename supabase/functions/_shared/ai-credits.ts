@@ -7,7 +7,7 @@
 // each exhaustion is logged as a critical system alert (which emails support)
 // and de-duplicated so one bad hour cannot flood the inbox.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { logSystemAlert } from "./alerts.ts";
 
 /** The gateway signals an exhausted balance/cap as 402, or 403 + credit_limit_reached. */
