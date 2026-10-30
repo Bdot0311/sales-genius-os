@@ -40,6 +40,13 @@ const OAUTH_PROVIDERS = new Set(["google", "hubspot", "calendly"]);
 const PUBLISHED_OAUTH_ORIGIN = "https://outreign.lovable.app";
 const OAUTH_MESSAGE_TYPE = "outreign-oauth-message";
 
+/*
+ * Codes this window has already sent to the callback. Module scope, not
+ * sessionStorage: the exchange and the marking have to happen in the same
+ * window, and a popup's storage is not its opener's.
+ */
+const exchangedCodes = new Set<string>();
+
 const isEmbeddedPreview = () => {
   try {
     return (
@@ -258,6 +265,22 @@ const DashboardIntegrations = () => {
     code: string,
     stateParam: string | null,
   ) => {
+    /*
+     * One exchange per code, guarded where the exchange happens.
+     *
+     * An OAuth authorization code is single-use: the second exchange comes
+     * back invalid_grant, which reads to the user as the connection failing
+     * rather than as having already succeeded.
+     *
+     * The guard used to live in handleOAuthCallback and key off
+     * sessionStorage — which is per-window. In the popup flow the popup marks
+     * the code used in ITS storage and then posts the code to the opener,
+     * so the window doing the exchange never saw the mark. The guard could
+     * not cover the call it existed to cover.
+     */
+    if (exchangedCodes.has(code)) return;
+    exchangedCodes.add(code);
+
     const activeSession = await ensureActiveSession();
     if (!activeSession) {
       throw new Error("Please sign in to finish connecting this integration");
@@ -364,8 +387,8 @@ const DashboardIntegrations = () => {
 
     if (!code) return;
 
-    // Guard against exchanging the same code twice (remounts, refreshes) —
-    // a second exchange always fails with invalid_grant.
+    // Survives a reload of this window, which the in-memory set above does
+    // not. The set is what covers the popup handoff.
     const codeKey = `oauth-code-used:${code}`;
     if (sessionStorage.getItem(codeKey)) {
       window.history.replaceState({}, '', '/integrations');
