@@ -1,4 +1,5 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { toReadableText } from "@/lib/message-body";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
@@ -111,7 +112,7 @@ export const EmailDetailSheet = ({ email, open, onOpenChange }: EmailDetailSheet
                   dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(email.body_html) }}
                 />
               ) : (
-                <p className="text-sm whitespace-pre-wrap">{email.body_text}</p>
+                <p className="text-sm whitespace-pre-wrap">{toReadableText(email.body_text)}</p>
               )}
             </div>
           </div>
@@ -119,7 +120,7 @@ export const EmailDetailSheet = ({ email, open, onOpenChange }: EmailDetailSheet
           {/* Email Quality Check */}
           <EmailQualityChecker
             subject={email.subject}
-            body={email.body_text || email.body_html?.replace(/<[^>]*>/g, '') || ''}
+            body={toReadableText(email.body_text || email.body_html)}
           />
 
           {/* Gmail link */}

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toReadableText } from "@/lib/message-body";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,7 +43,7 @@ export const EditScheduledEmailDialog = ({ email, open, onOpenChange, onSaved }:
   // Initialize form when email changes
   if (email && open && !initialized) {
     setSubject(email.subject || "");
-    setBodyText(email.body_text || "");
+    setBodyText(toReadableText(email.body_text));
     if (email.scheduled_at) {
       const d = new Date(email.scheduled_at);
       setScheduleDate(d);

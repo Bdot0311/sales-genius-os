@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { splitQuotedReply, toReadableText } from "@/lib/message-body";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { EmptyState, Panel } from "@/components/dashboard/Panel";
@@ -99,6 +100,46 @@ interface Conversation {
 const normalizeSubject = (s: string | null | undefined) =>
   (s || "").replace(/^((re|fwd)\s*:\s*)+/i, "").trim().toLowerCase();
 
+/**
+ * One message, with any quoted thread folded away.
+ *
+ * A reply carries the message it answers, and this view already shows both
+ * sides — so the quote is the same text twice, growing with every round. It
+ * is kept rather than dropped: "what exactly did they quote back" is
+ * occasionally the whole question.
+ */
+function MessageBody({ body }: { body: string }) {
+  const [showQuoted, setShowQuoted] = useState(false);
+  const { visible, quoted } = useMemo(() => splitQuotedReply(body), [body]);
+
+  return (
+    <>
+      {/* Capped where prose stops being comfortable to read. A reply pasted
+          from a wide screen otherwise runs the full width of the pane. */}
+      <p className="mt-2 max-w-[68ch] whitespace-pre-wrap text-[0.8125rem] leading-relaxed text-foreground/90">
+        {visible || "(no content)"}
+      </p>
+      {quoted ? (
+        <>
+          <button
+            type="button"
+            onClick={() => setShowQuoted((v) => !v)}
+            className="mt-2 rounded border border-border/50 px-1.5 py-0.5 text-[0.6875rem] text-muted-foreground transition-colors hover:text-foreground"
+            aria-expanded={showQuoted}
+          >
+            {showQuoted ? "Hide quoted text" : "Show quoted text"}
+          </button>
+          {showQuoted ? (
+            <p className="mt-2 max-w-[68ch] whitespace-pre-wrap border-l-2 border-border/60 pl-3 text-[0.8125rem] leading-relaxed text-muted-foreground">
+              {quoted}
+            </p>
+          ) : null}
+        </>
+      ) : null}
+    </>
+  );
+}
+
 const Inbox = () => {
   const queryClient = useQueryClient();
   const { isDemoMode } = useDemoMode();
@@ -168,7 +209,7 @@ const Inbox = () => {
         id: `out:${row.id}`,
         direction: "out",
         from: "You",
-        body: row.body_text || (row.body_html ? row.body_html.replace(/<[^>]+>/g, " ") : ""),
+        body: toReadableText(row.body_text || row.body_html),
         at,
         opened: !!row.opened_at,
       };
@@ -176,7 +217,7 @@ const Inbox = () => {
         id: `in:${ra.id}`,
         direction: "in" as const,
         from: row.to_email,
-        body: ra.reply_content || "",
+        body: toReadableText(ra.reply_content),
         at: ra.analyzed_at || ra.created_at,
         classification: ra.intent_classification,
       }));
@@ -220,7 +261,7 @@ const Inbox = () => {
         id: `rt:${rt.id}`,
         direction: "in",
         from: rt.sender_email,
-        body: rt.reply_body || "",
+        body: toReadableText(rt.reply_body),
         at: rt.created_at,
         classification: rt.classification,
       };
@@ -601,9 +642,7 @@ const Inbox = () => {
                         {/* Capped where prose stops being comfortable to read.
                             A reply pasted from a wide screen otherwise runs the
                             full width of the pane. */}
-                        <p className="mt-2 max-w-[68ch] whitespace-pre-wrap text-[0.8125rem] leading-relaxed text-foreground/90">
-                          {m.body || "(no content)"}
-                        </p>
+                        <MessageBody body={m.body} />
                       </div>
                     ))}
                   </div>
