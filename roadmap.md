@@ -44,3 +44,8 @@
 - [ ] Send messages / publish posts / submit directory listings (needs the owner's go-ahead and accounts).
 - [ ] Paid ads (after first users stick around).
 - [x] Add logo image to top of account emails and check them.
+
+# Google connection failure
+
+- [x] Reproduce the Google connect failure (auth-code step) and capture the exact error.
+- [x] Surface real Google errors + block duplicate code exchange; full connect not verifiable without Google sign-in.

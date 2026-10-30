@@ -342,8 +342,36 @@ const DashboardIntegrations = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
     const stateParam = urlParams.get('state');
-    
+
+    // Google can send the user back with an error instead of a code
+    // (e.g. access_denied when the app is in Testing mode and the Google
+    // account is not a listed test user, or the user cancelled).
+    const oauthError = urlParams.get('error');
+    if (oauthError && !code) {
+      const description = urlParams.get('error_description');
+      toast({
+        title: "Connection Error",
+        description: description
+          ? `Google refused the connection: ${description}`
+          : oauthError === 'access_denied'
+            ? "Google refused the connection. If you cancelled, nothing was connected; otherwise your Google account may not be allowed on this app yet."
+            : `Google refused the connection (${oauthError}). Please try again.`,
+        variant: "destructive",
+      });
+      window.history.replaceState({}, '', '/integrations');
+      return;
+    }
+
     if (!code) return;
+
+    // Guard against exchanging the same code twice (remounts, refreshes) —
+    // a second exchange always fails with invalid_grant.
+    const codeKey = `oauth-code-used:${code}`;
+    if (sessionStorage.getItem(codeKey)) {
+      window.history.replaceState({}, '', '/integrations');
+      return;
+    }
+    sessionStorage.setItem(codeKey, '1');
 
     const provider = getProviderFromState(stateParam);
     const openedFromPopup = Boolean(window.opener && window.opener !== window);
