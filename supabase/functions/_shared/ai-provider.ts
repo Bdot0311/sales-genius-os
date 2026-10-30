@@ -15,7 +15,7 @@
 // Call sites keep the exact `fetch` shape they had before — the response body is
 // the OpenAI chat-completions shape on all three routes, including streaming.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import {
   bedrockChat,
   bedrockChatAsStream,
