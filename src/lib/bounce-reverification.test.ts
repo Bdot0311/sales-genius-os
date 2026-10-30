@@ -338,3 +338,47 @@ describe("the SMTP probe answers honestly or not at all", () => {
     expect(PROBE).toMatch(/connecting\.then\(\(late\) => \{ try \{ late\.close\(\)/);
   });
 });
+
+describe("the probe can actually be run", () => {
+  const PROBE_SRC = readFileSync("supabase/functions/smtp-capability-probe/index.ts", "utf8");
+
+  it("a signed-in user may run it, and an anonymous caller may not", () => {
+    /*
+     * It sat deployed for twelve days and was never once invoked. The gate was
+     * requireServiceRole, so the only way to get the answer was to handle the
+     * key that bypasses every RLS policy in the project — for a function that
+     * returns a yes/no about whether a socket opens. The cost of asking was
+     * higher than the answer, so nobody asked, and the question the probe was
+     * built to settle stayed open.
+     *
+     * requireInternalOrUser keeps the service role working and adds any
+     * signed-in user. Anonymous is still refused, which is the line that
+     * matters: the targets are hardcoded Gmail endpoints, it reads no table,
+     * writes nothing and returns no secret.
+     */
+    expect(PROBE_SRC).toContain("requireInternalOrUser");
+    expect(PROBE_SRC, "the service-role-only gate is what made it unusable")
+      .not.toContain("requireServiceRole");
+    // Awaited — requireInternalOrUser verifies the token over the network, and
+    // a forgotten await makes every caller pass.
+    expect(PROBE_SRC).toContain("await requireInternalOrUser(req)");
+  });
+
+  it("the gate still runs before any socket is opened", () => {
+    /*
+     * Scoped to the request handler, not the whole file. `Deno.connect` first
+     * appears in the header comment and again in the `probe()` helper, both
+     * ABOVE the handler — so comparing raw source offsets compared the gate
+     * against a comment and failed for the wrong reason. What matters is that
+     * nothing inside the handler calls probe() before the gate has returned.
+     */
+    const handler = PROBE_SRC.slice(PROBE_SRC.indexOf("Deno.serve(async (req)"));
+    const gateAt = handler.indexOf("await requireInternalOrUser(req)");
+    const firstProbeCall = handler.indexOf("await probe(");
+    expect(gateAt, "the gate should be in the handler").toBeGreaterThan(-1);
+    expect(firstProbeCall, "the handler should call probe()").toBeGreaterThan(-1);
+    expect(gateAt, "auth before any outbound connection").toBeLessThan(firstProbeCall);
+    // And it returns on refusal rather than falling through.
+    expect(handler).toContain("if (unauth) return unauth;");
+  });
+});

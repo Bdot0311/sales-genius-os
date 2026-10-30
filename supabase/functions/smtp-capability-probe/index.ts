@@ -18,7 +18,7 @@
 //
 // Delete this function once the answer is known and recorded.
 
-import { corsHeaders, requireServiceRole } from "../_shared/internal-auth.ts";
+import { corsHeaders, requireInternalOrUser } from "../_shared/internal-auth.ts";
 
 interface ProbeResult {
   target: string;
@@ -114,7 +114,21 @@ async function probe(hostname: string, port: number, tls: boolean): Promise<Prob
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  const unauth = requireServiceRole(req);
+  /*
+   * A signed-in user may run this, not only the service role.
+   *
+   * It is a one-shot diagnostic whose whole purpose is to be run and read,
+   * and requiring the service role meant the only way to get an answer was to
+   * handle the key that bypasses every RLS policy in the project — for a
+   * function that returns a yes/no about a socket. The probe was deployed for
+   * twelve days and never once invoked, because the cost of asking it was
+   * higher than the answer.
+   *
+   * Nothing here is worth more than that trade: the targets are hardcoded
+   * Gmail submission endpoints, it reads no table, writes nothing, and
+   * returns no secret. Anonymous callers are still refused.
+   */
+  const unauth = await requireInternalOrUser(req);
   if (unauth) return unauth;
 
   /*
