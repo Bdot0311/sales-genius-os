@@ -22,6 +22,7 @@
 // agent-run does the same, because pending work belongs in the Drafts tab
 // where a person can find it rather than in a queue only the agent can see.
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { htmlToPlainText } from "../_shared/plain-text.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
 import { requireServiceRole } from "../_shared/internal-auth.ts";
 import {
@@ -212,7 +213,7 @@ async function scheduleDraft(
       to_email: to,
       subject: draft.subject,
       body_html: String(draft.body).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>"),
-      body_text: draft.body,
+      body_text: htmlToPlainText(String(draft.body)),
       status: "scheduled",
       scheduled_at: scheduledAt,
       // sent_at defaults to now(), and a row that has not been sent must not

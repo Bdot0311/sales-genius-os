@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { htmlToPlainText } from "../_shared/plain-text.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { playbookEnforcementRules } from "../_shared/cold-email-playbook.ts";
 import {
@@ -3747,7 +3748,7 @@ serve(async (req) => {
               to_email: to,
               subject,
               body_html: draftBodyToHtml(appendSignatureToBody(body, scheduleSignature)),
-              body_text: appendSignatureToBody(body, scheduleSignature),
+              body_text: htmlToPlainText(appendSignatureToBody(body, scheduleSignature)),
               status: "scheduled",
               scheduled_at: sendAt.toISOString(),
               // sent_at defaults to now() in the table, so a row that has not

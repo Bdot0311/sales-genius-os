@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { htmlToPlainText } from "../_shared/plain-text.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -207,7 +208,7 @@ serve(async (req) => {
         lead_id: enrollment.lead_id,
         to_email: lead?.contact_email || '',
         subject,
-        body_text: body,
+        body_text: htmlToPlainText(body),
         sequence_id: enrollment.sequence_id,
         sequence_step: nextStepNumber,
         enrollment_id: enrollmentId,
