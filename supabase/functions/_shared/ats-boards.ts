@@ -222,3 +222,49 @@ export function boardCacheExpiry(value: BoardCacheValue, now = Date.now()): stri
   const days = value.none ? BOARD_CACHE_MISS_DAYS : BOARD_CACHE_HIT_DAYS;
   return new Date(now + days * 86_400_000).toISOString();
 }
+
+/* ---------- hiring velocity ---------- */
+
+/**
+ * How many roles went up recently.
+ *
+ * "They are hiring" and "they are hiring hard" are different signals and the
+ * detector only ever sent the first. One newest posting decided everything, so
+ * a company with one stale opening and a company that posted six roles this
+ * month produced the identical event.
+ *
+ * Deliberately an absolute count over a window, and NOT a comparison against
+ * an earlier window, because the input cannot support a comparison. An ATS
+ * board lists roles that are OPEN. A role posted three months ago and since
+ * filled is simply gone from it, so any earlier window is missing exactly the
+ * postings that worked. Counting "recent versus prior" off one snapshot
+ * therefore finds a surge almost everywhere — the bias runs one way, towards
+ * the answer that looks exciting. A flat threshold on what is observable is
+ * worth more than a ratio computed from a number that is systematically short.
+ */
+export const SURGE_WINDOW_DAYS = 30;
+
+/** Roles in the window before this counts as hiring hard rather than hiring. */
+export const SURGE_MIN_ROLES = 4;
+
+export interface HiringVelocity {
+  /** Postings dated within the window. */
+  recent: number;
+  windowDays: number;
+  surge: boolean;
+}
+
+export function hiringVelocity(
+  jobs: readonly AtsJob[],
+  now = Date.now(),
+  windowDays = SURGE_WINDOW_DAYS,
+  minRoles = SURGE_MIN_ROLES,
+): HiringVelocity {
+  const cutoff = now - windowDays * 86_400_000;
+  const recent = jobs.filter((j) => {
+    const t = Date.parse(j.date);
+    // A posting dated in the future is bad data from the board, not news.
+    return Number.isFinite(t) && t <= now && t >= cutoff;
+  }).length;
+  return { recent, windowDays, surge: recent >= minRoles };
+}

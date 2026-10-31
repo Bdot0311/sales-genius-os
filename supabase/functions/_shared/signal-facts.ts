@@ -55,6 +55,25 @@ export function whenPhrase(iso: string | null): string {
 const str = (v: unknown): string => (typeof v === "string" ? v.trim() : "");
 const num = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
 
+/** One posting, with whatever scale the board reported alongside it. */
+function hiringFact(
+  event: SignalEventRow,
+  m: Record<string, unknown>,
+  suffix: string,
+): SignalFact | null {
+  const role = str(m.top_role);
+  if (!role) return null;
+  const open = num(m.open_roles);
+  const gtm = num(m.gtm_roles);
+  const scale = open && open > 1 ? `, ${open} roles open` : "";
+  const gtmNote = gtm && gtm > 0 ? `, ${gtm} of them go-to-market` : "";
+  return {
+    fact: `Posted a ${role} role${scale}${gtmNote}${suffix}`,
+    source: str(m.top_role_url) || str(event.source) || "job board",
+    occurred_at: event.occurred_at,
+  };
+}
+
 /**
  * Render one event as a fact a rep could say out loud.
  *
@@ -84,21 +103,41 @@ export function signalEventToFact(event: SignalEventRow): SignalFact | null {
      * dedupe keys embed them, and every row already stored uses them.
      * `hiring` and `hiring_surge` stay so older or newer rows both render.
      */
+    /*
+     * A surge leads with the count, because the count IS the signal.
+     *
+     * Rendered the same way as a single hire this would be a weight change
+     * nobody could read: "Posted a Head of Growth role, 9 roles open" says
+     * nothing about whether that happened this month or last year, and
+     * `open_roles` is a standing total rather than activity. "Posted 5 roles
+     * in the last month" is the observation a reply gets built on.
+     *
+     * Falls through to the single-hire wording when the metadata predates this
+     * and carries no count, so rows already stored still read correctly.
+     */
+    case "hiring_surge": {
+      const recent = num(m.recent_roles);
+      const days = num(m.window_days);
+      if (recent && recent > 1 && days) {
+        const gtm = num(m.gtm_roles);
+        const gtmNote = gtm && gtm > 0 ? `, ${gtm} of them go-to-market` : "";
+        const period = days <= 31 ? "the last month" : `the last ${Math.round(days / 30)} months`;
+        const role = str(m.top_role);
+        const lead = role ? `, most recently a ${role}` : "";
+        return {
+          fact: `Posted ${recent} roles in ${period}${gtmNote}${lead}`,
+          source: str(m.top_role_url) || str(event.source) || "job board",
+          occurred_at: event.occurred_at,
+        };
+      }
+      // No count on this row: fall through to the single-hire wording below.
+      return hiringFact(event, m, suffix);
+    }
+
     case "hiring_gtm":
     case "hiring_growth":
-    case "hiring_surge":
     case "hiring": {
-      const role = str(m.top_role);
-      if (!role) return null;
-      const open = num(m.open_roles);
-      const gtm = num(m.gtm_roles);
-      const scale = open && open > 1 ? `, ${open} roles open` : "";
-      const gtmNote = gtm && gtm > 0 ? `, ${gtm} of them go-to-market` : "";
-      return {
-        fact: `Posted a ${role} role${scale}${gtmNote}${suffix}`,
-        source: str(m.top_role_url) || str(event.source) || "job board",
-        occurred_at: event.occurred_at,
-      };
+      return hiringFact(event, m, suffix);
     }
 
     case "funding_raised": {

@@ -239,10 +239,16 @@ describe("the signal types the detectors ACTUALLY write", () => {
       );
       // Literal inserts: `signal_type: "tech_stack_change"`.
       for (const m of src.matchAll(/signal_type:\s*"([a-z_]+)"/g)) written.add(m[1]);
-      // And the ternary the hiring detector uses to pick between two.
-      for (const m of src.matchAll(/=\s*isGtm\s*\?\s*"([a-z_]+)"\s*:\s*"([a-z_]+)"/g)) {
-        written.add(m[1]);
-        written.add(m[2]);
+      /*
+       * And every literal in whatever expression computes `signalType`.
+       *
+       * This used to pin the exact shape of one ternary, and adding a third
+       * branch to it found nothing — which the floor below turned into a
+       * failure rather than a silent pass, as intended. Reading the whole
+       * assignment survives the next branch too.
+       */
+      for (const m of src.matchAll(/\bsignalType\s*=\s*([^;]+);/g)) {
+        for (const lit of m[1].matchAll(/"([a-z_]+)"/g)) written.add(lit[1]);
       }
     }
     // If this stops finding them, the loop below proves nothing.
@@ -266,3 +272,80 @@ describe("the signal types the detectors ACTUALLY write", () => {
   });
 });
 
+
+describe("a surge reads as a surge, not as one more hire", () => {
+  /*
+   * The signal type on its own would only have changed the intent weight.
+   * Rendered identically to a single hire, nobody reading the email could tell
+   * the difference — and "Posted a Head of Growth role, 9 roles open" says
+   * nothing about WHEN, because `open_roles` is a standing total rather than
+   * activity.
+   */
+  const surge = (metadata: Record<string, unknown>) =>
+    signalEventToFact({
+      signal_type: "hiring_surge",
+      occurred_at: daysAgo(4),
+      source: "ats:greenhouse",
+      metadata,
+    });
+
+  it("leads with the count and the period", () => {
+    const f = surge({
+      recent_roles: 5,
+      window_days: 30,
+      gtm_roles: 3,
+      top_role: "Head of Growth",
+      top_role_url: "https://boards.greenhouse.io/acme/jobs/1",
+      open_roles: 9,
+    });
+    expect(f?.fact).toContain("Posted 5 roles");
+    expect(f?.fact).toContain("the last month");
+    expect(f?.fact).toContain("3 of them go-to-market");
+    expect(f?.fact).toContain("most recently a Head of Growth");
+    // The standing total is not the story and must not lead.
+    expect(f?.fact).not.toMatch(/^Posted a /);
+    expect(f?.source).toBe("https://boards.greenhouse.io/acme/jobs/1");
+  });
+
+  it("says nothing about go-to-market when none of them are", () => {
+    const f = surge({ recent_roles: 4, window_days: 30, gtm_roles: 0, top_role: "Backend Engineer" });
+    expect(f?.fact).toContain("Posted 4 roles");
+    expect(f?.fact).not.toContain("go-to-market");
+  });
+
+  it("works with no top role recorded", () => {
+    const f = surge({ recent_roles: 6, window_days: 30 });
+    expect(f?.fact).toBe("Posted 6 roles in the last month");
+  });
+
+  it("a row stored before the count existed still reads correctly", () => {
+    /*
+     * Rows already in signal_events carry no recent_roles. They must fall back
+     * to the single-hire wording rather than rendering "Posted undefined
+     * roles" or dropping out entirely.
+     */
+    const f = surge({ top_role: "Head of Growth", open_roles: 4, gtm_roles: 2 });
+    expect(f).not.toBeNull();
+    expect(f?.fact).toContain("Posted a Head of Growth role");
+    expect(f?.fact).not.toContain("undefined");
+    expect(f?.fact).not.toContain("NaN");
+  });
+
+  it("a count of one is not phrased as a surge", () => {
+    // Belt and braces: the detector will not emit a surge for one role, but
+    // the renderer should not claim "Posted 1 roles" if it ever saw that.
+    const f = surge({ recent_roles: 1, window_days: 30, top_role: "AE" });
+    expect(f?.fact).toContain("Posted a AE role");
+  });
+
+  it("a longer window is described in months", () => {
+    const f = surge({ recent_roles: 7, window_days: 90, top_role: "AE" });
+    expect(f?.fact).toContain("the last 3 months");
+  });
+
+  it("still says nothing when there is nothing concrete", () => {
+    // The module's rule: a fact that can only say "they had a hiring signal"
+    // invites exactly the vague opener it exists to replace.
+    expect(surge({})).toBeNull();
+  });
+});

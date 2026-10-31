@@ -7,6 +7,7 @@ import {
   probeBoards,
   slugCandidates,
   type AtsJob,
+  hiringVelocity,
   type BoardCacheValue,
   type DiscoveredBoard,
 } from "../_shared/ats-boards.ts";
@@ -122,9 +123,30 @@ serve(async (req) => {
     const newest = relevant[0];
     if (!newest) return json({ detected: false, reason: "board had no readable roles" });
 
+    /*
+     * Three strengths, not two.
+     *
+     * "They are hiring" and "they are hiring hard" are different things to
+     * open an email on, and only the first was ever sent: one newest posting
+     * decided the whole event, so a company with a single stale opening and
+     * one that posted six roles this month produced the same signal.
+     *
+     * A surge is counted on the relevant roles, so four new engineering posts
+     * are a surge for somebody who sells to engineering leaders and four new
+     * GTM posts are a surge for somebody who sells to revenue leaders.
+     *
+     * Exactly one signal per poll. `toSignalFacts` keeps one fact per
+     * signal_type, so emitting a surge alongside a plain hiring event would
+     * put two sentences about the same job board into one email — the
+     * "reads like a dossier" failure that module is explicit about avoiding.
+     */
     const isGtm = gtm.length > 0;
-    const signalType = isGtm ? "hiring_gtm" : "hiring_growth";
-    const weight = isGtm ? 30 : 12;
+    const velocity = hiringVelocity(relevant);
+    const signalType = velocity.surge ? "hiring_surge" : isGtm ? "hiring_gtm" : "hiring_growth";
+    // Sits above a single GTM hire (30) and below a funding round (40): more
+    // roles is better evidence of a build-out than one posting, and still
+    // weaker evidence of budget than money actually raised.
+    const weight = velocity.surge ? 36 : isGtm ? 30 : 12;
     const signalKey = `${signalType}:${board.provider}:${board.token}:${newest.id}`;
 
     // Dedupe: one signal per newest-relevant-posting state. Re-polls with the
@@ -151,6 +173,8 @@ serve(async (req) => {
         board_token: board.token,
         open_roles: board.jobs.length,
         gtm_roles: gtm.length,
+        recent_roles: velocity.recent,
+        window_days: velocity.windowDays,
         roles,
         top_role: newest.title,
         top_role_url: newest.url,
@@ -163,6 +187,8 @@ serve(async (req) => {
       detected: true,
       signal_type: signalType,
       cached_board: fromCache,
+      recent_roles: velocity.recent,
+      surge: velocity.surge,
       provider: board.provider,
       board_token: board.token,
       open_roles: board.jobs.length,

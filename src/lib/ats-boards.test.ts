@@ -6,7 +6,10 @@ import {
   BOARD_CACHE_MISS_DAYS,
   boardCacheExpiry,
   boardCacheKey,
+  SURGE_MIN_ROLES,
+  SURGE_WINDOW_DAYS,
   fetchKnownBoard,
+  hiringVelocity,
   probeBoards,
   slugCandidates,
   type JsonFetcher,
@@ -258,5 +261,99 @@ describe("slug candidates", () => {
 
   it("every provider has a name usable in a source prefix", () => {
     for (const p of ATS_PROVIDERS) expect(p.name).toMatch(/^[a-z][a-z0-9-]*$/);
+  });
+});
+
+describe("hiring hard, as distinct from hiring", () => {
+  const job = (daysOld: number, title = "Account Executive") => ({
+    id: `j${daysOld}`,
+    title,
+    date: new Date(Date.now() - daysOld * 86_400_000).toISOString(),
+    url: null,
+  });
+
+  it("counts only postings inside the window", () => {
+    const v = hiringVelocity([job(2), job(10), job(29), job(45), job(200)]);
+    expect(v.recent).toBe(3);
+    expect(v.windowDays).toBe(SURGE_WINDOW_DAYS);
+  });
+
+  it("enough recent roles is a surge, a trickle is not", () => {
+    expect(hiringVelocity(Array.from({ length: SURGE_MIN_ROLES }, (_, i) => job(i + 1))).surge).toBe(true);
+    expect(hiringVelocity(Array.from({ length: SURGE_MIN_ROLES - 1 }, (_, i) => job(i + 1))).surge).toBe(false);
+  });
+
+  it("a pile of old roles is not a surge", () => {
+    /*
+     * The case a standing total gets wrong. Nine roles open says nothing about
+     * whether they were posted this month or last year, and `open_roles` is
+     * exactly that standing total — which is why the surge is counted on dates
+     * instead.
+     */
+    const v = hiringVelocity([job(120), job(130), job(140), job(150), job(160), job(200)]);
+    expect(v.recent).toBe(0);
+    expect(v.surge).toBe(false);
+  });
+
+  it("a posting dated in the future is bad data, not news", () => {
+    const future = { id: "f", title: "AE", date: new Date(Date.now() + 5 * 86_400_000).toISOString(), url: null };
+    expect(hiringVelocity([future, job(1), job(2), job(3)]).recent).toBe(3);
+  });
+
+  it("an unparseable date is skipped rather than counted as today", () => {
+    const bad = { id: "b", title: "AE", date: "not a date", url: null };
+    expect(hiringVelocity([bad, job(1)]).recent).toBe(1);
+  });
+
+  it("no jobs is no surge", () => {
+    const v = hiringVelocity([]);
+    expect(v.recent).toBe(0);
+    expect(v.surge).toBe(false);
+  });
+
+  it("is an absolute count, never a ratio against an earlier window", () => {
+    /*
+     * This is a correctness property of the INPUT, not a style preference, so
+     * it is pinned.
+     *
+     * An ATS board lists roles that are OPEN. A role posted three months ago
+     * and since filled is gone from it, so any earlier window is missing
+     * precisely the postings that worked. "Recent versus prior" off a single
+     * snapshot therefore reports a surge nearly everywhere, and the bias runs
+     * one way — towards the exciting answer.
+     *
+     * Four roles last month is four roles last month whether or not anything
+     * came before, so an empty history must not change the verdict.
+     */
+    const fourRecent = Array.from({ length: 4 }, (_, i) => job(i + 1));
+    const withHistory = [...fourRecent, job(200), job(210), job(220), job(230), job(240)];
+    expect(hiringVelocity(fourRecent).surge).toBe(true);
+    expect(hiringVelocity(withHistory).surge, "history must not suppress it").toBe(true);
+    expect(hiringVelocity(withHistory).recent).toBe(4);
+  });
+
+  it("the detector picks the surge type and weights it above a single hire", () => {
+    expect(DETECTOR).toContain('velocity.surge ? "hiring_surge"');
+    // Above a single GTM hire (30), below a funding round (40).
+    expect(DETECTOR).toContain("velocity.surge ? 36 : isGtm ? 30 : 12");
+    // Counted on the relevant roles, so it follows whoever the user sells to.
+    expect(DETECTOR).toContain("hiringVelocity(relevant)");
+  });
+
+  it("the detector records the count the copy needs", () => {
+    expect(DETECTOR).toContain("recent_roles: velocity.recent");
+    expect(DETECTOR).toContain("window_days: velocity.windowDays");
+  });
+
+  it("only one hiring signal is emitted per poll", () => {
+    /*
+     * toSignalFacts keeps one fact per signal_type, so a surge emitted
+     * alongside a plain hiring event would put two sentences about the same
+     * job board into one email.
+     */
+    const assignments = [...DETECTOR.matchAll(/\bsignalType\s*=/g)].length;
+    expect(assignments, "one signal type chosen, not several emitted").toBe(1);
+    const inserts = [...DETECTOR.matchAll(/\.from\("signal_events"\)\s*\.insert\(/g)].length;
+    expect(inserts).toBeLessThanOrEqual(1);
   });
 });
