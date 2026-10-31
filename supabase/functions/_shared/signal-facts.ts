@@ -68,6 +68,24 @@ export function signalEventToFact(event: SignalEventRow): SignalFact | null {
   const suffix = when ? ` (${when})` : "";
 
   switch (event.signal_type) {
+    /*
+     * All four spellings, because the vocabulary drifted and the copy paid.
+     *
+     * `detect-hiring-signals` writes `hiring_gtm` or `hiring_growth`
+     * (index.ts:142). This switch had only `hiring_surge` and `hiring`,
+     * neither of which any detector has ever written, so every hiring event
+     * fell to `default:`, found no `headline` in the hiring metadata, and
+     * returned null. Hiring is the highest-weighted signal in the product and
+     * it reached an email exactly never — the failure this whole module exists
+     * to fix, still live in the signal that matters most.
+     *
+     * The detector's two names are the ones to keep: three other files
+     * calibrate weights against them ("hiring_growth 12, hiring_gtm 30"), the
+     * dedupe keys embed them, and every row already stored uses them.
+     * `hiring` and `hiring_surge` stay so older or newer rows both render.
+     */
+    case "hiring_gtm":
+    case "hiring_growth":
     case "hiring_surge":
     case "hiring": {
       const role = str(m.top_role);
