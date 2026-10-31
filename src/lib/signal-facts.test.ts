@@ -265,3 +265,4 @@ describe("the signal types the detectors ACTUALLY write", () => {
     expect(dropped, "these are collected and scored but never reach the copy").toEqual([]);
   });
 });
+
