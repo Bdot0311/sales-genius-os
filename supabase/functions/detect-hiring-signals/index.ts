@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
+import { hireRelevance } from "../_shared/hire-relevance.ts";
 import {
   boardCacheExpiry,
   boardCacheKey,
@@ -49,10 +50,6 @@ async function fetchJson(url: string): Promise<any | null> {
     clearTimeout(timer);
   }
 }
-
-// A GTM hire (they are building pipeline/revenue) is the strongest signal for
-// outbound tooling; anything else is treated as general growth.
-const GTM_RE = /\b(sales|account executive|\bae\b|sdr|bdr|revenue|rev\s?ops|go[-\s]?to[-\s]?market|\bgtm\b|demand gen|growth|marketing|partnership|business development)\b/i;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -115,10 +112,28 @@ serve(async (req) => {
     }
     if (!board) return json({ detected: false, reason: "no public ATS board found" });
 
-    // Newest relevant posting decides the signal. GTM roles are the strong
-    // signal; otherwise any open roles are a softer growth signal.
+    /*
+     * What counts as a relevant hire is the seller's question, not ours.
+     *
+     * Ordered, because a user with several ICP profiles would otherwise get
+     * whichever row the database happened to return — and relevance decides
+     * the signal_type, which is embedded in the dedupe key. A profile that
+     * varied between polls would re-signal the same job board every time.
+     */
+    const { data: icp } = await supabase
+      .from("icp_profiles")
+      .select("hiring_signals, target_titles")
+      .eq("user_id", user.id)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const relevance = hireRelevance(icp);
+
+    // Newest relevant posting decides the signal. A hire the seller cares
+    // about is the strong signal; otherwise any open roles are a softer
+    // growth signal.
     const byDateDesc = (a: AtsJob, b: AtsJob) => Date.parse(b.date) - Date.parse(a.date);
-    const gtm = board.jobs.filter((j) => GTM_RE.test(j.title)).sort(byDateDesc);
+    const gtm = board.jobs.filter((j) => relevance.isRelevant(j.title)).sort(byDateDesc);
     const relevant = gtm.length ? gtm : [...board.jobs].sort(byDateDesc);
     const newest = relevant[0];
     if (!newest) return json({ detected: false, reason: "board had no readable roles" });
@@ -139,6 +154,13 @@ serve(async (req) => {
      * signal_type, so emitting a surge alongside a plain hiring event would
      * put two sentences about the same job board into one email — the
      * "reads like a dossier" failure that module is explicit about avoiding.
+     */
+    /*
+     * `hiring_gtm` keeps its name though it now means "a hire this seller
+     * cares about" rather than specifically go-to-market. The string is
+     * load-bearing: three files calibrate weights against it, the dedupe keys
+     * embed it, and every row already stored uses it. Renaming it would orphan
+     * that history to fix a comment.
      */
     const isGtm = gtm.length > 0;
     const velocity = hiringVelocity(relevant);
@@ -175,6 +197,8 @@ serve(async (req) => {
         gtm_roles: gtm.length,
         recent_roles: velocity.recent,
         window_days: velocity.windowDays,
+        relevance_source: relevance.source,
+        relevance_basis: relevance.describe(),
         roles,
         top_role: newest.title,
         top_role_url: newest.url,
@@ -189,6 +213,7 @@ serve(async (req) => {
       cached_board: fromCache,
       recent_roles: velocity.recent,
       surge: velocity.surge,
+      relevance_source: relevance.source,
       provider: board.provider,
       board_token: board.token,
       open_roles: board.jobs.length,
