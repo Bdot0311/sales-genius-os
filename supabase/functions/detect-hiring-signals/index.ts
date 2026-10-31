@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
 import { hireRelevance } from "../_shared/hire-relevance.ts";
+import { ownerOf, resolveCaller } from "../_shared/internal-auth.ts";
 import {
   boardCacheExpiry,
   boardCacheKey,
@@ -56,19 +57,35 @@ serve(async (req) => {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return json({ error: "Authorization required" }, 401);
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const { data: { user }, error: userErr } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
-    if (userErr || !user) return json({ error: "Invalid user token" }, 401);
+
+    /*
+     * Both a signed-in user and an internal job can ask.
+     *
+     * This called `auth.getUser()` on whatever token arrived, and a service
+     * key is not a user — so a scheduled refresh would have got 401 on every
+     * lead, which is the exact failure `resolveCaller` was written for after
+     * it happened to the generate-email queue.
+     *
+     * An internal caller comes back with `userId: null` and does NOT say whose
+     * lead it is acting on. `ownerOf` reads that off the row, so the only
+     * thing a request chooses is which lead, and the database decides whose it
+     * is. A forged user_id in the body cannot work because no body is read for
+     * one.
+     */
+    const caller = await resolveCaller(req);
+    if (!caller.ok) return caller.response;
 
     const body = await req.json().catch(() => ({} as Record<string, unknown>));
     const leadId = typeof body.leadId === "string" ? body.leadId : "";
     if (!leadId) return json({ error: "leadId is required", error_code: "invalid_input" }, 400);
 
+    const ownerId = await ownerOf(supabase, "leads", leadId, caller);
+    if (!ownerId) return json({ error: "lead not found", error_code: "not_found" }, 404);
+
     const { data: lead } = await supabase
       .from("leads").select("id, company_name, company_website")
-      .eq("id", leadId).eq("user_id", user.id).maybeSingle();
+      .eq("id", leadId).eq("user_id", ownerId).maybeSingle();
     if (!lead) return json({ error: "lead not found", error_code: "not_found" }, 404);
 
     const slugs = slugCandidates(lead.company_website, lead.company_name);
@@ -123,7 +140,7 @@ serve(async (req) => {
     const { data: icp } = await supabase
       .from("icp_profiles")
       .select("hiring_signals, target_titles")
-      .eq("user_id", user.id)
+      .eq("user_id", ownerId)
       .order("updated_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -175,7 +192,7 @@ serve(async (req) => {
     // same newest role add nothing; a new posting produces a new signal_key.
     const { data: existing } = await supabase
       .from("signal_events").select("metadata")
-      .eq("lead_id", leadId).eq("user_id", user.id).ilike("source", "ats:%").limit(50);
+      .eq("lead_id", leadId).eq("user_id", ownerId).ilike("source", "ats:%").limit(50);
     const already = (existing || []).some((e: any) => e?.metadata?.signal_key === signalKey);
     if (already) {
       return json({ detected: true, deduped: true, signal_type: signalType, provider: board.provider });
@@ -184,7 +201,7 @@ serve(async (req) => {
     const roles = relevant.slice(0, 5).map((j) => j.title).filter(Boolean);
     const { error: insErr } = await supabase.from("signal_events").insert({
       lead_id: leadId,
-      user_id: user.id,
+      user_id: ownerId,
       signal_type: signalType,
       weight,
       occurred_at: new Date(newest.date).toISOString(),
