@@ -1,6 +1,14 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { supabaseForUser, notAuthed, err, ok, planGate } from "./_supabase";
+/*
+ * The same stripper the edge functions use, imported rather than copied.
+ *
+ * It is dependency-free, so the Vite plugin inlines it into the generated
+ * Deno bundle, and `plain-text-storage.test.ts` cross-checks it against the
+ * browser-side reader. A third copy here would be a third thing to drift.
+ */
+import { htmlToPlainText } from "../../../../supabase/functions/_shared/plain-text.ts";
 
 export default defineTool({
   name: "send_reply",
@@ -36,7 +44,17 @@ export default defineTool({
           : `Re: ${thread.subject}`
         : "Re:");
 
-    const bodyHtml = body
+    /*
+     * `body` is documented as plain text, which is not the same as being plain
+     * text. An agent calling this tool can pass markup, and both columns then
+     * carry it: `body_text` stores the tags, and `bodyHtml` escapes them into
+     * `&lt;p&gt;` so the recipient reads the markup as prose.
+     *
+     * Stripping once, up front, fixes both.
+     */
+    const plainBody = htmlToPlainText(body);
+
+    const bodyHtml = plainBody
       .split(/\n{2,}/)
       .map((p) => `<p>${p.replace(/\n/g, "<br/>").replace(/</g, "&lt;")}</p>`)
       .join("");
@@ -48,7 +66,7 @@ export default defineTool({
         lead_id: thread.lead_id,
         to_email: thread.sender_email,
         subject: finalSubject,
-        body_text: body,
+        body_text: plainBody,
         body_html: bodyHtml,
         status: "queued",
         scheduled_at: new Date().toISOString(),
