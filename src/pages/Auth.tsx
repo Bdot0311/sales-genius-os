@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { OAUTH_START_KEY, classifyOAuthReturn, silentFailureMessage } from "@/lib/oauth-return";
+import {
+  OAUTH_START_KEY,
+  brokerErrorMessage,
+  classifyBrokerError,
+  classifyOAuthReturn,
+  silentFailureMessage,
+} from "@/lib/oauth-return";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthForm } from "@/components/auth/AuthForm";
@@ -118,10 +124,13 @@ const Auth = () => {
     const err = q.get("error") || h.get("error");
     if (!err) return;
     const desc = q.get("error_description") || h.get("error_description") || err;
-    console.error("Sign-in returned an error:", err, desc);
+    const failure = classifyBrokerError(err, desc);
+    console.error("Sign-in returned an error:", err, desc, { failure });
     toast({
-      title: "Google sign-in didn't finish",
-      description: `${desc.replace(/\+/g, " ")}. Please try again, or sign in with email.`,
+      // A configuration failure is not something the user can outwait, so it
+      // does not get a title that implies the attempt merely fell short.
+      title: failure === "config" ? "Google sign-in is unavailable" : "Google sign-in didn't finish",
+      description: brokerErrorMessage(err, desc),
       variant: "destructive",
     });
     window.history.replaceState(null, "", location.pathname);

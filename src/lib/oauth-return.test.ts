@@ -3,6 +3,8 @@ import { readFileSync } from "node:fs";
 import {
   OAUTH_START_KEY,
   OAUTH_WINDOW_MS,
+  brokerErrorMessage,
+  classifyBrokerError,
   classifyOAuthReturn,
   clearOAuthStart,
   silentFailureMessage,
@@ -184,5 +186,84 @@ describe("both ends are wired", () => {
     expect(FORM).toContain("OAUTH_START_KEY");
     expect(PAGE).toContain("OAUTH_START_KEY");
     expect(FORM).not.toContain('"outreign.oauth.startedAt"');
+  });
+});
+
+describe("what the broker's error means, and whether retrying can help", () => {
+  /*
+   * The string that actually came back from the live flow, hours of it.
+   *
+   * `/auth` relayed it verbatim and added "Please try again, or sign in with
+   * email". The exchange runs between the broker and Google's token endpoint
+   * using a client secret that neither the user nor the browser ever touches,
+   * so the one thing a retry cannot change is the thing that was wrong.
+   */
+  const LIVE = "failed to exchange authorization code";
+
+  it("the live failure is a configuration failure, not a retryable one", () => {
+    expect(classifyBrokerError("server_error", LIVE)).toBe("config");
+    const msg = brokerErrorMessage("server_error", LIVE);
+    // Must not send them round a loop that cannot terminate.
+    expect(msg.toLowerCase()).not.toContain("try again");
+    // Must say whose problem it is, and that it persists.
+    expect(msg).toMatch(/misconfigured|our side/i);
+    expect(msg).toContain("Nothing is wrong with your account");
+    // And keep the raw string: it is what distinguishes one config failure
+    // from another, and a user quoting it is often how anyone finds out.
+    expect(msg).toContain(LIVE);
+  });
+
+  it("the URL-encoded form is classified the same", () => {
+    // It arrives as a query parameter, so this is the spelling that shows up.
+    expect(classifyBrokerError("server_error", "failed+to+exchange+authorization+code")).toBe("config");
+    expect(brokerErrorMessage("server_error", "failed+to+exchange+authorization+code")).not.toContain("+");
+  });
+
+  it("the other credential errors are the same kind of problem", () => {
+    for (const e of ["invalid_client", "unauthorized_client", "invalid_grant", "redirect_uri_mismatch"]) {
+      expect(classifyBrokerError(e, ""), e).toBe("config");
+      expect(brokerErrorMessage(e, "").toLowerCase(), e).not.toContain("try again");
+    }
+  });
+
+  it("a user who closed the consent screen IS told to try again", () => {
+    /*
+     * The one branch where retrying is the right advice, and the reason this
+     * is classified rather than blanket-worded: telling someone who changed
+     * their mind that the product is broken is its own wrong answer.
+     */
+    expect(classifyBrokerError("access_denied", "The user denied the request")).toBe("declined");
+    const msg = brokerErrorMessage("access_denied", "The user denied the request");
+    expect(msg).toContain("again");
+    expect(msg).not.toMatch(/misconfigured/i);
+  });
+
+  it("an unrecognised error neither promises a retry nor blames the config", () => {
+    expect(classifyBrokerError("something_new", "who knows")).toBe("unknown");
+    const msg = brokerErrorMessage("something_new", "who knows");
+    expect(msg).toContain("who knows");
+    expect(msg).not.toMatch(/misconfigured/i);
+    expect(msg.toLowerCase()).not.toContain("try again");
+  });
+
+  it("every branch offers a route in that a Google-only account has", () => {
+    /*
+     * Same trap silentFailureMessage was written around: someone whose only
+     * route in was Google has no password, so "sign in with email" alone sends
+     * them to a second failure one screen later.
+     */
+    for (const [e, d] of [["server_error", LIVE], ["access_denied", "denied"], ["odd", "odd"]]) {
+      expect(brokerErrorMessage(e, d), `${e} offers no way in`).toMatch(/email/i);
+    }
+    // The two that are not the user's own choice name the password route.
+    expect(brokerErrorMessage("server_error", LIVE)).toContain("Forgot Password");
+    expect(brokerErrorMessage("odd", "odd")).toContain("Forgot Password");
+  });
+
+  it("the page uses the classifier rather than relaying the raw string", () => {
+    const page = readFileSync("src/pages/Auth.tsx", "utf8");
+    expect(page).toContain("brokerErrorMessage(err, desc)");
+    // The old form is what told users to retry a permanent failure.
+    expect(page).not.toContain("Please try again, or sign in with email.");
   });
 });
