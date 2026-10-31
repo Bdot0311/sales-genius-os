@@ -1,5 +1,15 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
+import {
+  boardCacheExpiry,
+  boardCacheKey,
+  fetchKnownBoard,
+  probeBoards,
+  slugCandidates,
+  type AtsJob,
+  type BoardCacheValue,
+  type DiscoveredBoard,
+} from "../_shared/ats-boards.ts";
 
 // Real, free buying signals from a company's public ATS job board.
 //
@@ -39,67 +49,6 @@ async function fetchJson(url: string): Promise<any | null> {
   }
 }
 
-// Candidate board slugs derived from the company domain and name. Boards are
-// almost always at the company's short slug (stripe, ramp, notion), so trying
-// the domain root and a couple of name variants finds most of them.
-function slugCandidates(website?: string | null, name?: string | null): string[] {
-  const set = new Set<string>();
-  if (website) {
-    const host = website.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
-    const root = host.split(".")[0];
-    if (root) { set.add(root); set.add(root.replace(/-/g, "")); }
-  }
-  if (name) {
-    const n = name.trim().toLowerCase();
-    if (n && n !== "unknown") {
-      const compact = n.replace(/[^a-z0-9]+/g, "");
-      const hyphen = n.replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-      if (compact) set.add(compact);
-      if (hyphen) set.add(hyphen);
-    }
-  }
-  return [...set].filter((s) => s.length >= 2).slice(0, 5);
-}
-
-interface Job { id: string; title: string; date: string; url: string | null }
-
-// Normalize each provider's posting shape into { id, title, date, url }.
-function ghJobs(d: any): Job[] {
-  return Array.isArray(d?.jobs) ? d.jobs.map((j: any) => ({
-    id: String(j.id), title: String(j.title || ""),
-    date: j.updated_at || j.first_published || new Date().toISOString(), url: j.absolute_url || null,
-  })) : [];
-}
-function leverJobs(d: any): Job[] {
-  return Array.isArray(d) ? d.map((j: any) => ({
-    id: String(j.id), title: String(j.text || ""),
-    date: j.createdAt ? new Date(j.createdAt).toISOString() : new Date().toISOString(), url: j.hostedUrl || null,
-  })) : [];
-}
-function ashbyJobs(d: any): Job[] {
-  return Array.isArray(d?.jobs) ? d.jobs.map((j: any) => ({
-    id: String(j.id ?? j.jobUrl ?? j.title), title: String(j.title || ""),
-    date: j.publishedAt || j.updatedAt || new Date().toISOString(), url: j.jobUrl || null,
-  })) : [];
-}
-
-async function discoverBoard(slugs: string[]): Promise<{ provider: string; token: string; jobs: Job[] } | null> {
-  for (const slug of slugs) {
-    const gh = await fetchJson(`https://boards-api.greenhouse.io/v1/boards/${slug}/jobs`);
-    const ghj = ghJobs(gh);
-    if (ghj.length) return { provider: "greenhouse", token: slug, jobs: ghj };
-
-    const lv = await fetchJson(`https://api.lever.co/v0/postings/${slug}?mode=json`);
-    const lvj = leverJobs(lv);
-    if (lvj.length) return { provider: "lever", token: slug, jobs: lvj };
-
-    const ab = await fetchJson(`https://api.ashbyhq.com/posting-api/job-board/${slug}?includeCompensation=false`);
-    const abj = ashbyJobs(ab);
-    if (abj.length) return { provider: "ashby", token: slug, jobs: abj };
-  }
-  return null;
-}
-
 // A GTM hire (they are building pipeline/revenue) is the strongest signal for
 // outbound tooling; anything else is treated as general growth.
 const GTM_RE = /\b(sales|account executive|\bae\b|sdr|bdr|revenue|rev\s?ops|go[-\s]?to[-\s]?market|\bgtm\b|demand gen|growth|marketing|partnership|business development)\b/i;
@@ -127,12 +76,47 @@ serve(async (req) => {
     const slugs = slugCandidates(lead.company_website, lead.company_name);
     if (!slugs.length) return json({ detected: false, reason: "no company domain or name to look up" });
 
-    const board = await discoverBoard(slugs);
+    /*
+     * Discovery is the expensive half, so what it found is remembered.
+     *
+     * Fifteen requests at a 6s timeout is up to ninety seconds to answer "no
+     * public board", and that answer was recomputed from scratch on every
+     * call. A known board skips straight to its own endpoint; a known miss
+     * answers without touching the network at all. Both matter far more now
+     * that a schedule re-polls rather than enrichment asking once.
+     */
+    const cacheKey = boardCacheKey(lead.company_website, lead.company_name);
+    const { data: cachedRow } = await supabase
+      .from("api_cache").select("cache_value, expires_at").eq("cache_key", cacheKey).maybeSingle();
+    const cacheFresh = !!cachedRow?.expires_at && new Date(cachedRow.expires_at).getTime() > Date.now();
+    const cached = (cacheFresh ? cachedRow!.cache_value : null) as BoardCacheValue | null;
+
+    if (cached?.none) {
+      return json({ detected: false, reason: "no public ATS board found", cached: true });
+    }
+
+    let board: DiscoveredBoard | null = null;
+    let fromCache = false;
+    if (cached?.provider && cached.token) {
+      board = await fetchKnownBoard(cached.provider, cached.token, fetchJson);
+      fromCache = !!board;
+    }
+    if (!board) {
+      board = await probeBoards(slugs, fetchJson);
+      const value: BoardCacheValue = board
+        ? { provider: board.provider, token: board.token }
+        : { none: true };
+      await supabase.from("api_cache").upsert({
+        cache_key: cacheKey,
+        cache_value: value,
+        expires_at: boardCacheExpiry(value),
+      }, { onConflict: "cache_key" });
+    }
     if (!board) return json({ detected: false, reason: "no public ATS board found" });
 
     // Newest relevant posting decides the signal. GTM roles are the strong
     // signal; otherwise any open roles are a softer growth signal.
-    const byDateDesc = (a: Job, b: Job) => Date.parse(b.date) - Date.parse(a.date);
+    const byDateDesc = (a: AtsJob, b: AtsJob) => Date.parse(b.date) - Date.parse(a.date);
     const gtm = board.jobs.filter((j) => GTM_RE.test(j.title)).sort(byDateDesc);
     const relevant = gtm.length ? gtm : [...board.jobs].sort(byDateDesc);
     const newest = relevant[0];
@@ -178,6 +162,7 @@ serve(async (req) => {
     return json({
       detected: true,
       signal_type: signalType,
+      cached_board: fromCache,
       provider: board.provider,
       board_token: board.token,
       open_roles: board.jobs.length,
