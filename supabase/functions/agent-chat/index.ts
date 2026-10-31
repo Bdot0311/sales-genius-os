@@ -2323,7 +2323,13 @@ serve(async (req) => {
       };
 
       {
-        const handled = await runOutboundTool(name, args as Record<string, any>, { admin, userId, toolEvents: toolEvents as any });
+        const handled = await runOutboundTool(name, args as Record<string, any>, {
+          admin, userId, toolEvents: toolEvents as any,
+          edge: {
+            url: Deno.env.get("SUPABASE_URL") ?? "",
+            serviceKey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+          },
+        });
         if (handled !== undefined) return handled;
       }
       switch (name) {
