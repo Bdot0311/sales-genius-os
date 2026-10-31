@@ -136,6 +136,70 @@ export default function SystemHealth() {
           })}
         </PanelBody>
       </Panel>
+
+      <SmtpCapabilityPanel />
     </div>
+  );
+}
+
+/**
+ * Can an edge function open an SMTP socket from here?
+ *
+ * The probe answering this was deployed on Oct 18 and invoked zero times,
+ * because the only way to ask it was to hold the service role key — the one
+ * that bypasses every RLS policy in the project — for a function that returns
+ * a yes/no about a socket. Nobody was going to do that, so the question sat
+ * open for twelve days.
+ *
+ * It is a button now. The backend runs on managed infrastructure whose
+ * dashboard the people who need this answer do not log into, so a console
+ * one-liner or a curl with a bearer token is not a way to ask a question
+ * either. Being signed in here is.
+ */
+function SmtpCapabilityPanel() {
+  const [running, setRunning] = useState(false);
+  const [verdict, setVerdict] = useState<string | null>(null);
+
+  const probe = async () => {
+    setRunning(true);
+    setVerdict(null);
+    const { data, error } = await supabase.functions.invoke("smtp-capability-probe", { body: {} });
+    setRunning(false);
+    if (error) {
+      // The reason matters more than "it failed": a 401 here means the gate,
+      // a 404 means it is not deployed, and they need different answers.
+      setVerdict(`Could not run the probe: ${error.message}`);
+      toast.error("SMTP probe failed to run");
+      return;
+    }
+    setVerdict(typeof data?.verdict === "string" ? data.verdict : JSON.stringify(data));
+  };
+
+  return (
+    <Panel>
+      <PanelHeader className="flex-row items-start justify-between gap-4">
+        <div>
+          <PanelTitle>SMTP capability</PanelTitle>
+          <PanelDescription>
+            Whether this runtime can open a mail submission socket. Decides if sending over
+            SMTP is buildable here, or whether it needs a different transport.
+          </PanelDescription>
+        </div>
+        <Button variant="outline" size="sm" onClick={probe} disabled={running} className="shrink-0">
+          <RefreshCw className={`mr-2 h-4 w-4 ${running ? "animate-spin" : ""}`} />
+          {running ? "Probing…" : "Run probe"}
+        </Button>
+      </PanelHeader>
+      <PanelBody>
+        {verdict ? (
+          <p className="break-words rounded-lg border border-border bg-card/50 p-4 text-sm">{verdict}</p>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Not run yet. It opens two connections to Gmail's submission endpoints and reports what
+            happened — it sends nothing and reads no data.
+          </p>
+        )}
+      </PanelBody>
+    </Panel>
   );
 }

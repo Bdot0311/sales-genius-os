@@ -371,6 +371,46 @@ var enroll_lead_default = defineTool8({
 // src/lib/mcp/tools/send-reply.ts
 import { defineTool as defineTool9 } from "npm:@lovable.dev/mcp-js@0.23.0";
 import { z as z9 } from "npm:zod@^3.25.76";
+
+// supabase/functions/_shared/plain-text.ts
+function htmlToPlainText(raw) {
+  if (!raw) return "";
+  if (!/<[a-z!/][\s\S]*?>/i.test(raw)) return decodeEntities(raw);
+  let text = raw;
+  text = text.replace(/<(style|script|head)[\s\S]*?<\/\1>/gi, " ");
+  text = text.replace(/<br\s*\/?>/gi, "\n");
+  text = text.replace(/<\/(p|div|tr|li|h[1-6]|blockquote)\s*>/gi, "\n");
+  text = text.replace(/<[^>]+>/g, "");
+  text = decodeEntities(text);
+  text = text.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n");
+  return text.trim();
+}
+function decodeEntities(text) {
+  const named = {
+    amp: "&",
+    lt: "<",
+    gt: ">",
+    quot: '"',
+    apos: "'",
+    nbsp: " ",
+    "#39": "'"
+  };
+  return text.replace(/&(#x?[0-9a-f]+|[a-z]+);/gi, (whole, code) => {
+    const key = code.toLowerCase();
+    if (key in named) return named[key];
+    if (key.startsWith("#x")) {
+      const n = Number.parseInt(key.slice(2), 16);
+      return Number.isFinite(n) ? String.fromCodePoint(n) : whole;
+    }
+    if (key.startsWith("#")) {
+      const n = Number.parseInt(key.slice(1), 10);
+      return Number.isFinite(n) ? String.fromCodePoint(n) : whole;
+    }
+    return whole;
+  });
+}
+
+// src/lib/mcp/tools/send-reply.ts
 var send_reply_default = defineTool9({
   name: "send_reply",
   title: "Queue reply to an inbox thread",
@@ -393,13 +433,14 @@ var send_reply_default = defineTool9({
     if (!thread) return err("Reply thread not found for this user.");
     if (!thread.sender_email) return err("Reply thread has no sender_email to reply to.");
     const finalSubject = subject ?? (thread.subject ? thread.subject.toLowerCase().startsWith("re:") ? thread.subject : `Re: ${thread.subject}` : "Re:");
-    const bodyHtml = body.split(/\n{2,}/).map((p) => `<p>${p.replace(/\n/g, "<br/>").replace(/</g, "&lt;")}</p>`).join("");
+    const plainBody = htmlToPlainText(body);
+    const bodyHtml = plainBody.split(/\n{2,}/).map((p) => `<p>${p.replace(/\n/g, "<br/>").replace(/</g, "&lt;")}</p>`).join("");
     const { data, error } = await supabase.from("sent_emails").insert({
       user_id: ctx.getUserId(),
       lead_id: thread.lead_id,
       to_email: thread.sender_email,
       subject: finalSubject,
-      body_text: body,
+      body_text: plainBody,
       body_html: bodyHtml,
       status: "queued",
       scheduled_at: (/* @__PURE__ */ new Date()).toISOString()

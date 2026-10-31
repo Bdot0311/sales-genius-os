@@ -118,19 +118,20 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     id: "2026-10-30-research-sources",
     date: "2026-10-30",
-    title: "Research checks the news and tech stack on its own",
+    title: "Research finds its own news and tech signals",
     summary: "Researching a lead now looks up company news and tech-stack changes even if you never enriched it, and account why-now research searches the web for recent, linked news.",
     items: [
       {
         tag: "improved",
         title: "Lead research pulls news and tech changes",
         description: "If a lead has no news or tech-stack signals yet, research checks for them first, so the brief can open on something dated and sourced.",
-        href: "/dashboard/saved-leads",
+        href: "/dashboard/outreach",
       },
       {
         tag: "improved",
         title: "Why-now research searches the web",
         description: "Account why-now reasons now include recent news found on the web, each with a link you can check.",
+        href: "/dashboard/accounts",
       },
     ],
   },

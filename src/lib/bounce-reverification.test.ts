@@ -382,3 +382,27 @@ describe("the probe can actually be run", () => {
     expect(handler).toContain("if (unauth) return unauth;");
   });
 });
+
+describe("the probe is reachable without a terminal", () => {
+  const PANEL = readFileSync("src/pages/admin/SystemHealth.tsx", "utf8");
+
+  it("admin System Health can run it", () => {
+    /*
+     * The backend runs on managed infrastructure whose dashboard the people
+     * who need this answer do not log into. So "run a curl with a bearer
+     * token" and "paste this into the browser console" are not ways to ask a
+     * question either — they are just a different gate.
+     *
+     * Being signed in here is the credential. The button is the ask.
+     */
+    expect(PANEL).toContain("smtp-capability-probe");
+    expect(PANEL).toContain("Run probe");
+  });
+
+  it("a failure says why, not just that it failed", () => {
+    // 401 means the gate, 404 means it is not deployed, and those need
+    // different answers. "It failed" sends someone back to the logs.
+    expect(PANEL).toContain("Could not run the probe:");
+    expect(PANEL).toMatch(/error\.message/);
+  });
+});

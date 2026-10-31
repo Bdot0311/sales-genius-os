@@ -120,3 +120,71 @@ export function clearOAuthStart(): void {
     // Blocked storage: nothing was written, so nothing needs removing.
   }
 }
+
+/**
+ * What the broker's own error means, and whether trying again can help.
+ *
+ * `/auth` used to relay Google's `error_description` verbatim and append
+ * "Please try again, or sign in with email". For one of these errors that
+ * advice is actively wrong: the exchange happens between the broker and
+ * Google's token endpoint using credentials neither the user nor the browser
+ * touches, so if it fails once it fails every time until somebody changes the
+ * configuration. Telling a user to retry sends them round a loop that cannot
+ * terminate.
+ *
+ * It cost us more than that. `failed to exchange authorization code` reads
+ * like something went wrong with the CODE — spent twice, expired, malformed —
+ * and that is where the diagnosis went for hours. The authorization step had
+ * in fact succeeded; a code existed and was fine. What did not match was the
+ * client secret. The string names the step that failed and not the thing that
+ * was wrong with it, so it points away from the cause.
+ *
+ * Classified rather than pattern-matched into prose, so the page can say
+ * something true about whether to retry.
+ */
+export type BrokerFailure = "config" | "declined" | "unknown";
+
+/** Errors that mean the credentials or the client registration, not the user. */
+const CONFIG_ERRORS = [
+  "failed to exchange authorization code",
+  "invalid_client",
+  "unauthorized_client",
+  "invalid_grant",
+  "redirect_uri_mismatch",
+];
+
+export function classifyBrokerError(error: string, description: string): BrokerFailure {
+  const text = `${error} ${description}`.toLowerCase().replace(/\+/g, " ");
+  // The user closed the consent screen. Theirs to repeat, and it may well work.
+  if (text.includes("access_denied")) return "declined";
+  if (CONFIG_ERRORS.some((e) => text.includes(e))) return "config";
+  return "unknown";
+}
+
+/**
+ * The message for a broker error.
+ *
+ * `raw` is kept in all three branches: it is the only thing that distinguishes
+ * one configuration failure from another, and a user reporting it is often how
+ * anyone finds out at all.
+ */
+export function brokerErrorMessage(error: string, description: string): string {
+  const raw = (description || error).replace(/\+/g, " ").replace(/\.\s*$/, "");
+  switch (classifyBrokerError(error, description)) {
+    case "declined":
+      return "You left the Google consent screen before finishing. Choose Continue with Google again, or sign in with your email below.";
+    case "config":
+      /*
+       * No "try again" here, deliberately. Same reasoning as
+       * silentFailureMessage: a Google-only account has no password to fall
+       * back on, so Forgot Password against the same address is the route in.
+       */
+      return (
+        `Google sign-in is misconfigured on our side, so it will keep failing until we fix it (${raw}). ` +
+        "Nothing is wrong with your account. Sign in with your email below, or choose " +
+        "Forgot Password to set one — it reaches the same account."
+      );
+    default:
+      return `Google sign-in didn't finish (${raw}). Sign in with your email below, or choose Forgot Password to set one — it reaches the same account.`;
+  }
+}
