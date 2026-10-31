@@ -4,7 +4,6 @@
 // Bundled from src/lib/mcp/index.ts by @lovable.dev/mcp-js.
 // src/lib/mcp/index.ts
 import { auth, defineMcp } from "npm:@lovable.dev/mcp-js@0.23.0";
-import { htmlToPlainText } from "../_shared/plain-text.ts";
 
 // src/lib/mcp/tools/list-leads.ts
 import { createClient as createClient2 } from "npm:@supabase/supabase-js@^2.76.1";
@@ -400,7 +399,7 @@ var send_reply_default = defineTool9({
       lead_id: thread.lead_id,
       to_email: thread.sender_email,
       subject: finalSubject,
-      body_text: htmlToPlainText(body),
+      body_text: body,
       body_html: bodyHtml,
       status: "queued",
       scheduled_at: (/* @__PURE__ */ new Date()).toISOString()

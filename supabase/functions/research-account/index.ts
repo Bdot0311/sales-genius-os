@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
+import { createClient } from "npm:@supabase/supabase-js@2.76.0";
 import { AI_SMART, aiFetch } from "../_shared/ai-provider.ts";
+import { leadResearchQueries, parallelConfigured, parallelSearch } from "../_shared/parallel.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -102,6 +103,23 @@ serve(async (req) => {
       }
       if (l.signal_type && l.signal_type !== "manual") raw.push({ text: String(l.signal_type).replace(/_/g, " "), date: l.signal_date || null, source: src });
     }
+    // Live web search (Parallel) for dated, independently sourced news about
+    // the account. Each result keeps its own URL, so it can be a cited claim.
+    const host = String(company.domain || "").replace(/^https?:\/\//i, "").replace(/\/.*$/, "").replace(/^www\./, "");
+    if (parallelConfigured() && (host || company.name)) {
+      const web = await parallelSearch({
+        objective: `Recent, dated developments at ${company.name}${host ? ` (${host})` : ""}: funding, acquisitions, launches, partnerships, leadership hires, expansion. Used as a reason to reach out now.`,
+        queries: leadResearchQueries(String(company.name || ""), host),
+        maxResults: 5,
+        timeoutMs: 15_000,
+        excludeDomains: host ? [host] : undefined,
+      });
+      for (const r of web.results) {
+        const snippet = (r.excerpts[0] || "").replace(/\s+/g, " ").slice(0, 280);
+        raw.push({ text: `${r.title}${snippet ? `: ${snippet}` : ""}`, date: r.publish_date || null, source: r.url });
+      }
+    }
+
     // Only signals with a source url can become a rendered claim: a why-now
     // reason that cannot be checked must never reach a sent email.
     const sourced = raw.filter((r) => r.source).slice(0, 12);
