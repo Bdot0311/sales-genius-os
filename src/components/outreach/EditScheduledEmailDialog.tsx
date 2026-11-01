@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { savedScheduledEmailBody, scheduledEmailEditorHtml } from "@/lib/scheduled-email-body";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,6 @@ interface EditScheduledEmailDialogProps {
 export const EditScheduledEmailDialog = ({ email, open, onOpenChange, onSaved }: EditScheduledEmailDialogProps) => {
   const { toast } = useToast();
   const [subject, setSubject] = useState("");
-  const bodyEditor = useRef<HTMLDivElement>(null);
   const [editedHtml, setEditedHtml] = useState<string | null>(null);
   const [scheduleDate, setScheduleDate] = useState<Date | undefined>(undefined);
   const [scheduleTime, setScheduleTime] = useState("09:00");
@@ -40,9 +39,9 @@ export const EditScheduledEmailDialog = ({ email, open, onOpenChange, onSaved }:
   const [isCancelling, setIsCancelling] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
-  useEffect(() => {
-    if (!email || !open || !bodyEditor.current) return;
-    bodyEditor.current.innerHTML = scheduledEmailEditorHtml(email);
+  const initializeBodyEditor = useCallback((node: HTMLDivElement | null) => {
+    if (!email || !open || !node) return;
+    node.innerHTML = scheduledEmailEditorHtml(email);
     setEditedHtml(null);
   }, [email, open]);
 
@@ -194,7 +193,7 @@ export const EditScheduledEmailDialog = ({ email, open, onOpenChange, onSaved }:
           <div>
             <Label id="scheduled-email-body-label">Body</Label>
             <div
-              ref={bodyEditor}
+              ref={initializeBodyEditor}
               role="textbox"
               aria-labelledby="scheduled-email-body-label"
               aria-multiline="true"

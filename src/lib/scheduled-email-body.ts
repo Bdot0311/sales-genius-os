@@ -9,7 +9,8 @@ export interface ScheduledEmailBody {
 /** Edit the rendered message, not the lossy plain-text alternative. */
 export function scheduledEmailEditorHtml(email: ScheduledEmailBody): string {
   if (email.body_html) return DOMPurify.sanitize(email.body_html);
-  const text = toReadableText(email.body_text);
+  const raw = email.body_text ?? "";
+  const text = /<[a-z!/][\s\S]*?>/i.test(raw) ? toReadableText(raw) : raw;
   return text.split("\n").map((line) => {
     const escaped = line.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     return `<div>${escaped || "<br>"}</div>`;
