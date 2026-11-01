@@ -1,9 +1,8 @@
-import { useState } from "react";
-import { toReadableText } from "@/lib/message-body";
+import { useEffect, useRef, useState } from "react";
+import { savedScheduledEmailBody, scheduledEmailEditorHtml } from "@/lib/scheduled-email-body";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -33,17 +32,23 @@ interface EditScheduledEmailDialogProps {
 export const EditScheduledEmailDialog = ({ email, open, onOpenChange, onSaved }: EditScheduledEmailDialogProps) => {
   const { toast } = useToast();
   const [subject, setSubject] = useState("");
-  const [bodyText, setBodyText] = useState("");
+  const bodyEditor = useRef<HTMLDivElement>(null);
+  const [editedHtml, setEditedHtml] = useState<string | null>(null);
   const [scheduleDate, setScheduleDate] = useState<Date | undefined>(undefined);
   const [scheduleTime, setScheduleTime] = useState("09:00");
   const [isSaving, setIsSaving] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
+  useEffect(() => {
+    if (!email || !open || !bodyEditor.current) return;
+    bodyEditor.current.innerHTML = scheduledEmailEditorHtml(email);
+    setEditedHtml(null);
+  }, [email, open]);
+
   // Initialize form when email changes
   if (email && open && !initialized) {
     setSubject(email.subject || "");
-    setBodyText(toReadableText(email.body_text));
     if (email.scheduled_at) {
       const d = new Date(email.scheduled_at);
       setScheduleDate(d);
@@ -74,12 +79,7 @@ export const EditScheduledEmailDialog = ({ email, open, onOpenChange, onSaved }:
         scheduledAt = d.toISOString();
       }
 
-      // Format body as HTML
-      const isHtml = bodyText.trim().startsWith('<');
-      const htmlBody = isHtml ? bodyText : `<!DOCTYPE html>
-<html><head><meta charset="utf-8"><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.6;color:#333;max-width:600px;margin:0 auto;padding:20px}p{margin:0 0 16px}</style></head><body>
-${bodyText.split('\n').map((line: string) => line.trim() ? `<p>${line}</p>` : '').join('\n')}
-</body></html>`;
+      const { body_text: bodyText, body_html: htmlBody } = savedScheduledEmailBody(email, editedHtml);
 
       /*
        * Not while a send is holding it.
@@ -192,11 +192,16 @@ ${bodyText.split('\n').map((line: string) => line.trim() ? `<p>${line}</p>` : ''
           </div>
 
           <div>
-            <Label>Body</Label>
-            <Textarea
-              value={bodyText}
-              onChange={(e) => setBodyText(e.target.value)}
-              className="min-h-[200px]"
+            <Label id="scheduled-email-body-label">Body</Label>
+            <div
+              ref={bodyEditor}
+              role="textbox"
+              aria-labelledby="scheduled-email-body-label"
+              aria-multiline="true"
+              contentEditable
+              suppressContentEditableWarning
+              onInput={(e) => setEditedHtml(e.currentTarget.innerHTML)}
+              className="min-h-[200px] max-h-[400px] overflow-y-auto w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 [&_img]:max-w-full [&_a]:text-primary [&_a]:underline"
             />
           </div>
 
