@@ -1,5 +1,7 @@
 # Agent rules
 
+- Lead and account web research share `external-research.ts`, merging Parallel and Context.dev without replacing either; Context.dev uses the connector gateway URL from environment configuration. Why: both surfaces and existing agent research tools must retain identical retrieval and failure-safe behavior.
+
 - Keep homepage contrast styling scoped to landing selectors and semantic landing tokens; do not override shared utilities globally because that changes dashboard appearance.
 
 - Theme-specific media treatments and colors live in semantic CSS tokens; both themes render the same media and layout so accessibility changes never remove visuals.

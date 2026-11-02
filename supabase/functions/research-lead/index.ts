@@ -1,16 +1,15 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { ownerOf, resolveCaller } from "../_shared/internal-auth.ts";
-import { createClient } from "npm:@supabase/supabase-js@2.76.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0?target=deno";
 import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
 import { rateLimit, rateLimitResponse } from "../_shared/rate-limit.ts";
 import { AI_CREDITS_USER_MESSAGE, isAiCreditError, reportAiCreditsExhausted } from "../_shared/ai-credits.ts";
 import { toSignalFacts, type SignalEventRow } from "../_shared/signal-facts.ts";
 import { coldiqConfigured, coldiqFetchPages } from "../_shared/coldiq.ts";
+import { externalResearchConfigured, externalResearchSearch } from "../_shared/external-research.ts";
 import {
   leadResearchQueries,
-  parallelConfigured,
   parallelPromptBlock,
-  parallelSearch,
   type ParallelResult,
 } from "../_shared/parallel.ts";
 import {
@@ -365,8 +364,8 @@ serve(async (req) => {
     // observation be dated — and a site we cannot read at all no longer ends
     // the research, because the outside world still has material on them.
     const webPromise: Promise<{ results: ParallelResult[]; sessionId: string | null; error: string | null }> =
-      parallelConfigured()
-        ? parallelSearch({
+      externalResearchConfigured()
+        ? externalResearchSearch({
           objective:
             `Recent, dated developments at the company ${lead.company_name || host} (website ${host}): funding, ` +
             `acquisitions, product launches, partnerships, leadership hires, expansion or hiring pushes. ` +
@@ -683,7 +682,7 @@ serve(async (req) => {
       sources: web.results.length,
       reason: web.error,
       note: web.error === "not_configured"
-        ? "External web research is switched off — PARALLEL_API_KEY is not set on this project. " +
+        ? "External web research is switched off — neither connected web search source is configured. " +
           "Briefs are being written from the prospect's own website alone, so every source link " +
           "points back at their site and nothing here is dated by an independent source."
         : web.error
