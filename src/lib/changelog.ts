@@ -116,6 +116,20 @@ export const ROADMAP: RoadmapItem[] = [
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-11-01-scheduled-email-signatures",
+    date: "2026-11-01",
+    title: "Scheduled email edits keep your signature",
+    summary: "Correct a scheduled email or change its send time without losing your signature logo or clickable links.",
+    items: [
+      {
+        tag: "fixed",
+        title: "Signatures and links survive edits",
+        description: "The scheduled email editor keeps your formatted message, signature images, and link destinations when you save changes.",
+        href: "/dashboard/outreach",
+      },
+    ],
+  },
+  {
     id: "2026-10-30-research-sources",
     date: "2026-10-30",
     title: "Research finds its own news and tech signals",

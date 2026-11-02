@@ -194,7 +194,6 @@ describe("the rows already stored with markup still read correctly", () => {
   const SURFACES = [
     "src/pages/Inbox.tsx",
     "src/components/outreach/EmailDetailSheet.tsx",
-    "src/components/outreach/EditScheduledEmailDialog.tsx",
   ];
 
   for (const file of SURFACES) {
@@ -204,16 +203,8 @@ describe("the rows already stored with markup still read correctly", () => {
     });
   }
 
-  it("the edit box does not hand the user markup to delete", () => {
-    /*
-     * This one is worse than a display bug: the textarea is what gets saved
-     * and sent, so markup left in it goes back out as literal text in the
-     * next email.
-     */
-    const code = readFileSync("src/components/outreach/EditScheduledEmailDialog.tsx", "utf8");
-    expect(code).toContain("setBodyText(toReadableText(email.body_text))");
-    expect(code).not.toContain('setBodyText(email.body_text || "")');
-  });
+  // Scheduled editing now uses the HTML alternative rather than editing a
+  // lossy text rendering. Its round-trip is covered by scheduled-email-body.test.ts.
 });
 
 describe("the mcp edge function is generated, so the fix lives in its source", () => {
