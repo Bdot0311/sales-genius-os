@@ -38,7 +38,7 @@ describe("research says when only the prospect's own site was read", () => {
     expect(code(RESEARCH)).toContain("ran: web.error === null,");
     expect(code(RESEARCH)).toContain('web.error === "not_configured"');
     // Names the setting, so the reader can act on it rather than file a bug.
-    expect(RESEARCH).toContain("PARALLEL_API_KEY is not set on this project");
+    expect(RESEARCH).toContain("neither connected web search source is configured");
   });
 
   it("carries it back to the caller rather than only to the logs", () => {
