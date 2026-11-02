@@ -87,6 +87,7 @@ export type ChangedSurface = "product" | "site" | "internal";
  * panel is still internal however it is nested.
  */
 const INTERNAL_PATHS: RegExp[] = [
+  /^supabase\/functions\/(.*smtp.*|.*healthcheck.*|.*security.*|.*monitor.*|.*probe.*)\//i,
   /\.(test|spec)\.[cm]?[jt]sx?$/i,
   /^src\/test\//,
   /^(scripts|docs|drizzle|domain-connect-templates)\//,
@@ -284,7 +285,7 @@ Rules, in order of importance:
 
 6. Tag honestly. "new" is something that did not exist. "improved" is something that got better. "fixed" is something that was broken. Do not inflate a fix into a feature.
 
-7. If the pull request only changes tests, internal structure, or developer tooling, return {"items": []}. When you are given a list of customer-facing files, that list is your evidence: write about what those files changed and nothing else.
+7. Only signed-in CUSTOMER functionality belongs here. Admin-only tools, SMTP probes, browser-console commands, system health checks, security monitoring, migrations, deployments, rate limits, tests, internal structure, developer tooling, blogs, SEO and marketing-site content are NOT customer features. For those return {"items": []}, even if the PR calls them user-facing or touches a product file. For a mixed PR describe only the concrete customer change, never the internal work. A file list is evidence of where work happened, not proof that customers see a change.
 
 8. British or American spelling, follow the PR. No exclamation marks. No "we're excited to". No emoji.
 

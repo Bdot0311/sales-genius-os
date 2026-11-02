@@ -27,6 +27,12 @@ const APP = readFileSync("src/App.tsx", "utf8");
  * was almost entirely bug fixes. The gate is the feature.
  */
 describe("not every merge is news", () => {
+  it("excludes SMTP probes from customer updates", () => {
+    expect(isWorthAnnouncing({ title: "SMTP probe now runs from System Health", files: ["supabase/functions/smtp-probe/index.ts", "src/pages/admin/SystemHealth.tsx"], filesComplete: true }).announce).toBe(false);
+  });
+  it("excludes security monitoring from customer updates", () => {
+    expect(isWorthAnnouncing({ title: "Security monitors now actually run", files: ["supabase/functions/security-monitor/index.ts"], filesComplete: true }).announce).toBe(false);
+  });
   it("skips the conventional-commit types customers never see", () => {
     for (const title of ["chore: bump deps", "ci(actions)!: retry", "test: add coverage", "refactor: extract helper"]) {
       expect(isWorthAnnouncing({ title }).announce, title).toBe(false);

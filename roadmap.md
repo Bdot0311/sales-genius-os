@@ -1,3 +1,9 @@
+# What's New editorial control
+
+- [x] Add confirmed deletion for draft, published and archived entries.
+- [x] Exclude admin diagnostics and security monitoring from automatic customer drafts.
+- [x] Verify cancellation, persistent deletion of the three internal entries shown, and 53 regression checks.
+
 # Context.dev research
 
 - [x] Connect and verify Context.dev securely.
