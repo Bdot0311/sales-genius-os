@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "npm:@supabase/supabase-js@2.76.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0?target=deno";
 import { AI_SMART, aiFetch } from "../_shared/ai-provider.ts";
 import { leadResearchQueries } from "../_shared/parallel.ts";
 import { externalResearchConfigured, externalResearchSearch } from "../_shared/external-research.ts";

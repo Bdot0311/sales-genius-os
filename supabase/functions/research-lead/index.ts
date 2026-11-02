@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { ownerOf, resolveCaller } from "../_shared/internal-auth.ts";
-import { createClient } from "npm:@supabase/supabase-js@2.76.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0?target=deno";
 import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
 import { rateLimit, rateLimitResponse } from "../_shared/rate-limit.ts";
 import { AI_CREDITS_USER_MESSAGE, isAiCreditError, reportAiCreditsExhausted } from "../_shared/ai-credits.ts";
@@ -9,9 +9,7 @@ import { coldiqConfigured, coldiqFetchPages } from "../_shared/coldiq.ts";
 import { externalResearchConfigured, externalResearchSearch } from "../_shared/external-research.ts";
 import {
   leadResearchQueries,
-  parallelConfigured,
   parallelPromptBlock,
-  parallelSearch,
   type ParallelResult,
 } from "../_shared/parallel.ts";
 import {
