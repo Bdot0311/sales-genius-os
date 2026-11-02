@@ -116,6 +116,13 @@ export const ROADMAP: RoadmapItem[] = [
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-11-02-research-coverage",
+    date: "2026-11-02",
+    title: "Research checks another web source",
+    summary: "Lead and account research now check an additional web search source alongside existing research, keeping links you can verify.",
+    items: [{ tag: "improved", title: "Broader web research", description: "Research combines results from both connected web search sources, removes duplicate links, and continues with existing sources if one is unavailable.", href: "/dashboard/accounts" }],
+  },
+  {
     id: "2026-11-01-scheduled-email-signatures",
     date: "2026-11-01",
     title: "Scheduled email edits keep your signature",

@@ -1,3 +1,15 @@
+# What's New editorial control
+
+- [x] Add confirmed deletion for draft, published and archived entries.
+- [x] Exclude admin diagnostics and security monitoring from automatic customer drafts.
+- [x] Verify cancellation, persistent deletion of the three internal entries shown, and 53 regression checks.
+
+# Context.dev research
+
+- [x] Connect and verify Context.dev securely.
+- [x] Supplement existing lead and account web research with deduplicated Context.dev sources.
+- [x] Run 56 research regression checks, deploy both research functions, and verify signed-in account research with source links.
+
 # Failed-payment recovery
 
 - [x] Recognize an expired failure episode during enabled automatic payment recovery, after status and count resets.
