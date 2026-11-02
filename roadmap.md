@@ -1,10 +1,10 @@
-# Failed-payment recovery
-
 # Context.dev research
 
 - [x] Connect and verify Context.dev securely.
 - [x] Supplement existing lead and account web research with deduplicated Context.dev sources.
-- [ ] Run research regression checks, deploy both research functions, and verify a signed-in research flow.
+- [x] Run 56 research regression checks, deploy both research functions, and verify signed-in account research with source links.
+
+# Failed-payment recovery
 
 - [x] Recognize an expired failure episode during enabled automatic payment recovery, after status and count resets.
 - [x] Test payment recovery followed by a later failed renewal, reject stale recovery events, and deploy all three affected functions (26 regression tests passed; build green).
