@@ -2,6 +2,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { contextDevSearch, normalizeContextResults } from "../../supabase/functions/_shared/context-dev";
 import { externalResearchSearch, mergeResearchResults } from "../../supabase/functions/_shared/external-research";
 
+declare global {
+  var Deno: { env: { get(name: string): string | undefined } };
+}
+
 afterEach(() => vi.unstubAllGlobals());
 const source = (url: string) => ({ url, title: url, publish_date: "", excerpts: ["A real search excerpt"] });
 describe("Context.dev supplements existing research", () => {
