@@ -1,4 +1,9 @@
 # Context.dev research
+# What's New editorial control
+
+- [x] Add confirmed deletion for draft, published and archived entries.
+- [x] Exclude admin diagnostics and security monitoring from automatic customer drafts.
+- [ ] Verify deletion and regression checks.
 
 - [x] Connect and verify Context.dev securely.
 - [x] Supplement existing lead and account web research with deduplicated Context.dev sources.

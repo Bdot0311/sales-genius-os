@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Panel, PanelHeader, EmptyState } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -49,6 +50,7 @@ export const ChangelogTab = () => {
   const [roadmap, setRoadmap] = useState<RoadmapRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<EntryRow | null>(null);
 
   const load = useCallback(async () => {
     const [e, r] = await Promise.all([
@@ -78,6 +80,25 @@ export const ChangelogTab = () => {
 
   const patchEntry = (id: string, patch: Partial<EntryRow>) =>
     setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, ...patch } : e)));
+
+  const deleteEntry = async () => {
+    if (!deleteTarget) return;
+    const id = deleteTarget.id;
+    setBusy(id);
+    const { data, error } = await supabase
+      .from("changelog_entries" as any)
+      .delete()
+      .eq("id", id)
+      .select("id");
+    setBusy(null);
+    if (error || !data?.length) {
+      toast.error(error ? `Could not delete: ${error.message}` : "Entry was not deleted. Refresh and try again.");
+      return;
+    }
+    setEntries((prev) => prev.filter((entry) => entry.id !== id));
+    setDeleteTarget(null);
+    toast.success("Entry deleted");
+  };
 
   const saveEntry = async (entry: EntryRow, status?: EntryRow["status"]) => {
     setBusy(entry.id);
@@ -176,6 +197,9 @@ export const ChangelogTab = () => {
         }
         actions={
           <div className="flex items-center gap-2">
+            <Button size="icon" variant="ghost" disabled={busy !== null} onClick={() => setDeleteTarget(entry)} aria-label={`Delete entry: ${entry.title}`} title="Delete entry">
+              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+            </Button>
             {entry.status === "draft" ? (
               <>
                 <Button size="sm" variant="outline" disabled={busy === entry.id} onClick={() => saveEntry(entry)}>
@@ -282,6 +306,23 @@ export const ChangelogTab = () => {
 
   return (
     <div className="space-y-6">
+      <AlertDialog open={deleteTarget !== null} onOpenChange={(open) => { if (!open && busy === null) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this entry?</AlertDialogTitle>
+            <AlertDialogDescription>
+              “{deleteTarget?.title}” will be permanently removed, including from the customer page if published. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy !== null}>Cancel</AlertDialogCancel>
+            <Button variant="destructive" disabled={busy !== null} onClick={deleteEntry}>
+              {busy !== null ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Trash2 className="mr-1.5 h-3.5 w-3.5" />}
+              Delete entry
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <section>
         <h2 className="mb-2 text-[0.625rem] font-medium uppercase tracking-[0.1em] text-muted-foreground/60">
           Waiting to publish
