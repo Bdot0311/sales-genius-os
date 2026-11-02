@@ -1,5 +1,18 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
+import { hireRelevance } from "../_shared/hire-relevance.ts";
+import { ownerOf, resolveCaller } from "../_shared/internal-auth.ts";
+import {
+  boardCacheExpiry,
+  boardCacheKey,
+  fetchKnownBoard,
+  probeBoards,
+  slugCandidates,
+  type AtsJob,
+  hiringVelocity,
+  type BoardCacheValue,
+  type DiscoveredBoard,
+} from "../_shared/ats-boards.ts";
 
 // Real, free buying signals from a company's public ATS job board.
 //
@@ -39,115 +52,147 @@ async function fetchJson(url: string): Promise<any | null> {
   }
 }
 
-// Candidate board slugs derived from the company domain and name. Boards are
-// almost always at the company's short slug (stripe, ramp, notion), so trying
-// the domain root and a couple of name variants finds most of them.
-function slugCandidates(website?: string | null, name?: string | null): string[] {
-  const set = new Set<string>();
-  if (website) {
-    const host = website.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
-    const root = host.split(".")[0];
-    if (root) { set.add(root); set.add(root.replace(/-/g, "")); }
-  }
-  if (name) {
-    const n = name.trim().toLowerCase();
-    if (n && n !== "unknown") {
-      const compact = n.replace(/[^a-z0-9]+/g, "");
-      const hyphen = n.replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-      if (compact) set.add(compact);
-      if (hyphen) set.add(hyphen);
-    }
-  }
-  return [...set].filter((s) => s.length >= 2).slice(0, 5);
-}
-
-interface Job { id: string; title: string; date: string; url: string | null }
-
-// Normalize each provider's posting shape into { id, title, date, url }.
-function ghJobs(d: any): Job[] {
-  return Array.isArray(d?.jobs) ? d.jobs.map((j: any) => ({
-    id: String(j.id), title: String(j.title || ""),
-    date: j.updated_at || j.first_published || new Date().toISOString(), url: j.absolute_url || null,
-  })) : [];
-}
-function leverJobs(d: any): Job[] {
-  return Array.isArray(d) ? d.map((j: any) => ({
-    id: String(j.id), title: String(j.text || ""),
-    date: j.createdAt ? new Date(j.createdAt).toISOString() : new Date().toISOString(), url: j.hostedUrl || null,
-  })) : [];
-}
-function ashbyJobs(d: any): Job[] {
-  return Array.isArray(d?.jobs) ? d.jobs.map((j: any) => ({
-    id: String(j.id ?? j.jobUrl ?? j.title), title: String(j.title || ""),
-    date: j.publishedAt || j.updatedAt || new Date().toISOString(), url: j.jobUrl || null,
-  })) : [];
-}
-
-async function discoverBoard(slugs: string[]): Promise<{ provider: string; token: string; jobs: Job[] } | null> {
-  for (const slug of slugs) {
-    const gh = await fetchJson(`https://boards-api.greenhouse.io/v1/boards/${slug}/jobs`);
-    const ghj = ghJobs(gh);
-    if (ghj.length) return { provider: "greenhouse", token: slug, jobs: ghj };
-
-    const lv = await fetchJson(`https://api.lever.co/v0/postings/${slug}?mode=json`);
-    const lvj = leverJobs(lv);
-    if (lvj.length) return { provider: "lever", token: slug, jobs: lvj };
-
-    const ab = await fetchJson(`https://api.ashbyhq.com/posting-api/job-board/${slug}?includeCompensation=false`);
-    const abj = ashbyJobs(ab);
-    if (abj.length) return { provider: "ashby", token: slug, jobs: abj };
-  }
-  return null;
-}
-
-// A GTM hire (they are building pipeline/revenue) is the strongest signal for
-// outbound tooling; anything else is treated as general growth.
-const GTM_RE = /\b(sales|account executive|\bae\b|sdr|bdr|revenue|rev\s?ops|go[-\s]?to[-\s]?market|\bgtm\b|demand gen|growth|marketing|partnership|business development)\b/i;
-
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return json({ error: "Authorization required" }, 401);
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const { data: { user }, error: userErr } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
-    if (userErr || !user) return json({ error: "Invalid user token" }, 401);
+
+    /*
+     * Both a signed-in user and an internal job can ask.
+     *
+     * This called `auth.getUser()` on whatever token arrived, and a service
+     * key is not a user — so a scheduled refresh would have got 401 on every
+     * lead, which is the exact failure `resolveCaller` was written for after
+     * it happened to the generate-email queue.
+     *
+     * An internal caller comes back with `userId: null` and does NOT say whose
+     * lead it is acting on. `ownerOf` reads that off the row, so the only
+     * thing a request chooses is which lead, and the database decides whose it
+     * is. A forged user_id in the body cannot work because no body is read for
+     * one.
+     */
+    const caller = await resolveCaller(req);
+    if (!caller.ok) return caller.response;
 
     const body = await req.json().catch(() => ({} as Record<string, unknown>));
     const leadId = typeof body.leadId === "string" ? body.leadId : "";
     if (!leadId) return json({ error: "leadId is required", error_code: "invalid_input" }, 400);
 
+    const ownerId = await ownerOf(supabase, "leads", leadId, caller);
+    if (!ownerId) return json({ error: "lead not found", error_code: "not_found" }, 404);
+
     const { data: lead } = await supabase
       .from("leads").select("id, company_name, company_website")
-      .eq("id", leadId).eq("user_id", user.id).maybeSingle();
+      .eq("id", leadId).eq("user_id", ownerId).maybeSingle();
     if (!lead) return json({ error: "lead not found", error_code: "not_found" }, 404);
 
     const slugs = slugCandidates(lead.company_website, lead.company_name);
     if (!slugs.length) return json({ detected: false, reason: "no company domain or name to look up" });
 
-    const board = await discoverBoard(slugs);
+    /*
+     * Discovery is the expensive half, so what it found is remembered.
+     *
+     * Fifteen requests at a 6s timeout is up to ninety seconds to answer "no
+     * public board", and that answer was recomputed from scratch on every
+     * call. A known board skips straight to its own endpoint; a known miss
+     * answers without touching the network at all. Both matter far more now
+     * that a schedule re-polls rather than enrichment asking once.
+     */
+    const cacheKey = boardCacheKey(lead.company_website, lead.company_name);
+    const { data: cachedRow } = await supabase
+      .from("api_cache").select("cache_value, expires_at").eq("cache_key", cacheKey).maybeSingle();
+    const cacheFresh = !!cachedRow?.expires_at && new Date(cachedRow.expires_at).getTime() > Date.now();
+    const cached = (cacheFresh ? cachedRow!.cache_value : null) as BoardCacheValue | null;
+
+    if (cached?.none) {
+      return json({ detected: false, reason: "no public ATS board found", cached: true });
+    }
+
+    let board: DiscoveredBoard | null = null;
+    let fromCache = false;
+    if (cached?.provider && cached.token) {
+      board = await fetchKnownBoard(cached.provider, cached.token, fetchJson);
+      fromCache = !!board;
+    }
+    if (!board) {
+      board = await probeBoards(slugs, fetchJson);
+      const value: BoardCacheValue = board
+        ? { provider: board.provider, token: board.token }
+        : { none: true };
+      await supabase.from("api_cache").upsert({
+        cache_key: cacheKey,
+        cache_value: value,
+        expires_at: boardCacheExpiry(value),
+      }, { onConflict: "cache_key" });
+    }
     if (!board) return json({ detected: false, reason: "no public ATS board found" });
 
-    // Newest relevant posting decides the signal. GTM roles are the strong
-    // signal; otherwise any open roles are a softer growth signal.
-    const byDateDesc = (a: Job, b: Job) => Date.parse(b.date) - Date.parse(a.date);
-    const gtm = board.jobs.filter((j) => GTM_RE.test(j.title)).sort(byDateDesc);
+    /*
+     * What counts as a relevant hire is the seller's question, not ours.
+     *
+     * Ordered, because a user with several ICP profiles would otherwise get
+     * whichever row the database happened to return — and relevance decides
+     * the signal_type, which is embedded in the dedupe key. A profile that
+     * varied between polls would re-signal the same job board every time.
+     */
+    const { data: icp } = await supabase
+      .from("icp_profiles")
+      .select("hiring_signals, target_titles")
+      .eq("user_id", ownerId)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const relevance = hireRelevance(icp);
+
+    // Newest relevant posting decides the signal. A hire the seller cares
+    // about is the strong signal; otherwise any open roles are a softer
+    // growth signal.
+    const byDateDesc = (a: AtsJob, b: AtsJob) => Date.parse(b.date) - Date.parse(a.date);
+    const gtm = board.jobs.filter((j) => relevance.isRelevant(j.title)).sort(byDateDesc);
     const relevant = gtm.length ? gtm : [...board.jobs].sort(byDateDesc);
     const newest = relevant[0];
     if (!newest) return json({ detected: false, reason: "board had no readable roles" });
 
+    /*
+     * Three strengths, not two.
+     *
+     * "They are hiring" and "they are hiring hard" are different things to
+     * open an email on, and only the first was ever sent: one newest posting
+     * decided the whole event, so a company with a single stale opening and
+     * one that posted six roles this month produced the same signal.
+     *
+     * A surge is counted on the relevant roles, so four new engineering posts
+     * are a surge for somebody who sells to engineering leaders and four new
+     * GTM posts are a surge for somebody who sells to revenue leaders.
+     *
+     * Exactly one signal per poll. `toSignalFacts` keeps one fact per
+     * signal_type, so emitting a surge alongside a plain hiring event would
+     * put two sentences about the same job board into one email — the
+     * "reads like a dossier" failure that module is explicit about avoiding.
+     */
+    /*
+     * `hiring_gtm` keeps its name though it now means "a hire this seller
+     * cares about" rather than specifically go-to-market. The string is
+     * load-bearing: three files calibrate weights against it, the dedupe keys
+     * embed it, and every row already stored uses it. Renaming it would orphan
+     * that history to fix a comment.
+     */
     const isGtm = gtm.length > 0;
-    const signalType = isGtm ? "hiring_gtm" : "hiring_growth";
-    const weight = isGtm ? 30 : 12;
+    const velocity = hiringVelocity(relevant);
+    const signalType = velocity.surge ? "hiring_surge" : isGtm ? "hiring_gtm" : "hiring_growth";
+    // Sits above a single GTM hire (30) and below a funding round (40): more
+    // roles is better evidence of a build-out than one posting, and still
+    // weaker evidence of budget than money actually raised.
+    const weight = velocity.surge ? 36 : isGtm ? 30 : 12;
     const signalKey = `${signalType}:${board.provider}:${board.token}:${newest.id}`;
 
     // Dedupe: one signal per newest-relevant-posting state. Re-polls with the
     // same newest role add nothing; a new posting produces a new signal_key.
     const { data: existing } = await supabase
       .from("signal_events").select("metadata")
-      .eq("lead_id", leadId).eq("user_id", user.id).ilike("source", "ats:%").limit(50);
+      .eq("lead_id", leadId).eq("user_id", ownerId).ilike("source", "ats:%").limit(50);
     const already = (existing || []).some((e: any) => e?.metadata?.signal_key === signalKey);
     if (already) {
       return json({ detected: true, deduped: true, signal_type: signalType, provider: board.provider });
@@ -156,7 +201,7 @@ serve(async (req) => {
     const roles = relevant.slice(0, 5).map((j) => j.title).filter(Boolean);
     const { error: insErr } = await supabase.from("signal_events").insert({
       lead_id: leadId,
-      user_id: user.id,
+      user_id: ownerId,
       signal_type: signalType,
       weight,
       occurred_at: new Date(newest.date).toISOString(),
@@ -167,6 +212,10 @@ serve(async (req) => {
         board_token: board.token,
         open_roles: board.jobs.length,
         gtm_roles: gtm.length,
+        recent_roles: velocity.recent,
+        window_days: velocity.windowDays,
+        relevance_source: relevance.source,
+        relevance_basis: relevance.describe(),
         roles,
         top_role: newest.title,
         top_role_url: newest.url,
@@ -178,6 +227,10 @@ serve(async (req) => {
     return json({
       detected: true,
       signal_type: signalType,
+      cached_board: fromCache,
+      recent_roles: velocity.recent,
+      surge: velocity.surge,
+      relevance_source: relevance.source,
       provider: board.provider,
       board_token: board.token,
       open_roles: board.jobs.length,

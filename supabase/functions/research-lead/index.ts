@@ -5,6 +5,7 @@ import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
 import { rateLimit, rateLimitResponse } from "../_shared/rate-limit.ts";
 import { AI_CREDITS_USER_MESSAGE, isAiCreditError, reportAiCreditsExhausted } from "../_shared/ai-credits.ts";
 import { toSignalFacts, type SignalEventRow } from "../_shared/signal-facts.ts";
+import { backfillSourceFilter, detectorsToBackfill } from "../_shared/signal-backfill.ts";
 import { coldiqConfigured, coldiqFetchPages } from "../_shared/coldiq.ts";
 import {
   leadResearchQueries,
@@ -579,18 +580,25 @@ serve(async (req) => {
     // pages that say the same thing to every visitor and carry no timing.
     //
     // A lead that was never enriched has never been through the detectors, so
-    // research runs the news (PredictLeads) and tech-stack (Bloomberry) checks
-    // itself when nothing from them is on record. Both cache per domain and
-    // never throw into this path; a slow or failed check just adds nothing.
+    // research runs the news (PredictLeads), tech-stack (Bloomberry) and
+    // hiring (public ATS boards) checks itself when nothing from one of them
+    // is on record. They cache per domain and never throw into this path; a
+    // slow or failed check just adds nothing.
     if (!caller.internal) {
+      // Each detector is judged on the source prefix it writes. The decision
+      // itself is in _shared/signal-backfill.ts, where it can be tested by
+      // behaviour rather than by grepping this file.
       const { data: existing } = await supabase
         .from("signal_events").select("source")
         .eq("lead_id", leadId).eq("user_id", userId)
-        .or("source.ilike.news:%,source.ilike.tech:%").limit(1);
-      if (!existing?.length) {
+        .or(backfillSourceFilter()).limit(200);
+      const missing = detectorsToBackfill(
+        (existing ?? []).map((r: { source: string | null }) => r.source),
+      );
+      if (missing.length) {
         const base = Deno.env.get("SUPABASE_URL")!;
         const anon = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
-        await Promise.allSettled(["detect-news-signals", "detect-tech-signals"].map(async (fn) => {
+        await Promise.allSettled(missing.map(async ({ fn }) => {
           const ctrl = new AbortController();
           const t = setTimeout(() => ctrl.abort(), 12_000);
           try {
