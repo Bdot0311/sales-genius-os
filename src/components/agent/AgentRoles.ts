@@ -96,6 +96,8 @@ export const AGENT_TOOL_GROUPS: {
       { name: "list_icp_profiles", label: "Read ICP profiles" },
       { name: "update_icp_profile", label: "Edit ICP targeting" },
       { name: "apply_won_deal_icp", label: "Set the ICP from won deals" },
+      { name: "list_signals", label: "Read buying signals" },
+      { name: "refresh_signals", label: "Re-read a job board for new hires" },
       { name: "list_campaign_briefs", label: "Read campaign briefs" },
       { name: "save_campaign_brief", label: "Create or edit campaign briefs" },
       { name: "list_email_templates", label: "Read email templates" },

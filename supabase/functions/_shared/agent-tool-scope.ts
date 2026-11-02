@@ -109,6 +109,22 @@ export const CRM_TOOLS = [
  */
 export const ICP_TOOLS = ["list_icp_profiles", "update_icp_profile", "apply_won_deal_icp"];
 
+/**
+ * The dated evidence behind a lead's intent score.
+ *
+ * Signals are what "why now" is actually built on — a role posted three weeks
+ * ago, a Form D filed last month, Segment added to the stack — and until now no
+ * agent could read them. An agent asked why a lead was worth emailing answered
+ * from the lead's standing description, which is the same sentence for every
+ * visitor to that company's website and carries no timing.
+ *
+ * `refresh_signals` re-reads a public job board and costs nothing. It stops at
+ * hiring deliberately: the news and tech detectors spend a third-party credit
+ * per uncached lookup, and a tool an agent can call in a loop must not be able
+ * to spend those.
+ */
+export const SIGNAL_TOOLS = ["list_signals", "refresh_signals"];
+
 /** Campaign assets and sequence control for email-facing agents. */
 export const CAMPAIGN_TOOLS = [
   "list_sequence_enrollments",
@@ -146,6 +162,7 @@ export const ALL_AGENT_TOOLS = [
     ...REPLY_TOOLS,
     ...CRM_TOOLS,
     ...ICP_TOOLS,
+    ...SIGNAL_TOOLS,
     ...CAMPAIGN_TOOLS,
     ...INBOX_TOOLS,
     ...DELIVERABILITY_TOOLS,
@@ -158,7 +175,7 @@ export const ALL_AGENT_TOOLS = [
 // an agent that says "I can't do that" for work it is supposed to own.
 const ROLE_TOOLS: Record<Exclude<AgentRole, "custom">, string[]> = {
   full_cycle: ALL_AGENT_TOOLS,
-  lead_gen: [...CORE_TOOLS, ...LEAD_GEN_TOOLS, ...ICP_TOOLS],
+  lead_gen: [...CORE_TOOLS, ...LEAD_GEN_TOOLS, ...ICP_TOOLS, ...SIGNAL_TOOLS],
   outreach: [
     ...CORE_TOOLS,
     ...OUTREACH_TOOLS,
@@ -166,6 +183,8 @@ const ROLE_TOOLS: Record<Exclude<AgentRole, "custom">, string[]> = {
     "research_leads",
     "score_leads",
     "update_lead",
+    // What a first line can honestly open on.
+    ...SIGNAL_TOOLS,
     ...CAMPAIGN_TOOLS,
     "list_icp_profiles",
     "list_sending_accounts",
@@ -289,6 +308,8 @@ export const TOOL_CATALOG: Record<string, string> = {
   delete_inbox_threads: "Permanently delete inbox threads (destructive).",
   run_full_agent: "Run the whole autonomous cycle end to end.",
   list_icp_profiles: "Read the ICP definitions.",
+  list_signals: "Read a lead's detected buying signals with dates and sources.",
+  refresh_signals: "Re-read a lead's public job board for new hiring signals (free).",
   update_icp_profile: "Edit ICP targeting: industries, titles, seniority, geos, size, pains, signals, exclusions.",
   list_sequence_enrollments: "See which leads are in which sequence and their next send.",
   update_enrollment: "Pause, resume or stop one lead's sequence.",
@@ -334,6 +355,7 @@ const TOOL_PREREQUISITES: Record<string, string[]> = {
   find_leads: ["list_leads"],
   run_full_agent: ["get_agent_status"],
   update_icp_profile: ["list_icp_profiles"],
+  refresh_signals: ["list_signals"],
   update_enrollment: ["list_sequence_enrollments"],
   update_sequence_status: ["list_sequences"],
   list_sequence_enrollments: ["list_sequences"],

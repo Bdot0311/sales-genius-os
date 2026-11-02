@@ -6,6 +6,8 @@
 // (src/components/agent/AgentRoles.ts). src/lib/agent-tool-coverage.test.ts fails
 // if a tool is defined in one place and not the others.
 
+import { toSignalFacts, type SignalEventRow } from "./signal-facts.ts";
+
 type Admin = { from: (t: string) => any };
 type ToolEvent = { name: string; label: string; status: "ok" | "error"; detail?: string };
 
@@ -29,6 +31,23 @@ const REPLY_CLASSES = ["interested", "meeting_request", "not_interested", "objec
 
 export const OUTBOUND_TOOL_DEFS = [
   fn("list_icp_profiles", "List the account's ICP (ideal customer profile) definitions."),
+  /*
+   * Signals had no agent tooling at all. Ninety-four tools were registered and
+   * not one of them could read `signal_events` or ask a detector to look
+   * again, so an agent asked "why now for this company" had to answer from the
+   * lead record — the standing description — while the dated, sourced evidence
+   * sat in a table it could not see. `AGENTS.md` exists to stop exactly that.
+   *
+   * Read and refresh, the pair that rule asks for. Refresh covers hiring only,
+   * because the news and tech detectors spend a third-party credit per
+   * uncached lookup and an agent should not be able to spend those in a loop.
+   */
+  fn("list_signals", "Read the detected buying signals for a lead: hiring, funding, tech-stack changes and news, each with its date, source and weight. This is the dated evidence an email can open on, as opposed to the lead's standing description.", {
+    lead_id: str, limit: num,
+  }, ["lead_id"]),
+  fn("refresh_signals", "Re-read a lead's public job board now and record any new hiring signal. Free and safe to call; it reads public ATS boards and spends no credits. Does not refresh news or tech-stack signals, which cost credits per lookup.", {
+    lead_id: str,
+  }, ["lead_id"]),
   fn("update_icp_profile", "Edit an ICP profile: target industries, titles, seniority, geographies, company size, pains, signals and exclusions. Pass only fields to change; list fields replace the old list.", {
     icp_id: str, name: str, industries: strList, target_titles: strList, seniority_levels: strList, geographies: strList,
     departments: strList, company_size_min: num, company_size_max: num, pain_points: strList, buying_signals: strList,
@@ -81,10 +100,24 @@ const pick = (args: Record<string, unknown>, fields: string[]) => {
 export async function runOutboundTool(
   name: string,
   args: Record<string, any>,
-  ctx: { admin: Admin; userId: string; toolEvents: ToolEvent[] },
+  /*
+   * `edge` is passed in rather than read from `Deno.env` here.
+   *
+   * This module is imported by tests that run under Node, and reaching for a
+   * Deno global put `Cannot find name 'Deno'` into the app's typecheck the
+   * moment one of them pulled it in. Taking the two values as arguments fixes
+   * that and is better anyway: a tool that calls another function can be
+   * tested by passing it a URL, with no global to stub.
+   */
+  ctx: {
+    admin: Admin;
+    userId: string;
+    toolEvents: ToolEvent[];
+    edge?: { url: string; serviceKey: string };
+  },
 ): Promise<Record<string, unknown> | undefined> {
   if (!OUTBOUND_TOOL_NAMES.includes(name)) return undefined;
-  const { admin, userId, toolEvents } = ctx;
+  const { admin, userId, toolEvents, edge } = ctx;
   const done = (label: string, error: { message: string } | null | undefined, detail = "", payload: Record<string, unknown> = {}) => {
     toolEvents.push({ name, label: error ? `${label} failed` : label, status: error ? "error" : "ok", detail: error ? error.message : detail });
     return error ? { error: error.message } : { success: true, ...payload };
@@ -117,6 +150,64 @@ export async function runOutboundTool(
       return list("icp_profiles", ["id", ...ICP_FIELDS, "updated_at"].join(", "), "Read ICP profiles", "icp_profiles");
     case "update_icp_profile":
       return updateOwned("icp_profiles", args.icp_id, pick(args, ICP_FIELDS), "Updated ICP");
+
+    case "list_signals": {
+      /*
+       * Newest first, and the facts rendered the same way the email copy
+       * renders them — an agent reading raw metadata would paraphrase
+       * `top_role_url` into prose, which is how an unsourced claim gets into
+       * an email.
+       */
+      const { data, error } = await admin.from("signal_events")
+        .select("signal_type, occurred_at, source, weight, metadata")
+        .eq("lead_id", String(args.lead_id ?? "")).eq("user_id", userId)
+        .order("occurred_at", { ascending: false })
+        .limit(Math.min(Math.max(Number(args.limit) || 20, 1), 100));
+      if (error) return done("Read signals", error);
+      const rows = (data ?? []) as SignalEventRow[];
+      return done("Read signals", null, `${rows.length}`, {
+        signals: rows,
+        facts: toSignalFacts(rows).map((f) => ({ fact: f.fact, source: f.source, occurred_at: f.occurred_at })),
+      });
+    }
+
+    case "refresh_signals": {
+      /*
+       * The lead is confirmed to belong to this account before the detector is
+       * asked, so a lead_id from another account cannot be used to make the
+       * platform fetch on its behalf. The detector checks ownership again
+       * itself; this is the cheaper refusal.
+       */
+      const leadId = String(args.lead_id ?? "");
+      const { data: lead } = await admin.from("leads").select("id").eq("id", leadId).eq("user_id", userId).maybeSingle();
+      if (!lead) return done("Refresh signals", { message: "Lead not found in this account" });
+
+      if (!edge?.url || !edge?.serviceKey) return done("Refresh signals", { message: "Signal refresh is not configured" });
+      const { url, serviceKey } = edge;
+
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 20_000);
+      try {
+        const res = await fetch(`${url}/functions/v1/detect-hiring-signals`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+          body: JSON.stringify({ leadId }),
+          signal: ctrl.signal,
+        });
+        const out = await res.json().catch(() => null);
+        if (!res.ok) return done("Refresh signals", { message: out?.error || `Job board read failed (${res.status})` });
+        return done("Refreshed signals", null, out?.signal_type ? String(out.signal_type) : "no change", {
+          detected: !!out?.detected,
+          deduped: !!out?.deduped,
+          signal_type: out?.signal_type ?? null,
+          reason: out?.reason ?? null,
+        });
+      } catch (e) {
+        return done("Refresh signals", { message: e instanceof Error ? e.message : String(e) });
+      } finally {
+        clearTimeout(timer);
+      }
+    }
 
     case "list_sequence_enrollments": {
       let q = admin.from("sequence_enrollments")

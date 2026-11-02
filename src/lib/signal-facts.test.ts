@@ -146,3 +146,206 @@ describe("the brief actually carries them", () => {
     expect(RESEARCH).toContain('signalFacts.length ? "high" : "medium"');
   });
 });
+
+describe("the signal types the detectors ACTUALLY write", () => {
+  /*
+   * This file's own first test renders `hiring_surge`, and passes. Nothing in
+   * the product has ever written that value.
+   *
+   * `detect-hiring-signals/index.ts:142` writes `hiring_gtm` or
+   * `hiring_growth`. The renderer's cases were `hiring_surge` and `hiring`,
+   * neither of which exists, so every hiring event fell to `default:`, which
+   * needs `metadata.headline` — and the hiring detector's metadata has no
+   * headline. It returned null. Every one.
+   *
+   * So hiring scored into intent (Lead Score v2 reads the stored weight) and
+   * reached the copy never, which is the exact failure `signal-facts.ts` was
+   * written to fix. Its header says so: "All of that drove the intent SCORE
+   * and none of it reached the COPY." Still true for the highest-weight
+   * signal in the product, because the test that was supposed to cover it
+   * made up its input.
+   *
+   * These assert against the strings the detector emits. Values, not names
+   * that read plausibly.
+   */
+  const HIRING_META = {
+    top_role: "Head of Growth",
+    top_role_url: "https://boards.greenhouse.io/acme/jobs/1",
+    open_roles: 4,
+    gtm_roles: 2,
+  };
+
+  it("hiring_gtm renders, because that is what the detector writes", () => {
+    const f = signalEventToFact({
+      signal_type: "hiring_gtm",
+      occurred_at: daysAgo(15),
+      source: "ats:greenhouse",
+      metadata: HIRING_META,
+    });
+    expect(f, "hiring_gtm produced no fact at all").not.toBeNull();
+    expect(f?.fact).toContain("Head of Growth");
+    expect(f?.fact).toContain("4 roles open");
+    expect(f?.source).toBe("https://boards.greenhouse.io/acme/jobs/1");
+  });
+
+  it("hiring_growth renders too", () => {
+    const f = signalEventToFact({
+      signal_type: "hiring_growth",
+      occurred_at: daysAgo(20),
+      source: "ats:lever",
+      metadata: { top_role: "Backend Engineer", open_roles: 2, gtm_roles: 0 },
+    });
+    expect(f, "hiring_growth produced no fact at all").not.toBeNull();
+    expect(f?.fact).toContain("Backend Engineer");
+    // No GTM roles, so that clause must not appear claiming zero.
+    expect(f?.fact).not.toContain("go-to-market");
+  });
+
+  it("every signal_type a detector writes can produce a fact", () => {
+    /*
+     * The guard that would have caught this. It reads the detectors for the
+     * values they actually insert, rather than trusting a list kept by hand,
+     * and requires each one to render.
+     *
+     * The first version of this passed while the bug was live. It handed every
+     * type one bag of "generous" metadata that happened to include a
+     * `headline`, so a type the switch does not know fell to `default:`, found
+     * the headline and returned a fact. The sweep proved the fallback works,
+     * which was never in question, and said nothing about the dispatch.
+     *
+     * Each type now gets only metadata its own branch would really see, and
+     * none of them carry a headline except news. A type the switch does not
+     * handle now reaches `default:`, finds nothing, and returns null — which
+     * is the production behaviour this is meant to detect.
+     */
+    const META_BY_TYPE: Record<string, Record<string, unknown>> = {
+      hiring_gtm: HIRING_META,
+      hiring_growth: HIRING_META,
+      hiring_surge: HIRING_META,
+      tech_stack_change: { product: "Segment", change: "added", source_url: "https://example.com/x" },
+      funding_raised: { filing_name: "Form D", filing_url: "https://sec.gov/x" },
+    };
+
+    const DETECTORS = [
+      "detect-hiring-signals",
+      "detect-tech-signals",
+      "detect-funding-signals",
+    ];
+    const written = new Set<string>();
+    for (const d of DETECTORS) {
+      const src = readFileSync(
+        new URL(`../../supabase/functions/${d}/index.ts`, import.meta.url),
+        "utf8",
+      );
+      // Literal inserts: `signal_type: "tech_stack_change"`.
+      for (const m of src.matchAll(/signal_type:\s*"([a-z_]+)"/g)) written.add(m[1]);
+      /*
+       * And every literal in whatever expression computes `signalType`.
+       *
+       * This used to pin the exact shape of one ternary, and adding a third
+       * branch to it found nothing — which the floor below turned into a
+       * failure rather than a silent pass, as intended. Reading the whole
+       * assignment survives the next branch too.
+       */
+      for (const m of src.matchAll(/\bsignalType\s*=\s*([^;]+);/g)) {
+        for (const lit of m[1].matchAll(/"([a-z_]+)"/g)) written.add(lit[1]);
+      }
+    }
+    // If this stops finding them, the loop below proves nothing.
+    expect(written.size, "found no signal types in the detectors").toBeGreaterThanOrEqual(4);
+    expect(written, "the hiring types are the ones this was written for").toContain("hiring_gtm");
+
+    // A new detector has to say how its signal reads, here, rather than
+    // discovering months later that it never reached an email.
+    const unmapped = [...written].filter((t) => !(t in META_BY_TYPE));
+    expect(unmapped, "new signal types: decide how each one renders").toEqual([]);
+
+    const dropped = [...written].filter(
+      (t) => signalEventToFact({
+        signal_type: t,
+        occurred_at: daysAgo(10),
+        source: "x",
+        metadata: META_BY_TYPE[t],
+      }) === null,
+    );
+    expect(dropped, "these are collected and scored but never reach the copy").toEqual([]);
+  });
+});
+
+
+describe("a surge reads as a surge, not as one more hire", () => {
+  /*
+   * The signal type on its own would only have changed the intent weight.
+   * Rendered identically to a single hire, nobody reading the email could tell
+   * the difference — and "Posted a Head of Growth role, 9 roles open" says
+   * nothing about WHEN, because `open_roles` is a standing total rather than
+   * activity.
+   */
+  const surge = (metadata: Record<string, unknown>) =>
+    signalEventToFact({
+      signal_type: "hiring_surge",
+      occurred_at: daysAgo(4),
+      source: "ats:greenhouse",
+      metadata,
+    });
+
+  it("leads with the count and the period", () => {
+    const f = surge({
+      recent_roles: 5,
+      window_days: 30,
+      gtm_roles: 3,
+      top_role: "Head of Growth",
+      top_role_url: "https://boards.greenhouse.io/acme/jobs/1",
+      open_roles: 9,
+    });
+    expect(f?.fact).toContain("Posted 5 roles");
+    expect(f?.fact).toContain("the last month");
+    expect(f?.fact).toContain("3 of them go-to-market");
+    expect(f?.fact).toContain("most recently a Head of Growth");
+    // The standing total is not the story and must not lead.
+    expect(f?.fact).not.toMatch(/^Posted a /);
+    expect(f?.source).toBe("https://boards.greenhouse.io/acme/jobs/1");
+  });
+
+  it("says nothing about go-to-market when none of them are", () => {
+    const f = surge({ recent_roles: 4, window_days: 30, gtm_roles: 0, top_role: "Backend Engineer" });
+    expect(f?.fact).toContain("Posted 4 roles");
+    expect(f?.fact).not.toContain("go-to-market");
+  });
+
+  it("works with no top role recorded", () => {
+    const f = surge({ recent_roles: 6, window_days: 30 });
+    expect(f?.fact).toBe("Posted 6 roles in the last month");
+  });
+
+  it("a row stored before the count existed still reads correctly", () => {
+    /*
+     * Rows already in signal_events carry no recent_roles. They must fall back
+     * to the single-hire wording rather than rendering "Posted undefined
+     * roles" or dropping out entirely.
+     */
+    const f = surge({ top_role: "Head of Growth", open_roles: 4, gtm_roles: 2 });
+    expect(f).not.toBeNull();
+    expect(f?.fact).toContain("Posted a Head of Growth role");
+    expect(f?.fact).not.toContain("undefined");
+    expect(f?.fact).not.toContain("NaN");
+  });
+
+  it("a count of one is not phrased as a surge", () => {
+    // Belt and braces: the detector will not emit a surge for one role, but
+    // the renderer should not claim "Posted 1 roles" if it ever saw that.
+    const f = surge({ recent_roles: 1, window_days: 30, top_role: "AE" });
+    expect(f?.fact).toContain("Posted a AE role");
+  });
+
+  it("a longer window is described in months", () => {
+    const f = surge({ recent_roles: 7, window_days: 90, top_role: "AE" });
+    expect(f?.fact).toContain("the last 3 months");
+  });
+
+  it("still says nothing when there is nothing concrete", () => {
+    // The module's rule: a fact that can only say "they had a hiring signal"
+    // invites exactly the vague opener it exists to replace.
+    expect(surge({})).toBeNull();
+  });
+});
