@@ -109,10 +109,17 @@ describe("password reset still reaches the reset form", () => {
 
 describe("the sign-in that broke", () => {
   it("still returns to /auth, which was the right call", () => {
-    // Reverting this would reintroduce the bug it fixed: the homepage drops
-    // the session because it loads the auth client too late.
+    /*
+     * Reverting this would reintroduce the bug it fixed: the homepage drops
+     * the session because it loads the auth client too late.
+     *
+     * The option is `redirectTo` now, not `redirect_uri` — sign-in moved off
+     * Lovable's broker, whose exchange had been failing, onto Supabase's own
+     * Google provider. What must not change is the destination.
+     */
     const form = readFileSync("src/components/auth/AuthForm.tsx", "utf8");
-    expect(form).toContain("redirect_uri: `${window.location.origin}/auth`");
+    expect(form).toContain("redirectTo: `${window.location.origin}/auth`");
+    expect(form, "the broker is what was failing").not.toContain("lovable.auth.signInWithOAuth");
   });
 
   it("and Lovable's wrapper is still what hands tokens to Supabase", () => {
