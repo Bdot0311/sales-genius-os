@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { edgeErrorMessage } from "@/lib/edge-error";
 import type { Session } from "@supabase/supabase-js";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { PageHeader } from "@/components/dashboard/PageHeader";
@@ -479,9 +480,19 @@ const DashboardIntegrations = () => {
       } catch (error: any) {
         if (oauthPopup && !oauthPopup.closed) oauthPopup.close();
         console.error(`${integration.name} OAuth init error:`, error);
+        /*
+         * The function's own message, not the transport's. `invoke` reports
+         * every non-2xx as "Edge Function returned a non-2xx status code" and
+         * leaves the reason unread on `error.context`, so a missing server
+         * secret and an expired session looked identical here.
+         */
+        const description = await edgeErrorMessage(
+          error,
+          `Failed to start ${integration.name} connection`,
+        );
         toast({
           title: "Connection Error",
-          description: error.message || `Failed to start ${integration.name} connection`,
+          description,
           variant: "destructive",
         });
         return;
