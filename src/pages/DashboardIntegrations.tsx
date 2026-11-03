@@ -556,21 +556,21 @@ const DashboardIntegrations = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      if (rowId) {
-        const { error } = await supabase
-          .from('integrations')
-          .update({ is_active: false })
-          .eq('id', rowId)
-          .eq('user_id', user.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('integrations')
-          .update({ is_active: false })
-          .eq('user_id', user.id)
-          .eq('integration_id', integrationId);
-        if (error) throw error;
-      }
+      /*
+       * Through an edge function rather than straight at the table.
+       *
+       * Writing from here needed a table grant `authenticated` does not have,
+       * so Remove failed with `permission denied for table integrations`
+       * while Connect worked — Connect runs on the service role, which
+       * bypasses grants. Both halves of one feature now work the same way,
+       * and the browser is not handed a write on a row holding OAuth refresh
+       * tokens.
+       */
+      const { data, error } = await supabase.functions.invoke('disconnect-integration', {
+        body: rowId ? { rowId } : { integrationId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       await loadIntegrations();
       toast({
@@ -578,9 +578,10 @@ const DashboardIntegrations = () => {
         description: "Integration has been disconnected",
       });
     } catch (error: any) {
+      // The function's own reason, not "non-2xx status code".
       toast({
         title: "Error",
-        description: error.message,
+        description: await edgeErrorMessage(error, "Could not disconnect that integration."),
         variant: "destructive",
       });
     }
