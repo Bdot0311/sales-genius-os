@@ -1,3 +1,4 @@
+import { PUBLIC_API_BASE } from "@/lib/public-api";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
@@ -68,7 +69,7 @@ const INBOUND_ACTIONS = [
   { value: "deal.created", label: "Create deals", hint: "Push a deal into your pipeline" },
 ];
 
-const FUNCTIONS_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/inbound-webhook`;
+const FUNCTIONS_BASE = `${PUBLIC_API_BASE}/inbound-webhook`;
 
 export const InboundWebhooksPanel = () => {
   const [hooks, setHooks] = useState<InboundWebhook[]>([]);

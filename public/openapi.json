@@ -14,7 +14,7 @@
   },
   "servers": [
     {
-      "url": "https://ghgfjnepvxvxrncmskys.supabase.co/functions/v1/rest-api",
+      "url": "https://api.outreign.io/rest-api",
       "description": "Production"
     }
   ],

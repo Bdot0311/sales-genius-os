@@ -120,7 +120,10 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: "2026-11-03",
     title: "Webhook connections save correctly",
     summary: "Connect Zapier or Slack without the connection-saving error.",
-    items: [{ tag: "fixed", title: "Save webhook connections", description: "Zapier and Slack webhook settings now save and remain connected when you reload Integrations.", href: "/integrations" }],
+    items: [
+      { tag: "fixed", title: "Save webhook connections", description: "Zapier and Slack webhook settings now save and remain connected when you reload Integrations.", href: "/integrations" },
+      { tag: "improved", title: "OutReign API address", description: "API docs, inbound webhook URLs and the AI assistant connection now use api.outreign.io. Existing URLs keep working.", href: "/api-docs" },
+    ],
   },
   {
     id: "2026-11-02-research-coverage",

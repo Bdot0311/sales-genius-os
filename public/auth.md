@@ -25,7 +25,7 @@ credentials.
     "code_challenge_methods_supported": ["S256"],
     "scopes_supported": ["openid", "profile", "email"],
     "protected_resources": [
-      "https://ghgfjnepvxvxrncmskys.supabase.co/functions/v1/mcp"
+      "https://api.outreign.io/mcp"
     ],
     "protected_resource_metadata": "https://outreign.io/.well-known/oauth-protected-resource",
     "contact": "support@bdotindustries.com"
@@ -38,7 +38,7 @@ credentials.
 
 ## Endpoints
 
-- MCP server (protected): `https://ghgfjnepvxvxrncmskys.supabase.co/functions/v1/mcp`
+- MCP server (protected): `https://api.outreign.io/mcp`
 - Protected resource metadata: `https://outreign.io/.well-known/oauth-protected-resource`
 - Authorization server metadata: `https://outreign.io/.well-known/oauth-authorization-server`
 - OpenID Connect discovery: `https://outreign.io/.well-known/openid-configuration`

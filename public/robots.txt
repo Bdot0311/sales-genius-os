@@ -218,7 +218,7 @@ Sitemap: https://outreign.io/sitemap.xml
 
 # LLMs.txt for AI crawlers (emerging standard)
 # Provides structured context for LLMs to understand the site
-# Dynamic version (always current): https://ghgfjnepvxvxrncmskys.supabase.co/functions/v1/llms-txt
+# Dynamic version (always current): https://api.outreign.io/llms-txt
 # Static fallback: https://outreign.io/llms.txt
 
 # Crawl budget optimization hints
