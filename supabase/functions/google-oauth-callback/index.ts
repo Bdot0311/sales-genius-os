@@ -88,7 +88,7 @@ serve(async (req) => {
       if (userInfoResponse.ok) {
         const userInfo = await userInfoResponse.json();
         googleEmail = userInfo.email;
-        console.log("Got Google email:", googleEmail);
+        console.log("Got Google account email");
       }
     } catch (e) {
       console.warn("Could not fetch Google user info:", e);

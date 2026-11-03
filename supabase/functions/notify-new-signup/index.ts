@@ -147,7 +147,7 @@ serve(async (req) => {
       say('onboarding-offer not sent:', onboardingRes.reason, onboardingRes.error ?? '');
     }
 
-    console.log('Signup emails processed for:', userEmail);
+    console.log('Signup emails processed');
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

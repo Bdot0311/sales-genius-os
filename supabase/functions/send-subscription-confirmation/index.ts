@@ -31,7 +31,7 @@ serve(async (req) => {
       );
     }
 
-    console.log("Sending subscription confirmation to:", email);
+    console.log("Sending subscription confirmation");
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",

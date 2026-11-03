@@ -1506,7 +1506,7 @@ serve(async (req) => {
     const rawText = await response.text();
     console.log('=== RAW RESPONSE FROM RAILWAY ===');
     console.log('Response status:', response.status);
-    console.log('Raw response body (first 3000 chars):', rawText.substring(0, 3000));
+    console.log('Raw response length:', rawText.length);
     
     let data: any;
     try {
@@ -1545,7 +1545,7 @@ serve(async (req) => {
     console.log('=== LEAD DATA ===');
     console.log('Raw leads count:', rawLeads.length);
     if (rawLeads.length > 0) {
-      console.log('First raw lead:', JSON.stringify(rawLeads[0], null, 2));
+      console.log('First raw lead keys:', Object.keys(rawLeads[0] ?? {}).join(','));
     }
 
     // Progressive fallback: if full search returned 0, retry with progressively fewer filters.
@@ -1764,7 +1764,7 @@ serve(async (req) => {
 
     console.log('Processed leads count:', leads.length);
     if (leads.length > 0) {
-      console.log('First processed lead:', JSON.stringify(leads[0], null, 2));
+      console.log('First processed lead keys:', Object.keys(leads[0] ?? {}).join(','));
     }
 
     // `provider` names the providers that contributed, joined ("bytemine+crustdata"),

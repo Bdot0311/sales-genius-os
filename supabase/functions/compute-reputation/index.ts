@@ -166,7 +166,7 @@ serve(async (req) => {
           metadata: { score: result.score, threshold, plan },
         });
 
-        console.log(`[compute-reputation] quarantined ${candidate.email}: ${redistributionSummary(plan)}`);
+        console.log(`[compute-reputation] quarantined mailbox ${candidate.id ?? ""}: ${redistributionSummary(plan)}`);
 
         // Raise an alert (deduped against existing active reputation_drop alerts).
         const { data: existing } = await supabase
