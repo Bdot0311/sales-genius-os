@@ -323,6 +323,13 @@
       "when": 1792881956990,
       "tag": "0045_restrict_public_bucket_listing",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1793681303901,
+      "tag": "0046_migration",
+      "breakpoints": true
     }
   ]
 }
