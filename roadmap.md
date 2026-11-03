@@ -1,3 +1,10 @@
+# Integration connection repair
+
+- [x] Fix manual integration saving without restoring the single-account Google constraint.
+- [x] Check sibling OAuth persistence failures and verify Google, Calendly, HubSpot and Salesforce authorization initiation.
+- [x] Run 34 regressions and verify signed-in Zapier/Slack save, reload and disconnect; remove temporary settings.
+- [ ] Complete provider authorization and real delivery/sync checks (requires each provider's consent and a real workflow; no messages or workflows triggered).
+
 # What's New editorial control
 
 - [x] Add confirmed deletion for draft, published and archived entries.

@@ -105,13 +105,16 @@ serve(async (req) => {
     };
 
     // Check if this Google email is already connected for this user
-    const { data: existing } = await supabase
+    const { data: existing, error: lookupError } = await supabase
       .from("integrations")
       .select("id")
       .eq("user_id", user.id)
       .eq("integration_id", "google")
       .eq("connected_email", googleEmail)
+      .order("updated_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
+    if (lookupError) throw new Error("Could not read your Google connection. Please try again.");
 
     let integrationId: string | null = existing?.id ?? null;
 

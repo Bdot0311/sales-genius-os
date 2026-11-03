@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { saveIntegration } from "../_shared/save-integration.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -110,23 +111,7 @@ serve(async (req) => {
       webhookRegistered,
     };
 
-    const { data: existing } = await supabase
-      .from("integrations")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("integration_id", "calendly")
-      .maybeSingle();
-
-    if (existing) {
-      await supabase.from("integrations").update({
-        config, is_active: true, connected_email: calendlyEmail, updated_at: new Date().toISOString(),
-      }).eq("id", existing.id);
-    } else {
-      await supabase.from("integrations").insert({
-        user_id: user.id, integration_id: "calendly", integration_name: "Calendly",
-        config, is_active: true, connected_email: calendlyEmail, updated_at: new Date().toISOString(),
-      });
-    }
+    await saveIntegration(supabase, user.id, "calendly", "Calendly", config, calendlyEmail);
 
     return new Response(
       JSON.stringify({ success: true, connectedEmail: calendlyEmail }),

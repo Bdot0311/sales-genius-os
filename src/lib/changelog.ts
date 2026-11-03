@@ -116,6 +116,13 @@ export const ROADMAP: RoadmapItem[] = [
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-11-03-integration-connections",
+    date: "2026-11-03",
+    title: "Webhook connections save correctly",
+    summary: "Connect Zapier or Slack without the connection-saving error.",
+    items: [{ tag: "fixed", title: "Save webhook connections", description: "Zapier and Slack webhook settings now save and remain connected when you reload Integrations.", href: "/integrations" }],
+  },
+  {
     id: "2026-11-02-research-coverage",
     date: "2026-11-02",
     title: "Research checks another web source",

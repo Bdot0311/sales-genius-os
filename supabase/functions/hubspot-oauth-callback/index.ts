@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { saveIntegration } from "../_shared/save-integration.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -72,23 +73,7 @@ serve(async (req) => {
       hubspotEmail,
     };
 
-    const { data: existing } = await supabase
-      .from("integrations")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("integration_id", "hubspot")
-      .maybeSingle();
-
-    if (existing) {
-      await supabase.from("integrations").update({
-        config, is_active: true, connected_email: hubspotEmail, updated_at: new Date().toISOString(),
-      }).eq("id", existing.id);
-    } else {
-      await supabase.from("integrations").insert({
-        user_id: user.id, integration_id: "hubspot", integration_name: "HubSpot",
-        config, is_active: true, connected_email: hubspotEmail, updated_at: new Date().toISOString(),
-      });
-    }
+    await saveIntegration(supabase, user.id, "hubspot", "HubSpot", config, hubspotEmail);
 
     return new Response(
       JSON.stringify({ success: true, connectedEmail: hubspotEmail }),

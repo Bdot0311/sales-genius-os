@@ -1,5 +1,7 @@
 # Agent rules
 
+- Manual integration writes run through authenticated `connect-integration`; non-Google OAuth callbacks share `save-integration.ts` and check persistence errors without using the removed user/provider conflict target. Why: Google supports multiple mailboxes and browser writes cannot access credential-bearing rows.
+
 - Lead and account web research share `external-research.ts`, merging Parallel and Context.dev without replacing either; Context.dev uses the connector gateway URL from environment configuration. Why: both surfaces and existing agent research tools must retain identical retrieval and failure-safe behavior.
 
 - Keep homepage contrast styling scoped to landing selectors and semantic landing tokens; do not override shared utilities globally because that changes dashboard appearance.
