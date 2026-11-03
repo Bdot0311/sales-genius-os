@@ -1,3 +1,4 @@
+import { safeOrigin, safeRedirectUri } from "../_shared/safe-origin.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -12,7 +13,9 @@ serve(async (req) => {
   }
 
   try {
-    const { redirectUri } = await req.json();
+    const { redirectUri: rawRedirect } = await req.json();
+    const redirectUri = safeRedirectUri(rawRedirect);
+    if (!redirectUri) throw new Error("Invalid redirect URI");
 
     const CLIENT_ID = Deno.env.get("SALESFORCE_CLIENT_ID");
     if (!CLIENT_ID) throw new Error("SALESFORCE_CLIENT_ID is not configured");
