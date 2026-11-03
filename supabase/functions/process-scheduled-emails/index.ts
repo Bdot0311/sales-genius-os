@@ -513,7 +513,7 @@ serve(async (req) => {
           trackingPixelId = crypto.randomUUID();
         }
         // Rewrite links for click tracking (skips already-tracked links)
-        trackedBody = injectClickTracking(trackedBody, trackingPixelId, supabaseUrl);
+        trackedBody = await injectClickTracking(trackedBody, trackingPixelId, supabaseUrl);
         // Inject tracking pixel if not already in body
         if (!body.includes('track-email-open')) {
           const trackingPixelUrl = `${supabaseUrl}/functions/v1/track-email-open?id=${trackingPixelId}`;

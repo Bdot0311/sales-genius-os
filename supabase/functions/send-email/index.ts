@@ -661,7 +661,7 @@ ${unsubscribeFooterHtml}
       // Click tracking is unaffected. It rewrites links the reader chose to
       // follow rather than loading a remote image on open, so it costs nothing
       // in placement and its numbers mean something.
-      const clickTrackedHtml = injectClickTracking(htmlBody, trackingPixelId, supabaseUrl);
+      const clickTrackedHtml = await injectClickTracking(htmlBody, trackingPixelId, supabaseUrl);
       const trackedHtmlBody = openTrackingEnabled
         ? clickTrackedHtml.replace('</body>', `${trackingPixel}\n</body>`)
         : clickTrackedHtml;
