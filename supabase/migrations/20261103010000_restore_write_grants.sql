@@ -1,0 +1,43 @@
+-- Restoring the write grants that locking down reads took away.
+--
+-- 20260901211628 tightened two tables so a user cannot read their own stored
+-- credentials -- the OAuth `config` on integrations, the secret value on
+-- api_keys. It did that with a blanket REVOKE followed by a column-level
+-- GRANT SELECT:
+--
+--   REVOKE SELECT ON public.integrations FROM authenticated, anon;
+--   GRANT SELECT (id, user_id, ...) ON public.integrations TO authenticated;
+--
+-- That part was right and stays. What it left behind is a table where
+-- `authenticated` holds column-level SELECT and nothing else, while the RLS
+-- policies written when the table was created still say users may create,
+-- update and delete their own rows. Policies decide WHICH rows a role may
+-- touch; they cannot grant the privilege to touch any. With the grant gone,
+-- every write from the browser fails before RLS is ever consulted, with
+-- `permission denied for table integrations` -- a privilege error, not a
+-- policy one, which is why it reads nothing like "no rows matched".
+--
+-- It stayed hidden for two months because the paths that write these tables
+-- are rare and the common one does not need the grant: connecting a mailbox
+-- goes through an edge function on the service role, which bypasses grants
+-- entirely. The first thing to actually exercise a browser write was pressing
+-- Remove on a connected inbox, and it has never worked since September.
+--
+-- Both tables are affected, and both were found the same way:
+--   integrations  -- DashboardIntegrations deactivates with .update({is_active:false})
+--                    and the manual-connect form .upsert()s, so INSERT and UPDATE.
+--
+-- Only `integrations` turned out to need it. `api_keys` looked identical from
+-- the migration that locked it down, and I had it in here by analogy until the
+-- guard below failed to notice its removal: it already carries
+-- `GRANT DELETE` and `GRANT UPDATE (cols)` to `authenticated` from elsewhere,
+-- so APIKeysTab's delete has always worked. Granting it again would have been
+-- a widening nobody needed, inferred rather than observed.
+--
+-- Granted to match the policies that already exist rather than only the calls
+-- the app makes today: the policies say create, update and delete, so a
+-- feature that starts deleting an integration tomorrow should not rediscover
+-- this. Reads stay exactly as 20260901211628 left them -- no SELECT is granted
+-- here, so `config` and the api key secret remain unreadable from the browser.
+
+GRANT INSERT, UPDATE, DELETE ON public.integrations TO authenticated;
