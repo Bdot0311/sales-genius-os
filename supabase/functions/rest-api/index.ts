@@ -402,7 +402,14 @@ serve(async (req) => {
         result = await handleCreate(supabase, 'contacts', userId, v.data);
         statusCode = 201;
       } else if (method === 'PATCH' && id) {
-        result = await handleUpdate(supabase, 'contacts', userId, id, body);
+        // Allowlist: only fields the caller may set; never user_id/id/etc.
+        const limits: Record<string, number> = { first_name: 100, last_name: 100, email: 255, job_title: 200, department: 100, seniority: 50, linkedin_url: 500, city: 100, country: 100, source: 100, lead_status: 50, company_id: 36 };
+        const updates: Record<string, unknown> = {};
+        for (const [k, max] of Object.entries(limits)) {
+          if (body && Object.prototype.hasOwnProperty.call(body, k)) updates[k] = sanitize(body[k], max);
+        }
+        if (Object.keys(updates).length === 0) return respond({ error: 'No updatable fields provided' }, 400);
+        result = await handleUpdate(supabase, 'contacts', userId, id, updates);
       } else if (method === 'DELETE' && id) {
         result = await handleDelete(supabase, 'contacts', userId, id);
       } else {
