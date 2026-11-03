@@ -684,12 +684,12 @@ const DashboardIntegrations = () => {
                                 </span>
                               ) : (
                                 <span className="inline-flex items-center gap-1.5 text-emerald-400">
-                                  <CheckCircle2 className="h-3 w-3" /> Syncing
+                                  <CheckCircle2 className="h-3 w-3" /> Settings saved
                                 </span>
                               )}
                               {status.lastSync && (
                                 <span className="text-muted-foreground">
-                                  Last sync {new Date(status.lastSync).toLocaleString()}
+                                  Updated {new Date(status.lastSync).toLocaleString()}
                                 </span>
                               )}
                             </p>
