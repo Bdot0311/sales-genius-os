@@ -4,8 +4,9 @@ import { useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { SEOHead, BreadcrumbSchema } from "@/components/seo";
+import { PUBLIC_API_BASE } from "@/lib/public-api";
 
-const BASE_URL_TEMPLATE = "https://ghgfjnepvxvxrncmskys.supabase.co/functions/v1/rest-api";
+const BASE_URL_TEMPLATE = `${PUBLIC_API_BASE}/rest-api`;
 
 type Endpoint = {
   name: string;

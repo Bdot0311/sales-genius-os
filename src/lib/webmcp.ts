@@ -1,3 +1,4 @@
+import { PUBLIC_API_BASE } from "@/lib/public-api";
 /**
  * WebMCP — exposes a small set of read-only, navigation-level site tools to
  * AI agents running in the browser (navigator.modelContext).
@@ -80,8 +81,8 @@ const tools: WebMcpTool[] = [
       "Get the details an AI assistant needs to connect to OutReign's authenticated MCP server (endpoint, transport, auth, and setup guide).",
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
     execute: async () => {
-      const ref = import.meta.env.VITE_SUPABASE_PROJECT_ID ?? "";
-      const endpoint = ref ? `https://${ref}.supabase.co/functions/v1/mcp` : "see /connect";
+
+      const endpoint = `${PUBLIC_API_BASE}/mcp`;
       return text(
         [
           `MCP endpoint: ${endpoint}`,
