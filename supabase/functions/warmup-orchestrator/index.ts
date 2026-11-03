@@ -15,7 +15,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
-import { corsHeaders, requireInternalOrUser } from "../_shared/internal-auth.ts";
+import { corsHeaders, resolveCaller } from "../_shared/internal-auth.ts";
 
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GMAIL_API = "https://gmail.googleapis.com/gmail/v1/users/me";
@@ -136,8 +136,11 @@ serve(async (req) => {
 
   // Cron/service role, or a signed-in user pressing "run warmup now".
   // Anonymous callers can no longer trigger real Gmail sends.
-  const authFail = await requireInternalOrUser(req);
-  if (authFail) return authFail;
+  // A signed-in user may only drive sends from, and scans of, their OWN
+  // mailboxes; only the internal cron operates on the whole pool.
+  const caller = await resolveCaller(req);
+  if (!caller.ok) return caller.response;
+  const actsFor = (a: { user_id: string }) => caller.internal || a.user_id === caller.userId;
 
   try {
     const supabase = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
@@ -232,6 +235,7 @@ serve(async (req) => {
     for (let i = 0; i < sendable.length; i++) {
       if (outOfTime()) break;
       const sender = sendable[i];
+      if (!actsFor(sender)) continue;
 
       /*
        * Recipients in pairing order: a different owner first, so warmup
@@ -308,6 +312,7 @@ serve(async (req) => {
     let scanned = 0;
 
     for (const acct of scanOrder) {
+      if (!actsFor(acct)) continue;
       if (outOfTime()) break;
       const token = tokens.get(acct.account_id)!;
 
