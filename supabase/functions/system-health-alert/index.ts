@@ -2,13 +2,11 @@
 // critical alert row when something is failing, and emails the operators
 // through the project's own verified sending domain.
 //
-// Deliberately callable without a service-role token: the daily database job
-// can only reach edge functions with the public key. That is safe because the
-// endpoint takes no input, always emails the same fixed operator recipients,
-// and refuses to run more than once every 6 hours — so the worst an outsider
-// can do is trigger a health check that would have run anyway.
+// Internal only: the daily database job signs with the internal trigger
+// secret (via deliverability_call_edge). Public callers get 401.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.2'
 import { sendManagedEmail } from '../_shared/managed-email.ts'
+import { requireServiceRole } from '../_shared/internal-auth.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -41,6 +39,8 @@ interface HealthCheck {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
+  const denied = requireServiceRole(req)
+  if (denied) return denied
 
   try {
     const supabase = createClient(

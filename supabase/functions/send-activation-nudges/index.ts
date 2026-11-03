@@ -1,6 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.45.0'
 import { sendAppEmail } from '../_shared/transactional-email-templates/send-app-email.ts'
 import { reactivationAllowed } from '../_shared/reactivation-cap.ts';
+import { requireServiceRole } from '../_shared/internal-auth.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -19,6 +20,9 @@ const RULES: NudgeRule[] = [
 ]
 
 Deno.serve(async (req) => {
+  // Cron only (internal trigger secret / service role).
+  const denied = requireServiceRole(req)
+  if (denied) return denied
   try {
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE)
     const now = Date.now()

@@ -124,3 +124,26 @@ export async function ownerOf(
   if (!caller.internal && owner !== caller.userId) return null;
   return owner;
 }
+
+/**
+ * Internal caller, or a signed-in user holding the admin role in
+ * public.user_roles. For jobs that touch shared/site-wide data.
+ */
+export async function requireInternalOrAdmin(req: Request): Promise<Response | null> {
+  const caller = await resolveCaller(req);
+  if (!caller.ok) return caller.response;
+  if (caller.internal) return null;
+  const url = Deno.env.get("SUPABASE_URL") ?? "";
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const res = await fetch(`${url}/rest/v1/rpc/has_role`, {
+    method: "POST",
+    headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ _user_id: caller.userId, _role: "admin" }),
+  }).catch(() => null);
+  const isAdmin = res?.ok ? (await res.json().catch(() => false)) === true : false;
+  if (isAdmin) return null;
+  return new Response(JSON.stringify({ error: "Forbidden" }), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    status: 403,
+  });
+}
