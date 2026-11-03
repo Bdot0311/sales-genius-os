@@ -79,7 +79,7 @@ ${useCase}`;
       replyTo: email,
       subject,
       text,
-      html: text.replace(/\n/g, "<br/>"),
+      html: text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;").replace(/\n/g, "<br/>"),
       label: "integration-request",
     });
 

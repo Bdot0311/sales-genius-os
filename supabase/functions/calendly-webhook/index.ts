@@ -50,13 +50,13 @@ Deno.serve(async (req) => {
 
   const rawBody = await req.text();
 
+  // Fail closed: an unsigned request must never reach the service-role writes.
   const signingKey = Deno.env.get("CALENDLY_WEBHOOK_SIGNING_KEY");
-  if (signingKey) {
-    const ok = await verifySignature(req.headers.get("calendly-webhook-signature"), rawBody, signingKey);
-    if (!ok) {
-      console.error("[calendly-webhook] invalid signature");
-      return json(401, { error: "invalid signature" });
-    }
+  if (!signingKey) return json(503, { error: "webhook not configured" });
+  const ok = await verifySignature(req.headers.get("calendly-webhook-signature"), rawBody, signingKey);
+  if (!ok) {
+    console.error("[calendly-webhook] invalid signature");
+    return json(401, { error: "invalid signature" });
   }
 
   let event: any;

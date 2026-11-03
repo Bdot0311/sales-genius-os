@@ -148,6 +148,8 @@ Deno.serve(async (req) => {
         status: 'submitted',
         metadata: { company, website, audience, goal, source },
       }).eq('id', requestId)
+        // Only the caller's own request, or an unclaimed anonymous click row.
+        .or(`user_id.eq.${user.id},and(user_id.is.null,contact_email.is.null)`)
     } else {
       await admin.from('campaign_setup_requests').insert({
         user_id: user.id,

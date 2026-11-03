@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
+import { signClick } from "../_shared/click-tracking.ts";
 
 /**
  * Records a real link click on a tracked outbound email, then redirects the
@@ -17,6 +18,9 @@ serve(async (req) => {
 
 
   const safeTarget = /^https?:\/\//i.test(target) ? target : null;
+  // Only redirect automatically when we signed this exact link.
+  const expected = pixelId && safeTarget ? await signClick(pixelId, safeTarget) : "";
+  const signed = !!expected && url.searchParams.get("s") === expected;
 
   try {
     if (pixelId && !isScanner) {
@@ -64,8 +68,16 @@ serve(async (req) => {
     console.error("track-email-click error:", err);
   }
 
-  if (safeTarget) {
+  if (safeTarget && signed) {
     return new Response(null, { status: 302, headers: { Location: safeTarget, "Cache-Control": "no-store" } });
+  }
+  if (safeTarget) {
+    // Unsigned (older emails or forged): confirm before leaving instead of redirecting.
+    const esc = safeTarget.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    return new Response(
+      `<!doctype html><meta charset="utf-8"><title>Leaving</title><p>You are about to visit:</p><p><a href="${esc}" rel="noopener noreferrer">${esc}</a></p>`,
+      { status: 200, headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } },
+    );
   }
   return new Response("Invalid link", { status: 400 });
 });

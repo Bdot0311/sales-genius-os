@@ -242,8 +242,11 @@ Keep responses concise (2-3 focused paragraphs) unless they ask for detailed ana
 
     // Add conversation history if provided
     if (conversationHistory && Array.isArray(conversationHistory)) {
-      for (const msg of conversationHistory) {
-        messages.push({ role: msg.role, content: msg.content });
+      // Only user/assistant turns; a caller must never inject system prompts.
+      for (const msg of conversationHistory.slice(-30)) {
+        if (!msg || (msg.role !== "user" && msg.role !== "assistant")) continue;
+        if (typeof msg.content !== "string") continue;
+        messages.push({ role: msg.role, content: msg.content.slice(0, 8000) });
       }
     }
 

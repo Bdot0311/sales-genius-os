@@ -129,7 +129,7 @@ Deno.serve(async (req) => {
 
     if (leadError || !lead) {
       return new Response(
-        JSON.stringify({ error: "Lead not found", details: leadError }),
+        JSON.stringify({ error: "Lead not found" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -199,7 +199,7 @@ Deno.serve(async (req) => {
 
     if (updateError) {
       return new Response(
-        JSON.stringify({ error: "Failed to update lead state", details: updateError }),
+        JSON.stringify({ error: "Failed to update lead state" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

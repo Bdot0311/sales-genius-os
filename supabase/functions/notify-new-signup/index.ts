@@ -46,7 +46,7 @@ serve(async (req) => {
     // Placed above the analytics call as well: a smoke signup counted in
     // PostHog is a number in the funnel that never belonged to a person.
     if (isReservedTestRecipient(rawEmail)) {
-      console.log('notify-new-signup: skipped — reserved test domain', { email: rawEmail });
+      console.log('notify-new-signup: skipped — reserved test domain');
       return new Response(JSON.stringify({ success: true, skipped: 'test_domain' }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -147,7 +147,7 @@ serve(async (req) => {
       say('onboarding-offer not sent:', onboardingRes.reason, onboardingRes.error ?? '');
     }
 
-    console.log('Signup emails processed for:', userEmail);
+    console.log('Signup emails processed');
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

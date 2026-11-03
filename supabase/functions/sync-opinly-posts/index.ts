@@ -12,7 +12,7 @@
  * inserts or updates rows it owns (source='opinly').
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { corsHeaders, requireInternalOrUser } from "../_shared/internal-auth.ts";
+import { corsHeaders, requireInternalOrAdmin } from "../_shared/internal-auth.ts";
 import { getPost, listPosts, toBlogPostRow, OpinlyError, type OpinlyPostSummary } from "../_shared/opinly.ts";
 
 const MAX_PAGES = 20;
@@ -26,8 +26,8 @@ Deno.serve(async (req: Request) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
-  // Cron/service role, or a signed-in user pressing "sync now".
-  const unauthorized = await requireInternalOrUser(req);
+  // Cron/service role, or an admin pressing "sync now".
+  const unauthorized = await requireInternalOrAdmin(req);
   if (unauthorized) return unauthorized;
 
   const apiKey = Deno.env.get("OPINLY_API_KEY");

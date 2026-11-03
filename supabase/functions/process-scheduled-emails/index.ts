@@ -161,7 +161,7 @@ serve(async (req) => {
 
     const deferrals: Array<{ id: string; to: string; reason: string }> = [];
     const defer = (email: any, reason: string) => {
-      console.log(`Deferring ${email.id} to ${email.to_email}: ${reason}`);
+      console.log(`Deferring ${email.id}: ${reason}`);
       deferrals.push({ id: email.id, to: email.to_email, reason });
       /*
        * A deferral leaves the row at 'scheduled' on purpose — a reached cap or
@@ -260,7 +260,7 @@ serve(async (req) => {
         // account on the platform.
         const optout = await isOptedOut(supabase, email.user_id, email.to_email || "");
         if (optout) {
-          console.log(`Recipient ${email.to_email} unsubscribed, skipping ${email.id}`);
+          console.log(`Recipient unsubscribed, skipping ${email.id}`);
           await failEmail(
             email.id,
             "This person unsubscribed after the email was queued, so it was not sent.",
@@ -513,7 +513,7 @@ serve(async (req) => {
           trackingPixelId = crypto.randomUUID();
         }
         // Rewrite links for click tracking (skips already-tracked links)
-        trackedBody = injectClickTracking(trackedBody, trackingPixelId, supabaseUrl);
+        trackedBody = await injectClickTracking(trackedBody, trackingPixelId, supabaseUrl);
         // Inject tracking pixel if not already in body
         if (!body.includes('track-email-open')) {
           const trackingPixelUrl = `${supabaseUrl}/functions/v1/track-email-open?id=${trackingPixelId}`;
@@ -661,7 +661,7 @@ serve(async (req) => {
           ul.monthlySent += 1;
 
           processed++;
-          console.log(`Sent scheduled email ${email.id} to ${email.to_email}`);
+          console.log(`Sent scheduled email ${email.id}`);
         } else {
           const errorText = await gmailResponse.text();
           console.error(`Gmail error for email ${email.id}:`, errorText);

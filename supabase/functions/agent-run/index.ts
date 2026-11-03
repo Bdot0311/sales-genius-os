@@ -1901,7 +1901,7 @@ Output ONLY the reply body. No subject line or signature.`;
           skipped++;
         }
       } catch (replyErr: any) {
-        console.error(`Error processing reply from ${reply.fromEmail}:`, replyErr.message);
+        console.error(`Error processing reply:`, replyErr.message);
         errors++;
 
         try {

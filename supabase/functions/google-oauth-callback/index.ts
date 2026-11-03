@@ -88,7 +88,7 @@ serve(async (req) => {
       if (userInfoResponse.ok) {
         const userInfo = await userInfoResponse.json();
         googleEmail = userInfo.email;
-        console.log("Got Google email:", googleEmail);
+        console.log("Got Google account email");
       }
     } catch (e) {
       console.warn("Could not fetch Google user info:", e);
@@ -129,7 +129,7 @@ serve(async (req) => {
         console.error("Error updating integration:", updateError);
         throw new Error("Failed to update integration");
       }
-      console.log("Updated existing Google integration for:", googleEmail);
+      console.log("Updated existing Google integration");
     } else {
       const { data: inserted, error: insertError } = await supabase
         .from("integrations")
@@ -150,7 +150,7 @@ serve(async (req) => {
         throw new Error("Failed to save integration");
       }
       integrationId = inserted?.id ?? null;
-      console.log("Created new Google integration for:", googleEmail);
+      console.log("Created new Google integration");
     }
 
     // Ensure a sending_accounts row exists so this mailbox is usable for outreach

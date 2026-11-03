@@ -523,6 +523,20 @@ serve(async (req) => {
         );
       }
 
+      // Test sends may only go to an inbox the caller owns: their account email
+      // or one of their own connected sending mailboxes. Never a third party.
+      {
+        const own = new Set<string>([String(user.email ?? "").toLowerCase()]);
+        const { data: accts } = await adminClient.from("sending_accounts").select("email").eq("user_id", user.id);
+        for (const a of accts ?? []) if (a?.email) own.add(String(a.email).toLowerCase());
+        if (!own.has(to.toLowerCase())) {
+          return new Response(
+            JSON.stringify({ success: false, error: "Test emails can only go to your own account email or one of your connected mailboxes." }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+
       const { integrationRowId, pausedAccountId, pausedReason } = await resolveIntegration();
       if (!integrationRowId) {
         return new Response(

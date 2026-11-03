@@ -103,7 +103,7 @@ serve(async (req) => {
       );
     }
 
-    console.log("Processing password reset for email:", email);
+    console.log("Processing password reset request");
 
     const logoUrl = "https://ghgfjnepvxvxrncmskys.supabase.co/storage/v1/object/public/email-assets/outreign-logo.webp";
     const redirectUrl = `${APP_URL}/auth?type=recovery`;

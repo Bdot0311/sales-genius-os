@@ -325,7 +325,7 @@ describe("the deliverability jobs can reach their functions", () => {
     const guards: Array<[string, string]> = [
       ["compute-reputation", "requireServiceRole"],
       ["deliverability-alerts-scan", "requireServiceRole"],
-      ["warmup-orchestrator", "requireInternalOrUser"],
+      ["warmup-orchestrator", "resolveCaller"],
     ];
     for (const [fn, guard] of guards) {
       const src = readFileSync(`supabase/functions/${fn}/index.ts`, "utf8");

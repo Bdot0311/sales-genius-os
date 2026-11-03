@@ -31,7 +31,7 @@ serve(async (req) => {
       );
     }
 
-    console.log("Sending welcome email to:", email);
+    console.log("Sending welcome email");
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
