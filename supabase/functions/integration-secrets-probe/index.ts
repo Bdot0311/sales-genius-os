@@ -27,7 +27,15 @@ const SECRETS = [
   { key: "SUPABASE_URL", used: "Every function that talks to the database" },
   { key: "SUPABASE_SERVICE_ROLE_KEY", used: "Every function that reads a row on a user's behalf" },
   { key: "SUPABASE_ANON_KEY", used: "Verifying a caller's session" },
-  { key: "RESEND_API_KEY", used: "Transactional email: invites, alerts, password resets" },
+  /*
+   * Only `send-seo-digest` reads this. The label said "invites, alerts,
+   * password resets", which was wrong and alarming in the one place that must
+   * not be: a panel read while something is already broken. Transactional
+   * mail — password resets, auth links — goes through Supabase's own mailer
+   * via `auth-email-hook`, which needs no key here, so this being unset costs
+   * the SEO digest and nothing a customer sees.
+   */
+  { key: "RESEND_API_KEY", used: "The weekly SEO digest only — not password resets or auth email" },
   { key: "INTERNAL_TRIGGER_SECRET", used: "Letting pg_cron call the scheduled workers" },
 ] as const;
 
