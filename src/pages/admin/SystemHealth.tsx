@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { edgeErrorMessage } from "@/lib/edge-error";
 import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -138,6 +139,7 @@ export default function SystemHealth() {
       </Panel>
 
       <SmtpCapabilityPanel />
+      <IntegrationSecretsPanel />
     </div>
   );
 }
@@ -156,6 +158,108 @@ export default function SystemHealth() {
  * one-liner or a curl with a bearer token is not a way to ask a question
  * either. Being signed in here is.
  */
+interface SecretRow {
+  key: string;
+  used: string;
+  present: boolean;
+  length: number;
+  fingerprint: string | null;
+  suspicious: boolean;
+}
+
+/**
+ * Whether the secrets these functions read are actually set here.
+ *
+ * Google sending broke and stayed broken because nothing could answer that.
+ * `google-oauth-init` knew — it throws when the client id is missing — and
+ * turned it into the same opaque 500 as everything else, so the answer existed
+ * and was unreadable. Rotating a credential over and over is what you do when
+ * you cannot tell whether the last rotation landed.
+ *
+ * Shows presence, length and a short fingerprint, never a value. The
+ * fingerprint is the useful part: it tells "nothing is set" apart from "set,
+ * but not to what I just pasted".
+ */
+function IntegrationSecretsPanel() {
+  const [running, setRunning] = useState(false);
+  const [rows, setRows] = useState<SecretRow[] | null>(null);
+  const [note, setNote] = useState<string | null>(null);
+
+  const probe = async () => {
+    setRunning(true);
+    setRows(null);
+    setNote(null);
+    const { data, error } = await supabase.functions.invoke("integration-secrets-probe", { body: {} });
+    setRunning(false);
+    if (error) {
+      setNote(await edgeErrorMessage(error, "Could not read the secret configuration."));
+      toast.error("Secrets check failed to run");
+      return;
+    }
+    setRows(Array.isArray(data?.secrets) ? (data.secrets as SecretRow[]) : []);
+    setNote(typeof data?.note === "string" ? data.note : null);
+  };
+
+  return (
+    <Panel>
+      <PanelHeader className="flex-row items-start justify-between gap-4">
+        <div>
+          <PanelTitle>Integration secrets</PanelTitle>
+          <PanelDescription>
+            Which secrets the edge functions can actually see. Shows presence, length and a
+            fingerprint — never a value. A missing or padded secret fails at runtime as a
+            generic error, which is what makes it hard to find.
+          </PanelDescription>
+        </div>
+        <Button variant="outline" size="sm" onClick={probe} disabled={running} className="shrink-0">
+          <RefreshCw className={`mr-2 h-4 w-4 ${running ? "animate-spin" : ""}`} />
+          {running ? "Checking…" : "Check secrets"}
+        </Button>
+      </PanelHeader>
+      <PanelBody>
+        {rows ? (
+          <div className="space-y-2">
+            {rows.map((r) => (
+              <div
+                key={r.key}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-card/50 p-3"
+              >
+                <div className="min-w-0">
+                  <p className="font-mono text-sm">{r.key}</p>
+                  <p className="text-xs text-muted-foreground">{r.used}</p>
+                </div>
+                <div className="flex items-center gap-3 text-xs">
+                  {r.present ? (
+                    <span className="font-mono text-muted-foreground">
+                      {r.length} chars · {r.fingerprint}
+                    </span>
+                  ) : null}
+                  <span
+                    className={
+                      !r.present
+                        ? "rounded border border-red-500/30 bg-red-500/15 px-2 py-0.5 text-red-400"
+                        : r.suspicious
+                          ? "rounded border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-amber-400"
+                          : "rounded border border-green-500/30 bg-green-500/15 px-2 py-0.5 text-green-400"
+                    }
+                  >
+                    {!r.present ? "Missing" : r.suspicious ? "Has quotes or spaces" : "Set"}
+                  </span>
+                </div>
+              </div>
+            ))}
+            {note ? <p className="text-sm text-muted-foreground">{note}</p> : null}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            {note ?? "Not run yet. It reports which secrets are set and a fingerprint of each, so a value that was pasted wrong can be told apart from one that was never set."}
+          </p>
+        )}
+      </PanelBody>
+    </Panel>
+  );
+}
+
 function SmtpCapabilityPanel() {
   const [running, setRunning] = useState(false);
   const [verdict, setVerdict] = useState<string | null>(null);

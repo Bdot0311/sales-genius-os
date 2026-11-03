@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { countActionable, describeRequest } from "@/lib/campaign-setup-status";
 import { Loader2, RefreshCw, ShieldOff, Send, ChevronDown, ChevronRight } from "lucide-react";
 import { SupportAccessWorkspace } from "@/components/admin/SupportAccessWorkspace";
 
@@ -324,7 +325,17 @@ const AdminCampaignSetup = () => {
         <PanelHeader>
           <PanelTitle>Setup requests ({requests.length})</PanelTitle>
           <PanelDescription>
-            Everyone who clicked a "book a campaign setup" call to action, plus outbound requests you sent.
+            {/*
+              * Most rows are a button press and nothing else. Leading with the
+              * count that can be replied to stops the table reading as a pile
+              * of unreachable enquiries.
+              */}
+            {(() => {
+              const { actionable, total } = countActionable(requests);
+              return actionable === total
+                ? 'Everyone who clicked a "book a campaign setup" call to action, plus outbound requests you sent.'
+                : `${actionable} of ${total} can be replied to. The rest pressed the button on a public page and never submitted the form, so no contact details were ever given.`;
+            })()}
           </PanelDescription>
         </PanelHeader>
         <PanelBody>
@@ -337,6 +348,7 @@ const AdminCampaignSetup = () => {
                   <TableRow>
                     <TableHead>Customer</TableHead>
                     <TableHead>Type</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead>Plan</TableHead>
                     <TableHead>Source</TableHead>
                     <TableHead>Requested</TableHead>
@@ -388,6 +400,29 @@ const AdminCampaignSetup = () => {
                             {r.direction}
                           </Badge>
                         </TableCell>
+                        <TableCell>
+                          {/*
+                            * A click and a completed form were rendered the
+                            * same, so a row nobody could reply to looked like
+                            * a lead whose details had been lost.
+                            */}
+                          {(() => {
+                            const state = describeRequest(r);
+                            return (
+                              <Badge
+                                variant="outline"
+                                title={state.detail}
+                                className={
+                                  state.actionable
+                                    ? "text-[10px] bg-green-500/15 text-green-400 border-green-500/30"
+                                    : "text-[10px] text-muted-foreground"
+                                }
+                              >
+                                {state.label}
+                              </Badge>
+                            );
+                          })()}
+                        </TableCell>
                         <TableCell className="text-sm text-muted-foreground">{r.plan ?? "—"}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{r.source}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">
@@ -431,7 +466,7 @@ const AdminCampaignSetup = () => {
                       </TableRow>
                       {expanded && (
                         <TableRow>
-                          <TableCell colSpan={7} className="bg-muted/30">
+                          <TableCell colSpan={8} className="bg-muted/30">
                             <dl className="grid gap-2 sm:grid-cols-2">
                               {details.map(([label, value]) => (
                                 <div key={label}>
