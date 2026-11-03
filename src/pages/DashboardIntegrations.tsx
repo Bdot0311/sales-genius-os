@@ -514,19 +514,12 @@ const DashboardIntegrations = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const { error } = await supabase
-        .from('integrations')
-        .upsert({
-          user_id: user.id,
-          integration_id: selectedIntegration.id,
-          integration_name: selectedIntegration.name,
-          config: formData,
-          is_active: true,
-        }, {
-          onConflict: 'user_id,integration_id'
-        });
+      const { data, error } = await supabase.functions.invoke('connect-integration', {
+        body: { integrationId: selectedIntegration.id, config: formData },
+      });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       supabase.from("onboarding_progress")
         .update({ set_up_integration: true })
@@ -545,7 +538,7 @@ const DashboardIntegrations = () => {
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message,
+        description: await edgeErrorMessage(error, "Could not save your connection."),
         variant: "destructive",
       });
     }

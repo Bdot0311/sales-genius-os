@@ -1,3 +1,9 @@
+# Integration connection repair
+
+- [ ] Fix manual integration saving without restoring the single-account Google constraint.
+- [ ] Check sibling OAuth persistence failures and connection initiation.
+- [ ] Run regressions and verify signed-in save, reload and disconnect.
+
 # What's New editorial control
 
 - [x] Add confirmed deletion for draft, published and archived entries.
