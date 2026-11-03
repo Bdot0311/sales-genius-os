@@ -97,12 +97,36 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
         // Private mode or blocked storage. The sign-in still works; only the
         // diagnosis on an empty return is lost.
       }
-      const result = await lovable.auth.signInWithOAuth("google", {
-        // Return to the public sign-in page (not "/"): the homepage defers
-        // loading the auth client, so Google's returned session was dropped
-        // there and users bounced back signed-out. /auth picks it up at once
-        // and forwards to the dashboard.
-        redirect_uri: `${window.location.origin}/auth`,
+      /*
+       * Supabase's own Google provider, not Lovable's OAuth broker.
+       *
+       * The broker was the only path here and it has been failing for days:
+       * Google issues the authorization code fine and the broker's exchange
+       * of it does not, so every attempt ends on /auth with "failed to
+       * exchange authorization code". That exchange happens on Lovable's
+       * servers with a secret stored in their configuration, so no amount of
+       * rotating ours reaches it, and nothing in this repository can.
+       *
+       * It was never the only way. This project's Supabase instance already
+       * has Google configured and live — it redirects to
+       * accounts.google.com with the same client id and its own
+       * /auth/v1/callback — so the session can be obtained directly, with no
+       * third party in the middle of the exchange.
+       *
+       * Worth saying plainly: the broker package describes itself as
+       * "Lovable legacy OAuth broker JS", and its own code carries a
+       * `legacy_flow` error branch. We were on a path its authors call legacy.
+       *
+       * The destination is unchanged: back to /auth (not "/"), because the
+       * homepage defers loading the auth client and dropped the returned
+       * session there, bouncing users back signed-out.
+       */
+      const result = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth`,
+          queryParams: { access_type: "offline", prompt: "consent" },
+        },
       });
       /*
        * Checked first, and it is the only outcome that keeps the flag.
@@ -113,7 +137,13 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
        * the flag set on those makes the next visit to /auth report a failure
        * that already finished.
        */
-      if (result.redirected) return;
+      /*
+       * Unlike the broker, this returns no `redirected` flag: on success the
+       * browser is already navigating to Google, so there is nothing to do
+       * and the start marker must SURVIVE for /auth to read on the way back.
+       * Only a failure retracts it.
+       */
+      if (!result.error) return;
       clearOAuthStart();
       if (result.error) {
         toast({

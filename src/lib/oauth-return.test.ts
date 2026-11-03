@@ -127,10 +127,17 @@ describe("an attempt that ends on this page is forgotten", () => {
   const handler = FORM.slice(FORM.indexOf("const handleGoogleAuth"), FORM.indexOf("const handleSubmit"));
 
   it("keeps the flag only when the page is leaving", () => {
-    const redirected = handler.indexOf("if (result.redirected) return;");
+    /*
+     * Same rule, different shape. Lovable's broker answered with a
+     * `redirected` flag; Supabase's provider navigates on success and returns
+     * no flag at all, so "we are leaving" is simply "no error". The early
+     * return still has to come BEFORE the retraction, or the marker /auth
+     * reads on the way back is wiped on the way out.
+     */
+    const leaving = handler.indexOf("if (!result.error) return;");
     const clear = handler.indexOf("clearOAuthStart();");
-    expect(redirected).toBeGreaterThan(-1);
-    expect(clear).toBeGreaterThan(redirected);
+    expect(leaving, "a successful start must return early").toBeGreaterThan(-1);
+    expect(clear).toBeGreaterThan(leaving);
   });
 
   it("clears it before reporting an SDK error", () => {
@@ -153,11 +160,23 @@ describe("both ends are wired", () => {
   const PAGE = readFileSync("src/pages/Auth.tsx", "utf8");
 
   it("the attempt is recorded before the page is gone", () => {
-    // signInWithOAuth sets window.location.href; nothing in memory survives.
-    const handler = FORM.slice(FORM.indexOf("const handleGoogleAuth"));
+    /*
+     * signInWithOAuth navigates the page; nothing in memory survives it. The
+     * marker has to be written before the call, whichever provider makes it —
+     * this used to name Lovable's broker, which sign-in has since moved off.
+     *
+     * Searched with comments stripped: the function's own comment explains
+     * what signInWithOAuth does, so matching the raw source found the
+     * explanation at position 129 and the call at 441, and reported the
+     * marker as being written too late.
+     */
+    const handler = FORM.slice(FORM.indexOf("const handleGoogleAuth"))
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/(^|[^:])\/\/.*$/gm, "$1");
     const mark = handler.indexOf(`sessionStorage.setItem(OAUTH_START_KEY`);
-    const leave = handler.indexOf("lovable.auth.signInWithOAuth");
+    const leave = handler.indexOf("signInWithOAuth");
     expect(mark).toBeGreaterThan(-1);
+    expect(leave, "the call that takes the page away").toBeGreaterThan(-1);
     expect(mark).toBeLessThan(leave);
   });
 
