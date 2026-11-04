@@ -59,6 +59,71 @@ const POLICIES: Array<[string, string]> = [
  */
 const GIS_DIRECTIVES = ["script-src", "style-src", "frame-src", "connect-src"] as const;
 
+/** Every directive in a policy, as name -> source list. */
+function parseAll(policy: string): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  for (const part of policy.split(";")) {
+    const bits = part.trim().split(/\s+/).filter(Boolean);
+    if (bits.length) out[bits[0]] = bits.slice(1);
+  }
+  return out;
+}
+
+/*
+ * A policy delivered in a <meta> tag has three directives silently ignored by
+ * every browser, so those are the only ones allowed to live in the header
+ * alone. Everything else must match, or the stricter file wins and the
+ * difference shows up as a feature that works in development and not in
+ * production.
+ */
+const META_IGNORES = new Set(["frame-ancestors", "report-uri", "sandbox"]);
+
+describe("the two policy files say the same thing", () => {
+  const header = parseAll(headerPolicy);
+  const meta = parseAll(metaPolicy);
+
+  it("found enough directives to be comparing something", () => {
+    expect(Object.keys(header).length).toBeGreaterThan(6);
+    expect(Object.keys(meta).length).toBeGreaterThan(6);
+  });
+
+  for (const name of [...new Set([...Object.keys(header), ...Object.keys(meta)])].sort()) {
+    if (META_IGNORES.has(name)) continue;
+    it(`${name}`, () => {
+      expect(
+        [...(header[name] ?? [])].sort(),
+        `public/_headers and index.html disagree about ${name}; a browser enforces both, so the stricter one wins silently`,
+      ).toEqual([...(meta[name] ?? [])].sort());
+    });
+  }
+
+  it("keeps frame-ancestors on the header, where it is not ignored", () => {
+    expect(header["frame-ancestors"]).toEqual(["'none'"]);
+    expect(meta["frame-ancestors"]).toBeUndefined();
+  });
+});
+
+/*
+ * Origins that were in the policy and in nothing else. Each one was checked
+ * against the codebase before removal: cdn.gpteng.co had no loader at all,
+ * the focusapps host had only a dns-prefetch hint, and the "railway" in
+ * enrichment-source.ts is a source label rendered in the UI, never a URL the
+ * browser opens. Listed here so they are not pasted back in by reflex.
+ */
+describe("dead origins stay out of the policy", () => {
+  for (const origin of [
+    "cdn.gpteng.co",
+    "r2.direasy-multi-tenant.focusapps.app",
+    "up.railway.app",
+  ]) {
+    it(`${origin}`, () => {
+      expect(headerPolicy, `${origin} is back in public/_headers`).not.toContain(origin);
+      expect(metaPolicy, `${origin} is back in index.html`).not.toContain(origin);
+      expect(INDEX, `${origin} is back in index.html outside the policy`).not.toContain(origin);
+    });
+  }
+});
+
 describe("the content security policy", () => {
   it("was found in both places, and they are real policies", () => {
     // A guard on the guard. A rename or a reformat that broke either regex
