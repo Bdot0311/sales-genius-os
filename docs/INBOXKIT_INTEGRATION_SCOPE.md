@@ -81,7 +81,7 @@ phase cannot be costed, and phase 5 should not start.
 |---|---|---|
 | Is warm-up included in the pre-warmed price, or additive? | Swings the 9-mailbox example from $63 to $90/month, a 43% change in cost of goods | **Open** |
 | Is the $15 transfer fee per domain or per mailbox? | 3x difference on setup cost at 3 mailboxes/domain | **Open** |
-| $2.50 partner rate | They require our expected initial and ongoing monthly mailbox volume to approve it | **Open — needs a number from us** |
+| $2.50 partner rate | InboxKit ask for expected monthly mailbox volume before approving it. We are pre-launch on this integration with nobody buying yet, so any total we gave would be invented, and a forecast we miss costs more at renewal than no forecast. Counter with the unit shape instead, and ask for the tier table so we can model it ourselves | **Open — on them, not on us** |
 | Volume tiers | Determines whether margin improves with scale or stays flat | **Open** |
 | Reseller agreement | Determines whether we can resell at all, and on what terms | **Open** |
 | Pre-warmed replenishment lead time | Determines whether "out of stock" is a minutes or weeks problem, which changes the fallback UX | **Open** |
@@ -283,8 +283,14 @@ Phases 1–4 can proceed while section 3 is unanswered. Phase 5 cannot.
 
 1. Approval of this scope, or amendments.
 2. Approval of ~$25 for the phase 1 pilot.
-3. Expected initial and ongoing monthly mailbox volume, so InboxKit's
-   partnerships team can approve the $2.50 rate.
+3. A decision on how to answer InboxKit's volume question. We cannot
+   forecast a monthly total before launch. What we can give them is the
+   unit shape — roughly 9 mailboxes per customer, so 10 customers is ~90
+   mailboxes and 50 is ~450 — and ask for the tier table plus whether a
+   rate applies automatically on crossing a threshold or needs manual
+   approval each time. If they want a commitment to unlock $2.50, let them
+   propose the structure: a minimum monthly spend, a ramp, or a 90-day
+   review.
 4. Written confirmation from InboxKit of the items in section 3.
 5. A decision on customer pricing shape — per-mailbox or per-volume — once the
    warm-up question in section 3 is answered.
