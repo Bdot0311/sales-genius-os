@@ -263,6 +263,7 @@ how mail is sent and how replies are read.
 | `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_SUPABASE_PROJECT_ID` | Required. The app cannot reach its backend without them |
 | `VITE_STRIPE_PUBLISHABLE_KEY` | Checkout |
 | `VITE_TURNSTILE_SITE_KEY` | Signup captcha widget |
+| `VITE_GOOGLE_CLIENT_ID` | Optional. The Google OAuth client id the sign-in button uses. Public by design, and the app ships with this deployment's id built in, so it is only set to point the browser at a different OAuth client. Changing it does not affect Gmail connection, which reads `GOOGLE_CLIENT_ID` in the edge functions, nor sign-in token verification, which uses the auth provider's own copy |
 | `VITE_POSTHOG_KEY`, `VITE_POSTHOG_HOST` | Client analytics |
 | `VITE_DOMAINCONNECT_PROVIDER_ID`, `VITE_DOMAINCONNECT_SERVICE_ID` | One-click DNS setup |
 | `VITE_LOVABLE_CONNECTOR_*` | Managed by Lovable's connectors; not set by hand |

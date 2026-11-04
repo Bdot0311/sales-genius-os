@@ -1,5 +1,10 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { OAUTH_START_KEY, clearOAuthStart } from "@/lib/oauth-return";
+import {
+  GOOGLE_CLIENT_ID,
+  loadGoogleIdentity,
+  looksLikeGoogleClientId,
+} from "@/lib/google-identity";
 import { supabase } from "@/integrations/supabase/client";
 import { HONEYPOT_FIELD, botRejectionMessage, botSignals } from "../../../supabase/functions/_shared/bot-signals";
 import { lovable } from "@/integrations/lovable/index";
@@ -48,6 +53,9 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
 
   const signupFormOpenedAt = useRef(Date.now());
   const [googleLoading, setGoogleLoading] = useState(false);
+  // Where Google renders its own button, and whether it managed to.
+  const googleButtonRef = useRef<HTMLDivElement | null>(null);
+  const [gisReady, setGisReady] = useState(false);
   const { toast } = useToast();
   // Set when a sign-in is refused because the address was never verified, so we
   // can offer the link again instead of leaving the person stuck.
@@ -168,6 +176,95 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
     }
   };
 
+
+
+  /*
+   * Sign in from the ID token Google just handed this page.
+   *
+   * No authorization code, so nothing to exchange and no client secret in
+   * play — which is the whole point, since the secret held by the auth
+   * provider is what "Unable to exchange external code" was about.
+   *
+   * If Supabase refuses the token the user is not left on a dead button:
+   * they go down the redirect flow, which is what shipped before this.
+   */
+  const handleGoogleCredential = async (credential?: string) => {
+    if (!credential) {
+      // Google closed without issuing one. Treat it as "use the other path"
+      // rather than as an error, because a dismissed chooser is not a fault.
+      return;
+    }
+    setGoogleLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithIdToken({
+        provider: "google",
+        token: credential,
+      });
+      if (!error) {
+        onSuccess?.();
+        return;
+      }
+      console.error("Google ID token sign-in refused:", error.message);
+      await handleGoogleAuth();
+    } catch (err: any) {
+      console.error("Google ID token sign-in threw:", err?.message ?? err);
+      await handleGoogleAuth();
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  /*
+   * Offer Google's own button, and only once it is genuinely usable.
+   *
+   * Everything here is allowed to fail. A blocked script, a privacy
+   * extension, an environment variable holding half a client id: each one
+   * leaves gisReady false, and the form keeps the button that was already
+   * there. There is no state in which this removes a way to sign in.
+   */
+  useEffect(() => {
+    if (!looksLikeGoogleClientId(GOOGLE_CLIENT_ID)) return;
+    let cancelled = false;
+
+    void (async () => {
+      const gis = await loadGoogleIdentity();
+      const parent = googleButtonRef.current;
+      if (cancelled || !gis || !parent) return;
+      try {
+        gis.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: (response) => {
+            void handleGoogleCredential(response?.credential);
+          },
+          // Never sign someone in because a browser remembered them. This is
+          // a sign-in page they navigated to on purpose.
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
+        gis.renderButton(parent, {
+          type: "standard",
+          theme: "filled_black",
+          size: "large",
+          text: "continue_with",
+          shape: "pill",
+          logo_alignment: "left",
+          // Google requires a number in [200, 400]. offsetWidth is 0 before
+          // layout, so the clamp has to survive that too.
+          width: Math.min(400, Math.max(200, parent.offsetWidth || 320)),
+        });
+        if (!cancelled) setGisReady(true);
+      } catch (err: any) {
+        console.error("Google Identity Services failed to render:", err?.message ?? err);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // Mounted once. handleGoogleCredential is read through the closure and
+    // only touches setState and the module-scope client.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -478,6 +575,24 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
         </div>
 
         <div className="mb-5 space-y-3">
+          {/*
+            Google's button when Identity Services loaded, ours when it did
+            not. Both sign the same person in; only the first keeps the
+            account chooser reading "to continue to outreign.io".
+          */}
+          <div
+            ref={googleButtonRef}
+            className={`flex justify-center ${gisReady ? "" : "hidden"} ${
+              googleLoading ? "pointer-events-none opacity-60" : ""
+            }`}
+          />
+          {gisReady && googleLoading ? (
+            <p className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Signing you in…
+            </p>
+          ) : null}
+          {gisReady ? null : (
           <Button
             type="button"
             variant="outline"
@@ -497,6 +612,7 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
             )}
             Continue with Google
           </Button>
+          )}
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t border-border/50" />
