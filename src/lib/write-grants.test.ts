@@ -142,7 +142,34 @@ describe("a table the browser writes to has the privilege to", () => {
   it("the walk finds the tables and their writes at all", () => {
     // Floors on the two inputs: a parse that finds nothing proves nothing.
     expect(allSql).toMatch(/GRANT SELECT \([^)]*\) ON public\.integrations TO authenticated/);
-    expect(browserWrites("integrations")).toContain("UPDATE");
+
+    /*
+     * The source-side floor names no table, and that is the point.
+     *
+     * It used to assert that the browser UPDATEs `integrations`, and it
+     * started failing the day that stopped being true: disconnecting a
+     * mailbox moved into the `disconnect-integration` edge function, so the
+     * only thing the browser does to that table now is SELECT two columns.
+     * Nothing was broken. The floor had pinned itself to a premise the fix
+     * was supposed to remove, which is the same trap the synthetic input in
+     * the test above exists to avoid.
+     *
+     * So prove the walk is not vacuous the way it actually can be vacuous:
+     * it must find writes across the codebase, and it must still tell the
+     * three operations apart. Either half going quiet is a broken detector;
+     * neither depends on which table a given feature writes to.
+     */
+    const tables = new Set<string>();
+    for (const file of sources) {
+      for (const m of readFileSync(file, "utf8").matchAll(/from\(\s*["\'`]([a-z_]+)["\'`]\s*\)/g)) {
+        tables.add(m[1]);
+      }
+    }
+    const written = [...tables].filter((t) => browserWrites(t).length > 0);
+    expect(written.length, "the source walk found no browser write anywhere").toBeGreaterThan(4);
+
+    const ops = new Set(written.flatMap((t) => browserWrites(t)));
+    expect([...ops].sort()).toEqual(["DELETE", "INSERT", "UPDATE"]);
   });
 
   it("every write the browser performs on a locked-down table is granted", () => {

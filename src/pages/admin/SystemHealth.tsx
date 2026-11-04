@@ -180,15 +180,24 @@ interface SecretRow {
  * fingerprint is the useful part: it tells "nothing is set" apart from "set,
  * but not to what I just pasted".
  */
+interface GoogleVerdict {
+  verdict: "valid" | "invalid" | "unknown";
+  googleError: string | null;
+  detail: string;
+  scope: string;
+}
+
 function IntegrationSecretsPanel() {
   const [running, setRunning] = useState(false);
   const [rows, setRows] = useState<SecretRow[] | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const [google, setGoogle] = useState<GoogleVerdict | null>(null);
 
   const probe = async () => {
     setRunning(true);
     setRows(null);
     setNote(null);
+    setGoogle(null);
     const { data, error } = await supabase.functions.invoke("integration-secrets-probe", { body: {} });
     setRunning(false);
     if (error) {
@@ -198,6 +207,7 @@ function IntegrationSecretsPanel() {
     }
     setRows(Array.isArray(data?.secrets) ? (data.secrets as SecretRow[]) : []);
     setNote(typeof data?.note === "string" ? data.note : null);
+    setGoogle(data?.google && typeof data.google === "object" ? (data.google as GoogleVerdict) : null);
   };
 
   return (
@@ -248,6 +258,27 @@ function IntegrationSecretsPanel() {
                 </div>
               </div>
             ))}
+            {google ? (
+              <div
+                className={
+                  google.verdict === "invalid"
+                    ? "rounded-lg border border-red-500/30 bg-red-500/10 p-3"
+                    : google.verdict === "valid"
+                      ? "rounded-lg border border-green-500/30 bg-green-500/10 p-3"
+                      : "rounded-lg border border-border bg-card/50 p-3"
+                }
+              >
+                <p className="text-sm font-medium">
+                  {google.verdict === "invalid"
+                    ? "Google rejects this client id and secret"
+                    : google.verdict === "valid"
+                      ? "Google accepts this client id and secret"
+                      : "Google could not judge this client id and secret"}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">{google.detail}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{google.scope}</p>
+              </div>
+            ) : null}
             {note ? <p className="text-sm text-muted-foreground">{note}</p> : null}
           </div>
         ) : (

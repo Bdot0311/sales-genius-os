@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { corsHeaders, requireInternalOrUser } from "../_shared/internal-auth.ts";
+import { verifyGoogleCredential } from "../_shared/google-credential-check.ts";
 
 /**
  * Which integration secrets this deployment actually has.
@@ -72,12 +73,33 @@ serve(async (req) => {
   const missing = secrets.filter((s) => !s.present).map((s) => s.key);
   const suspicious = secrets.filter((s) => s.suspicious).map((s) => s.key);
 
+  /*
+   * Presence is not correctness, and the gap between the two is where Google
+   * sign-in lived for days: the secret was set, the right length, and wrong.
+   * So the pair is put to Google itself.
+   *
+   * Scope, stated because it is the part that misleads: this reads the EDGE
+   * FUNCTION secret. The auth provider keeps its own separate copy of the
+   * same credential, and that copy is what signs users in. A "valid" verdict
+   * here therefore proves the secret exists in a working form and narrows a
+   * sign-in failure to the auth provider's copy being a different, older one.
+   */
+  const google = await verifyGoogleCredential(
+    Deno.env.get("GOOGLE_CLIENT_ID") ?? "",
+    Deno.env.get("GOOGLE_CLIENT_SECRET") ?? "",
+  );
+
   return new Response(
     JSON.stringify({
       ok: missing.length === 0 && suspicious.length === 0,
       missing,
       suspicious,
       secrets,
+      google: {
+        ...google,
+        scope:
+          "Checked against Google. This is the copy the edge functions use for Gmail. The auth provider keeps a separate copy for sign-in, which this cannot read.",
+      },
       note:
         missing.length === 0 && suspicious.length === 0
           ? "Every secret these functions read is set."
