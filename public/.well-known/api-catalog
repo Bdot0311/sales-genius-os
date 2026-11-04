@@ -54,7 +54,7 @@
       ]
     },
     {
-      "anchor": "https://ghgfjnepvxvxrncmskys.supabase.co/functions/v1/mcp",
+      "anchor": "https://api.outreign.io/mcp",
       "service-desc": [
         {
           "href": "https://outreign.io/.well-known/mcp/server-card.json",

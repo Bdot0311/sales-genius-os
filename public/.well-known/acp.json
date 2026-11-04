@@ -11,7 +11,7 @@
     "terms_of_service": "https://outreign.io/terms",
     "privacy_policy": "https://outreign.io/privacy"
   },
-  "api_base_url": "https://ghgfjnepvxvxrncmskys.supabase.co/functions/v1/rest-api",
+  "api_base_url": "https://api.outreign.io/rest-api",
   "transports": ["https"],
   "capabilities": {
     "services": [

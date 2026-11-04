@@ -1235,7 +1235,7 @@ Troubleshoot API authentication problems.
 Use this curl command:
 
 \`\`\`bash
-curl -X GET "https://api.outreign.io/v1/leads" \\
+curl -X GET "https://api.outreign.io/rest-api/leads" \\
   -H "X-API-Key: YOUR_API_KEY"
 \`\`\`
 
@@ -1432,7 +1432,7 @@ Build powerful integrations with the OutReign REST API.
 ### Base URL
 
 \`\`\`
-https://api.outreign.io/v1
+https://api.outreign.io/rest-api
 \`\`\`
 
 ### Authentication
@@ -1440,7 +1440,7 @@ https://api.outreign.io/v1
 All requests require an API key:
 
 \`\`\`bash
-curl -X GET "https://api.outreign.io/v1/leads" \\
+curl -X GET "https://api.outreign.io/rest-api/leads" \\
   -H "X-API-Key: sos_your_api_key"
 \`\`\`
 
@@ -1550,17 +1550,10 @@ When issues occur:
 Monitor programmatically:
 
 \`\`\`bash
-curl https://api.outreign.io/health
+curl https://api.outreign.io/
 \`\`\`
 
-Response:
-\`\`\`json
-{
-  "status": "healthy",
-  "version": "1.2.3",
-  "timestamp": "2024-01-15T10:30:00Z"
-}
-\`\`\`
+A healthy API responds with HTTP 200 and the text \`OutReign API\`.
     `,
     readTime: 3,
     tags: ['API', 'status', 'monitoring', 'uptime'],
