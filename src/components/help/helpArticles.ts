@@ -1550,17 +1550,10 @@ When issues occur:
 Monitor programmatically:
 
 \`\`\`bash
-curl https://api.outreign.io/health
+curl https://api.outreign.io/
 \`\`\`
 
-Response:
-\`\`\`json
-{
-  "status": "healthy",
-  "version": "1.2.3",
-  "timestamp": "2024-01-15T10:30:00Z"
-}
-\`\`\`
+A healthy API responds with HTTP 200 and the text \`OutReign API\`.
     `,
     readTime: 3,
     tags: ['API', 'status', 'monitoring', 'uptime'],
