@@ -14,7 +14,7 @@ OutReign.
 
 OutReign exposes a remote MCP server:
 
-- Endpoint: `https://ghgfjnepvxvxrncmskys.supabase.co/functions/v1/mcp`
+- Endpoint: `https://api.outreign.io/mcp`
 - Transport: streamable HTTP
 - Auth: OAuth 2.1 (authorization code + PKCE). See `https://outreign.io/auth.md`.
 - Server card: `https://outreign.io/.well-known/mcp/server-card.json`

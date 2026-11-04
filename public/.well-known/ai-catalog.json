@@ -13,7 +13,7 @@
       "displayName": "OutReign MCP server",
       "description": "Authenticated MCP server (streamable HTTP) letting a signed-in OutReign user search and manage leads, review ICP profiles, inspect sequences and deals, read replies and sent emails, and configure the AI SDR agent.",
       "type": "application/json",
-      "url": "https://ghgfjnepvxvxrncmskys.supabase.co/functions/v1/mcp",
+      "url": "https://api.outreign.io/mcp",
       "authentication": {
         "type": "oauth2",
         "protectedResourceMetadata": "https://outreign.io/.well-known/oauth-protected-resource"

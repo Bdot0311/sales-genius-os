@@ -1235,7 +1235,7 @@ Troubleshoot API authentication problems.
 Use this curl command:
 
 \`\`\`bash
-curl -X GET "https://api.outreign.io/v1/leads" \\
+curl -X GET "https://api.outreign.io/rest-api/leads" \\
   -H "X-API-Key: YOUR_API_KEY"
 \`\`\`
 
@@ -1432,7 +1432,7 @@ Build powerful integrations with the OutReign REST API.
 ### Base URL
 
 \`\`\`
-https://api.outreign.io/v1
+https://api.outreign.io/rest-api
 \`\`\`
 
 ### Authentication
@@ -1440,7 +1440,7 @@ https://api.outreign.io/v1
 All requests require an API key:
 
 \`\`\`bash
-curl -X GET "https://api.outreign.io/v1/leads" \\
+curl -X GET "https://api.outreign.io/rest-api/leads" \\
   -H "X-API-Key: sos_your_api_key"
 \`\`\`
 
