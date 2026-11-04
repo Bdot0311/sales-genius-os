@@ -44,11 +44,20 @@ const POLICIES: Array<[string, string]> = [
 ];
 
 /*
- * Identity Services needs all three: the script itself, the iframe the
- * rendered button lives in, and the calls it makes to mint the ID token.
- * Allowing the script alone gets a button that cannot do anything.
+ * Identity Services needs all four, and the list is this long because each
+ * one was found the hard way by reloading the deploy preview:
+ *
+ *   script-src   the loader itself
+ *   style-src    accounts.google.com/gsi/style, which the button is drawn with
+ *   frame-src    the iframe the rendered button lives in
+ *   connect-src  the calls that mint the ID token
+ *
+ * Allowing the script alone gets a button that cannot do anything, and
+ * allowing everything but the stylesheet gets one that is unstyled — which is
+ * worse than absent, because it looks like a shipped bug rather than a
+ * fallback.
  */
-const GIS_DIRECTIVES = ["script-src", "frame-src", "connect-src"] as const;
+const GIS_DIRECTIVES = ["script-src", "style-src", "frame-src", "connect-src"] as const;
 
 describe("the content security policy", () => {
   it("was found in both places, and they are real policies", () => {
