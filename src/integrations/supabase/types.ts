@@ -7059,6 +7059,7 @@ export type Database = {
         Args: {
           p_company_size?: string
           p_desc?: boolean
+          p_enriched?: string
           p_industry?: string
           p_intent_label?: string
           p_limit?: number
