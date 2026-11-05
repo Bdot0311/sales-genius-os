@@ -901,6 +901,7 @@ ${playbookSystemRules()}`;
               const leadStrategyBlock = decisionPromptBlock(leadDecision);
 
               const outreachPrompt = buildTouchPrompt({
+                research: leadResearchBlock,
                 firstName,
                 jobTitle: lead.job_title,
                 companyName: lead.company_name,
@@ -911,8 +912,10 @@ ${playbookSystemRules()}`;
                 valueProps: cfgValuePropsText,
               });
 
+              // Not appended here any more: buildTouchPrompt takes it, so the
+              // empty case can be stated to the model rather than vanishing.
               const raw = await callGemini(
-                `${outreachPrompt}${leadResearchBlock}`,
+                outreachPrompt,
                 `${outreachSystemPrompt}${leadStrategyBlock}`,
               );
               const touches = parseTouches(raw);
