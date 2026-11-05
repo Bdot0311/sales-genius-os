@@ -1,6 +1,7 @@
 # Done-for-you offer — scope
 
-**Status: not launched. For review.**
+**Status: approved 2026-11-05. Delivery process in
+[DFY_DELIVERY_RUNBOOK.md](DFY_DELIVERY_RUNBOOK.md).**
 
 Last updated 2026-11-05.
 
@@ -105,8 +106,14 @@ Everything in Launch, plus ongoing operation: list building, message iteration,
 reply QA before the agent sends, monthly reporting through the white-label
 portal.
 
-Capped at five concurrent clients. When the cap is full, the answer is the
-waitlist or Rung 1, not a sixth seat.
+**DFY is this rung.** Capped at five concurrent clients, and client six is
+offered Launch or a waitlist seat, never a sixth Managed slot. Founder
+decision, 2026-11-05.
+
+That pairing is what makes the cap hold. A cap with no alternative gets broken
+the first time someone turns up with money, because turning away revenue is
+harder than promising to cope. With Launch as the overflow, nobody is turned
+away and the cap never has to be argued about.
 
 ### Rung 3 — Agency partner. For firms reselling to their own clients.
 

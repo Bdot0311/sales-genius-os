@@ -87,4 +87,5 @@ These live in [`docs/`](docs/) and were not linked from anywhere until now.
 | [INBOX_SYNC_SCHEDULE.md](docs/INBOX_SYNC_SCHEDULE.md) | Reply detection and when it runs |
 | [SAVED_LEADS_BRIEF.md](docs/SAVED_LEADS_BRIEF.md) | The design brief behind the Saved Leads list |
 | [INBOXKIT_INTEGRATION_SCOPE.md](docs/INBOXKIT_INTEGRATION_SCOPE.md) | Proposed in-house domain and mailbox provisioning: costs, guards and phases. Not built |
-| [DFY_OFFER_SCOPE.md](docs/DFY_OFFER_SCOPE.md) | The proposed done-for-you offer: rungs, pricing, unit economics and delivery guardrails. Not launched |
+| [DFY_OFFER_SCOPE.md](docs/DFY_OFFER_SCOPE.md) | The done-for-you offer: rungs, pricing, unit economics and guardrails |
+| [DFY_DELIVERY_RUNBOOK.md](docs/DFY_DELIVERY_RUNBOOK.md) | How a Managed engagement actually runs, day 0 to day 90, and the agreement clauses |
