@@ -23,6 +23,9 @@
  * rather than as the alternative to the plans above it.
  */
 
+import { useState } from "react";
+import { DfyApplicationDialog } from "./DfyApplicationDialog";
+
 const PURPLE = "hsl(261 75% 50%)";
 
 const INCLUDED = [
@@ -35,7 +38,10 @@ const INCLUDED = [
   "Monthly reporting in your own branded portal",
 ];
 
-export const DoneForYou = () => (
+export const DoneForYou = () => {
+  const [applying, setApplying] = useState(false);
+
+  return (
   <section className="mx-auto mb-20 max-w-5xl md:mb-24" aria-labelledby="dfy-heading">
     <div>
       <div>
@@ -146,10 +152,9 @@ export const DoneForYou = () => (
             </div>
 
             <div className="mt-8">
-              <a
-                href="https://calendly.com/bdotindustries/30min"
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                type="button"
+                onClick={() => setApplying(true)}
                 className="inline-flex h-11 w-full items-center justify-center rounded-full px-4 text-sm font-semibold leading-none transition-opacity duration-200 hover:opacity-90"
                 style={{
                   background: "linear-gradient(135deg, hsl(261 75% 60%), hsl(261 75% 50%))",
@@ -157,7 +162,7 @@ export const DoneForYou = () => (
                 }}
               >
                 Apply for a seat
-              </a>
+              </button>
               {/*
                * The guarantee earns its own line rather than sitting in fine
                * print. It is the strongest thing on this panel and burying it
@@ -192,5 +197,7 @@ export const DoneForYou = () => (
         </div>
       </div>
     </div>
+    <DfyApplicationDialog open={applying} onOpenChange={setApplying} />
   </section>
-);
+  );
+};

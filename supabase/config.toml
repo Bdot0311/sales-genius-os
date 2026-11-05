@@ -91,6 +91,10 @@ project_id = "ghgfjnepvxvxrncmskys"
     verify_jwt = false
   [functions.submit-campaign-setup]
     verify_jwt = false
+  # Public by design: an applicant for the done-for-you offer has no account
+  # yet. Honeypot, timing, Turnstile and an IP rate limit are checked inside.
+  [functions.submit-dfy-application]
+    verify_jwt = false
   [functions.create-account-with-subscription]
     verify_jwt = false
   [functions.create-checkout]

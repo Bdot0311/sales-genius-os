@@ -29,6 +29,11 @@ const loaderSource = readFileSync("src/lib/google-identity.ts", "utf8");
 const scriptUrlMatch = loaderSource.match(/GIS_SCRIPT_SRC\s*=\s*["'`]([^"'`]+)["'`]/);
 const gisOrigin = scriptUrlMatch ? new URL(scriptUrlMatch[1]).origin : "";
 
+/** Same, for Calendly's embed bundle. */
+const calendlySource = readFileSync("src/lib/calendly-embed.ts", "utf8");
+const calendlyMatch = calendlySource.match(/CALENDLY_SCRIPT_SRC\s*=\s*["'`]([^"'`]+)["'`]/);
+const calendlyOrigin = calendlyMatch ? new URL(calendlyMatch[1]).origin : "";
+
 /** Pull one directive's source list out of a policy string. */
 function directive(policy: string, name: string): string[] {
   const match = policy.match(new RegExp(`(?:^|;)\\s*${name}\\s+([^;"]+)`));
@@ -77,6 +82,34 @@ function parseAll(policy: string): Record<string, string[]> {
  * production.
  */
 const META_IGNORES = new Set(["frame-ancestors", "report-uri", "sandbox"]);
+
+/*
+ * The booking widget needs its bundle and its stylesheet. frame-src already
+ * allows calendly.com for the booking iframe itself, which is a different
+ * origin from the one the bundle is served off.
+ */
+describe("the content security policy allows the booking widget", () => {
+  it("knows which origin the Calendly loader asks for", () => {
+    expect(calendlyOrigin).toBe("https://assets.calendly.com");
+  });
+
+  for (const [file, policy] of POLICIES) {
+    for (const name of ["script-src", "style-src"] as const) {
+      it(`${file} allows it in ${name}`, () => {
+        expect(
+          directive(policy, name),
+          `${file} blocks ${calendlyOrigin} in ${name}, so the booking step renders nothing`,
+        ).toContain(calendlyOrigin);
+      });
+    }
+  }
+
+  it("still allows the booking iframe itself", () => {
+    for (const [file, policy] of POLICIES) {
+      expect(directive(policy, "frame-src"), `${file} frame-src`).toContain("https://calendly.com");
+    }
+  });
+});
 
 describe("the two policy files say the same thing", () => {
   const header = parseAll(headerPolicy);
