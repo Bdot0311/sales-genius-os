@@ -15,6 +15,12 @@
  * And the founding price is deliberately absent. Publishing the discount
  * alongside the list price makes the list price look invented, and removes the
  * room to negotiate it per client.
+ *
+ * It renders inside the pricing section, directly beneath the plan cards and
+ * above the comparison table, so it brings no container or background of its
+ * own. Placed after <Pricing /> instead it landed below the comparison table,
+ * the add-ons and the credit FAQ, which reads as an afterthought by the footer
+ * rather than as the alternative to the plans above it.
  */
 
 const PURPLE = "hsl(261 75% 50%)";
@@ -30,13 +36,9 @@ const INCLUDED = [
 ];
 
 export const DoneForYou = () => (
-  <section
-    className="relative overflow-hidden py-16 sm:py-20"
-    style={{ background: "hsl(261 75% 2%)" }}
-    aria-labelledby="dfy-heading"
-  >
-    <div className="container mx-auto px-5 sm:px-6">
-      <div className="mx-auto max-w-5xl">
+  <section className="mx-auto mb-20 max-w-5xl md:mb-24" aria-labelledby="dfy-heading">
+    <div>
+      <div>
         <p className="font-serif italic font-thin text-base text-center text-purple-500 mb-4">
           Done for you
         </p>

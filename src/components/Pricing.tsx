@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { DoneForYou } from "@/components/pricing/DoneForYou";
 import { Check, X, HelpCircle, Coins, Zap, ArrowRight, Bot } from "lucide-react";
 import { STRIPE_PRICE_IDS } from "@/lib/stripe-config";
 import { useSearchCredits } from "@/hooks/use-search-credits";
@@ -618,6 +619,9 @@ export const Pricing = () => {
             );
           })}
         </div>
+
+        {/* Done for you. Sits with the plans it is an alternative to. */}
+        <DoneForYou />
 
         {/* Feature Comparison Table */}
         <div className="max-w-7xl mx-auto mb-20 md:mb-24">
