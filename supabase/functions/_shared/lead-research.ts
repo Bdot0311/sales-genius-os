@@ -245,6 +245,33 @@ export function normalizeHost(input: string): string | null {
 }
 
 /** Render a stored brief as a prompt block for the email writer. */
+/**
+ * Does this brief contain a single fact about the company?
+ *
+ * Needed because an empty brief does not produce an empty block. A brief with
+ * nothing in it still emits "Sources read: ..." and the TIMING instruction and
+ * a confidence line, so the block is a non-empty string carrying no facts at
+ * all — and it reads, to anything checking for emptiness, as research that
+ * worked.
+ *
+ * That is worse than nothing. A model handed "Sources read: acme.com,
+ * Research confidence: low" and a rule demanding one specific detail has been
+ * told research happened and given none of it.
+ *
+ * Only these five fields carry facts. `avoid`, sources, timing, confidence and
+ * the quality score are all instructions or metadata about the research rather
+ * than anything true about the prospect.
+ */
+export function briefHasFacts(brief: LeadResearchBrief | null | undefined): boolean {
+  if (!brief) return false;
+  if (brief.changes?.added?.length || brief.changes?.removed?.length) return true;
+  if (brief.what_they_do?.trim()) return true;
+  if (brief.who_they_sell_to?.trim()) return true;
+  if ((brief.observations ?? []).some((o) => o?.fact?.trim())) return true;
+  if ((brief.hooks ?? []).some((h) => typeof h === "string" && h.trim())) return true;
+  return false;
+}
+
 export function briefToPromptBlock(
   brief: LeadResearchBrief | null | undefined,
   sources?: string[] | null,

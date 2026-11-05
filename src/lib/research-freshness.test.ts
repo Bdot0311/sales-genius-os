@@ -121,7 +121,13 @@ describe("every reader fetches what the comparison needs", () => {
   for (const [name, path] of [
     ["research-lead", "supabase/functions/research-lead/index.ts"],
     ["generate-email", "supabase/functions/generate-email/index.ts"],
-    ["agent-run", "supabase/functions/agent-run/index.ts"],
+    /*
+     * The agent's reader moved out of agent-run and into _shared so it could
+     * be tested without starting a server. The invariant did not move: the
+     * select that feeds the freshness check still has to carry every field the
+     * comparison reads, wherever it lives.
+     */
+    ["agent-run", "supabase/functions/_shared/lead-research-block.ts"],
   ] as const) {
     it(`${name} selects the fingerprint fields`, () => {
       // The select that also fetches research_brief is the one feeding the
