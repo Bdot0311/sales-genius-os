@@ -77,15 +77,37 @@ describe("the overview page", () => {
   });
 
   it("what needs attention is computed from rows, not hardcoded", () => {
-    expect(OVERVIEW).toContain("leadsMissingEmail");
     expect(OVERVIEW).toContain("leadsNeverContacted");
-    expect(OVERVIEW).toContain("rows.filter((l) => !l.contact_email).length");
+    expect(OVERVIEW).toContain("rows.filter((l) => l.contact_email && !l.last_contacted_at).length");
+    /*
+     * The missing-address counts moved into lead-email-gap.ts when "no email"
+     * turned out to be two situations: never enriched, and enriched with no
+     * address found. The page must still derive them from the rows it just
+     * fetched rather than from a literal, which is what this has always been
+     * about.
+     */
+    expect(OVERVIEW).toContain("countEmailGaps(rows)");
+    expect(OVERVIEW).toContain("leadsEnrichedNoEmail: gaps.enriched");
+    expect(OVERVIEW).toContain("leadsUnenrichedNoEmail: gaps.unenriched");
   });
 
   it("an item only appears when the account is actually in that state", () => {
     // An entry that is always present is a link, and links belong in the nav.
-    expect(OVERVIEW).toContain("stats.leadsMissingEmail > 0 &&");
+    expect(OVERVIEW).toContain("stats.leadsUnenrichedNoEmail > 0 &&");
+    expect(OVERVIEW).toContain("stats.leadsEnrichedNoEmail > 0 &&");
     expect(OVERVIEW).toContain("].filter(Boolean)");
+  });
+
+  /*
+   * A websocket does not survive a backgrounded tab, which on a phone is every
+   * time the app is left. Without this the overview showed whatever it loaded
+   * on open, indefinitely, with nothing to say the numbers had stopped moving.
+   */
+  it("reloads when the tab comes back, not only on a realtime event", () => {
+    expect(OVERVIEW).toContain('document.addEventListener("visibilitychange"');
+    expect(OVERVIEW).toContain('window.addEventListener("focus"');
+    expect(OVERVIEW).toContain('document.removeEventListener("visibilitychange"');
+    expect(OVERVIEW).toContain('window.removeEventListener("focus"');
   });
 });
 
