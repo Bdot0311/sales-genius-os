@@ -25,16 +25,51 @@ customer to configure.
 
 All figures are InboxKit's quoted costs to us, not customer prices.
 
+Confirmed in writing by InboxKit, 2026-11-05. This supersedes the earlier
+quote, which was materially worse.
+
 | Item | Cost |
 |---|---|
-| Fresh mailbox, Google or Microsoft | $3 / month |
-| Warm-up | +$3 / month, optional |
-| Pre-warmed, 2–4 weeks history | $6 / month (replaces the $3 mailbox fee) |
-| Pre-warmed, 4–8 weeks history | $7 / month |
-| Pre-warmed, 8+ weeks history | $9 / month |
-| Domain transfer, pre-warmed inventory | ~$15 one-time for a `.com` |
+| Fresh mailbox, Google or Microsoft | $3 / month, **$2.70 from ~450 mailboxes** |
+| Warm-up on a fresh mailbox | +$3 / month, optional |
+| **Pre-warmed, any age** | **$4.50 / month flat, warm-up included** |
+| Domain transfer fee | **None from InboxKit.** The receiving registrar charges, per domain |
 | Domain registration | billed annually, non-refundable |
 | Azure tenant, Microsoft only | $30 / month per tenant, up to 100 mailboxes |
+
+### Pre-warmed is no longer the expensive option
+
+The $6/$7/$9 bands are gone, replaced by $4.50 flat with warm-up included.
+That inverts the earlier conclusion: **pre-warmed is now cheaper than fresh
+plus warm-up ($6), and ready on day one instead of in two to four weeks.**
+Strictly better on both axes, where stock exists.
+
+### The cheapest option is one we can already build
+
+| Option | Per mailbox | 9 mailboxes | Ready | Stock risk |
+|---|---|---|---|---|
+| Pre-warmed, warm-up included | $4.50 | $40.50/mo | day 1 | **Yes — the last batch sold out in 3 days** |
+| Fresh + InboxKit warm-up | $6.00 | $54.00/mo | 2–4 weeks | none |
+| **Fresh + our own warm-up** | **$3.00** | **$27.00/mo** | 2–4 weeks | none |
+| Fresh + our warm-up, at 450 mailboxes | $2.70 | $24.30/mo | 2–4 weeks | none |
+
+At 50 customers, roughly 450 mailboxes, running our own warm-up on fresh
+mailboxes costs **$14,580/year against $24,300** for pre-warmed. That is
+**$9,720/year**, and the missing piece — `warmup-orchestrator` — is already
+built.
+
+Two things argue the other way, and neither is small. Our warm-up is unproven
+at this scale, and warming badly is worse than not warming. And pre-warmed
+carries real sending and receiving history, which no warm-up system can
+manufacture. The guard in section 5 still applies either way: whichever
+warm-up runs, the other must be off.
+
+### Open: does fresh still cost +$3 to warm?
+
+"Warm-up is included" was said about pre-warmed pricing. Fresh is quoted at
+$3 and $2.70 with no mention of warm-up, and the earlier answer had it as a
+separate $3 subscription. Worth one line of confirmation, because it decides
+whether option B above costs $6 or $3.
 
 **The $2.50 partner rate is not live.** InboxKit: "must be approved and
 configured on your account; until then, the dashboard and API will continue
@@ -81,7 +116,12 @@ phase cannot be costed, and phase 5 should not start.
 |---|---|---|
 | Is warm-up included in the pre-warmed price, or additive? | Swings the 9-mailbox example from $63 to $90/month, a 43% change in cost of goods | **Open** |
 | Is the $15 transfer fee per domain or per mailbox? | 3x difference on setup cost at 3 mailboxes/domain | **Open** |
-| $2.50 partner rate | InboxKit ask for expected monthly mailbox volume before approving it. We are pre-launch on this integration with nobody buying yet, so any total we gave would be invented, and a forecast we miss costs more at renewal than no forecast. Counter with the unit shape instead, and ask for the tier table so we can model it ourselves | **Open — on them, not on us** |
+| ~~$2.50 partner rate~~ | **Settled.** $2.70 from ~450 mailboxes with no minimum commitment, moving to $2.50 at higher volume. Rates are applied manually on our account, not by the API, and tiers count active mailboxes per month — one message on crossing a threshold | **Closed** |
+| ~~Reselling~~ | **Confirmed in writing**: reselling under our brand, billed by us, is permitted. **We are the customer of record for provider suspensions, and end users come to us for support** — that liability is ours, not the customer's, and section 5 carries it | **Closed** |
+| ~~Pre-warmed replenishment~~ | **Answered, and it is a constraint.** Restocked irregularly; the last batch sold out in **3 days**. Treat as buy-when-available, never as something a start date can depend on | **Closed** |
+| ~~Customer-facing OAuth consent~~ | **Confirmed**: single-mailbox consent works with no domain-wide delegation and no admin registration. Our existing Google connect flow covers these mailboxes, and the app-password/IMAP route drops to a fallback | **Closed** |
+| Does fresh still cost +$3 to warm? | Decides whether fresh-plus-their-warm-up is $6 or $3, and whether running our own warm-up saves $9,720/year at 450 mailboxes or nothing | **Open** |
+| May we run our own warm-up on their fresh mailboxes? | The $9,720/year question. Our `warmup-orchestrator` already exists | **Open** |
 | Volume tiers | Determines whether margin improves with scale or stays flat | **Open** |
 | Reseller agreement | Determines whether we can resell at all, and on what terms | **Open** |
 | Pre-warmed replenishment lead time | Determines whether "out of stock" is a minutes or weeks problem, which changes the fallback UX | **Open** |
