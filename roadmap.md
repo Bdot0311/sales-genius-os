@@ -1,5 +1,12 @@
 # Integration connection repair
 
+# DFY sales-model questions
+
+- [ ] Add subscription/high-ticket paths with exact customer values, buying and onboarding timelines.
+- [ ] Verify answer persistence, legacy summaries and desktop/mobile form behavior.
+
+# Integration connection repair (continued)
+
 - [x] Fix manual integration saving without restoring the single-account Google constraint.
 - [x] Check sibling OAuth persistence failures and verify Google, Calendly, HubSpot and Salesforce authorization initiation.
 - [x] Run 34 regressions and verify signed-in Zapier/Slack save, reload and disconnect; remove temporary settings.

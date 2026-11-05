@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { TurnstileWidget } from "@/components/auth/TurnstileWidget";
 import { HONEYPOT_FIELD } from "../../../supabase/functions/_shared/bot-signals";
 import { loadCalendly } from "@/lib/calendly-embed";
+import { SALES_MODELS, BUYING_MOTIONS, BILLING_BASES } from "../../../supabase/functions/_shared/dfy-sales-model";
 
 /*
  * Apply, then book, without leaving the page.
@@ -25,10 +26,8 @@ import { loadCalendly } from "@/lib/calendly-embed";
  * `calendly-webhook` reads `tracking.utm_content`, finds the row and marks it
  * booked, so no new backend work was needed for that half.
  *
- * The questions are not arbitrary. They are the day-zero baseline the
- * delivery runbook says cannot be reconstructed later, plus the deal-cycle
- * check that decides whether a prospect can produce proof inside a 90-day
- * term at all. Asked here, every applicant arrives already qualified.
+ * Capture the applicant's own economics and timing, including self-serve
+ * activation rather than assuming every business has a rep-led sales cycle.
  */
 
 export const CALENDLY_URL = "https://calendly.com/bdotindustries/30min";
@@ -51,18 +50,6 @@ const OUTBOUND_TODAY = [
   { value: "agency", label: "An agency runs it" },
   { value: "tool", label: "A tool we run ourselves" },
 ];
-const DEAL_SIZE = [
-  { value: "under_5k", label: "Under $5k" },
-  { value: "5k_25k", label: "$5k to $25k" },
-  { value: "25k_100k", label: "$25k to $100k" },
-  { value: "over_100k", label: "Over $100k" },
-];
-const SALES_CYCLE = [
-  { value: "under_30d", label: "Under 30 days" },
-  { value: "30_90d", label: "30 to 90 days" },
-  { value: "90_180d", label: "90 to 180 days" },
-  { value: "over_180d", label: "Over 180 days" },
-];
 const RUNG = [
   { value: "managed", label: "Managed — you run it" },
   { value: "launch", label: "Launch — build it and hand over" },
@@ -78,8 +65,14 @@ export function DfyApplicationDialog({ open, onOpenChange }: Props) {
   const [values, setValues] = useState<FormValues>(initial);
   const [errors, setErrors] = useState<Partial<Record<keyof FormValues, string>>>({});
   const [outboundToday, setOutboundToday] = useState("");
-  const [dealSize, setDealSize] = useState("");
-  const [salesCycle, setSalesCycle] = useState("");
+  const [salesModel, setSalesModel] = useState("");
+  const [buyingMotion, setBuyingMotion] = useState("");
+  const [customerValue, setCustomerValue] = useState("");
+  const [billingBasis, setBillingBasis] = useState("");
+  const [buyingTimeline, setBuyingTimeline] = useState("");
+  const [onboardingTimeline, setOnboardingTimeline] = useState("");
+  const hasSubscription = salesModel === "subscription" || salesModel === "both";
+  const showOnboarding = hasSubscription || buyingMotion === "self_serve";
   const [rung, setRung] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [requestId, setRequestId] = useState<string | null>(null);
@@ -139,8 +132,12 @@ export function DfyApplicationDialog({ open, onOpenChange }: Props) {
         setValues(initial);
         setErrors({});
         setOutboundToday("");
-        setDealSize("");
-        setSalesCycle("");
+        setSalesModel("");
+        setBuyingMotion("");
+        setCustomerValue("");
+        setBillingBasis("");
+        setBuyingTimeline("");
+        setOnboardingTimeline("");
         setRung("");
         setRequestId(null);
         setCalendlyFailed(false);
@@ -172,8 +169,12 @@ export function DfyApplicationDialog({ open, onOpenChange }: Props) {
         body: {
           ...parsed.data,
           outboundToday,
-          dealSize,
-          salesCycle,
+          salesModel,
+          buyingMotion,
+          customerValue,
+          billingBasis,
+          buyingTimeline,
+          onboardingTimeline,
           rung,
           turnstileToken: captchaToken,
           [HONEYPOT_FIELD]: honeypot,
@@ -205,9 +206,9 @@ export function DfyApplicationDialog({ open, onOpenChange }: Props) {
     placeholder: string,
   ) => (
     <div className="space-y-1.5">
-      <Label>{label}</Label>
+      <Label htmlFor={`dfy-${label.replace(/\W+/g, "-").toLowerCase()}`}>{label}</Label>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger>
+        <SelectTrigger id={`dfy-${label.replace(/\W+/g, "-").toLowerCase()}`}>
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
@@ -294,11 +295,41 @@ export function DfyApplicationDialog({ open, onOpenChange }: Props) {
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
-                {picker("Outbound today", outboundToday, setOutboundToday, OUTBOUND_TODAY, "Pick one")}
-                {picker("Typical deal size", dealSize, setDealSize, DEAL_SIZE, "Pick one")}
+                {picker("Sales model", salesModel, (v) => {
+                  setSalesModel(v);
+                  setCustomerValue("");
+                  setBillingBasis("");
+                  setOnboardingTimeline("");
+                }, SALES_MODELS, "Pick one")}
+                {picker("How customers buy", buyingMotion, (v) => {
+                  setBuyingMotion(v);
+                  setBuyingTimeline("");
+                }, BUYING_MOTIONS, "Pick one")}
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
-                {picker("Typical sales cycle", salesCycle, setSalesCycle, SALES_CYCLE, "Pick one")}
+                <div className="space-y-1.5">
+                  <Label htmlFor="dfy-value">{hasSubscription ? "Typical subscription / customer value" : "Typical deal / customer value"}</Label>
+                  <Input id="dfy-value" value={customerValue} onChange={(e) => setCustomerValue(e.target.value)} maxLength={300}
+                    placeholder={salesModel === "both" ? "e.g. USD 99/mo + USD 5,000 setup" : hasSubscription ? "e.g. USD 49 per customer" : "e.g. USD 12,500 per project"} />
+                </div>
+                {picker("Billing basis", billingBasis, setBillingBasis, BILLING_BASES, "Pick one")}
+              </div>
+              {buyingMotion && buyingMotion !== "self_serve" && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="dfy-buying-timeline">Actual time from first contact to paid customer</Label>
+                  <Input id="dfy-buying-timeline" value={buyingTimeline} onChange={(e) => setBuyingTimeline(e.target.value)} maxLength={300}
+                    placeholder="Your observed time or range, with units; or not known yet" />
+                </div>
+              )}
+              {showOnboarding && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="dfy-onboarding-timeline">Actual time from signup to activation / onboarding</Label>
+                  <Input id="dfy-onboarding-timeline" value={onboardingTimeline} onChange={(e) => setOnboardingTimeline(e.target.value)} maxLength={300}
+                    placeholder="e.g. instant, 15 minutes, 2 days; or not known yet" />
+                </div>
+              )}
+              <div className="grid gap-4 sm:grid-cols-2">
+                {picker("Outbound today", outboundToday, setOutboundToday, OUTBOUND_TODAY, "Pick one")}
                 {picker("Which fits best", rung, setRung, RUNG, "Pick one")}
               </div>
 
