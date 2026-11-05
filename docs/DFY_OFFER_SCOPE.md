@@ -305,6 +305,13 @@ The copy rules are absolute on this, so the process has to be deliberate.
    to price that risk against. Revisit once the cohort has produced one.
 3. **No promise to replace a suspended mailbox.** InboxKit give no such
    guarantee, so neither can we.
+3a. **The refund guarantee is a window, never an outcome.** Full refund inside
+   30 days, prorated after, infrastructure excluded. An outcome-based refund
+   with no measured baseline is an unbounded liability: it lets a client define
+   failure at day 90 and reclaim three months of delivered work. Protecting the
+   reputation this offer exists to build is the point of refunding at all, and
+   it only works if the refund cannot be used to recover a completed
+   engagement.
 4. **Each client on their own domains.** Reputation follows the domain, so one
    client's complaint rate never reaches another's.
 5. **Written scope, in and out, per rung.** Outbound DFY scope creep is usually

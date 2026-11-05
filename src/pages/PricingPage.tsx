@@ -1,5 +1,6 @@
 import { Navbar } from "@/components/Navbar";
 import { Pricing } from "@/components/Pricing";
+import { DoneForYou } from "@/components/pricing/DoneForYou";
 import { SEOHead, BreadcrumbSchema, FAQSchema, SoftwareApplicationSchema } from "@/components/seo";
 import { Link } from "react-router-dom";
 import { lazy, Suspense } from "react";
@@ -174,6 +175,9 @@ const PricingPage = () => {
 
           {/* Pricing Component */}
           <Pricing />
+
+          {/* Done-for-you. Its own section, not a sixth tier card. */}
+          <DoneForYou />
 
           {/* Value Props — dark canvas */}
           <section

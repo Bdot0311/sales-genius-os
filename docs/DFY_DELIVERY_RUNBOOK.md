@@ -185,9 +185,27 @@ Plain language for a lawyer to tighten. **Not legal advice and not a contract.**
 6. **Testimonial** — recorded video or written quote, at day 90
 7. **Logo** — right to display on the site and in materials
 8. **Referrals** — three warm introductions by day 60
-9. **No guarantee** — no meetings, replies or revenue are guaranteed. There is
-   no baseline to price such a promise against, and one cannot be offered until
-   the cohort produces it
+9. **No guarantee of results** — no meetings, replies or revenue are
+   guaranteed. There is no baseline to price such a promise against, and one
+   cannot be offered until the cohort produces it
+9a. **Refund** — full refund of fees paid if the client cancels within the
+    first 30 days, no reason required. After 30 days, unused whole months are
+    refunded on cancellation. Excluded in both cases: domains, mailbox
+    subscriptions and other third-party costs, which the client has bought and
+    keeps. The client also keeps the domains, mailboxes, sequences and lists
+    built for them.
+
+    **The window is deliberate.** A promise to refund when it "does not work
+    out" has no definition behind it, because no baseline exists yet to define
+    working. Left open, a client can decide at day 90 that no meetings means it
+    failed, and the engagement is refunded after three months of delivery, a
+    spent founding seat and non-recoverable data costs. Thirty days caps that
+    exposure at one month while still reversing the client's risk at the point
+    they actually feel it, which is before anything has been proven.
+
+    It also matches the 30-day money-back guarantee already offered on the
+    self-serve plans, so the two do not contradict each other in a sales
+    conversation.
 10. **Mailbox suspension** — no replacement guarantee. Providers suspend
     mailboxes for sending behaviour and our supplier offers us no guarantee, so
     we cannot pass one on
