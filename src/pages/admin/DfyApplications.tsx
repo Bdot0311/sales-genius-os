@@ -81,8 +81,9 @@ export default function DfyApplications() {
                   <TableHead>Who</TableHead>
                   <TableHead>Sells</TableHead>
                   <TableHead>Outbound today</TableHead>
-                  <TableHead>Deal size</TableHead>
-                  <TableHead>Cycle</TableHead>
+                  <TableHead>Sales model</TableHead>
+                  <TableHead>Customer value</TableHead>
+                  <TableHead>Buying / onboarding</TableHead>
                   <TableHead>Wants</TableHead>
                   <TableHead>Booked</TableHead>
                 </TableRow>
@@ -102,11 +103,16 @@ export default function DfyApplications() {
                       </TableCell>
                       <TableCell className="max-w-[260px] text-sm">{d.sells}</TableCell>
                       <TableCell className="whitespace-nowrap text-sm">{d.outboundToday}</TableCell>
-                      <TableCell className="whitespace-nowrap text-sm">{d.dealSize}</TableCell>
-                      <TableCell className="whitespace-nowrap text-sm">
-                        <span className={d.cycleTooLong ? "text-amber-500" : undefined}>
+                      <TableCell className="min-w-[180px] text-sm">
+                        <p>{d.salesModel}</p>
+                        <p className="text-xs text-muted-foreground">{d.buyingMotion}</p>
+                      </TableCell>
+                      <TableCell className="min-w-[160px] max-w-[260px] break-words text-sm">{d.dealSize}</TableCell>
+                      <TableCell className="min-w-[220px] max-w-[320px] break-words text-sm">
+                        <span className={d.cycleTooLong ? "text-muted-foreground" : undefined}>
                           {d.salesCycle}
                         </span>
+                        {d.onboardingTimeline !== "—" && <p className="mt-1 text-xs text-muted-foreground">Activation / onboarding: {d.onboardingTimeline}</p>}
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-sm">{d.rung}</TableCell>
                       <TableCell className="whitespace-nowrap">
@@ -128,10 +134,9 @@ export default function DfyApplications() {
               </TableBody>
             </Table>
             {rows.some((r) => describeApplication(r).cycleTooLong) && (
-              <p className="mt-4 text-xs text-amber-500">
-                An amber cycle is longer than the 90-day term, so that applicant cannot
-                produce a case study inside a founding seat. Worth knowing before the call,
-                not after it.
+              <p className="mt-4 text-xs text-muted-foreground">
+                Some older applications report buying cycles beyond the 90-day service term.
+                Discuss buying timelines, onboarding and pipeline goals on the call; this is not a prediction of results.
               </p>
             )}
           </div>

@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { botRejectionMessage, botSignals } from "../_shared/bot-signals.ts";
 import { verifyTurnstile } from "../_shared/turnstile.ts";
+import { normalizeDfySalesAnswers } from "../_shared/dfy-sales-model.ts";
 
 /**
  * A done-for-you application, from the public pricing page.
@@ -121,6 +122,7 @@ Deno.serve(async (req) => {
       contact_name: name,
       contact_email: email,
       metadata: {
+        ...normalizeDfySalesAnswers(body as Record<string, unknown>),
         company,
         website,
         sells,

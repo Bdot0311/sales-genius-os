@@ -11,6 +11,7 @@
  * has to tolerate a missing or renamed key. Hence the fallbacks, and hence
  * the tests.
  */
+import { SALES_MODELS, BUYING_MOTIONS, BILLING_BASES } from "../../supabase/functions/_shared/dfy-sales-model";
 
 export const DFY_SOURCE = "dfy_application";
 
@@ -34,12 +35,13 @@ export interface DfyApplicationView {
   outboundToday: string;
   dealSize: string;
   salesCycle: string;
+  salesModel: string;
+  buyingMotion: string;
+  onboardingTimeline: string;
   rung: string;
   /**
-   * Their sales cycle is longer than the 90-day founding term, so they cannot
-   * produce a result inside it. The delivery runbook says to check this
-   * before spending a seat, which is only possible if it is asked for up
-   * front and shown here.
+   * Legacy range-based warning only; free-text timing is not guessed or used
+   * to infer outcomes. A longer cycle does not rule out pipeline progress.
    */
   cycleTooLong: boolean;
 }
@@ -86,6 +88,10 @@ function labelled(raw: string, labels: Record<string, string>): string {
 
 export function describeApplication(row: DfyApplicationRow): DfyApplicationView {
   const cycle = field(row.metadata, "sales_cycle");
+  const value = field(row.metadata, "customer_value");
+  const basis = field(row.metadata, "billing_basis");
+  const buyingMotion = field(row.metadata, "buying_motion");
+  const labels = (options: { value: string; label: string }[]) => Object.fromEntries(options.map((o) => [o.value, o.label]));
   return {
     name: row.contact_name?.trim() || "Unnamed",
     email: row.contact_email?.trim() || UNSET,
@@ -93,10 +99,13 @@ export function describeApplication(row: DfyApplicationRow): DfyApplicationView 
     website: field(row.metadata, "website"),
     sells: field(row.metadata, "sells") || UNSET,
     outboundToday: labelled(field(row.metadata, "outbound_today"), OUTBOUND_LABELS),
-    dealSize: labelled(field(row.metadata, "deal_size"), DEAL_LABELS),
-    salesCycle: labelled(cycle, CYCLE_LABELS),
+    dealSize: value ? `${value}${basis && basis !== "unspecified" ? ` · ${labelled(basis, labels(BILLING_BASES))}` : ""}` : labelled(field(row.metadata, "deal_size"), DEAL_LABELS),
+    salesCycle: buyingMotion === "self_serve" ? "No sales-led cycle" : field(row.metadata, "buying_timeline") || labelled(cycle, CYCLE_LABELS),
+    salesModel: labelled(field(row.metadata, "sales_model"), labels(SALES_MODELS)),
+    buyingMotion: labelled(buyingMotion, labels(BUYING_MOTIONS)),
+    onboardingTimeline: field(row.metadata, "onboarding_timeline") || UNSET,
     // `plan` carries the rung, matching how the column is used elsewhere.
     rung: labelled(row.plan?.trim() ?? "", RUNG_LABELS),
-    cycleTooLong: CYCLE_EXCEEDS_TERM.has(cycle),
+    cycleTooLong: buyingMotion !== "self_serve" && !field(row.metadata, "buying_timeline") && CYCLE_EXCEEDS_TERM.has(cycle),
   };
 }
