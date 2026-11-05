@@ -107,6 +107,41 @@ retainer either way. It is not a DFY decision at all. It only matters for a
 self-serve mailbox product sold on thin margin, and that is the decision to
 reopen at scale.
 
+### Annual rates, offered 2026-11-05
+
+| Path | Monthly | Annual | Saving |
+|---|---|---|---|
+| Fresh + our warm-up | $2.70 | **$2.30** | 15% |
+| Fresh + their warm-up | $4.50 | **not quoted** | — |
+| Pre-warmed | $4.50 | **$3.50** | 22% |
+
+Pre-warmed takes the larger discount, so **the gap between the two strategies
+narrows from $9,720 to $6,480 a year** at 450 mailboxes. The recommendation
+above gets cheaper to follow, not dearer. Pre-warmed on an annual rate is only
+$0.80 per mailbox above fresh on the monthly one.
+
+Per DFY customer it is $10.80 a month between them, still under 1.3% of a
+$2,500 retainer either way, so it remains a self-serve question rather than a
+DFY one.
+
+**Two things this offer does not say, and both matter more than the discount.**
+
+**What is committed?** We have no customers on this yet. "Annual deal" can
+mean a locked rate with volume flexing month to month, a committed mailbox
+count, or a year paid up front. The first is free money. The second is a bet
+on sales not yet made: 450 mailboxes at $3.50 is **$18,900 committed** against
+zero current revenue, and 90 mailboxes — ten customers' worth — is still
+$3,780. The monthly rates of $2.70 and $4.50 are already agreed with no
+commitment, so there is no pressure to answer this quickly.
+
+**What does the stock-out fallback cost?** On monthly pricing pre-warmed and
+fresh-with-their-warm-up were both $4.50, so running out of inventory cost
+nothing extra and gave up only the sending history. Annual quotes $3.50 for
+pre-warmed and $2.30 for bare fresh, and says nothing about fresh with their
+warm-up. If that is not also $3.50, the self-healing property described above
+does not survive the move to annual, and stock becomes something the product
+has to design around again.
+
 ### Worth one question before committing
 
 Their warm-up is pitched as "a premium pool with dedicated IPs and a private
