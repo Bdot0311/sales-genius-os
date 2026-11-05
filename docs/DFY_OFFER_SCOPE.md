@@ -13,19 +13,30 @@ this document is built around, and the reason the founding cohort exists.
 
 ## 1. What the offer is for
 
-Stated goals: users, revenue, use cases, testimonials. Those are four different
-things and a DFY offer buys them at different rates.
+**This is a proof engine that happens to produce revenue.** Founder's framing,
+2026-11-05, and it changes how every decision below gets made.
 
-| Goal | What DFY actually delivers |
-|---|---|
-| **Revenue** | Fast and real. 10x the revenue per account versus the self-serve tiers |
-| **Testimonials** | The only honest way to get them. The copy rules forbid inventing any, so they have to be earned |
-| **Use cases** | Each engagement is a documented before and after, if the baseline is captured on day zero |
-| **Users** | Slowest. A DFY client is a client, not a user, unless the offer is designed to hand them the keys |
+The problem being solved is credibility, not cash flow. Outreign sells into a
+crowded category against funded incumbents, from a solo founder with no logos
+and no published numbers. Buyers discount a vendor's account of its own
+results to roughly zero, which means the founder promoting it himself cannot
+fix this no matter how much of it he does. Only a named third party can.
 
-The fourth row is the one that decides the shape of the offer. If the goal is
-SaaS users, the ladder has to end with the client operating the product
-themselves, not with us operating it forever.
+So the goals rank like this, and ties break downward:
+
+| Rank | Goal | Notes |
+|---|---|---|
+| 1 | **Testimonials and use cases** | The asset. Named, with numbers. The copy rules forbid inventing any, so they can only be earned |
+| 2 | **Users, via referral and reputation** | What the asset is spent on |
+| 3 | **Revenue** | Welcome, and it funds the work, but it is not why this exists |
+
+Two consequences follow, and both cut against a normal agency build:
+
+- **Optimise for time-to-first-provable-win, not for margin.** A client who
+  produces a quotable result in 30 days is worth more than one paying double
+  who produces nothing for 90.
+- **Select clients for whose name carries, and who will actually say so.** A
+  great result from a client who refuses to be quoted buys nothing.
 
 ---
 
@@ -186,13 +197,19 @@ Two consequences worth stating now, before a pricing page implies otherwise:
 ## 6. Founding cohort
 
 The first five managed clients at **$1,500/month** instead of $2,500, on a
-90-day commitment, in exchange for three things written into the agreement:
+90-day commitment, in exchange for four things written into the agreement:
 
 1. A named case study with real numbers
 2. A recorded video testimonial at the end of the term
 3. Logo rights on the site
+4. **Three warm introductions** to comparable companies, due at day 60
 
-That is a $3,000 discount over the term against three assets we cannot buy any
+The fourth is new and it is the one that compounds. Referral is the stated
+route to users, so it belongs in the contract rather than left to goodwill
+after the engagement ends. Five clients at three introductions each is fifteen
+warm conversations from people who have already seen the product work.
+
+That is a $3,000 discount over the term against four assets we cannot buy any
 other way and are not allowed to fabricate.
 
 **The cohort is also how the benchmark gets built.** Right now there is no
@@ -223,16 +240,34 @@ only, and the offer must not imply otherwise at any point.
 
 ---
 
-## 8. Client zero is Outreign
+## 8. Client zero runs in the background
 
-Before this is sold to anyone, run the entire playbook on Outreign itself.
+An earlier draft made running the playbook on Outreign itself a prerequisite.
+That was wrong, for the reason the founder gave: self-promotion is not getting
+traction, and a vendor's account of its own results is the weakest evidence
+available. Waiting on it would delay the only thing that does build trust.
 
-It is the only case study that can be produced without a customer, it costs
-nothing but infrastructure, and it is the fastest QA pass available. A founder
-operating his own product daily as a client finds the broken things before
-customers do, which is the exact failure mode that has been costing customers.
+So it runs in the background, continuously, and nothing waits on it. Its value
+is product feedback, not proof.
 
-It also settles a question no deck can: whether the offer works at all.
+### What does have to happen first
+
+One bounded reliability pass, once, before a paying client's campaign depends
+on the product. Not a 90-day self-campaign, a checklist:
+
+- Sign in, sign up and password reset, on a fresh account
+- Connect a Google mailbox end to end
+- Build an ICP, run a search, reveal contacts
+- Load a sequence and send a real first touch to a seat we control
+- Confirm the reply lands in the unified inbox and the agent drafts a response
+- Confirm the deliverability dashboard scores the mailbox
+
+The reason is specific rather than cautious. Google sign-in was broken for
+several days this week and cost customers. The same failure during a founding
+engagement burns the testimonial that engagement exists to produce, and a
+founding client who churns over a bug is worse than no founding client.
+
+An afternoon of this is cheap insurance on an asset that cannot be bought.
 
 ---
 
@@ -277,9 +312,10 @@ The copy rules are absolute on this, so the process has to be deliberate.
 
 1. Approve or amend the three rungs and the prices.
 2. Approve the founding-cohort discount and its terms.
-3. Run client zero before selling to anyone.
-4. Decide the first channel. Selling this offer using Outreign is both the
-   obvious move and the strongest proof available.
+3. Run the reliability pass in section 8 before the first paying engagement.
+4. Decide the first channel for selling the offer itself.
+5. Confirm the referral clause in section 6 is acceptable to put in a contract,
+   since it is the mechanism the user-growth goal actually rests on.
 
 ---
 
