@@ -235,3 +235,33 @@ describe("the filter helpers decide which nothing you see", () => {
     expect(activeFilterCount({ ...EMPTY_FILTERS, search: "x", industry: "Software", stage: "contacted" })).toBe(3);
   });
 });
+
+describe("the enriched filter", () => {
+  const ENRICHED_MIGRATION = readFileSync(
+    "drizzle/migrations/0047_enriched_lead_filter.sql",
+    "utf8",
+  );
+
+  it("defaults to all leads and counts when narrowed", () => {
+    expect(EMPTY_FILTERS.enriched).toBe("all");
+    expect(hasActiveFilters({ ...EMPTY_FILTERS, enriched: "not-enriched" })).toBe(true);
+    expect(activeFilterCount({ ...EMPTY_FILTERS, enriched: "enriched" })).toBe(1);
+  });
+
+  it("reaches the database on all three query paths", () => {
+    // List, empty-page probe and export must all carry the filter or the
+    // export would quietly include leads the list hid.
+    expect(H.match(/p_enriched: orNull\(filters\.enriched\)/g)).toHaveLength(3);
+  });
+
+  it("is a dropdown on the page, not buried in another filter", () => {
+    expect(P).toContain('<Select value={filters.enriched}');
+    expect(P).toContain('value="not-enriched"');
+  });
+
+  it("the database treats both terminal statuses and a timestamp as enriched", () => {
+    expect(ENRICHED_MIGRATION).toContain("p_enriched");
+    expect(ENRICHED_MIGRATION).toContain("l.enrichment_status IN ('enriched', 'completed')");
+    expect(ENRICHED_MIGRATION).toContain("l.enriched_at IS NOT NULL");
+  });
+});

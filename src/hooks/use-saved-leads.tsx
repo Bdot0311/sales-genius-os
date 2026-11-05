@@ -33,6 +33,13 @@ export interface SavedLeadFilters {
    * ever works it.
    */
   tier: string;
+  /**
+   * "enriched" / "not-enriched" / "all".
+   *
+   * The enrichment badge was the only way to tell, which meant scrolling the
+   * whole list to find the leads worth spending enrichment credits on.
+   */
+  enriched: string;
 }
 
 export const EMPTY_FILTERS: SavedLeadFilters = {
@@ -45,6 +52,7 @@ export const EMPTY_FILTERS: SavedLeadFilters = {
   priority: "all",
   nextStep: "all",
   tier: "all",
+  enriched: "all",
 };
 
 /** Whether the user has narrowed anything. Drives "no leads" vs "none match". */
@@ -111,6 +119,7 @@ export const useSavedLeads = <T,>(
       p_priority: orNull(filters.priority),
       p_next_step: orNull(filters.nextStep),
       p_tier: orNull(filters.tier),
+      p_enriched: orNull(filters.enriched),
       p_sort: sort.field,
       p_desc: sort.desc,
       p_limit: pageSize,
@@ -138,6 +147,7 @@ export const useSavedLeads = <T,>(
         p_priority: orNull(filters.priority),
         p_next_step: orNull(filters.nextStep),
         p_tier: orNull(filters.tier),
+        p_enriched: orNull(filters.enriched),
         p_limit: 1,
         p_offset: 0,
         p_show: show,
@@ -201,6 +211,7 @@ export const useSavedLeads = <T,>(
         p_priority: orNull(filters.priority),
         p_next_step: orNull(filters.nextStep),
         p_tier: orNull(filters.tier),
+        p_enriched: orNull(filters.enriched),
         p_sort: sort.field,
         p_desc: sort.desc,
         p_limit: size,
