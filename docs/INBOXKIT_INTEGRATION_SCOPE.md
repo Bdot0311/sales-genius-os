@@ -142,6 +142,54 @@ warm-up. If that is not also $3.50, the self-healing property described above
 does not survive the move to annual, and stock becomes something the product
 has to design around again.
 
+### Monthly or annual to start: monthly, unless annual means a locked rate
+
+The 22% discount is the smaller number in this decision. What decides it is
+whether annual commits a mailbox count.
+
+**If annual is a locked rate and volume still flexes month to month**, it is
+strictly cheaper at every volume and should be taken immediately. $3.50 beats
+$4.50 on whatever we actually use, with nothing given up.
+
+**If annual commits a mailbox count** (or prepays a year at one), the discount
+has to beat the mailboxes we pay for and do not resell:
+
+| | Cost over 12 months |
+|---|---|
+| Annual, committed to `N` mailboxes | `N` × $3.50 × 12 = **$42N** |
+| Monthly, averaging `U` mailboxes in use | `U` × $4.50 × 12 = **$54U** |
+
+Annual wins only when `$42N < $54U`, i.e. when **average utilisation stays
+above 78% of the committed count for the whole year**. Starting from zero
+customers, it will not.
+
+Worked against the DFY ramp — five managed clients at nine mailboxes each, one
+landing every other month, reaching the 45-mailbox cap in month nine:
+
+| | Mailbox-months billed | Cost |
+|---|---|---|
+| Monthly at $4.50 | 360 (what we use) | **$1,620** |
+| Annual committed at 45 | 540 (the cap, all year) | **$1,890** |
+
+**Annual costs $270 more over the year despite the 22% discount**, because it
+bills eight months of capacity that has no customer in it. A slower ramp makes
+the gap worse, not better.
+
+And the discount is small in absolute terms where we actually are: at 45
+mailboxes it is **$45 a month**. That is not worth a twelve-month commitment
+discussion.
+
+**Their own note that prices get rearranged as volume grows argues the same
+way.** The rate we could lock today is the rate for pre-launch volume. Both
+improvements so far — $2.70 on fresh and $4.50 flat on pre-warmed — came from
+asking, and are applied manually on our account rather than by the API. Locking
+a pre-launch rate for twelve months trades away that flexibility at exactly the
+point where the base is smallest and the renegotiation upside is largest.
+
+**Decision: start monthly at $4.50.** Move to annual only if they confirm it is
+a locked rate with volume flexing monthly, or once real utilisation is high
+enough that 78% of a committed count is a safe floor.
+
 ### Worth one question before committing
 
 Their warm-up is pitched as "a premium pool with dedicated IPs and a private
