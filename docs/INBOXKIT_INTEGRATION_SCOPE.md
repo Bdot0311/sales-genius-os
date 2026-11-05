@@ -64,7 +64,58 @@ carries real sending and receiving history, which no warm-up system can
 manufacture. The guard in section 5 still applies either way: whichever
 warm-up runs, the other must be off.
 
-### Open: does fresh still cost +$3 to warm?
+### Decided: take the $4.50 tier, revisit $2.70 at scale
+
+Both questions answered 2026-11-05. Fresh with their warm-up is $4.50 all-in
+for us rather than $6, and running our own warm-up on fresh mailboxes at
+$2.70 is explicitly supported.
+
+| Path | Per mailbox | 9 mailboxes | History on day 1 | Stock risk |
+|---|---|---|---|---|
+| Fresh + our warm-up | $2.70 | $24.30/mo | no | none |
+| Fresh + their warm-up | $4.50 | $40.50/mo | no | none |
+| Pre-warmed | $4.50 | $40.50/mo | **yes** | sold out in 3 days |
+
+**The $4.50 tier self-heals on stock.** Pre-warmed and fresh-with-their-warm-up
+now cost the same, so when inventory runs out the fallback costs nothing extra
+and only gives up the sending history. That removes the reason to design
+around stock at all.
+
+**Our own warm-up is the wrong choice today, and the reason is in our own
+code.** `warmup-orchestrator`'s first line says opted-in mailboxes "send each
+other short, natural emails … the way Instantly/Smartlead pools do". Three
+consequences:
+
+1. **The pool is other cold-outreach senders.** A curated pool of ordinary
+   high-reputation accounts is structurally better than one assembled from
+   domains that are themselves cold-emailing, whoever runs it.
+2. **It does nothing while the pool is thin.** `if (eligible.length < 2)` it
+   returns idle, correctly refusing to fake traffic. Pre-launch that means
+   fresh mailboxes arrive in front of paying clients effectively unwarmed,
+   which is the worst outcome at any price.
+3. **Customers warm against each other.** One client's mailbox sends warm-up
+   mail to another's. A client who gets flagged is then a flagged sender
+   mailing other clients' inboxes. An external pool has no such path.
+
+**The saving is not available yet, and arrives exactly when it becomes
+usable.** $9,720/year is the difference at 450 mailboxes — which is also
+roughly the point at which our own pool is large enough to warm properly. So
+nothing is lost by starting at $4.50 and revisiting.
+
+**Per DFY customer the difference is $16.20/month**, under 1% of a $2,500
+retainer either way. It is not a DFY decision at all. It only matters for a
+self-serve mailbox product sold on thin margin, and that is the decision to
+reopen at scale.
+
+### Worth one question before committing
+
+Their warm-up is pitched as "a premium pool with dedicated IPs and a private
+network of high-reputation accounts we manage directly". That is plausible
+and standard for the category, and it is also unverifiable from here. Whether
+those accounts are real businesses or ones they created matters: providers do
+detect synthetic warm-up networks, and the cost of that lands on our
+customers' domains, not on InboxKit's. One line asking how the pool is
+composed is cheap diligence, not distrust.
 
 "Warm-up is included" was said about pre-warmed pricing. Fresh is quoted at
 $3 and $2.70 with no mention of warm-up, and the earlier answer had it as a
