@@ -11,7 +11,7 @@ export const PLAYBOOK_SYSTEM_RULES = `COLD EMAIL ENGINE RULES (non-negotiable, a
 - Exactly ONE low-friction CTA in question form. Never ask for a meeting on touch 1. Never propose times.
 - Interest-based CTA ladder, lowest friction first: interest ("worth a look?"), permission ("would you be opposed to a 2-minute example?"), or resource ("want the teardown?"). Never a calendar link or a proposed time on touch 1.
 - Named proof requires company + metric + timeframe. If no verified proof is supplied, use restrained operational language instead of inventing one. Never fabricate metrics, logos, or case studies.
-- Reference ONE specific detail about the prospect per email.
+- Reference ONE specific detail about the prospect per email. When the RESEARCH block below says none is available, that detail must come from their role or industry. Never state anything about this specific company that was not supplied to you.
 - Touch 1 earns a reply, it does not sell. NEVER name your own product or company in the touch 1 body (only the signature carries it). Do not explain the product, list features, or write "we built" / "we help" / "[Product] was built" / "[Product] turns X into Y" / "all-in-one" / "our platform" on touch 1. Imply a better path exists and withhold the how. Naming the product and saying what it does is the pitch we forbid. The pitch and the proof belong on touch 2, once you have their attention.
 - Their world, not yours: across the body, "you"/"your" must outnumber "we"/"our"/"I".
 - Sign-off: sender first name only. Never "Best," / "Thanks,".
@@ -21,7 +21,7 @@ ${bannedPhrasesLine()}
 BANNED SPAM TRIGGERS: "free", "guarantee", "limited time", "act now", "100%", "$$$", ALL CAPS words.
 
 FOUR-TOUCH STRUCTURE (attention first, sell later):
-Touch 1 (day 0) — attention, NO pitch. What it must achieve: ground the email in something true about this specific account, make clear you understand how they operate today, open a curiosity gap about a better path without explaining the product or how it works, and ask one low-friction question. If a line explains what the product does, it is a pitch, rewrite it as a hint.
+Touch 1 (day 0) — attention, NO pitch. What it must achieve: ground the email in something true — about this specific account when research supplies it, and about their role or industry when it does not, make clear you understand how they operate today, open a curiosity gap about a better path without explaining the product or how it works, and ask one low-friction question. If a line explains what the product does, it is a pitch, rewrite it as a hint.
   The ORDER and shape of those beats is not fixed here — choose it from the frameworks in the reference material at the end of this prompt, based on what this lead's evidence supports. Writing every touch 1 as "observation, then inferred pain, then implied better path, then soft question" is what makes an entire campaign read as one email sent repeatedly, and it is the failure this instruction exists to prevent. Vary the shape across leads.
 Touch 2 (day 3) — the payoff, this is the selling touch: now give what touch 1 held back — what you do and roughly how, plus ONE market observation or peer example as proof (only if verified). Do not repeat touch 1's pain. Different soft CTA.
 Touch 3 (day 7) — timing/clarification. Acknowledge silence without guilt, offer a lower-commitment path, include an easy-out to be redirected to the right person.
@@ -88,6 +88,26 @@ export function parseTouches(raw: string): Touch[] {
   }
 }
 
+/**
+ * `research` is an input rather than something the caller concatenates on,
+ * because the empty case needs saying out loud.
+ *
+ * The rules above require one specific detail about the prospect and tell
+ * touch 1 to be grounded in something true about the account. Research is
+ * where those details come from, and it returns nothing whenever a provider
+ * is unset, out of credits, or silently failing — which this product's own
+ * ENVIRONMENT.md documents for Parallel, Context.dev, Bloomberry and
+ * PredictLeads alike.
+ *
+ * Appending an empty string left the model under a non-negotiable instruction
+ * to state a specific truth about a company it had been told nothing about.
+ * There is only one way to satisfy that, and it is to make something up. The
+ * model was doing as it was told.
+ *
+ * The `signals` field has carried "none supplied — do not invent one" since it
+ * was written. Whoever wrote that had this exact problem in mind and solved it
+ * for one field. This gives research the same treatment.
+ */
 export function buildTouchPrompt(input: {
   firstName: string;
   jobTitle?: string | null;
@@ -97,7 +117,10 @@ export function buildTouchPrompt(input: {
   senderFirstName: string;
   companyContext?: string | null;
   valueProps?: string | null;
+  /** The research brief block, or empty when research produced nothing. */
+  research?: string | null;
 }): string {
+  const research = (input.research ?? "").trim();
   return `Write the full 4-touch sequence for this prospect. Return JSON only.
 
 PROSPECT:
@@ -106,6 +129,9 @@ job_title: ${input.jobTitle ?? "decision maker"}
 company: ${input.companyName ?? "their company"}
 industry: ${input.industry ?? ""}
 signals: ${(input.signals ?? []).join(", ") || "none supplied — do not invent one, use role/industry context instead"}
+
+RESEARCH:
+${research || "none available — you have NO verified facts about this company. Do not state, imply or guess anything specific about them: not what they do, not what they shipped, not who they hired, not what is on their site. Ground the email in the role and industry above instead. An invented company detail is worse than a generic email."}
 
 SENDER:
 first_name: ${input.senderFirstName}

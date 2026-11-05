@@ -89,3 +89,4 @@ These live in [`docs/`](docs/) and were not linked from anywhere until now.
 | [INBOXKIT_INTEGRATION_SCOPE.md](docs/INBOXKIT_INTEGRATION_SCOPE.md) | Proposed in-house domain and mailbox provisioning: costs, guards and phases. Not built |
 | [DFY_OFFER_SCOPE.md](docs/DFY_OFFER_SCOPE.md) | The done-for-you offer: rungs, pricing, unit economics and guardrails |
 | [DFY_DELIVERY_RUNBOOK.md](docs/DFY_DELIVERY_RUNBOOK.md) | How a Managed engagement actually runs, day 0 to day 90, and the agreement clauses |
+| [AGENT_RELIABILITY_SCOPE.md](docs/AGENT_RELIABILITY_SCOPE.md) | Why the agent hallucinates, what actually fixes it, and what not to buy. Not built |

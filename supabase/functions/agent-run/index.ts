@@ -30,7 +30,7 @@ import {
 import { AI_SMART, aiFetch } from "../_shared/ai-provider.ts";
 import { capToolsToTier, resolveAgentTier } from "../_shared/agent-tier-scope.ts";
 import { notifyAgentRunFinished, notifyMeetingBooked } from "../_shared/notify-events.ts";
-import { briefToPromptBlock, isResearchFresh, type LeadResearchBrief } from "../_shared/lead-research.ts";
+import { researchBlockForLead } from "../_shared/lead-research-block.ts";
 import {
   decisionForDrafting,
   decisionPromptBlock,
@@ -54,46 +54,7 @@ const corsHeaders = {
  * same cache, same 14-day freshness rule. Failure is silent — a draft without
  * research is still a draft, it just makes no site-specific claims.
  */
-async function researchBlockForLead(
-  admin: any,
-  supabaseUrl: string,
-  authHeader: string,
-  anonKey: string,
-  leadId: string,
-): Promise<string> {
-  try {
-    const { data: row } = await admin
-      .from("leads")
-      .select(
-        // The fields the brief was built from, because freshness now compares
-        // the inputs rather than the row's last write. Reading the brief
-        // without them computes an empty fingerprint and never matches.
-        "research_brief, research_sources, research_confidence, researched_at, research_inputs, company_website, contact_email, company_name, linkedin_url, company_linkedin, enriched_at",
-      )
-      .eq("id", leadId)
-      .maybeSingle();
 
-    if (row && isResearchFresh(row as Record<string, unknown>)) {
-      return briefToPromptBlock(
-        row.research_brief as LeadResearchBrief,
-        (row.research_sources as string[]) ?? [],
-      );
-    }
-
-    const res = await fetch(`${supabaseUrl}/functions/v1/research-lead`, {
-      method: "POST",
-      headers: { Authorization: authHeader, apikey: anonKey, "Content-Type": "application/json" },
-      body: JSON.stringify({ leadId }),
-      signal: AbortSignal.timeout(60_000),
-    });
-    const rj = await res.json().catch(() => ({}));
-    if (rj?.brief) return briefToPromptBlock(rj.brief as LeadResearchBrief, Array.isArray(rj.sources) ? rj.sources : []);
-    if (rj?.error) console.warn("[agent-run] research skipped:", rj.error_code || rj.error);
-  } catch (err) {
-    console.warn("[agent-run] research step failed:", err instanceof Error ? err.message : err);
-  }
-  return "";
-}
 
 async function callGemini(prompt: string, systemPrompt: string): Promise<string> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -748,6 +709,18 @@ const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
     // ────────────────────────────────────────────────────────────────────────
     let outreachSent = 0;
     let outreachDrafted = 0;
+    /*
+     * How many drafts this run wrote with no facts about the company, and why.
+     *
+     * The prompt now tells the model to stay generic when this happens rather
+     * than inventing, so these are no longer fabrications. They are still the
+     * weakest emails the product sends, and the count is the only way to know
+     * whether a provider has quietly stopped answering: a lapsed key, an empty
+     * wallet and a trailing space all land here, and all of them used to look
+     * exactly like a working run.
+     */
+    let draftsWithoutResearch = 0;
+    const researchOutcomes: Record<string, number> = {};
     // Loaded once per run, not once per lead: what this customer sells is what
     // the evaluation judges fit against.
     let sellerContext: SellerContext | null = null;
@@ -887,13 +860,21 @@ ${playbookSystemRules()}`;
               // Research the prospect's site and read the decision layer before
               // writing, exactly as Outreach Studio does: Bedrock writes, the
               // brief supplies the facts, the evaluation supplies the angle.
-              const leadResearchBlock = await researchBlockForLead(
+              const research = await researchBlockForLead(
                 adminClient,
                 supabaseUrl,
                 authHeader,
                 anonKey,
                 lead.id,
               );
+              const leadResearchBlock = research.block;
+              researchOutcomes[research.outcome] = (researchOutcomes[research.outcome] ?? 0) + 1;
+              if (!leadResearchBlock) {
+                draftsWithoutResearch++;
+                console.warn(
+                  `[agent-run] drafting ${lead.id} with no research (${research.outcome}${research.detail ? `: ${research.detail}` : ""})`,
+                );
+              }
               if (!sellerContext) sellerContext = await loadSellerContext(adminClient, user.id);
               const leadDecision = await decisionForDrafting(adminClient, lead.id, user.id, {
                 seller: sellerContext,
@@ -901,6 +882,7 @@ ${playbookSystemRules()}`;
               const leadStrategyBlock = decisionPromptBlock(leadDecision);
 
               const outreachPrompt = buildTouchPrompt({
+                research: leadResearchBlock,
                 firstName,
                 jobTitle: lead.job_title,
                 companyName: lead.company_name,
@@ -911,8 +893,10 @@ ${playbookSystemRules()}`;
                 valueProps: cfgValuePropsText,
               });
 
+              // Not appended here any more: buildTouchPrompt takes it, so the
+              // empty case can be stated to the model rather than vanishing.
               const raw = await callGemini(
-                `${outreachPrompt}${leadResearchBlock}`,
+                outreachPrompt,
                 `${outreachSystemPrompt}${leadStrategyBlock}`,
               );
               const touches = parseTouches(raw);
@@ -1940,6 +1924,8 @@ Output ONLY the reply body. No subject line or signature.`;
         leads_found: leadsFound,
         outreach_drafted: outreachDrafted,
         outreach_sent: outreachSent,
+        drafts_without_research: draftsWithoutResearch,
+        research_outcomes: researchOutcomes,
         pending_approvals: pendingApprovals,
         replies_processed: repliesProcessed,
         replies_sent: repliesSent,
