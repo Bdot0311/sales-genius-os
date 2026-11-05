@@ -33,6 +33,13 @@ export interface SavedLeadFilters {
    * ever works it.
    */
   tier: string;
+  /**
+   * "enriched" / "not-enriched" / "all".
+   *
+   * The enrichment badge was the only way to tell, which meant scrolling the
+   * whole list to find the leads worth spending enrichment credits on.
+   */
+  enriched: string;
 }
 
 export const EMPTY_FILTERS: SavedLeadFilters = {
@@ -45,6 +52,7 @@ export const EMPTY_FILTERS: SavedLeadFilters = {
   priority: "all",
   nextStep: "all",
   tier: "all",
+  enriched: "all",
 };
 
 /** Whether the user has narrowed anything. Drives "no leads" vs "none match". */
