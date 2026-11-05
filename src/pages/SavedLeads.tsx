@@ -780,6 +780,24 @@ const SavedLeads = () => {
                 </SelectContent>
               </Select>
 
+              {/*
+                * Enriched or not, without scrolling.
+                *
+                * The badge on each row was the only way to tell, so finding
+                * the leads worth spending enrichment credits on meant reading
+                * the whole list. Filtered server-side like the rest.
+                */}
+              <Select value={filters.enriched} onValueChange={(v) => setFilter("enriched", v)}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Enriched" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All leads</SelectItem>
+                  <SelectItem value="enriched">Enriched</SelectItem>
+                  <SelectItem value="not-enriched">Not enriched</SelectItem>
+                </SelectContent>
+              </Select>
+
               {uniqueSeniorities.length > 0 && (
                 <Select value={filters.seniority} onValueChange={(v) => setFilter("seniority", v)}>
                   <SelectTrigger className="w-[140px]">
