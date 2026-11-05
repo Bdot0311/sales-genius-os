@@ -1,3 +1,9 @@
+# DFY sales-model questions
+
+- [x] Add subscription/high-ticket paths with exact customer values, buying and onboarding timelines; deploy submission support.
+- [x] Verify normalization and legacy summaries with 36 tests and all four form paths on desktop/mobile; build clean.
+- [ ] Complete a real application submission and read-back (requires human CAPTCHA; not bypassed during automated checks).
+
 # Integration connection repair
 
 - [x] Fix manual integration saving without restoring the single-account Google constraint.

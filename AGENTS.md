@@ -1,5 +1,7 @@
 # Agent rules
 
+- DFY sales-model answers share normalization between the public form and submission function and persist in request metadata; admin summaries retain legacy fields. Why: pricing changes must preserve applicants' actual values and timelines without breaking older requests.
+
 - Manual integration writes run through authenticated `connect-integration`; non-Google OAuth callbacks share `save-integration.ts` and check persistence errors without using the removed user/provider conflict target. Why: Google supports multiple mailboxes and browser writes cannot access credential-bearing rows.
 
 - Lead and account web research share `external-research.ts`, merging Parallel and Context.dev without replacing either; Context.dev uses the connector gateway URL from environment configuration. Why: both surfaces and existing agent research tools must retain identical retrieval and failure-safe behavior.
