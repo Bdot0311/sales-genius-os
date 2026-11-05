@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { countActionable, describeRequest } from "@/lib/campaign-setup-status";
+import { DFY_SOURCE } from "@/lib/dfy-applications";
 import { Loader2, RefreshCw, ShieldOff, Send, ChevronDown, ChevronRight } from "lucide-react";
 import { SupportAccessWorkspace } from "@/components/admin/SupportAccessWorkspace";
 
@@ -71,6 +72,10 @@ const AdminCampaignSetup = () => {
         .select(
           "id, user_id, source, plan, created_at, contact_email, contact_name, status, direction, access_requested_at, access_request_count, metadata",
         )
+        // Done-for-you applications share this table but are a different
+        // thing: public applicants with no account, read in their own tab.
+        // Without this they appear in both and get chased twice.
+        .neq("source", DFY_SOURCE)
         .order("created_at", { ascending: false })
         .limit(200),
       supabase
