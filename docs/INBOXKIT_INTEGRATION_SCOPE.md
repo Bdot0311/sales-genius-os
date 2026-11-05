@@ -186,9 +186,12 @@ asking, and are applied manually on our account rather than by the API. Locking
 a pre-launch rate for twelve months trades away that flexibility at exactly the
 point where the base is smallest and the renegotiation upside is largest.
 
-**Decision: start monthly at $4.50.** Move to annual only if they confirm it is
-a locked rate with volume flexing monthly, or once real utilisation is high
-enough that 78% of a committed count is a safe floor.
+**Decision: monthly at $4.50, and annual is not being pursued yet.** We are
+not asking which of the three shapes the annual offer is, because the answer
+does not change what we do now: the only shape we would accept is a locked
+rate with volume flexing monthly, and that is worth $45 a month at current
+scale. Revisit when real utilisation makes 78% of a committed count a safe
+floor, or when volume gets the rates rearranged anyway.
 
 ### Worth one question before committing
 
