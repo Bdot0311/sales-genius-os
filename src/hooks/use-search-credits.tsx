@@ -90,7 +90,9 @@ export const useSearchCredits = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session || cancelled) return;
       channel = supabase
-        .channel(`search-credits:${session.user.id}`)
+        // Unique per hook instance: sidebar and page mount this hook together,
+        // and a reused topic returns the already-subscribed channel, which throws on .on().
+        .channel(`search-credits:${session.user.id}:${Math.random().toString(36).slice(2)}`)
         .on(
           "postgres_changes",
           {
