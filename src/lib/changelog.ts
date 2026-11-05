@@ -116,6 +116,15 @@ export const ROADMAP: RoadmapItem[] = [
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-11-05-enriched-filter",
+    date: "2026-11-05",
+    title: "Filter saved leads by enrichment",
+    summary: "See which saved leads are enriched — and which still need it — without scrolling the whole list.",
+    items: [
+      { tag: "new", title: "Enriched filter", description: "Saved Leads has an Enriched dropdown: show only enriched leads, or only the ones still waiting, so you know exactly where to spend enrichment.", href: "/dashboard/leads/saved" },
+    ],
+  },
+  {
     id: "2026-11-03-integration-connections",
     date: "2026-11-03",
     title: "Webhook connections save correctly",
