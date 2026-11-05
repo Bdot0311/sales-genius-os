@@ -64,7 +64,144 @@ carries real sending and receiving history, which no warm-up system can
 manufacture. The guard in section 5 still applies either way: whichever
 warm-up runs, the other must be off.
 
-### Open: does fresh still cost +$3 to warm?
+### Decided: take the $4.50 tier, revisit $2.70 at scale
+
+Both questions answered 2026-11-05. Fresh with their warm-up is $4.50 all-in
+for us rather than $6, and running our own warm-up on fresh mailboxes at
+$2.70 is explicitly supported.
+
+| Path | Per mailbox | 9 mailboxes | History on day 1 | Stock risk |
+|---|---|---|---|---|
+| Fresh + our warm-up | $2.70 | $24.30/mo | no | none |
+| Fresh + their warm-up | $4.50 | $40.50/mo | no | none |
+| Pre-warmed | $4.50 | $40.50/mo | **yes** | sold out in 3 days |
+
+**The $4.50 tier self-heals on stock.** Pre-warmed and fresh-with-their-warm-up
+now cost the same, so when inventory runs out the fallback costs nothing extra
+and only gives up the sending history. That removes the reason to design
+around stock at all.
+
+**Our own warm-up is the wrong choice today, and the reason is in our own
+code.** `warmup-orchestrator`'s first line says opted-in mailboxes "send each
+other short, natural emails … the way Instantly/Smartlead pools do". Three
+consequences:
+
+1. **The pool is other cold-outreach senders.** A curated pool of ordinary
+   high-reputation accounts is structurally better than one assembled from
+   domains that are themselves cold-emailing, whoever runs it.
+2. **It does nothing while the pool is thin.** `if (eligible.length < 2)` it
+   returns idle, correctly refusing to fake traffic. Pre-launch that means
+   fresh mailboxes arrive in front of paying clients effectively unwarmed,
+   which is the worst outcome at any price.
+3. **Customers warm against each other.** One client's mailbox sends warm-up
+   mail to another's. A client who gets flagged is then a flagged sender
+   mailing other clients' inboxes. An external pool has no such path.
+
+**The saving is not available yet, and arrives exactly when it becomes
+usable.** $9,720/year is the difference at 450 mailboxes — which is also
+roughly the point at which our own pool is large enough to warm properly. So
+nothing is lost by starting at $4.50 and revisiting.
+
+**Per DFY customer the difference is $16.20/month**, under 1% of a $2,500
+retainer either way. It is not a DFY decision at all. It only matters for a
+self-serve mailbox product sold on thin margin, and that is the decision to
+reopen at scale.
+
+### Annual rates, offered 2026-11-05
+
+| Path | Monthly | Annual | Saving |
+|---|---|---|---|
+| Fresh + our warm-up | $2.70 | **$2.30** | 15% |
+| Fresh + their warm-up | $4.50 | **not quoted** | — |
+| Pre-warmed | $4.50 | **$3.50** | 22% |
+
+Pre-warmed takes the larger discount, so **the gap between the two strategies
+narrows from $9,720 to $6,480 a year** at 450 mailboxes. The recommendation
+above gets cheaper to follow, not dearer. Pre-warmed on an annual rate is only
+$0.80 per mailbox above fresh on the monthly one.
+
+Per DFY customer it is $10.80 a month between them, still under 1.3% of a
+$2,500 retainer either way, so it remains a self-serve question rather than a
+DFY one.
+
+**Two things this offer does not say, and both matter more than the discount.**
+
+**What is committed?** We have no customers on this yet. "Annual deal" can
+mean a locked rate with volume flexing month to month, a committed mailbox
+count, or a year paid up front. The first is free money. The second is a bet
+on sales not yet made: 450 mailboxes at $3.50 is **$18,900 committed** against
+zero current revenue, and 90 mailboxes — ten customers' worth — is still
+$3,780. The monthly rates of $2.70 and $4.50 are already agreed with no
+commitment, so there is no pressure to answer this quickly.
+
+**What does the stock-out fallback cost?** On monthly pricing pre-warmed and
+fresh-with-their-warm-up were both $4.50, so running out of inventory cost
+nothing extra and gave up only the sending history. Annual quotes $3.50 for
+pre-warmed and $2.30 for bare fresh, and says nothing about fresh with their
+warm-up. If that is not also $3.50, the self-healing property described above
+does not survive the move to annual, and stock becomes something the product
+has to design around again.
+
+### Monthly or annual to start: monthly, unless annual means a locked rate
+
+The 22% discount is the smaller number in this decision. What decides it is
+whether annual commits a mailbox count.
+
+**If annual is a locked rate and volume still flexes month to month**, it is
+strictly cheaper at every volume and should be taken immediately. $3.50 beats
+$4.50 on whatever we actually use, with nothing given up.
+
+**If annual commits a mailbox count** (or prepays a year at one), the discount
+has to beat the mailboxes we pay for and do not resell:
+
+| | Cost over 12 months |
+|---|---|
+| Annual, committed to `N` mailboxes | `N` × $3.50 × 12 = **$42N** |
+| Monthly, averaging `U` mailboxes in use | `U` × $4.50 × 12 = **$54U** |
+
+Annual wins only when `$42N < $54U`, i.e. when **average utilisation stays
+above 78% of the committed count for the whole year**. Starting from zero
+customers, it will not.
+
+Worked against the DFY ramp — five managed clients at nine mailboxes each, one
+landing every other month, reaching the 45-mailbox cap in month nine:
+
+| | Mailbox-months billed | Cost |
+|---|---|---|
+| Monthly at $4.50 | 360 (what we use) | **$1,620** |
+| Annual committed at 45 | 540 (the cap, all year) | **$1,890** |
+
+**Annual costs $270 more over the year despite the 22% discount**, because it
+bills eight months of capacity that has no customer in it. A slower ramp makes
+the gap worse, not better.
+
+And the discount is small in absolute terms where we actually are: at 45
+mailboxes it is **$45 a month**. That is not worth a twelve-month commitment
+discussion.
+
+**Their own note that prices get rearranged as volume grows argues the same
+way.** The rate we could lock today is the rate for pre-launch volume. Both
+improvements so far — $2.70 on fresh and $4.50 flat on pre-warmed — came from
+asking, and are applied manually on our account rather than by the API. Locking
+a pre-launch rate for twelve months trades away that flexibility at exactly the
+point where the base is smallest and the renegotiation upside is largest.
+
+**Decision: monthly at $4.50, and annual is not being pursued yet.** We are
+not asking which of the three shapes the annual offer is, because the answer
+does not change what we do now: the only shape we would accept is a locked
+rate with volume flexing monthly, and that is worth $45 a month at current
+scale. Revisit when real utilisation makes 78% of a committed count a safe
+floor, or when volume gets the rates rearranged anyway.
+
+### Worth one question before committing
+
+Their warm-up is pitched as "a premium pool with dedicated IPs and a private
+network of high-reputation accounts we manage directly". That is plausible
+and standard for the category, and it is also unverifiable from here. Whether
+those accounts are real businesses or ones they created matters: providers do
+detect synthetic warm-up networks, and the cost of that lands on our
+customers' domains, not on InboxKit's. One line asking how the pool is
+composed is cheap diligence, not distrust.
 
 "Warm-up is included" was said about pre-warmed pricing. Fresh is quoted at
 $3 and $2.70 with no mention of warm-up, and the earlier answer had it as a
