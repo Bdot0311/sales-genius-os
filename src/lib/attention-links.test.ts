@@ -18,7 +18,10 @@ const PERSON = readFileSync("supabase/functions/find-person/index.ts", "utf8");
  */
 describe("needs attention opens the rows it counted", () => {
   it("each item deep-links to a filtered list", () => {
-    expect(OVERVIEW).toContain('href: "/dashboard/leads/saved?show=no-email"');
+    // One filter per count. The two missing-address items ask for different
+    // things, so sending both to the same list would show rows neither counted.
+    expect(OVERVIEW).toContain('href: "/dashboard/leads/saved?show=no-email-unenriched"');
+    expect(OVERVIEW).toContain('href: "/dashboard/leads/saved?show=no-email-enriched"');
     expect(OVERVIEW).toContain('href: "/dashboard/leads/saved?show=never-contacted"');
   });
 

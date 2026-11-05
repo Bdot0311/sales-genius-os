@@ -128,7 +128,27 @@ stop after the first build.
 
 ## 5. Pricing and unit economics
 
-### Version 1 ships without InboxKit
+### Version 1 no longer has a reason to avoid InboxKit — decide
+
+Written on the assumption that InboxKit's terms were open and its prices bad.
+Both changed on 2026-11-05: reselling is confirmed in writing, and pre-warmed
+is $4.50/mailbox/month with warm-up included.
+
+That removes the argument below. Nine mailboxes cost **$40.50/month**
+pre-warmed, or **$27** on fresh ones we warm ourselves, against a client
+buying their own Workspace at roughly $63. InboxKit is now both **cheaper and
+less work for the client**, and at 1.2% to 1.8% of a $2,500 retainer the cost
+is noise.
+
+Two things still argue for keeping v1 as written: pre-warmed stock sold out in
+three days last time, so a start date cannot depend on it, and fresh mailboxes
+need two to four weeks of warm-up either way. A client buying their own
+Workspace can start immediately.
+
+The section below is kept as the fallback rather than deleted, because it is
+what we do when stock is out.
+
+### The original reasoning, now the fallback
 
 InboxKit provisioning is unsigned and its commercial terms are open, so nothing
 here waits on it. **The client brings their own domains and mailboxes** — a

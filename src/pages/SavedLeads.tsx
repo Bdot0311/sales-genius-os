@@ -32,6 +32,7 @@ import { Progress } from "@/components/ui/progress";
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { enrichedWithoutEmail, hasNoEmail, unenrichedWithoutEmail } from "@/lib/lead-email-gap";
 import { useToast } from "@/hooks/use-toast";
 import { Analytics } from "@/lib/analytics";
 
@@ -86,7 +87,21 @@ interface Lead {
 const URL_FILTERS = {
   "no-email": {
     label: "leads with no email address",
-    match: (l: Lead) => !l.contact_email,
+    match: (l: Lead) => hasNoEmail(l),
+  },
+  /*
+   * The overview counts these two separately, because they call for different
+   * things: one has never been enriched, the other was and no address exists
+   * to find. Both land here, so each needs a filter that shows exactly the
+   * rows its count counted.
+   */
+  "no-email-unenriched": {
+    label: "leads with no email address, not yet enriched",
+    match: (l: Lead) => unenrichedWithoutEmail(l),
+  },
+  "no-email-enriched": {
+    label: "enriched leads with no address on record",
+    match: (l: Lead) => enrichedWithoutEmail(l),
   },
   "never-contacted": {
     label: "reachable leads never contacted",

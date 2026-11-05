@@ -10,6 +10,7 @@ import { ProspectUsageMeter } from "@/components/dashboard/ProspectUsageMeter";
 import { Panel, PanelHeader, MetricStrip, type Metric } from "@/components/dashboard/Panel";
 import { ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { countEmailGaps } from "@/lib/lead-email-gap";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { SEOHead } from "@/components/seo/SEOHead";
 
@@ -18,7 +19,12 @@ interface Stats {
   totalDeals: number;
   totalValue: number;
   meetingsThisWeek: number;
+  /** Both kinds together, for the note on the leads tile. */
   leadsMissingEmail: number;
+  /** Enriched, and no address was found. Nothing further to try. */
+  leadsEnrichedNoEmail: number;
+  /** Never enriched. This is the actionable one. */
+  leadsUnenrichedNoEmail: number;
   leadsNeverContacted: number;
 }
 
@@ -28,6 +34,8 @@ const EMPTY: Stats = {
   totalValue: 0,
   meetingsThisWeek: 0,
   leadsMissingEmail: 0,
+  leadsEnrichedNoEmail: 0,
+  leadsUnenrichedNoEmail: 0,
   leadsNeverContacted: 0,
 };
 
@@ -83,7 +91,22 @@ const Dashboard = () => {
       .on("postgres_changes", { event: "*", schema: "public", table: "activities" }, () => loadStats())
       .subscribe();
 
+    /*
+     * Realtime is configured correctly — leads is in the publication and has
+     * REPLICA IDENTITY FULL — but a websocket does not survive a backgrounded
+     * tab, which on a phone is every time the app is left. Coming back then
+     * showed whatever was loaded on open, for as long as the page stayed up,
+     * with nothing to indicate the numbers had stopped moving.
+     */
+    const refreshIfVisible = () => {
+      if (document.visibilityState === "visible") loadStats();
+    };
+    document.addEventListener("visibilitychange", refreshIfVisible);
+    window.addEventListener("focus", refreshIfVisible);
+
     return () => {
+      document.removeEventListener("visibilitychange", refreshIfVisible);
+      window.removeEventListener("focus", refreshIfVisible);
       supabase.removeChannel(leadsChannel);
       supabase.removeChannel(dealsChannel);
       supabase.removeChannel(activitiesChannel);
@@ -113,7 +136,7 @@ const Dashboard = () => {
       if (!user) return;
       const { data: leads } = await supabase
         .from("leads")
-        .select("id, contact_email, last_contacted_at")
+        .select("id, contact_email, last_contacted_at, enrichment_status, enriched_at")
         .eq("user_id", user.id);
       const { data: deals } = await supabase.from("deals").select("id, value").eq("user_id", user.id);
       const { data: activities } = await supabase
@@ -125,14 +148,21 @@ const Dashboard = () => {
 
       const totalValue = deals?.reduce((sum, deal) => sum + (Number(deal.value) || 0), 0) || 0;
       const rows = leads ?? [];
+      const gaps = countEmailGaps(rows);
       setStats({
         totalLeads: rows.length,
         totalDeals: deals?.length || 0,
         totalValue,
         meetingsThisWeek: activities?.length || 0,
-        // A lead with no address cannot be sent to. It is the one thing on this
-        // page that is both quantifiable and immediately fixable.
-        leadsMissingEmail: rows.filter((l) => !l.contact_email).length,
+        /*
+         * Split, because "no address" was two different situations wearing one
+         * number. Enrichment can succeed and find no address, and telling
+         * someone who has already enriched every lead to go and enrich them
+         * reads as the product not noticing the work. See lead-email-gap.ts.
+         */
+        leadsMissingEmail: gaps.total,
+        leadsEnrichedNoEmail: gaps.enriched,
+        leadsUnenrichedNoEmail: gaps.unenriched,
         leadsNeverContacted: rows.filter((l) => l.contact_email && !l.last_contacted_at).length,
       });
     } catch (error) {
@@ -184,13 +214,21 @@ const Dashboard = () => {
    * on it.
    */
   const attention = [
-    stats.leadsMissingEmail > 0 && {
-      key: "missing-email",
-      count: stats.leadsMissingEmail,
-      title: `${stats.leadsMissingEmail} ${stats.leadsMissingEmail === 1 ? "lead has" : "leads have"} no email address`,
-      body: "They cannot be sent to. Opening them filters your saved leads down to exactly these, and person search fills in a contact record from a name and company.",
+    stats.leadsUnenrichedNoEmail > 0 && {
+      key: "no-email-unenriched",
+      count: stats.leadsUnenrichedNoEmail,
+      title: `${stats.leadsUnenrichedNoEmail} ${stats.leadsUnenrichedNoEmail === 1 ? "lead has" : "leads have"} no email address yet`,
+      body: "These have never been enriched. Opening them filters your saved leads down to exactly these, and person search fills in a contact record from a name and company.",
       action: "Show them",
-      href: "/dashboard/leads/saved?show=no-email",
+      href: "/dashboard/leads/saved?show=no-email-unenriched",
+    },
+    stats.leadsEnrichedNoEmail > 0 && {
+      key: "no-email-enriched",
+      count: stats.leadsEnrichedNoEmail,
+      title: `${stats.leadsEnrichedNoEmail} enriched ${stats.leadsEnrichedNoEmail === 1 ? "lead has" : "leads have"} no address on record`,
+      body: "Enrichment ran on these and found no address, so there is nothing further to try automatically. They cannot be sent to. Remove them or add an address by hand.",
+      action: "Show them",
+      href: "/dashboard/leads/saved?show=no-email-enriched",
     },
     stats.leadsNeverContacted > 0 && {
       key: "never-contacted",
