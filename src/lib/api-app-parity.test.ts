@@ -59,4 +59,10 @@ describe("API and MCP app action boundaries", () => {
     expect(helper).not.toContain("SERVICE_ROLE");
     for (const name of ["search-prospects", "search-companies", "find-person", "verify-email", "enrich-lead", "score-lead", "research-lead", "generate-email"]) expect(readFileSync(`src/lib/mcp/tools/${name}.ts`, "utf8")).toContain("callAppAction");
   });
+  it("REST app forwarding satisfies the gateway without a privileged bearer", () => {
+    const src = readFileSync("supabase/functions/rest-api/index.ts", "utf8");
+    const delegated = src.slice(src.indexOf("const appRoute"), src.indexOf("// ── Rate limit"));
+    expect(delegated).toContain("Authorization: `Bearer ${Deno.env.get('SUPABASE_ANON_KEY') ?? ''}`");
+    expect(delegated).not.toContain("Bearer ${serviceKey}");
+  });
 });

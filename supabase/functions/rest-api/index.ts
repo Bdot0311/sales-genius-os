@@ -266,7 +266,7 @@ serve(async (req) => {
       if (invalid) return respond({ error: invalid }, 400);
       const forwarded = await fetch(`${supabaseUrl}/functions/v1/${appFunction}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-API-Key': req.headers.get('X-API-Key') ?? '', apikey: Deno.env.get('SUPABASE_ANON_KEY') ?? '' },
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': req.headers.get('X-API-Key') ?? '', apikey: Deno.env.get('SUPABASE_ANON_KEY') ?? '', Authorization: `Bearer ${Deno.env.get('SUPABASE_ANON_KEY') ?? ''}` },
         body: JSON.stringify(appRoute === 'people/lookup' ? { ...input, action: 'lookup' } : input),
       });
       return respond(await forwarded.json(), forwarded.status);
