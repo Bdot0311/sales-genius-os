@@ -463,16 +463,55 @@ var send_reply_default = defineTool9({
   }
 });
 
-// src/lib/mcp/tools/list-deals.ts
+// src/lib/mcp/tools/send-email.ts
 import { defineTool as defineTool10 } from "npm:@lovable.dev/mcp-js@0.23.0";
 import { z as z10 } from "npm:zod@^3.25.76";
-var list_deals_default = defineTool10({
+var send_email_default = defineTool10({
+  name: "send_email",
+  title: "Send an email",
+  description: "Send an email now from the user's connected Gmail mailbox, exactly as Outreach Studio does. Applies the app's send limits, suppression list and quality check, and logs the email to Unified Inbox. Only call after the user explicitly approves the final recipient, subject and body.",
+  inputSchema: {
+    to: z10.string().email().max(320).describe("Recipient email address."),
+    subject: z10.string().trim().min(1).max(300),
+    body: z10.string().trim().min(1).max(5e4).describe("Email body (plain text or simple HTML)."),
+    lead_id: z10.string().uuid().optional().describe("Saved lead this email is for."),
+    thread_id: z10.string().max(200).optional().describe("Gmail thread id when replying in an existing conversation."),
+    mailbox_id: z10.string().uuid().optional().describe("Specific connected mailbox to send from; defaults to the most recent."),
+    append_signature: z10.boolean().optional().describe("Append the user's saved email signature.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+  handler: async ({ to, subject, body, lead_id, thread_id, mailbox_id, append_signature }, ctx) => {
+    if (!ctx.isAuthenticated() || !ctx.getToken()) return notAuthed();
+    const blocked = await planGate(ctx, "send_email");
+    if (blocked) return blocked;
+    const { data, error } = await supabaseForUser(ctx).functions.invoke("send-email", {
+      body: { to, subject, body, leadId: lead_id, threadId: thread_id, integrationRowId: mailbox_id, appendSignature: append_signature }
+    });
+    if (error) {
+      let message = "The email was not sent. Check your connected mailbox and try again.";
+      try {
+        const ctxRes = error.context;
+        const parsed = ctxRes ? await ctxRes.json() : null;
+        if (parsed?.error) message = String(parsed.error);
+      } catch {
+      }
+      return err(message);
+    }
+    if (data?.error || data?.success === false) return err(data?.error ?? "The email was not sent.");
+    return { content: [{ type: "text", text: JSON.stringify(data) }] };
+  }
+});
+
+// src/lib/mcp/tools/list-deals.ts
+import { defineTool as defineTool11 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z11 } from "npm:zod@^3.25.76";
+var list_deals_default = defineTool11({
   name: "list_deals",
   title: "List pipeline deals",
   description: "List the signed-in user's pipeline deals, optionally filtered by stage.",
   inputSchema: {
-    limit: z10.number().int().min(1).max(100).optional(),
-    stage: z10.string().trim().optional().describe("Pipeline stage to filter by.")
+    limit: z11.number().int().min(1).max(100).optional(),
+    stage: z11.string().trim().optional().describe("Pipeline stage to filter by.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ limit, stage }, ctx) => {
@@ -491,22 +530,22 @@ var list_deals_default = defineTool10({
 });
 
 // src/lib/mcp/tools/update-deal.ts
-import { defineTool as defineTool11 } from "npm:@lovable.dev/mcp-js@0.23.0";
-import { z as z11 } from "npm:zod@^3.25.76";
-var update_deal_default = defineTool11({
+import { defineTool as defineTool12 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z12 } from "npm:zod@^3.25.76";
+var update_deal_default = defineTool12({
   name: "update_deal",
   title: "Update deal",
   description: "Update fields on an existing pipeline deal owned by the signed-in user.",
   inputSchema: {
-    id: z11.string().uuid(),
-    title: z11.string().trim().optional(),
-    company_name: z11.string().trim().optional(),
-    contact_name: z11.string().trim().optional(),
-    value: z11.number().optional(),
-    stage: z11.string().trim().optional(),
-    probability: z11.number().int().min(0).max(100).optional(),
-    expected_close_date: z11.string().trim().optional().describe("YYYY-MM-DD"),
-    notes: z11.string().trim().optional()
+    id: z12.string().uuid(),
+    title: z12.string().trim().optional(),
+    company_name: z12.string().trim().optional(),
+    contact_name: z12.string().trim().optional(),
+    value: z12.number().optional(),
+    stage: z12.string().trim().optional(),
+    probability: z12.number().int().min(0).max(100).optional(),
+    expected_close_date: z12.string().trim().optional().describe("YYYY-MM-DD"),
+    notes: z12.string().trim().optional()
   },
   annotations: { readOnlyHint: false, idempotentHint: true, openWorldHint: false },
   handler: async ({ id, ...patch }, ctx) => {
@@ -525,14 +564,14 @@ var update_deal_default = defineTool11({
 });
 
 // src/lib/mcp/tools/list-icp-profiles.ts
-import { defineTool as defineTool12 } from "npm:@lovable.dev/mcp-js@0.23.0";
-import { z as z12 } from "npm:zod@^3.25.76";
-var list_icp_profiles_default = defineTool12({
+import { defineTool as defineTool13 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z13 } from "npm:zod@^3.25.76";
+var list_icp_profiles_default = defineTool13({
   name: "list_icp_profiles",
   title: "List ICP profiles",
   description: "List the signed-in user's Ideal Customer Profile definitions with their targeting fields.",
   inputSchema: {
-    limit: z12.number().int().min(1).max(50).optional()
+    limit: z13.number().int().min(1).max(50).optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ limit }, ctx) => {
@@ -551,30 +590,30 @@ var list_icp_profiles_default = defineTool12({
 });
 
 // src/lib/mcp/tools/update-icp-profile.ts
-import { defineTool as defineTool13 } from "npm:@lovable.dev/mcp-js@0.23.0";
-import { z as z13 } from "npm:zod@^3.25.76";
-var update_icp_profile_default = defineTool13({
+import { defineTool as defineTool14 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z14 } from "npm:zod@^3.25.76";
+var update_icp_profile_default = defineTool14({
   name: "update_icp_profile",
   title: "Update ICP profile",
   description: "Update fields on an existing Ideal Customer Profile owned by the signed-in user. Array fields (industries, target_titles, tech_stack, etc.) replace the previous value entirely when provided.",
   inputSchema: {
-    id: z13.string().uuid(),
-    name: z13.string().trim().optional(),
-    industries: z13.array(z13.string()).optional(),
-    target_titles: z13.array(z13.string()).optional(),
-    departments: z13.array(z13.string()).optional(),
-    seniority_levels: z13.array(z13.string()).optional(),
-    geographies: z13.array(z13.string()).optional(),
-    tech_stack: z13.array(z13.string()).optional(),
-    buying_signals: z13.array(z13.string()).optional(),
-    intent_keywords: z13.array(z13.string()).optional(),
-    pain_points: z13.array(z13.string()).optional(),
-    company_size_min: z13.number().int().optional(),
-    company_size_max: z13.number().int().optional(),
-    revenue_range: z13.string().trim().optional(),
-    value_proposition: z13.string().trim().optional(),
-    disqualifiers: z13.string().trim().optional(),
-    notes: z13.string().trim().optional()
+    id: z14.string().uuid(),
+    name: z14.string().trim().optional(),
+    industries: z14.array(z14.string()).optional(),
+    target_titles: z14.array(z14.string()).optional(),
+    departments: z14.array(z14.string()).optional(),
+    seniority_levels: z14.array(z14.string()).optional(),
+    geographies: z14.array(z14.string()).optional(),
+    tech_stack: z14.array(z14.string()).optional(),
+    buying_signals: z14.array(z14.string()).optional(),
+    intent_keywords: z14.array(z14.string()).optional(),
+    pain_points: z14.array(z14.string()).optional(),
+    company_size_min: z14.number().int().optional(),
+    company_size_max: z14.number().int().optional(),
+    revenue_range: z14.string().trim().optional(),
+    value_proposition: z14.string().trim().optional(),
+    disqualifiers: z14.string().trim().optional(),
+    notes: z14.string().trim().optional()
   },
   annotations: { readOnlyHint: false, idempotentHint: true, openWorldHint: false },
   handler: async ({ id, ...patch }, ctx) => {
@@ -593,14 +632,14 @@ var update_icp_profile_default = defineTool13({
 });
 
 // src/lib/mcp/tools/get-agent-stats.ts
-import { defineTool as defineTool14 } from "npm:@lovable.dev/mcp-js@0.23.0";
-import { z as z14 } from "npm:zod@^3.25.76";
-var get_agent_stats_default = defineTool14({
+import { defineTool as defineTool15 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z15 } from "npm:zod@^3.25.76";
+var get_agent_stats_default = defineTool15({
   name: "get_agent_stats",
   title: "Get AI agent stats",
   description: "Return every AI SDR agent build the signed-in user owns (name, role, enabled state, persona/tone, limits) plus recent activity: counts of agent actions in the last N days broken down by action_type, status and agent.",
   inputSchema: {
-    days: z14.number().int().min(1).max(90).optional().describe("Look-back window in days (default 7).")
+    days: z15.number().int().min(1).max(90).optional().describe("Look-back window in days (default 7).")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ days }, ctx) => {
@@ -654,28 +693,28 @@ var get_agent_stats_default = defineTool14({
 });
 
 // src/lib/mcp/tools/update-agent-config.ts
-import { defineTool as defineTool15 } from "npm:@lovable.dev/mcp-js@0.23.0";
-import { z as z15 } from "npm:zod@^3.25.76";
-var update_agent_config_default = defineTool15({
+import { defineTool as defineTool16 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z16 } from "npm:zod@^3.25.76";
+var update_agent_config_default = defineTool16({
   name: "update_agent_config",
   title: "Update AI agent config",
   description: "Update the signed-in user's AI SDR agent configuration \u2014 toggle enabled, change persona/tone/signature, adjust reply capabilities and daily limits. Creates the row if it does not yet exist.",
   inputSchema: {
-    agent_id: z15.string().uuid().optional().describe("Which agent build to update. Defaults to the primary agent."),
-    agent_name_match: z15.string().trim().optional().describe("Alternative to agent_id: match an agent by name."),
-    enabled: z15.boolean().optional(),
-    agent_name: z15.string().trim().optional(),
-    role: z15.enum(["full_cycle", "lead_gen", "outreach", "replies"]).optional(),
-    persona: z15.string().trim().optional(),
-    tone: z15.string().trim().optional(),
-    company_context: z15.string().trim().optional(),
-    signature: z15.string().trim().optional(),
-    calendly_url: z15.string().trim().optional(),
-    can_reply_interested: z15.boolean().optional(),
-    can_handle_objections: z15.boolean().optional(),
-    can_book_meetings: z15.boolean().optional(),
-    max_daily_auto_replies: z15.number().int().min(0).max(500).optional(),
-    reply_delay_minutes: z15.number().int().min(0).max(1440).optional()
+    agent_id: z16.string().uuid().optional().describe("Which agent build to update. Defaults to the primary agent."),
+    agent_name_match: z16.string().trim().optional().describe("Alternative to agent_id: match an agent by name."),
+    enabled: z16.boolean().optional(),
+    agent_name: z16.string().trim().optional(),
+    role: z16.enum(["full_cycle", "lead_gen", "outreach", "replies"]).optional(),
+    persona: z16.string().trim().optional(),
+    tone: z16.string().trim().optional(),
+    company_context: z16.string().trim().optional(),
+    signature: z16.string().trim().optional(),
+    calendly_url: z16.string().trim().optional(),
+    can_reply_interested: z16.boolean().optional(),
+    can_handle_objections: z16.boolean().optional(),
+    can_book_meetings: z16.boolean().optional(),
+    max_daily_auto_replies: z16.number().int().min(0).max(500).optional(),
+    reply_delay_minutes: z16.number().int().min(0).max(1440).optional()
   },
   annotations: { readOnlyHint: false, idempotentHint: true, openWorldHint: false },
   handler: async (patch, ctx) => {
@@ -707,12 +746,12 @@ var update_agent_config_default = defineTool15({
 });
 
 // src/lib/mcp/tools/search-prospects.ts
-import { defineTool as defineTool16 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { defineTool as defineTool17 } from "npm:@lovable.dev/mcp-js@0.23.0";
 
 // src/lib/mcp/action-schemas.ts
-import { z as z16 } from "npm:zod@^3.25.76";
-var text = z16.string().trim().min(1).max(500);
-var list = z16.array(text).max(20).optional();
+import { z as z17 } from "npm:zod@^3.25.76";
+var text = z17.string().trim().min(1).max(500);
+var list = z17.array(text).max(20).optional();
 var prospectSearchSchema = {
   query: text.optional(),
   job_title: text.optional(),
@@ -729,14 +768,14 @@ var prospectSearchSchema = {
   exclude_titles: list,
   exclude_industries: list,
   exclude_keywords: list,
-  companies: z16.array(z16.object({ name: text.optional(), domain: text.optional() }).strict()).max(20).optional(),
+  companies: z17.array(z17.object({ name: text.optional(), domain: text.optional() }).strict()).max(20).optional(),
   seniority: text.optional(),
-  limit: z16.number().int().min(1).max(200).optional(),
-  page: z16.number().int().min(1).max(1e3).optional(),
-  cursor: z16.string().min(1).max(4e3).optional(),
-  strict: z16.boolean().optional(),
-  relax: z16.boolean().optional(),
-  exclude_seen: z16.boolean().optional()
+  limit: z17.number().int().min(1).max(200).optional(),
+  page: z17.number().int().min(1).max(1e3).optional(),
+  cursor: z17.string().min(1).max(4e3).optional(),
+  strict: z17.boolean().optional(),
+  relax: z17.boolean().optional(),
+  exclude_seen: z17.boolean().optional()
 };
 
 // src/lib/mcp/app-actions.ts
@@ -795,7 +834,7 @@ function validateAppAction(route, body) {
 }
 
 // src/lib/mcp/tools/search-prospects.ts
-var search_prospects_default = defineTool16({
+var search_prospects_default = defineTool17({
   name: "search_prospects",
   title: "Find new prospects",
   description: "Search the real B2B lead network using the app's ICP filters, result caps and daily search meter. Returns candidates without saving or sending; pass next_cursor to continue. Paid searching costs no reveal credits; enrichment does.",
@@ -808,101 +847,101 @@ var search_prospects_default = defineTool16({
 });
 
 // src/lib/mcp/tools/search-companies.ts
-import { defineTool as defineTool17 } from "npm:@lovable.dev/mcp-js@0.23.0";
-import { z as z17 } from "npm:zod@^3.25.76";
-var search_companies_default = defineTool17({
+import { defineTool as defineTool18 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z18 } from "npm:zod@^3.25.76";
+var search_companies_default = defineTool18({
   name: "search_companies",
   title: "Find companies",
   description: "Search company names/domains using the app's free autocomplete, up to eight matches. Returns accounts, not people; nothing is saved or enriched.",
-  inputSchema: { query: z17.string().trim().min(2).max(500) },
+  inputSchema: { query: z18.string().trim().min(2).max(500) },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
   handler: (input, ctx) => callAppAction(ctx, "search_companies", "search-companies", input)
 });
 
 // src/lib/mcp/tools/find-person.ts
-import { defineTool as defineTool18 } from "npm:@lovable.dev/mcp-js@0.23.0";
-import { z as z18 } from "npm:zod@^3.25.76";
-var find_person_default = defineTool18({
+import { defineTool as defineTool19 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z19 } from "npm:zod@^3.25.76";
+var find_person_default = defineTool19({
   name: "find_person",
   title: "Look up a person",
   description: "Look up a known person by LinkedIn profile, work email or full name plus company. Uses the app's one-credit lookup and no-match refund; does not save. Use create_lead to save an approved result.",
-  inputSchema: { full_name: z18.string().trim().min(1).max(500).optional(), company: z18.string().trim().min(1).max(500).optional(), company_domain: z18.string().trim().min(1).max(500).optional(), email: z18.string().trim().email().max(320).optional(), linkedin_url: z18.string().url().max(500).optional() },
+  inputSchema: { full_name: z19.string().trim().min(1).max(500).optional(), company: z19.string().trim().min(1).max(500).optional(), company_domain: z19.string().trim().min(1).max(500).optional(), email: z19.string().trim().email().max(320).optional(), linkedin_url: z19.string().url().max(500).optional() },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
   handler: (input, ctx) => callAppAction(ctx, "find_person", "find-person", { ...input, action: "lookup" })
 });
 
 // src/lib/mcp/tools/verify-email.ts
-import { defineTool as defineTool19 } from "npm:@lovable.dev/mcp-js@0.23.0";
-import { z as z19 } from "npm:zod@^3.25.76";
-var verify_email_default = defineTool19({
+import { defineTool as defineTool20 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z20 } from "npm:zod@^3.25.76";
+var verify_email_default = defineTool20({
   name: "verify_email",
   title: "Check email deliverability",
   description: "Check one email through the same verifier used in search and enrichment. Returns valid, invalid, catch_all, role or unknown; only verified=true confirms a mailbox. No email is sent, no lead saved and no reveal credit charged. Account request limits apply.",
-  inputSchema: { email: z19.string().trim().min(1).max(320) },
+  inputSchema: { email: z20.string().trim().min(1).max(320) },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
   handler: (input, ctx) => callAppAction(ctx, "verify_email", "check-lead-email", input)
 });
 
 // src/lib/mcp/tools/enrich-lead.ts
-import { defineTool as defineTool20 } from "npm:@lovable.dev/mcp-js@0.23.0";
-import { z as z20 } from "npm:zod@^3.25.76";
-var enrich_lead_default = defineTool20({
+import { defineTool as defineTool21 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z21 } from "npm:zod@^3.25.76";
+var enrich_lead_default = defineTool21({
   name: "enrich_lead",
   title: "Enrich a saved lead",
   description: "Enrich your saved lead through the app's one-credit reveal, ownership checks and refund rules. Writes enrichment and verification results to that lead.",
-  inputSchema: { lead_id: z20.string().uuid() },
+  inputSchema: { lead_id: z21.string().uuid() },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
   handler: ({ lead_id }, ctx) => callAppAction(ctx, "enrich_lead", "enrich-lead", { leadId: lead_id })
 });
 
 // src/lib/mcp/tools/score-lead.ts
-import { defineTool as defineTool21 } from "npm:@lovable.dev/mcp-js@0.23.0";
-import { z as z21 } from "npm:zod@^3.25.76";
-var score_lead_default = defineTool21({
+import { defineTool as defineTool22 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z22 } from "npm:zod@^3.25.76";
+var score_lead_default = defineTool22({
   name: "score_lead",
   title: "Score a saved lead",
   description: "Score your saved lead against your saved ICP using the same app scorer, and store the resulting scores. Does not search or send.",
-  inputSchema: { lead_id: z21.string().uuid() },
+  inputSchema: { lead_id: z22.string().uuid() },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   handler: ({ lead_id }, ctx) => callAppAction(ctx, "score_lead", "score-lead", { leadId: lead_id })
 });
 
 // src/lib/mcp/tools/research-lead.ts
-import { defineTool as defineTool22 } from "npm:@lovable.dev/mcp-js@0.23.0";
-import { z as z22 } from "npm:zod@^3.25.76";
-var research_lead_default = defineTool22({
+import { defineTool as defineTool23 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z23 } from "npm:zod@^3.25.76";
+var research_lead_default = defineTool23({
   name: "research_lead",
   title: "Research a saved lead",
   description: "Research your saved lead with the app's existing combined web sources and return a sourced brief. Stores research on the lead, reuses fresh results unless force=true, and never sends outreach.",
-  inputSchema: { lead_id: z22.string().uuid(), force: z22.boolean().optional() },
+  inputSchema: { lead_id: z23.string().uuid(), force: z23.boolean().optional() },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
   handler: ({ lead_id, force }, ctx) => callAppAction(ctx, "research_lead", "research-lead", { leadId: lead_id, force: force ?? false })
 });
 
 // src/lib/mcp/tools/generate-email.ts
-import { defineTool as defineTool23 } from "npm:@lovable.dev/mcp-js@0.23.0";
-import { z as z23 } from "npm:zod@^3.25.76";
-var generate_email_default = defineTool23({
+import { defineTool as defineTool24 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z24 } from "npm:zod@^3.25.76";
+var generate_email_default = defineTool24({
   name: "generate_email",
   title: "Generate an email draft",
   description: "Generate and save an email draft for your saved lead, grounded in your own company context. The draft appears in Outreach Studio and Unified Inbox; no message is sent.",
-  inputSchema: { lead_id: z23.string().uuid(), tone: z23.enum(["professional", "friendly", "casual", "formal"]), goal: z23.enum(["introduction", "follow-up", "meeting", "demo", "proposal"]), senderName: z23.string().max(100), businessDescription: z23.string().max(500).optional(), customInstruction: z23.string().max(8e3).optional() },
+  inputSchema: { lead_id: z24.string().uuid(), tone: z24.enum(["professional", "friendly", "casual", "formal"]), goal: z24.enum(["introduction", "follow-up", "meeting", "demo", "proposal"]), senderName: z24.string().max(100), businessDescription: z24.string().max(500).optional(), customInstruction: z24.string().max(8e3).optional() },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
   handler: ({ lead_id, ...input }, ctx) => callAppAction(ctx, "generate_email", "generate-email", { ...input, lead: { id: lead_id }, saveDraft: true })
 });
 
 // src/lib/mcp/tools/workspace-action.ts
-import { defineTool as defineTool24 } from "npm:@lovable.dev/mcp-js@0.23.0";
-import { z as z24 } from "npm:zod@^3.25.76";
-var workspace_action_default = defineTool24({
+import { defineTool as defineTool25 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z25 } from "npm:zod@^3.25.76";
+var workspace_action_default = defineTool25({
   name: "workspace_action",
   title: "Manage sales workspace",
   description: "Use the app's existing account tools for ICPs, signals, sequence enrollment/status, reply classification, mailbox health/settings, deliverability alerts, email templates, objections, campaign briefs and outbound statistics. Read actions return data. Every edit returns a confirmation preview unless confirmed=true after explicit user approval. Optional agent_id preserves that build's role scope. Does not compose or directly send email.",
   inputSchema: {
-    action: z24.enum(["list_icp_profiles", "update_icp_profile", "list_signals", "refresh_signals", "list_sequence_enrollments", "update_enrollment", "update_sequence_status", "classify_reply", "list_sending_accounts", "update_sending_account", "list_deliverability_alerts", "resolve_deliverability_alert", "list_email_templates", "save_email_template", "list_objections", "save_objection", "list_campaign_briefs", "save_campaign_brief", "get_outbound_stats"]),
-    args: z24.record(z24.unknown()).optional().describe("Action-specific fields from the workspace-actions documentation; ownership fields are never accepted."),
-    agent_id: z24.string().uuid().optional(),
-    confirmed: z24.boolean().optional().describe("True only after the user approved the exact previewed changes.")
+    action: z25.enum(["list_icp_profiles", "update_icp_profile", "list_signals", "refresh_signals", "list_sequence_enrollments", "update_enrollment", "update_sequence_status", "classify_reply", "list_sending_accounts", "update_sending_account", "list_deliverability_alerts", "resolve_deliverability_alert", "list_email_templates", "save_email_template", "list_objections", "save_objection", "list_campaign_briefs", "save_campaign_brief", "get_outbound_stats"]),
+    args: z25.record(z25.unknown()).optional().describe("Action-specific fields from the workspace-actions documentation; ownership fields are never accepted."),
+    agent_id: z25.string().uuid().optional(),
+    confirmed: z25.boolean().optional().describe("True only after the user approved the exact previewed changes.")
   },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
   handler: (input, ctx) => callAppAction(ctx, "workspace_action", "workspace-action", input)
@@ -948,6 +987,7 @@ var mcp_default = defineMcp({
     update_lead_default,
     enroll_lead_default,
     send_reply_default,
+    send_email_default,
     update_deal_default,
     update_icp_profile_default,
     update_agent_config_default
