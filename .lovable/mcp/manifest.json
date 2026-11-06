@@ -14,10 +14,420 @@
   "mcp": {
     "server": {
       "name": "outreign-mcp",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "title": "OutReign"
     },
     "tools": [
+      {
+        "name": "search_prospects",
+        "title": "Find new prospects",
+        "description": "Search the real B2B lead network using the app's ICP filters, result caps and daily search meter. Returns candidates without saving or sending; pass next_cursor to continue. Paid searching costs no reveal credits; enrichment does.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "job_title": {
+              "$ref": "#/properties/query"
+            },
+            "industry": {
+              "$ref": "#/properties/query"
+            },
+            "company_size": {
+              "$ref": "#/properties/query"
+            },
+            "country": {
+              "$ref": "#/properties/query"
+            },
+            "company": {
+              "$ref": "#/properties/query"
+            },
+            "company_domain": {
+              "$ref": "#/properties/query"
+            },
+            "job_titles": {
+              "type": "array",
+              "items": {
+                "$ref": "#/properties/query"
+              },
+              "maxItems": 20
+            },
+            "industries": {
+              "$ref": "#/properties/job_titles"
+            },
+            "countries": {
+              "$ref": "#/properties/job_titles"
+            },
+            "seniority_levels": {
+              "$ref": "#/properties/job_titles"
+            },
+            "keywords": {
+              "$ref": "#/properties/job_titles"
+            },
+            "exclude_titles": {
+              "$ref": "#/properties/job_titles"
+            },
+            "exclude_industries": {
+              "$ref": "#/properties/job_titles"
+            },
+            "exclude_keywords": {
+              "$ref": "#/properties/job_titles"
+            },
+            "companies": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "$ref": "#/properties/query"
+                  },
+                  "domain": {
+                    "$ref": "#/properties/query"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "maxItems": 20
+            },
+            "seniority": {
+              "$ref": "#/properties/query"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            },
+            "page": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            },
+            "cursor": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4000
+            },
+            "strict": {
+              "type": "boolean"
+            },
+            "relax": {
+              "type": "boolean"
+            },
+            "exclude_seen": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "search_companies",
+        "title": "Find companies",
+        "description": "Search company names/domains using the app's free autocomplete, up to eight matches. Returns accounts, not people; nothing is saved or enriched.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 500
+            }
+          },
+          "required": [
+            "query"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "find_person",
+        "title": "Look up a person",
+        "description": "Look up a known person by LinkedIn profile, work email or full name plus company. Uses the app's one-credit lookup and no-match refund; does not save. Use create_lead to save an approved result.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "full_name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "company": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "company_domain": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "email": {
+              "type": "string",
+              "format": "email",
+              "maxLength": 320
+            },
+            "linkedin_url": {
+              "type": "string",
+              "format": "uri",
+              "maxLength": 500
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "verify_email",
+        "title": "Check email deliverability",
+        "description": "Check one email through the same verifier used in search and enrichment. Returns valid, invalid, catch_all, role or unknown; only verified=true confirms a mailbox. No email is sent, no lead saved and no reveal credit charged. Account request limits apply.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "email": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 320
+            }
+          },
+          "required": [
+            "email"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "enrich_lead",
+        "title": "Enrich a saved lead",
+        "description": "Enrich your saved lead through the app's one-credit reveal, ownership checks and refund rules. Writes enrichment and verification results to that lead.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "lead_id": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "required": [
+            "lead_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "score_lead",
+        "title": "Score a saved lead",
+        "description": "Score your saved lead against your saved ICP using the same app scorer, and store the resulting scores. Does not search or send.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "lead_id": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "required": [
+            "lead_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "research_lead",
+        "title": "Research a saved lead",
+        "description": "Research your saved lead with the app's existing combined web sources and return a sourced brief. Stores research on the lead, reuses fresh results unless force=true, and never sends outreach.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "lead_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "force": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "lead_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "generate_email",
+        "title": "Generate an email draft",
+        "description": "Generate email copy for your saved lead through the app generator, grounded in your own company context. Returns a draft only; no message is sent.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "lead_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "tone": {
+              "type": "string",
+              "enum": [
+                "professional",
+                "friendly",
+                "casual",
+                "formal"
+              ]
+            },
+            "goal": {
+              "type": "string",
+              "enum": [
+                "introduction",
+                "follow-up",
+                "meeting",
+                "demo",
+                "proposal"
+              ]
+            },
+            "senderName": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "businessDescription": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "customInstruction": {
+              "type": "string",
+              "maxLength": 8000
+            }
+          },
+          "required": [
+            "lead_id",
+            "tone",
+            "goal",
+            "senderName"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "workspace_action",
+        "title": "Manage sales workspace",
+        "description": "Use the app's existing account tools for ICPs, signals, sequence enrollment/status, reply classification, mailbox health/settings, deliverability alerts, email templates, objections, campaign briefs and outbound statistics. Read actions return data. Every edit returns a confirmation preview unless confirmed=true after explicit user approval. Optional agent_id preserves that build's role scope. Does not compose or directly send email.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "action": {
+              "type": "string",
+              "enum": [
+                "list_icp_profiles",
+                "update_icp_profile",
+                "list_signals",
+                "refresh_signals",
+                "list_sequence_enrollments",
+                "update_enrollment",
+                "update_sequence_status",
+                "classify_reply",
+                "list_sending_accounts",
+                "update_sending_account",
+                "list_deliverability_alerts",
+                "resolve_deliverability_alert",
+                "list_email_templates",
+                "save_email_template",
+                "list_objections",
+                "save_objection",
+                "list_campaign_briefs",
+                "save_campaign_brief",
+                "get_outbound_stats"
+              ]
+            },
+            "args": {
+              "type": "object",
+              "additionalProperties": {},
+              "description": "Action-specific fields from the workspace-actions documentation; ownership fields are never accepted."
+            },
+            "agent_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "confirmed": {
+              "type": "boolean",
+              "description": "True only after the user approved the exact previewed changes."
+            }
+          },
+          "required": [
+            "action"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
       {
         "name": "list_leads",
         "title": "List leads",
