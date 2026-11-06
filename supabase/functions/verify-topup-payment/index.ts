@@ -85,50 +85,29 @@ serve(async (req) => {
 
     logStep("Payment verified", { prospectCount, amountPaid });
 
-    // Add credits to user's subscription
-    const { data: sub } = await supabaseAdmin
-      .from('subscriptions')
-      .select('search_credits_remaining')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    const currentCredits = sub?.search_credits_remaining || 0;
-    const newBalance = currentCredits + prospectCount;
-
-    const { error: updateError } = await supabaseAdmin
-      .from('subscriptions')
-      .update({ search_credits_remaining: newBalance })
-      .eq('user_id', userId);
-
-    if (updateError) throw updateError;
-
-    // Record the topup payment
-    const { error: insertError } = await supabaseAdmin
-      .from('topup_payments')
-      .insert({
-        user_id: userId,
-        stripe_session_id: sessionId,
-        prospects_added: prospectCount,
-        amount_paid: amountPaid,
-      });
-
-    if (insertError) throw insertError;
-
-    // Log transaction
-    await supabaseAdmin.from('search_transactions').insert({
-      user_id: userId,
-      type: 'topup',
-      amount: prospectCount,
-      balance_after: newBalance,
-      description: `One-time top-up: +${prospectCount} prospects`,
+    // One transaction: the session row and the credit add commit together.
+    // A retried verification of the same Stripe session finds the row and
+    // does not add the credits again. Adding first and inserting second let
+    // two overlapping calls both add, then one insert fail.
+    const { data: granted, error: grantError } = await supabaseAdmin.rpc("grant_topup_credits", {
+      p_user_id: userId,
+      p_session_id: sessionId,
+      p_prospects: prospectCount,
+      p_amount_paid: amountPaid,
     });
+    if (grantError) throw grantError;
+    const grant = (granted ?? {}) as { applied?: boolean; reason?: string; credits?: number };
+    if (grant.applied !== true && grant.reason !== "already_granted") {
+      throw new Error(grant.reason === "no_subscription" ? "No subscription found" : "Could not add credits");
+    }
 
-    logStep("Credits added successfully", { prospectCount, newBalance });
+    logStep("Credits added successfully", { prospectCount, applied: grant.applied, credits: grant.credits });
 
-    return new Response(JSON.stringify({ 
-      success: true, 
+    return new Response(JSON.stringify({
+      success: true,
       prospects_added: prospectCount,
-      new_balance: newBalance,
+      new_balance: grant.credits ?? null,
+      already_granted: grant.reason === "already_granted",
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

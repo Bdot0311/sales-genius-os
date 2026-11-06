@@ -27,6 +27,7 @@ import {
   providerContributions,
   savableRecord,
 } from "../_shared/person-match.ts";
+import { applySearchMeter, asMeterClient } from "../_shared/search-meter.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -199,54 +200,45 @@ serve(async (req) => {
         });
       }
 
-      const remaining = subscription?.search_credits_remaining || 0;
-      if (!isAdmin && remaining <= 0) {
-        return json({
-          person: null,
-          error: "No search credits remaining. Add more credits to look up contacts.",
-          error_code: "credits_exhausted",
-        });
-      }
-
-      const nextRemaining = Math.max(0, remaining - 1);
-      const { error: deductError } = await supabase
-        .from("subscriptions")
-        .update({ search_credits_remaining: nextRemaining })
-        .eq("user_id", user.id);
-      if (deductError) {
-        console.error("[find-person] credit deduction failed:", deductError.message);
-        return json({ person: null, error: "Could not reserve a credit. Try again." }, 200);
-      }
-      creditWasDeducted = true;
-      await supabase.from("search_transactions").insert({
-        user_id: user.id,
-        type: "usage",
-        amount: -1,
-        balance_after: nextRemaining,
+      // Locked in apply_search_meter. Reading the balance and writing
+      // remaining-1 let two lookups spend one credit.
+      const metered = await applySearchMeter(asMeterClient(supabase), {
+        userId: user.id,
+        creditDelta: -1,
+        dailyDelta: 0,
         description: "People search",
+        gate: !isAdmin,
       });
+      if (!metered.applied) {
+        if (!isAdmin && (metered.reason === "insufficient" || metered.reason === "no_subscription")) {
+          return json({
+            person: null,
+            error: "No search credits remaining. Add more credits to look up contacts.",
+            error_code: "credits_exhausted",
+          });
+        }
+        if (!(isAdmin && metered.reason === "no_subscription")) {
+          console.error("[find-person] credit deduction failed:", metered.reason ?? "unknown");
+          return json({ person: null, error: "Could not reserve a credit. Try again." }, 200);
+        }
+      } else {
+        creditWasDeducted = true;
+      }
     }
 
     const refundCredit = async (reason: string) => {
       if (!creditWasDeducted) return;
+      // Cleared before the call so a second refund in this request cannot add
+      // another credit if the first one is still in flight or throws after
+      // the database has applied it.
       creditWasDeducted = false;
       try {
-        const { data: sub } = await supabase
-          .from("subscriptions")
-          .select("search_credits_remaining")
-          .eq("user_id", user.id)
-          .maybeSingle();
-        if (!sub) return;
-        const restored = (sub.search_credits_remaining || 0) + 1;
-        await supabase.from("subscriptions")
-          .update({ search_credits_remaining: restored })
-          .eq("user_id", user.id);
-        await supabase.from("search_transactions").insert({
-          user_id: user.id,
-          type: "refund",
-          amount: 1,
-          balance_after: restored,
+        await applySearchMeter(asMeterClient(supabase), {
+          userId: user.id,
+          creditDelta: 1,
+          dailyDelta: 0,
           description: `People search refund: ${reason}`,
+          gate: false,
         });
       } catch (e) {
         console.error("[find-person] refund failed:", e instanceof Error ? e.message : e);

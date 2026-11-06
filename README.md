@@ -90,3 +90,4 @@ These live in [`docs/`](docs/) and were not linked from anywhere until now.
 | [DFY_OFFER_SCOPE.md](docs/DFY_OFFER_SCOPE.md) | The done-for-you offer: rungs, pricing, unit economics and guardrails |
 | [DFY_DELIVERY_RUNBOOK.md](docs/DFY_DELIVERY_RUNBOOK.md) | How a Managed engagement actually runs, day 0 to day 90, and the agreement clauses |
 | [AGENT_RELIABILITY_SCOPE.md](docs/AGENT_RELIABILITY_SCOPE.md) | Why the agent hallucinates, what actually fixes it, and what not to buy. Not built |
+| [E2E_AUDIT_2026-11-06.md](docs/E2E_AUDIT_2026-11-06.md) | November 2026 end-to-end audit: findings, fixes, test evidence, and what is still untested |

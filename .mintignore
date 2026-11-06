@@ -1,4 +1,7 @@
 # Mintlify shares this repository with the app; do not inject app CSS or scripts.
+# /.lovable/ stays excluded: north-star.md starts with an HTML comment, and
+# Mintlify's MDX parser logs "Updated deployment with errors" while still
+# reporting success. That note is Lovable's, not API docs.
 *.css
 !/style.css
 *.js

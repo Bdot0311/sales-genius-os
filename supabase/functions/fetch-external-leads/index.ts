@@ -3,6 +3,7 @@ import { ownerOf, resolveCaller } from '../_shared/internal-auth.ts';
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getPlanSearchLimits } from "../_shared/plan-limits.ts";
+import { applySearchMeter, asMeterClient } from "../_shared/search-meter.ts";
 // One vocabulary for the whole pipeline — see _shared/icp-vocab.ts.
 import {
   normalizeCountry,
@@ -772,40 +773,54 @@ serve(async (req) => {
 
       // Count the search against the daily limit for every non-admin — that cap
       // is a rate limit, not a charge, and it is what bounds provider spend now
-      // that paid searching costs no credits.
-      const newDailyUsed = dailyUsed + 1;
-      const update: Record<string, unknown> = { daily_searches_used: newDailyUsed };
-      // Floored: two searches racing each other, or an admin metered against an
-      // allowance nothing is stopping them spending, would otherwise write a
-      // negative balance and the meter would read below empty.
-      const newRemaining = Math.max(0, remainingCredits - 1);
-      if (chargesPerSearch) {
-        update.search_credits_remaining = newRemaining;
-        creditBalanceAfter = newRemaining;
-      }
-
-      const { error: updateError } = await supabase
-        .from('subscriptions')
-        .update(update)
-        .eq('user_id', user.id);
-
-      if (updateError) {
-        console.error('Error updating search usage:', updateError);
+      // that paid searching costs no credits. The lock lives in the database
+      // function: this request does not write a balance it read earlier.
+      const metered = await applySearchMeter(asMeterClient(supabase), {
+        userId: user.id,
+        creditDelta: chargesPerSearch ? -1 : 0,
+        dailyDelta: 1,
+        description: `Lead search: ${filters.job_title || filters.industry || 'general'}`,
+        gate: !isAdmin && chargesPerSearch,
+        dailyCap: isAdmin ? null : planConfig.dailySearchLimit,
+      });
+      if (!metered.applied && isAdmin && metered.reason === 'no_subscription') {
+        // A support account with no subscription row is still allowed to search.
+      } else if (!metered.applied) {
+        if (metered.reason === 'daily_cap') {
+          await updateUsageEvent(supabase, usageEventId, 'error', 0, 'daily_limit_reached');
+          return new Response(
+            JSON.stringify({
+              error: 'Daily search limit reached. Try again tomorrow.',
+              error_code: 'daily_limit_reached',
+              daily_used: metered.daily,
+              daily_limit: planConfig.dailySearchLimit,
+              leads: [],
+            }),
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        if (metered.reason === 'insufficient' || metered.reason === 'no_subscription') {
+          await updateUsageEvent(supabase, usageEventId, 'error', 0, 'credits_exhausted');
+          return new Response(
+            JSON.stringify({
+              error: `You've used your ${planConfig.monthlySearchCredits} free lead searches. `
+                + 'Upgrade to a paid plan to keep finding prospects.',
+              error_code: 'credits_exhausted',
+              upgrade_required: true,
+              remaining_credits: metered.credits ?? 0,
+              leads: [],
+            }),
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
         throw new Error('Failed to update credits');
       }
 
-      dailyWasCounted = true;
-
-      if (chargesPerSearch) {
-        creditWasCharged = true;
-        await supabase.from('search_transactions').insert({
-          user_id: user.id,
-          type: 'usage',
-          amount: -1,
-          balance_after: newRemaining,
-          description: `Lead search: ${filters.job_title || filters.industry || 'general'}`,
-        });
-      }
+      const newDailyUsed = metered.daily ?? dailyUsed + 1;
+      const newRemaining = metered.credits ?? remainingCredits;
+      if (chargesPerSearch && metered.applied) creditBalanceAfter = newRemaining;
+      dailyWasCounted = metered.applied;
+      creditWasCharged = metered.applied && chargesPerSearch;
 
       // Update the audit row with the actual credit impact of this search.
       await updateUsageEvent(supabase, usageEventId, 'started', 0, undefined, undefined, undefined, {
@@ -840,30 +855,13 @@ serve(async (req) => {
       dailyWasCounted = false;
       creditWasCharged = false;
       try {
-        const { data: sub } = await supabase
-          .from('subscriptions')
-          .select('search_credits_remaining, daily_searches_used')
-          .eq('user_id', user.id)
-          .maybeSingle();
-        if (!sub) return;
-        const restored = (sub.search_credits_remaining || 0) + 1;
-        const update: Record<string, unknown> = {
-          daily_searches_used: Math.max((sub.daily_searches_used || 0) - 1, 0),
-        };
-        if (refundingCredit) update.search_credits_remaining = restored;
-        await supabase
-          .from('subscriptions')
-          .update(update)
-          .eq('user_id', user.id);
-        if (refundingCredit) {
-          await supabase.from('search_transactions').insert({
-            user_id: user.id,
-            type: 'refund',
-            amount: 1,
-            balance_after: restored,
-            description: `Refund: ${reason}`,
-          });
-        }
+        await applySearchMeter(asMeterClient(supabase), {
+          userId: user.id,
+          creditDelta: refundingCredit ? 1 : 0,
+          dailyDelta: -1,
+          description: `Refund: ${reason}`,
+          gate: false,
+        });
         console.log('Search usage released:', { userId: user.id, reason, refundingCredit });
       } catch (e) {
         console.error('Failed to release search usage:', e);

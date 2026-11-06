@@ -336,8 +336,7 @@ export function SequenceBuilder() {
           <AlertTriangle className="w-4 h-4 text-yellow-500" />
           <AlertDescription className="text-sm">
             <span className="font-medium">Add {OUTBOUND_KB.sequenceRules.minTouches - steps.length} more step{OUTBOUND_KB.sequenceRules.minTouches - steps.length !== 1 ? "s" : ""}.</span>{" "}
-            Sequences with {OUTBOUND_KB.sequenceRules.minTouches}+ touches achieve 8.3% reply rates vs. 4.1% for shorter ones.
-            42% of replies come from follow-ups — don't stop at {steps.length}.
+            This product does not have a measured reply rate for short sequences. The recommendation is to keep going past {steps.length} so a single unanswered note is not the whole attempt.
           </AlertDescription>
         </Alert>
       )}

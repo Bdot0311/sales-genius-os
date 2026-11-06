@@ -61,6 +61,19 @@ describe("payment recovery after the grace day", () => {
     await processStripeEvent(f.event as never, f.stripe as never, f.client as never);
     expect(f.state.grace_started_at).toBeNull();
     expect(f.state.plan).toBe("growth");
+    const applyCall = f.rpc.mock.calls.find((call) => call[0] === "apply_stripe_event_to_subscription");
+    expect(applyCall?.[1]._updates.search_credits_delta).toBe(2500);
+    expect(applyCall?.[1]._updates.search_credits_remaining).toBeUndefined();
+    expect(f.rpc).toHaveBeenCalledWith(
+      "apply_stripe_event_to_subscription",
+      expect.objectContaining({
+        _updates: expect.objectContaining({ search_credits_delta: 2500 }),
+      }),
+    );
+    const applyArgs = f.rpc.mock.calls.find((call) => call[0] === "apply_stripe_event_to_subscription")?.[1] as {
+      _updates: Record<string, unknown>;
+    };
+    expect(applyArgs._updates.search_credits_remaining).toBeUndefined();
     expect(f.rpc).toHaveBeenCalledWith("billing_record_auto_resume", expect.objectContaining({ _user_id: "user-1" }));
     await f.rpc("billing_start_grace_period", {});
     expect(dunningStage(f.state.grace_started_at, 1, new Date(nextFailure))).toBe("grace");

@@ -13,6 +13,7 @@ import { useState, useRef, useEffect, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { readCoachDeltaStream } from "@/lib/coach-stream";
 import { useNavigate } from "react-router-dom";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { FeatureGateModal } from "@/components/dashboard/FeatureGateModal";
@@ -551,37 +552,13 @@ Be encouraging but direct. Experienced outbound coaches don't sugarcoat.`;
       if (!response.ok) throw new Error("Failed to get feedback");
       if (!response.body) throw new Error("No response body");
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let fullContent = "";
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        let newlineIndex: number;
-        while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
-          let line = buffer.slice(0, newlineIndex);
-          buffer = buffer.slice(newlineIndex + 1);
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (line.startsWith(":") || line.trim() === "" || !line.startsWith("data: ")) continue;
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") continue;
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) {
-              fullContent += content;
-              setMessages(prev => {
-                const updated = [...prev];
-                updated[updated.length - 1] = { role: 'assistant', content: fullContent };
-                return updated;
-              });
-            }
-          } catch { buffer = line + "\n" + buffer; break; }
-        }
-      }
+      await readCoachDeltaStream(response.body, (content) => {
+        setMessages(prev => {
+          const updated = [...prev];
+          updated[updated.length - 1] = { role: 'assistant', content };
+          return updated;
+        });
+      });
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
       setMessages(prev => prev.filter(m => m.content !== ''));

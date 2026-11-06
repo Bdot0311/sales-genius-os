@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { AI_SMART, aiFetch } from "../_shared/ai-provider.ts";
-import { findUnverifiedClaims } from "../_shared/email-rules.ts";
+import { adviceWithoutInventedFigures } from "../_shared/factual-send.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -92,7 +92,7 @@ serve(async (req) => {
         .eq('role', 'user')
         .gte('created_at', periodStart.toISOString());
 
-      if ((usedThisMonth ?? 0) > coachLimit) {
+      if ((usedThisMonth ?? 0) >= coachLimit) {
         return new Response(
           JSON.stringify({
             error: `You have used all ${coachLimit} AI Sales Coach messages included in your ${activePlan} plan this month. Upgrade your plan for a higher coaching limit.`,
@@ -207,6 +207,8 @@ ${hotLeads.length > 0 ? hotLeads.map(l => `- ${l}`).join('\n') : '- None identif
 
 LEADS NEEDING ATTENTION (No contact in 7+ days):
 ${stalledLeads.length > 0 ? stalledLeads.map(l => `- ${l.contact_name} at ${l.company_name}`).join('\n') : '- All leads recently contacted'}
+
+PLANNING RANGE (not this account's result, and not a sourced benchmark): a rough close-rate range of 20-30% is sometimes used for planning. Say so if you mention it. Do not present it as their close rate.
     `.trim();
 
     const systemPrompt = `You are an expert B2B sales coach with 20+ years of experience, personally assigned to help ${userProfile?.full_name || 'this sales professional'}. You have full access to their CRM data and provide highly personalized, actionable advice.
@@ -221,7 +223,7 @@ Your coaching approach:
 CRITICAL RULES - Never Break These:
 1. ONLY use the numbers provided in the context above. Never invent metrics, percentages, or figures.
 2. If you don't have data for a metric, say "I don't have this data" rather than estimating.
-3. When benchmarking, use the provided industry standard (20-30% close rate) - do not invent other benchmarks.
+3. The only outside range you may mention is the planning range in the context, and you must call it a rough range rather than this account's result or a sourced benchmark. Do not invent any other benchmark.
 4. Never make up deal values, lead counts, or conversion rates not shown in the context.
 5. All metrics you reference must be visible in the CRM data provided above.
 
@@ -230,7 +232,7 @@ When coaching:
 2. Prioritize high-value opportunities and high-scoring leads
 3. Flag stalled leads that need immediate attention
 4. Suggest specific follow-up actions based on deal stages
-5. Benchmark their metrics against industry standards (avg close rate: 20-30%)
+5. If you mention a close-rate range, use only the planning range in the context and label it as a rough range, not their number
 
 Keep responses concise (2-3 focused paragraphs) unless they ask for detailed analysis. Always end with 1-2 specific action items.`;
 
@@ -287,20 +289,27 @@ Keep responses concise (2-3 focused paragraphs) unless they ask for detailed ana
     }
 
     const data = await response.json();
-    const advice = data.choices?.[0]?.message?.content || "";
+    const rawAdvice = data.choices?.[0]?.message?.content || "";
 
-    // Validate advice for fabricated claims
-    const unverifiedClaims = findUnverifiedClaims(advice, context);
-    if (unverifiedClaims.length > 0) {
-      console.warn("[ai-coach] Detected unverified claims:", unverifiedClaims);
-      // Return the advice but with a warning - don't block coaching for this
-      // as it could be legitimate insights. Log for monitoring.
+    // Figures the account data does not contain are removed before the
+    // client sees them. The coach pages read a Server-Sent Events stream
+    // (`data: {"choices":[{"delta":{"content"}}]}`). Returning a JSON object
+    // left those pages with an empty assistant message, so the checked text
+    // is written as one SSE chunk rather than streamed past the check.
+    const { text: advice, removed } = adviceWithoutInventedFigures(rawAdvice, context);
+    if (removed.length > 0) {
+      console.warn("[ai-coach] Removed unverified claims:", removed);
     }
+    const chunk = JSON.stringify({ choices: [{ delta: { content: advice } }] });
+    const sse = `data: ${chunk}\n\ndata: [DONE]\n\n`;
 
-    return new Response(
-      JSON.stringify({ advice, hasUnverifiedClaims: unverifiedClaims.length > 0 }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(sse, {
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+      },
+    });
   } catch (error: any) {
     console.error("Error in ai-coach function:", error.message);
     

@@ -765,7 +765,7 @@ function OutboundBenchmarksCard({ userReplyRate }: { userReplyRate: number | nul
   };
 
   const likelyCauses = [
-    { issue: "Targeting too broad", fix: "Narrow your ICP — niche segments get 3–5x higher reply rates" },
+    { issue: "Targeting too broad", fix: "Narrow your ICP to the segment you can actually name" },
     { issue: "Generic copy", fix: "Use signal-based templates and unique openers per prospect" },
     { issue: "Deliverability issues", fix: "Check SPF/DKIM/DMARC and warmup status" },
   ];
@@ -816,20 +816,9 @@ function OutboundBenchmarksCard({ userReplyRate }: { userReplyRate: number | nul
         )}
       </div>
 
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-        <div className="rounded-lg bg-muted/40 p-3">
-          <p className="font-medium mb-0.5">{Math.round(kb.personalizedLiftMultiplier)}x lift</p>
-          <p className="text-muted-foreground text-xs">Personalized vs. generic emails</p>
-        </div>
-        <div className="rounded-lg bg-muted/40 p-3">
-          <p className="font-medium mb-0.5">{Math.round(kb.followUpReplyShare * 100)}% of replies</p>
-          <p className="text-muted-foreground text-xs">Come from follow-ups, not first touch</p>
-        </div>
-        <div className="rounded-lg bg-muted/40 p-3">
-          <p className="font-medium mb-0.5">{Math.round(kb.signalBasedReplyRate * 100)}%+ reply rate</p>
-          <p className="text-muted-foreground text-xs">Signal-based campaigns (5x baseline)</p>
-        </div>
-      </div>
+      <p className="mt-6 text-xs text-muted-foreground">
+        The comparison lines above are planning constants stored in the product. They are not measured from your mailbox, and this product has not verified the published figures they came from. Your reply rate, shown separately, is computed from your own sends.
+      </p>
 
       {(userReplyRate === null || userReplyRate < kb.industryAvgReplyRate) && (
         <div className="mt-5 rounded-lg border border-border/40 bg-muted/20 p-4">

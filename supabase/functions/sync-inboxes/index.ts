@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, requireServiceRole } from "../_shared/internal-auth.ts";
+import { sweepSlice } from "../_shared/sweep-window.ts";
 
 /**
  * The scheduled sweep that finds replies.
@@ -32,12 +33,24 @@ serve(async (req) => {
   const admin = createClient(supabaseUrl, serviceKey);
 
   try {
-    // Only mailboxes that are connected and still have a thread worth polling.
-    const { data: integrations, error: intErr } = await admin
+    // One page of connected mailboxes. Counting first, then reading that page,
+    // avoids loading every integration row before the user cap.
+    const { count: mailboxCount, error: countErr } = await admin
       .from("integrations")
-      .select("user_id")
+      .select("user_id", { count: "exact", head: true })
       .eq("integration_id", "google")
       .eq("is_active", true);
+    if (countErr) throw new Error(`integrations: ${countErr.message}`);
+    const mailboxPage = sweepSlice(mailboxCount ?? 0, MAX_USERS, Date.now(), 5 * 60_000);
+    const { data: integrations, error: intErr } = mailboxPage.to < mailboxPage.from
+      ? { data: [], error: null }
+      : await admin
+        .from("integrations")
+        .select("user_id")
+        .eq("integration_id", "google")
+        .eq("is_active", true)
+        .order("user_id")
+        .range(mailboxPage.from, mailboxPage.to);
     if (intErr) throw new Error(`integrations: ${intErr.message}`);
 
     const candidates = [...new Set((integrations ?? []).map((i: { user_id: string }) => i.user_id))];

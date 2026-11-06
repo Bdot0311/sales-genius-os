@@ -31,6 +31,7 @@ import { AI_SMART, aiFetch } from "../_shared/ai-provider.ts";
 import { capToolsToTier, resolveAgentTier } from "../_shared/agent-tier-scope.ts";
 import { notifyAgentRunFinished, notifyMeetingBooked } from "../_shared/notify-events.ts";
 import { researchBlockForLead } from "../_shared/lead-research-block.ts";
+import { firstTouchBlockers, replySendBlockers } from "../_shared/factual-send.ts";
 import {
   decisionForDrafting,
   decisionPromptBlock,
@@ -51,8 +52,9 @@ const corsHeaders = {
  * Outreach Studio has always written against this brief (generate-email scrapes
  * and caches it); the autonomous agent wrote from the lead row alone, which is
  * why its emails read thinner than the ones a person generates. Same brief,
- * same cache, same 14-day freshness rule. Failure is silent — a draft without
- * research is still a draft, it just makes no site-specific claims.
+ * same cache, same 14-day freshness rule. An empty block is not a researched
+ * draft: company-specific assertions are rejected, and nothing is sent until
+ * a person reviews it.
  */
 
 
@@ -868,6 +870,14 @@ ${playbookSystemRules()}`;
                 lead.id,
               );
               const leadResearchBlock = research.block;
+              const proofForTouch = [
+                leadResearchBlock,
+                config.company_context ?? "",
+                cfgValuePropsText,
+                lead.job_title ?? "",
+                lead.industry ?? "",
+                ...(Array.isArray(lead.signals) ? lead.signals : []),
+              ].filter(Boolean).join("\n");
               researchOutcomes[research.outcome] = (researchOutcomes[research.outcome] ?? 0) + 1;
               if (!leadResearchBlock) {
                 draftsWithoutResearch++;
@@ -962,16 +972,29 @@ ${playbookSystemRules()}`;
               /** Score one draft on both checks: the model rubric and the rule audit. */
               const assess = async (subj: string, bod: string): Promise<Attempt> => {
                 const rubric = await scoreEmail(supabaseUrl, authHeader, anonKey, { subject: subj, body: bod });
-                const blocking = auditEmail({
-                  subject: subj,
-                  body: bod,
-                  position: 1,
-                  lead: { company: lead.company_name, contactName: lead.contact_name },
-                })
-                  // Notes are observations, not reasons to rewrite. Blockers and
-                  // warnings are both things a person would fix before sending.
-                  .filter((f) => f.severity !== "note")
-                  .map((f) => ({ rule: f.rule, severity: f.severity, why: f.why, fix: f.fix }));
+                const blocking = [
+                  ...auditEmail({
+                    subject: subj,
+                    body: bod,
+                    position: 1,
+                    verifiedProof: proofForTouch,
+                    lead: { company: lead.company_name, contactName: lead.contact_name },
+                  })
+                    // Notes are observations, not reasons to rewrite. Blockers and
+                    // warnings are both things a person would fix before sending.
+                    .filter((f) => f.severity !== "note")
+                    .map((f) => ({ rule: f.rule, severity: f.severity, why: f.why, fix: f.fix })),
+                  // A number the proof does not contain is already a blocker
+                  // above. These are the claims that audit does not see: a
+                  // specific company observation with no research, and an
+                  // offer the account never authorised.
+                  ...firstTouchBlockers({
+                    researchBlock: leadResearchBlock,
+                    subject: subj,
+                    body: bod,
+                    allowedProof: proofForTouch,
+                  }),
+                ];
                 return { subject: subj, body: bod, rubric, blocking };
               };
 
@@ -1078,8 +1101,15 @@ ${playbookSystemRules()}`;
                 continue;
               }
 
-              if (approvalMode) {
+              const heldForResearch = !leadResearchBlock.trim();
+              if (approvalMode || heldForResearch) {
                 // Save a draft, not an approval.
+                //
+                // An empty research block used to take the send path. The
+                // prompt says not to invent a company fact, and the draft
+                // above was rejected when it did, but a category-only email
+                // is still not something to send while the account is asleep.
+                // It is saved here, labelled, and left for a person.
                 //
                 // agent-run has no conversation to confirm in, so its pending
                 // work has to live somewhere the user can find it. That place
@@ -1114,12 +1144,17 @@ ${playbookSystemRules()}`;
                   prospect_email: to,
                   subject,
                   reply_content: body,
-                  description: `Drafted a first-touch email to ${lead.contact_name ?? to} at ${lead.company_name ?? "their company"}, scoring ${quality.score ?? "unscored"}/100 — saved to your drafts${leadSenderEmail ? `, to send from ${leadSenderEmail}` : ""}`,
+                  description: heldForResearch
+                    ? `Drafted a category-only first touch to ${lead.contact_name ?? to} at ${lead.company_name ?? "their company"}. No company research was on file, so it was not sent. Review it before it goes out.`
+                    : `Drafted a first-touch email to ${lead.contact_name ?? to} at ${lead.company_name ?? "their company"}, scoring ${quality.score ?? "unscored"}/100 — saved to your drafts${leadSenderEmail ? `, to send from ${leadSenderEmail}` : ""}`,
                   metadata: {
                     phase: "outreach",
                     lead_id: lead.id,
                     sender_email: leadSenderEmail,
                     quality,
+                    ...(heldForResearch
+                      ? { reason: "no_research", research_outcome: research.outcome }
+                      : {}),
                   },
                 });
                 outreachDrafted++;
@@ -1160,13 +1195,35 @@ ${playbookSystemRules()}`;
                 .update({ last_contacted_at: new Date().toISOString(), lead_status: "active" })
                 .eq("id", lead.id);
 
-              const scheduled = await scheduleFollowUps(
-                adminClient,
-                user.id,
-                lead.id,
-                lead.company_name ?? lead.contact_name ?? to,
-                touches,
-              );
+              const followUpBlockers = touches.slice(1, 4).flatMap((touch) => [
+                ...firstTouchBlockers({
+                  researchBlock: leadResearchBlock,
+                  subject: touch.subject ?? "",
+                  body: touch.body ?? "",
+                  allowedProof: proofForTouch,
+                }),
+                ...auditEmail({
+                  subject: touch.subject,
+                  body: touch.body,
+                  position: 2,
+                  verifiedProof: proofForTouch,
+                  lead: { company: lead.company_name, contactName: lead.contact_name },
+                }).filter((finding) => finding.severity === "blocker"),
+              ]);
+              const scheduled = followUpBlockers.length === 0
+                ? await scheduleFollowUps(
+                    adminClient,
+                    user.id,
+                    lead.id,
+                    lead.company_name ?? lead.contact_name ?? to,
+                    touches,
+                  )
+                : false;
+              if (followUpBlockers.length > 0) {
+                console.warn(
+                  `[agent-run] follow-ups not queued for ${lead.id}: ${followUpBlockers.map((finding) => finding.rule).join(", ")}`,
+                );
+              }
 
               await logAction({
                 user_id: user.id,
@@ -1175,7 +1232,7 @@ ${playbookSystemRules()}`;
                 prospect_email: to,
                 subject,
                 reply_content: body,
-                description: `Touch 1 of 4 sent to ${lead.company_name ?? to}${quality.score !== null ? `, scoring ${quality.score}/100` : ""}${scheduled ? " — follow-ups queued for day 3, 7 and 14 (they stop automatically on reply)" : ""}`,
+                description: `Touch 1 of 4 sent to ${lead.company_name ?? to}${quality.score !== null ? `, scoring ${quality.score}/100` : ""}${scheduled ? " — follow-ups queued for day 3, 7 and 14 (they stop automatically on reply)" : followUpBlockers.length > 0 ? " — follow-ups were not queued because they included a claim the research does not support" : ""}`,
                 metadata: {
                   phase: "outreach",
                   lead_id: lead.id,
@@ -1264,6 +1321,30 @@ ${playbookSystemRules()}`;
 
     const valuePropsList = Array.isArray(config.value_props) ? config.value_props : [];
     const valuePropsText = valuePropsList.join("\n");
+    const accountProof = [config.company_context ?? "", valuePropsText].filter(Boolean).join("\n");
+    /** True when the reply invents a figure or an offer. Logs and skips. */
+    const blockUngroundedReply = async (
+      current: Reply,
+      body: string,
+      classification: string,
+      extraProof = "",
+    ): Promise<boolean> => {
+      const blockers = replySendBlockers(body, `${accountProof}\n${extraProof}`);
+      if (blockers.length === 0) return false;
+      await logAction({
+        user_id: user.id,
+        sent_email_id: current.sentEmailId,
+        action_type: "skipped",
+        status: "skipped",
+        prospect_email: current.fromEmail,
+        subject: current.subject,
+        classification,
+        description: `Did not send a reply to ${current.fromEmail} — it included ${blockers.slice(0, 3).join("; ")}`,
+        metadata: { phase: "reply", reason: "ungrounded_reply", blockers },
+      });
+      skipped++;
+      return true;
+    };
 
     for (const reply of replies) {
       if (repliesSent >= remainingReplies) break;
@@ -1474,6 +1555,8 @@ Output ONLY the reply body. No subject line. No greeting like "Hi [name]". No si
             continue;
           }
 
+          if (await blockUngroundedReply(reply, generatedReply, "interested")) continue;
+
           if (approvalMode) {
             // No queue, and no draft either: a reply draft would overwrite the
             // lead's outreach draft, and email_drafts holds one per lead.
@@ -1600,6 +1683,7 @@ Output ONLY the reply body. No subject line. No greeting like "Hi [name]". No si
           const objectionSystemPrompt = `You are ${config.agent_name}. ${config.persona}. Tone: ${config.tone}.
 ${UNTRUSTED_CONTENT_RULE}
 ${bannedPhrasesBlock()}
+${agentProhibitions(config.agent_name)}
 ${composeSkillContext({ goal: "objection" })}`;
           const objectionPrompt = `The prospect raised an objection to your sales email.
 Objection type, as classified: ${objectionType ?? "unclassified — read the reply and decide"}
@@ -1625,6 +1709,13 @@ Output ONLY the reply body. No subject line or signature.`;
             skipped++;
             continue;
           }
+
+          const proofPoints = top
+            .flatMap((entry: { proof_points?: unknown }) =>
+              Array.isArray(entry.proof_points) ? entry.proof_points.filter((point) => typeof point === "string") : [],
+            )
+            .join("\n");
+          if (await blockUngroundedReply(reply, generatedReply, "objection", proofPoints)) continue;
 
           if (approvalMode) {
             // No queue, and no draft either: a reply draft would overwrite the
@@ -1710,13 +1801,16 @@ Output ONLY the reply body. No subject line or signature.`;
           } else {
             const meetingSystemPrompt = `You are ${config.agent_name}. ${config.persona}. Tone: ${config.tone}.
 ${UNTRUSTED_CONTENT_RULE}
-${bannedPhrasesBlock()}`;
+${bannedPhrasesBlock()}
+${agentProhibitions(config.agent_name)}`;
             const meetingPrompt = `A prospect is requesting a meeting in response to your sales email.
 Prospect reply: ${fence(`reply from ${reply.fromEmail}`, reply.bodyText)}
 Write a short, friendly reply asking for their availability (2-3 time options format or asking when works best).
 Output ONLY the reply body. No subject line or signature.`;
             meetingReply = await callGemini(meetingPrompt, meetingSystemPrompt);
           }
+
+          if (!config.calendly_url && await blockUngroundedReply(reply, meetingReply, "meeting_request")) continue;
 
           if (approvalMode) {
             // No queue, and no draft either: a reply draft would overwrite the

@@ -179,17 +179,18 @@ describe("the autonomous run", () => {
     // "ready to go" and became a queue of things to triage.
     expect(RUN).not.toContain("if (approvalMode || qualityHold)");
     expect(RUN).toContain("if (qualityHold) {");
-    expect(RUN).toContain("if (approvalMode) {");
-    expect(RUN.indexOf("if (qualityHold) {")).toBeLessThan(RUN.indexOf("if (approvalMode) {"));
+    // Unresearched copy is held with the approval drafts. It is not folded
+    // into the quality hold, which throws the draft away.
+    expect(RUN).toContain("if (approvalMode || heldForResearch) {");
+    expect(RUN.indexOf("if (qualityHold) {")).toBeLessThan(RUN.indexOf("if (approvalMode || heldForResearch) {"));
   });
 
   it("writes no draft row on the quality path", () => {
     // The upsert has to sit inside the approval branch, where the copy passed.
-    const qualityBranch = code(
-      RUN.slice(RUN.indexOf("if (qualityHold) {"), RUN.indexOf("if (approvalMode) {")),
-    );
+    const approvalAt = RUN.indexOf("if (approvalMode || heldForResearch) {");
+    const qualityBranch = code(RUN.slice(RUN.indexOf("if (qualityHold) {"), approvalAt));
     expect(qualityBranch).not.toContain("email_drafts");
-    expect(RUN.indexOf('from("email_drafts").upsert')).toBeGreaterThan(RUN.indexOf("if (approvalMode) {"));
+    expect(RUN.indexOf('from("email_drafts").upsert')).toBeGreaterThan(approvalAt);
   });
 
   it("says a skipped lead was neither sent nor saved", () => {
@@ -262,7 +263,7 @@ describe("a lead the agent cannot write well for does not block the queue", () =
     // No status change and no archive, so the lead stays uncontacted and the
     // agent writes a fresh email once the cooldown passes.
     const qualityBranch = code(
-      RUN.slice(RUN.indexOf("if (qualityHold) {"), RUN.indexOf("if (approvalMode) {")),
+      RUN.slice(RUN.indexOf("if (qualityHold) {"), RUN.indexOf("if (approvalMode || heldForResearch) {")),
     );
     expect(qualityBranch).not.toContain("lead_status");
     expect(qualityBranch).not.toContain("last_contacted_at");

@@ -194,6 +194,10 @@ serve(async (req) => {
 
     const companyContextRaw = str(parsed.company_context, 1200);
     const companyContextCheck = checkGrounded(companyContextRaw, groundingSources);
+    const personaRaw = str(parsed.persona, 600);
+    const personaCheck = checkGrounded(personaRaw, groundingSources);
+    const instructionsRaw = str(parsed.role_instructions, 1200);
+    const instructionsCheck = checkGrounded(instructionsRaw, groundingSources);
     const rawValueProps = Array.isArray(parsed.value_props)
       ? parsed.value_props.filter((v: unknown): v is string => typeof v === "string" && !!v.trim())
           .slice(0, 4)
@@ -211,6 +215,12 @@ serve(async (req) => {
     if (droppedValueProps.length > 0) {
       console.warn(`[build-agent] dropped ${droppedValueProps.length} ungrounded value prop(s)`);
     }
+    if (!personaCheck.grounded && personaRaw) {
+      console.warn(`[build-agent] dropped ungrounded persona (${personaCheck.reason})`);
+    }
+    if (!instructionsCheck.grounded && instructionsRaw) {
+      console.warn(`[build-agent] dropped ungrounded role_instructions (${instructionsCheck.reason})`);
+    }
 
     // The plan's real daily send cap, not a number the model picked. A build
     // showing an allowance the account will never be permitted to send is a
@@ -221,10 +231,10 @@ serve(async (req) => {
       agent_name: str(parsed.agent_name, 40) || "Custom agent",
       role,
       tone: TONES.includes(parsed.tone) ? parsed.tone : "professional",
-      persona: str(parsed.persona, 600),
+      persona: personaCheck.grounded ? personaRaw : "",
       company_context: companyContextCheck.grounded ? companyContextRaw : "",
       value_props: groundedValueProps,
-      role_instructions: str(parsed.role_instructions, 1200),
+      role_instructions: instructionsCheck.grounded ? instructionsRaw : "",
       allowed_tools: role === "custom" ? cappedTools : null,
       prospecting_job_title: str(parsed.prospecting_job_title, 120),
       prospecting_industry: str(parsed.prospecting_industry, 120),

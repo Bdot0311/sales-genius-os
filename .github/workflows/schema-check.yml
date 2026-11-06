@@ -175,6 +175,38 @@ jobs:
       - name: Unit tests
         run: npm test
 
+  # The credit and send races are only visible when two transactions hit one
+  # row. This job boots a throwaway Postgres, with no production secret, and
+  # runs the file that talks to it. The main test job does not have that
+  # database, so those assertions return there instead of failing the suite.
+  audit-db:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: audit
+          POSTGRES_PASSWORD: audit
+          POSTGRES_DB: audit_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U audit -d audit_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund
+      - name: Local database contention tests
+        env:
+          AUDIT_PG_URL: postgresql://audit:audit@localhost:5432/audit_test
+          AUDIT_PG_REQUIRED: "1"
+        run: npx vitest run src/lib/runtime-guards.test.ts
+
   # generate-email injects the GTM skills into its prompt by importing
   # _shared/skills.generated.ts, which is compiled from .claude/skills. Editing
   # a skill without rebuilding leaves the deployed prompt on the old text — the
