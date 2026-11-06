@@ -1,5 +1,6 @@
 import { Mail, Clock, ExternalLink, MessageSquare } from "lucide-react";
 import { Link } from "react-router-dom";
+import { PUBLIC_DOCS_URL } from "@/lib/public-api";
 
 const accentColor = "hsl(261 75% 65%)";
 const cardStyle = {
@@ -70,15 +71,15 @@ export const ContactSupport = () => {
             <p className="text-sm mb-4" style={{ color: "hsl(0 0% 100% / 0.55)" }}>
               Technical docs for developers
             </p>
-            <Link
-              to="/api-docs"
+            <a
+              href={PUBLIC_DOCS_URL}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors"
               style={{ background: "hsl(261 75% 50% / 0.08)", border: "1px solid hsl(261 75% 50% / 0.2)", color: "hsl(0 0% 85%)" }}
               onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "hsl(261 75% 50% / 0.4)")}
               onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "hsl(261 75% 50% / 0.2)")}
             >
               View API Docs
-            </Link>
+            </a>
           </div>
 
           {/* Request Feature */}

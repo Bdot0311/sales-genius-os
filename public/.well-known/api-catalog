@@ -11,7 +11,7 @@
       ],
       "service-doc": [
         {
-          "href": "https://outreign.io/api-docs",
+          "href": "https://docs.outreign.io",
           "title": "OutReign API documentation",
           "type": "text/html"
         }
@@ -64,7 +64,7 @@
       ],
       "service-doc": [
         {
-          "href": "https://outreign.io/connect",
+          "href": "https://docs.outreign.io/developer-docs/mcp/connect",
           "title": "Connect an AI assistant to OutReign",
           "type": "text/html"
         }

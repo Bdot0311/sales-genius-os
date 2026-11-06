@@ -1,0 +1,39 @@
+---
+title: "Connect an AI assistant"
+description: "Set up Claude, ChatGPT or another remote MCP client."
+---
+
+Use this server URL:
+
+```text
+https://api.outreign.io/mcp
+```
+
+## Claude
+
+1. Open Claude's [custom connectors](https://claude.ai/customize/connectors?modal=add-custom-connector).
+2. Name the connector **OutReign** and enter the server URL above.
+3. Sign in to OutReign when prompted and approve access.
+4. Enable the connector in your conversation.
+5. Start with a read-only request: **“List my recent OutReign leads.”**
+
+Custom connector availability depends on your Claude account and workspace settings.
+
+## ChatGPT
+
+1. Open ChatGPT's settings for apps/connectors. Enable developer mode if your account requires it for custom MCP connections.
+2. Add a custom connector named **OutReign**, using the URL above and OAuth authentication.
+3. Complete OutReign sign-in and consent.
+4. Enable OutReign in a new conversation and ask it to list your saved leads.
+
+ChatGPT's menu names and developer-mode availability depend on its current plan and workspace controls.
+
+## Other clients
+
+Use a client that supports remote Streamable HTTP and OAuth with PKCE. Configure the server URL, then let the client perform discovery and consent. A client that only supports local stdio servers or static API keys cannot use this connection directly.
+
+## Refresh and revoke
+
+After tool updates, refresh or reconnect OutReign and start a new conversation. Clients may cache tool definitions. To stop an assistant's access, revoke the authorized connection in your OutReign account settings and remove it from the assistant.
+
+If sign-in is denied, check both OutReign account access and your assistant workspace's policy. Never share an access token with support or paste it into a conversation.

@@ -1,0 +1,50 @@
+---
+title: "Outbound webhooks"
+description: "Receive OutReign lead and deal events at your own endpoint."
+---
+
+Outbound webhooks deliver subscribed OutReign events to your server or automation tool. They are separate from [inbound webhooks](/developer-docs/webhooks/inbound), which accept data into OutReign.
+
+## Create a subscription
+
+1. In OutReign, open **Settings → Webhooks → Outgoing**.
+2. Add a webhook name and your publicly reachable HTTPS receiver URL.
+3. Select the events you want to receive.
+4. Save the webhook and securely copy its signing secret.
+5. Use the webhook test control, then inspect the delivery log.
+
+Localhost, private networks and internal addresses are not valid production receivers. A test request can execute your receiver's automation; use a test destination before connecting a live workflow.
+
+## Request format
+
+OutReign sends an HTTP `POST` with JSON:
+
+```http
+Content-Type: application/json
+X-Webhook-Event: lead.created
+X-Webhook-Signature: HEX_HMAC_SHA256_SIGNATURE
+```
+
+```json
+{
+  "event": "lead.created",
+  "data": {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "company_name": "Example B2B Software",
+    "contact_email": "prospect@example.com"
+  },
+  "timestamp": 1793937600000
+}
+```
+
+This is an illustrative payload, not a real customer record. `timestamp` is Unix time in milliseconds. `data` varies by event; creation and update events contain the resulting record, while delete and stage-change events have event-specific fields.
+
+## Receiver checklist
+
+- Verify the [signature](/developer-docs/webhooks/security-and-retries) against the raw body before processing.
+- Return a successful `2xx` response after securely accepting the event.
+- Queue slow work instead of keeping the webhook request open.
+- Handle duplicates and do not assume event ordering.
+- Use delivery logs to diagnose non-success responses and retries.
+
+See the [event reference](/developer-docs/webhooks/events) for available subscriptions.
