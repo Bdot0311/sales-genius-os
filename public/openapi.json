@@ -179,7 +179,6 @@
                 "linkedin_url": "https://www.linkedin.com/in/jordanlee",
                 "lead_status": "active",
                 "engagement_state": "new",
-                "pipeline_stage": "new",
                 "source": "api"
               }
             }
@@ -281,11 +280,12 @@
                     "linkedin_url": "https://www.linkedin.com/in/jordanlee",
                     "lead_status": "active",
                     "engagement_state": "new",
-                    "pipeline_stage": "new",
                     "source": "api"
                   },
                   {
-                    "company_name": "Missing contact name Inc"
+                    "contact_name": "Sam Ortiz",
+                    "company_name": "Brightline Labs",
+                    "contact_email": "sam@brightline.dev"
                   }
                 ]
               }
@@ -476,7 +476,7 @@
                 "$ref": "#/components/schemas/LeadUpdate"
               },
               "example": {
-                "pipeline_stage": "contacted",
+                "engagement_state": "contacted",
                 "notes": "Sent intro on Nov 5."
               }
             }
