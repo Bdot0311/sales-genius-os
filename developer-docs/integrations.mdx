@@ -1,0 +1,28 @@
+---
+title: "Automation and integrations"
+description: "Connect HTTP automation tools or use the native integrations in OutReign."
+---
+
+## Zapier, Make and n8n
+
+Use an HTTP request action to call the REST API:
+
+1. Set the method and URL from the API reference.
+2. Add `X-API-Key` using the automation tool's credential store.
+3. For writes, select JSON and send only the documented request fields.
+4. Map the JSON response into your next step.
+5. Handle errors and usage limits before allowing automatic retries.
+
+Start with a read-only call to `/leads`. Test writes against a record you control before enabling a production automation.
+
+To start an automation from an OutReign event, configure an [outbound webhook](/developer-docs/webhooks/overview). To bring an external event into OutReign, use an [inbound webhook](/developer-docs/webhooks/inbound). A Zapier webhook URL is not an OutReign API key.
+
+## Native connections
+
+OutReign's **Integrations** page supports Gmail, HubSpot, Salesforce, Slack, Calendly and Zapier. Use each provider's connection dialog; OAuth credentials and permission requirements differ by provider.
+
+The REST API does not expose every action available in the app or every provider's API. Do not send a REST API key to a third-party provider's endpoint.
+
+## AI assistants
+
+For Claude, ChatGPT or another compatible assistant, use [MCP](/developer-docs/mcp/connect), not an HTTP automation built around a shared API key.

@@ -1,0 +1,33 @@
+---
+title: "Errors and usage limits"
+description: "Handle authentication, plan restrictions, quotas and failures safely."
+---
+
+## Read the status and body
+
+Parse the JSON body as well as the HTTP status. Responses may contain an `error` even when an upstream operation was handled without a transport failure.
+
+| Status | Meaning / action |
+| --- | --- |
+| `400` | Check the request body and required fields. |
+| `401` | Check the API key, or reconnect an MCP OAuth session. |
+| `403` | Check plan access or another authorization restriction. |
+| `404` | Check the endpoint and that the resource belongs to the account. |
+| `410` | The legacy workflows endpoint is retired. |
+| `429` | Pause requests; the current usage allowance has been reached. |
+| `500` | The operation failed; inspect the error and avoid immediate write retries. |
+
+## Rate-limit headers
+
+REST responses that pass the rate check include `X-RateLimit-Remaining` and `X-RateLimit-Reset`. Rate-limit rejections also include these headers. Read them when present; early authentication failures may not include them.
+
+Plan limits differ by tier. Check your current allowance in OutReign and on the [pricing page](https://outreign.io/pricing). API request allowance, MCP call allowance and feature-specific credits are not interchangeable balances.
+
+## Retry safely
+
+- Back off after rate-limit and transient service errors.
+- Do not automatically retry authentication failures with the same invalid credential.
+- Do not assume write requests are idempotent. After an ambiguous timeout, read the resource back before repeating a create, import or other write.
+- Avoid running enrichment or generation repeatedly just to poll progress; these operations may consume allowance.
+
+No public idempotency-key contract is documented for the REST API. Implement reconciliation in your integration rather than assuming duplicate writes will be ignored.

@@ -1,0 +1,64 @@
+---
+title: "Your first API request"
+description: "Create an API key and read saved leads without changing your data."
+---
+
+## 1. Create an API key
+
+Sign in to [OutReign](https://outreign.io/dashboard), open **Settings → API Keys**, and create a key. Copy it when shown and keep it in your application's secret storage.
+
+Your account must have API access. The key represents its owner, so requests operate on that owner's data.
+
+## 2. Read your saved leads
+
+Set `OUTREIGN_API_KEY` in your local environment or secret manager. This request only reads data; it does not send email or create a lead.
+
+<CodeGroup>
+```bash cURL
+curl --fail-with-body \
+  'https://api.outreign.io/rest-api/leads?limit=10&offset=0' \
+  -H "X-API-Key: $OUTREIGN_API_KEY"
+```
+
+```javascript JavaScript (server-side)
+const response = await fetch(
+  'https://api.outreign.io/rest-api/leads?limit=10&offset=0',
+  { headers: { 'X-API-Key': process.env.OUTREIGN_API_KEY } }
+);
+const result = await response.json();
+if (!response.ok || result.error) {
+  throw new Error(result.error || `Request failed: ${response.status}`);
+}
+console.log(result.data);
+```
+
+```python Python
+import os
+import requests
+
+response = requests.get(
+    "https://api.outreign.io/rest-api/leads",
+    params={"limit": 10, "offset": 0},
+    headers={"X-API-Key": os.environ["OUTREIGN_API_KEY"]},
+    timeout=30,
+)
+response.raise_for_status()
+result = response.json()
+if result.get("error"):
+    raise RuntimeError(result["error"])
+print(result["data"])
+```
+</CodeGroup>
+
+## 3. Interpret the response
+
+List responses contain a `data` array and a `count`. An empty `data` array is valid when the account has no matching saved leads. Reading saved leads is not a new prospect search.
+
+Inspect both the HTTP status and the JSON body for errors. Keep your key out of logs and screenshots.
+
+## Next steps
+
+- [Authentication and key rotation](/developer-docs/authentication)
+- [Pagination and filters](/developer-docs/pagination)
+- [API reference](/developer-docs/api-overview)
+- [Connect an AI assistant instead](/developer-docs/mcp/connect)

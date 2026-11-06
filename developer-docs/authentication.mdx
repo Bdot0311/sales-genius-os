@@ -1,0 +1,37 @@
+---
+title: "Authentication"
+description: "API keys for REST, delegated OAuth for MCP, and separate webhook secrets."
+---
+
+## REST API: API key
+
+Send your key on every REST request:
+
+```http
+X-API-Key: YOUR_OUTREIGN_API_KEY
+```
+
+Create and manage keys in **Settings → API Keys**. Missing, invalid, inactive or expired keys are rejected. A REST API key is not an MCP OAuth token, and the REST API does not use a Bearer token in place of `X-API-Key`.
+
+### Rotate a key
+
+Create a replacement key, update your application's secret storage, and verify a read-only request. Then deactivate the old key. Do not revoke a working key before its replacement is configured.
+
+## MCP: delegated OAuth
+
+Use an OAuth-capable MCP client. The client discovers the authorization service, opens OutReign sign-in and consent, and exchanges an authorization code with PKCE (`S256`). MCP requests use `Authorization: Bearer …` after consent.
+
+Published identity scopes are `openid`, `profile` and `email`. These identify the approving user; they are not REST resource permissions. Tool availability and usage remain subject to the account's plan and server-side checks.
+
+Do not manually construct authorization-service URLs or paste tokens into chat. Use discovery from `https://api.outreign.io/mcp`. See [assistant setup](/developer-docs/mcp/connect).
+
+## Webhook secrets
+
+Outbound webhook signing secrets and inbound webhook tokens are separate from REST API keys and MCP OAuth tokens. Use the credential provided for the specific webhook. See [webhook security](/developer-docs/webhooks/security-and-retries).
+
+## Protect credentials
+
+- Keep credentials on the server or in a trusted automation tool's secure credential store.
+- Never commit credentials to GitHub or include them in publicly served JavaScript.
+- Do not print authorization headers, keys or tokens in error logs.
+- Revoke a credential if it has been exposed, then reconnect or rotate it.

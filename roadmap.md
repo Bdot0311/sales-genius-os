@@ -2,7 +2,13 @@
 
 - [x] Add root Mintlify configuration using the existing public API specification.
 - [x] Validate against Mintlify's official schema and discover all 21 API operations.
-- [ ] Complete Mintlify repository connection (requires the configuration on GitHub's default branch and user confirmation in Mintlify).
+- [x] Complete Mintlify repository connection at https://docs.outreign.io.
+
+# Developer documentation
+
+- [ ] Add readable getting-started, authentication, API, MCP, webhook and integration guides alongside the existing API specification.
+- [ ] Point app links and AI discovery documentation to https://docs.outreign.io and preserve old documentation links.
+- [ ] Validate documentation configuration, references and app navigation; hosted changes wait for Mintlify's GitHub deployment.
 
 # DFY sales-model questions
 
