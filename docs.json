@@ -20,6 +20,18 @@
   "appearance": {
     "default": "dark"
   },
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/developer-docs/introduction",
+      "permanent": false
+    },
+    {
+      "source": "/introduction",
+      "destination": "/developer-docs/introduction",
+      "permanent": false
+    }
+  ],
   "api": {
     "params": {
       "expanded": "closed"
