@@ -1,7 +1,7 @@
 # Retire built-in API documentation
 
 - [x] Remove the duplicate API reference and developer help category/articles; keep external documentation links and legacy redirects.
-- [ ] Verify help navigation and retired-page redirects.
+- [x] Verify help navigation and retired-page redirects; both regression tests pass and preview builds cleanly.
 
 # Mintlify repository setup
 
