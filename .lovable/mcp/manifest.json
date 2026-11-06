@@ -852,6 +852,66 @@
         "outputSchema": null
       },
       {
+        "name": "send_email",
+        "title": "Send an email",
+        "description": "Send an email now from the user's connected Gmail mailbox, exactly as Outreach Studio does. Applies the app's send limits, suppression list and quality check, and logs the email to Unified Inbox. Only call after the user explicitly approves the final recipient, subject and body.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "to": {
+              "type": "string",
+              "format": "email",
+              "maxLength": 320,
+              "description": "Recipient email address."
+            },
+            "subject": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            },
+            "body": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 50000,
+              "description": "Email body (plain text or simple HTML)."
+            },
+            "lead_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Saved lead this email is for."
+            },
+            "thread_id": {
+              "type": "string",
+              "maxLength": 200,
+              "description": "Gmail thread id when replying in an existing conversation."
+            },
+            "mailbox_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Specific connected mailbox to send from; defaults to the most recent."
+            },
+            "append_signature": {
+              "type": "boolean",
+              "description": "Append the user's saved email signature."
+            }
+          },
+          "required": [
+            "to",
+            "subject",
+            "body"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
         "name": "update_deal",
         "title": "Update deal",
         "description": "Update fields on an existing pipeline deal owned by the signed-in user.",

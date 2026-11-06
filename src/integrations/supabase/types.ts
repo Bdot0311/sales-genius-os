@@ -2131,6 +2131,21 @@ export type Database = {
           },
         ]
       }
+      outbound_durable_runs: {
+        Row: {
+          enabled: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          enabled?: boolean
+          user_id: string
+        }
+        Update: {
+          enabled?: boolean
+        }
+        Relationships: []
+      }
       outbound_runs: {
         Row: {
           created_at: string
@@ -2161,6 +2176,7 @@ export type Database = {
           phase: string
           run_id: string
           status: string
+          subject_key: string
           updated_at: string
           user_id: string
         }

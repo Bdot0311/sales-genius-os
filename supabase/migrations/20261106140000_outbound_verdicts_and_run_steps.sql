@@ -54,14 +54,37 @@ CREATE TABLE IF NOT EXISTS public.outbound_run_steps (
     CHECK (phase IN ('research', 'draft', 'score', 'hold', 'send')),
   CONSTRAINT outbound_run_steps_status_check
     CHECK (status IN ('open', 'leased', 'done', 'cancelled', 'failed')),
-  CONSTRAINT outbound_run_steps_unique UNIQUE (user_id, lead_id, run_id, phase)
+  subject_key uuid,
+  CONSTRAINT outbound_run_steps_subject_unique UNIQUE (user_id, subject_key, run_id, phase)
 );
 
 ALTER TABLE public.outbound_run_steps ADD COLUMN IF NOT EXISTS payload jsonb;
+ALTER TABLE public.outbound_run_steps ADD COLUMN IF NOT EXISTS subject_key uuid;
+UPDATE public.outbound_run_steps SET subject_key = lead_id WHERE subject_key IS NULL;
+ALTER TABLE public.outbound_run_steps ALTER COLUMN subject_key SET NOT NULL;
+ALTER TABLE public.outbound_run_steps DROP CONSTRAINT IF EXISTS outbound_run_steps_unique;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'outbound_run_steps_subject_unique'
+  ) THEN
+    ALTER TABLE public.outbound_run_steps
+      ADD CONSTRAINT outbound_run_steps_subject_unique
+      UNIQUE (user_id, subject_key, run_id, phase);
+  END IF;
+END $$;
 
 -- One open run per account. open_outbound_run creates or returns it under a
 -- lock, so two overlapping agent-run calls share the id and then the step
 -- lease. A new id is issued only after this row is closed or cancelled.
+-- Default off. No rows are inserted. Rollout-off keeps the in-memory loop.
+-- Enabled mode must not send when the step store is unavailable.
+CREATE TABLE IF NOT EXISTS public.outbound_durable_runs (
+  user_id uuid PRIMARY KEY,
+  enabled boolean NOT NULL DEFAULT false,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS public.outbound_runs (
   id uuid PRIMARY KEY,
   user_id uuid NOT NULL,
@@ -94,6 +117,7 @@ ALTER TABLE public.outbound_verdicts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.outbound_gate_canary ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.outbound_run_steps ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.outbound_runs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.outbound_durable_runs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.agent_tool_receipts ENABLE ROW LEVEL SECURITY;
 
 DO $$
@@ -102,12 +126,14 @@ BEGIN
   EXECUTE 'REVOKE ALL ON TABLE public.outbound_gate_canary FROM PUBLIC';
   EXECUTE 'REVOKE ALL ON TABLE public.outbound_run_steps FROM PUBLIC';
   EXECUTE 'REVOKE ALL ON TABLE public.outbound_runs FROM PUBLIC';
+  EXECUTE 'REVOKE ALL ON TABLE public.outbound_durable_runs FROM PUBLIC';
   EXECUTE 'REVOKE ALL ON TABLE public.agent_tool_receipts FROM PUBLIC';
   IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
     EXECUTE 'REVOKE ALL ON TABLE public.outbound_verdicts FROM anon';
     EXECUTE 'REVOKE ALL ON TABLE public.outbound_gate_canary FROM anon';
     EXECUTE 'REVOKE ALL ON TABLE public.outbound_run_steps FROM anon';
     EXECUTE 'REVOKE ALL ON TABLE public.outbound_runs FROM anon';
+    EXECUTE 'REVOKE ALL ON TABLE public.outbound_durable_runs FROM anon';
     EXECUTE 'REVOKE ALL ON TABLE public.agent_tool_receipts FROM anon';
   END IF;
   IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
@@ -115,6 +141,7 @@ BEGIN
     EXECUTE 'REVOKE ALL ON TABLE public.outbound_gate_canary FROM authenticated';
     EXECUTE 'REVOKE ALL ON TABLE public.outbound_run_steps FROM authenticated';
     EXECUTE 'REVOKE ALL ON TABLE public.outbound_runs FROM authenticated';
+    EXECUTE 'REVOKE ALL ON TABLE public.outbound_durable_runs FROM authenticated';
     EXECUTE 'REVOKE ALL ON TABLE public.agent_tool_receipts FROM authenticated';
   END IF;
 END $$;
@@ -134,6 +161,8 @@ BEGIN
     EXECUTE 'CREATE POLICY outbound_run_steps_owner_read ON public.outbound_run_steps FOR SELECT USING (user_id = auth.uid())';
     EXECUTE 'DROP POLICY IF EXISTS outbound_runs_owner_read ON public.outbound_runs';
     EXECUTE 'CREATE POLICY outbound_runs_owner_read ON public.outbound_runs FOR SELECT USING (user_id = auth.uid())';
+    EXECUTE 'DROP POLICY IF EXISTS outbound_durable_runs_owner_read ON public.outbound_durable_runs';
+    EXECUTE 'CREATE POLICY outbound_durable_runs_owner_read ON public.outbound_durable_runs FOR SELECT USING (user_id = auth.uid())';
     EXECUTE 'DROP POLICY IF EXISTS agent_tool_receipts_owner_read ON public.agent_tool_receipts';
     EXECUTE 'CREATE POLICY agent_tool_receipts_owner_read ON public.agent_tool_receipts FOR SELECT USING (user_id = auth.uid())';
   END IF;
@@ -225,6 +254,7 @@ AS $$
 $$;
 
 DROP FUNCTION IF EXISTS public.claim_agent_run_step(uuid, uuid, uuid, text, text, integer, integer);
+DROP FUNCTION IF EXISTS public.claim_agent_run_step(uuid, uuid, uuid, text, text, integer, integer, uuid);
 
 CREATE OR REPLACE FUNCTION public.claim_agent_run_step(
   p_user_id uuid,
@@ -233,7 +263,8 @@ CREATE OR REPLACE FUNCTION public.claim_agent_run_step(
   p_phase text,
   p_owner text,
   p_lease_seconds integer,
-  p_max_attempts integer
+  p_max_attempts integer,
+  p_subject_key uuid DEFAULT NULL
 ) RETURNS TABLE (step_id uuid, step_status text, attempt_count integer, payload jsonb)
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -242,13 +273,14 @@ AS $$
 DECLARE
   _row public.outbound_run_steps%ROWTYPE;
 BEGIN
-  INSERT INTO public.outbound_run_steps (user_id, lead_id, run_id, phase, status)
-  VALUES (p_user_id, p_lead_id, p_run_id, p_phase, 'open')
-  ON CONFLICT (user_id, lead_id, run_id, phase) DO NOTHING;
+  INSERT INTO public.outbound_run_steps (user_id, lead_id, run_id, phase, status, subject_key)
+  VALUES (p_user_id, p_lead_id, p_run_id, p_phase, 'open', COALESCE(p_subject_key, p_lead_id))
+  ON CONFLICT (user_id, subject_key, run_id, phase) DO NOTHING;
 
   SELECT * INTO _row
     FROM public.outbound_run_steps
-   WHERE user_id = p_user_id AND lead_id = p_lead_id
+   WHERE user_id = p_user_id
+     AND subject_key = COALESCE(p_subject_key, p_lead_id)
      AND run_id = p_run_id AND phase = p_phase
    FOR UPDATE;
 
@@ -441,6 +473,34 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION public.outbound_durable_enabled(p_user_id uuid)
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT COALESCE(
+    (SELECT enabled FROM public.outbound_durable_runs WHERE user_id = p_user_id),
+    false
+  );
+$$;
+
+-- Receipts for this account and this run only. A resumed request loads these
+-- instead of trusting the empty memory of a new HTTP call.
+CREATE OR REPLACE FUNCTION public.list_agent_tool_receipts(
+  p_user_id uuid,
+  p_run_id uuid
+) RETURNS TABLE (tool_name text, status text, detail text)
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT tool_name, status, detail
+    FROM public.agent_tool_receipts
+   WHERE user_id = p_user_id AND run_id = p_run_id
+   ORDER BY created_at;
+$$;
+
 -- These functions take a user id and bypass RLS. Authenticated callers must
 -- not invoke them; agent-run and send-email call them with the service role
 -- after auth.getUser. A missing service_role (local Postgres) still leaves
@@ -454,7 +514,9 @@ BEGIN
     'public.attach_verdict_to_send(uuid, uuid, uuid)',
     'public.latest_outbound_verdict(uuid, text)',
     'public.outbound_canary_enabled(uuid)',
-    'public.claim_agent_run_step(uuid, uuid, uuid, text, text, integer, integer)',
+    'public.claim_agent_run_step(uuid, uuid, uuid, text, text, integer, integer, uuid)',
+    'public.outbound_durable_enabled(uuid)',
+    'public.list_agent_tool_receipts(uuid, uuid)',
     'public.complete_agent_run_step(uuid, text, jsonb)',
     'public.agent_step_owned(uuid, text)',
     'public.open_outbound_run(uuid)',

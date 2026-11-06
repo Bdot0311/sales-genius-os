@@ -30,6 +30,7 @@ export interface StepStore {
     owner: string,
     leaseSeconds: number,
     maxAttempts: number,
+    subjectKey?: string,
   ): Promise<StepClaim>;
   stillOwned(stepId: string, owner: string): Promise<boolean>;
   complete(stepId: string, owner: string, payload: Record<string, unknown> | null): Promise<boolean>;
@@ -53,7 +54,11 @@ export interface AdvanceResult {
   effects: LeadPhase[];
   stopped: string | null;
   hold: boolean;
+  payloads: Partial<Record<LeadPhase, Record<string, unknown> | null>>;
 }
+
+/** Reply work uses draft, score, hold, and send. It does not research. */
+export const REPLY_PHASES: LeadPhase[] = ["draft", "score", "hold", "send"];
 
 export function rpcStepStore(client: { rpc: (fn: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown }> }): StepStore {
   const row = (data: unknown): StepClaim => {
@@ -67,7 +72,7 @@ export function rpcStepStore(client: { rpc: (fn: string, args: Record<string, un
     };
   };
   return {
-    claim: async (userId, leadId, runId, phase, owner, leaseSeconds, maxAttempts) => {
+    claim: async (userId, leadId, runId, phase, owner, leaseSeconds, maxAttempts, subjectKey) => {
       const { data } = await client.rpc("claim_agent_run_step", {
         p_user_id: userId,
         p_lead_id: leadId,
@@ -76,6 +81,7 @@ export function rpcStepStore(client: { rpc: (fn: string, args: Record<string, un
         p_owner: owner,
         p_lease_seconds: leaseSeconds,
         p_max_attempts: maxAttempts,
+        p_subject_key: subjectKey ?? leadId,
       });
       return row(data);
     },
@@ -109,12 +115,15 @@ function asPayload(value: Record<string, unknown> | void | null): Record<string,
  */
 export async function runPhase(
   store: StepStore | null,
-  ids: { userId: string; leadId: string; runId: string; owner: string },
+  ids: { userId: string; leadId: string; runId: string; owner: string; subjectKey?: string; requireDurable?: boolean },
   phase: LeadPhase,
   effect: (ctx: PhaseContext) => Promise<Record<string, unknown> | void>,
-  limits?: { leaseSeconds?: number; maxAttempts?: number },
+  limits?: { leaseSeconds?: number; maxAttempts?: number; requireDurable?: boolean },
 ): Promise<{ action: "ran" | "skipped" | "stopped"; payload: Record<string, unknown> | null; status: string }> {
   if (!store) {
+    if (limits?.requireDurable || ids.requireDurable) {
+      return { action: "stopped", payload: null, status: "durable_unavailable" };
+    }
     const payload = asPayload(await effect({ owned: async () => true }));
     return { action: "ran", payload, status: "in_memory" };
   }
@@ -126,6 +135,7 @@ export async function runPhase(
     ids.owner,
     limits?.leaseSeconds ?? 120,
     limits?.maxAttempts ?? 3,
+    ids.subjectKey ?? ids.leadId,
   );
   if (claim.status === "done") return { action: "skipped", payload: claim.payload, status: "done" };
   if (!shouldExecuteStep(claim.status)) return { action: "stopped", payload: claim.payload, status: claim.status };
@@ -148,32 +158,100 @@ export async function advanceLead(input: {
   maxAttempts?: number;
   effects: LeadEffects;
 }): Promise<AdvanceResult> {
-  const effects: LeadPhase[] = [];
-  let hold = false;
-  const ids = { userId: input.userId, leadId: input.leadId, runId: input.runId, owner: input.owner };
-  const limits = { leaseSeconds: input.leaseSeconds, maxAttempts: input.maxAttempts };
-
-  for (const phase of LEAD_PHASES) {
-    if ((phase === "hold" && !hold) || (phase === "send" && hold)) {
-      const skipped = await runPhase(input.store, ids, phase, async () => ({ skipped: true }), limits);
-      if (skipped.action === "stopped") return { effects, stopped: skipped.status, hold };
-      continue;
-    }
-    const ran = await runPhase(input.store, ids, phase, async () => {
+  return walkPhases({
+    phases: LEAD_PHASES,
+    store: input.store,
+    ids: { userId: input.userId, leadId: input.leadId, runId: input.runId, owner: input.owner },
+    limits: { leaseSeconds: input.leaseSeconds, maxAttempts: input.maxAttempts },
+    run: async (phase) => {
       if (phase === "score") {
         const scored = await input.effects.score();
-        hold = scored.hold;
         return { hold: scored.hold };
       }
       return asPayload(await input.effects[phase]()) ?? {};
-    }, limits);
+    },
+  });
+}
+
+export interface ReplyEffects {
+  draft: () => Promise<Record<string, unknown> | void>;
+  score: () => Promise<{ hold: boolean; approval?: boolean; body?: string }>;
+  hold: (score: Record<string, unknown> | null) => Promise<Record<string, unknown> | void>;
+  send: (ctx: PhaseContext, prior: AdvanceResult["payloads"]) => Promise<{ ok: boolean; done?: boolean; submitted?: boolean }>;
+}
+
+/**
+ * Draft, score, hold, and send for one reply. Research is not a reply phase.
+ * `subjectKey` is the sent-email id, so a reply does not reuse the lead's
+ * first-touch send step. `requireDurable` refuses to run when there is no store.
+ * A cancel or a lost lease after `submitted: true` does not recall the provider.
+ */
+export async function advanceReply(input: {
+  store: StepStore | null;
+  userId: string;
+  leadId: string;
+  subjectKey: string;
+  runId: string;
+  owner: string;
+  requireDurable?: boolean;
+  leaseSeconds?: number;
+  maxAttempts?: number;
+  effects: ReplyEffects;
+}): Promise<AdvanceResult> {
+  return walkPhases({
+    phases: REPLY_PHASES,
+    store: input.store,
+    ids: {
+      userId: input.userId,
+      leadId: input.leadId,
+      subjectKey: input.subjectKey,
+      runId: input.runId,
+      owner: input.owner,
+    },
+    limits: {
+      leaseSeconds: input.leaseSeconds,
+      maxAttempts: input.maxAttempts,
+      requireDurable: input.requireDurable,
+    },
+    run: async (phase, ctx, prior) => {
+      if (phase === "score") {
+        const scored = await input.effects.score();
+        return { hold: scored.hold, approval: scored.approval === true, body: scored.body ?? "" };
+      }
+      if (phase === "send") return input.effects.send(ctx, prior);
+      if (phase === "draft") return asPayload(await input.effects.draft()) ?? {};
+      return asPayload(await input.effects.hold(prior.score ?? null)) ?? {};
+    },
+  });
+}
+
+async function walkPhases(input: {
+  phases: LeadPhase[];
+  store: StepStore | null;
+  ids: { userId: string; leadId: string; runId: string; owner: string; subjectKey?: string };
+  limits: { leaseSeconds?: number; maxAttempts?: number; requireDurable?: boolean };
+  run: (phase: LeadPhase, ctx: PhaseContext, prior: AdvanceResult["payloads"]) => Promise<Record<string, unknown> | void>;
+}): Promise<AdvanceResult> {
+  const effects: LeadPhase[] = [];
+  const payloads: AdvanceResult["payloads"] = {};
+  let hold = false;
+  for (const phase of input.phases) {
+    if ((phase === "hold" && !hold) || (phase === "send" && hold)) {
+      const skipped = await runPhase(input.store, input.ids, phase, async () => ({ skipped: true }), input.limits);
+      payloads[phase] = skipped.payload;
+      if (skipped.action === "stopped") return { effects, stopped: skipped.status, hold, payloads };
+      continue;
+    }
+    const ran = await runPhase(input.store, input.ids, phase, async (ctx) => input.run(phase, ctx, payloads), input.limits);
+    payloads[phase] = ran.payload;
     if (ran.action === "skipped" && phase === "score" && ran.payload?.hold === true) hold = true;
+    if (ran.action === "ran" && phase === "score" && ran.payload?.hold === true) hold = true;
     if (ran.status === "left_open") {
       effects.push(phase);
-      return { effects, stopped: "left_open", hold };
+      return { effects, stopped: "left_open", hold, payloads };
     }
-    if (ran.action === "stopped") return { effects, stopped: ran.status, hold };
+    if (ran.action === "stopped") return { effects, stopped: ran.status, hold, payloads };
     if (ran.action === "ran") effects.push(phase);
   }
-  return { effects, stopped: null, hold };
+  return { effects, stopped: null, hold, payloads };
 }

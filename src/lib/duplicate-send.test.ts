@@ -109,8 +109,8 @@ describe("a reply in an existing thread is not a duplicate", () => {
 
   it("the agent's three reply paths pass it too", () => {
     const RUN = readFileSync("supabase/functions/agent-run/index.ts", "utf8");
-    const threaded = RUN.split("threadId: reply.gmailThreadId").length - 1;
-    expect(threaded).toBe(3);
+    expect(RUN.split("gmailThreadId: reply.gmailThreadId").length - 1).toBe(3);
+    expect(RUN).toContain("threadId: input.gmailThreadId");
   });
 
   it("an approved reply is allowed through as a continuation", () => {

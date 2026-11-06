@@ -47,6 +47,33 @@ export function guardRunSummary(summary: string, receipts: ToolReceipt[]): strin
  * `ok` is the only status that may be described as delivered. Approval,
  * an attempt, a failure, and a provider accept that was not stored are not.
  */
+export function receiptKey(receipt: ToolReceipt): string {
+  return `${receipt.toolName}\0${receipt.status}\0${receipt.detail ?? ""}`;
+}
+
+/**
+ * One row per tool, status, and detail. An ok receipt for a detail replaces
+ * an earlier failed, attempted, approved, or unpersisted receipt for that
+ * same detail, so a retry is not counted as both a failure and a delivery.
+ * Two ok rows for the same detail count once.
+ */
+export function reconcileReceipts(prior: ToolReceipt[], current: ToolReceipt[]): ToolReceipt[] {
+  const seen = new Set<string>();
+  const merged: ToolReceipt[] = [];
+  for (const receipt of [...prior, ...current]) {
+    const key = receiptKey(receipt);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(receipt);
+  }
+  const delivered = new Set(
+    merged.filter((receipt) => receipt.status === "ok").map((receipt) => `${receipt.toolName}\0${receipt.detail ?? ""}`),
+  );
+  return merged.filter((receipt) =>
+    receipt.status === "ok" || !delivered.has(`${receipt.toolName}\0${receipt.detail ?? ""}`)
+  );
+}
+
 export function classifyProviderSend(input: { ok: boolean; error?: unknown; code?: unknown }): ReceiptStatus {
   if (input.code === "accepted_unpersisted") return "provider_accepted_unpersisted";
   if (!input.ok || input.error) return "failed";

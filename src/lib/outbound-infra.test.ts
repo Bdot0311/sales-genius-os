@@ -1,12 +1,15 @@
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import postgres from "postgres";
 import { describe, expect, it } from "vitest";
 import { RUBRIC_SYSTEM_PROMPT } from "../../supabase/functions/check-email-rubric/prompt";
 import { outboundGateFindings } from "../../supabase/functions/_shared/quality-gate";
-import { advanceLead, runPhase, type StepStore } from "../../supabase/functions/_shared/lead-run";
+import { advanceLead, advanceReply, runPhase, type StepStore } from "../../supabase/functions/_shared/lead-run";
+import { appendSignatureToBody } from "../../supabase/functions/_shared/signature";
+import { htmlToPlainText } from "../../supabase/functions/_shared/plain-text";
 import { evaluateSend, shouldExecuteStep } from "../../supabase/functions/_shared/outbound-verdict";
 import { contentHash, rubricPromptHash, sha256Hex } from "../../supabase/functions/_shared/prompt-versions";
-import { buildAgentRunSummary, classifyProviderSend, guardRunSummary, type ToolReceipt } from "../../supabase/functions/_shared/run-receipts";
+import { buildAgentRunSummary, classifyProviderSend, guardRunSummary, reconcileReceipts, type ToolReceipt } from "../../supabase/functions/_shared/run-receipts";
 
 const USUALLY = "Freight brokers usually lose the second touch. The handoff after the first reply is where it dies.";
 const QUESTION = "How does follow-up work on your team after the first reply?";
@@ -37,8 +40,11 @@ describe("a changed body cannot reuse a passing verdict", () => {
         gateStatus: "clear",
         promptHash: "prompt-a",
         rubricPromptHash: "rubric-a",
+        userId: "account-a",
       },
+      persisted: true,
       canary: true,
+      userId: "account-a",
     });
     expect(decision.allow).toBe(false);
     expect(decision.reason).toBe("verdict_missing_or_stale");
@@ -51,7 +57,9 @@ describe("a changed body cannot reuse a passing verdict", () => {
       promptHash: "p",
       rubricPromptHash: "r",
       stored: null,
+      persisted: false,
       canary: false,
+      userId: "account-a",
     });
     expect(decision.allow).toBe(false);
     expect(decision.reason).toBe("live_gate");
@@ -67,12 +75,61 @@ describe("a changed body cannot reuse a passing verdict", () => {
       contentHash: bodyHash,
       promptHash: "gate",
       rubricPromptHash: first,
-      stored: { contentHash: bodyHash, gateStatus: "clear", promptHash: "gate", rubricPromptHash: second },
+      stored: { contentHash: bodyHash, gateStatus: "clear", promptHash: "gate", rubricPromptHash: second, userId: "account-a" },
+      persisted: true,
       canary: true,
+      userId: "account-a",
     });
     expect(a.allow).toBe(false);
     expect(a.reason).toBe("prompt_version_mismatch");
     expect(await rubricPromptHash()).toBe(first);
+  });
+
+  it("requires a persisted verdict for the signed body, and refuses a missing, stale, foreign, or wrong-version row", async () => {
+    const raw = QUESTION;
+    const signed = htmlToPlainText(appendSignatureToBody(raw, "<p>Alex<br>Example</p>"));
+    expect(signed).not.toBe(raw);
+    const signedHash = await contentHash("follow-up", signed);
+    const rawHash = await contentHash("follow-up", raw);
+    expect(signedHash).not.toBe(rawHash);
+    const current = {
+      liveBlocked: false,
+      contentHash: signedHash,
+      promptHash: "gate-current",
+      rubricPromptHash: "rubric-current",
+      canary: true,
+      userId: "account-a",
+    };
+    const matching = {
+      contentHash: signedHash,
+      gateStatus: "clear" as const,
+      promptHash: "gate-current",
+      rubricPromptHash: "rubric-current",
+      userId: "account-a",
+    };
+    expect(evaluateSend({ ...current, persisted: false, stored: null }).allow).toBe(false);
+    expect(evaluateSend({ ...current, persisted: false, stored: null }).reason).toBe("verdict_not_persisted");
+    expect(evaluateSend({
+      ...current,
+      persisted: true,
+      stored: { ...matching, contentHash: rawHash },
+    }).reason).toBe("verdict_missing_or_stale");
+    expect(evaluateSend({
+      ...current,
+      persisted: true,
+      stored: { ...matching, userId: "account-b" },
+    }).reason).toBe("verdict_wrong_account");
+    expect(evaluateSend({
+      ...current,
+      persisted: true,
+      stored: { ...matching, rubricPromptHash: "rubric-old" },
+    }).reason).toBe("prompt_version_mismatch");
+    expect(evaluateSend({ ...current, persisted: true, stored: matching })).toMatchObject({
+      allow: true,
+      reason: "verdict_matches",
+    });
+    const shadow = evaluateSend({ ...current, canary: false, persisted: false, stored: null });
+    expect(shadow).toMatchObject({ allow: true, reason: "live_gate_clear" });
   });
 });
 
@@ -123,6 +180,26 @@ describe("a receipt is not a completed send", () => {
     expect(classifyProviderSend({ ok: true })).toBe("ok");
     expect(classifyProviderSend({ ok: false })).toBe("failed");
   });
+
+  it("reloads a prior ok receipt once and does not promote an unpersisted accept", () => {
+    const prior: ToolReceipt[] = [
+      { toolName: "send_reply", status: "ok", detail: "a@b.co" },
+      { toolName: "send_reply", status: "provider_accepted_unpersisted", detail: "c@d.co" },
+    ];
+    const restarted = reconcileReceipts(prior, [{ toolName: "send_reply", status: "ok", detail: "a@b.co" }]);
+    const text = buildAgentRunSummary({
+      agentLabel: "Agent (full cycle)",
+      approvalMode: false,
+      leadsFound: 0,
+      outreachDrafted: 0,
+      threadsChecked: 1,
+      pendingApprovals: 0,
+      receipts: restarted,
+    });
+    expect(text).toContain("1 reply(ies) sent");
+    expect(text).not.toContain("2 reply");
+    expect(text).toContain("not counted as delivered");
+  });
 });
 
 describe("production wiring", () => {
@@ -136,7 +213,9 @@ describe("production wiring", () => {
     expect(RUN).toContain('rpc("open_outbound_run"');
     expect(RUN).toContain('rpc("close_outbound_run"');
     expect(RUN).toContain('rpc("cancel_agent_run"');
-    expect(RUN).toContain("replyExecution: \"in_memory\"");
+    expect(RUN).toContain("executeDurableReply");
+    expect(RUN).toContain('durableMode === "on" ? "leased_steps" : "in_memory"');
+    expect(RUN).toContain("list_agent_tool_receipts");
   });
 
   it("stores the scorer result for the signed plain text and still reserves the send", () => {
@@ -159,8 +238,8 @@ describe("the lead runner skips completed phases and will not send twice", () =>
   function memoryStore(): StepStore {
     const rows = new Map<string, { status: string; attempt: number; payload: Record<string, unknown> | null; owner: string | null; exp: number }>();
     return {
-      claim: async (userId, leadId, runId, phase, owner, leaseSeconds, maxAttempts) => {
-        const key = `${userId}:${leadId}:${runId}:${phase}`;
+      claim: async (userId, leadId, runId, phase, owner, leaseSeconds, maxAttempts, subjectKey?: string) => {
+        const key = `${userId}:${subjectKey ?? leadId}:${runId}:${phase}`;
         const row = rows.get(key) ?? { status: "open", attempt: 0, payload: null, owner: null, exp: 0 };
         if (row.status === "done" || row.status === "cancelled") {
           return { stepId: key, status: row.status, attemptCount: row.attempt, payload: row.payload };
@@ -237,10 +316,11 @@ type Pg = ReturnType<typeof postgres>;
 
 function pgStore(sql: Pg): StepStore {
   return {
-    claim: async (userId, leadId, runId, phase, owner, leaseSeconds, maxAttempts) => {
+    claim: async (userId, leadId, runId, phase, owner, leaseSeconds, maxAttempts, subjectKey?: string) => {
       const rows = await sql`
         SELECT * FROM public.claim_agent_run_step(
-          ${userId}::uuid, ${leadId}::uuid, ${runId}::uuid, ${phase}, ${owner}, ${leaseSeconds}, ${maxAttempts}
+          ${userId}::uuid, ${leadId}::uuid, ${runId}::uuid, ${phase}, ${owner}, ${leaseSeconds}, ${maxAttempts},
+          ${(subjectKey ?? leadId)}::uuid
         )`;
       const row = rows[0];
       return {
@@ -281,6 +361,116 @@ async function withPg(run: (sql: Pg) => Promise<void>) {
     await sql.end({ timeout: 2 });
   }
 }
+
+describe("reply phases on postgres reuse results and stay fenced", () => {
+  const replyEffects = (drafts: { n: number }, sends: { n: number }, submit?: { n: number }) => ({
+    draft: async () => {
+      drafts.n += 1;
+      return { body: "reply text" };
+    },
+    score: async () => ({ hold: false, body: "reply text" }),
+    hold: async () => {},
+    send: async (ctx: { owned: () => Promise<boolean> }) => {
+      if (!await ctx.owned()) return { ok: false, done: false as const, submitted: false };
+      if (submit) submit.n += 1;
+      sends.n += 1;
+      return { ok: true, submitted: true };
+    },
+  });
+
+  it("does not redraft a finished reply and does not reuse the lead's first-touch send", async () => {
+    await withPg(async (sql) => {
+      const store = pgStore(sql);
+      const userId = crypto.randomUUID();
+      const leadId = crypto.randomUUID();
+      const sentId = crypto.randomUUID();
+      const runId = crypto.randomUUID();
+      const drafts = { n: 0 };
+      const sends = { n: 0 };
+      await advanceLead({
+        store, userId, leadId, runId, owner: "a",
+        effects: {
+          research: async () => {},
+          draft: async () => {},
+          score: async () => ({ hold: false }),
+          hold: async () => {},
+          send: async () => { sends.n += 1; return { ok: true }; },
+        },
+      });
+      const first = await advanceReply({
+        store, userId, leadId, subjectKey: sentId, runId, owner: "a",
+        effects: replyEffects(drafts, sends),
+      });
+      expect(first.stopped).toBeNull();
+      expect(drafts.n).toBe(1);
+      expect(sends.n).toBe(2);
+      const second = await advanceReply({
+        store, userId, leadId, subjectKey: sentId, runId, owner: "b",
+        effects: replyEffects(drafts, sends),
+      });
+      expect(second.effects).toEqual([]);
+      expect(drafts.n).toBe(1);
+      expect(sends.n).toBe(2);
+    });
+  });
+
+  it("does not send a reply from memory when durable mode has no store, and a cancel does not recall a submitted send", async () => {
+    let sends = 0;
+    const blocked = await advanceReply({
+      store: null,
+      requireDurable: true,
+      userId: "u",
+      leadId: "l",
+      subjectKey: "s",
+      runId: "r",
+      owner: "a",
+      effects: {
+        draft: async () => ({ body: "x" }),
+        score: async () => ({ hold: false }),
+        hold: async () => {},
+        send: async () => { sends += 1; return { ok: true }; },
+      },
+    });
+    expect(blocked.stopped).toBe("durable_unavailable");
+    expect(sends).toBe(0);
+
+    await withPg(async (sql) => {
+      const store = pgStore(sql);
+      const userId = crypto.randomUUID();
+      const sentId = crypto.randomUUID();
+      const runId = crypto.randomUUID();
+      let submitted = 0;
+      await advanceReply({
+        store, userId, leadId: sentId, subjectKey: sentId, runId, owner: "a",
+        effects: {
+          draft: async () => ({ body: "x" }),
+          score: async () => ({ hold: false }),
+          hold: async () => {},
+          send: async (ctx) => {
+            if (!await ctx.owned()) return { ok: false, done: false, submitted: false };
+            submitted += 1;
+            await sql`SELECT public.cancel_agent_run(${userId}::uuid, ${runId}::uuid)`;
+            return { ok: true, submitted: true };
+          },
+        },
+      });
+      expect(submitted).toBe(1);
+      let again = 0;
+      const second = await advanceReply({
+        store, userId, leadId: sentId, subjectKey: sentId, runId, owner: "b",
+        effects: {
+          draft: async () => ({ body: "x" }),
+          score: async () => ({ hold: false }),
+          hold: async () => {},
+          send: async () => { again += 1; return { ok: true }; },
+        },
+      });
+      expect(second.stopped).toBe("cancelled");
+      expect(again).toBe(0);
+      expect(submitted).toBe(1);
+    });
+  });
+});
 
 describe("advanceLead on postgres resumes, fences, and does not send twice", () => {
   it("does not replay a completed research step or send while another worker holds the lease", async () => {
@@ -420,6 +610,110 @@ describe("advanceLead on postgres resumes, fences, and does not send twice", () 
          WHERE routine_name = 'claim_agent_run_step' AND grantee = 'PUBLIC'`;
       expect(grants).toEqual([]);
     });
+  });
+});
+
+describe("local roles cannot read another tenant or call the definer functions", () => {
+  it("revokes anon and authenticated, grants service_role, and filters rows by account", async () => {
+    if (!PG_URL.includes("127.0.0.1") && !PG_URL.includes("localhost")) {
+      throw new Error("refusing to create test roles outside local postgres");
+    }
+    let sql: Pg | null = null;
+    try {
+      sql = postgres(PG_URL, { max: 1, connect_timeout: 2 });
+      await sql`select 1`;
+    } catch (err) {
+      if (sql) await sql.end({ timeout: 1 });
+      if (process.env.AUDIT_PG_REQUIRED === "1") throw err;
+      return;
+    }
+    try {
+      const bootstrap = `
+        DO $$ BEGIN
+          IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN CREATE ROLE anon NOLOGIN; END IF;
+          IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN CREATE ROLE authenticated NOLOGIN; END IF;
+          IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN CREATE ROLE service_role NOLOGIN BYPASSRLS; END IF;
+        END $$;
+        CREATE SCHEMA IF NOT EXISTS auth;
+        CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$
+          SELECT NULLIF(current_setting('request.jwt.claim.sub', true), '')::uuid
+        $$;`;
+      const [me] = await sql`SELECT current_user AS name, rolsuper FROM pg_roles WHERE rolname = current_user`;
+      if (me.rolsuper) await sql.unsafe(bootstrap);
+      else {
+        const dbName = new URL(PG_URL).pathname.replace(/^\//, "") || "audit_test";
+        const member = String(me.name).replace(/"/g, "");
+        execFileSync("sudo", ["-u", "postgres", "psql", "-d", dbName, "-v", "ON_ERROR_STOP=1", "-c",
+          `${bootstrap}\nGRANT anon, authenticated, service_role TO "${member}";`], { stdio: "pipe" });
+      }
+      await sql.unsafe(readFileSync("supabase/migrations/20261106140000_outbound_verdicts_and_run_steps.sql", "utf8"));
+      const userA = crypto.randomUUID();
+      const userB = crypto.randomUUID();
+      const runId = crypto.randomUUID();
+      await sql`SELECT public.record_agent_tool_receipt(${userA}::uuid, ${runId}::uuid, 'send_reply', 'ok', 'a@b.co')`;
+      await sql`SELECT public.record_agent_tool_receipt(${userA}::uuid, ${runId}::uuid, 'send_reply', 'provider_accepted_unpersisted', 'c@d.co')`;
+      const own = await sql`SELECT * FROM public.list_agent_tool_receipts(${userA}::uuid, ${runId}::uuid)`;
+      const foreign = await sql`SELECT * FROM public.list_agent_tool_receipts(${userB}::uuid, ${runId}::uuid)`;
+      expect(own.map((row) => row.status).sort()).toEqual(["ok", "provider_accepted_unpersisted"]);
+      expect(foreign).toEqual([]);
+      const summary = buildAgentRunSummary({
+        agentLabel: "Agent",
+        approvalMode: false,
+        leadsFound: 0,
+        outreachDrafted: 0,
+        threadsChecked: 0,
+        pendingApprovals: 0,
+        receipts: reconcileReceipts(own.map((row) => ({
+          toolName: String(row.tool_name),
+          status: row.status as ToolReceipt["status"],
+          detail: row.detail ?? undefined,
+        })), []),
+      });
+      expect(summary).toContain("1 reply(ies) sent");
+      expect(summary).toContain("not counted as delivered");
+
+      const tableGrants = await sql`
+        SELECT privilege_type FROM information_schema.role_table_grants
+         WHERE grantee IN ('anon', 'authenticated')
+           AND table_name IN ('outbound_verdicts', 'outbound_run_steps', 'outbound_runs', 'agent_tool_receipts', 'outbound_durable_runs')`;
+      expect(tableGrants).toEqual([]);
+
+      await expect(sql.begin(async (tx) => {
+        await tx`SET LOCAL ROLE authenticated`;
+        await tx`SELECT public.claim_agent_run_step(${userA}::uuid, ${crypto.randomUUID()}::uuid, ${runId}::uuid, 'send', 'a', 30, 3, ${crypto.randomUUID()}::uuid)`;
+      })).rejects.toThrow(/permission denied/i);
+      await expect(sql.begin(async (tx) => {
+        await tx`SET LOCAL ROLE anon`;
+        await tx`SELECT public.list_agent_tool_receipts(${userA}::uuid, ${runId}::uuid)`;
+      })).rejects.toThrow(/permission denied/i);
+      const opened = await sql.begin(async (tx) => {
+        await tx`SET LOCAL ROLE service_role`;
+        return tx`SELECT public.outbound_durable_enabled(${userA}::uuid) AS enabled`;
+      });
+      expect(opened[0].enabled).toBe(false);
+
+      const verdictUser = crypto.randomUUID();
+      const otherUser = crypto.randomUUID();
+      await sql.begin(async (tx) => {
+        await tx`INSERT INTO public.outbound_verdicts (
+          user_id, content_hash, subject, body, findings, rubric_availability, prompt_hash, rubric_prompt_hash, gate_status
+        ) VALUES (
+          ${verdictUser}::uuid, 'hash-a', 'follow-up', 'body', '[]'::jsonb, 'plan_gated', 'gate', 'rubric', 'clear'
+        )`;
+        await tx`INSERT INTO public.outbound_verdicts (
+          user_id, content_hash, subject, body, findings, rubric_availability, prompt_hash, rubric_prompt_hash, gate_status
+        ) VALUES (
+          ${otherUser}::uuid, 'hash-b', 'follow-up', 'other', '[]'::jsonb, 'unavailable', 'gate', 'rubric', 'refused'
+        )`;
+        await tx`GRANT SELECT ON public.outbound_verdicts TO authenticated`;
+        await tx`SET LOCAL ROLE authenticated`;
+        await tx`SELECT set_config('request.jwt.claim.sub', ${verdictUser}, true)`;
+        const visible = await tx`SELECT content_hash FROM public.outbound_verdicts`;
+        expect(visible.map((row) => row.content_hash)).toEqual(["hash-a"]);
+      });
+    } finally {
+      await sql.end({ timeout: 2 });
+    }
   });
 });
 

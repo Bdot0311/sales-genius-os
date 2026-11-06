@@ -15,8 +15,8 @@ import {
   type RubricDimension,
 } from "../_shared/email-quality.ts";
 import { auditEmail } from "../_shared/email-audit.ts";
-import { buildAgentRunSummary, classifyProviderSend, type ToolReceipt } from "../_shared/run-receipts.ts";
-import { rpcStepStore, runPhase, type StepStore } from "../_shared/lead-run.ts";
+import { buildAgentRunSummary, classifyProviderSend, reconcileReceipts, type ToolReceipt } from "../_shared/run-receipts.ts";
+import { advanceReply, rpcStepStore, runPhase, type StepStore } from "../_shared/lead-run.ts";
 import { contentHash, gatePromptHash, rubricPromptHash } from "../_shared/prompt-versions.ts";
 import { agentProhibitions } from "../_shared/agent-prohibitions.ts";
 import { deliverabilityCheck } from "../_shared/email-deliverability.ts";
@@ -251,15 +251,34 @@ const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    // Rollout-off (no row, or the migration is not applied) keeps the in-memory
+    // loop and says so. Enabled mode does not send if the step store fails.
+    let durableMode: "on" | "off" = "off";
     let stepStore: StepStore | null = null;
     try {
-      const opened = await adminClient.rpc("open_outbound_run", { p_user_id: user.id });
-      if (typeof opened.data === "string") {
+      const flag = await adminClient.rpc("outbound_durable_enabled", { p_user_id: user.id });
+      if (!flag.error && flag.data === true) durableMode = "on";
+    } catch {
+      durableMode = "off";
+    }
+    if (durableMode === "on") {
+      try {
+        const opened = await adminClient.rpc("open_outbound_run", { p_user_id: user.id });
+        if (typeof opened.data !== "string" || opened.error) {
+          return new Response(JSON.stringify({
+            error: "Durable run storage is enabled and the open run could not be claimed. Nothing was sent.",
+            durableMode: "on",
+          }), { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
         runId = opened.data;
         stepStore = rpcStepStore(adminClient);
+      } catch (openErr) {
+        console.error("[agent-run] durable open failed", openErr);
+        return new Response(JSON.stringify({
+          error: "Durable run storage is enabled and the open run could not be claimed. Nothing was sent.",
+          durableMode: "on",
+        }), { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-    } catch {
-      stepStore = null;
     }
 
     // ── Agent resolution ──────────────────────────────────────────────────
@@ -742,6 +761,138 @@ const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
       leadReceipts.push({ toolName: "send_reply", status, detail });
       return status;
     };
+    /**
+     * One reply: draft, score, hold, send. No research step.
+     * The subject key is the sent-email id, so this does not reuse the lead's
+     * first-touch send. Enabled durable mode passes requireDurable and will not
+     * run these effects in memory. A provider request that already left is not
+     * recalled by a later cancel; deliverReserved is the other lock.
+     */
+    const executeDurableReply = async (input: {
+      sentEmailId: string;
+      fromEmail: string;
+      subject: string;
+      classification: string;
+      gmailThreadId?: string | null;
+      gmailMessageId?: string | null;
+      confidence?: number;
+      draft: () => Promise<string>;
+      review: (body: string) => Promise<{ hold: boolean; approval: boolean }>;
+      onHold: (body: string) => Promise<void>;
+      onSent: (body: string) => Promise<void>;
+    }): Promise<"sent" | "held" | "blocked" | "failed" | "unpersisted" | "resumed" | "stopped"> => {
+      let body = "";
+      const result = await advanceReply({
+        store: stepStore,
+        userId: user.id,
+        leadId: input.sentEmailId,
+        subjectKey: input.sentEmailId,
+        runId,
+        owner: stepOwner,
+        requireDurable: durableMode === "on",
+        effects: {
+          draft: async () => {
+            body = await input.draft();
+            return { body };
+          },
+          score: async () => {
+            const review = await input.review(body);
+            return { ...review, body };
+          },
+          hold: async (score) => {
+            const text = typeof score?.body === "string" && score.body ? score.body : body;
+            if (score?.approval === true) {
+              await input.onHold(text);
+              leadReceipts.push({ toolName: "send_reply", status: "approved", detail: input.fromEmail });
+            }
+            return { hold: true };
+          },
+          send: async (ctx, prior) => {
+            if (!await ctx.owned()) return { ok: false, done: false, submitted: false };
+            const text = body
+              || (typeof prior.score?.body === "string" ? prior.score.body : "")
+              || (typeof prior.draft?.body === "string" ? prior.draft.body : "");
+            if (!googleIntegrationId) {
+              leadReceipts.push({ toolName: "send_reply", status: "failed", detail: input.fromEmail });
+              await logAction({
+                user_id: user.id,
+                sent_email_id: input.sentEmailId,
+                action_type: "skipped",
+                status: "skipped",
+                prospect_email: input.fromEmail,
+                subject: input.subject,
+                classification: input.classification,
+                description: `Did not send the reply to ${input.fromEmail} because no active Gmail mailbox is available.`,
+                metadata: { phase: "reply", reason: "no_active_mailbox" },
+              });
+              skipped++;
+              return { ok: false, noMailbox: true };
+            }
+            const sendRes = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+              method: "POST",
+              headers: { Authorization: authHeader, "Content-Type": "application/json" },
+              body: JSON.stringify({
+                to: input.fromEmail,
+                subject: `Re: ${input.subject}`,
+                body: text,
+                integrationRowId: googleIntegrationId,
+                threadId: input.gmailThreadId,
+                appendSignature: true,
+              }),
+            });
+            const sendData = await sendRes.json().catch(() => ({}));
+            const replyStatus = recordReplySend(input.fromEmail, sendRes, sendData);
+            if (replyStatus === "provider_accepted_unpersisted") {
+              await logAction({
+                user_id: user.id,
+                sent_email_id: input.sentEmailId,
+                action_type: "error",
+                status: "failed",
+                prospect_email: input.fromEmail,
+                subject: input.subject,
+                classification: input.classification,
+                description: `Gmail accepted a reply to ${input.fromEmail}, and the send record was not saved. It was not counted as delivered. Cancelling this run cannot recall that provider request.`,
+                metadata: { phase: "reply", gmail_message_id: input.gmailMessageId ?? null, code: sendData?.code ?? null },
+              });
+              errors++;
+              return { ok: false, submitted: true, unpersisted: true };
+            }
+            if (replyStatus !== "ok") {
+              await logAction({
+                user_id: user.id,
+                sent_email_id: input.sentEmailId,
+                action_type: "error",
+                status: "failed",
+                prospect_email: input.fromEmail,
+                subject: input.subject,
+                classification: input.classification,
+                error_message: sendData?.error ?? `send-email returned ${sendRes.status}`,
+                description: `Could not send the reply to ${input.fromEmail}.`,
+                metadata: { phase: "reply", gmail_message_id: input.gmailMessageId ?? null, code: sendData?.code ?? null },
+              });
+              errors++;
+              return { ok: false, done: false, submitted: true };
+            }
+            body = text;
+            return { ok: true, submitted: true };
+          },
+        },
+      });
+      if (typeof result.payloads.draft?.body === "string" && result.payloads.draft.body) {
+        body = result.payloads.draft.body;
+      }
+      if (result.stopped && result.stopped !== "left_open") return "stopped";
+      if (result.hold) return result.payloads.score?.approval === true ? "held" : "blocked";
+      if (result.payloads.send?.ok === true && result.effects.includes("send")) {
+        const text = body || (typeof result.payloads.send.body === "string" ? result.payloads.send.body : "");
+        await input.onSent(text);
+        repliesSent++;
+        return "sent";
+      }
+      if (result.payloads.send?.ok === true) return "resumed";
+      if (result.payloads.send?.unpersisted === true) return "unpersisted";
+      return "failed";
+    };
     /*
      * How many drafts this run wrote with no facts about the company, and why.
      *
@@ -895,7 +1046,7 @@ ${playbookSystemRules()}`;
               // brief supplies the facts, the evaluation supplies the angle.
               let research: { block: string; outcome: string; detail?: string } = { block: "", outcome: "skipped" };
               const researchPhase = await runPhase(stepStore, {
-                userId: user.id, leadId: lead.id, runId, owner: stepOwner,
+                userId: user.id, leadId: lead.id, runId, owner: stepOwner, requireDurable: durableMode === "on",
               }, "research", async () => {
                 research = await researchBlockForLead(
                   adminClient,
@@ -953,7 +1104,7 @@ ${playbookSystemRules()}`;
               // empty case can be stated to the model rather than vanishing.
               let raw = "";
               const draftPhase = await runPhase(stepStore, {
-                userId: user.id, leadId: lead.id, runId, owner: stepOwner,
+                userId: user.id, leadId: lead.id, runId, owner: stepOwner, requireDurable: durableMode === "on",
               }, "draft", async () => {
                 raw = await callGemini(
                   outreachPrompt,
@@ -1076,7 +1227,7 @@ ${playbookSystemRules()}`;
                 score: null, dimensions: null, attempts: 1, blocking: [],
               };
               const scorePhase = await runPhase(stepStore, {
-                userId: user.id, leadId: lead.id, runId, owner: stepOwner,
+                userId: user.id, leadId: lead.id, runId, owner: stepOwner, requireDurable: durableMode === "on",
               }, "score", async (ctx) => {
               if (!await ctx.owned()) return { hold: true, done: false };
               best = await assess(subject, body);
@@ -1200,7 +1351,7 @@ ${playbookSystemRules()}`;
               // resurrecting this one.
               if (qualityHold) {
                 const held = await runPhase(stepStore, {
-                  userId: user.id, leadId: lead.id, runId, owner: stepOwner,
+                  userId: user.id, leadId: lead.id, runId, owner: stepOwner, requireDurable: durableMode === "on",
                 }, "hold", async (ctx) => {
                 if (!await ctx.owned()) return { hold: true, done: false };
                 await logAction({
@@ -1291,7 +1442,7 @@ ${playbookSystemRules()}`;
               }
 
               const sendPhase = await runPhase(stepStore, {
-                userId: user.id, leadId: lead.id, runId, owner: stepOwner,
+                userId: user.id, leadId: lead.id, runId, owner: stepOwner, requireDurable: durableMode === "on",
               }, "send", async (ctx) => {
               if (!await ctx.owned()) return { ok: false, done: false };
               const sendRes = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
@@ -1682,134 +1833,75 @@ Write a concise ${config.tone} reply (2-3 sentences) that:
 
 Output ONLY the reply body. No subject line. No greeting like "Hi [name]". No signature.`;
 
-          const generatedReply = await callGemini(replyPrompt, replySystemPrompt);
-
-          const delivCheck = deliverabilityCheck(`Re: ${reply.subject}`, generatedReply);
-          if (!delivCheck.ok) {
-            await logAction({
-              user_id: user.id,
-              sent_email_id: reply.sentEmailId,
-              action_type: "skipped",
-              status: "skipped",
-              prospect_email: reply.fromEmail,
-              subject: reply.subject,
-              classification: "interested",
-              metadata: { reason: "deliverability_block", spam_triggers: delivCheck.hits },
-            });
-            skipped++;
-            continue;
-          }
-
-          if (await blockUngroundedReply(reply, generatedReply, "interested")) continue;
-
-          if (approvalMode) {
-            // No queue, and no draft either: a reply draft would overwrite the
-            // lead's outreach draft, and email_drafts holds one per lead.
-            //
-            // The reply is already visible in the unified inbox, so the honest
-            // move is to say it needs an answer and stop. Asking the agent to
-            // reply in chat gets a reply written against the live thread rather
-            // than against a snapshot taken days earlier — which is what the
-            // queued copies were, on the rare occasions anyone drained them.
-            await logAction({
-              user_id: user.id,
-              sent_email_id: reply.sentEmailId,
-              action_type: "awaiting_reply",
-              status: "pending",
-              prospect_email: reply.fromEmail,
-              subject: `Re: ${reply.subject}`,
-              description: `${reply.fromEmail} replied and is waiting on an answer. Ask the agent to reply and it will draft against the live thread.`,
-              metadata: { phase: "reply", gmail_message_id: reply.gmailMessageId },
-            });
-            await logAction({
-              user_id: user.id,
-              sent_email_id: reply.sentEmailId,
-              action_type: "awaiting_approval",
-              status: "pending",
-              prospect_email: reply.fromEmail,
-              subject: reply.subject,
-              classification: "interested",
-              reply_content: generatedReply,
-              description: `${reply.fromEmail} replied with interest — drafted a response for your approval`,
-              metadata: { phase: "reply", confidence },
-            });
-            leadReceipts.push({ toolName: "send_reply", status: "approved", detail: reply.fromEmail });
-            continue;
-          }
-
-          if (googleIntegrationId) {
-            const sendRes = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
-              method: "POST",
-              headers: { Authorization: authHeader, "Content-Type": "application/json" },
-              body: JSON.stringify({
-                to: reply.fromEmail,
-                subject: `Re: ${reply.subject}`,
-                body: generatedReply,
-                integrationRowId: googleIntegrationId,
-                threadId: reply.gmailThreadId,
-                  appendSignature: true,
-              }),
-            });
-            const sendData = await sendRes.json().catch(() => ({}));
-            const replyStatus = recordReplySend(reply.fromEmail, sendRes, sendData);
-            if (replyStatus !== "ok") {
+          await executeDurableReply({
+            sentEmailId: reply.sentEmailId,
+            fromEmail: reply.fromEmail,
+            subject: reply.subject,
+            classification: "interested",
+            gmailThreadId: reply.gmailThreadId,
+            gmailMessageId: reply.gmailMessageId,
+            confidence,
+            draft: () => callGemini(replyPrompt, replySystemPrompt),
+            review: async (body) => {
+              const delivCheck = deliverabilityCheck(`Re: ${reply.subject}`, body);
+              if (!delivCheck.ok) {
+                await logAction({
+                  user_id: user.id,
+                  sent_email_id: reply.sentEmailId,
+                  action_type: "skipped",
+                  status: "skipped",
+                  prospect_email: reply.fromEmail,
+                  subject: reply.subject,
+                  classification: "interested",
+                  metadata: { reason: "deliverability_block", spam_triggers: delivCheck.hits },
+                });
+                skipped++;
+                return { hold: true, approval: false };
+              }
+              if (await blockUngroundedReply(reply, body, "interested")) return { hold: true, approval: false };
+              if (approvalMode) return { hold: true, approval: true };
+              return { hold: false, approval: false };
+            },
+            onHold: async (body) => {
               await logAction({
                 user_id: user.id,
                 sent_email_id: reply.sentEmailId,
-                action_type: "error",
-                status: "failed",
+                action_type: "awaiting_reply",
+                status: "pending",
+                prospect_email: reply.fromEmail,
+                subject: `Re: ${reply.subject}`,
+                description: `${reply.fromEmail} replied and is waiting on an answer. Ask the agent to reply and it will draft against the live thread.`,
+                metadata: { phase: "reply", gmail_message_id: reply.gmailMessageId },
+              });
+              await logAction({
+                user_id: user.id,
+                sent_email_id: reply.sentEmailId,
+                action_type: "awaiting_approval",
+                status: "pending",
                 prospect_email: reply.fromEmail,
                 subject: reply.subject,
                 classification: "interested",
-                error_message: sendData?.error ?? `send-email returned ${sendRes.status}`,
-                description: replyStatus === "provider_accepted_unpersisted"
-                  ? `Gmail accepted a reply to ${reply.fromEmail}, and the send record was not saved. It was not counted as delivered.`
-                  : `Could not send the reply to ${reply.fromEmail}.`,
-                metadata: { phase: "reply", gmail_message_id: reply.gmailMessageId, code: sendData?.code ?? null },
+                reply_content: body,
+                description: `${reply.fromEmail} replied with interest — drafted a response for your approval`,
+                metadata: { phase: "reply", confidence },
               });
-              errors++;
-              continue;
-            }
-          } else {
-            leadReceipts.push({ toolName: "send_reply", status: "failed", detail: reply.fromEmail });
-            await logAction({
-              user_id: user.id,
-              sent_email_id: reply.sentEmailId,
-              action_type: "skipped",
-              status: "skipped",
-              prospect_email: reply.fromEmail,
-              subject: reply.subject,
-              classification: "interested",
-              description: `Did not send the reply to ${reply.fromEmail} because no active Gmail mailbox is available.`,
-              metadata: { phase: "reply", reason: "no_active_mailbox" },
-            });
-            skipped++;
-            continue;
-          }
-
-          await logAction({
-            user_id: user.id,
-            sent_email_id: reply.sentEmailId,
-            action_type: "reply_sent",
-            status: "completed",
-            prospect_email: reply.fromEmail,
-            subject: reply.subject,
-            classification: "interested",
-            reply_content: generatedReply,
-            metadata: { gmail_message_id: reply.gmailMessageId, confidence },
+            },
+            onSent: async (body) => {
+              await logAction({
+                user_id: user.id,
+                sent_email_id: reply.sentEmailId,
+                action_type: "reply_sent",
+                status: "completed",
+                prospect_email: reply.fromEmail,
+                subject: reply.subject,
+                classification: "interested",
+                reply_content: body,
+                metadata: { gmail_message_id: reply.gmailMessageId, confidence },
+              });
+              await adminClient.from("sent_emails").update({ agent_thread_status: "replied" }).eq("id", reply.sentEmailId);
+              await adminClient.from("reply_analysis").update({ agent_reply_sent_at: new Date().toISOString() }).eq("sent_email_id", reply.sentEmailId);
+            },
           });
-
-          await adminClient
-            .from("sent_emails")
-            .update({ agent_thread_status: "replied" })
-            .eq("id", reply.sentEmailId);
-
-          await adminClient
-            .from("reply_analysis")
-            .update({ agent_reply_sent_at: new Date().toISOString() })
-            .eq("sent_email_id", reply.sentEmailId);
-
-          repliesSent++;
         } else if (classification === "objection" && config.can_handle_objections) {
           // Objection Library: pull matching entries (by classified type first,
           // then trigger term in the reply body; top two if several) and ground the
@@ -1869,278 +1961,155 @@ ${objectionGuidance}
 Write a 2-3 sentence reply that acknowledges their concern, provides a brief value-focused response, and offers a low-commitment next step.
 Output ONLY the reply body. No subject line or signature.`;
 
-          const generatedReply = await callGemini(objectionPrompt, objectionSystemPrompt);
-
-          const delivCheck = deliverabilityCheck(`Re: ${reply.subject}`, generatedReply);
-          if (!delivCheck.ok) {
-            await logAction({
-              user_id: user.id,
-              sent_email_id: reply.sentEmailId,
-              action_type: "skipped",
-              status: "skipped",
-              prospect_email: reply.fromEmail,
-              subject: reply.subject,
-              classification: "objection",
-              metadata: { reason: "deliverability_block", spam_triggers: delivCheck.hits },
-            });
-            skipped++;
-            continue;
-          }
-
           const proofPoints = top
             .flatMap((entry: { proof_points?: unknown }) =>
               Array.isArray(entry.proof_points) ? entry.proof_points.filter((point) => typeof point === "string") : [],
             )
             .join("\n");
-          if (await blockUngroundedReply(reply, generatedReply, "objection", proofPoints)) continue;
-
-          if (approvalMode) {
-            // No queue, and no draft either: a reply draft would overwrite the
-            // lead's outreach draft, and email_drafts holds one per lead.
-            //
-            // The reply is already visible in the unified inbox, so the honest
-            // move is to say it needs an answer and stop. Asking the agent to
-            // reply in chat gets a reply written against the live thread rather
-            // than against a snapshot taken days earlier — which is what the
-            // queued copies were, on the rare occasions anyone drained them.
-            await logAction({
-              user_id: user.id,
-              sent_email_id: reply.sentEmailId,
-              action_type: "awaiting_reply",
-              status: "pending",
-              prospect_email: reply.fromEmail,
-              subject: `Re: ${reply.subject}`,
-              description: `${reply.fromEmail} replied and is waiting on an answer. Ask the agent to reply and it will draft against the live thread.`,
-              metadata: { phase: "reply", gmail_message_id: reply.gmailMessageId },
-            });
-            await logAction({
-              user_id: user.id,
-              sent_email_id: reply.sentEmailId,
-              action_type: "awaiting_approval",
-              status: "pending",
-              prospect_email: reply.fromEmail,
-              subject: reply.subject,
-              classification: "objection",
-              reply_content: generatedReply,
-              description: `${reply.fromEmail} raised an objection — drafted a response for your approval`,
-              metadata: { phase: "reply", confidence, objection_entry_ids: usedEntryIds },
-            });
-            leadReceipts.push({ toolName: "send_reply", status: "approved", detail: reply.fromEmail });
-            continue;
-          }
-
-          if (googleIntegrationId) {
-            const sendRes = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
-              method: "POST",
-              headers: { Authorization: authHeader, "Content-Type": "application/json" },
-              body: JSON.stringify({
-                to: reply.fromEmail,
-                subject: `Re: ${reply.subject}`,
-                body: generatedReply,
-                integrationRowId: googleIntegrationId,
-                threadId: reply.gmailThreadId,
-                  appendSignature: true,
-              }),
-            });
-            const sendData = await sendRes.json().catch(() => ({}));
-            const replyStatus = recordReplySend(reply.fromEmail, sendRes, sendData);
-            if (replyStatus !== "ok") {
+          await executeDurableReply({
+            sentEmailId: reply.sentEmailId,
+            fromEmail: reply.fromEmail,
+            subject: reply.subject,
+            classification: "objection",
+            gmailThreadId: reply.gmailThreadId,
+            gmailMessageId: reply.gmailMessageId,
+            confidence,
+            draft: () => callGemini(objectionPrompt, objectionSystemPrompt),
+            review: async (body) => {
+              const delivCheck = deliverabilityCheck(`Re: ${reply.subject}`, body);
+              if (!delivCheck.ok) {
+                await logAction({
+                  user_id: user.id,
+                  sent_email_id: reply.sentEmailId,
+                  action_type: "skipped",
+                  status: "skipped",
+                  prospect_email: reply.fromEmail,
+                  subject: reply.subject,
+                  classification: "objection",
+                  metadata: { reason: "deliverability_block", spam_triggers: delivCheck.hits },
+                });
+                skipped++;
+                return { hold: true, approval: false };
+              }
+              if (await blockUngroundedReply(reply, body, "objection", proofPoints)) return { hold: true, approval: false };
+              if (approvalMode) return { hold: true, approval: true };
+              return { hold: false, approval: false };
+            },
+            onHold: async (body) => {
               await logAction({
                 user_id: user.id,
                 sent_email_id: reply.sentEmailId,
-                action_type: "error",
-                status: "failed",
+                action_type: "awaiting_reply",
+                status: "pending",
+                prospect_email: reply.fromEmail,
+                subject: `Re: ${reply.subject}`,
+                description: `${reply.fromEmail} replied and is waiting on an answer. Ask the agent to reply and it will draft against the live thread.`,
+                metadata: { phase: "reply", gmail_message_id: reply.gmailMessageId },
+              });
+              await logAction({
+                user_id: user.id,
+                sent_email_id: reply.sentEmailId,
+                action_type: "awaiting_approval",
+                status: "pending",
                 prospect_email: reply.fromEmail,
                 subject: reply.subject,
                 classification: "objection",
-                error_message: sendData?.error ?? `send-email returned ${sendRes.status}`,
-                description: replyStatus === "provider_accepted_unpersisted"
-                  ? `Gmail accepted a reply to ${reply.fromEmail}, and the send record was not saved. It was not counted as delivered.`
-                  : `Could not send the reply to ${reply.fromEmail}.`,
-                metadata: { phase: "reply", gmail_message_id: reply.gmailMessageId, code: sendData?.code ?? null },
+                reply_content: body,
+                description: `${reply.fromEmail} raised an objection — drafted a response for your approval`,
+                metadata: { phase: "reply", confidence, objection_entry_ids: usedEntryIds },
               });
-              errors++;
-              continue;
-            }
-          } else {
-            leadReceipts.push({ toolName: "send_reply", status: "failed", detail: reply.fromEmail });
-            await logAction({
-              user_id: user.id,
-              sent_email_id: reply.sentEmailId,
-              action_type: "skipped",
-              status: "skipped",
-              prospect_email: reply.fromEmail,
-              subject: reply.subject,
-              classification: "objection",
-              description: `Did not send the reply to ${reply.fromEmail} because no active Gmail mailbox is available.`,
-              metadata: { phase: "reply", reason: "no_active_mailbox" },
-            });
-            skipped++;
-            continue;
-          }
-
-          await logAction({
-            user_id: user.id,
-            sent_email_id: reply.sentEmailId,
-            action_type: "reply_sent",
-            status: "completed",
-            prospect_email: reply.fromEmail,
-            subject: reply.subject,
-            classification: "objection",
-            reply_content: generatedReply,
-            metadata: { gmail_message_id: reply.gmailMessageId, confidence },
-          });
-
-          await adminClient
-            .from("sent_emails")
-            .update({ agent_thread_status: "replied" })
-            .eq("id", reply.sentEmailId);
-
-          await adminClient
-            .from("reply_analysis")
-            .update({ agent_reply_sent_at: new Date().toISOString() })
-            .eq("sent_email_id", reply.sentEmailId);
-
-          repliesSent++;
-        } else if (classification === "meeting_request" && config.can_book_meetings) {
-          let meetingReply: string;
-
-          if (config.calendly_url) {
-            meetingReply = `Thanks for reaching out! You can book time directly on my calendar here: ${config.calendly_url}. Looking forward to connecting!`;
-          } else {
-            const meetingSystemPrompt = `You are ${config.agent_name}. ${config.persona}. Tone: ${config.tone}.
-${UNTRUSTED_CONTENT_RULE}
-${bannedPhrasesBlock()}
-${agentProhibitions(config.agent_name)}`;
-            const meetingPrompt = `A prospect is requesting a meeting in response to your sales email.
-Prospect reply: ${fence(`reply from ${reply.fromEmail}`, reply.bodyText)}
-Write a short, friendly reply asking for their availability (2-3 time options format or asking when works best).
-Output ONLY the reply body. No subject line or signature.`;
-            meetingReply = await callGemini(meetingPrompt, meetingSystemPrompt);
-          }
-
-          if (!config.calendly_url && await blockUngroundedReply(reply, meetingReply, "meeting_request")) continue;
-
-          if (approvalMode) {
-            // No queue, and no draft either: a reply draft would overwrite the
-            // lead's outreach draft, and email_drafts holds one per lead.
-            //
-            // The reply is already visible in the unified inbox, so the honest
-            // move is to say it needs an answer and stop. Asking the agent to
-            // reply in chat gets a reply written against the live thread rather
-            // than against a snapshot taken days earlier — which is what the
-            // queued copies were, on the rare occasions anyone drained them.
-            await logAction({
-              user_id: user.id,
-              sent_email_id: reply.sentEmailId,
-              action_type: "awaiting_reply",
-              status: "pending",
-              prospect_email: reply.fromEmail,
-              subject: `Re: ${reply.subject}`,
-              description: `${reply.fromEmail} replied and is waiting on an answer. Ask the agent to reply and it will draft against the live thread.`,
-              metadata: { phase: "reply", gmail_message_id: reply.gmailMessageId },
-            });
-            await logAction({
-              user_id: user.id,
-              sent_email_id: reply.sentEmailId,
-              action_type: "awaiting_approval",
-              status: "pending",
-              prospect_email: reply.fromEmail,
-              subject: reply.subject,
-              classification: "meeting_request",
-              reply_content: meetingReply,
-              description: `${reply.fromEmail} asked to meet — drafted a scheduling reply for your approval`,
-              metadata: { phase: "reply", confidence },
-            });
-            leadReceipts.push({ toolName: "send_reply", status: "approved", detail: reply.fromEmail });
-            continue;
-          }
-
-          if (googleIntegrationId) {
-            const sendRes = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
-              method: "POST",
-              headers: { Authorization: authHeader, "Content-Type": "application/json" },
-              body: JSON.stringify({
-                to: reply.fromEmail,
-                subject: `Re: ${reply.subject}`,
-                body: meetingReply,
-                integrationRowId: googleIntegrationId,
-                threadId: reply.gmailThreadId,
-                  appendSignature: true,
-
-              }),
-            });
-            const sendData = await sendRes.json().catch(() => ({}));
-            const replyStatus = recordReplySend(reply.fromEmail, sendRes, sendData);
-            if (replyStatus !== "ok") {
+            },
+            onSent: async (body) => {
               await logAction({
                 user_id: user.id,
                 sent_email_id: reply.sentEmailId,
-                action_type: "error",
-                status: "failed",
+                action_type: "reply_sent",
+                status: "completed",
+                prospect_email: reply.fromEmail,
+                subject: reply.subject,
+                classification: "objection",
+                reply_content: body,
+                metadata: { gmail_message_id: reply.gmailMessageId, confidence },
+              });
+              await adminClient.from("sent_emails").update({ agent_thread_status: "replied" }).eq("id", reply.sentEmailId);
+              await adminClient.from("reply_analysis").update({ agent_reply_sent_at: new Date().toISOString() }).eq("sent_email_id", reply.sentEmailId);
+            },
+          });
+        } else if (classification === "meeting_request" && config.can_book_meetings) {
+          await executeDurableReply({
+            sentEmailId: reply.sentEmailId,
+            fromEmail: reply.fromEmail,
+            subject: reply.subject,
+            classification: "meeting_request",
+            gmailThreadId: reply.gmailThreadId,
+            gmailMessageId: reply.gmailMessageId,
+            confidence,
+            draft: async () => {
+              if (config.calendly_url) {
+                return `Thanks for reaching out! You can book time directly on my calendar here: ${config.calendly_url}. Looking forward to connecting!`;
+              }
+              const meetingSystemPrompt = `You are ${config.agent_name}. ${config.persona}. Tone: ${config.tone}.
+${UNTRUSTED_CONTENT_RULE}
+${bannedPhrasesBlock()}
+${agentProhibitions(config.agent_name)}`;
+              const meetingPrompt = `A prospect is requesting a meeting in response to your sales email.
+Prospect reply: ${fence(`reply from ${reply.fromEmail}`, reply.bodyText)}
+Write a short, friendly reply asking for their availability (2-3 time options format or asking when works best).
+Output ONLY the reply body. No subject line or signature.`;
+              return callGemini(meetingPrompt, meetingSystemPrompt);
+            },
+            review: async (body) => {
+              if (!config.calendly_url && await blockUngroundedReply(reply, body, "meeting_request")) {
+                return { hold: true, approval: false };
+              }
+              if (approvalMode) return { hold: true, approval: true };
+              return { hold: false, approval: false };
+            },
+            onHold: async (body) => {
+              await logAction({
+                user_id: user.id,
+                sent_email_id: reply.sentEmailId,
+                action_type: "awaiting_reply",
+                status: "pending",
+                prospect_email: reply.fromEmail,
+                subject: `Re: ${reply.subject}`,
+                description: `${reply.fromEmail} replied and is waiting on an answer. Ask the agent to reply and it will draft against the live thread.`,
+                metadata: { phase: "reply", gmail_message_id: reply.gmailMessageId },
+              });
+              await logAction({
+                user_id: user.id,
+                sent_email_id: reply.sentEmailId,
+                action_type: "awaiting_approval",
+                status: "pending",
                 prospect_email: reply.fromEmail,
                 subject: reply.subject,
                 classification: "meeting_request",
-                error_message: sendData?.error ?? `send-email returned ${sendRes.status}`,
-                description: replyStatus === "provider_accepted_unpersisted"
-                  ? `Gmail accepted a reply to ${reply.fromEmail}, and the send record was not saved. It was not counted as delivered.`
-                  : `Could not send the reply to ${reply.fromEmail}.`,
-                metadata: { phase: "reply", gmail_message_id: reply.gmailMessageId, code: sendData?.code ?? null },
+                reply_content: body,
+                description: `${reply.fromEmail} asked to meet — drafted a scheduling reply for your approval`,
+                metadata: { phase: "reply", confidence },
               });
-              errors++;
-              continue;
-            }
-          } else {
-            leadReceipts.push({ toolName: "send_reply", status: "failed", detail: reply.fromEmail });
-            await logAction({
-              user_id: user.id,
-              sent_email_id: reply.sentEmailId,
-              action_type: "skipped",
-              status: "skipped",
-              prospect_email: reply.fromEmail,
-              subject: reply.subject,
-              classification: "meeting_request",
-              description: `Did not send the reply to ${reply.fromEmail} because no active Gmail mailbox is available.`,
-              metadata: { phase: "reply", reason: "no_active_mailbox" },
-            });
-            skipped++;
-            continue;
-          }
-
-          await adminClient
-            .from("sent_emails")
-            .update({ agent_thread_status: "meeting_booked" })
-            .eq("id", reply.sentEmailId);
-
-          /**
-           * A prospect asked for time. This is the outcome the whole product
-           * exists to produce, and it was the quietest thing in it — recorded
-           * in the agent log, visible only to someone who went looking.
-           */
-          await notifyMeetingBooked(user.id, {
-            // The reply carries an address and nothing else — there is no name
-            // on it, and inventing one would put a wrong name on a lock screen.
-            inviteeEmail: reply.fromEmail,
-          });
-
-          await logAction({
-            user_id: user.id,
-            sent_email_id: reply.sentEmailId,
-            action_type: "meeting_booked",
-            status: "completed",
-            prospect_email: reply.fromEmail,
-            subject: reply.subject,
-            classification: "meeting_request",
-            reply_content: meetingReply,
-            metadata: {
-              gmail_message_id: reply.gmailMessageId,
-              calendly_used: !!config.calendly_url,
-              confidence,
+            },
+            onSent: async (body) => {
+              await adminClient.from("sent_emails").update({ agent_thread_status: "meeting_booked" }).eq("id", reply.sentEmailId);
+              await notifyMeetingBooked(user.id, { inviteeEmail: reply.fromEmail });
+              await logAction({
+                user_id: user.id,
+                sent_email_id: reply.sentEmailId,
+                action_type: "meeting_booked",
+                status: "completed",
+                prospect_email: reply.fromEmail,
+                subject: reply.subject,
+                classification: "meeting_request",
+                reply_content: body,
+                metadata: {
+                  gmail_message_id: reply.gmailMessageId,
+                  calendly_used: !!config.calendly_url,
+                  confidence,
+                },
+              });
+              meetingsBooked++;
             },
           });
-
-          meetingsBooked++;
-          repliesSent++;
         } else if (classification === "not_interested") {
           await adminClient
             .from("sent_emails")
@@ -2241,28 +2210,60 @@ Output ONLY the reply body. No subject line or signature.`;
     }
 
     const agentLabel = `${config.agent_name || "Agent"} (${agentRole.replace(/_/g, " ")})`;
-    const runReceipts = leadReceipts;
-    const runSummary = buildAgentRunSummary({
-      agentLabel,
-      approvalMode,
-      leadsFound,
-      outreachDrafted,
-      threadsChecked,
-      pendingApprovals,
-      receipts: runReceipts,
-    });
-    if (stepStore) {
-      await adminClient.rpc("close_outbound_run", { p_user_id: user.id, p_run_id: runId }).then(() => {}, () => {});
-    }
-    for (const receipt of runReceipts) {
-      await adminClient.rpc("record_agent_tool_receipt", {
+    let runReceipts = leadReceipts;
+    let receiptLoadFailed = false;
+    const unsavedDeliveries: ToolReceipt[] = [];
+    if (durableMode === "on") {
+      for (const receipt of leadReceipts) {
+        const written = await adminClient.rpc("record_agent_tool_receipt", {
+          p_user_id: user.id,
+          p_run_id: runId,
+          p_tool_name: receipt.toolName,
+          p_status: receipt.status,
+          p_detail: receipt.detail ?? null,
+        }).then((saved) => !saved.error, () => false);
+        if (!written && receipt.status === "ok") unsavedDeliveries.push(receipt);
+      }
+      const listed = await adminClient.rpc("list_agent_tool_receipts", {
         p_user_id: user.id,
         p_run_id: runId,
-        p_tool_name: receipt.toolName,
-        p_status: receipt.status,
-        p_detail: receipt.detail ?? null,
-      }).then(() => {}, () => {});
+      }).then((loaded) => loaded, () => ({ error: { message: "list failed" }, data: null }));
+      if (listed.error || !Array.isArray(listed.data)) {
+        receiptLoadFailed = true;
+        runReceipts = [];
+      } else {
+        const saved = listed.data.map((row: { tool_name?: string; status?: string; detail?: string | null }) => ({
+          toolName: String(row.tool_name ?? ""),
+          status: String(row.status ?? "failed") as ToolReceipt["status"],
+          detail: row.detail ?? undefined,
+        }));
+        runReceipts = reconcileReceipts(saved, []);
+      }
+      await adminClient.rpc("close_outbound_run", { p_user_id: user.id, p_run_id: runId }).then(() => {}, () => {});
+    } else {
+      for (const receipt of leadReceipts) {
+        await adminClient.rpc("record_agent_tool_receipt", {
+          p_user_id: user.id,
+          p_run_id: runId,
+          p_tool_name: receipt.toolName,
+          p_status: receipt.status,
+          p_detail: receipt.detail ?? null,
+        }).then(() => {}, () => {});
+      }
     }
+    const runSummary = receiptLoadFailed
+      ? `${agentLabel} could not load saved results for this run. Do not treat this request as delivered.`
+      : buildAgentRunSummary({
+          agentLabel,
+          approvalMode,
+          leadsFound,
+          outreachDrafted,
+          threadsChecked,
+          pendingApprovals,
+          receipts: runReceipts,
+        }) + (unsavedDeliveries.length
+          ? ` ${unsavedDeliveries.length} send result(s) could not be saved, and are not counted as delivered.`
+          : "");
 
     await logAction({
       user_id: user.id,
@@ -2315,10 +2316,9 @@ Output ONLY the reply body. No subject line or signature.`;
         role: agentRole,
         mode: approvalMode ? "approval" : "autonomous",
         summary: runSummary,
-        // First-touch phases only. Reply sends in this request are still in memory.
-        // deliverReserved inside send-email is what stops a duplicate reply.
-        durableFirstTouch: stepStore !== null,
-        replyExecution: "in_memory",
+        // "on" leases first-touch and reply phases. "off" is the in-memory loop.
+        durableMode,
+        replyExecution: durableMode === "on" ? "leased_steps" : "in_memory",
         threadsChecked,
         leadsFound,
         outreachDrafted,

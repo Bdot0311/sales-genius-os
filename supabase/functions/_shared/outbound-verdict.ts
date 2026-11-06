@@ -1,10 +1,13 @@
 /**
- * Whether a send may proceed, given the live gate and any stored verdict.
+ * Whether a send may proceed, given the live gate and a verdict this server
+ * just produced for the exact final subject and body.
  *
  * The live gate always runs. Canary off (the default) does not let a stored
- * verdict authorize or block a send. Canary on requires a clear verdict for
- * this exact content hash and these prompt hashes. A changed body does not
- * reuse the old verdict. A client "passed" flag is not an input.
+ * verdict authorize or block a send. Canary on requires the verdict that was
+ * persisted for this request: same account, same content hash, current prompt
+ * hashes, and a clear gate. A missing row is not permission. A stale or
+ * other-account row is not permission. A client "passed" flag is not an input.
+ * The rubric availability is recorded on the row. It is not a new entitlement.
  */
 
 export interface StoredVerdict {
@@ -12,6 +15,8 @@ export interface StoredVerdict {
   gateStatus: "clear" | "needs_review" | "refused";
   promptHash: string;
   rubricPromptHash: string;
+  /** Account that owns the row. A different account's verdict cannot authorize. */
+  userId: string;
 }
 
 export interface SendDecision {
@@ -27,7 +32,10 @@ export function evaluateSend(input: {
   promptHash: string;
   rubricPromptHash: string;
   stored: StoredVerdict | null;
+  /** True only when this request persisted `stored` for this account. */
+  persisted: boolean;
   canary: boolean;
+  userId: string;
 }): SendDecision {
   const stored = input.stored;
   if (input.liveBlocked) {
@@ -43,14 +51,18 @@ export function evaluateSend(input: {
       || stored.gateStatus !== "clear"
       || stored.promptHash !== input.promptHash
       || stored.rubricPromptHash !== input.rubricPromptHash
+      || stored.userId !== input.userId
     );
     return { allow: true, reason: "live_gate_clear", shadowMismatch: mismatch };
   }
-  if (stored && stored.contentHash !== input.contentHash) {
-    return { allow: false, reason: "verdict_missing_or_stale", shadowMismatch: true };
+  if (!input.persisted || !stored) {
+    return { allow: false, reason: "verdict_not_persisted", shadowMismatch: false };
   }
-  if (!stored) {
-    return { allow: true, reason: "live_gate_clear_no_prior_verdict", shadowMismatch: false };
+  if (stored.userId !== input.userId) {
+    return { allow: false, reason: "verdict_wrong_account", shadowMismatch: true };
+  }
+  if (stored.contentHash !== input.contentHash) {
+    return { allow: false, reason: "verdict_missing_or_stale", shadowMismatch: true };
   }
   if (stored.promptHash !== input.promptHash || stored.rubricPromptHash !== input.rubricPromptHash) {
     return { allow: false, reason: "prompt_version_mismatch", shadowMismatch: true };
