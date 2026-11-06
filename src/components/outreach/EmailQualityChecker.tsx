@@ -9,6 +9,7 @@ import {
   type Severity,
 } from "../../../supabase/functions/_shared/email-audit";
 import { deliverabilityReport } from "../../../supabase/functions/_shared/email-deliverability";
+import { unsupportedClaims } from "../../../supabase/functions/_shared/evidence";
 
 /**
  * The live quality card — now a view of the rules rather than a second set.
@@ -123,7 +124,14 @@ export const scoreEmailQuality = (
     verifiedProof,
   });
   const { findings: deliverability, metrics } = deliverabilityReport({ subject, body, isFirstTouch });
-  const findings = [...writing, ...deliverability];
+  const claimFindings: Finding[] = unsupportedClaims(`${subject}\n${body}`, verifiedProof ?? "").map((hit) => ({
+    rule: hit.rule,
+    severity: "blocker",
+    evidence: hit.evidence,
+    why: hit.why,
+    fix: "Remove the claim, or ask a question that does not state it.",
+  }));
+  const findings = [...writing, ...deliverability, ...claimFindings];
 
   const shown = new Set(ROWS.flatMap((r) => r.rules));
   const checks: CheckResult[] = ROWS.map(({ label, rules, clean }) => {

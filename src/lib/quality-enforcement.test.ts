@@ -5,7 +5,7 @@ import {
   autonomousSendAllowed,
   type Attempt,
 } from "../../supabase/functions/_shared/email-quality";
-import { failingCheckerFindings } from "../../supabase/functions/_shared/quality-gate";
+import { failingCheckerFindings, outboundGateFindings, reviseUntilClear } from "../../supabase/functions/_shared/quality-gate";
 import { unsupportedClaims } from "../../supabase/functions/_shared/evidence";
 import { redQualityRows, scoreEmailQuality } from "@/components/outreach/EmailQualityChecker";
 
@@ -79,8 +79,8 @@ describe("the card and the send gate share one result", () => {
       .toEqual(expect.arrayContaining(["touch_one_pitch"]));
   });
 
-  it("does not invent a pass for a role-level note that still has a warning", () => {
-    const body = [
+  it("does not treat an unsupported category pain as a pass", () => {
+    const before = [
       "Hi Sam,",
       "",
       "Freight brokers usually lose the second touch. The handoff after the first reply is where it dies.",
@@ -89,10 +89,86 @@ describe("the card and the send gate share one result", () => {
       "",
       "Jordan",
     ].join("\n");
-    const quality = scoreEmailQuality("second touch", body, true);
-    const rules = quality.findings.map((f) => f.rule);
-    expect(rules).not.toContain("touch_one_pitch");
-    expect(rules).not.toContain("unverified_claim");
+    const beforeQuality = scoreEmailQuality("second touch", before, true);
+    expect(beforeQuality.findings.map((f) => f.rule)).toContain("ungrounded_prospect_claim");
+    expect(redQualityRows(beforeQuality).length).toBeGreaterThan(0);
+    expect(outboundGateFindings("second touch", before, "").some((f) => f.rule === "ungrounded_prospect_claim")).toBe(true);
+
+    const after = [
+      "Hi Sam,",
+      "",
+      "How does follow-up work on your team after the first reply?",
+      "",
+      "Jordan",
+    ].join("\n");
+    const afterQuality = scoreEmailQuality("follow-up", after, true);
+    expect(afterQuality.findings.map((f) => f.rule)).not.toContain("ungrounded_prospect_claim");
+    expect(redQualityRows(afterQuality)).toEqual([]);
+  });
+
+  it("allows a paraphrase of a fact the fixture actually contains", () => {
+    const evidence = "Acme's own page: second-touch replies drop after the first reply.";
+    const body = "Your second-touch replies drop after the first reply.";
+    expect(unsupportedClaims(body, evidence)).toEqual([]);
+    expect(outboundGateFindings("acme", body, evidence).map((f) => f.rule)).not.toContain("ungrounded_prospect_claim");
+  });
+});
+
+describe("generation is rechecked after the rewrite, and a failed rewrite is not a pass", () => {
+  const before = "Freight brokers usually lose the second touch. The handoff after the first reply is where it dies.";
+  const after = "How does follow-up work on your team after the first reply?";
+
+  it("feeds the checker note into one rewrite and keeps the rechecked text", async () => {
+    const notes: string[] = [];
+    const result = await reviseUntilClear({
+      subject: "follow-up",
+      body: before,
+      corpus: "",
+      maxRewrites: 1,
+      rewrite: async (_body, note) => {
+        notes.push(note);
+        return after;
+      },
+    });
+    expect(notes[0]).toContain("ungrounded_prospect_claim");
+    expect(result.status).toBe("clear");
+    expect(result.body).toBe(after);
+    expect(result.findings).toEqual([]);
+    expect(result.attempts).toBe(2);
+  });
+
+  it("refuses when the rewrite does not remove the claim", async () => {
+    const result = await reviseUntilClear({
+      subject: "follow-up",
+      body: before,
+      corpus: "",
+      maxRewrites: 2,
+      rewrite: async () => before,
+    });
+    expect(result.status).toBe("refused");
+    expect(result.body).toBe(before);
+    expect(result.findings.some((f) => f.rule === "ungrounded_prospect_claim")).toBe(true);
+  });
+
+  it("does not treat a missing or throwing rewrite as a pass", async () => {
+    const missing = await reviseUntilClear({
+      subject: "follow-up",
+      body: before,
+      corpus: "",
+      maxRewrites: 1,
+      rewrite: async () => null,
+    });
+    expect(missing.status).toBe("refused");
+    const thrown = await reviseUntilClear({
+      subject: "follow-up",
+      body: before,
+      corpus: "",
+      maxRewrites: 1,
+      rewrite: async () => {
+        throw new Error("checker down");
+      },
+    });
+    expect(thrown.status).not.toBe("clear");
   });
 });
 

@@ -20,6 +20,8 @@ import {
   normalizeRecipient,
 } from "../_shared/duplicate-send.ts";
 import { acceptedUnpersistedBody, deliverReserved, type OutboundStore } from "../_shared/tracked-send.ts";
+import { outboundGateFindings } from "../_shared/quality-gate.ts";
+import { proofFromLead } from "../_shared/template-send-gate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -456,10 +458,11 @@ serve(async (req) => {
     // here. Only a confirmed `invalid` is refused: catch-all, role and unknown
     // are unproven rather than bad, and blocking those would ground most of a
     // list to prevent a minority of bounces.
+    let leadProof = "";
     if (leadId) {
       const { data: leadRow } = await supabase
         .from('leads')
-        .select('id, email_verification_status')
+        .select('id, email_verification_status, research_brief, job_title, industry, company_name, contact_name')
         .eq('id', leadId)
         .eq('user_id', user.id)
         .maybeSingle();
@@ -474,6 +477,9 @@ serve(async (req) => {
           { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
+
+      // Evidence is the lead row this account owns, not a score the caller sent.
+      leadProof = proofFromLead(leadRow);
 
       if (leadRow.email_verification_status === 'invalid') {
         return new Response(
@@ -545,6 +551,27 @@ serve(async (req) => {
       if (appendSignature) {
         const sig = await getSignatureHtml(supabase, user.id, accessToken);
         body = appendSignatureToBody(body, sig);
+      }
+
+      // The browser card is not the gate. A direct call, a stale edit, and a
+      // signature appended here are checked on the text that would be sent.
+      // There is no caller flag that skips this. Confirmation in chat is not
+      // a pass. Human-written mail uses the same rules.
+      const gateFindings = outboundGateFindings(
+        String(subject ?? ""),
+        htmlToPlainText(body),
+        leadProof,
+        0,
+      );
+      if (gateFindings.length > 0) {
+        return new Response(
+          JSON.stringify({
+            error: `Not sent. The quality check failed: ${gateFindings.slice(0, 4).map((f) => f.rule).join(", ")}.`,
+            code: "quality_checker",
+            findings: gateFindings.slice(0, 8).map((f) => ({ rule: f.rule, evidence: f.evidence, fix: f.fix })),
+          }),
+          { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
       }
 
       // Format body as proper HTML email if it's not already HTML

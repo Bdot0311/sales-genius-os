@@ -9,7 +9,7 @@ import { composeSkillContext, skillNamesUsed } from "../_shared/email-skills.ts"
 import { isWeak, rubricFeedback, scoreEmail } from "../_shared/email-quality.ts";
 import { AI_CREDITS_USER_MESSAGE, isAiCreditError, reportAiCreditsExhausted } from "../_shared/ai-credits.ts";
 import { stripInstructionLines, unsupportedClaims } from "../_shared/evidence.ts";
-import { checkerRewriteNote, failingCheckerFindings } from "../_shared/quality-gate.ts";
+import { reviseUntilClear } from "../_shared/quality-gate.ts";
 // The writing rules live in one module so the three copies that used to exist
 // cannot drift apart — see _shared/email-rules.ts.
 import {
@@ -2143,57 +2143,42 @@ conversation that is already going, not as someone chasing silence.`}`;
     const subjectMatch = email.match(/^Subject:\s*(.+)\n+/i);
     const checkedSubject = subjectMatch?.[1]?.trim() || String(subjectLine ?? "");
     const checkedBody = subjectMatch ? email.slice(subjectMatch[0].length) : email;
-    let checkerFailures = goal === "subject_only" || isPrecisionEdit
-      ? []
-      : failingCheckerFindings(checkedSubject, checkedBody, goal === "introduction" ? 1 : 0);
-    if (checkerFailures.length) {
-      console.warn(`[generate-email] checker failures: ${checkerFailures.map((f) => f.rule).join(", ")}`);
-      try {
-        const checkerRetry = await aiFetch("generate-email", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: AI_SMART,
-            messages: [
-              { role: "system", content: systemPrompt },
-              { role: "user", content: `${userPrompt}\n\n${checkerRewriteNote(checkerFailures)}` },
-            ],
-            temperature: 0.4,
-          }),
-        });
-        if (checkerRetry.ok) {
-          const d = await checkerRetry.json();
-          let second = cleanGeneratedEmail((d.choices?.[0]?.message?.content || "").trim(), preserveSubject);
-          if (second) {
+    const revised = goal === "subject_only" || isPrecisionEdit
+      ? { subject: checkedSubject, body: checkedBody, findings: [], status: "clear" as const, attempts: 1 }
+      : await reviseUntilClear({
+          subject: checkedSubject,
+          body: checkedBody,
+          corpus: prospectCorpus,
+          position: goal === "introduction" ? 1 : 0,
+          maxRewrites: 1,
+          rewrite: async (_current, note) => {
+            const checkerRetry = await aiFetch("generate-email", {
+              method: "POST",
+              headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+              body: JSON.stringify({
+                model: AI_SMART,
+                messages: [
+                  { role: "system", content: systemPrompt },
+                  { role: "user", content: `${userPrompt}\n\n${note}` },
+                ],
+                temperature: 0.4,
+              }),
+            });
+            if (!checkerRetry.ok) return null;
+            const d = await checkerRetry.json();
+            let second = cleanGeneratedEmail((d.choices?.[0]?.message?.content || "").trim(), preserveSubject);
+            if (!second) return null;
             second = repairSelfReferentialPeers(second, String(lead?.company_name ?? ""));
             second = enforceSignOff(second, resolvedSenderName);
-            const secondSubject = second.match(/^Subject:\s*(.+)\n+/i);
-            const secondBody = secondSubject ? second.slice(secondSubject[0].length) : second;
-            const secondFailures = failingCheckerFindings(
-              secondSubject?.[1]?.trim() || checkedSubject,
-              secondBody,
-              goal === "introduction" ? 1 : 0,
-            );
-            const stillBlocked = secondFailures.some((f) => f.severity === "blocker")
-              && secondFailures.filter((f) => f.severity === "blocker").length
-                >= checkerFailures.filter((f) => f.severity === "blocker").length
-              && secondFailures.length >= checkerFailures.length;
-            if (
-              !hasPlaceholder(second) &&
-              !hasScaffolding(second) &&
-              !unsupportedClaims(second, prospectCorpus).length &&
-              !stillBlocked &&
-              secondFailures.length < checkerFailures.length
-            ) {
-              email = second;
-              checkerFailures = secondFailures;
-            }
-          }
-        }
-      } catch (e) {
-        console.warn(`[generate-email] checker retry failed: ${e}`);
-      }
+            if (hasPlaceholder(second) || hasScaffolding(second)) return null;
+            const embedded = second.match(/^Subject:\s*(.+)\n+/i);
+            return embedded ? second.slice(embedded[0].length) : second;
+          },
+        });
+    if (revised.body && revised.body !== checkedBody) {
+      email = subjectMatch ? `Subject: ${checkedSubject}\n\n${revised.body}` : revised.body;
     }
+    const checkerFailures = revised.findings;
     const checkerBlockers = checkerFailures.filter((f) => f.severity === "blocker");
     if (checkerBlockers.length) {
       return new Response(JSON.stringify({

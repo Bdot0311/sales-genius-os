@@ -217,7 +217,8 @@ describe("a blocker fails the draft on its own", () => {
       "Best,",
       "Brandon",
     ].join("\n");
-    const card = scoreEmailQuality("sdr ramp", good, true, { company: "Kogenie", contactName: "Dana" });
+    const proof = "Four SDR openings went up on your careers page this month. In teams that size the ramp usually lands on whoever closed last quarter. Kogenie ran into the same thing at nine reps.";
+    const card = scoreEmailQuality("sdr ramp", good, true, { company: "Kogenie", contactName: "Dana" }, proof);
     expect(card.blockers).toEqual([]);
   });
 
@@ -236,10 +237,11 @@ describe("a blocker fails the draft on its own", () => {
       "Brandon",
     ].join("\n");
     for (const greeting of ["Hi there,", "Hi team,", "Hey everyone,", "Hi Bob,", "Dear Dr. Smith,"]) {
+      const proof = "Four SDR openings went up on your careers page this month. In teams that size the ramp usually lands on whoever closed last quarter. Kogenie ran into the same thing at nine reps.";
       const card = scoreEmailQuality("sdr ramp", greeting + rest, true, {
         company: "Kogenie",
         contactName: "Robert Smith",
-      });
+      }, proof);
       expect(card.blockers.map((f) => f.rule), `blocked: ${greeting}`).not.toContain("name_mismatch");
     }
   });

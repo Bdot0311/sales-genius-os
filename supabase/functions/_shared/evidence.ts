@@ -63,6 +63,18 @@ const FUNDING = /\b(?:funding|series\s+[a-e]|new round)\b/i;
 const IMMEDIATE_TIME =
   /\b(?:yesterday|this morning|last night|earlier today|just now)\b/i;
 
+/**
+ * A rate or a habit stated as known, with no source in the corpus.
+ * "Usually" and "most teams" are claims. A question that does not use them
+ * is not. A sentence that labels itself a hypothesis is not stated as fact.
+ */
+const PREVALENCE =
+  /\b(?:usually|typically|tend(?:s)? to|most (?:teams|companies|founders|reps|brokers|operators)|the majority)\b/i;
+
+/** An outcome stated as the mechanism, rather than asked about. */
+const CAUSAL_OUTCOME =
+  /\b(?:is where it dies|dies here|kills (?:your|the|their)|causes (?:your|the|their))\b/i;
+
 const INSTRUCTION_LINE =
   /ignore (?:all |any )?(?:previous|prior|above) instructions|disregard (?:the |all )?(?:above|previous)|you are now|system prompt|do not follow the rules/i;
 
@@ -183,6 +195,27 @@ export function unsupportedClaims(text: string, corpus: string): ClaimHit[] {
     const when = sentence.match(IMMEDIATE_TIME);
     if (when && !source.toLowerCase().includes(when[0].toLowerCase())) {
       push(hits, sentence, "This says something happened at a specific recent time the research does not.");
+    }
+
+    // A labeled hypothesis is not stated as fact. Event and quantity checks
+    // above still apply: "Hypothesis: you raised" is still a claim.
+    if (/\bhypothesis\b/i.test(sentence)) continue;
+
+    const prevalence = sentence.match(PREVALENCE);
+    if (prevalence && !source.toLowerCase().includes(prevalence[0].toLowerCase())) {
+      push(
+        hits,
+        sentence,
+        "This states a rate or a habit as fact. Nothing supplied says that. Ask, or mark it as a hypothesis.",
+      );
+    }
+    const causal = sentence.match(CAUSAL_OUTCOME);
+    if (causal && !source.toLowerCase().includes(causal[0].toLowerCase())) {
+      push(
+        hits,
+        sentence,
+        "This states a cause or an outcome as fact. Nothing supplied says that.",
+      );
     }
   }
   return hits;

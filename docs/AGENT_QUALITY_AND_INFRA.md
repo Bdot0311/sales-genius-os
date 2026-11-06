@@ -28,74 +28,89 @@ The rubric panel also kept the previous dimension scores on screen until the nex
 
 Word overlap is not one of these checks. A sentence can reuse a page's nouns and still be false. That limit is unchanged. `unsupportedClaims` blocks an event, a quantity about the prospect, a "this just happened" time, or a pain stated as known, unless the research or the lead record says that thing. It does not decide that a paraphrase is true.
 
-## Synthetic fixtures, scored by the real card
+## Synthetic fixtures
 
-These are not customer emails. `scoreEmailQuality` produced the numbers.
+These are not customer emails. No live account sample was available. `scoreEmailQuality` produced the numbers. A card score is not a reply rate and not proof the sentences are true.
 
-**Fails the card.** Subject `quick question`. Body:
+**Pitch, no evidence.** Subject `quick question`. Body states "We help companies like yours build the lead sourcing and campaign infrastructure" and "predictable pipeline without adding headcount." Nothing in the fixture supports either sentence. Card: overall 60, status yellow, red rows for Banned Phrases and Pitch. Send stops.
 
-> Hi Sarah,
->
-> We help companies like yours build the lead sourcing and campaign infrastructure that drives predictable pipeline without adding headcount.
->
-> Worth exploring?
->
-> Jordan
+**Before: category pain stated as fact, no source.** Subject `follow-up`.
 
-Result: overall 60, status yellow, with red rows for Banned Phrases and Pitch. `redQualityRows` is non-empty, so studio send and bulk send stop. The evidence for the pitch row is the "We help companies like yours..." sentence. Nothing in this fixture supports that sentence.
-
-**Clears the card except a short-length note.** Subject `second touch`. Body:
-
-> Hi Sam,
->
 > Freight brokers usually lose the second touch. The handoff after the first reply is where it dies.
->
-> How does that handoff work on your team?
->
-> Jordan
 
-Result: overall 95, status green. The only non-green row is Length, yellow, "27 words". There is no pitch row and no unverified-claim row. The length note is the checker's own under-50 rule. This is not a prediction that the email will be answered. It is the card's score for this text.
+No fixture evidence says that freight brokers usually lose anything, or that the handoff is where anything dies. An earlier card score of 95 only meant the lexical rules had not caught "usually" or "is where it dies". That score was not a safe draft. The same text now returns two `ungrounded_prospect_claim` blockers. Card: overall 25, status red. `outboundGateFindings` with an empty corpus returns the same rule. Studio, bulk send, `send-email`, sequence queue, and the agent first-touch path all use that rule.
 
-A false event that copies other words from a page is a different check. Against "Acme builds route planning software for freight brokers. They did not raise a round.", the sentence "You just raised a series B" is an unsupported claim. "Saw you just launched a freight product last week" is allowed when the research says "Launched a freight product last week".
+**After: no fact asserted.** Same greeting and sign-off, body replaced with:
+
+> How does follow-up work on your team after the first reply?
+
+No rate, no cause, no event. Card: overall 95, status green, one yellow length note ("13 words"). Blockers empty. The 95 is only the lexical card. It does not mean the question is relevant, and it does not mean anyone will answer it.
+
+**Paraphrase that the fixture does support.** Evidence string: "Acme's own page: second-touch replies drop after the first reply." Email: "Your second-touch replies drop after the first reply." `unsupportedClaims` is empty. The words are the evidence's words, rearranged. A true paraphrase that shares none of those words is not something this check can bless, and a false sentence that avoids "usually", event verbs, and quantities can still pass. Those two limits are the semantic gap.
+
+A sentence that contains the word "hypothesis" is not treated as a stated rate. "Hypothesis: you raised" is still an event claim.
+
+## Where the gate runs
+
+There is no caller flag, score, or "manual" bit that skips the gate. Chat confirmation means the person asked to send. It does not mark the copy as passed. Human-written mail uses the same rules. A person can send a question. They cannot send a red row or an unsupported rate by calling the API directly.
+
+| Path | What is checked | On failure |
+|---|---|---|
+| `send-email` | `outboundGateFindings` on the plain text after the signature is appended. Evidence is `proofFromLead` for the lead row owned by the caller. No lead id means an empty corpus. | HTTP 422 `quality_checker`. Gmail is not called. |
+| Outreach Studio and bulk send | The same findings via `scoreEmailQuality` and `redQualityRows`, on the body about to send. | Toast or per-lead block. The server checks again. |
+| `generate-email` | `reviseUntilClear`: check, one rewrite, recheck. Corpus is the fetched brief and lead fields, not recalled text and not a client score. | Blockers are not saved. Warnings return `needs_review`. |
+| `agent-run` first touch | `firstTouchBlockers`, which calls `unsupportedClaims`, plus the rubric. A missing rubric is not a pass. A perfect model score does not override a claim blocker. | Held. Nothing is sent or saved. |
+| `agent-chat` `draft_outreach` | Goes through `generate-email`. | Same as generate-email. |
+| `agent-chat` send | Calls `send-email`. | Same 422. |
+| Autonomous replies | `replySendBlockers`, corpus is the prospect's reply plus extra proof, not the sender's offer. | Reply is not sent. |
+| Sequence queue and scheduled send | `queuedCopyBlockers` before the row is queued and again before Gmail. | Held or failed as `ungrounded_template`. |
+
+`deliverReserved` is unchanged. It still stops two concurrent sends of one reservation. The quality gate runs before that reservation.
 
 ## Built in this change
 
-- Studio send and bulk send refuse when any quality-card row is red, on the body that would be sent, including the signature. Blockers are still named. Warnings that the card paints red now stop the send too. Yellow notes do not.
-- `generate-email` runs that same failing-finding list once and rewrites once. Remaining blockers are not saved. Remaining warnings come back as `quality_status: "needs_review"`, which is not a pass.
-- `check-email-rubric` only accepts a score that is an integer 0 through 5, or `n/5`. Anything else, including `0-5`, is `unparseable` and no dimensions are returned.
-- `agent-run` asks `scoreEmailReport`. Availability `unavailable` does not send. Availability `scored` still requires `isPerfect` (100 and no warning or blocker). Availability `plan_gated` still sends only when the deterministic rules are clean.
-- The reply rubric panel drops the previous scores when the text changes.
-- Prospect-event checks at the agent first-touch and reply boundaries, and on queued sequence copy, no longer treat a non-empty research blob or a word overlap as permission. The sender's offer is not evidence that the prospect raised, hired, or launched.
-- The first-touch prompt no longer says to invent an operational pain and never refuse. The proximity lines no longer say to claim "already working with" a customer who was not named.
+- The gates in the table above.
+- Prevalence and causal wording ("usually", "most teams", "is where it dies") are blockers unless that wording is in the evidence corpus. A question that does not use them is not a claim.
+- `reviseUntilClear` is the rewrite loop `generate-email` calls. Tests drive it with a fake model: a failing draft, the checker's note, a revised body, a recheck, and the revised text kept; an unchanged rewrite stays `refused`; a null or throwing rewrite is not `clear`.
+- Rubric integers only. `0-5` is unparseable. Panel scores clear when the text changes.
+- The first-touch prompt no longer says to invent a pain or to claim an unnamed customer.
 
-Hosted functions are whatever was last published in Lovable. Merging this branch does not deploy them. A red card in production can still be the previous function until that publish.
+Hosted functions are whatever was last published in Lovable. Merging this branch does not deploy them.
 
-## Proposed, not built
+## Current runtime, and what to keep
 
-The custom loop is not, by itself, the reason a draft scores red. The missing piece that reproduces is the gate above: the checker ran, and send did not have to clear the rows the user was looking at. Replacing the loop with a named agent framework would not score the email.
+`agent-chat` is a tool loop in one request. `agent-run` is a for-loop over leads in one request, with counters in memory. Drafts, approvals, and sent rows are Postgres. `deliverReserved` and the sent-email unique indexes are the idempotency that already works. Credit locks from the earlier audit stay. Tenant checks on lead id in `send-email` stay.
 
-What the current runtime does not have, and a production build would add, in this order:
+What failed, and is now gated in this branch: the card and the send did not have to agree, a direct `send-email` did not run the card, and "usually" was invisible to the card.
 
-1. **One saved verdict per draft.** Today the card is recomputed in the browser and the agent stores a rubric snapshot in the action log. A draft row should store the checker findings, the rubric report (or `unavailable` / `plan_gated`), and the exact subject and body those were computed on. Send reads that row. A mismatch between the stored body and the body about to send invalidates the verdict. Acceptance: a changed body cannot send on the old score.
+What is still missing, and is the reason a later build is scoped: a verdict is not stored on the draft, a run has no row to resume, and a model rubric score is not a versioned artifact. A named workflow product does not fix those by being installed. The custom loop should stay until those rows exist. Adopting a workflow runtime is justified only if step leases and retries cannot be done on the tables this app already has. That has not been shown. No vendor is selected here.
 
-2. **Durable run steps.** `agent-run` keeps counters in memory for one request. A timeout loses the place. A `agent_run_steps` row per lead (research, draft, score, hold or send) with a status, an attempt count, and a lease makes a retry resume instead of starting over. Acceptance: killing the request after a score leaves a step that a second invocation does not send twice. The existing `deliverReserved` unique index stays the send lock.
+## Proposed build, not started
 
-3. **Typed tool results and the claim check on every path that speaks.** `claim-check.ts` already corrects `agent-chat` when it says it sent and no send event exists. `agent-run` returns counters it computed itself, so that particular lie is less available there. Tool results should stay schema-checked. Acceptance: a fixture where the model says "sent" and the event is an approval is still corrected, on both entry points.
+Must-have, in order. Each item names the failure it answers.
 
-4. **Traces that can be read without a new vendor.** The action log already records skips and scores. Extending it with the verdict id from step 1 is enough to see why a lead was held. A hosted trace product is optional and is not required for the gate. Do not add one until someone can read the log and still cannot answer "why was this held".
+1. **Verdict on the draft.** Store checker findings, rubric availability, and a hash of the exact subject and body. `send-email` recomputes the hash. A mismatch invalidates the verdict and runs the gate again. Answers the stale-edit hole that a browser score cannot close once the body changes after scoring. Acceptance: a test updates the body and the old verdict does not authorize the send.
 
-5. **Replay of the rubric and the checker on fixtures.** The tests in this change score fixed strings. A later eval set should be frozen emails plus the findings they must produce, run in CI against `scoreEmailQuality` and, separately, against a recorded rubric response. Do not call the live model in CI. Acceptance: a change that paints a known pitch as green fails the fixture.
+2. **Run steps with a lease.** One row per lead per phase (research, draft, score, hold, send) with status, attempt count, and a lease expiry. A second invocation resumes the open step instead of sending again. Cancel sets the step to cancelled and the lease is not renewed. Answers `agent-run` losing its place when the request dies. Acceptance: a test inserts a scored step, kills the fake runner, and the next run does not call send. `deliverReserved` stays the last lock.
 
-Must-have before calling the agent enforced: 1, 2, and 5. Optional and not justified by a reproduced bug: a new agent framework, a sandbox, a vector store, a second model that approves the first. The deterministic card is the gate. The model rubric is an additional opinion with a published threshold, not a truth check.
+3. **Receipts for tools.** `claim-check.ts` already corrects `agent-chat` when the prose says "sent" and the event is an approval. `agent-run` should write the same event list it already returns as counters, and the correction should run on any user-visible summary. Acceptance: the existing claim-check fixtures pass on both entry points.
 
-Rollback of the built gate is reverting the send condition to blockers only. Rollback of a future step table is leaving the rows in place and ignoring them; the send lock does not depend on them.
+4. **Fixture replay in CI.** Frozen emails and the findings they must produce, including the "usually" pair above. The live model is not called. Acceptance: a change that lets the "usually" sentence through fails CI. The tests added here are the start of that set, not the whole set.
 
-No capacity, price, or latency number is claimed. The workload assumption behind step 2 is the current per-lead loop inside one edge request, which already has `AGENT_MAX_ATTEMPTS` of 4. Whether that request fits the platform's time limit on a large inbox was not measured here.
+5. **Prompt and rubric version on the verdict.** The system prompt and the rubric prompt are files. Store their hash next to the verdict so a later reply can be tied to the text that was scored. Acceptance: two verdicts of the same body under two prompt hashes are distinguishable. This does not measure replies.
 
-## What a real reply rate would require
+Optional, not justified by a bug reproduced here: a hosted trace vendor, a sandbox, a vector store, a second model that approves the first, a replacement agent framework. The action log plus the verdict id is the trace until someone can read it and still cannot say why a lead was held.
 
-After a publish, on a staging mailbox, a person would send two variants that the card scored, keep the body hash and the verdict, and later count human replies that are not auto-responders. The unit tests in this change do not do that and cannot. No number from those tests is a reply rate.
+Rollback of the gate in this branch is not "send on blockers only" again. That was the bypass. Rollback is to keep refusing sends and hold drafts. A future step table can be ignored without dropping the gate.
+
+Shadow: run the verdict write for a period without reading it, compare it to the live gate, then switch send to require the hash. Canary is a single account flag, default off, with the gate still on for everyone. No new paid dependency.
+
+Owner decisions still open: whether a person may override a red row after reading the findings (there is no such flag now); whether starter plans that cannot call the rubric may keep sending when the deterministic gate is clear (they can, today); whether yearly invoices should keep replacing the credit balance; whether a second search with the same filters is a new charge. Workload size of `agent-run` against the edge time limit was not measured. No price or capacity number is stated. Any effort beyond this list is a provisional guess that the five items are each a migration plus tests, not a measured duration.
+
+## What would count as a reply improvement
+
+A staging mailbox can show that a message was handed to Gmail and that a bounce or an autoresponder came back. It cannot establish a prospect reply rate. A rate needs a campaign the owner approves, a denominator of messages that were actually delivered, human replies counted apart from autoresponders, each reply tied to the body hash and the rubric version, and the confounders written down (list, offer, mailbox, time). This change did not send anything. No number here is that rate.
 
 ## Limits
 
-A green card means the deterministic rules found no blocker and no warning. It does not mean the email is true, relevant, or likely to be answered. A rubric score of 100 is the model agreeing with itself. Semantic falsehoods that are not an event, a quantity, a fake time, or a pain stated as known can still pass. Research that was never fetched is still not something this change can see in production until the new functions are published.
+A green card means no red row. It does not mean the email is true or that it will be answered. A rubric score is the model. A paraphrase with none of the evidence's words is not certified. A false sentence that avoids the patterns above can still pass. Word overlap is not used as proof of meaning. The functions are not published until Lovable publishes them.
