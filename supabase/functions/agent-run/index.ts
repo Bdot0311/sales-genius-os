@@ -15,7 +15,9 @@ import {
   type RubricDimension,
 } from "../_shared/email-quality.ts";
 import { auditEmail } from "../_shared/email-audit.ts";
-import { guardRunSummary, receiptsFromRun } from "../_shared/run-receipts.ts";
+import { buildAgentRunSummary, classifyProviderSend, type ToolReceipt } from "../_shared/run-receipts.ts";
+import { rpcStepStore, runPhase, type StepStore } from "../_shared/lead-run.ts";
+import { contentHash, gatePromptHash, rubricPromptHash } from "../_shared/prompt-versions.ts";
 import { agentProhibitions } from "../_shared/agent-prohibitions.ts";
 import { deliverabilityCheck } from "../_shared/email-deliverability.ts";
 import { findPlaceholders, hasPlaceholder, bannedPhrasesBlock, realValue } from "../_shared/email-rules.ts";
@@ -190,11 +192,12 @@ serve(async (req) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const reqBody: { mode?: string; agentId?: string; trigger?: string } = await req.json().catch(() => ({}));
+  const reqBody: { mode?: string; agentId?: string; trigger?: string; cancelRunId?: string } = await req.json().catch(() => ({}));
 
   // Every invocation gets a run id so the UI can group the audit trail into
-  // discrete runs, and record *why* a run produced nothing.
-  const runId = crypto.randomUUID();
+  // discrete runs, and record *why* a run produced nothing. open_outbound_run
+  // may replace it with an unfinished run so a restart resumes that run.
+  let runId: string = crypto.randomUUID();
   const triggerSource = typeof reqBody.trigger === "string" ? reqBody.trigger : "manual";
   const auditClient = createClient(supabaseUrl, serviceKey);
   let auditUserId: string | null = null;
@@ -242,6 +245,22 @@ const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
     }
 
     auditUserId = user.id;
+    if (typeof reqBody.cancelRunId === "string" && reqBody.cancelRunId.length > 0) {
+      await adminClient.rpc("cancel_agent_run", { p_user_id: user.id, p_run_id: reqBody.cancelRunId });
+      return new Response(JSON.stringify({ cancelled: true, runId: reqBody.cancelRunId }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    let stepStore: StepStore | null = null;
+    try {
+      const opened = await adminClient.rpc("open_outbound_run", { p_user_id: user.id });
+      if (typeof opened.data === "string") {
+        runId = opened.data;
+        stepStore = rpcStepStore(adminClient);
+      }
+    } catch {
+      stepStore = null;
+    }
 
     // ── Agent resolution ──────────────────────────────────────────────────
     // A user can own several agent builds. When no specific agent is named we
@@ -712,6 +731,17 @@ const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
     // ────────────────────────────────────────────────────────────────────────
     let outreachSent = 0;
     let outreachDrafted = 0;
+    const stepOwner = crypto.randomUUID();
+    const leadReceipts: ToolReceipt[] = [];
+    const recordReplySend = (
+      detail: string,
+      sendRes: Response,
+      sendData: { error?: unknown; code?: unknown },
+    ) => {
+      const status = classifyProviderSend({ ok: sendRes.ok, error: sendData?.error, code: sendData?.code });
+      leadReceipts.push({ toolName: "send_reply", status, detail });
+      return status;
+    };
     /*
      * How many drafts this run wrote with no facts about the company, and why.
      *
@@ -863,13 +893,28 @@ ${playbookSystemRules()}`;
               // Research the prospect's site and read the decision layer before
               // writing, exactly as Outreach Studio does: Bedrock writes, the
               // brief supplies the facts, the evaluation supplies the angle.
-              const research = await researchBlockForLead(
-                adminClient,
-                supabaseUrl,
-                authHeader,
-                anonKey,
-                lead.id,
-              );
+              let research: { block: string; outcome: string; detail?: string } = { block: "", outcome: "skipped" };
+              const researchPhase = await runPhase(stepStore, {
+                userId: user.id, leadId: lead.id, runId, owner: stepOwner,
+              }, "research", async () => {
+                research = await researchBlockForLead(
+                  adminClient,
+                  supabaseUrl,
+                  authHeader,
+                  anonKey,
+                  lead.id,
+                );
+                return { block: research.block, outcome: research.outcome, detail: research.detail ?? null };
+              });
+              if (researchPhase.action === "stopped" || researchPhase.status === "left_open") continue;
+              if (researchPhase.action === "skipped") {
+                const payload = researchPhase.payload;
+                research = {
+                  block: typeof payload?.block === "string" ? payload.block : "",
+                  outcome: typeof payload?.outcome === "string" ? payload.outcome : "skipped",
+                  detail: typeof payload?.detail === "string" ? payload.detail : "resumed",
+                };
+              }
               const leadResearchBlock = research.block;
               const proofForTouch = [
                 leadResearchBlock,
@@ -906,10 +951,30 @@ ${playbookSystemRules()}`;
 
               // Not appended here any more: buildTouchPrompt takes it, so the
               // empty case can be stated to the model rather than vanishing.
-              const raw = await callGemini(
-                outreachPrompt,
-                `${outreachSystemPrompt}${leadStrategyBlock}`,
-              );
+              let raw = "";
+              const draftPhase = await runPhase(stepStore, {
+                userId: user.id, leadId: lead.id, runId, owner: stepOwner,
+              }, "draft", async () => {
+                raw = await callGemini(
+                  outreachPrompt,
+                  `${outreachSystemPrompt}${leadStrategyBlock}`,
+                );
+                return { raw };
+              });
+              if (draftPhase.action === "stopped" || draftPhase.status === "left_open") continue;
+              if (draftPhase.action === "skipped") {
+                const savedRaw = draftPhase.payload?.raw;
+                if (typeof savedRaw === "string" && savedRaw.length > 0) {
+                  raw = savedRaw;
+                } else {
+                  const { data: saved } = await adminClient.from("email_drafts")
+                    .select("subject, body")
+                    .eq("user_id", user.id)
+                    .eq("lead_id", lead.id)
+                    .maybeSingle();
+                  raw = JSON.stringify({ touches: [{ day: 0, purpose: "resumed", subject: saved?.subject ?? "", body: saved?.body ?? "" }] });
+                }
+              }
               const touches = parseTouches(raw);
               let subject = touches[0]?.subject ?? "";
               let body = touches[0]?.body ?? "";
@@ -1003,9 +1068,21 @@ ${playbookSystemRules()}`;
                 return { subject: subj, body: bod, rubric, blocking, availability: report.availability };
               };
 
-              let best = await assess(subject, body);
+              let best: Attempt = { subject, body, rubric: null, blocking: [], availability: "unavailable" };
               let attempts = 1;
+              let qualityHold = false;
+              let rubric: { overall?: number; dimensions?: Record<string, { score: number }> } | null = null;
+              let quality: { score: number | null; dimensions: Record<string, number> | null; attempts: number; blocking: string[] } = {
+                score: null, dimensions: null, attempts: 1, blocking: [],
+              };
+              const scorePhase = await runPhase(stepStore, {
+                userId: user.id, leadId: lead.id, runId, owner: stepOwner,
+              }, "score", async (ctx) => {
+              if (!await ctx.owned()) return { hold: true, done: false };
+              best = await assess(subject, body);
+              attempts = 1;
               while (!isPerfect(best) && attempts < AGENT_MAX_ATTEMPTS) {
+                if (!await ctx.owned()) return { hold: true, done: false };
                 attempts++;
                 const retryRaw = await callGemini(
                   outreachPrompt + attemptFeedback(best),
@@ -1021,7 +1098,7 @@ ${playbookSystemRules()}`;
               }
               subject = best.subject;
               body = best.body;
-              const rubric = best.rubric;
+              rubric = best.rubric;
 
               // Held unless it is clean on both checks. The exception is an
               // account with no rubric available at all, where holding every
@@ -1029,11 +1106,11 @@ ${playbookSystemRules()}`;
               // those the original floor still applies.
               // Carried onto every action this draft produces, so the score is
               // visible where the work is rather than only in a server log.
-              const quality = {
+              quality = {
                 score: rubric?.overall ?? null,
                 dimensions: rubric
                   ? Object.fromEntries(
-                      Object.entries(rubric.dimensions).map(([k, d]) => [k, (d as RubricDimension).score]),
+                      Object.entries(rubric?.dimensions ?? {}).map(([k, d]) => [k, (d as RubricDimension).score]),
                     )
                   : null,
                 attempts,
@@ -1058,14 +1135,53 @@ ${playbookSystemRules()}`;
                * the same one — and it comes back once enrichment has given the
                * agent something more to work with.
                */
-              const qualityHold = !autonomousSendAllowed(best, best.availability ?? (scored ? "scored" : "unavailable"));
+              qualityHold = !autonomousSendAllowed(best, best.availability ?? (scored ? "scored" : "unavailable"));
+              return {
+                hold: qualityHold,
+                subject: best.subject,
+                body: best.body,
+                availability: best.availability ?? (scored ? "scored" : "unavailable"),
+              };
+              });
+              if (scorePhase.action === "stopped" || scorePhase.status === "left_open") continue;
+              if (scorePhase.action === "skipped") {
+                qualityHold = scorePhase.payload?.hold === true;
+                if (typeof scorePhase.payload?.subject === "string") subject = scorePhase.payload.subject;
+                if (typeof scorePhase.payload?.body === "string") body = scorePhase.payload.body;
+              }
+              if (scorePhase.action === "ran" && scorePhase.status === "done") {
+                try {
+                  const [hash, promptHash, rubricHash] = await Promise.all([
+                    contentHash(subject, body),
+                    gatePromptHash(),
+                    rubricPromptHash(),
+                  ]);
+                  await adminClient.rpc("record_outbound_verdict", {
+                    p_user_id: user.id,
+                    p_lead_id: lead.id,
+                    p_content_hash: hash,
+                    p_subject: subject,
+                    p_body: body,
+                    p_findings: best.blocking,
+                    p_rubric_availability: best.availability ?? "unavailable",
+                    p_rubric: best.rubric,
+                    p_prompt_hash: promptHash,
+                    p_rubric_prompt_hash: rubricHash,
+                    p_gate_status: qualityHold ? "refused" : "clear",
+                    p_shadow: true,
+                    p_shadow_mismatch: false,
+                  });
+                } catch (verdictErr) {
+                  console.warn("[agent-run] draft verdict skipped", verdictErr);
+                }
+              }
               if (qualityHold) {
                 console.log(
                   `[agent-run] quality hold for ${to} after ${attempts} attempt(s): ` +
-                  `${rubric?.overall ?? "unscored"}/100, ${best.blocking.length} blocking`,
+                  `${best.rubric?.overall ?? "unscored"}/100, ${best.blocking.length} blocking`,
                 );
               } else {
-                console.log(`[agent-run] quality pass for ${to} after ${attempts} attempt(s): ${rubric?.overall ?? "unscored"}/100`);
+                console.log(`[agent-run] quality pass for ${to} after ${attempts} attempt(s): ${best.rubric?.overall ?? "unscored"}/100`);
               }
 
               // A draft that could not be written well enough is thrown away,
@@ -1083,6 +1199,10 @@ ${playbookSystemRules()}`;
               // about it — the agent writes a fresh email rather than
               // resurrecting this one.
               if (qualityHold) {
+                const held = await runPhase(stepStore, {
+                  userId: user.id, leadId: lead.id, runId, owner: stepOwner,
+                }, "hold", async (ctx) => {
+                if (!await ctx.owned()) return { hold: true, done: false };
                 await logAction({
                   user_id: user.id,
                   action_type: "skipped",
@@ -1102,7 +1222,9 @@ ${playbookSystemRules()}`;
                     quality,
                   },
                 });
-                remainingOutreach--;
+                return { hold: true };
+                });
+                if (held.action === "ran") remainingOutreach--;
                 continue;
               }
 
@@ -1162,11 +1284,16 @@ ${playbookSystemRules()}`;
                       : {}),
                   },
                 });
+                leadReceipts.push({ toolName: "send_outreach", status: "approved", detail: to });
                 outreachDrafted++;
                 remainingOutreach--;
                 continue;
               }
 
+              const sendPhase = await runPhase(stepStore, {
+                userId: user.id, leadId: lead.id, runId, owner: stepOwner,
+              }, "send", async (ctx) => {
+              if (!await ctx.owned()) return { ok: false, done: false };
               const sendRes = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
                 method: "POST",
                 headers: { Authorization: authHeader, "Content-Type": "application/json" },
@@ -1180,7 +1307,12 @@ ${playbookSystemRules()}`;
                 }),
               });
               const sendData = await sendRes.json().catch(() => ({}));
+              const sendStatus = classifyProviderSend({ ok: sendRes.ok, error: sendData?.error, code: sendData?.code });
+              leadReceipts.push({ toolName: "send_outreach", status: sendStatus, detail: to });
 
+              if (sendStatus === "provider_accepted_unpersisted") {
+                return { ok: false, unpersisted: true };
+              }
               if (!sendRes.ok || sendData?.error) {
                 await logAction({
                   user_id: user.id,
@@ -1192,8 +1324,11 @@ ${playbookSystemRules()}`;
                   description: `Could not send to ${to}: ${sendData?.error ?? `send-email returned ${sendRes.status}`}`,
                   metadata: { phase: "outreach", lead_id: lead.id },
                 });
-                continue;
+                return { ok: false, done: false };
               }
+              return { ok: true, sendData };
+              });
+              if (sendPhase.action !== "ran" || sendPhase.payload?.ok !== true) continue;
 
               await adminClient
                 .from("leads")
@@ -1251,6 +1386,7 @@ ${playbookSystemRules()}`;
               });
 
 
+              leadReceipts.push({ toolName: "send_outreach", status: "ok", detail: to });
               outreachSent++;
               remainingOutreach--;
             } catch (leadErr: any) {
@@ -1597,6 +1733,7 @@ Output ONLY the reply body. No subject line. No greeting like "Hi [name]". No si
               description: `${reply.fromEmail} replied with interest — drafted a response for your approval`,
               metadata: { phase: "reply", confidence },
             });
+            leadReceipts.push({ toolName: "send_reply", status: "approved", detail: reply.fromEmail });
             continue;
           }
 
@@ -1614,9 +1751,40 @@ Output ONLY the reply body. No subject line. No greeting like "Hi [name]". No si
               }),
             });
             const sendData = await sendRes.json().catch(() => ({}));
-            if (!sendRes.ok || sendData?.error) {
-              throw new Error(sendData?.error ?? `send-email returned ${sendRes.status}`);
+            const replyStatus = recordReplySend(reply.fromEmail, sendRes, sendData);
+            if (replyStatus !== "ok") {
+              await logAction({
+                user_id: user.id,
+                sent_email_id: reply.sentEmailId,
+                action_type: "error",
+                status: "failed",
+                prospect_email: reply.fromEmail,
+                subject: reply.subject,
+                classification: "interested",
+                error_message: sendData?.error ?? `send-email returned ${sendRes.status}`,
+                description: replyStatus === "provider_accepted_unpersisted"
+                  ? `Gmail accepted a reply to ${reply.fromEmail}, and the send record was not saved. It was not counted as delivered.`
+                  : `Could not send the reply to ${reply.fromEmail}.`,
+                metadata: { phase: "reply", gmail_message_id: reply.gmailMessageId, code: sendData?.code ?? null },
+              });
+              errors++;
+              continue;
             }
+          } else {
+            leadReceipts.push({ toolName: "send_reply", status: "failed", detail: reply.fromEmail });
+            await logAction({
+              user_id: user.id,
+              sent_email_id: reply.sentEmailId,
+              action_type: "skipped",
+              status: "skipped",
+              prospect_email: reply.fromEmail,
+              subject: reply.subject,
+              classification: "interested",
+              description: `Did not send the reply to ${reply.fromEmail} because no active Gmail mailbox is available.`,
+              metadata: { phase: "reply", reason: "no_active_mailbox" },
+            });
+            skipped++;
+            continue;
           }
 
           await logAction({
@@ -1757,6 +1925,7 @@ Output ONLY the reply body. No subject line or signature.`;
               description: `${reply.fromEmail} raised an objection — drafted a response for your approval`,
               metadata: { phase: "reply", confidence, objection_entry_ids: usedEntryIds },
             });
+            leadReceipts.push({ toolName: "send_reply", status: "approved", detail: reply.fromEmail });
             continue;
           }
 
@@ -1774,9 +1943,40 @@ Output ONLY the reply body. No subject line or signature.`;
               }),
             });
             const sendData = await sendRes.json().catch(() => ({}));
-            if (!sendRes.ok || sendData?.error) {
-              throw new Error(sendData?.error ?? `send-email returned ${sendRes.status}`);
+            const replyStatus = recordReplySend(reply.fromEmail, sendRes, sendData);
+            if (replyStatus !== "ok") {
+              await logAction({
+                user_id: user.id,
+                sent_email_id: reply.sentEmailId,
+                action_type: "error",
+                status: "failed",
+                prospect_email: reply.fromEmail,
+                subject: reply.subject,
+                classification: "objection",
+                error_message: sendData?.error ?? `send-email returned ${sendRes.status}`,
+                description: replyStatus === "provider_accepted_unpersisted"
+                  ? `Gmail accepted a reply to ${reply.fromEmail}, and the send record was not saved. It was not counted as delivered.`
+                  : `Could not send the reply to ${reply.fromEmail}.`,
+                metadata: { phase: "reply", gmail_message_id: reply.gmailMessageId, code: sendData?.code ?? null },
+              });
+              errors++;
+              continue;
             }
+          } else {
+            leadReceipts.push({ toolName: "send_reply", status: "failed", detail: reply.fromEmail });
+            await logAction({
+              user_id: user.id,
+              sent_email_id: reply.sentEmailId,
+              action_type: "skipped",
+              status: "skipped",
+              prospect_email: reply.fromEmail,
+              subject: reply.subject,
+              classification: "objection",
+              description: `Did not send the reply to ${reply.fromEmail} because no active Gmail mailbox is available.`,
+              metadata: { phase: "reply", reason: "no_active_mailbox" },
+            });
+            skipped++;
+            continue;
           }
 
           await logAction({
@@ -1852,6 +2052,7 @@ Output ONLY the reply body. No subject line or signature.`;
               description: `${reply.fromEmail} asked to meet — drafted a scheduling reply for your approval`,
               metadata: { phase: "reply", confidence },
             });
+            leadReceipts.push({ toolName: "send_reply", status: "approved", detail: reply.fromEmail });
             continue;
           }
 
@@ -1870,9 +2071,40 @@ Output ONLY the reply body. No subject line or signature.`;
               }),
             });
             const sendData = await sendRes.json().catch(() => ({}));
-            if (!sendRes.ok || sendData?.error) {
-              throw new Error(sendData?.error ?? `send-email returned ${sendRes.status}`);
+            const replyStatus = recordReplySend(reply.fromEmail, sendRes, sendData);
+            if (replyStatus !== "ok") {
+              await logAction({
+                user_id: user.id,
+                sent_email_id: reply.sentEmailId,
+                action_type: "error",
+                status: "failed",
+                prospect_email: reply.fromEmail,
+                subject: reply.subject,
+                classification: "meeting_request",
+                error_message: sendData?.error ?? `send-email returned ${sendRes.status}`,
+                description: replyStatus === "provider_accepted_unpersisted"
+                  ? `Gmail accepted a reply to ${reply.fromEmail}, and the send record was not saved. It was not counted as delivered.`
+                  : `Could not send the reply to ${reply.fromEmail}.`,
+                metadata: { phase: "reply", gmail_message_id: reply.gmailMessageId, code: sendData?.code ?? null },
+              });
+              errors++;
+              continue;
             }
+          } else {
+            leadReceipts.push({ toolName: "send_reply", status: "failed", detail: reply.fromEmail });
+            await logAction({
+              user_id: user.id,
+              sent_email_id: reply.sentEmailId,
+              action_type: "skipped",
+              status: "skipped",
+              prospect_email: reply.fromEmail,
+              subject: reply.subject,
+              classification: "meeting_request",
+              description: `Did not send the reply to ${reply.fromEmail} because no active Gmail mailbox is available.`,
+              metadata: { phase: "reply", reason: "no_active_mailbox" },
+            });
+            skipped++;
+            continue;
           }
 
           await adminClient
@@ -2009,20 +2241,19 @@ Output ONLY the reply body. No subject line or signature.`;
     }
 
     const agentLabel = `${config.agent_name || "Agent"} (${agentRole.replace(/_/g, " ")})`;
-    const runReceipts = receiptsFromRun({
-      outreachSent,
+    const runReceipts = leadReceipts;
+    const runSummary = buildAgentRunSummary({
+      agentLabel,
+      approvalMode,
+      leadsFound,
+      outreachDrafted,
+      threadsChecked,
       pendingApprovals,
-      repliesSent,
-      sendFailed: 0,
-      unpersisted: 0,
+      receipts: runReceipts,
     });
-    const runSummary = guardRunSummary(
-      approvalMode
-        ? `${agentLabel} finished in approval mode — ${leadsFound} new lead(s) found, ${outreachDrafted} first-touch draft(s) created, ${threadsChecked} thread(s) checked, ${pendingApprovals} total draft(s) waiting for your approval.`
-        : `${agentLabel} finished autonomously — ${leadsFound} lead(s) found, ${outreachSent} first-touch email(s) sent, ${threadsChecked} thread(s) checked, ${repliesSent} reply(ies) sent.`,
-      runReceipts,
-    );
-    const runId = crypto.randomUUID();
+    if (stepStore) {
+      await adminClient.rpc("close_outbound_run", { p_user_id: user.id, p_run_id: runId }).then(() => {}, () => {});
+    }
     for (const receipt of runReceipts) {
       await adminClient.rpc("record_agent_tool_receipt", {
         p_user_id: user.id,
@@ -2084,6 +2315,10 @@ Output ONLY the reply body. No subject line or signature.`;
         role: agentRole,
         mode: approvalMode ? "approval" : "autonomous",
         summary: runSummary,
+        // First-touch phases only. Reply sends in this request are still in memory.
+        // deliverReserved inside send-email is what stops a duplicate reply.
+        durableFirstTouch: stepStore !== null,
+        replyExecution: "in_memory",
         threadsChecked,
         leadsFound,
         outreachDrafted,

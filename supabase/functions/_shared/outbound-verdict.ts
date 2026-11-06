@@ -46,8 +46,11 @@ export function evaluateSend(input: {
     );
     return { allow: true, reason: "live_gate_clear", shadowMismatch: mismatch };
   }
-  if (!stored || stored.contentHash !== input.contentHash) {
+  if (stored && stored.contentHash !== input.contentHash) {
     return { allow: false, reason: "verdict_missing_or_stale", shadowMismatch: true };
+  }
+  if (!stored) {
+    return { allow: true, reason: "live_gate_clear_no_prior_verdict", shadowMismatch: false };
   }
   if (stored.promptHash !== input.promptHash || stored.rubricPromptHash !== input.rubricPromptHash) {
     return { allow: false, reason: "prompt_version_mismatch", shadowMismatch: true };

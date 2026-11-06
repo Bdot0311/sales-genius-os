@@ -204,7 +204,7 @@ describe("the autonomous run", () => {
   it("records the score where the user can see it", () => {
     // It was computed and thrown away, so the only evidence was a server log.
     // Carried on all three outcomes now: sent, saved for approval, and skipped.
-    expect(RUN).toContain("const quality = {");
+    expect(RUN).toContain("quality = {");
     expect(RUN).toContain("quality,");
     expect(RUN.match(/^\s*quality,$/gm) ?? []).toHaveLength(3);
   });

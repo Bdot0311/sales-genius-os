@@ -2131,6 +2131,24 @@ export type Database = {
           },
         ]
       }
+      outbound_runs: {
+        Row: {
+          created_at: string
+          id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          id: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          status?: string
+        }
+        Relationships: []
+      }
       outbound_run_steps: {
         Row: {
           attempt_count: number
@@ -2139,6 +2157,7 @@ export type Database = {
           lead_id: string
           lease_expires_at: string | null
           lease_owner: string | null
+          payload: Json | null
           phase: string
           run_id: string
           status: string

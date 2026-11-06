@@ -120,23 +120,30 @@ describe("every rule names tools that exist", () => {
  * its summary is built from counters incremented only after a real send, not
  * written by a model. These assertions are what makes that safe to rely on.
  */
-describe("the autonomous path reports counters, not model prose", () => {
+describe("the autonomous path reports receipts, not model prose", () => {
   const RUN = readFileSync("supabase/functions/agent-run/index.ts", "utf8");
 
-  it("builds its summary from counters", () => {
-    expect(RUN).toContain("guardRunSummary(");
-    expect(RUN).toMatch(/\$\{outreachSent\} first-touch email\(s\) sent/);
+  it("builds its summary from tool receipts", () => {
+    expect(RUN).toContain("buildAgentRunSummary(");
+    expect(RUN).not.toContain("receiptsFromRun(");
   });
 
   it("only counts a send after the send call succeeded", () => {
-    const gate = RUN.indexOf("if (!sendRes.ok || sendData?.error)");
+    const gate = RUN.indexOf("classifyProviderSend(");
     const counter = RUN.indexOf("outreachSent++");
     expect(gate).toBeGreaterThan(-1);
     expect(counter).toBeGreaterThan(gate);
+    const replyGate = RUN.indexOf('if (replyStatus !== "ok")');
+    const replyCounter = RUN.indexOf("repliesSent++");
+    expect(replyGate).toBeGreaterThan(-1);
+    expect(replyCounter).toBeGreaterThan(replyGate);
   });
 
   it("distinguishes approval mode from autonomous in what it claims", () => {
-    expect(RUN).toMatch(/waiting for your approval/i);
+    const summary = readFileSync("supabase/functions/_shared/run-receipts.ts", "utf8");
+    expect(summary).toMatch(/waiting for your approval/i);
+    expect(summary).toContain('delivered("send_outreach")');
+    expect(RUN).toContain("buildAgentRunSummary(");
   });
 });
 

@@ -24,6 +24,7 @@ import { outboundGateFindings } from "../_shared/quality-gate.ts";
 import { proofFromLead } from "../_shared/template-send-gate.ts";
 import { evaluateSend } from "../_shared/outbound-verdict.ts";
 import { contentHash, gatePromptHash, rubricPromptHash } from "../_shared/prompt-versions.ts";
+import { scoreEmailReport } from "../_shared/email-quality.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -64,6 +65,7 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const payload = await req.json();
@@ -584,10 +586,14 @@ serve(async (req) => {
       let allowSend = !liveBlocked;
       let verdictId: string | null = null;
       try {
-        const [hash, promptHash, rubricHash] = await Promise.all([
+        const [hash, promptHash, rubricHash, rubricReport] = await Promise.all([
           contentHash(String(subject ?? ""), plainBody),
           gatePromptHash(),
           rubricPromptHash(),
+          scoreEmailReport(supabaseUrl, authHeader, anonKey, {
+            subject: String(subject ?? ""),
+            body: plainBody,
+          }),
         ]);
         const { data: enabled } = await supabase.rpc("outbound_canary_enabled", { p_user_id: user.id });
         const { data: storedRows } = await supabase.rpc("latest_outbound_verdict", {
@@ -619,8 +625,8 @@ serve(async (req) => {
           p_subject: String(subject ?? ""),
           p_body: plainBody,
           p_findings: gateFindings,
-          p_rubric_availability: "unavailable",
-          p_rubric: null,
+          p_rubric_availability: rubricReport.availability,
+          p_rubric: rubricReport.rubric,
           p_prompt_hash: promptHash,
           p_rubric_prompt_hash: rubricHash,
           p_gate_status: gateStatus,
