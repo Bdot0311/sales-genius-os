@@ -4,7 +4,7 @@
     "title": "OutReign API",
     "version": "1.0.0",
     "summary": "B2B lead intelligence and outbound sales API",
-    "description": "REST API for OutReign leads, deals, activities, contacts and AI email generation. Authenticate with an X-API-Key header generated in OutReign \u2192 Settings \u2192 API Keys.",
+    "description": "REST API for OutReign saved leads, deals, activities, contacts and AI email generation. Authenticate with X-API-Key from Settings \u2192 API Keys. MCP OAuth and webhook contracts are documented separately at https://docs.outreign.io.",
     "contact": {
       "name": "OutReign support",
       "email": "support@bdotindustries.com",
@@ -20,7 +20,7 @@
   ],
   "externalDocs": {
     "description": "Human API documentation",
-    "url": "https://outreign.io/api-docs"
+    "url": "https://docs.outreign.io"
   },
   "security": [
     {
@@ -39,9 +39,6 @@
     },
     {
       "name": "Contacts"
-    },
-    {
-      "name": "Workflows"
     },
     {
       "name": "Outreach"
@@ -75,7 +72,9 @@
             "in": "query",
             "schema": {
               "type": "integer",
-              "default": 50
+              "default": 50,
+              "minimum": 1,
+              "maximum": 100
             }
           },
           {
@@ -83,7 +82,9 @@
             "in": "query",
             "schema": {
               "type": "integer",
-              "default": 0
+              "default": 0,
+              "minimum": 0,
+              "maximum": 100000
             }
           }
         ],
@@ -97,6 +98,15 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Missing, invalid, inactive or expired API key"
+          },
+          "403": {
+            "description": "Account plan or access restriction"
+          },
+          "429": {
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
         }
       },
@@ -111,7 +121,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Lead"
+                "$ref": "#/components/schemas/LeadInput"
               }
             }
           }
@@ -126,6 +136,15 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Missing, invalid, inactive or expired API key"
+          },
+          "403": {
+            "description": "Account plan or access restriction"
+          },
+          "429": {
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
         }
       }
@@ -147,8 +166,9 @@
                   "leads": {
                     "type": "array",
                     "items": {
-                      "$ref": "#/components/schemas/Lead"
-                    }
+                      "$ref": "#/components/schemas/LeadInput"
+                    },
+                    "maxItems": 100
                   }
                 },
                 "required": [
@@ -175,13 +195,36 @@
                     "errors": {
                       "type": "array",
                       "items": {
-                        "type": "string"
+                        "type": "object",
+                        "properties": {
+                          "index": {
+                            "type": "integer"
+                          },
+                          "error": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "leads": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Lead"
                       }
                     }
                   }
                 }
               }
             }
+          },
+          "401": {
+            "description": "Missing, invalid, inactive or expired API key"
+          },
+          "403": {
+            "description": "Account plan or access restriction"
+          },
+          "429": {
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
         }
       }
@@ -214,6 +257,15 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Missing, invalid, inactive or expired API key"
+          },
+          "403": {
+            "description": "Account plan or access restriction"
+          },
+          "429": {
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
         }
       },
@@ -228,7 +280,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Lead"
+                "$ref": "#/components/schemas/LeadUpdate"
               }
             }
           }
@@ -243,8 +295,18 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Missing, invalid, inactive or expired API key"
+          },
+          "403": {
+            "description": "Account plan or access restriction"
+          },
+          "429": {
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
-        }
+        },
+        "description": "Current update normalization may clear omitted optional fields or apply defaults. Read the current record first and include writable values that must be preserved; inspect the returned record."
       },
       "delete": {
         "tags": [
@@ -262,6 +324,15 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Missing, invalid, inactive or expired API key"
+          },
+          "403": {
+            "description": "Account plan or access restriction"
+          },
+          "429": {
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
         }
       }
@@ -284,7 +355,7 @@
         ],
         "operationId": "enrichLead",
         "summary": "Enrich a lead",
-        "description": "Consumes one enrichment credit from the authenticated account's plan.",
+        "description": "Enrich a saved lead using the account\u2019s entitlement and credit checks. Inspect noMatch and enrichedFields; success does not guarantee a new match.",
         "responses": {
           "200": {
             "description": "Enrichment result",
@@ -293,27 +364,38 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
                       "type": "string"
                     },
-                    "fields_updated": {
+                    "enrichedFields": {
                       "type": "array",
                       "items": {
                         "type": "string"
                       }
+                    },
+                    "noMatch": {
+                      "type": "boolean"
+                    },
+                    "alreadyUpToDate": {
+                      "type": "boolean"
                     }
                   }
                 }
               }
             }
+          },
+          "401": {
+            "description": "Missing, invalid, inactive or expired API key"
+          },
+          "403": {
+            "description": "Account plan or access restriction"
+          },
+          "429": {
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
-        },
-        "x-payment-info": {
-          "intent": "charge",
-          "method": "stripe",
-          "amount": 0.25,
-          "currency": "USD",
-          "description": "Lead enrichment call"
         }
       }
     },
@@ -343,25 +425,79 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "score": {
+                      "type": "integer"
+                    },
+                    "intent_score": {
+                      "type": "integer"
+                    },
                     "icp_score": {
                       "type": "integer"
                     },
-                    "explanation": {
+                    "enrichment_score": {
+                      "type": "integer"
+                    },
+                    "signal_score": {
+                      "type": "integer"
+                    },
+                    "intent_label": {
+                      "type": "string",
+                      "enum": [
+                        "Cold",
+                        "Warm",
+                        "Hot",
+                        "Very Hot"
+                      ]
+                    },
+                    "reasoning": {
                       "type": "string"
+                    },
+                    "recommended_angle": {
+                      "type": "string"
+                    },
+                    "recommendations": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "intent_reasons": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "buying_signals": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "signals": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "signal_layers": {
+                      "type": "object"
                     }
                   }
                 }
               }
             }
+          },
+          "401": {
+            "description": "Missing, invalid, inactive or expired API key"
+          },
+          "403": {
+            "description": "Account plan or access restriction"
+          },
+          "429": {
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
         },
-        "x-payment-info": {
-          "intent": "charge",
-          "method": "stripe",
-          "amount": 0.05,
-          "currency": "USD",
-          "description": "ICP scoring call"
-        }
+        "description": "Returns lead scoring, intent, signal layers and recommendations. Inspect reasoning rather than assuming a purchase prediction."
       }
     },
     "/deals": {
@@ -384,7 +520,9 @@
             "in": "query",
             "schema": {
               "type": "integer",
-              "default": 50
+              "default": 50,
+              "minimum": 1,
+              "maximum": 100
             }
           },
           {
@@ -392,7 +530,9 @@
             "in": "query",
             "schema": {
               "type": "integer",
-              "default": 0
+              "default": 0,
+              "minimum": 0,
+              "maximum": 100000
             }
           }
         ],
@@ -412,11 +552,26 @@
                     },
                     "count": {
                       "type": "integer"
+                    },
+                    "limit": {
+                      "type": "integer"
+                    },
+                    "offset": {
+                      "type": "integer"
                     }
                   }
                 }
               }
             }
+          },
+          "401": {
+            "description": "Missing, invalid, inactive or expired API key"
+          },
+          "403": {
+            "description": "Account plan or access restriction"
+          },
+          "429": {
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
         }
       },
@@ -431,7 +586,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Deal"
+                "$ref": "#/components/schemas/DealInput"
               }
             }
           }
@@ -451,6 +606,15 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Missing, invalid, inactive or expired API key"
+          },
+          "403": {
+            "description": "Account plan or access restriction"
+          },
+          "429": {
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
         }
       }
@@ -478,7 +642,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Deal"
+                "$ref": "#/components/schemas/DealUpdate"
               }
             }
           }
@@ -498,8 +662,18 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Missing, invalid, inactive or expired API key"
+          },
+          "403": {
+            "description": "Account plan or access restriction"
+          },
+          "429": {
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
-        }
+        },
+        "description": "Current update normalization may clear omitted optional fields or apply defaults. Read the current record first and include writable values that must be preserved; inspect the returned record."
       },
       "delete": {
         "tags": [
@@ -517,6 +691,48 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Missing, invalid, inactive or expired API key"
+          },
+          "403": {
+            "description": "Account plan or access restriction"
+          },
+          "429": {
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Deals"
+        ],
+        "operationId": "getDeal",
+        "summary": "Get a deal",
+        "responses": {
+          "200": {
+            "description": "Resource belonging to the authenticated account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Deal"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, inactive or expired API key"
+          },
+          "403": {
+            "description": "Account plan or access restriction"
+          },
+          "429": {
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
         }
       }
@@ -541,7 +757,19 @@
             "in": "query",
             "schema": {
               "type": "integer",
-              "default": 50
+              "default": 50,
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0,
+              "maximum": 100000
             }
           }
         ],
@@ -561,11 +789,26 @@
                     },
                     "count": {
                       "type": "integer"
+                    },
+                    "limit": {
+                      "type": "integer"
+                    },
+                    "offset": {
+                      "type": "integer"
                     }
                   }
                 }
               }
             }
+          },
+          "401": {
+            "description": "Missing, invalid, inactive or expired API key"
+          },
+          "403": {
+            "description": "Account plan or access restriction"
+          },
+          "429": {
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
         }
       },
@@ -580,7 +823,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Activity"
+                "$ref": "#/components/schemas/ActivityInput"
               }
             }
           }
@@ -600,6 +843,15 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Missing, invalid, inactive or expired API key"
+          },
+          "403": {
+            "description": "Account plan or access restriction"
+          },
+          "429": {
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
         }
       }
@@ -627,7 +879,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Activity"
+                "$ref": "#/components/schemas/ActivityUpdate"
               }
             }
           }
@@ -647,8 +899,18 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Missing, invalid, inactive or expired API key"
+          },
+          "403": {
+            "description": "Account plan or access restriction"
+          },
+          "429": {
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
-        }
+        },
+        "description": "Current update normalization may clear omitted optional fields or apply defaults. Read the current record first and include writable values that must be preserved; inspect the returned record."
       },
       "delete": {
         "tags": [
@@ -666,6 +928,48 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Missing, invalid, inactive or expired API key"
+          },
+          "403": {
+            "description": "Account plan or access restriction"
+          },
+          "429": {
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Activities"
+        ],
+        "operationId": "getActivity",
+        "summary": "Get a activity",
+        "responses": {
+          "200": {
+            "description": "Resource belonging to the authenticated account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Activity"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, inactive or expired API key"
+          },
+          "403": {
+            "description": "Account plan or access restriction"
+          },
+          "429": {
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
         }
       }
@@ -690,7 +994,19 @@
             "in": "query",
             "schema": {
               "type": "integer",
-              "default": 50
+              "default": 50,
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0,
+              "maximum": 100000
             }
           }
         ],
@@ -710,11 +1026,26 @@
                     },
                     "count": {
                       "type": "integer"
+                    },
+                    "limit": {
+                      "type": "integer"
+                    },
+                    "offset": {
+                      "type": "integer"
                     }
                   }
                 }
               }
             }
+          },
+          "401": {
+            "description": "Missing, invalid, inactive or expired API key"
+          },
+          "403": {
+            "description": "Account plan or access restriction"
+          },
+          "429": {
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
         }
       },
@@ -729,7 +1060,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Contact"
+                "$ref": "#/components/schemas/ContactInput"
               }
             }
           }
@@ -749,6 +1080,15 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Missing, invalid, inactive or expired API key"
+          },
+          "403": {
+            "description": "Account plan or access restriction"
+          },
+          "429": {
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
         }
       }
@@ -776,7 +1116,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Contact"
+                "$ref": "#/components/schemas/ContactUpdate"
               }
             }
           }
@@ -796,6 +1136,15 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Missing, invalid, inactive or expired API key"
+          },
+          "403": {
+            "description": "Account plan or access restriction"
+          },
+          "429": {
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
         }
       },
@@ -815,6 +1164,48 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Missing, invalid, inactive or expired API key"
+          },
+          "403": {
+            "description": "Account plan or access restriction"
+          },
+          "429": {
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Contacts"
+        ],
+        "operationId": "getContact",
+        "summary": "Get a contact",
+        "responses": {
+          "200": {
+            "description": "Resource belonging to the authenticated account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Contact"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, inactive or expired API key"
+          },
+          "403": {
+            "description": "Account plan or access restriction"
+          },
+          "429": {
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
         }
       }
@@ -826,28 +1217,133 @@
         ],
         "operationId": "generateEmail",
         "summary": "Generate an AI email draft for a lead",
-        "description": "Consumes AI email credits from the authenticated account's plan.",
+        "description": "Generate a draft, not a sent email. Send a lead object plus tone and goal; leadId alone is not accepted by the generator. Supply your own sender/business context. Inspect JSON error even on HTTP 200.",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
+                "required": [
+                  "lead",
+                  "tone",
+                  "goal"
+                ],
                 "properties": {
-                  "leadId": {
-                    "type": "string",
-                    "format": "uuid"
+                  "lead": {
+                    "type": "object",
+                    "required": [
+                      "id"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "contact_name": {
+                        "type": "string"
+                      },
+                      "contact_email": {
+                        "type": "string"
+                      },
+                      "company_name": {
+                        "type": "string"
+                      },
+                      "job_title": {
+                        "type": "string"
+                      },
+                      "company_website": {
+                        "type": "string"
+                      },
+                      "industry": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": true
                   },
                   "tone": {
+                    "type": "string",
+                    "enum": [
+                      "professional",
+                      "friendly",
+                      "casual",
+                      "formal"
+                    ]
+                  },
+                  "goal": {
+                    "type": "string",
+                    "enum": [
+                      "introduction",
+                      "follow-up",
+                      "meeting",
+                      "demo",
+                      "proposal",
+                      "subject_only",
+                      "custom",
+                      "trigger_context",
+                      "social_proof",
+                      "4ts",
+                      "elusive",
+                      "proximity",
+                      "4ps_followup",
+                      "4ps_elusive_followup"
+                    ]
+                  },
+                  "senderName": {
                     "type": "string"
                   },
-                  "trigger_context": {
+                  "senderEmail": {
                     "type": "string"
+                  },
+                  "senderCompany": {
+                    "type": "string"
+                  },
+                  "businessDescription": {
+                    "type": "string"
+                  },
+                  "triggerContext": {
+                    "type": "string"
+                  },
+                  "subjectLine": {
+                    "type": "string"
+                  },
+                  "socialProof": {
+                    "type": "string"
+                  },
+                  "customInstruction": {
+                    "type": "string"
+                  },
+                  "templateDescription": {
+                    "type": "string"
+                  },
+                  "templateValue": {
+                    "type": "string"
+                  },
+                  "templateGoal": {
+                    "type": "string"
+                  },
+                  "openerWord": {
+                    "type": "string"
+                  },
+                  "strict_mode": {
+                    "type": "boolean"
+                  },
+                  "variantNum": {
+                    "type": "integer"
+                  },
+                  "use4SentenceFramework": {
+                    "type": "boolean"
+                  },
+                  "avoidSubjects": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "thread": {
+                    "type": "object"
                   }
-                },
-                "required": [
-                  "leadId"
-                ]
+                }
               }
             }
           }
@@ -860,24 +1356,47 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "subject": {
+                    "email": {
                       "type": "string"
                     },
-                    "body": {
+                    "rubric": {
+                      "type": "object"
+                    },
+                    "quality_weak": {
+                      "type": "boolean"
+                    },
+                    "research": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "skills_used": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "error": {
+                      "type": "string"
+                    },
+                    "error_code": {
                       "type": "string"
                     }
                   }
                 }
               }
             }
+          },
+          "401": {
+            "description": "Missing, invalid, inactive or expired API key"
+          },
+          "403": {
+            "description": "Account plan or access restriction"
+          },
+          "429": {
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
-        },
-        "x-payment-info": {
-          "intent": "charge",
-          "method": "stripe",
-          "amount": 0.1,
-          "currency": "USD",
-          "description": "AI email generation call"
         }
       }
     }
@@ -889,29 +1408,19 @@
         "in": "header",
         "name": "X-API-Key",
         "description": "Create keys in OutReign \u2192 Settings \u2192 API Keys."
-      },
-      "OAuth2": {
-        "type": "oauth2",
-        "description": "Human-delegated OAuth 2.1 with PKCE, used by the OutReign MCP server.",
-        "flows": {
-          "authorizationCode": {
-            "authorizationUrl": "https://ghgfjnepvxvxrncmskys.supabase.co/auth/v1/oauth/authorize",
-            "tokenUrl": "https://ghgfjnepvxvxrncmskys.supabase.co/auth/v1/oauth/token",
-            "scopes": {
-              "openid": "Subject identifier",
-              "profile": "Basic profile",
-              "email": "Email address"
-            }
-          }
-        }
       }
     },
     "schemas": {
       "Deleted": {
         "type": "object",
         "properties": {
-          "deleted": {
-            "type": "boolean"
+          "data": {
+            "type": "object",
+            "properties": {
+              "deleted": {
+                "type": "boolean"
+              }
+            }
           }
         }
       },
@@ -924,30 +1433,35 @@
             "readOnly": true
           },
           "contact_name": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 500
           },
           "contact_email": {
             "type": "string",
-            "format": "email"
+            "maxLength": 255
           },
           "company_name": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 500
           },
           "job_title": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 200
           },
           "industry": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 100
           },
           "country": {
             "type": "string"
           },
           "linkedin_url": {
             "type": "string",
-            "format": "uri"
+            "maxLength": 500
           },
           "lead_status": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 50
           },
           "pipeline_stage": {
             "type": "string"
@@ -959,6 +1473,54 @@
             "type": "string",
             "format": "date-time",
             "readOnly": true
+          },
+          "contact_phone": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "company_size": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "department": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "seniority": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "company_website": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "company_linkedin": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "company_description": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "employee_count": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "annual_revenue": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "engagement_state": {
+            "type": "string",
+            "maxLength": 50
           }
         }
       },
@@ -1011,7 +1573,23 @@
             "type": "string"
           },
           "probability": {
-            "type": "integer"
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "contact_name": {
+            "type": "string"
+          },
+          "expected_close_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "lead_id": {
+            "type": "string",
+            "format": "uuid"
           }
         }
       },
@@ -1027,13 +1605,7 @@
             "type": "string"
           },
           "type": {
-            "type": "string",
-            "enum": [
-              "task",
-              "call",
-              "email",
-              "note"
-            ]
+            "type": "string"
           },
           "due_date": {
             "type": "string",
@@ -1043,6 +1615,13 @@
             "type": "boolean"
           },
           "lead_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "description": {
+            "type": "string"
+          },
+          "deal_id": {
             "type": "string",
             "format": "uuid"
           }
@@ -1063,44 +1642,451 @@
             "type": "string"
           },
           "email": {
-            "type": "string",
-            "format": "email"
+            "type": "string"
           },
           "job_title": {
             "type": "string"
           },
           "lead_status": {
             "type": "string"
+          },
+          "department": {
+            "type": "string"
+          },
+          "seniority": {
+            "type": "string"
+          },
+          "linkedin_url": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "company_id": {
+            "type": "string",
+            "format": "uuid"
           }
         }
       },
-      "Workflow": {
+      "LeadInput": {
         "type": "object",
         "properties": {
-          "id": {
+          "contact_name": {
             "type": "string",
-            "format": "uuid",
-            "readOnly": true
+            "maxLength": 500
           },
-          "name": {
-            "type": "string"
+          "company_name": {
+            "type": "string",
+            "maxLength": 500
           },
-          "trigger": {
-            "type": "string"
+          "contact_email": {
+            "type": "string",
+            "maxLength": 255
           },
-          "active": {
-            "type": "boolean"
+          "contact_phone": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "industry": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "company_size": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "linkedin_url": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "job_title": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "department": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "seniority": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "company_website": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "company_linkedin": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "company_description": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "employee_count": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "annual_revenue": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "lead_status": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "engagement_state": {
+            "type": "string",
+            "maxLength": 50
           }
-        }
+        },
+        "additionalProperties": false,
+        "required": [
+          "contact_name",
+          "company_name"
+        ]
+      },
+      "LeadUpdate": {
+        "type": "object",
+        "properties": {
+          "contact_name": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "company_name": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "contact_email": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "contact_phone": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "industry": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "company_size": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "linkedin_url": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "job_title": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "department": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "seniority": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "company_website": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "company_linkedin": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "company_description": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "employee_count": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "annual_revenue": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "lead_status": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "engagement_state": {
+            "type": "string",
+            "maxLength": 50
+          }
+        },
+        "additionalProperties": false
+      },
+      "DealInput": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "company_name": {
+            "type": "string"
+          },
+          "contact_name": {
+            "type": "string"
+          },
+          "stage": {
+            "type": "string"
+          },
+          "value": {
+            "type": "number"
+          },
+          "probability": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "expected_close_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "lead_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "company_name"
+        ]
+      },
+      "DealUpdate": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "company_name": {
+            "type": "string"
+          },
+          "contact_name": {
+            "type": "string"
+          },
+          "stage": {
+            "type": "string"
+          },
+          "value": {
+            "type": "number"
+          },
+          "probability": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "expected_close_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "lead_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ActivityInput": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "completed": {
+            "type": "boolean"
+          },
+          "due_date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deal_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "lead_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "subject",
+          "type"
+        ]
+      },
+      "ActivityUpdate": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "completed": {
+            "type": "boolean"
+          },
+          "due_date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deal_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "lead_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ContactInput": {
+        "type": "object",
+        "properties": {
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "job_title": {
+            "type": "string"
+          },
+          "department": {
+            "type": "string"
+          },
+          "seniority": {
+            "type": "string"
+          },
+          "linkedin_url": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "lead_status": {
+            "type": "string"
+          },
+          "company_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false,
+        "anyOf": [
+          {
+            "required": [
+              "first_name"
+            ]
+          },
+          {
+            "required": [
+              "last_name"
+            ]
+          },
+          {
+            "required": [
+              "email"
+            ]
+          }
+        ]
+      },
+      "ContactUpdate": {
+        "type": "object",
+        "properties": {
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "job_title": {
+            "type": "string"
+          },
+          "department": {
+            "type": "string"
+          },
+          "seniority": {
+            "type": "string"
+          },
+          "linkedin_url": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "lead_status": {
+            "type": "string"
+          },
+          "company_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false
       }
     }
-  },
-  "x-payment-info": {
-    "intent": "session",
-    "method": "stripe",
-    "currency": "USD",
-    "checkout": "https://outreign.io/checkout",
-    "discovery": "https://outreign.io/.well-known/x402.json",
-    "description": "Metered API usage is billed against an OutReign subscription; agent-native per-call payment is available via x402/MPP."
   }
 }
