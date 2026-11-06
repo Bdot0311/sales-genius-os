@@ -751,9 +751,21 @@ async function callAppAction(ctx, tool, fn, body) {
 }
 
 // supabase/functions/_shared/api-action-contract.ts
+var SEND_FIELDS = ["to", "subject", "body", "leadId", "threadId", "integrationRowId", "appendSignature"];
+function validateSend(input) {
+  if (Object.keys(input).some((k) => !SEND_FIELDS.includes(k))) return "Unsupported input field";
+  if (typeof input.to !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.to) || input.to.length > 320) return "Valid to email is required";
+  if (typeof input.subject !== "string" || !input.subject.trim() || input.subject.length > 300) return "subject is required";
+  if (typeof input.body !== "string" || !input.body.trim() || input.body.length > 5e4) return "body is required";
+  for (const k of ["leadId", "integrationRowId"]) if (input[k] !== void 0 && (typeof input[k] !== "string" || !/^[0-9a-f-]{36}$/i.test(input[k]))) return `Invalid ${k}`;
+  if (input.threadId !== void 0 && (typeof input.threadId !== "string" || input.threadId.length > 200)) return "Invalid threadId";
+  if (input.appendSignature !== void 0 && typeof input.appendSignature !== "boolean") return "appendSignature must be boolean";
+  return null;
+}
 function validateAppAction(route, body) {
   if (!body || typeof body !== "object" || Array.isArray(body)) return "A JSON object is required";
   const input = body;
+  if (route === "email/send") return validateSend(input);
   if (route === "workspace/actions") {
     if (Object.keys(input).some((k) => !["action", "args", "agent_id", "confirmed"].includes(k)) || typeof input.action !== "string" || input.action.length > 100) return "Invalid action request";
     if (input.args !== void 0 && (!input.args || typeof input.args !== "object" || Array.isArray(input.args))) return "Invalid action arguments";

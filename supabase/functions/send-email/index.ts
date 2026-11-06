@@ -21,6 +21,7 @@ import {
 } from "../_shared/duplicate-send.ts";
 import { acceptedUnpersistedBody, deliverReserved, type OutboundStore } from "../_shared/tracked-send.ts";
 import { outboundGateFindings } from "../_shared/quality-gate.ts";
+import { resolveAppUser } from "../_shared/app-user.ts";
 import { proofFromLead } from "../_shared/template-send-gate.ts";
 
 const corsHeaders = {
@@ -70,17 +71,11 @@ serve(async (req) => {
     console.log('Send email request received:', { to, subject, integrationId, leadId, templateId });
 
     // Get authorization header
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      console.error('Missing authorization header');
-      throw new Error('No authorization header');
-    }
-
-    console.log('Auth header present, extracting user...');
-
-    // Get user from JWT
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    // Browser sessions, MCP OAuth tokens and API keys all resolve to the same
+    // verified app user, so the API/MCP send with the app's exact rules.
+    const resolved = await resolveAppUser(req, supabase);
+    const user = resolved.user;
+    const userError = resolved.error ? { message: resolved.error } : null;
 
     // Demo mode: simulate instead of hitting providers or spending credits
     if (user && await isDemoMode(supabase, user.id)) {

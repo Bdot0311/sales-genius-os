@@ -5,10 +5,23 @@ export const APP_API_ACTIONS: Record<string, string> = {
   "people/lookup": "find-person",
   "email/verify": "check-lead-email",
   "workspace/actions": "workspace-action",
+  "email/send": "send-email",
 };
+const SEND_FIELDS = ["to", "subject", "body", "leadId", "threadId", "integrationRowId", "appendSignature"];
+function validateSend(input: Record<string, unknown>): string | null {
+  if (Object.keys(input).some(k => !SEND_FIELDS.includes(k))) return "Unsupported input field";
+  if (typeof input.to !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.to) || input.to.length > 320) return "Valid to email is required";
+  if (typeof input.subject !== "string" || !input.subject.trim() || input.subject.length > 300) return "subject is required";
+  if (typeof input.body !== "string" || !input.body.trim() || input.body.length > 50000) return "body is required";
+  for (const k of ["leadId", "integrationRowId"]) if (input[k] !== undefined && (typeof input[k] !== "string" || !/^[0-9a-f-]{36}$/i.test(input[k] as string))) return `Invalid ${k}`;
+  if (input.threadId !== undefined && (typeof input.threadId !== "string" || input.threadId.length > 200)) return "Invalid threadId";
+  if (input.appendSignature !== undefined && typeof input.appendSignature !== "boolean") return "appendSignature must be boolean";
+  return null;
+}
 export function validateAppAction(route: string, body: unknown): string | null {
   if (!body || typeof body !== "object" || Array.isArray(body)) return "A JSON object is required";
   const input = body as Record<string, unknown>;
+  if (route === "email/send") return validateSend(input);
   if (route === "workspace/actions") {
     if (Object.keys(input).some(k => !["action", "args", "agent_id", "confirmed"].includes(k)) || typeof input.action !== "string" || input.action.length > 100) return "Invalid action request";
     if (input.args !== undefined && (!input.args || typeof input.args !== "object" || Array.isArray(input.args))) return "Invalid action arguments";
