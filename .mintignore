@@ -1,0 +1,4 @@
+# Lovable keeps a north-star note here. Mintlify's MDX parser rejects the
+# HTML comment that file starts with, and the deployment check still reports
+# success after logging "Updated deployment with errors". This is not API docs.
+.lovable/**

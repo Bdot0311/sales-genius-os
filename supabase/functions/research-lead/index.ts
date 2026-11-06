@@ -24,7 +24,7 @@ import {
 } from "../_shared/lead-research.ts";
 import { AI_SMART, aiFetch } from "../_shared/ai-provider.ts";
 import { diffBriefs } from "../_shared/brief-diff.ts";
-import { sourceWasFetched } from "../_shared/research-citation.ts";
+import { claimSupportedByCorpus, sourceWasFetched } from "../_shared/research-citation.ts";
 import {
   FALLBACK_PATHS,
   isSitemapIndex,
@@ -706,7 +706,7 @@ serve(async (req) => {
     // shown it will write around evidence it was given. They lead the
     // observation list because recency is what a cold open trades on.
     const citedObservations = (result.brief.observations ?? []).filter(
-      (o) => o?.fact && sourceWasFetched(o.source, sources),
+      (o) => o?.fact && sourceWasFetched(o.source, sources) && claimSupportedByCorpus(o.fact, siteText),
     );
     const droppedObservations = (result.brief.observations ?? []).filter((o) => o?.fact).length - citedObservations.length;
     if (droppedObservations > 0) {
@@ -728,8 +728,12 @@ serve(async (req) => {
       ...modelObservations,
     ];
 
+    const supportedProse = (value: string) => (claimSupportedByCorpus(value, siteText) ? value : "");
     const baseBrief: LeadResearchBrief = {
       ...result.brief,
+      what_they_do: supportedProse(result.brief.what_they_do ?? ""),
+      who_they_sell_to: supportedProse(result.brief.who_they_sell_to ?? ""),
+      hooks: (result.brief.hooks ?? []).filter((hook) => claimSupportedByCorpus(hook, siteText)),
       observations: mergedObservations,
       confidence: mergedObservations.length === 0
         ? "low"

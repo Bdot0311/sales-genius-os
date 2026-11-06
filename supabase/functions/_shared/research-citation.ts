@@ -1,3 +1,5 @@
+import { contentWords } from "./grounding.ts";
+
 /**
  * Whether a model-written observation cites a page this run actually fetched.
  *
@@ -44,4 +46,24 @@ export function sourceWasFetched(source: string, fetched: string[]): boolean {
     if (!citedPath || citedPath === "/") return true;
     return pagePath === citedPath || pagePath.startsWith(`${citedPath}/`) || citedPath.startsWith(`${pagePath}/`);
   });
+}
+
+/**
+ * Whether the content words of a model sentence appear in text this run read.
+ *
+ * A matching source URL is not enough: the model can cite a page it saw and
+ * then state something that page does not say. This requires the claim's own
+ * words to be in the corpus. It is not a proof of meaning. A sentence that
+ * uses only words from the page can still be false, and a true paraphrase
+ * that shares none of those words is dropped. Short claims have to match in
+ * full. Longer ones have to match at least 70 percent, and at least three
+ * words, so a single borrowed noun cannot carry an invented sentence.
+ */
+export function claimSupportedByCorpus(claim: string, corpus: string): boolean {
+  const words = [...new Set(contentWords(claim))];
+  if (words.length === 0) return false;
+  const haystack = new Set(contentWords(corpus));
+  const hit = words.filter((word) => haystack.has(word)).length;
+  if (words.length <= 4) return hit === words.length;
+  return hit / words.length >= 0.7 && hit >= 3;
 }

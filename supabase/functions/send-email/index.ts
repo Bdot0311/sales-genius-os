@@ -19,6 +19,7 @@ import {
   duplicateWindowStart,
   normalizeRecipient,
 } from "../_shared/duplicate-send.ts";
+import { acceptedUnpersistedBody, deliverReserved, type OutboundStore } from "../_shared/tracked-send.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -697,100 +698,156 @@ ${unsubscribeFooterHtml}
       const encodedEmail = toBase64Url(emailContent);
 
       console.log('Sending email via Gmail to:', to);
-      
-      const gmailResponse = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
+
+      const recipient = normalizeRecipient(to);
+      const store: OutboundStore = {
+        findAttempted: async (userId, toEmail, subj) => {
+          const { data } = await supabase
+            .from('sent_emails')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('to_email', toEmail)
+            .eq('subject', subj)
+            .eq('status', 'pending')
+            .not('send_attempted_at', 'is', null)
+            .limit(1)
+            .maybeSingle();
+          return data?.id ? { id: data.id as string } : null;
         },
-        body: JSON.stringify(
-          typeof threadId === 'string' && threadId
-            ? { raw: encodedEmail, threadId }
-            : { raw: encodedEmail }
-        ),
+        insertPending: async (row) => {
+          const { data, error } = await supabase.from('sent_emails').insert({
+            user_id: row.userId,
+            lead_id: row.leadId,
+            template_id: row.templateId,
+            to_email: normalizeRecipient(to),
+            subject: row.subject,
+            body_html: trackedHtmlBody,
+            body_text: htmlToPlainText(body),
+            status: 'pending',
+            sent_at: null,
+            gmail_thread_id: row.threadId,
+            tracking_pixel_id: row.trackingPixelId,
+            sending_account_id: row.sendingAccountId,
+          }).select('id').maybeSingle();
+          if (error) {
+            if (error.code === '23505') return { conflict: true };
+            return { error: error.message };
+          }
+          if (!data?.id) return { error: 'Reservation was not stored' };
+          return { id: data.id as string };
+        },
+        markAttempted: async (id) => {
+          const { data, error } = await supabase
+            .from('sent_emails')
+            .update({ send_attempted_at: new Date().toISOString(), send_claimed_at: new Date().toISOString() })
+            .eq('id', id)
+            .is('send_attempted_at', null)
+            .select('id');
+          return !error && Array.isArray(data) && data.length > 0;
+        },
+        markSent: async (id, gmail) => {
+          const { data, error } = await supabase.from('sent_emails').update({
+            status: 'sent',
+            gmail_message_id: gmail.messageId,
+            gmail_thread_id: gmail.threadId,
+            sent_at: new Date().toISOString(),
+          }).eq('id', id).select('id');
+          return !error && Array.isArray(data) && data.length > 0;
+        },
+        markFailed: async (id, reason) => {
+          await supabase.from('sent_emails').update({
+            status: 'failed',
+            error_message: reason,
+            failed_at: new Date().toISOString(),
+            sent_at: null,
+          }).eq('id', id);
+        },
+      };
+
+      const delivery = await deliverReserved(store, {
+        send: async () => {
+          const gmailResponse = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(
+              typeof threadId === 'string' && threadId
+                ? { raw: encodedEmail, threadId }
+                : { raw: encodedEmail }
+            ),
+          });
+          if (!gmailResponse.ok) {
+            const error = await gmailResponse.text();
+            console.error('Gmail API error:', gmailResponse.status, error);
+            return { ok: false as const, status: gmailResponse.status, body: error };
+          }
+          const gmailResult = await gmailResponse.json();
+          console.log('Email sent successfully via Gmail. Message ID:', gmailResult.id);
+          return {
+            ok: true as const,
+            messageId: String(gmailResult.id ?? ''),
+            threadId: gmailResult.threadId ? String(gmailResult.threadId) : null,
+          };
+        },
+      }, {
+        userId: user.id,
+        to: recipient,
+        subject,
+        bodyHtml: trackedHtmlBody,
+        bodyText: htmlToPlainText(body),
+        leadId: leadId || null,
+        templateId: templateId || null,
+        threadId: typeof threadId === 'string' ? threadId : null,
+        trackingPixelId,
+        sendingAccountId,
+        allowDuplicate: payload.allowDuplicate === true,
       });
 
-      if (!gmailResponse.ok) {
-        const error = await gmailResponse.text();
-        console.error('Gmail API error:', gmailResponse.status, error);
-
-        // Gmail's body is a JSON blob; the message inside it is the only part
-        // worth putting in front of a customer, and only when it exists.
+      if (delivery.kind === 'duplicate') {
+        return new Response(
+          JSON.stringify(duplicateRefusal({ to, subject, previouslySentAt: null })),
+          { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
+      if (delivery.kind === 'reserve_failed') {
+        return new Response(
+          JSON.stringify({ error: 'The send could not be reserved, so it was not sent.', code: 'reserve_failed' }),
+          { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
+      if (delivery.kind === 'provider_rejected') {
         let detail = '';
-        try { detail = String(JSON.parse(error)?.error?.message ?? ''); } catch { detail = ''; }
+        try { detail = String(JSON.parse(delivery.body)?.error?.message ?? ''); } catch { detail = ''; }
         const reason =
-          gmailResponse.status === 401
+          delivery.status === 401
             ? 'Google would not accept access to your mailbox, so the message was not sent. Reconnect Google on the Integrations page and send again.'
-            : gmailResponse.status === 429
+            : delivery.status === 429
               ? 'Gmail rate-limited this mailbox, so the message was not accepted. It usually clears within the hour.'
-              : gmailResponse.status === 403
+              : delivery.status === 403
                 ? `Gmail refused to send from this mailbox${detail ? `: ${detail.slice(0, 160)}` : '.'} This is usually a permissions or sending-limit problem on the Google account.`
-                : `Gmail rejected the message${detail ? `: ${detail.slice(0, 160)}` : ` (HTTP ${gmailResponse.status})`}.`;
-
-        // Store failed email in sent_emails table.
-        //
-        // failed_at, not sent_at. The column defaults to now(), so it has to
-        // be nulled explicitly; this row used to claim a send time for a
-        // message Gmail never accepted. That made one failure count twice —
-        // once as a failure, once as a send. The Sent tab read "sent 3
-        // minutes ago" under a red Failed badge, and both metric surfaces
-        // treat any row carrying sent_at as a send, so every failure inflated
-        // the send total and diluted the rates measured against it.
-        await supabase.from('sent_emails').insert({
-          user_id: user.id,
-          lead_id: leadId || null,
-          template_id: templateId || null,
-          // Stored in the one spelling the duplicate guard searches for.
-          to_email: normalizeRecipient(to),
-          subject: subject,
-          body_html: trackedHtmlBody,
-          body_text: htmlToPlainText(body),
-          status: 'failed',
-          sent_at: null,
-          failed_at: new Date().toISOString(),
-          error_message: reason,
-          tracking_pixel_id: trackingPixelId,
-          sending_account_id: sendingAccountId,
-        });
-
-        if (gmailResponse.status === 401) {
+                : `Gmail rejected the message${detail ? `: ${detail.slice(0, 160)}` : ` (HTTP ${delivery.status})`}.`;
+        if (delivery.status === 401) {
           return new Response(
             JSON.stringify({ error: 'Gmail authentication failed. Please reconnect your Gmail account.' }),
-            { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
           );
         }
-        
-        throw new Error(`Failed to send email via Gmail: ${error}`);
+        return new Response(
+          JSON.stringify({ error: reason }),
+          { status: delivery.status === 429 ? 429 : 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
+      if (delivery.kind === 'accepted_unpersisted') {
+        console.error('[send-email] Gmail accepted the message and the row could not be updated', delivery.messageId);
+        return new Response(
+          JSON.stringify(acceptedUnpersistedBody(delivery.messageId, delivery.threadId)),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
       }
 
-      const gmailResult = await gmailResponse.json();
-      console.log('Email sent successfully via Gmail. Message ID:', gmailResult.id);
-
-      // Store sent email in sent_emails table. The id comes back because the
-      // allowance row is keyed to it: that is what lets a bounce give the
-      // allowance back, and what stops a retry charging twice for one send.
-      const { data: sentRow, error: insertError } = await supabase.from('sent_emails').insert({
-        user_id: user.id,
-        lead_id: leadId || null,
-        template_id: templateId || null,
-        // Stored in the one spelling the duplicate guard searches for.
-        to_email: normalizeRecipient(to),
-        subject: subject,
-        body_html: trackedHtmlBody,
-        body_text: htmlToPlainText(body),
-        status: 'sent',
-        gmail_message_id: gmailResult.id,
-        gmail_thread_id: gmailResult.threadId,
-        sent_at: new Date().toISOString(),
-        tracking_pixel_id: trackingPixelId,
-        sending_account_id: sendingAccountId,
-      }).select('id').maybeSingle();
-
-      if (insertError) {
-        console.error('Failed to store sent email:', insertError);
-        // Don't fail the request, email was sent successfully
-      }
+      const sentRow = { id: delivery.id };
 
       /*
        * Record the send against the allowance.
@@ -833,11 +890,11 @@ ${unsubscribeFooterHtml}
       }
 
       return new Response(
-        JSON.stringify({ 
-          success: true, 
+        JSON.stringify({
+          success: true,
           provider: 'gmail',
-          messageId: gmailResult.id,
-          threadId: gmailResult.threadId
+          messageId: delivery.messageId,
+          threadId: delivery.threadId,
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );

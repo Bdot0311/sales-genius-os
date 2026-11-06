@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { htmlToPlainText } from "../_shared/plain-text.ts";
+import { proofFromLead, queuedCopyBlockers } from "../_shared/template-send-gate.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -228,6 +229,26 @@ serve(async (req) => {
       body = body.replace(new RegExp(key, 'g'), value);
     });
 
+    const copyBlockers = queuedCopyBlockers(subject, body, proofFromLead(lead));
+    if (copyBlockers.length > 0) {
+      const retryAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      await supabase
+        .from('sequence_enrollments')
+        .update({ next_action_at: retryAt })
+        .eq('id', enrollmentId)
+        .eq('user_id', enrollment.user_id);
+      console.warn(`[process-sequence-step] ${enrollmentId} copy held: ${copyBlockers.join('; ')}`);
+      return new Response(JSON.stringify({
+        success: false,
+        action: 'skipped',
+        reason: 'ungrounded_template',
+        blockers: copyBlockers.slice(0, 5),
+        retryAt,
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Create sent_email record (actual sending would be done by send-email function)
     const { data: sentEmail, error: emailError } = await supabase
       .from('sent_emails')
@@ -251,6 +272,27 @@ serve(async (req) => {
       .single();
 
     if (emailError) {
+      // 23505 is the unique step guard: another pass already queued this step.
+      // Advance only if this enrollment is still on the old step, and do not
+      // insert a second email.
+      if (emailError.code === '23505') {
+        await supabase
+          .from('sequence_enrollments')
+          .update({
+            current_step: nextStepNumber,
+            last_activity_at: new Date().toISOString(),
+          })
+          .eq('id', enrollmentId)
+          .eq('current_step', enrollment.current_step)
+          .eq('user_id', enrollment.user_id);
+        return new Response(JSON.stringify({
+          success: true,
+          action: 'already_queued',
+          nextStepNumber,
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
       console.error('Error creating sent email:', emailError);
       return new Response(JSON.stringify({ error: 'Failed to create email record' }), {
         status: 500,
@@ -272,7 +314,9 @@ serve(async (req) => {
         last_activity_at: new Date().toISOString(),
         engagement_state: 'contacted',
       })
-      .eq('id', enrollmentId);
+      .eq('id', enrollmentId)
+      .eq('current_step', enrollment.current_step)
+      .eq('user_id', enrollment.user_id);
 
     // Update lead engagement state
     await supabase

@@ -18,21 +18,25 @@ const code = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/
  * and every rate measured against that total came out low.
  */
 describe("a refused message is not a send", () => {
-  // The failure branch, up to where it starts deciding what to return.
-  const failureBranch = () =>
-    code(SEND).split("if (!gmailResponse.ok) {")[1].split("if (gmailResponse.status === 401)")[0];
+  // The reservation is marked failed after Gmail refuses. It must not keep a
+  // send time, or the metrics count a refusal as a delivery.
+  const failedWrite = () => {
+    const src = code(SEND);
+    const at = src.indexOf("markFailed: async");
+    return src.slice(at, src.indexOf("},", at));
+  };
 
   it("does not stamp a send time on a failure", () => {
-    const block = failureBranch();
+    const block = failedWrite();
     expect(block).toContain("status: 'failed'");
     expect(block).toContain("sent_at: null");
     expect(block).toContain("failed_at: new Date().toISOString()");
   });
 
   it("says why, the way the scheduled path already does", () => {
-    const block = failureBranch();
+    const block = failedWrite();
     expect(block).toContain("error_message: reason");
-    expect(block).toContain("Reconnect Google on the Integrations page");
+    expect(code(SEND)).toContain("Reconnect Google on the Integrations page");
   });
 
   it("is decided in one place, by status rather than by timestamp", () => {

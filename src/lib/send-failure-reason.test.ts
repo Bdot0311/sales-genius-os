@@ -40,10 +40,10 @@ describe("a failed send says why", () => {
   });
 
   it("leaves no path that fails a send silently", () => {
-    // Eight: unsubscribed, the sequence stopped or went on hold before this
-    // step was due, no integration, no server credentials, refresh refused,
-    // no access token, Gmail rejected it, and anything thrown.
-    expect(PROC.match(/await failEmail\(/g) ?? []).toHaveLength(8);
+    // Nine: the original eight, plus a saved template whose claims are not in
+    // the lead research. That one is failed before Gmail is called.
+    expect(PROC.match(/await failEmail\(/g) ?? []).toHaveLength(9);
+    expect(PROC).toContain("ungrounded_template");
     expect(PROC).not.toMatch(/from\(["']sent_emails["']\)[\s\S]{0,80}?update\(\{ status: ["']failed["'] \}\)/);
   });
 

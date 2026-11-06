@@ -9,6 +9,7 @@ import {
   unsubscribeUrl,
 } from '../_shared/unsubscribe.ts';
 import { injectClickTracking } from "../_shared/click-tracking.ts";
+import { proofFromLead, queuedCopyBlockers } from "../_shared/template-send-gate.ts";
 
 // RFC 2047 MIME encode subject for non-ASCII characters
 const mimeEncodeSubject = (subject: string) => {
@@ -241,6 +242,16 @@ serve(async (req) => {
         monthlyLimit: MONTHLY_EMAIL_LIMITS[plan] ?? 0,
         monthlySent: monthlyCount,
       };
+    }
+
+    const leadIds = [...new Set(scheduledEmails.map((email: { lead_id?: string | null }) => email.lead_id).filter(Boolean))] as string[];
+    const proofByLead = new Map<string, string>();
+    if (leadIds.length > 0) {
+      const { data: leadRows } = await supabase
+        .from("leads")
+        .select("id, research_brief, job_title, industry, company_name, contact_name")
+        .in("id", leadIds);
+      for (const lead of leadRows ?? []) proofByLead.set(lead.id, proofFromLead(lead));
     }
 
     for (const email of scheduledEmails) {
@@ -567,6 +578,20 @@ serve(async (req) => {
          * a claim with no attempt was never sent and is handed back, a claim
          * with one may be in the recipient's inbox and is never retried.
          */
+        const copyBlockers = queuedCopyBlockers(
+          email.subject || "",
+          email.body_text || email.body_html || "",
+          email.lead_id ? proofByLead.get(email.lead_id) ?? "" : "",
+        );
+        if (copyBlockers.length > 0) {
+          await failEmail(
+            email.id,
+            `Not sent (ungrounded_template). The saved copy includes a claim that is not in this lead's research: ${copyBlockers.slice(0, 3).join("; ")}`,
+          );
+          failed++;
+          continue;
+        }
+
         const { data: mine, error: beginError } = await supabase
           .rpc("begin_scheduled_email_send", { p_id: email.id });
         if (beginError) {
@@ -597,7 +622,7 @@ serve(async (req) => {
 
         if (gmailResponse.ok) {
           const gmailResult = await gmailResponse.json();
-          await supabase
+          const { error: persistError } = await supabase
             .from("sent_emails")
             .update({
               status: "sent",
@@ -608,6 +633,14 @@ serve(async (req) => {
               sending_account_id: sendingAccountId,
             } as any)
             .eq("id", email.id);
+          if (persistError) {
+            // send_attempted_at is already set, so a later pass will not send
+            // this row again. Do not mark it failed: that would invite a resend
+            // of a message Gmail already accepted.
+            console.error(
+              `[process-scheduled-emails] accepted_unpersisted ${email.id} gmail=${gmailResult.id}: ${persistError.message}`,
+            );
+          }
 
           // Bump per-mailbox daily counter (drives rotation + deliverability caps).
           // increment_account_send() gates on auth.uid(); called from service role

@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { sweepSlice } from "../_shared/sweep-window.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { profilesById } from "../_shared/profiles-by-id.ts";
 import { corsHeaders, requireServiceRole } from "../_shared/internal-auth.ts";
@@ -149,11 +150,24 @@ serve(async (req) => {
      * Fetched by id instead, the way the admin lookup further down this same
      * file already does it, so no schema change is needed.
      */
-    const { data: proSubs, error: proSubsErr } = await supabaseClient
+    const { count: proCount, error: proCountErr } = await supabaseClient
       .from("subscriptions")
-      .select("user_id")
+      .select("user_id", { count: "exact", head: true })
       .eq("plan", "pro")
       .eq("status", "active");
+    if (proCountErr) logStep("Pro-user count FAILED", { message: proCountErr.message });
+    // One page per minute. The page moves with the clock, so a later pass
+    // reads a different slice instead of the same first rows forever.
+    const proPage = sweepSlice(proCount ?? 0, 40, Date.now(), 60_000);
+    const { data: proSubs, error: proSubsErr } = proPage.to < proPage.from
+      ? { data: [], error: null }
+      : await supabaseClient
+        .from("subscriptions")
+        .select("user_id")
+        .eq("plan", "pro")
+        .eq("status", "active")
+        .order("user_id")
+        .range(proPage.from, proPage.to);
     if (proSubsErr) {
       // A monitor that cannot list its subjects must not report a clean scan.
       logStep("Pro-user scan FAILED", { message: proSubsErr.message });
@@ -167,19 +181,23 @@ serve(async (req) => {
 
     for (const user of users || []) {
       const suspiciousPatterns = [];
-      const { data: apiKeys } = await supabaseClient.from("api_keys").select("id, name").eq("user_id", user.user_id);
-      const { data: failedRequests } = await supabaseClient.from("api_usage_log").select("*").in("api_key_id", apiKeys?.map(k => k.id) || []).gte("status_code", 400).gte("created_at", oneHourAgo);
-      if (failedRequests && failedRequests.length > 50) suspiciousPatterns.push({ type: "high_error_rate", severity: "high", description: `${failedRequests.length} failed API requests in the last hour`, count: failedRequests.length });
+      const { data: apiKeys } = await supabaseClient.from("api_keys").select("id, name").eq("user_id", user.user_id).limit(100);
+      const keyIds = apiKeys?.map(k => k.id) || [];
+      const { count: failedCount } = keyIds.length === 0
+        ? { count: 0 }
+        : await supabaseClient.from("api_usage_log").select("id", { count: "exact", head: true }).in("api_key_id", keyIds).gte("status_code", 400).gte("created_at", oneHourAgo);
+      if ((failedCount ?? 0) > 50) suspiciousPatterns.push({ type: "high_error_rate", severity: "high", description: `${failedCount} failed API requests in the last hour`, count: failedCount });
 
-      const { data: nightActivity } = await supabaseClient.from("audit_logs").select("*").eq("user_id", user.user_id).gte("created_at", oneHourAgo);
+      const { data: nightActivity } = await supabaseClient.from("audit_logs").select("created_at").eq("user_id", user.user_id).gte("created_at", oneHourAgo).order("created_at", { ascending: false }).limit(200);
+      const nightCapped = (nightActivity?.length ?? 0) >= 200;
       const suspiciousHourActivity = nightActivity?.filter(log => { const hour = new Date(log.created_at).getHours(); return hour >= 2 && hour <= 5; });
-      if (suspiciousHourActivity && suspiciousHourActivity.length > 10) suspiciousPatterns.push({ type: "unusual_access_time", severity: "medium", description: `${suspiciousHourActivity.length} actions during unusual hours (2-5 AM)`, count: suspiciousHourActivity.length });
+      if (suspiciousHourActivity && suspiciousHourActivity.length > 10) suspiciousPatterns.push({ type: "unusual_access_time", severity: "medium", description: `${suspiciousHourActivity.length}${nightCapped ? "+" : ""} actions during unusual hours (2-5 AM)`, count: suspiciousHourActivity.length });
 
-      const { data: deletions } = await supabaseClient.from("audit_logs").select("*").eq("user_id", user.user_id).eq("action", "deleted").gte("created_at", oneHourAgo);
-      if (deletions && deletions.length > 20) suspiciousPatterns.push({ type: "mass_deletion", severity: "high", description: `${deletions.length} records deleted in the last hour`, count: deletions.length });
+      const { count: deletionCount } = await supabaseClient.from("audit_logs").select("id", { count: "exact", head: true }).eq("user_id", user.user_id).eq("action", "deleted").gte("created_at", oneHourAgo);
+      if ((deletionCount ?? 0) > 20) suspiciousPatterns.push({ type: "mass_deletion", severity: "high", description: `${deletionCount} records deleted in the last hour`, count: deletionCount });
 
-      const { data: newApiKeys } = await supabaseClient.from("audit_logs").select("*").eq("user_id", user.user_id).eq("entity_type", "api_keys").eq("action", "created").gte("created_at", oneHourAgo);
-      if (newApiKeys && newApiKeys.length > 5) suspiciousPatterns.push({ type: "rapid_api_key_creation", severity: "medium", description: `${newApiKeys.length} API keys created in the last hour`, count: newApiKeys.length });
+      const { count: newKeyCount } = await supabaseClient.from("audit_logs").select("id", { count: "exact", head: true }).eq("user_id", user.user_id).eq("entity_type", "api_keys").eq("action", "created").gte("created_at", oneHourAgo);
+      if ((newKeyCount ?? 0) > 5) suspiciousPatterns.push({ type: "rapid_api_key_creation", severity: "medium", description: `${newKeyCount} API keys created in the last hour`, count: newKeyCount });
 
       if (suspiciousPatterns.length > 0) {
         const highSeverity = suspiciousPatterns.some(p => p.severity === "high");

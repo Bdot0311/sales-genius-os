@@ -136,21 +136,26 @@ describe("a reveal is what costs a credit", () => {
 
   it("but are never refused by it", () => {
     expect(ENRICH).toContain("if (!isAdmin && (!subscription || subscription.plan === 'free'))");
-    expect(ENRICH).toContain("if (!isAdmin && remaining <= 0)");
+    expect(ENRICH).toContain("gate: !isAdmin");
     expect(PERSON).toContain('if (!isAdmin && (!subscription || subscription.plan === "free"))');
     expect(PERSON).toContain("if (!isAdmin && remaining <= 0)");
   });
 
   it("a balance cannot go below empty", () => {
-    for (const [name, src] of [["enrich", ENRICH], ["person", PERSON]] as const) {
-      expect(src, name).toContain("Math.max(0, remaining - 1)");
-    }
+    expect(PERSON).toContain("Math.max(0, remaining - 1)");
+    // Enrichment no longer writes the balance it just read. The floor is the
+    // locked update, which refuses a gated debit past zero and otherwise
+    // clamps at empty.
+    const meter = readFileSync("supabase/migrations/20261106053000_meter_and_send_guards.sql", "utf8");
+    expect(meter).toContain("GREATEST(0, v_credits + COALESCE(p_credit_delta, 0))");
+    expect(meter).toContain("FOR UPDATE");
+    expect(ENRICH).toContain("applySearchMeter");
   });
 
   it("the transaction records the balance actually written", () => {
-    // It recorded remaining - 1, which is a different number once floored.
-    for (const [name, src] of [["enrich", ENRICH], ["person", PERSON]] as const) {
-      expect(src, name).toContain("balance_after: nextRemaining");
-    }
+    expect(PERSON).toContain("balance_after: nextRemaining");
+    const meter = readFileSync("supabase/migrations/20261106053000_meter_and_send_guards.sql", "utf8");
+    expect(meter).toContain("balance_after");
+    expect(meter).toContain("v_credits");
   });
 });

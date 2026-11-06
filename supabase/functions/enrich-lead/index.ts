@@ -6,6 +6,7 @@ import { isPersonLinkedIn, normalizeDomain, realValue } from "../_shared/email-r
 import { verifyEmail, type CacheClient, type VerificationStatus } from "../_shared/email-verify.ts";
 
 import { ownerOf, resolveCaller } from "../_shared/internal-auth.ts";
+import { applySearchMeter, asMeterClient } from "../_shared/search-meter.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -181,38 +182,34 @@ serve(async (req) => {
       }
 
       if (chargeForEnrichment()) {
-        const remaining = subscription?.search_credits_remaining || 0;
-        if (!isAdmin && remaining <= 0) {
-          return new Response(
-            JSON.stringify({
-              error: 'No search credits remaining. Add more credits to enrich leads.',
-              error_code: 'credits_exhausted',
-            }),
-            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-
-        // Deduct 1 credit up-front; refunded below on no-match / failure.
-        // Floored, because an admin is metered against an allowance nothing is
-        // stopping them spending, and two reveals racing could already breach
-        // zero on any account.
-        const nextRemaining = Math.max(0, remaining - 1);
-        const { error: deductError } = await supabase
-          .from('subscriptions')
-          .update({ search_credits_remaining: nextRemaining })
-          .eq('user_id', userId);
-        if (deductError) {
-          console.error('Enrich credit deduction failed:', deductError);
-          throw new Error('Failed to reserve credit for enrichment');
-        }
-        creditWasDeducted = true;
-        await supabase.from('search_transactions').insert({
-          user_id: userId,
-          type: 'usage',
-          amount: -1,
-          balance_after: nextRemaining,
+        // The row lock is inside apply_search_meter. A read of the balance
+        // here would be stale before the write, which is how two reveals
+        // spent one credit.
+        const metered = await applySearchMeter(asMeterClient(supabase), {
+          userId,
+          creditDelta: -1,
+          dailyDelta: 0,
           description: 'Lead enrichment',
+          gate: !isAdmin,
         });
+        if (!metered.applied) {
+          if (!isAdmin && (metered.reason === 'insufficient' || metered.reason === 'no_subscription')) {
+            return new Response(
+              JSON.stringify({
+                error: 'No search credits remaining. Add more credits to enrich leads.',
+                error_code: 'credits_exhausted',
+              }),
+              { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+          if (isAdmin && metered.reason === 'no_subscription') {
+            // Support sessions are not stopped by a missing allowance row.
+          } else {
+            throw new Error('Failed to reserve credit for enrichment');
+          }
+        } else {
+          creditWasDeducted = true;
+        }
       }
     }
 
@@ -220,23 +217,12 @@ serve(async (req) => {
       if (!creditWasDeducted) return;
       creditWasDeducted = false;
       try {
-        const { data: sub } = await supabase
-          .from('subscriptions')
-          .select('search_credits_remaining')
-          .eq('user_id', userId)
-          .maybeSingle();
-        if (!sub) return;
-        const restored = (sub.search_credits_remaining || 0) + 1;
-        await supabase
-          .from('subscriptions')
-          .update({ search_credits_remaining: restored })
-          .eq('user_id', userId);
-        await supabase.from('search_transactions').insert({
-          user_id: userId,
-          type: 'refund',
-          amount: 1,
-          balance_after: restored,
+        await applySearchMeter(asMeterClient(supabase), {
+          userId,
+          creditDelta: 1,
+          dailyDelta: 0,
           description: `Enrichment refund: ${reason}`,
+          gate: false,
         });
       } catch (e) {
         console.error('Enrich credit refund failed:', e);

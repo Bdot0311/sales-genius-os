@@ -71,7 +71,12 @@ describe("admins are metered, not gated", () => {
 
   it("a balance cannot be driven below empty", () => {
     // Two searches racing, or an admin metered against an allowance nothing
-    // stops them spending, would otherwise write a negative number.
-    expect(SEARCH).toContain("const newRemaining = Math.max(0, remainingCredits - 1);");
+    // stops them spending, would otherwise write a negative number. The write
+    // is now one locked update, and the floor is in that update.
+    expect(SEARCH).toContain("applySearchMeter");
+    expect(SEARCH).toContain("gate: !isAdmin && chargesPerSearch");
+    const meter = readFileSync("supabase/migrations/20261106053000_meter_and_send_guards.sql", "utf8");
+    expect(meter).toContain("GREATEST(0, v_credits + COALESCE(p_credit_delta, 0))");
+    expect(meter).toContain("FOR UPDATE");
   });
 });
