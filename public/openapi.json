@@ -2755,6 +2755,98 @@
           "description": "The record's UUID."
         }
       ]
+    },
+    "/workspace/actions": {
+      "post": {
+        "operationId": "workspaceAction",
+        "summary": "Read or update sales workspace",
+        "tags": [
+          "Outreach"
+        ],
+        "description": "Existing app workspace handlers with caller ownership, plan and optional agent role checks. All edits return confirmation_required until confirmed=true after explicit approval. Does not directly send email; resuming sequences/mailboxes permits future automation. Additional 30/minute account cap.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "action"
+                ],
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "list_icp_profiles",
+                      "update_icp_profile",
+                      "list_signals",
+                      "refresh_signals",
+                      "list_sequence_enrollments",
+                      "update_enrollment",
+                      "update_sequence_status",
+                      "classify_reply",
+                      "list_sending_accounts",
+                      "update_sending_account",
+                      "list_deliverability_alerts",
+                      "resolve_deliverability_alert",
+                      "list_email_templates",
+                      "save_email_template",
+                      "list_objections",
+                      "save_objection",
+                      "list_campaign_briefs",
+                      "save_campaign_brief",
+                      "get_outbound_stats"
+                    ]
+                  },
+                  "args": {
+                    "type": "object",
+                    "additionalProperties": true,
+                    "description": "Action-specific fields at https://docs.outreign.io/developer-docs/workspace-actions; handler rejects unknown fields."
+                  },
+                  "agent_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "confirmed": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                }
+              },
+              "example": {
+                "action": "list_email_templates",
+                "args": {}
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Action data, confirmation preview or app action error; inspect response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
     }
   },
   "components": {
