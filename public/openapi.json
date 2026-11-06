@@ -938,7 +938,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DealEnvelope"
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Deal"
+                    }
+                  }
                 },
                 "example": {
                   "data": {
@@ -1023,7 +1028,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DealEnvelope"
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Deal"
+                    }
+                  }
                 },
                 "example": {
                   "data": {
@@ -1131,7 +1141,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DealEnvelope"
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Deal"
+                    }
+                  }
                 },
                 "example": {
                   "data": {
@@ -1296,7 +1311,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ActivityEnvelope"
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Activity"
+                    }
+                  }
                 },
                 "example": {
                   "data": {
@@ -1377,7 +1397,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ActivityEnvelope"
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Activity"
+                    }
+                  }
                 },
                 "example": {
                   "data": {
@@ -1482,7 +1507,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ActivityEnvelope"
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Activity"
+                    }
+                  }
                 },
                 "example": {
                   "data": {
@@ -1650,7 +1680,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ContactEnvelope"
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Contact"
+                    }
+                  }
                 },
                 "example": {
                   "data": {
@@ -1734,7 +1769,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ContactEnvelope"
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Contact"
+                    }
+                  }
                 },
                 "example": {
                   "data": {
@@ -1842,7 +1882,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ContactEnvelope"
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Contact"
+                    }
+                  }
                 },
                 "example": {
                   "data": {
@@ -2993,14 +3038,6 @@
           }
         }
       },
-      "DealEnvelope": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/Deal"
-          }
-        }
-      },
       "ActivityList": {
         "type": "object",
         "properties": {
@@ -3022,14 +3059,6 @@
           }
         }
       },
-      "ActivityEnvelope": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/Activity"
-          }
-        }
-      },
       "ContactList": {
         "type": "object",
         "properties": {
@@ -3048,14 +3077,6 @@
           },
           "offset": {
             "type": "integer"
-          }
-        }
-      },
-      "ContactEnvelope": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/Contact"
           }
         }
       }
