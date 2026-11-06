@@ -781,25 +781,19 @@ export async function processStripeEvent(
     if (!userId) throw new Error(`user not found for ${customer.email}`);
     const planDetails = PRICE_TO_PLAN[priceId] || PRICE_TO_PLAN['price_1SmM2hFTerosS6hiiDXBDIxl'];
 
-    // Read current credits inside the same logical operation. The
-    // apply_stripe_event_to_subscription RPC will refuse to apply if this
-    // event has already been recorded (last_stripe_event_id == event.id),
-    // so duplicate invoice.paid events cannot double-add credits.
-    const { data: cur } = await supabase.from('subscriptions')
-      .select('search_credits_remaining, last_stripe_event_id').eq('user_id', userId).single();
-
-    if (cur?.last_stripe_event_id === event.id) {
-      log("invoice.paid duplicate, skipping credit rollover", { id: event.id });
-      return;
-    }
-
+    // Monthly growth, pro, and agency roll unused credits forward. That add
+    // has to happen on the locked row. Reading the balance here and sending
+    // an absolute number let a second invoice, a top-up, or a search debit
+    // commit in between and then get overwritten. Yearly plans replace the
+    // balance with the plan allowance; that is a set, not a sum, and it is
+    // also applied under the same lock.
+    const rollover = !planDetails.isYearly
+      && (planDetails.plan === 'growth' || planDetails.plan === 'pro' || planDetails.plan === 'agency');
     const period = getSubscriptionPeriod(sub);
-    let newCredits = planDetails.credits;
-    if (!planDetails.isYearly && (planDetails.plan === 'growth' || planDetails.plan === 'pro' || planDetails.plan === 'agency')) {
-      newCredits = (cur?.search_credits_remaining || 0) + planDetails.credits;
-    }
     const result = await applyEvent(supabase, userId, event, {
-      search_credits_remaining: newCredits,
+      ...(rollover
+        ? { search_credits_delta: planDetails.credits }
+        : { search_credits_remaining: planDetails.credits }),
       daily_searches_used: 0,
       status: 'active',
       account_status: 'active',

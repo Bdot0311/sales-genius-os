@@ -232,9 +232,13 @@ describe("local postgres serializes the credit debit", () => {
     try {
       sql = postgres(PG_URL, { max: 8, connect_timeout: 2 });
       await sql`select 1`;
-    } catch {
+    } catch (err) {
       if (sql) await sql.end({ timeout: 1 });
-      // CI does not run Postgres. The local audit run does, and records it.
+      if (process.env.AUDIT_PG_REQUIRED === "1") {
+        throw new Error(`AUDIT_PG_REQUIRED is set but ${PG_URL} is not reachable: ${err instanceof Error ? err.message : err}`);
+      }
+      // The unit-test job has no database. The audit-db job and a local
+      // Postgres do. scripts/run-audit-db-tests.sh is the setup.
       return;
     }
     const migration = readFileSync("supabase/migrations/20261106053000_meter_and_send_guards.sql", "utf8");
@@ -320,7 +324,7 @@ describe("local postgres serializes the credit debit", () => {
     await sql.unsafe(`
       CREATE OR REPLACE FUNCTION auth.role() RETURNS text LANGUAGE plpgsql AS $fn$
       BEGIN
-        RETURN COALESCE(current_setting('app.role', true), 'service_role');
+        RETURN COALESCE(NULLIF(current_setting('app.role', true), ''), 'service_role');
       END $fn$;
       CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE plpgsql AS $fn$
       BEGIN
@@ -455,6 +459,122 @@ describe("local postgres serializes the credit debit", () => {
     const [aiBalance] = await sql`SELECT search_credits_remaining FROM subscriptions WHERE user_id = ${aiUser}::uuid`;
     // 5 - 3 - 3, floored at 0. Without the row lock both calls would write 2.
     expect(aiBalance.search_credits_remaining).toBe(0);
+
+    await sql.unsafe(`
+      DO $$ BEGIN
+        CREATE TYPE subscription_plan AS ENUM ('free','starter','growth','pro','agency');
+      EXCEPTION WHEN duplicate_object THEN NULL;
+      END $$;
+      ALTER TABLE subscriptions
+        ADD COLUMN IF NOT EXISTS plan subscription_plan,
+        ADD COLUMN IF NOT EXISTS previous_plan subscription_plan,
+        ADD COLUMN IF NOT EXISTS status text,
+        ADD COLUMN IF NOT EXISTS account_status text,
+        ADD COLUMN IF NOT EXISTS stripe_customer_id text,
+        ADD COLUMN IF NOT EXISTS stripe_subscription_id text,
+        ADD COLUMN IF NOT EXISTS search_credits_base integer,
+        ADD COLUMN IF NOT EXISTS leads_limit integer,
+        ADD COLUMN IF NOT EXISTS current_period_start timestamptz,
+        ADD COLUMN IF NOT EXISTS current_period_end timestamptz,
+        ADD COLUMN IF NOT EXISTS credits_reset_at timestamptz,
+        ADD COLUMN IF NOT EXISTS trial_end_date timestamptz,
+        ADD COLUMN IF NOT EXISTS cancel_at_period_end boolean,
+        ADD COLUMN IF NOT EXISTS canceled_at timestamptz,
+        ADD COLUMN IF NOT EXISTS payment_failed_at timestamptz,
+        ADD COLUMN IF NOT EXISTS last_payment_error text,
+        ADD COLUMN IF NOT EXISTS last_stripe_event_id text,
+        ADD COLUMN IF NOT EXISTS last_stripe_event_at timestamptz,
+        ADD COLUMN IF NOT EXISTS updated_at timestamptz;
+      DROP TABLE IF EXISTS stripe_credit_grants;
+    `);
+    const stripeSql = readFileSync("supabase/migrations/20261106070000_stripe_credit_delta_lock.sql", "utf8");
+    await sql.unsafe(stripeSql);
+    const billUser = "99999999-9999-9999-9999-999999999999";
+    await sql`INSERT INTO subscriptions (user_id, search_credits_remaining, daily_searches_used) VALUES (${billUser}::uuid, 100, 3)`;
+    const t0 = "2026-11-01T00:00:00Z";
+    const t1 = "2026-11-02T00:00:00Z";
+    const [firstInvoice, secondInvoice] = await Promise.all([
+      sql`SELECT * FROM public.apply_stripe_event_to_subscription(${billUser}::uuid, 'evt_a', ${t0}::timestamptz, ${sql.json({ search_credits_delta: 1000, status: "active" })})`,
+      sql`SELECT * FROM public.apply_stripe_event_to_subscription(${billUser}::uuid, 'evt_b', ${t1}::timestamptz, ${sql.json({ search_credits_delta: 500, status: "active" })})`,
+    ]);
+    const invoiceReasons = [firstInvoice, secondInvoice].map((row) => String(row[0].reason));
+    expect(invoiceReasons.filter((reason) => reason === "applied" || reason === "stale_credits_applied").length).toBe(2);
+    const [afterInvoices] = await sql`SELECT search_credits_remaining, last_stripe_event_id FROM subscriptions WHERE user_id = ${billUser}::uuid`;
+    expect(afterInvoices.search_credits_remaining).toBe(1600);
+    expect(afterInvoices.last_stripe_event_id).toBe("evt_b");
+    const [replay] = await sql`SELECT * FROM public.apply_stripe_event_to_subscription(${billUser}::uuid, 'evt_a', ${t0}::timestamptz, ${sql.json({ search_credits_delta: 1000 })})`;
+    expect(String(replay.reason) === "duplicate_event" || String(replay.reason) === "stale_event").toBe(true);
+    const [afterReplay] = await sql`SELECT search_credits_remaining FROM subscriptions WHERE user_id = ${billUser}::uuid`;
+    expect(afterReplay.search_credits_remaining).toBe(1600);
+
+    const [debitAndGrant] = await Promise.all([
+      sql`SELECT public.apply_search_meter(${billUser}::uuid, -1, 0, 'during invoice', true, NULL) AS result`,
+      sql`SELECT * FROM public.apply_stripe_event_to_subscription(${billUser}::uuid, 'evt_c', '2026-11-03T00:00:00Z'::timestamptz, ${sql.json({ search_credits_delta: 40 })})`,
+    ]);
+    const [mixed] = await sql`SELECT search_credits_remaining, last_stripe_event_id FROM subscriptions WHERE user_id = ${billUser}::uuid`;
+    expect(mixed.search_credits_remaining).toBe(1639);
+    expect(mixed.last_stripe_event_id).toBe("evt_c");
+    expect(debitAndGrant).toBeTruthy();
+    const [replayNewest] = await sql`SELECT * FROM public.apply_stripe_event_to_subscription(${billUser}::uuid, 'evt_c', '2026-11-03T00:00:00Z'::timestamptz, ${sql.json({ search_credits_delta: 40 })})`;
+    expect(String(replayNewest.reason)).toBe("duplicate_event");
+    expect(replayNewest.applied).toBe(false);
+
+    await expect(sql.begin(async (tx) => {
+      await tx`SELECT * FROM public.apply_stripe_event_to_subscription(${billUser}::uuid, 'evt_rollback', '2026-11-04T00:00:00Z'::timestamptz, ${tx.json({ search_credits_delta: 70 })})`;
+      throw new Error("rollback");
+    })).rejects.toThrow(/rollback/);
+    const [afterRollback] = await sql`SELECT search_credits_remaining FROM subscriptions WHERE user_id = ${billUser}::uuid`;
+    expect(afterRollback.search_credits_remaining).toBe(1639);
+
+    await expect(sql.begin(async (tx) => {
+      await tx`SELECT set_config('request.jwt.claim.role', 'authenticated', true)`;
+      await tx`SELECT * FROM public.apply_stripe_event_to_subscription(${billUser}::uuid, 'evt_denied', '2026-11-05T00:00:00Z'::timestamptz, ${tx.json({ search_credits_delta: 5 })})`;
+    })).rejects.toThrow(/denied/);
+    const [afterDeny] = await sql`SELECT search_credits_remaining, last_stripe_event_id, status FROM subscriptions WHERE user_id = ${billUser}::uuid`;
+    expect(afterDeny.search_credits_remaining).toBe(1639);
+    expect(afterDeny.last_stripe_event_id).toBe("evt_c");
+    expect(afterDeny.status).toBe("active");
+
+    const [lateInvoice] = await sql`SELECT * FROM public.apply_stripe_event_to_subscription(${billUser}::uuid, 'evt_old', '2026-10-01T00:00:00Z'::timestamptz, ${sql.json({ search_credits_delta: 11, status: "cancelled" })})`;
+    expect(lateInvoice.applied).toBe(false);
+    expect(String(lateInvoice.reason)).toBe("stale_credits_applied");
+    const [afterLate] = await sql`SELECT search_credits_remaining, last_stripe_event_id, status FROM subscriptions WHERE user_id = ${billUser}::uuid`;
+    expect(afterLate.search_credits_remaining).toBe(1650);
+    expect(afterLate.last_stripe_event_id).toBe("evt_c");
+    expect(afterLate.status).toBe("active");
+    const [lateReplay] = await sql`SELECT * FROM public.apply_stripe_event_to_subscription(${billUser}::uuid, 'evt_old', '2026-10-01T00:00:00Z'::timestamptz, ${sql.json({ search_credits_delta: 11, status: "cancelled" })})`;
+    expect(String(lateReplay.reason)).toBe("stale_event");
+    const [afterLateReplay] = await sql`SELECT search_credits_remaining FROM subscriptions WHERE user_id = ${billUser}::uuid`;
+    expect(afterLateReplay.search_credits_remaining).toBe(1650);
+
+    const sameSecond = "2026-12-01T00:00:00Z";
+    const tieUser = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+    await sql`INSERT INTO subscriptions (user_id, search_credits_remaining, daily_searches_used) VALUES (${tieUser}::uuid, 10, 0)`;
+    const tie = await Promise.all([
+      sql`SELECT * FROM public.apply_stripe_event_to_subscription(${tieUser}::uuid, 'evt_tie_1', ${sameSecond}::timestamptz, ${sql.json({ search_credits_delta: 2 })})`,
+      sql`SELECT * FROM public.apply_stripe_event_to_subscription(${tieUser}::uuid, 'evt_tie_2', ${sameSecond}::timestamptz, ${sql.json({ search_credits_delta: 3 })})`,
+    ]);
+    expect(tie.map((row) => String(row[0].reason))).toEqual(["applied", "applied"]);
+    const [afterTie] = await sql`SELECT search_credits_remaining FROM subscriptions WHERE user_id = ${tieUser}::uuid`;
+    expect(afterTie.search_credits_remaining).toBe(15);
+
+    const mixUser = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
+    await sql`INSERT INTO subscriptions (user_id, search_credits_remaining, daily_searches_used, billing_exempt) VALUES (${mixUser}::uuid, 100, 0, false)`;
+    await Promise.all([
+      sql`SELECT public.grant_topup_credits(${mixUser}::uuid, 'cs_mix', 25, 500)`,
+      sql`SELECT * FROM public.apply_stripe_event_to_subscription(${mixUser}::uuid, 'evt_mix', '2026-12-02T00:00:00Z'::timestamptz, ${sql.json({ search_credits_delta: 40 })})`,
+      sql`SELECT public.record_ai_usage('mix', 'bedrock', 'm', 0, 0, 0.006, ${mixUser}::uuid)`,
+      sql`SELECT public.apply_search_meter(${mixUser}::uuid, -1, 0, 'during mix', true, NULL)`,
+    ]);
+    const [afterMix] = await sql`SELECT search_credits_remaining FROM subscriptions WHERE user_id = ${mixUser}::uuid`;
+    expect(afterMix.search_credits_remaining).toBe(161);
+
+    const replaceUser = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+    await sql`INSERT INTO subscriptions (user_id, search_credits_remaining, daily_searches_used) VALUES (${replaceUser}::uuid, 80, 0)`;
+    await sql`SELECT public.grant_topup_credits(${replaceUser}::uuid, 'cs_before_set', 25, 500)`;
+    await sql`SELECT * FROM public.apply_stripe_event_to_subscription(${replaceUser}::uuid, 'evt_set', '2026-12-03T00:00:00Z'::timestamptz, ${sql.json({ search_credits_remaining: 9 })})`;
+    const [afterSet] = await sql`SELECT search_credits_remaining FROM subscriptions WHERE user_id = ${replaceUser}::uuid`;
+    expect(afterSet.search_credits_remaining).toBe(9);
 
     await sql.end({ timeout: 2 });
   });
