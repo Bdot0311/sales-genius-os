@@ -1,3 +1,4 @@
+import { PUBLIC_DOCS_URL } from "@/lib/public-api";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Shield, Lock, Eye, Server, FileCheck, AlertTriangle, Mail } from "lucide-react";
@@ -216,7 +217,7 @@ const Security = () => {
                   {[
                     { href: "/privacy", label: "Privacy Policy", sub: "Data protection details" },
                     { href: "/terms", label: "Terms of Service", sub: "User agreement" },
-                    { href: "/api-docs", label: "API Documentation", sub: "Developer integration guide" },
+                    { href: PUBLIC_DOCS_URL, label: "API Documentation", sub: "Developer integration guide" },
                     { href: "/api-status", label: "System Status", sub: "Real-time uptime monitoring" },
                   ].map(({ href, label, sub }) => (
                     <li key={href}>
