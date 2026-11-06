@@ -1,5 +1,8 @@
 # Agent rules
 
+- API prospect/lookup actions forward the real API key to shared app-user authentication; MCP forwards its OAuth token to app handlers. Why: identity comes from verified credentials, not owner arguments or service-role forwarding, so app credit and plan rules stay authoritative.
+- Public action routes are explicitly allowlisted in `api-action-contract.ts`; standalone verification reuses `email-verify.ts` with owner-scoped request quotas and no reveal charge. Why: external callers must not gain arbitrary function access or mistake DNS/catch-all verdicts for confirmed mailboxes.
+
 - Root `docs.json` configures Mintlify using `public/openapi.json` directly. Why: repository onboarding requires a discoverable config, and a single API specification prevents documentation drift.
 - Mintlify guides live under `developer-docs/`; `.mintignore` excludes application code, CSS and scripts, and retired `/api-docs` and API help guides redirect to the documentation host instead of maintaining duplicate app pages. Why: sharing the repository must not inject app styles/scripts into docs or leave old bookmarks on a stale reference.
 

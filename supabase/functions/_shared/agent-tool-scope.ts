@@ -33,6 +33,7 @@ export const CORE_TOOLS = [
 export const LEAD_GEN_TOOLS = [
   "find_leads",
   "search_companies",
+  "verify_email",
   "enrich_leads",
   "score_leads",
   "research_leads",
@@ -271,6 +272,7 @@ export const TOOL_CATALOG: Record<string, string> = {
   get_agent_status: "Report this agent's own configuration and recent activity.",
   find_leads: "Source brand-new leads (people) from the lead network.",
   search_companies: "Search companies matching an ICP.",
+  verify_email: "Check one business email through the same verifier used in search and enrichment; returns an honest mailbox verdict without sending.",
   enrich_leads: "Fill missing contact/company data on existing leads.",
   score_leads: "Score existing leads against the saved ICP.",
   research_leads: "Research a lead/company for personalisation angles.",

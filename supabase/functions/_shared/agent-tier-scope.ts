@@ -23,6 +23,7 @@ export const TIER_BLOCKED_TOOLS: Record<AgentTierId, string[]> = {
   // Explore tier: research and draft only. Nothing leaves the account, nothing
   // is destroyed, no autonomous runs.
   free: [
+    "verify_email",
     "send_drafts",
     "send_outreach",
     "schedule_drafts",
