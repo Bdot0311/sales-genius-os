@@ -24,6 +24,7 @@ OutReign has four interfaces. They share the same account and data but expose di
 | Generate an email draft | Yes | `POST /email/generate` | `generate_email` | — |
 | Enroll a lead in a sequence | Yes | No | `enroll_lead_in_sequence` | — |
 | Reply to an inbox thread | Yes | No | `send_reply` (queues the reply) | — |
+| Send an email now | Yes | `POST /email/send` | `send_email` | — |
 | Read sent emails and replies | Yes | No | `list_recent_sent_emails`, `list_recent_replies` | — |
 | Deals | Yes | Full create/read/update/delete | `list_deals`, `update_deal` | `deal.*` events |
 | Activities and contacts | Yes | Full create/read/update/delete | No | Inbound `contact.created` |

@@ -8,6 +8,7 @@ import createLeadTool from "./tools/create-lead";
 import updateLeadTool from "./tools/update-lead";
 import enrollLeadTool from "./tools/enroll-lead";
 import sendReplyTool from "./tools/send-reply";
+import sendEmailTool from "./tools/send-email";
 import listDealsTool from "./tools/list-deals";
 import updateDealTool from "./tools/update-deal";
 import listIcpProfilesTool from "./tools/list-icp-profiles";
@@ -70,6 +71,7 @@ export default defineMcp({
     updateLeadTool,
     enrollLeadTool,
     sendReplyTool,
+    sendEmailTool,
     updateDealTool,
     updateIcpProfileTool,
     updateAgentConfigTool,
