@@ -22,6 +22,8 @@ These tools return the app action's JSON as text content. Parse that JSON and ch
 
 Verification status is `valid`, `invalid`, `catch_all`, `role` or `unknown`. `verified` is true only for valid, false for invalid and null otherwise. A domain accepting mail is not proof that the mailbox exists. Reconnect clients that cache an older tool list after the new revision is published.
 
+`workspace_action` provides the app's existing ICP/signal/campaign/template/objection/mailbox/inbox-classification/sequence-control/statistics actions. Required `action`, optional `args`, `agent_id` and `confirmed`; all edits require a preview followed by explicit approval. Exact fields: [workspace actions](/developer-docs/workspace-actions).
+
 ## Read tools
 
 | Tool | Inputs | Structured result key |

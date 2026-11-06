@@ -72,6 +72,7 @@
               "developer-docs/pagination",
               "developer-docs/errors-and-limits",
               "developer-docs/integrations",
+              "developer-docs/workspace-actions",
               "developer-docs/troubleshooting"
             ]
           },

@@ -31,6 +31,8 @@ OutReign has four interfaces. They share the same account and data but expose di
 | AI SDR agent settings and stats | Yes | No | `update_agent_config`, `get_agent_stats` | — |
 | Get notified when data changes | — | — | — | Outbound `lead.*`, `deal.*` |
 
+Campaign templates/briefs/objections, signals, mailbox health, reply tagging, sequence pause/resume and outbound statistics are also available through `POST /workspace/actions` and MCP `workspace_action`. See [workspace actions](/developer-docs/workspace-actions) for action fields and confirmation behavior.
+
 ## What this means for AI agents
 
 Discovery and intelligence actions reuse the app's real handlers, identity checks, credits and limits. A typical agent workflow is:
