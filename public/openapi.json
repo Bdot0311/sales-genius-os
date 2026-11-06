@@ -1463,7 +1463,7 @@
           "Activities"
         ],
         "operationId": "getActivity",
-        "summary": "Get a activity",
+        "summary": "Get an activity",
         "responses": {
           "200": {
             "description": "Resource belonging to the authenticated account",

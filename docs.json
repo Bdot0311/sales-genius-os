@@ -30,6 +30,10 @@
       "source": "/introduction",
       "destination": "/developer-docs/introduction",
       "permanent": false
+    },
+    {
+      "source": "/api-reference/activities/get-a-activity",
+      "destination": "/api-reference/activities/get-an-activity"
     }
   ],
   "api": {
