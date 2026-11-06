@@ -1,5 +1,6 @@
 # Mintlify shares this repository with the app; do not inject app CSS or scripts.
 *.css
+!/style.css
 *.js
 /src/
 /supabase/
