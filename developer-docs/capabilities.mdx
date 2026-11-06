@@ -1,0 +1,46 @@
+---
+title: "Capabilities by interface"
+description: "Exactly what the app, REST API, MCP and webhooks can and cannot do, so you pick the right one before you build."
+---
+
+OutReign has four interfaces. They share the same account and data but expose different actions. Check this table before designing an integration or giving an AI agent a task.
+
+## Capability matrix
+
+| Capability | OutReign app | REST API | MCP (AI assistants) | Webhooks |
+| --- | --- | --- | --- | --- |
+| Search for **new** prospects by ICP | Yes | No | No | No |
+| Verify an email address on its own | Yes, during search and enrichment | No | No | No |
+| List and read saved leads | Yes | `GET /leads`, `GET /leads/{id}` | `list_leads` | — |
+| Search saved leads by text | Yes | No (filter by `industry`/`status`) | `search_leads` | — |
+| Create and update saved leads | Yes | `POST /leads`, `PATCH /leads/{id}` | `create_lead`, `update_lead` | Inbound `lead.created` / `lead.updated` |
+| Bulk import leads | CSV import | `POST /leads/bulk` (100 per request) | No | — |
+| Delete saved leads | Yes | `DELETE /leads/{id}` | No | — |
+| Enrich a saved lead | Yes | `POST /leads/{id}/enrich` | No | — |
+| Score a lead against your ICP | Yes | `POST /leads/{id}/score` | No | — |
+| Generate an email draft | Yes | `POST /email/generate` | No | — |
+| Enroll a lead in a sequence | Yes | No | `enroll_lead_in_sequence` | — |
+| Reply to an inbox thread | Yes | No | `send_reply` (queues the reply) | — |
+| Read sent emails and replies | Yes | No | `list_recent_sent_emails`, `list_recent_replies` | — |
+| Deals | Yes | Full create/read/update/delete | `list_deals`, `update_deal` | `deal.*` events |
+| Activities and contacts | Yes | Full create/read/update/delete | No | Inbound `contact.created` |
+| ICP profiles | Yes | No | `list_icp_profiles`, `update_icp_profile` | — |
+| AI SDR agent settings and stats | Yes | No | `update_agent_config`, `get_agent_stats` | — |
+| Get notified when data changes | — | — | — | Outbound `lead.*`, `deal.*` |
+
+## What this means for AI agents
+
+An assistant connected over MCP or the REST API works with records already in the account. It cannot run a fresh prospect search or return a standalone email-verification result. A typical agent workflow is:
+
+1. Find prospects in the OutReign app (Lead Search) and save them.
+2. Let the agent read them with `list_leads` / `search_leads` or `GET /leads`.
+3. Enrich and score with the REST API, then draft with `POST /email/generate`.
+4. Enroll approved leads in a sequence with `enroll_lead_in_sequence`.
+
+If a prompt asks the agent to "find new leads" or "verify these emails", the agent should say those steps happen in the app instead of guessing.
+
+## Credits and plan limits
+
+- API and MCP access require a paid plan (Starter and above). See [errors and limits](/developer-docs/errors-and-limits) for request allowances.
+- Enrichment and email generation use the same account entitlements as the app. An API key never bypasses plan limits.
+- Request allowances (per minute / per day) and feature credits are separate balances.
