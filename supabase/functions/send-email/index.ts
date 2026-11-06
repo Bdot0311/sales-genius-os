@@ -557,7 +557,21 @@ serve(async (req) => {
       // signature appended here are checked on the text that would be sent.
       // There is no caller flag that skips this. Confirmation in chat is not
       // a pass. Human-written mail uses the same rules.
-      const gateFindings = outboundGateFindings(
+      // Exception: a reply inside the sender's own thread where the prospect
+      // has already replied is a conversation, not cold outreach. Verified
+      // server-side against owner-scoped sent_emails, never trusted from input.
+      let isVerifiedReply = false;
+      if (typeof threadId === "string" && threadId) {
+        const { data: replied } = await supabase
+          .from("sent_emails")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("gmail_thread_id", threadId)
+          .not("replied_at", "is", null)
+          .limit(1);
+        isVerifiedReply = Array.isArray(replied) && replied.length > 0;
+      }
+      const gateFindings = isVerifiedReply ? [] : outboundGateFindings(
         String(subject ?? ""),
         htmlToPlainText(body),
         leadProof,
