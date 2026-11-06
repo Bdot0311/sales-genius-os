@@ -4,7 +4,8 @@
   "name": "OutReign API",
   "description": "OutReign API reference for B2B lead intelligence and outbound sales.",
   "colors": {
-    "primary": "#8b5cf6"
+    "primary": "#8b5cf6",
+    "light": "#8B5CF6"
   },
   "navigation": {
     "groups": [
