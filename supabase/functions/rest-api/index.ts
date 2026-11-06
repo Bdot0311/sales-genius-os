@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { APP_API_ACTIONS, validateAppAction } from "../_shared/api-action-contract.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -253,6 +254,24 @@ serve(async (req) => {
     const { keyData } = auth;
     const userId = keyData.user_id;
 
+    // Narrow app-action routes forward the actual API key. The app handler
+    // revalidates owner, plan and request allowance; it never sees a service
+    // token or caller-supplied owner. Do not consume the REST quota twice.
+    const appRoute = `${resource}/${id ?? ''}`;
+    const appFunction = APP_API_ACTIONS[appRoute];
+    if (appFunction) {
+      if (method !== 'POST' || action) return respond({ error: 'Method not allowed' }, 405);
+      const input = await req.json().catch(() => null);
+      const invalid = validateAppAction(appRoute, input);
+      if (invalid) return respond({ error: invalid }, 400);
+      const forwarded = await fetch(`${supabaseUrl}/functions/v1/${appFunction}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': req.headers.get('X-API-Key') ?? '', apikey: Deno.env.get('SUPABASE_ANON_KEY') ?? '' },
+        body: JSON.stringify(appRoute === 'people/lookup' ? { ...input, action: 'lookup' } : input),
+      });
+      return respond(await forwarded.json(), forwarded.status);
+    }
+
     // ── Rate limit ──
     const rl = await checkRateLimit(supabaseUrl, serviceKey, keyData.id, resource || 'default');
     if (!rl.allowed) {
@@ -293,24 +312,19 @@ serve(async (req) => {
         }
         result = { imported: imported.length, failed: failed.length, leads: imported, errors: failed };
         statusCode = 201;
-      } else if (action === 'enrich' && id && method === 'POST') {
+      } else if (['enrich', 'score', 'research'].includes(action ?? '') && id && method === 'POST') {
+        const owned = await handleGet(supabase, 'leads', userId, id);
+        if (owned.error) return respond({ error: 'Not found' }, 404);
+        if (action === 'research' && body && Object.keys(body).some(k => k !== 'force')) return respond({ error: 'Only force is supported' }, 400);
+        if (body?.force !== undefined && typeof body.force !== 'boolean') return respond({ error: 'force must be boolean' }, 400);
         // Trigger enrichment via existing edge function
-        const enrichRes = await fetch(`${supabaseUrl}/functions/v1/enrich-lead`, {
+        const enrichRes = await fetch(`${supabaseUrl}/functions/v1/${action}-lead`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${serviceKey}` },
-          body: JSON.stringify({ leadId: id, userId }),
+          body: JSON.stringify({ leadId: id, force: body?.force === true }),
         });
         result = await enrichRes.json();
         statusCode = enrichRes.status;
-      } else if (action === 'score' && id && method === 'POST') {
-        // Trigger scoring via existing edge function
-        const scoreRes = await fetch(`${supabaseUrl}/functions/v1/score-lead`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${serviceKey}` },
-          body: JSON.stringify({ leadId: id, userId }),
-        });
-        result = await scoreRes.json();
-        statusCode = scoreRes.status;
       } else if (method === 'GET' && !id) {
         const filters: Record<string, string> = {};
         if (url.searchParams.get('industry')) filters.industry = String(url.searchParams.get('industry')).substring(0, 100);
@@ -428,7 +442,11 @@ serve(async (req) => {
 
     // ── EMAIL ──
     else if (resource === 'email') {
-      if (action === 'generate' || (!id && method === 'POST')) {
+      if (method === 'POST' && ((!action && id === 'generate') || (!id && !action))) {
+        const leadId = body?.lead?.id;
+        if (typeof leadId !== 'string') return respond({ error: 'lead.id is required' }, 400);
+        const owned = await handleGet(supabase, 'leads', userId, leadId);
+        if (owned.error) return respond({ error: 'Not found' }, 404);
         // generate-email refuses to write an email it cannot sign. API callers
         // rarely pass a sender, so fill it from the account rather than
         // returning an error for something the server already knows: the
@@ -463,7 +481,7 @@ serve(async (req) => {
     else {
       return respond({
         error: 'Unknown resource',
-        available: ['leads', 'deals', 'activities', 'contacts', 'email'],
+        available: ['leads', 'deals', 'activities', 'contacts', 'email', 'prospects', 'companies', 'people'],
       }, 404);
     }
 
