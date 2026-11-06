@@ -389,16 +389,16 @@ import { z as z9 } from "npm:zod@^3.25.76";
 function htmlToPlainText(raw) {
   if (!raw) return "";
   if (!/<[a-z!/][\s\S]*?>/i.test(raw)) return decodeEntities(raw);
-  let text = raw;
-  text = text.replace(/<(style|script|head)[\s\S]*?<\/\1>/gi, " ");
-  text = text.replace(/<br\s*\/?>/gi, "\n");
-  text = text.replace(/<\/(p|div|tr|li|h[1-6]|blockquote)\s*>/gi, "\n");
-  text = text.replace(/<[^>]+>/g, "");
-  text = decodeEntities(text);
-  text = text.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n");
-  return text.trim();
+  let text2 = raw;
+  text2 = text2.replace(/<(style|script|head)[\s\S]*?<\/\1>/gi, " ");
+  text2 = text2.replace(/<br\s*\/?>/gi, "\n");
+  text2 = text2.replace(/<\/(p|div|tr|li|h[1-6]|blockquote)\s*>/gi, "\n");
+  text2 = text2.replace(/<[^>]+>/g, "");
+  text2 = decodeEntities(text2);
+  text2 = text2.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n");
+  return text2.trim();
 }
-function decodeEntities(text) {
+function decodeEntities(text2) {
   const named = {
     amp: "&",
     lt: "<",
@@ -408,7 +408,7 @@ function decodeEntities(text) {
     nbsp: " ",
     "#39": "'"
   };
-  return text.replace(/&(#x?[0-9a-f]+|[a-z]+);/gi, (whole, code) => {
+  return text2.replace(/&(#x?[0-9a-f]+|[a-z]+);/gi, (whole, code) => {
     const key = code.toLowerCase();
     if (key in named) return named[key];
     if (key.startsWith("#x")) {
@@ -706,13 +706,151 @@ var update_agent_config_default = defineTool15({
   }
 });
 
+// src/lib/mcp/tools/search-prospects.ts
+import { defineTool as defineTool16 } from "npm:@lovable.dev/mcp-js@0.23.0";
+
+// src/lib/mcp/action-schemas.ts
+import { z as z16 } from "npm:zod@^3.25.76";
+var text = z16.string().trim().min(1).max(500);
+var list = z16.array(text).max(20).optional();
+var prospectSearchSchema = {
+  query: text.optional(),
+  job_title: text.optional(),
+  industry: text.optional(),
+  company_size: text.optional(),
+  country: text.optional(),
+  company: text.optional(),
+  company_domain: text.optional(),
+  job_titles: list,
+  industries: list,
+  countries: list,
+  seniority_levels: list,
+  keywords: list,
+  exclude_titles: list,
+  exclude_industries: list,
+  exclude_keywords: list,
+  companies: z16.array(z16.object({ name: text.optional(), domain: text.optional() }).strict()).max(20).optional(),
+  seniority: text.optional(),
+  limit: z16.number().int().min(1).max(200).optional(),
+  page: z16.number().int().min(1).max(1e3).optional(),
+  cursor: z16.string().max(4e3).optional(),
+  strict: z16.boolean().optional(),
+  relax: z16.boolean().optional(),
+  exclude_seen: z16.boolean().optional()
+};
+
+// src/lib/mcp/app-actions.ts
+async function callAppAction(ctx, tool, fn, body) {
+  if (!ctx.isAuthenticated() || !ctx.getToken()) return err("Not authenticated");
+  const blocked = await planGate(ctx, tool);
+  if (blocked) return blocked;
+  const { data, error } = await supabaseForUser(ctx).functions.invoke(fn, { body });
+  if (error) return err("The action could not complete. Check your account access and try again.");
+  if (data?.error || data?.success === false) return err(data?.error ?? "The action did not complete.");
+  return { content: [{ type: "text", text: JSON.stringify(data) }] };
+}
+
+// src/lib/mcp/tools/search-prospects.ts
+var search_prospects_default = defineTool16({
+  name: "search_prospects",
+  title: "Find new prospects",
+  description: "Search the real B2B lead network using the app's ICP filters, result caps and daily search meter. Returns candidates without saving or sending; pass next_cursor to continue. Paid searching costs no reveal credits; enrichment does.",
+  inputSchema: prospectSearchSchema,
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+  handler: (input, ctx) => callAppAction(ctx, "search_prospects", "fetch-external-leads", input)
+});
+
+// src/lib/mcp/tools/search-companies.ts
+import { defineTool as defineTool17 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z17 } from "npm:zod@^3.25.76";
+var search_companies_default = defineTool17({
+  name: "search_companies",
+  title: "Find companies",
+  description: "Search company names/domains using the app's free autocomplete, up to eight matches. Returns accounts, not people; nothing is saved or enriched.",
+  inputSchema: { query: z17.string().trim().min(2).max(500) },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
+  handler: (input, ctx) => callAppAction(ctx, "search_companies", "search-companies", input)
+});
+
+// src/lib/mcp/tools/find-person.ts
+import { defineTool as defineTool18 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z18 } from "npm:zod@^3.25.76";
+var find_person_default = defineTool18({
+  name: "find_person",
+  title: "Look up a person",
+  description: "Look up a known person by LinkedIn profile, work email or full name plus company. Uses the app's one-credit lookup and no-match refund; does not save. Use create_lead to save an approved result.",
+  inputSchema: { full_name: z18.string().max(500).optional(), company: z18.string().max(500).optional(), company_domain: z18.string().max(500).optional(), email: z18.string().email().optional(), linkedin_url: z18.string().url().max(500).optional() },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+  handler: (input, ctx) => callAppAction(ctx, "find_person", "find-person", { ...input, action: "lookup" })
+});
+
+// src/lib/mcp/tools/verify-email.ts
+import { defineTool as defineTool19 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z19 } from "npm:zod@^3.25.76";
+var verify_email_default = defineTool19({
+  name: "verify_email",
+  title: "Check email deliverability",
+  description: "Check one email through the same verifier used in search and enrichment. Returns valid, invalid, catch_all, role or unknown; only verified=true confirms a mailbox. No email is sent, no lead saved and no reveal credit charged. Account request limits apply.",
+  inputSchema: { email: z19.string().trim().min(1).max(320) },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+  handler: (input, ctx) => callAppAction(ctx, "verify_email", "check-lead-email", input)
+});
+
+// src/lib/mcp/tools/enrich-lead.ts
+import { defineTool as defineTool20 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z20 } from "npm:zod@^3.25.76";
+var enrich_lead_default = defineTool20({
+  name: "enrich_lead",
+  title: "Enrich a saved lead",
+  description: "Enrich your saved lead through the app's one-credit reveal, ownership checks and refund rules. Writes enrichment and verification results to that lead.",
+  inputSchema: { lead_id: z20.string().uuid() },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+  handler: ({ lead_id }, ctx) => callAppAction(ctx, "enrich_lead", "enrich-lead", { leadId: lead_id })
+});
+
+// src/lib/mcp/tools/score-lead.ts
+import { defineTool as defineTool21 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z21 } from "npm:zod@^3.25.76";
+var score_lead_default = defineTool21({
+  name: "score_lead",
+  title: "Score a saved lead",
+  description: "Score your saved lead against your saved ICP using the same app scorer, and store the resulting scores. Does not search or send.",
+  inputSchema: { lead_id: z21.string().uuid() },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  handler: ({ lead_id }, ctx) => callAppAction(ctx, "score_lead", "score-lead", { leadId: lead_id })
+});
+
+// src/lib/mcp/tools/research-lead.ts
+import { defineTool as defineTool22 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z22 } from "npm:zod@^3.25.76";
+var research_lead_default = defineTool22({
+  name: "research_lead",
+  title: "Research a saved lead",
+  description: "Research your saved lead with the app's existing combined web sources and return a sourced brief. Stores research on the lead, reuses fresh results unless force=true, and never sends outreach.",
+  inputSchema: { lead_id: z22.string().uuid(), force: z22.boolean().optional() },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+  handler: ({ lead_id, force }, ctx) => callAppAction(ctx, "research_lead", "research-lead", { leadId: lead_id, force: force ?? false })
+});
+
+// src/lib/mcp/tools/generate-email.ts
+import { defineTool as defineTool23 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z23 } from "npm:zod@^3.25.76";
+var generate_email_default = defineTool23({
+  name: "generate_email",
+  title: "Generate an email draft",
+  description: "Generate email copy for your saved lead through the app generator, grounded in your own company context. Returns a draft only; no message is sent.",
+  inputSchema: { lead_id: z23.string().uuid(), tone: z23.enum(["professional", "friendly", "casual", "formal"]), goal: z23.enum(["introduction", "follow-up", "meeting", "demo", "proposal"]), senderName: z23.string().max(100), businessDescription: z23.string().max(500).optional(), customInstruction: z23.string().max(8e3).optional() },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+  handler: ({ lead_id, ...input }, ctx) => callAppAction(ctx, "generate_email", "generate-email", { ...input, lead: { id: lead_id } })
+});
+
 // src/lib/mcp/index.ts
 var projectRef = "ghgfjnepvxvxrncmskys";
 var mcp_default = defineMcp({
   name: "outreign-mcp",
   title: "OutReign",
-  version: "0.2.0",
-  instructions: "Tools for OutReign \u2014 an AI sales outreach and lead intelligence platform. Read and manage the signed-in user's leads, sequences, deals, ICP profiles, AI agent, sent emails, and inbox replies. All operations are scoped to the authenticated user by row-level security.",
+  version: "0.3.0",
+  instructions: "Tools for OutReign \u2014 an AI sales outreach and lead intelligence platform. Read and manage the signed-in user's leads, sequences, deals, ICP profiles, AI agent, sent emails, and inbox replies. Find new B2B prospects with search_prospects (search_leads only searches saved CRM leads), look up people, verify emails, enrich, research, score and draft using the same app handlers and credits. All operations are scoped to the authenticated user by row-level security. Do not send, enroll or enable automation without explicit user approval; a verification verdict is not a delivery guarantee.",
   // Clients connect through https://api.outreign.io/mcp and reject a server
   // whose advertised `resource` differs from that URL, so pin both the resource
   // and the metadata document (served by the mcp-oauth-metadata function).
@@ -723,6 +861,14 @@ var mcp_default = defineMcp({
     protectedResourceMetadataUrl: "https://api.outreign.io/mcp-oauth-metadata"
   }),
   tools: [
+    search_prospects_default,
+    search_companies_default,
+    find_person_default,
+    verify_email_default,
+    enrich_lead_default,
+    score_lead_default,
+    research_lead_default,
+    generate_email_default,
     // Read
     list_leads_default,
     search_leads_default,
