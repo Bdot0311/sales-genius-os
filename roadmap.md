@@ -6,9 +6,10 @@
 
 # Developer documentation
 
-- [ ] Add readable getting-started, authentication, API, MCP, webhook and integration guides alongside the existing API specification.
-- [ ] Point app links and AI discovery documentation to https://docs.outreign.io and preserve old documentation links.
-- [ ] Validate documentation configuration, references and app navigation; hosted changes wait for Mintlify's GitHub deployment.
+- [x] Add 15 readable getting-started, authentication, API, MCP, webhook and integration guides; correct the specification to cover all 24 implemented operations.
+- [x] Point documentation entry points and AI discovery to https://docs.outreign.io, preserve old links with a redirect, and deploy the AI-readable documentation update.
+- [x] Validate Mintlify's schema, MDX compilation, links, API contracts and app navigation at desktop/mobile widths.
+- [ ] Verify the redesigned hosted documentation after Mintlify deploys the GitHub default-branch changes (current hosted site still serves the previous reference-only layout).
 
 # DFY sales-model questions
 
