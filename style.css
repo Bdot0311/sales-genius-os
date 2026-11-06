@@ -1,0 +1,19 @@
+/* OutReign brand: near-black, white, violet (from DESIGN.md) */
+
+/* HTTP method badges (GET, POST, etc.) on endpoint pages and in the sidebar */
+.method-pill,
+.method-nav-pill {
+  background-color: #7236E2 !important;
+  color: #FFFFFF !important;
+  border-color: transparent !important;
+}
+
+/* "Try it" button */
+.tryit-button {
+  background-color: #7236E2 !important;
+  color: #FFFFFF !important;
+}
+
+.tryit-button:hover {
+  background-color: #8B5AE7 !important;
+}

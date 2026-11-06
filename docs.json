@@ -4,8 +4,9 @@
   "name": "OutReign API",
   "description": "OutReign API reference for B2B lead intelligence and outbound sales.",
   "colors": {
-    "primary": "#8b5cf6",
-    "light": "#8B5CF6"
+    "primary": "#7236E2",
+    "light": "#8B5AE7",
+    "dark": "#7236E2"
   },
   "navigation": {
     "groups": [
@@ -23,5 +24,8 @@
   "favicon": {
     "light": "/public/apple-touch-icon.png",
     "dark": "/public/apple-touch-icon.png"
+  },
+  "appearance": {
+    "default": "dark"
   }
 }
