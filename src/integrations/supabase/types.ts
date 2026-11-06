@@ -2131,6 +2131,108 @@ export type Database = {
           },
         ]
       }
+      outbound_run_steps: {
+        Row: {
+          attempt_count: number
+          created_at: string
+          id: string
+          lead_id: string
+          lease_expires_at: string | null
+          lease_owner: string | null
+          phase: string
+          run_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempt_count?: number
+          id?: string
+          lead_id: string
+          phase: string
+          run_id: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          status?: string
+          attempt_count?: number
+        }
+        Relationships: []
+      }
+      agent_tool_receipts: {
+        Row: {
+          created_at: string
+          detail: string | null
+          id: string
+          run_id: string | null
+          status: string
+          tool_name: string
+          user_id: string
+        }
+        Insert: {
+          detail?: string | null
+          run_id?: string | null
+          status: string
+          tool_name: string
+          user_id: string
+        }
+        Update: {
+          status?: string
+        }
+        Relationships: []
+      }
+      outbound_gate_canary: {
+        Row: {
+          enabled: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          enabled?: boolean
+          user_id: string
+        }
+        Update: {
+          enabled?: boolean
+        }
+        Relationships: []
+      }
+      outbound_verdicts: {
+        Row: {
+          body: string
+          content_hash: string
+          created_at: string
+          findings: Json
+          gate_status: string
+          id: string
+          lead_id: string | null
+          prompt_hash: string
+          rubric: Json | null
+          rubric_availability: string
+          rubric_prompt_hash: string
+          sent_email_id: string | null
+          shadow: boolean
+          shadow_mismatch: boolean
+          subject: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          content_hash: string
+          findings?: Json
+          gate_status: string
+          lead_id?: string | null
+          prompt_hash: string
+          rubric_availability: string
+          rubric_prompt_hash: string
+          subject: string
+          user_id: string
+        }
+        Update: {
+          sent_email_id?: string | null
+        }
+        Relationships: []
+      }
       email_drafts: {
         Row: {
           body: string | null

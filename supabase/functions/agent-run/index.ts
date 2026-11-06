@@ -15,6 +15,7 @@ import {
   type RubricDimension,
 } from "../_shared/email-quality.ts";
 import { auditEmail } from "../_shared/email-audit.ts";
+import { guardRunSummary, receiptsFromRun } from "../_shared/run-receipts.ts";
 import { agentProhibitions } from "../_shared/agent-prohibitions.ts";
 import { deliverabilityCheck } from "../_shared/email-deliverability.ts";
 import { findPlaceholders, hasPlaceholder, bannedPhrasesBlock, realValue } from "../_shared/email-rules.ts";
@@ -2008,9 +2009,29 @@ Output ONLY the reply body. No subject line or signature.`;
     }
 
     const agentLabel = `${config.agent_name || "Agent"} (${agentRole.replace(/_/g, " ")})`;
-    const runSummary = approvalMode
-      ? `${agentLabel} finished in approval mode — ${leadsFound} new lead(s) found, ${outreachDrafted} first-touch draft(s) created, ${threadsChecked} thread(s) checked, ${pendingApprovals} total draft(s) waiting for your approval.`
-      : `${agentLabel} finished autonomously — ${leadsFound} lead(s) found, ${outreachSent} first-touch email(s) sent, ${threadsChecked} thread(s) checked, ${repliesSent} reply(ies) sent.`;
+    const runReceipts = receiptsFromRun({
+      outreachSent,
+      pendingApprovals,
+      repliesSent,
+      sendFailed: 0,
+      unpersisted: 0,
+    });
+    const runSummary = guardRunSummary(
+      approvalMode
+        ? `${agentLabel} finished in approval mode — ${leadsFound} new lead(s) found, ${outreachDrafted} first-touch draft(s) created, ${threadsChecked} thread(s) checked, ${pendingApprovals} total draft(s) waiting for your approval.`
+        : `${agentLabel} finished autonomously — ${leadsFound} lead(s) found, ${outreachSent} first-touch email(s) sent, ${threadsChecked} thread(s) checked, ${repliesSent} reply(ies) sent.`,
+      runReceipts,
+    );
+    const runId = crypto.randomUUID();
+    for (const receipt of runReceipts) {
+      await adminClient.rpc("record_agent_tool_receipt", {
+        p_user_id: user.id,
+        p_run_id: runId,
+        p_tool_name: receipt.toolName,
+        p_status: receipt.status,
+        p_detail: receipt.detail ?? null,
+      }).then(() => {}, () => {});
+    }
 
     await logAction({
       user_id: user.id,

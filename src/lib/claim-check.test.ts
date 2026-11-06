@@ -124,7 +124,7 @@ describe("the autonomous path reports counters, not model prose", () => {
   const RUN = readFileSync("supabase/functions/agent-run/index.ts", "utf8");
 
   it("builds its summary from counters", () => {
-    expect(RUN).toMatch(/const runSummary = approvalMode/);
+    expect(RUN).toContain("guardRunSummary(");
     expect(RUN).toMatch(/\$\{outreachSent\} first-touch email\(s\) sent/);
   });
 

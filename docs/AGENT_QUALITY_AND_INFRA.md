@@ -85,7 +85,21 @@ What failed, and is now gated in this branch: the card and the send did not have
 
 What is still missing, and is the reason a later build is scoped: a verdict is not stored on the draft, a run has no row to resume, and a model rubric score is not a versioned artifact. A named workflow product does not fix those by being installed. The custom loop should stay until those rows exist. Adopting a workflow runtime is justified only if step leases and retries cannot be done on the tables this app already has. That has not been shown. No vendor is selected here.
 
-## Proposed build, not started
+## Approved build, implemented in code, not published
+
+The five items below are in the repository. They are not on the hosted database until a Lovable publish applies the migration and the functions. The canary table is empty, so no account is in canary. The live gate still refuses red rows for everyone. Shadow writes record a verdict and a mismatch flag. They do not authorize a send while the canary is off. If the verdict write fails, the live gate still decides, and a failing gate still refuses.
+
+Rollback is to leave `outbound_gate_canary.enabled` false, or to delete a row that was turned on. Do not restore a path that sends when the live gate has findings. A step row can be cancelled with `cancel_agent_run`. An expired lease can be claimed by the next worker. `deliverReserved` is still the lock that stops two sends of one reservation.
+
+| Phase | In this branch | Acceptance exercised | Not done |
+|---|---|---|---|
+| 1. Verdict bound to exact text | `outbound_verdicts`, `evaluateSend`, shadow write from `send-email` | A new body hash does not match the stored hash, and canary mode refuses | No account is canaried. Hosted rows do not exist yet |
+| 2. Leased run steps | `outbound_run_steps` and `claim_agent_run_step` | Two workers, one claim; expired lease resumes; done does not execute; cancel does not execute | `agent-run` still walks leads in memory. It does not yet claim these rows on every lead. The SQL is the recovery primitive and is tested. This is not the existing `agent_run_steps` trace table |
+| 3. Tool receipts | `agent_tool_receipts`, `guardRunSummary` on the agent-run summary | A provider-accepted-but-unpersisted receipt does not back "I sent the email" | Receipt insert is best-effort until the migration is published |
+| 4. Fixture replay | `src/lib/outbound-infra.test.ts` frozen pair, no model | The "usually" sentence fails the gate. The question does not | Not a campaign |
+| 5. Prompt hashes | `prompt_hash` and `rubric_prompt_hash` on the verdict | Same body, two hashes, two rows, canary refuses a hash mismatch | Does not invent hashes for mail sent before this table |
+
+## Proposed build, now the implemented contract
 
 Must-have, in order. Each item names the failure it answers.
 

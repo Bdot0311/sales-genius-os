@@ -205,7 +205,7 @@ jobs:
         env:
           AUDIT_PG_URL: postgresql://audit:audit@localhost:5432/audit_test
           AUDIT_PG_REQUIRED: "1"
-        run: npx vitest run src/lib/runtime-guards.test.ts
+        run: npx vitest run src/lib/runtime-guards.test.ts src/lib/outbound-infra.test.ts
 
   # generate-email injects the GTM skills into its prompt by importing
   # _shared/skills.generated.ts, which is compiled from .claude/skills. Editing

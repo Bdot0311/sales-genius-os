@@ -22,6 +22,8 @@ import {
 import { acceptedUnpersistedBody, deliverReserved, type OutboundStore } from "../_shared/tracked-send.ts";
 import { outboundGateFindings } from "../_shared/quality-gate.ts";
 import { proofFromLead } from "../_shared/template-send-gate.ts";
+import { evaluateSend } from "../_shared/outbound-verdict.ts";
+import { contentHash, gatePromptHash, rubricPromptHash } from "../_shared/prompt-versions.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -571,17 +573,73 @@ serve(async (req) => {
           .limit(1);
         isVerifiedReply = Array.isArray(replied) && replied.length > 0;
       }
+      const plainBody = htmlToPlainText(body);
       const gateFindings = isVerifiedReply ? [] : outboundGateFindings(
         String(subject ?? ""),
-        htmlToPlainText(body),
+        plainBody,
         leadProof,
         0,
       );
-      if (gateFindings.length > 0) {
+      const liveBlocked = gateFindings.length > 0;
+      let allowSend = !liveBlocked;
+      let verdictId: string | null = null;
+      try {
+        const [hash, promptHash, rubricHash] = await Promise.all([
+          contentHash(String(subject ?? ""), plainBody),
+          gatePromptHash(),
+          rubricPromptHash(),
+        ]);
+        const { data: enabled } = await supabase.rpc("outbound_canary_enabled", { p_user_id: user.id });
+        const { data: storedRows } = await supabase.rpc("latest_outbound_verdict", {
+          p_user_id: user.id,
+          p_content_hash: hash,
+        });
+        const row = Array.isArray(storedRows) ? storedRows[0] : storedRows;
+        const stored = row ? {
+          contentHash: String(row.content_hash),
+          gateStatus: row.gate_status as "clear" | "needs_review" | "refused",
+          promptHash: String(row.prompt_hash),
+          rubricPromptHash: String(row.rubric_prompt_hash),
+        } : null;
+        const decision = evaluateSend({
+          liveBlocked,
+          contentHash: hash,
+          promptHash,
+          rubricPromptHash: rubricHash,
+          stored,
+          canary: enabled === true,
+        });
+        const gateStatus = liveBlocked
+          ? (gateFindings.some((f) => f.severity === "blocker") ? "refused" : "needs_review")
+          : "clear";
+        const { data: id } = await supabase.rpc("record_outbound_verdict", {
+          p_user_id: user.id,
+          p_lead_id: leadId ?? null,
+          p_content_hash: hash,
+          p_subject: String(subject ?? ""),
+          p_body: plainBody,
+          p_findings: gateFindings,
+          p_rubric_availability: "unavailable",
+          p_rubric: null,
+          p_prompt_hash: promptHash,
+          p_rubric_prompt_hash: rubricHash,
+          p_gate_status: gateStatus,
+          p_shadow: enabled !== true,
+          p_shadow_mismatch: decision.shadowMismatch,
+        });
+        verdictId = typeof id === "string" ? id : null;
+        allowSend = decision.allow;
+      } catch (verdictErr) {
+        console.warn("[send-email] verdict shadow skipped", verdictErr);
+        allowSend = !liveBlocked;
+      }
+      if (!allowSend) {
         return new Response(
           JSON.stringify({
-            error: `Not sent. The quality check failed: ${gateFindings.slice(0, 4).map((f) => f.rule).join(", ")}.`,
-            code: "quality_checker",
+            error: liveBlocked
+              ? `Not sent. The quality check failed: ${gateFindings.slice(0, 4).map((f) => f.rule).join(", ")}.`
+              : "Not sent. This account's canary requires a clear verdict for this exact text, and the stored verdict does not match.",
+            code: liveBlocked ? "quality_checker" : "verdict_required",
             findings: gateFindings.slice(0, 8).map((f) => ({ rule: f.rule, evidence: f.evidence, fix: f.fix })),
           }),
           { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -793,7 +851,15 @@ ${unsubscribeFooterHtml}
             gmail_thread_id: gmail.threadId,
             sent_at: new Date().toISOString(),
           }).eq('id', id).select('id');
-          return !error && Array.isArray(data) && data.length > 0;
+          const stored = !error && Array.isArray(data) && data.length > 0;
+          if (stored && verdictId) {
+            await supabase.rpc("attach_verdict_to_send", {
+              p_verdict_id: verdictId,
+              p_sent_email_id: id,
+              p_user_id: user.id,
+            }).then(() => {}, () => {});
+          }
+          return stored;
         },
         markFailed: async (id, reason) => {
           await supabase.from('sent_emails').update({
