@@ -1,3 +1,4 @@
+import { resolveAppUser } from "../_shared/app-user.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 // Frameworks come from the GTM skills at request time rather than being retyped
 // here — see _shared/email-skills.ts.
@@ -61,7 +62,7 @@ import { decisionForDrafting, decisionPromptBlock } from "../_shared/lead-intell
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-api-key",
 };
 
 // ─── Input validation ──────────────────────────────────────────────────────────
@@ -703,7 +704,7 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
+    if (!authHeader && !req.headers.get('X-API-Key')) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -712,7 +713,7 @@ serve(async (req) => {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
+      { global: { headers: { Authorization: authHeader ?? '' } } }
     );
 
     // Service role, needed before the auth block below so an internal caller's
@@ -741,7 +742,9 @@ serve(async (req) => {
     const internal = isInternalCaller(req);
     let userId = '';
     if (!internal) {
-      const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+      const resolved = await resolveAppUser(req, adminClient);
+      const user = resolved.user;
+      const authError = resolved.error;
       if (authError || !user) {
         return new Response(JSON.stringify({ error: 'Unauthorized' }), {
           status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },

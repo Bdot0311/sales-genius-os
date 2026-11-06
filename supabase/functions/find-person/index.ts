@@ -1,3 +1,4 @@
+import { resolveAppUser } from "../_shared/app-user.ts";
 // Find a person by name.
 //
 // The other entry points start from an ICP, a website, or a company list. This
@@ -31,7 +32,7 @@ import { applySearchMeter, asMeterClient } from "../_shared/search-meter.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-api-key",
 };
 
 const json = (body: unknown, status = 200) =>
@@ -69,14 +70,16 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return json({ error: "Authorization required" }, 401);
+    if (!authHeader && !req.headers.get("X-API-Key")) return json({ error: "Authorization required" }, 401);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    const resolved = await resolveAppUser(req, supabase);
+    if (!resolved.user) return json({ error: resolved.error }, resolved.status);
+    const user = resolved.user;
+    const userError = null;
 
     if (user && await isDemoMode(supabase, user.id)) {
       return demoResponse(
@@ -137,7 +140,7 @@ serve(async (req) => {
       try {
         await fetch(`${supabaseUrl}/functions/v1/score-lead`, {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: authHeader, apikey: serviceKey },
+          headers: { "Content-Type": "application/json", Authorization: authHeader ?? "", apikey: serviceKey, ...(req.headers.get("X-API-Key") ? { "X-API-Key": req.headers.get("X-API-Key") ?? "" } : {}) },
           body: JSON.stringify({ leadId }),
         });
       } catch (e) {
@@ -159,7 +162,7 @@ serve(async (req) => {
     else if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) enrichPayload.email = email;
     else if (fullName.split(/\s+/).length >= 2 && (company || domain)) {
       enrichPayload.full_name = fullName;
-      enrichPayload.company = company || domain!;
+      enrichPayload.company = company || domain || '';
     }
 
     if (Object.keys(enrichPayload).length === 0) {

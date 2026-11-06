@@ -1,3 +1,4 @@
+import { resolveAppUser } from "../_shared/app-user.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
 import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
@@ -5,7 +6,7 @@ import { rateLimit, rateLimitResponse } from "../_shared/rate-limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-api-key",
 };
 
 interface CompanyCandidate {
@@ -50,7 +51,7 @@ serve(async (req) => {
   try {
     // Auth — same JWT pattern as fetch-external-leads.
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    if (!authHeader && !req.headers.get("X-API-Key")) {
       return new Response(JSON.stringify({ error: "Authorization required", companies: [] }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -60,8 +61,10 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    const resolved = await resolveAppUser(req, supabase);
+    if (!resolved.user) return new Response(JSON.stringify({ error: resolved.error }), { status: resolved.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const user = resolved.user;
+    const userError = null;
 
     // Demo mode: simulate instead of hitting providers or spending credits
     if (user && await isDemoMode(supabase, user.id)) {

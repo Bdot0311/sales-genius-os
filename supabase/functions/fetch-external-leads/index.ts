@@ -32,7 +32,7 @@ import { coldiqLeadsMode, coldiqSearchPeople, coldiqConfigured, COLDIQ_CREDITS_E
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
 };
 
 interface ExternalLeadFilters {
@@ -594,7 +594,7 @@ serve(async (req) => {
 
     // Get auth token from request
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
+    if (!authHeader && !req.headers.get('X-API-Key')) {
       throw new Error('No authorization header');
     }
 
