@@ -1,4 +1,6 @@
 import { useParams, useSearchParams, Link } from "react-router-dom";
+import DeveloperDocsRedirect from "./DeveloperDocsRedirect";
+import { PUBLIC_DOCS_URL } from "@/lib/public-api";
 import { Navbar } from "@/components/Navbar";
 import { SEOHead, BreadcrumbSchema } from "@/components/seo";
 import { lazy, Suspense, type ReactNode, type CSSProperties } from "react";
@@ -60,6 +62,14 @@ const HelpCenter = () => {
   const { category, slug } = useParams();
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get("search");
+
+  // Retired developer guides remain reachable only as documentation redirects.
+  if (category === "api" || (slug && [
+    "api-documentation", "api-status-monitoring",
+    "webhook-signature-verification", "rate-limits-best-practices",
+  ].includes(slug))) {
+    return <DeveloperDocsRedirect />;
+  }
 
   // Article view
   if (slug) {
@@ -366,7 +376,7 @@ const HelpCenter = () => {
           <div className="container mx-auto px-5 sm:px-6">
             <div className="flex flex-wrap justify-center gap-3">
               {[
-                { to: "/api-docs", label: "API Documentation", Icon: Book, isLink: true },
+                { to: PUBLIC_DOCS_URL, label: "API Documentation", Icon: Book, isLink: false },
                 { to: "/api-status", label: "System Status", Icon: Activity, isLink: true },
                 { to: "mailto:support@bdotindustries.com", label: "Contact Support", Icon: FileText, isLink: false },
               ].map(({ to, label, Icon, isLink }) => (
@@ -486,7 +496,7 @@ const HelpCenter = () => {
                 {[
                   { to: "/", label: "Home" },
                   { to: "/pricing", label: "Pricing" },
-                  { to: "/api-docs", label: "API Docs" },
+                  { to: PUBLIC_DOCS_URL, label: "API Docs" },
                   { to: "/api-status", label: "System Status" },
                   { to: "/security", label: "Security" },
                   { to: "/privacy", label: "Privacy" },

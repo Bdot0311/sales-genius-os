@@ -1,3 +1,4 @@
+import { PUBLIC_DOCS_URL } from "@/lib/public-api";
 import { useState, useEffect } from "react";
 import { CheckCircle, XCircle, AlertCircle, Activity, Clock, TrendingUp, ArrowLeft, ExternalLink } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -224,7 +225,7 @@ const ApiStatus = () => {
                   <p style={{ color: "hsl(0 0% 100% / 0.55)" }}>Real-time system status and incident history</p>
                 </div>
                 <a
-                  href="/api-docs"
+                  href={PUBLIC_DOCS_URL}
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-colors shrink-0 w-fit"
                   style={{ background: "hsl(261 75% 50% / 0.08)", border: "1px solid hsl(261 75% 50% / 0.2)", color: "hsl(0 0% 85%)" }}
                   onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.borderColor = "hsl(261 75% 50% / 0.4)")}
@@ -378,7 +379,7 @@ const ApiStatus = () => {
               <p className="text-[10px] uppercase tracking-[0.25em] mb-4" style={{ color: "hsl(0 0% 100% / 0.7)" }}>Related resources</p>
               <ul className="grid sm:grid-cols-2 gap-3 text-sm">
                 {[
-                  { href: "/api-docs", label: "API Documentation", sub: "Complete integration guide" },
+                  { href: PUBLIC_DOCS_URL, label: "API Documentation", sub: "Complete integration guide" },
                   { href: "/security", label: "Security Practices", sub: "Data protection measures" },
                   { href: "/help", label: "Help Center", sub: "Guides and support" },
                   { href: "/pricing", label: "Pricing Plans", sub: "Find your plan" },

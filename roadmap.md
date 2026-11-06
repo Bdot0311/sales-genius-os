@@ -1,3 +1,8 @@
+# Retire built-in API documentation
+
+- [x] Remove the duplicate API reference and developer help category/articles; keep external documentation links and legacy redirects.
+- [ ] Verify help navigation and retired-page redirects.
+
 # Mintlify repository setup
 
 - [x] Add root Mintlify configuration using the existing public API specification.

@@ -1,3 +1,4 @@
+import { PUBLIC_DOCS_URL } from "@/lib/public-api";
 import { Navbar } from "@/components/Navbar";
 import { Pricing } from "@/components/Pricing";
 import { SEOHead, BreadcrumbSchema, FAQSchema, SoftwareApplicationSchema } from "@/components/seo";
@@ -288,7 +289,7 @@ const PricingPage = () => {
                   {[
                     { to: "/", label: "Features" },
                     { to: "/help", label: "Help Center" },
-                    { to: "/api-docs", label: "API Docs" },
+                    { to: PUBLIC_DOCS_URL, label: "API Docs" },
                     { to: "/security", label: "Security" },
                     { to: "/terms", label: "Terms" },
                     { to: "/privacy", label: "Privacy" },
