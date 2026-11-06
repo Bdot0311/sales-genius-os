@@ -873,10 +873,10 @@ import { z as z23 } from "npm:zod@^3.25.76";
 var generate_email_default = defineTool23({
   name: "generate_email",
   title: "Generate an email draft",
-  description: "Generate email copy for your saved lead through the app generator, grounded in your own company context. Returns a draft only; no message is sent.",
+  description: "Generate and save an email draft for your saved lead, grounded in your own company context. The draft appears in Outreach Studio and Unified Inbox; no message is sent.",
   inputSchema: { lead_id: z23.string().uuid(), tone: z23.enum(["professional", "friendly", "casual", "formal"]), goal: z23.enum(["introduction", "follow-up", "meeting", "demo", "proposal"]), senderName: z23.string().max(100), businessDescription: z23.string().max(500).optional(), customInstruction: z23.string().max(8e3).optional() },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
-  handler: ({ lead_id, ...input }, ctx) => callAppAction(ctx, "generate_email", "generate-email", { ...input, lead: { id: lead_id } })
+  handler: ({ lead_id, ...input }, ctx) => callAppAction(ctx, "generate_email", "generate-email", { ...input, lead: { id: lead_id }, saveDraft: true })
 });
 
 // src/lib/mcp/tools/workspace-action.ts
