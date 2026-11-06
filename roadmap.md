@@ -1,3 +1,9 @@
+# API and MCP app-access parity
+
+- [ ] Expose real app prospect search and email verification with the same owner, plan and credit checks.
+- [ ] Extend matching API/MCP enrichment, research and app-action access; document exact capabilities without claiming unsupported actions.
+- [ ] Run authorization/contract regressions, verify authenticated requests, extract the MCP catalog and deploy eligible functions.
+
 # Retire built-in API documentation
 
 - [x] Remove the duplicate API reference and developer help category/articles; keep external documentation links and legacy redirects.
