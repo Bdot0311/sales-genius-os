@@ -19,5 +19,5 @@
     "protectedResourceMetadata": "https://outreign.io/.well-known/oauth-protected-resource",
     "authorizationServers": ["https://ghgfjnepvxvxrncmskys.supabase.co/auth/v1"]
   },
-  "documentationUrl": "https://outreign.io/connect"
+  "documentationUrl": "https://docs.outreign.io/developer-docs/mcp/overview"
 }

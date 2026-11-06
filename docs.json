@@ -1,16 +1,121 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "OutReign API",
-  "description": "OutReign API reference for B2B lead intelligence and outbound sales.",
+  "theme": "maple",
+  "name": "OutReign Developers",
+  "description": "Developer guides, API reference, MCP and webhooks for OutReign.",
   "colors": {
-    "primary": "#8b5cf6"
+    "primary": "#7236E2",
+    "light": "#8B5AE7",
+    "dark": "#7236E2"
+  },
+  "logo": {
+    "light": "/public/apple-touch-icon.png",
+    "dark": "/public/apple-touch-icon.png",
+    "href": "https://outreign.io"
+  },
+  "favicon": {
+    "light": "/public/apple-touch-icon.png",
+    "dark": "/public/apple-touch-icon.png"
+  },
+  "appearance": {
+    "default": "dark"
+  },
+  "api": {
+    "params": {
+      "expanded": "closed"
+    },
+    "optional": "collapsed",
+    "examples": {
+      "languages": [
+        "bash",
+        "javascript",
+        "python"
+      ],
+      "defaults": "required"
+    }
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Support",
+        "href": "https://outreign.io/help"
+      },
+      {
+        "label": "API status",
+        "href": "https://outreign.io/api-status"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Open OutReign",
+      "href": "https://outreign.io/dashboard"
+    }
   },
   "navigation": {
-    "groups": [
+    "tabs": [
       {
-        "group": "API reference",
-        "openapi": "public/openapi.json"
+        "tab": "Guides",
+        "groups": [
+          {
+            "group": "Get started",
+            "pages": [
+              "developer-docs/introduction",
+              "developer-docs/quickstart",
+              "developer-docs/authentication"
+            ]
+          },
+          {
+            "group": "Build with OutReign",
+            "pages": [
+              "developer-docs/pagination",
+              "developer-docs/errors-and-limits",
+              "developer-docs/integrations",
+              "developer-docs/troubleshooting"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "developer-docs/api-overview"
+            ]
+          },
+          {
+            "group": "Endpoints",
+            "openapi": "public/openapi.json"
+          }
+        ]
+      },
+      {
+        "tab": "MCP",
+        "groups": [
+          {
+            "group": "AI assistant connections",
+            "pages": [
+              "developer-docs/mcp/overview",
+              "developer-docs/mcp/connect",
+              "developer-docs/mcp/tools"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Webhooks",
+        "groups": [
+          {
+            "group": "Event delivery",
+            "pages": [
+              "developer-docs/webhooks/overview",
+              "developer-docs/webhooks/events",
+              "developer-docs/webhooks/security-and-retries",
+              "developer-docs/webhooks/inbound"
+            ]
+          }
+        ]
       }
     ]
   }

@@ -1,0 +1,33 @@
+---
+title: "MCP overview"
+description: "Use OutReign from an OAuth-capable AI assistant."
+---
+
+The Model Context Protocol (MCP) lets an assistant discover and call OutReign tools with your authorization.
+
+```text
+https://api.outreign.io/mcp
+```
+
+## Connection contract
+
+- Transport: remote **Streamable HTTP**.
+- Authentication: delegated OAuth with PKCE. Sign in to OutReign and approve access.
+- Data scope: the approving user's account, enforced on the server.
+- Availability: paid-plan MCP access and per-tool usage checks apply.
+
+REST API keys are not used for this connection. The client discovers authorization metadata from the server; do not substitute the documentation site's address as the MCP endpoint.
+
+## What is available
+
+Read saved leads, search existing saved records, inspect sequences, replies, sent emails, deals and ICP profiles, and review agent activity. Write tools can create or update records, enroll a lead, queue a reply and edit agent settings.
+
+`search_leads` searches the user's saved records. It does not perform a fresh external prospect search or enrichment. MCP tools are distinct from OutReign's in-app agent tools and the REST endpoint catalog.
+
+## Before calling write tools
+
+Review the intended recipient, record IDs and content before authorizing a write. Enrollment can start an email sequence; `send_reply` queues an outbound message. A successful queue result is not proof of email delivery.
+
+- [Connect a client](/developer-docs/mcp/connect)
+- [Tool inputs and effects](/developer-docs/mcp/tools)
+- [Authentication](/developer-docs/authentication)

@@ -1,4 +1,24 @@
-# Lovable keeps a north-star note here. Mintlify's MDX parser rejects the
-# HTML comment that file starts with, and the deployment check still reports
-# success after logging "Updated deployment with errors". This is not API docs.
-.lovable/**
+# Mintlify shares this repository with the app; do not inject app CSS or scripts.
+# /.lovable/ stays excluded: north-star.md starts with an HTML comment, and
+# Mintlify's MDX parser logs "Updated deployment with errors" while still
+# reporting success. That note is Lovable's, not API docs.
+*.css
+!/style.css
+*.js
+/src/
+/supabase/
+/drizzle/
+/workers/
+/scripts/
+/docs/
+/node_modules/
+/.git/
+/.github/
+/.lovable/
+/.agents/
+/.claude/
+/.workspace/
+/.env*
+/*.md
+/*.ts
+/*.tsx

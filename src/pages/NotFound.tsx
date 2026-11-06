@@ -1,3 +1,4 @@
+import { PUBLIC_DOCS_URL } from "@/lib/public-api";
 import { useLocation, Link } from "react-router-dom";
 import { useEffect } from "react";
 import { Home, Search, ArrowLeft, BookOpen, DollarSign, HelpCircle } from "lucide-react";
@@ -14,7 +15,7 @@ const NotFound = () => {
   const popularPages = [
     { name: "Home", path: "/", icon: Home, description: "Return to the main page" },
     { name: "Pricing", path: "/pricing", icon: DollarSign, description: "View our pricing plans" },
-    { name: "API Docs", path: "/api-docs", icon: BookOpen, description: "Explore our API documentation" },
+    { name: "API Docs", path: PUBLIC_DOCS_URL, icon: BookOpen, description: "Explore our API documentation" },
     { name: "Help Center", path: "/help", icon: HelpCircle, description: "Get help and support" },
   ];
 

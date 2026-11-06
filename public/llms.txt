@@ -1,6 +1,6 @@
 # Find Who To Sell To, Then Close Them.
 # https://outreign.io
-# Last Updated: 2026-10-24
+# Last Updated: 2026-11-06
 # For complete product documentation: https://outreign.io/llms-full.txt
 
 > OutReign is sales operations software for B2B outbound teams, a unified alternative to stitching together Apollo, Instantly, Outreach, and Salesloft. Describe your ideal customer in plain English, get ranked prospects with SMTP-verified business emails, and send an AI-drafted first-touch message from one workflow in under 2 minutes.
@@ -81,7 +81,8 @@ Sign up for free at https://outreign.io. The Explore plan needs no credit card.
 - [Pricing](/pricing): Subscription plans, one-time credit packs, and annual billing options.
 - [Demo](/demo): Interactive walkthrough of the lead-to-email workflow.
 - [Help Center](/help): Documentation, guides, and support articles.
-- [API Documentation](/api-docs): RESTful API reference for paid plan users. Starter and up include API & MCP access with higher limits by tier.
+- [Developer Documentation](https://docs.outreign.io): Getting started, authentication, REST API reference, MCP tools, inbound/outbound webhooks, signatures, retries and automation guides. Starter and up include API & MCP access with higher limits by tier.
+- [Developer Documentation Index](https://docs.outreign.io/llms.txt): Mintlify's index of developer documentation pages for AI readers.
 - [API Status](/api-status): Real-time system status and uptime monitoring.
 - [Privacy Policy](/privacy): Data handling, GDPR compliance, and user rights.
 - [Terms of Service](/terms): Acceptable use, billing terms, and legal agreements.

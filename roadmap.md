@@ -1,8 +1,20 @@
+# Retire built-in API documentation
+
+- [x] Remove the duplicate API reference and developer help category/articles; keep external documentation links and legacy redirects.
+- [x] Verify help navigation and retired-page redirects; both regression tests pass and preview builds cleanly.
+
 # Mintlify repository setup
 
 - [x] Add root Mintlify configuration using the existing public API specification.
 - [x] Validate against Mintlify's official schema and discover all 21 API operations.
-- [ ] Complete Mintlify repository connection (requires the configuration on GitHub's default branch and user confirmation in Mintlify).
+- [x] Complete Mintlify repository connection at https://docs.outreign.io.
+
+# Developer documentation
+
+- [x] Add 15 readable getting-started, authentication, API, MCP, webhook and integration guides; correct the specification to cover all 24 implemented operations.
+- [x] Point documentation entry points and AI discovery to https://docs.outreign.io, preserve old links with a redirect, and deploy the AI-readable documentation update.
+- [x] Validate Mintlify's schema, MDX compilation, links, API contracts and app navigation at desktop/mobile widths.
+- [ ] Verify the redesigned hosted documentation after Mintlify deploys the GitHub default-branch changes (current hosted site still serves the previous reference-only layout).
 
 # DFY sales-model questions
 

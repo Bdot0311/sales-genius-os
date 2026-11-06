@@ -7,8 +7,9 @@ import { SEOHead } from "@/components/seo";
 import { Copy, Check, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Panel, PanelBody, PanelHeader, SectionLabel } from "@/components/dashboard/Panel";
+import { PUBLIC_API_BASE, PUBLIC_DOCS_URL } from "@/lib/public-api";
 
-const MCP_URL = "https://mcp.outreign.io/mcp";
+const MCP_URL = `${PUBLIC_API_BASE}/mcp`;
 
 /**
  * A numbered sequence.
@@ -206,6 +207,9 @@ export default function Connect() {
             Assistants cache the tool list when you first connect, so when we ship new tools or
             change existing ones, refresh the connector to see them.
           </p>
+          <a href={`${PUBLIC_DOCS_URL}/developer-docs/mcp/overview`} className="mt-4 inline-flex text-sm text-primary hover:underline">
+            MCP documentation and tool reference
+          </a>
 
           <Panel className="mt-10">
             <PanelHeader title="What your assistant can do" />
