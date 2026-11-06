@@ -14,5 +14,14 @@
         "openapi": "public/openapi.json"
       }
     ]
+  },
+  "logo": {
+    "light": "/public/apple-touch-icon.png",
+    "dark": "/public/apple-touch-icon.png",
+    "href": "https://outreign.io"
+  },
+  "favicon": {
+    "light": "/public/apple-touch-icon.png",
+    "dark": "/public/apple-touch-icon.png"
   }
 }
