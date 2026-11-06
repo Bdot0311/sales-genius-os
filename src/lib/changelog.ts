@@ -121,6 +121,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     title: "Connect Grok, Cursor and other AI assistants",
     summary: "AI assistants that refused to load OutReign's tools can now connect and sign in.",
     items: [
+      { tag: "improved", title: "Every outreach email in Unified Inbox", description: "Review drafts, scheduled and queued messages, completed sends and failed emails together, including drafts created by API and connected AI assistants. Older emails are no longer hidden by a fixed list limit.", href: "/dashboard/inbox" },
       { tag: "new", title: "Find and check prospects from connected assistants", description: "The API and connected AI assistants can search for new prospects, find companies, look up people, check email addresses, enrich and research saved leads, score them and draft emails. Your account's permissions, credits and limits still apply; nothing is sent by these new actions.", href: "/connect" },
       { tag: "new", title: "Manage your sales workspace from connected tools", description: "Connected tools can review templates, campaign briefs, objections, signals, mailbox health and results, or update supported targeting, campaign and inbox settings after you confirm the changes.", href: "/connect" },
       { tag: "fixed", title: "AI assistant connection", description: "Assistants such as Grok and Cursor that showed \"failed to load\" for OutReign now connect at api.outreign.io/mcp. Remove the connector, add it again, and sign in.", href: "/connect" },
