@@ -3,7 +3,10 @@ title: "API changelog"
 description: "Changes to the REST API, MCP server and webhooks."
 ---
 
-<Update label="November 2026" description="v1.1">
+<Update label="November 2026" description="v1.2">
+- **Discovery:** real prospect search, company autocomplete, person lookup and email verification in REST/MCP, using the app's account limits and credits.
+- **Intelligence:** saved-lead research in REST; enrichment, research, scoring and email drafting in MCP.
+- **Workspace:** role/plan-gated workspace actions for templates, briefs, ICPs, sequence controls, inbox classification, mailbox health and outbound statistics; edits require confirmation.
 - **MCP:** AI assistants connecting to `https://api.outreign.io/mcp` now receive sign-in details for that exact address. Clients such as Grok and Cursor that previously reported `failed_to_load` should reconnect.
 - **Docs:** every endpoint now has a description, request and response examples, and documented error responses with rate-limit headers.
 - **Docs:** added [capabilities by interface](/developer-docs/capabilities), [core concepts](/developer-docs/concepts) and workflow recipes.

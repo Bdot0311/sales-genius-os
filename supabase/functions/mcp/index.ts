@@ -754,6 +754,13 @@ async function callAppAction(ctx, tool, fn, body) {
 function validateAppAction(route, body) {
   if (!body || typeof body !== "object" || Array.isArray(body)) return "A JSON object is required";
   const input = body;
+  if (route === "workspace/actions") {
+    if (Object.keys(input).some((k) => !["action", "args", "agent_id", "confirmed"].includes(k)) || typeof input.action !== "string" || input.action.length > 100) return "Invalid action request";
+    if (input.args !== void 0 && (!input.args || typeof input.args !== "object" || Array.isArray(input.args))) return "Invalid action arguments";
+    if (input.confirmed !== void 0 && typeof input.confirmed !== "boolean") return "confirmed must be boolean";
+    if (input.agent_id !== void 0 && (typeof input.agent_id !== "string" || !/^[0-9a-f-]{36}$/i.test(input.agent_id))) return "Invalid agent_id";
+    return JSON.stringify(input).length > 18e3 ? "Action request too large" : null;
+  }
   const search = ["query", "job_title", "industry", "company_size", "country", "company", "company_domain", "companies", "seniority", "keywords", "limit", "page", "cursor", "job_titles", "industries", "countries", "seniority_levels", "exclude_titles", "exclude_industries", "exclude_keywords", "strict", "relax", "exclude_seen"];
   const fields = route === "prospects/search" ? search : route === "companies/search" ? ["query"] : route === "people/lookup" ? ["full_name", "company", "company_domain", "email", "linkedin_url"] : route === "email/verify" ? ["email"] : [];
   if (!fields.length || Object.keys(input).some((k) => !fields.includes(k))) return "Unsupported input field";
@@ -872,6 +879,23 @@ var generate_email_default = defineTool23({
   handler: ({ lead_id, ...input }, ctx) => callAppAction(ctx, "generate_email", "generate-email", { ...input, lead: { id: lead_id } })
 });
 
+// src/lib/mcp/tools/workspace-action.ts
+import { defineTool as defineTool24 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z24 } from "npm:zod@^3.25.76";
+var workspace_action_default = defineTool24({
+  name: "workspace_action",
+  title: "Manage sales workspace",
+  description: "Use the app's existing account tools for ICPs, signals, sequence enrollment/status, reply classification, mailbox health/settings, deliverability alerts, email templates, objections, campaign briefs and outbound statistics. Read actions return data. Every edit returns a confirmation preview unless confirmed=true after explicit user approval. Optional agent_id preserves that build's role scope. Does not compose or directly send email.",
+  inputSchema: {
+    action: z24.enum(["list_icp_profiles", "update_icp_profile", "list_signals", "refresh_signals", "list_sequence_enrollments", "update_enrollment", "update_sequence_status", "classify_reply", "list_sending_accounts", "update_sending_account", "list_deliverability_alerts", "resolve_deliverability_alert", "list_email_templates", "save_email_template", "list_objections", "save_objection", "list_campaign_briefs", "save_campaign_brief", "get_outbound_stats"]),
+    args: z24.record(z24.unknown()).optional().describe("Action-specific fields from the workspace-actions documentation; ownership fields are never accepted."),
+    agent_id: z24.string().uuid().optional(),
+    confirmed: z24.boolean().optional().describe("True only after the user approved the exact previewed changes.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+  handler: (input, ctx) => callAppAction(ctx, "workspace_action", "workspace-action", input)
+});
+
 // src/lib/mcp/index.ts
 var projectRef = "ghgfjnepvxvxrncmskys";
 var mcp_default = defineMcp({
@@ -897,6 +921,7 @@ var mcp_default = defineMcp({
     score_lead_default,
     research_lead_default,
     generate_email_default,
+    workspace_action_default,
     // Read
     list_leads_default,
     search_leads_default,

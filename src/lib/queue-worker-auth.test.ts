@@ -29,7 +29,7 @@ describe("the batch worker can actually reach the generator", () => {
     expect(GEN).toContain('import { isInternalCaller } from "../_shared/internal-auth.ts";');
     expect(GEN).toContain("const internal = isInternalCaller(req);");
     // The user lookup still runs for everyone else, and still rejects.
-    expect(GEN).toMatch(/if \(!internal\) \{[\s\S]{0,400}auth\.getUser\(\)/);
+    expect(GEN).toMatch(/if \(!internal\) \{[\s\S]{0,400}resolveAppUser\(req, adminClient\)/);
   });
 
   it("an internal caller does not get to say who it is acting for", () => {

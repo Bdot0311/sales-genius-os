@@ -4,10 +4,18 @@ export const APP_API_ACTIONS: Record<string, string> = {
   "companies/search": "search-companies",
   "people/lookup": "find-person",
   "email/verify": "check-lead-email",
+  "workspace/actions": "workspace-action",
 };
 export function validateAppAction(route: string, body: unknown): string | null {
   if (!body || typeof body !== "object" || Array.isArray(body)) return "A JSON object is required";
   const input = body as Record<string, unknown>;
+  if (route === "workspace/actions") {
+    if (Object.keys(input).some(k => !["action", "args", "agent_id", "confirmed"].includes(k)) || typeof input.action !== "string" || input.action.length > 100) return "Invalid action request";
+    if (input.args !== undefined && (!input.args || typeof input.args !== "object" || Array.isArray(input.args))) return "Invalid action arguments";
+    if (input.confirmed !== undefined && typeof input.confirmed !== "boolean") return "confirmed must be boolean";
+    if (input.agent_id !== undefined && (typeof input.agent_id !== "string" || !/^[0-9a-f-]{36}$/i.test(input.agent_id))) return "Invalid agent_id";
+    return JSON.stringify(input).length > 18000 ? "Action request too large" : null;
+  }
   const search = ["query", "job_title", "industry", "company_size", "country", "company", "company_domain", "companies", "seniority", "keywords", "limit", "page", "cursor", "job_titles", "industries", "countries", "seniority_levels", "exclude_titles", "exclude_industries", "exclude_keywords", "strict", "relax", "exclude_seen"];
   const fields = route === "prospects/search" ? search : route === "companies/search" ? ["query"] : route === "people/lookup" ? ["full_name", "company", "company_domain", "email", "linkedin_url"] : route === "email/verify" ? ["email"] : [];
   if (!fields.length || Object.keys(input).some(k => !fields.includes(k))) return "Unsupported input field";

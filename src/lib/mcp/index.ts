@@ -22,6 +22,7 @@ import enrichLeadTool from "./tools/enrich-lead";
 import scoreLeadTool from "./tools/score-lead";
 import researchLeadTool from "./tools/research-lead";
 import generateEmailTool from "./tools/generate-email";
+import workspaceActionTool from "./tools/workspace-action";
 
 // Build the OAuth issuer from the Supabase project ref, inlined by Vite at
 // build time so no runtime env read happens at module load.
@@ -54,6 +55,7 @@ export default defineMcp({
     scoreLeadTool,
     researchLeadTool,
     generateEmailTool,
+    workspaceActionTool,
     // Read
     listLeadsTool,
     searchLeadsTool,
