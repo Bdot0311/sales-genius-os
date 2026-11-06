@@ -35,7 +35,7 @@ import { FollowUpSuggestion, FollowUpData } from "@/components/outreach/FollowUp
 import { BarChart3, ListOrdered, Layout, Users } from "lucide-react";
 import { LeadMultiSelect } from "@/components/outreach/LeadMultiSelect";
 import { BulkSendDialog } from "@/components/outreach/BulkSendDialog";
-import { EmailQualityChecker, blockerSummary, scoreEmailQuality } from "@/components/outreach/EmailQualityChecker";
+import { EmailQualityChecker, blockerSummary, redQualityRows, scoreEmailQuality } from "@/components/outreach/EmailQualityChecker";
 import { EmailRubricPanel } from "@/components/outreach/EmailRubricPanel";
 import { EmailAuditPanel } from "@/components/outreach/EmailAuditPanel";
 import { readGeneratedEmail, readGeneratedSubject, stripLeadingSubject } from "@/lib/read-generated-email";
@@ -1717,14 +1717,17 @@ Return ONLY the corrected email body. No subject line. No explanation. No "Here 
         contactName: lead.contact_name,
       });
 
-      if (quality.blockers.length > 0) {
-        // Naming them is the difference between a gate and a wall. "High-risk
-        // outbound issues" told the user nothing about which of eighteen
-        // checks to look at, and the number it was computed from could not
-        // have failed the draft on one blocker anyway.
+      const failingRows = redQualityRows(quality);
+      if (failingRows.length > 0) {
+        // The card paints a warning red. Sending past that showed a failing
+        // draft as ready. The gate uses the same rows, on the body that
+        // would actually go out, including the signature.
+        const detail = quality.blockers.length > 0
+          ? blockerSummary(quality.blockers)
+          : failingRows.map((row) => `${row.label}: ${row.message}`).join("; ");
         toast({
           title: "Email needs edits before sending",
-          description: `Fix first — ${blockerSummary(quality.blockers)}.`,
+          description: `Fix first — ${detail}.`,
           variant: "destructive",
         });
         setIsSending(false);

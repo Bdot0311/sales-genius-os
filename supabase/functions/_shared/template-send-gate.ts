@@ -5,8 +5,7 @@
  */
 
 import { auditEmail } from "./email-audit.ts";
-import { firstTouchBlockers, unsupportedProspectAssertions } from "./factual-send.ts";
-import { claimSupportedByCorpus } from "./research-citation.ts";
+import { firstTouchBlockers } from "./factual-send.ts";
 
 export function proofFromLead(lead: {
   research_brief?: unknown;
@@ -51,13 +50,8 @@ export function queuedCopyBlockers(subject: string, body: string, proof: string)
     body,
     allowedProof: proof,
   });
-  const assertions = unsupportedProspectAssertions(text);
-  const unsupported = assertions.length > 0 && !claimSupportedByCorpus(text, proof)
-    ? assertions
-    : [];
   return [
     ...audited.map((finding) => `${finding.rule}: ${finding.evidence}`),
     ...grounded.map((finding) => `${finding.rule}: ${finding.evidence}`),
-    ...unsupported.map((hit) => `ungrounded_prospect_claim: ${hit}`),
   ];
 }

@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0?target=deno";
 import { corsHeaders as sdkCorsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { resolveAppUser } from "../_shared/app-user.ts";
-import { verifyEmail } from "../_shared/email-verify.ts";
+import { verifyEmail, type CacheClient } from "../_shared/email-verify.ts";
 import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
 import { getPlanSearchLimits } from "../_shared/plan-limits.ts";
 
@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
       if (allowed !== true) return json({ error: "Email verification request limit reached" }, 429);
     }
     const email = body.email.trim().toLowerCase();
-    const result = await verifyEmail(db, email);
+    const result = await verifyEmail(db as unknown as CacheClient, email);
     // Provider identity is internal; preserve honest verdicts, not vendor names.
     return json({ email, status: result.status, verified: result.verified, reason: result.reason, cached: result.source === "cache", credits_charged: 0 });
   } catch {

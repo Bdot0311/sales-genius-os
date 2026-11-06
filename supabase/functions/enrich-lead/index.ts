@@ -541,7 +541,7 @@ serve(async (req) => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': authHeader,
+            'Authorization': authHeader ?? "",
             'apikey': supabaseKey,
           },
           body: JSON.stringify({ leadId }),
@@ -560,7 +560,7 @@ serve(async (req) => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': authHeader,
+            'Authorization': authHeader ?? "",
             'apikey': supabaseKey,
           },
           body: JSON.stringify({ leadId }),
@@ -577,7 +577,7 @@ serve(async (req) => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': authHeader,
+            'Authorization': authHeader ?? "",
             'apikey': supabaseKey,
           },
           body: JSON.stringify({ leadId }),
@@ -595,7 +595,7 @@ serve(async (req) => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': authHeader,
+            'Authorization': authHeader ?? "",
             'apikey': supabaseKey,
           },
           body: JSON.stringify({ leadId }),
@@ -614,7 +614,7 @@ serve(async (req) => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': authHeader,
+            'Authorization': authHeader ?? "",
             'apikey': supabaseKey,
           },
           body: JSON.stringify({ leadId }),
@@ -636,7 +636,7 @@ serve(async (req) => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': authHeader,
+            'Authorization': authHeader ?? "",
             'apikey': supabaseKey,
           },
           body: JSON.stringify({ leadId }),

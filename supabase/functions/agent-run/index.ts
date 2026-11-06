@@ -9,8 +9,8 @@ import {
   attemptFeedback,
   better,
   isPerfect,
-  isWeak,
-  scoreEmail,
+  autonomousSendAllowed,
+  scoreEmailReport,
   type Attempt,
   type RubricDimension,
 } from "../_shared/email-quality.ts";
@@ -971,7 +971,8 @@ ${playbookSystemRules()}`;
 
               /** Score one draft on both checks: the model rubric and the rule audit. */
               const assess = async (subj: string, bod: string): Promise<Attempt> => {
-                const rubric = await scoreEmail(supabaseUrl, authHeader, anonKey, { subject: subj, body: bod });
+                const report = await scoreEmailReport(supabaseUrl, authHeader, anonKey, { subject: subj, body: bod });
+                const rubric = report.rubric;
                 const blocking = [
                   ...auditEmail({
                     subject: subj,
@@ -989,13 +990,16 @@ ${playbookSystemRules()}`;
                   // specific company observation with no research, and an
                   // offer the account never authorised.
                   ...firstTouchBlockers({
-                    researchBlock: leadResearchBlock,
+                    researchBlock: [
+                      leadResearchBlock,
+                      ...(Array.isArray(lead.signals) ? lead.signals : []),
+                    ].filter(Boolean).join("\n"),
                     subject: subj,
                     body: bod,
-                    allowedProof: proofForTouch,
+                    allowedProof: [config.company_context ?? "", cfgValuePropsText].filter(Boolean).join("\n"),
                   }),
                 ];
-                return { subject: subj, body: bod, rubric, blocking };
+                return { subject: subj, body: bod, rubric, blocking, availability: report.availability };
               };
 
               let best = await assess(subject, body);
@@ -1053,7 +1057,7 @@ ${playbookSystemRules()}`;
                * the same one — and it comes back once enrichment has given the
                * agent something more to work with.
                */
-              const qualityHold = scored ? !isPerfect(best) : isWeak(rubric) || best.blocking.length > 0;
+              const qualityHold = !autonomousSendAllowed(best, best.availability ?? (scored ? "scored" : "unavailable"));
               if (qualityHold) {
                 console.log(
                   `[agent-run] quality hold for ${to} after ${attempts} attempt(s): ` +
@@ -1329,7 +1333,11 @@ ${playbookSystemRules()}`;
       classification: string,
       extraProof = "",
     ): Promise<boolean> => {
-      const blockers = replySendBlockers(body, `${accountProof}\n${extraProof}`);
+      const blockers = replySendBlockers(
+        body,
+        `${accountProof}\n${extraProof}`,
+        `${extraProof}\n${current.bodyText ?? ""}`,
+      );
       if (blockers.length === 0) return false;
       await logAction({
         user_id: user.id,

@@ -125,6 +125,10 @@ export const EmailRubricPanel = ({ subject, body, onApplyBody, onApplySubject }:
   useEffect(() => {
     if (!body.replace(/<[^>]*>/g, "").trim()) { setDims(null); setSuggestions([]); return; }
     const id = ++reqId.current;
+    // Drop the previous score immediately. Leaving it up scored the last
+    // draft against the text the user is looking at now.
+    setDims(null);
+    setSuggestions([]);
     setLoading(true);
     const t = setTimeout(async () => {
       try {

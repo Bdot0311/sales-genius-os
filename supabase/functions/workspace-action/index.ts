@@ -4,7 +4,7 @@ import { resolveAppUser } from "../_shared/app-user.ts";
 import { OUTBOUND_TOOL_DEFS, runOutboundTool } from "../_shared/agent-outbound-tools.ts";
 import { allowedToolsFor } from "../_shared/agent-tool-scope.ts";
 import { agentTierForPlan, capToolsToTier } from "../_shared/agent-tier-scope.ts";
-import { validateToolArgs } from "../_shared/tool-args.ts";
+import { validateToolArgs, type ToolSchema } from "../_shared/tool-args.ts";
 const corsHeaders = { ...sdkCorsHeaders, "Access-Control-Allow-Headers": `${sdkCorsHeaders["Access-Control-Allow-Headers"]}, x-api-key` };
 Deno.serve(async req => {
   const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -20,7 +20,7 @@ Deno.serve(async req => {
     if (!definition) return json({ error: "Unsupported workspace action" }, 400);
     const args = body.args ?? {};
     if (!args || typeof args !== "object" || Array.isArray(args) || JSON.stringify(args).length > 16000 || Object.keys(args).some(k => !(k in definition.function.parameters.properties))) return json({ error: "Invalid action arguments" }, 400);
-    const checked = validateToolArgs(definition.function.parameters, args);
+    const checked = validateToolArgs(definition.function.parameters as ToolSchema, args);
     if (!checked.ok) return json({ error: "Invalid action arguments", problems: checked.errors }, 400);
     const { data: plan, error: planError } = await db.rpc("plan_for_user", { _user_id: caller.user.id });
     if (planError) return json({ error: "Plan check unavailable" }, 503);
