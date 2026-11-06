@@ -6628,6 +6628,17 @@ export type Database = {
         }
         Returns: Json
       }
+      apply_search_meter: {
+        Args: {
+          p_credit_delta: number
+          p_daily_cap?: number
+          p_daily_delta: number
+          p_description: string
+          p_gate?: boolean
+          p_user_id: string
+        }
+        Returns: Json
+      }
       apply_stripe_event_to_subscription: {
         Args: {
           _event_created_at: string
