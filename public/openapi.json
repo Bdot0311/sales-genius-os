@@ -41,9 +41,6 @@
       "name": "Contacts"
     },
     {
-      "name": "Workflows"
-    },
-    {
       "name": "Outreach"
     }
   ],
@@ -73,17 +70,23 @@
           {
             "name": "limit",
             "in": "query",
+            "description": "Values outside 1-100 are clamped.",
             "schema": {
               "type": "integer",
-              "default": 50
+              "default": 50,
+              "minimum": 1,
+              "maximum": 100
             }
           },
           {
             "name": "offset",
             "in": "query",
+            "description": "Values outside 0-100000 are clamped.",
             "schema": {
               "type": "integer",
-              "default": 0
+              "default": 0,
+              "minimum": 0,
+              "maximum": 100000
             }
           }
         ],
@@ -97,6 +100,15 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       },
@@ -111,7 +123,15 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Lead"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Lead"
+                  }
+                ],
+                "required": [
+                  "contact_name",
+                  "company_name"
+                ]
               }
             }
           }
@@ -126,6 +146,25 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid JSON body, or contact_name and company_name are required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       }
@@ -137,6 +176,7 @@
         ],
         "operationId": "bulkImportLeads",
         "summary": "Bulk import up to 100 leads",
+        "description": "Each lead is validated and inserted separately. Leads that fail are reported in errors by their index in the request.",
         "requestBody": {
           "required": true,
           "content": {
@@ -147,8 +187,17 @@
                   "leads": {
                     "type": "array",
                     "items": {
-                      "$ref": "#/components/schemas/Lead"
-                    }
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/Lead"
+                        }
+                      ],
+                      "required": [
+                        "contact_name",
+                        "company_name"
+                      ]
+                    },
+                    "maxItems": 100
                   }
                 },
                 "required": [
@@ -172,16 +221,49 @@
                     "failed": {
                       "type": "integer"
                     },
+                    "leads": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Lead"
+                      }
+                    },
                     "errors": {
                       "type": "array",
                       "items": {
-                        "type": "string"
+                        "type": "object",
+                        "properties": {
+                          "index": {
+                            "type": "integer"
+                          },
+                          "error": {
+                            "type": "string"
+                          }
+                        }
                       }
                     }
                   }
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid JSON body, leads array is required, or Maximum 100 leads per request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       }
@@ -214,6 +296,25 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       },
@@ -223,6 +324,7 @@
         ],
         "operationId": "updateLead",
         "summary": "Update a lead",
+        "description": "Send the full record. Fields you omit are cleared, and fields with a default are reset to it.",
         "requestBody": {
           "required": true,
           "content": {
@@ -243,6 +345,35 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid JSON body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not found or update failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       },
@@ -262,6 +393,25 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not found or delete failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       }
@@ -284,7 +434,18 @@
         ],
         "operationId": "enrichLead",
         "summary": "Enrich a lead",
-        "description": "Consumes one enrichment credit from the authenticated account's plan.",
+        "description": "Consumes one enrichment credit from the authenticated account's plan. Send a JSON body; {} is enough. Some failures (free plan, no credits left) return 200 with error and error_code.",
+        "requestBody": {
+          "required": true,
+          "description": "Any JSON object. {} is enough.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Enrichment result",
@@ -293,19 +454,74 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
                       "type": "string"
                     },
-                    "fields_updated": {
+                    "enrichedFields": {
                       "type": "array",
                       "items": {
                         "type": "string"
                       }
+                    },
+                    "noMatch": {
+                      "type": "boolean"
+                    },
+                    "alreadyUpToDate": {
+                      "type": "boolean"
+                    },
+                    "error": {
+                      "type": "string"
+                    },
+                    "error_code": {
+                      "type": "string",
+                      "enum": [
+                        "free_tier_blocked",
+                        "credits_exhausted"
+                      ]
                     }
                   }
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid JSON body or Operation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Lead not found or unauthorized, or API access is not included in your plan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         },
         "x-payment-info": {
@@ -335,6 +551,18 @@
         ],
         "operationId": "scoreLead",
         "summary": "Score a lead against the saved ICP",
+        "description": "Send a JSON body; {} is enough.",
+        "requestBody": {
+          "required": true,
+          "description": "Any JSON object. {} is enough.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Score",
@@ -343,16 +571,70 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "score": {
+                      "type": "integer"
+                    },
                     "icp_score": {
                       "type": "integer"
                     },
-                    "explanation": {
+                    "intent_score": {
+                      "type": "integer"
+                    },
+                    "intent_label": {
+                      "type": "string"
+                    },
+                    "intent_reasons": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "recommended_angle": {
+                      "type": "string"
+                    },
+                    "reasoning": {
                       "type": "string"
                     }
                   }
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid JSON body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Lead not found or unauthorized, or API access is not included in your plan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Lead not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         },
         "x-payment-info": {
@@ -382,17 +664,23 @@
           {
             "name": "limit",
             "in": "query",
+            "description": "Values outside 1-100 are clamped.",
             "schema": {
               "type": "integer",
-              "default": 50
+              "default": 50,
+              "minimum": 1,
+              "maximum": 100
             }
           },
           {
             "name": "offset",
             "in": "query",
+            "description": "Values outside 0-100000 are clamped.",
             "schema": {
               "type": "integer",
-              "default": 0
+              "default": 0,
+              "minimum": 0,
+              "maximum": 100000
             }
           }
         ],
@@ -412,11 +700,26 @@
                     },
                     "count": {
                       "type": "integer"
+                    },
+                    "limit": {
+                      "type": "integer"
+                    },
+                    "offset": {
+                      "type": "integer"
                     }
                   }
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       },
@@ -431,7 +734,15 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Deal"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Deal"
+                  }
+                ],
+                "required": [
+                  "title",
+                  "company_name"
+                ]
               }
             }
           }
@@ -451,6 +762,25 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid JSON body, or title and company_name are required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       }
@@ -467,12 +797,56 @@
           }
         }
       ],
+      "get": {
+        "tags": [
+          "Deals"
+        ],
+        "operationId": "getDeal",
+        "summary": "Get a deal",
+        "responses": {
+          "200": {
+            "description": "The deal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Deal"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      },
       "patch": {
         "tags": [
           "Deals"
         ],
         "operationId": "updateDeal",
         "summary": "Update a deal",
+        "description": "Send the full record. Fields you omit are cleared, and fields with a default are reset to it.",
         "requestBody": {
           "required": true,
           "content": {
@@ -498,6 +872,35 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid JSON body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not found or update failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       },
@@ -517,6 +920,25 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not found or delete failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       }
@@ -539,9 +961,23 @@
           {
             "name": "limit",
             "in": "query",
+            "description": "Values outside 1-100 are clamped.",
             "schema": {
               "type": "integer",
-              "default": 50
+              "default": 50,
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Values outside 0-100000 are clamped.",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0,
+              "maximum": 100000
             }
           }
         ],
@@ -561,11 +997,26 @@
                     },
                     "count": {
                       "type": "integer"
+                    },
+                    "limit": {
+                      "type": "integer"
+                    },
+                    "offset": {
+                      "type": "integer"
                     }
                   }
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       },
@@ -580,7 +1031,15 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Activity"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Activity"
+                  }
+                ],
+                "required": [
+                  "subject",
+                  "type"
+                ]
               }
             }
           }
@@ -600,6 +1059,25 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid JSON body, or subject and type are required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       }
@@ -616,12 +1094,56 @@
           }
         }
       ],
+      "get": {
+        "tags": [
+          "Activities"
+        ],
+        "operationId": "getActivity",
+        "summary": "Get an activity",
+        "responses": {
+          "200": {
+            "description": "The activity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Activity"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      },
       "patch": {
         "tags": [
           "Activities"
         ],
         "operationId": "updateActivity",
         "summary": "Update an activity",
+        "description": "Send the full record. Fields you omit are cleared, and fields with a default are reset to it.",
         "requestBody": {
           "required": true,
           "content": {
@@ -647,6 +1169,35 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid JSON body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not found or update failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       },
@@ -666,6 +1217,25 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not found or delete failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       }
@@ -688,9 +1258,23 @@
           {
             "name": "limit",
             "in": "query",
+            "description": "Values outside 1-100 are clamped.",
             "schema": {
               "type": "integer",
-              "default": 50
+              "default": 50,
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Values outside 0-100000 are clamped.",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0,
+              "maximum": 100000
             }
           }
         ],
@@ -710,11 +1294,26 @@
                     },
                     "count": {
                       "type": "integer"
+                    },
+                    "limit": {
+                      "type": "integer"
+                    },
+                    "offset": {
+                      "type": "integer"
                     }
                   }
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       },
@@ -724,6 +1323,7 @@
         ],
         "operationId": "createContact",
         "summary": "Create a contact",
+        "description": "Send at least one of first_name, last_name or email.",
         "requestBody": {
           "required": true,
           "content": {
@@ -749,6 +1349,25 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid JSON body, or At least first_name, last_name, or email is required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       }
@@ -765,12 +1384,56 @@
           }
         }
       ],
+      "get": {
+        "tags": [
+          "Contacts"
+        ],
+        "operationId": "getContact",
+        "summary": "Get a contact",
+        "responses": {
+          "200": {
+            "description": "The contact",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Contact"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      },
       "patch": {
         "tags": [
           "Contacts"
         ],
         "operationId": "updateContact",
         "summary": "Update a contact",
+        "description": "Only the fields you send are changed. Other fields, including id, are ignored.",
         "requestBody": {
           "required": true,
           "content": {
@@ -796,6 +1459,35 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid JSON body, or No updatable fields provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not found or update failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       },
@@ -815,18 +1507,37 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not found or delete failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       }
     },
-    "/email/generate": {
+    "/email": {
       "post": {
         "tags": [
           "Outreach"
         ],
         "operationId": "generateEmail",
         "summary": "Generate an AI email draft for a lead",
-        "description": "Consumes AI email credits from the authenticated account's plan.",
+        "description": "Consumes AI email credits from the authenticated account's plan. Some failures return 200 with error and error_code instead of a draft.",
         "requestBody": {
           "required": true,
           "content": {
@@ -834,19 +1545,65 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "leadId": {
-                    "type": "string",
-                    "format": "uuid"
+                  "lead": {
+                    "type": "object",
+                    "description": "The lead to write to. id is required; other lead fields are used to personalize the draft.",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      }
+                    },
+                    "required": [
+                      "id"
+                    ]
                   },
                   "tone": {
+                    "type": "string",
+                    "enum": [
+                      "professional",
+                      "friendly",
+                      "casual",
+                      "formal"
+                    ]
+                  },
+                  "goal": {
+                    "type": "string",
+                    "enum": [
+                      "introduction",
+                      "follow-up",
+                      "meeting",
+                      "demo",
+                      "proposal",
+                      "subject_only",
+                      "custom",
+                      "trigger_context",
+                      "social_proof",
+                      "4ts",
+                      "elusive",
+                      "proximity",
+                      "4ps_followup",
+                      "4ps_elusive_followup"
+                    ]
+                  },
+                  "triggerContext": {
                     "type": "string"
                   },
-                  "trigger_context": {
-                    "type": "string"
+                  "senderName": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "description": "Defaults to your profile name."
+                  },
+                  "senderEmail": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "description": "Used to sign the draft when senderName is empty and your profile has no name. Defaults to your first connected sending account."
                   }
                 },
                 "required": [
-                  "leadId"
+                  "lead",
+                  "tone",
+                  "goal"
                 ]
               }
             }
@@ -860,16 +1617,58 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "subject": {
+                    "email": {
                       "type": "string"
                     },
-                    "body": {
+                    "quality_weak": {
+                      "type": "boolean"
+                    },
+                    "error": {
+                      "type": "string"
+                    },
+                    "error_code": {
                       "type": "string"
                     }
                   }
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid JSON body, or tone, goal or lead data is missing or invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "description": "AI credits exhausted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Lead not found or unauthorized, or API access is not included in your plan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         },
         "x-payment-info": {
@@ -906,17 +1705,68 @@
         }
       }
     },
+    "responses": {
+      "Unauthorized": {
+        "description": "Missing, invalid or expired API key",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "API access is not included in your plan (Starter and above)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/RateLimitError"
+            }
+          }
+        }
+      },
+      "RateLimited": {
+        "description": "Rate limit or daily request limit reached",
+        "headers": {
+          "X-RateLimit-Remaining": {
+            "schema": {
+              "type": "string"
+            }
+          },
+          "X-RateLimit-Reset": {
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/RateLimitError"
+            }
+          }
+        }
+      }
+    },
     "schemas": {
       "Deleted": {
         "type": "object",
         "properties": {
-          "deleted": {
-            "type": "boolean"
+          "data": {
+            "type": "object",
+            "properties": {
+              "deleted": {
+                "type": "boolean"
+              }
+            }
           }
         }
       },
       "Lead": {
         "type": "object",
+        "description": "String fields longer than their maxLength are truncated, not rejected. country, pipeline_stage and icp_score are returned but ignored on create and update.",
         "properties": {
           "id": {
             "type": "string",
@@ -924,36 +1774,96 @@
             "readOnly": true
           },
           "contact_name": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 500
           },
           "contact_email": {
             "type": "string",
-            "format": "email"
+            "format": "email",
+            "maxLength": 255
+          },
+          "contact_phone": {
+            "type": "string",
+            "maxLength": 50
           },
           "company_name": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 500
           },
           "job_title": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 200
+          },
+          "department": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "seniority": {
+            "type": "string",
+            "maxLength": 50
           },
           "industry": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 100
+          },
+          "company_size": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "employee_count": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "annual_revenue": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "company_website": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "company_linkedin": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "company_description": {
+            "type": "string",
+            "maxLength": 2000
           },
           "country": {
-            "type": "string"
+            "type": "string",
+            "readOnly": true
           },
           "linkedin_url": {
             "type": "string",
-            "format": "uri"
+            "format": "uri",
+            "maxLength": 500
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2000
           },
           "lead_status": {
-            "type": "string"
+            "type": "string",
+            "default": "active",
+            "maxLength": 50
+          },
+          "engagement_state": {
+            "type": "string",
+            "default": "new",
+            "maxLength": 50
           },
           "pipeline_stage": {
-            "type": "string"
+            "type": "string",
+            "readOnly": true
           },
           "icp_score": {
-            "type": "integer"
+            "type": "integer",
+            "readOnly": true
           },
           "created_at": {
             "type": "string",
@@ -992,6 +1902,7 @@
       },
       "Deal": {
         "type": "object",
+        "description": "String fields longer than their maxLength are truncated, not rejected.",
         "properties": {
           "id": {
             "type": "string",
@@ -999,24 +1910,58 @@
             "readOnly": true
           },
           "title": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 500
           },
           "company_name": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 500
+          },
+          "contact_name": {
+            "type": "string",
+            "maxLength": 500
           },
           "value": {
             "type": "number"
           },
           "stage": {
-            "type": "string"
+            "type": "string",
+            "enum": [
+              "new",
+              "contacted",
+              "qualified",
+              "proposal",
+              "negotiation",
+              "closed_won",
+              "closed_lost"
+            ],
+            "default": "new"
           },
           "probability": {
-            "type": "integer"
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "default": 0,
+            "description": "Values outside 0-100 are clamped."
+          },
+          "expected_close_date": {
+            "type": "string",
+            "maxLength": 20
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "lead_id": {
+            "type": "string",
+            "format": "uuid",
+            "maxLength": 36
           }
         }
       },
       "Activity": {
         "type": "object",
+        "description": "String fields longer than their maxLength are truncated, not rejected.",
         "properties": {
           "id": {
             "type": "string",
@@ -1024,32 +1969,50 @@
             "readOnly": true
           },
           "subject": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 500
           },
           "type": {
             "type": "string",
             "enum": [
-              "task",
               "call",
               "email",
-              "note"
+              "meeting",
+              "task",
+              "note",
+              "follow_up",
+              "assignment",
+              "other"
             ]
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000
           },
           "due_date": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "maxLength": 30
           },
           "completed": {
-            "type": "boolean"
+            "type": "boolean",
+            "default": false
+          },
+          "deal_id": {
+            "type": "string",
+            "format": "uuid",
+            "maxLength": 36
           },
           "lead_id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "maxLength": 36
           }
         }
       },
       "Contact": {
         "type": "object",
+        "description": "String fields longer than their maxLength are truncated, not rejected.",
         "properties": {
           "id": {
             "type": "string",
@@ -1057,39 +2020,80 @@
             "readOnly": true
           },
           "first_name": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 100
           },
           "last_name": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 100
           },
           "email": {
             "type": "string",
-            "format": "email"
+            "format": "email",
+            "maxLength": 255
           },
           "job_title": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 200
+          },
+          "department": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "seniority": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "linkedin_url": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 500
+          },
+          "city": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "country": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 100
           },
           "lead_status": {
-            "type": "string"
+            "type": "string",
+            "default": "discovered",
+            "maxLength": 50
+          },
+          "company_id": {
+            "type": "string",
+            "format": "uuid",
+            "maxLength": 36
           }
         }
       },
-      "Workflow": {
+      "Error": {
         "type": "object",
         "properties": {
-          "id": {
+          "error": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "description": "HTTP status, included on 404 responses for a record."
+          }
+        }
+      },
+      "RateLimitError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "resetAt": {
             "type": "string",
-            "format": "uuid",
-            "readOnly": true
-          },
-          "name": {
-            "type": "string"
-          },
-          "trigger": {
-            "type": "string"
-          },
-          "active": {
-            "type": "boolean"
+            "format": "date-time"
           }
         }
       }
