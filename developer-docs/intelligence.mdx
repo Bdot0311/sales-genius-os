@@ -10,7 +10,7 @@ These operations require a saved lead belonging to the approving account. A tran
 | Enrich | POST /leads/{id}/enrich | enrich_lead | Updates owned saved lead; one-credit app reserve/refund rules |
 | Research | POST /leads/{id}/research | research_lead | Stores sourced brief; fresh cached research can be reused |
 | Score | POST /leads/{id}/score | score_lead | Updates fit/scores through the existing app pipeline |
-| Draft | POST /email/generate | generate_email | Returns generated email copy; does not send |
+| Draft | POST /email/generate | generate_email | Returns copy and saves a draft in Outreach Studio and Unified Inbox; does not send |
 
 ## Enrich and read back
 
@@ -75,4 +75,4 @@ if (!response.ok || result.error) throw new Error(result.error || `HTTP ${respon
 
 MCP `generate_email` instead accepts `lead_id`, `tone`, `goal`, `senderName`, and optional `businessDescription`/`customInstruction`. Its goal set is introduction, follow-up, meeting, demo or proposal; REST exposes additional template-specific goals in the reference. Tone is professional, friendly, casual or formal.
 
-Generated copy is not delivery and is not an automatic CRM draft-save contract. Do not fabricate customer results, source facts or social proof. Sending requires a separate supported app or MCP outbound action with user approval.
+Successful full-email generation returns `draft_id` and saves the copy in Outreach Studio and Unified Inbox. Subject-only and trigger-only generation do not create full-email drafts. Each generation creates a new draft; retries are not idempotent. Generated copy is not delivery. Do not fabricate customer results, source facts or social proof. Sending requires a separate supported app or MCP outbound action with user approval.

@@ -191,7 +191,7 @@ const Inbox = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
       return readAllMail((from, to) => supabase.from("email_drafts")
-        .select("id, lead_id, subject, body, created_at, updated_at, leads(contact_name, company_name, email)")
+        .select("id, lead_id, subject, body, created_at, updated_at, leads(contact_name, company_name, contact_email)")
         .eq("user_id", user.id).order("created_at", { ascending: false })
         .order("id", { ascending: false }).range(from, to));
     },
@@ -223,7 +223,7 @@ const Inbox = () => {
     const map = new Map<string, Conversation>();
 
     const draftRows: SentRow[] = (drafts || []).map(d => ({
-      id: `draft:${d.id}`, to_email: d.leads?.email || "No email address",
+      id: `draft:${d.id}`, to_email: d.leads?.contact_email || "No email address",
       subject: d.subject, body_text: d.body, body_html: null,
       sent_at: null, created_at: d.updated_at || d.created_at || new Date(0).toISOString(),
       status: "draft", gmail_thread_id: null, opened_at: null, replied_at: null,

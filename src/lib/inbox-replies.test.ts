@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
+import { matchesMailFolder } from "./inbox-mail";
 
 const SYNC = readFileSync("supabase/functions/inbox-sync/index.ts", "utf8");
 const ANALYZE = readFileSync("supabase/functions/analyze-reply/index.ts", "utf8");
@@ -73,7 +74,8 @@ describe("the unified inbox reads a table something now writes", () => {
 
   it("arrives unread so it shows in the Unread tab", () => {
     expect(SYNC).toContain("read: false");
-    expect(INBOX).toContain('folder === "unread"');
+    expect(matchesMailFolder("unread", { unread: true, hasReply: true, messages: [{ direction: "in" }] })).toBe(true);
+    expect(matchesMailFolder("unread", { unread: false, hasReply: true, messages: [{ direction: "in" }] })).toBe(false);
   });
 
   it("labels an auto-reply so it can be told apart in the list", () => {
