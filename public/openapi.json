@@ -2,9 +2,9 @@
   "openapi": "3.1.0",
   "info": {
     "title": "OutReign API",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "summary": "B2B lead intelligence and outbound sales API",
-    "description": "REST API for OutReign saved leads, deals, activities, contacts and AI email generation. Authenticate with X-API-Key from Settings \u2192 API Keys. MCP OAuth and webhook contracts are documented separately at https://docs.outreign.io.",
+    "description": "The OutReign REST API lets your server read and manage the data in an OutReign account: saved leads, pipeline deals, activities and contacts. It can also enrich and score saved leads and generate AI email drafts.\n\n**Base URL:** `https://api.outreign.io/rest-api`\n\n**Authentication:** send your key in the `X-API-Key` header. Create keys in OutReign under Settings → API Keys. API access is included on Starter and above.\n\n**Format:** JSON request and response bodies, UTF-8. Single records are returned in `data`; lists return `data`, `count`, `limit` and `offset`. Errors return `error` with a message.\n\n**Scope:** this API works on data already in your account. Finding new prospects and verifying email addresses happen inside the OutReign app; see https://docs.outreign.io/developer-docs/capabilities.\n\nMCP (for AI assistants) and webhooks are documented at https://docs.outreign.io.",
     "contact": {
       "name": "OutReign support",
       "email": "support@bdotindustries.com",
@@ -29,19 +29,24 @@
   ],
   "tags": [
     {
-      "name": "Leads"
+      "name": "Leads",
+      "description": "Saved leads: the people and companies you prospect. Enrichment adds verified contact and company data; scoring rates fit and intent against your ICP."
     },
     {
-      "name": "Deals"
+      "name": "Deals",
+      "description": "Pipeline opportunities, optionally linked to a saved lead."
     },
     {
-      "name": "Activities"
+      "name": "Activities",
+      "description": "Tasks, calls, meetings and notes linked to a lead or deal."
     },
     {
-      "name": "Contacts"
+      "name": "Contacts",
+      "description": "People records in your contact database, separate from saved leads."
     },
     {
-      "name": "Outreach"
+      "name": "Outreach",
+      "description": "AI email drafts for a lead. Drafts are returned to you; nothing is sent."
     }
   ],
   "paths": {
@@ -58,14 +63,16 @@
             "in": "query",
             "schema": {
               "type": "string"
-            }
+            },
+            "description": "Only leads whose `industry` exactly matches this value."
           },
           {
             "name": "status",
             "in": "query",
             "schema": {
               "type": "string"
-            }
+            },
+            "description": "Only records whose `lead_status` exactly matches this value."
           },
           {
             "name": "limit",
@@ -75,7 +82,8 @@
               "default": 50,
               "minimum": 1,
               "maximum": 100
-            }
+            },
+            "description": "Maximum records to return (1-100). Default 50."
           },
           {
             "name": "offset",
@@ -85,7 +93,8 @@
               "default": 0,
               "minimum": 0,
               "maximum": 100000
-            }
+            },
+            "description": "Number of records to skip. Use `offset + limit` for the next page."
           }
         ],
         "responses": {
@@ -95,20 +104,56 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/LeadList"
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": "6f1c2a9e-3b7d-4c1a-9e2f-8a4b5c6d7e8f",
+                      "contact_name": "Jordan Lee",
+                      "contact_email": "jordan@northwind.io",
+                      "company_name": "Northwind Analytics",
+                      "job_title": "Head of Sales",
+                      "industry": "Software",
+                      "company_website": "https://northwind.io",
+                      "company_size": "11-50",
+                      "linkedin_url": "https://www.linkedin.com/in/jordanlee",
+                      "lead_status": "active",
+                      "engagement_state": "new",
+                      "pipeline_stage": "new",
+                      "icp_score": 82,
+                      "source": "api",
+                      "created_at": "2026-11-05T14:02:11.000Z"
+                    }
+                  ],
+                  "count": 1,
+                  "limit": 50,
+                  "offset": 0
                 }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
               }
             }
           },
           "401": {
-            "description": "Missing, invalid, inactive or expired API key"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Account plan or access restriction"
+            "$ref": "#/components/responses/Forbidden"
           },
           "429": {
-            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
           }
-        }
+        },
+        "description": "List saved leads, newest first. Filter by `industry` or `status`, and page with `limit` and `offset`. This reads leads already saved in your account; it does not search for new prospects."
       },
       "post": {
         "tags": [
@@ -122,6 +167,19 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/LeadInput"
+              },
+              "example": {
+                "contact_name": "Jordan Lee",
+                "contact_email": "jordan@northwind.io",
+                "company_name": "Northwind Analytics",
+                "job_title": "Head of Sales",
+                "industry": "Software",
+                "company_website": "https://northwind.io",
+                "company_size": "11-50",
+                "linkedin_url": "https://www.linkedin.com/in/jordanlee",
+                "lead_status": "active",
+                "engagement_state": "new",
+                "source": "api"
               }
             }
           }
@@ -133,20 +191,54 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/LeadEnvelope"
+                },
+                "example": {
+                  "data": {
+                    "id": "6f1c2a9e-3b7d-4c1a-9e2f-8a4b5c6d7e8f",
+                    "contact_name": "Jordan Lee",
+                    "contact_email": "jordan@northwind.io",
+                    "company_name": "Northwind Analytics",
+                    "job_title": "Head of Sales",
+                    "industry": "Software",
+                    "company_website": "https://northwind.io",
+                    "company_size": "11-50",
+                    "linkedin_url": "https://www.linkedin.com/in/jordanlee",
+                    "lead_status": "active",
+                    "engagement_state": "new",
+                    "pipeline_stage": "new",
+                    "icp_score": 82,
+                    "source": "api",
+                    "created_at": "2026-11-05T14:02:11.000Z"
+                  }
                 }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
               }
             }
           },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
           "401": {
-            "description": "Missing, invalid, inactive or expired API key"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Account plan or access restriction"
+            "$ref": "#/components/responses/Forbidden"
           },
           "429": {
-            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
           }
-        }
+        },
+        "description": "Save a new lead to your account. `contact_name` and `company_name` are required. Creating a lead does not enrich it or send outreach; call Enrich a lead afterwards if you need verified contact data."
       }
     },
     "/leads/bulk": {
@@ -173,6 +265,28 @@
                 },
                 "required": [
                   "leads"
+                ]
+              },
+              "example": {
+                "leads": [
+                  {
+                    "contact_name": "Jordan Lee",
+                    "contact_email": "jordan@northwind.io",
+                    "company_name": "Northwind Analytics",
+                    "job_title": "Head of Sales",
+                    "industry": "Software",
+                    "company_website": "https://northwind.io",
+                    "company_size": "11-50",
+                    "linkedin_url": "https://www.linkedin.com/in/jordanlee",
+                    "lead_status": "active",
+                    "engagement_state": "new",
+                    "source": "api"
+                  },
+                  {
+                    "contact_name": "Sam Ortiz",
+                    "company_name": "Brightline Labs",
+                    "contact_email": "sam@brightline.dev"
+                  }
                 ]
               }
             }
@@ -213,20 +327,64 @@
                       }
                     }
                   }
+                },
+                "example": {
+                  "imported": 1,
+                  "failed": 1,
+                  "leads": [
+                    {
+                      "id": "6f1c2a9e-3b7d-4c1a-9e2f-8a4b5c6d7e8f",
+                      "contact_name": "Jordan Lee",
+                      "contact_email": "jordan@northwind.io",
+                      "company_name": "Northwind Analytics",
+                      "job_title": "Head of Sales",
+                      "industry": "Software",
+                      "company_website": "https://northwind.io",
+                      "company_size": "11-50",
+                      "linkedin_url": "https://www.linkedin.com/in/jordanlee",
+                      "lead_status": "active",
+                      "engagement_state": "new",
+                      "pipeline_stage": "new",
+                      "icp_score": 82,
+                      "source": "api",
+                      "created_at": "2026-11-05T14:02:11.000Z"
+                    }
+                  ],
+                  "errors": [
+                    {
+                      "index": 1,
+                      "error": "contact_name and company_name are required"
+                    }
+                  ]
                 }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
               }
             }
           },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
           "401": {
-            "description": "Missing, invalid, inactive or expired API key"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Account plan or access restriction"
+            "$ref": "#/components/responses/Forbidden"
           },
           "429": {
-            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
           }
-        }
+        },
+        "description": "Import up to 100 leads in one request. Each entry is validated on its own: valid leads are saved and invalid ones are reported in `errors` by their position in the array, so a partial import still returns 201. Check `failed` before assuming every lead was saved."
       }
     },
     "/leads/{id}": {
@@ -238,7 +396,8 @@
           "schema": {
             "type": "string",
             "format": "uuid"
-          }
+          },
+          "description": "The record's UUID."
         }
       ],
       "get": {
@@ -254,20 +413,54 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/LeadEnvelope"
+                },
+                "example": {
+                  "data": {
+                    "id": "6f1c2a9e-3b7d-4c1a-9e2f-8a4b5c6d7e8f",
+                    "contact_name": "Jordan Lee",
+                    "contact_email": "jordan@northwind.io",
+                    "company_name": "Northwind Analytics",
+                    "job_title": "Head of Sales",
+                    "industry": "Software",
+                    "company_website": "https://northwind.io",
+                    "company_size": "11-50",
+                    "linkedin_url": "https://www.linkedin.com/in/jordanlee",
+                    "lead_status": "active",
+                    "engagement_state": "new",
+                    "pipeline_stage": "new",
+                    "icp_score": 82,
+                    "source": "api",
+                    "created_at": "2026-11-05T14:02:11.000Z"
+                  }
                 }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
               }
             }
           },
           "401": {
-            "description": "Missing, invalid, inactive or expired API key"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Account plan or access restriction"
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "429": {
-            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
           }
-        }
+        },
+        "description": "Retrieve one saved lead by ID."
       },
       "patch": {
         "tags": [
@@ -281,6 +474,10 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/LeadUpdate"
+              },
+              "example": {
+                "engagement_state": "contacted",
+                "notes": "Sent intro on Nov 5."
               }
             }
           }
@@ -292,18 +489,54 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/LeadEnvelope"
+                },
+                "example": {
+                  "data": {
+                    "id": "6f1c2a9e-3b7d-4c1a-9e2f-8a4b5c6d7e8f",
+                    "contact_name": "Jordan Lee",
+                    "contact_email": "jordan@northwind.io",
+                    "company_name": "Northwind Analytics",
+                    "job_title": "Head of Sales",
+                    "industry": "Software",
+                    "company_website": "https://northwind.io",
+                    "company_size": "11-50",
+                    "linkedin_url": "https://www.linkedin.com/in/jordanlee",
+                    "lead_status": "active",
+                    "engagement_state": "new",
+                    "pipeline_stage": "new",
+                    "icp_score": 82,
+                    "source": "api",
+                    "created_at": "2026-11-05T14:02:11.000Z"
+                  }
                 }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
               }
             }
           },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
           "401": {
-            "description": "Missing, invalid, inactive or expired API key"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Account plan or access restriction"
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "429": {
-            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
           }
         },
         "description": "Current update normalization may clear omitted optional fields or apply defaults. Read the current record first and include writable values that must be preserved; inspect the returned record."
@@ -321,20 +554,40 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Deleted"
+                },
+                "example": {
+                  "data": {
+                    "deleted": true
+                  }
                 }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
               }
             }
           },
           "401": {
-            "description": "Missing, invalid, inactive or expired API key"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Account plan or access restriction"
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "429": {
-            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
           }
-        }
+        },
+        "description": "Permanently delete a saved lead. This cannot be undone."
       }
     },
     "/leads/{id}/enrich": {
@@ -346,7 +599,8 @@
           "schema": {
             "type": "string",
             "format": "uuid"
-          }
+          },
+          "description": "The record's UUID."
         }
       ],
       "post": {
@@ -355,7 +609,7 @@
         ],
         "operationId": "enrichLead",
         "summary": "Enrich a lead",
-        "description": "Enrich a saved lead using the account\u2019s entitlement and credit checks. Inspect noMatch and enrichedFields; success does not guarantee a new match.",
+        "description": "Enrich a saved lead using the account’s entitlement and credit checks. Inspect noMatch and enrichedFields; success does not guarantee a new match.",
         "responses": {
           "200": {
             "description": "Enrichment result",
@@ -383,18 +637,46 @@
                       "type": "boolean"
                     }
                   }
+                },
+                "example": {
+                  "success": true,
+                  "message": "Lead enriched successfully",
+                  "enrichedFields": [
+                    "contact_email",
+                    "linkedin_url",
+                    "company_size"
+                  ],
+                  "noMatch": false,
+                  "alreadyUpToDate": false
                 }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
               }
             }
           },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
           "401": {
-            "description": "Missing, invalid, inactive or expired API key"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Account plan or access restriction"
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "429": {
-            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
           }
         }
       }
@@ -408,7 +690,8 @@
           "schema": {
             "type": "string",
             "format": "uuid"
-          }
+          },
+          "description": "The record's UUID."
         }
       ],
       "post": {
@@ -483,18 +766,48 @@
                       "type": "object"
                     }
                   }
+                },
+                "example": {
+                  "score": 78,
+                  "intent_score": 71,
+                  "icp_score": 82,
+                  "enrichment_score": 90,
+                  "intent_label": "Hot",
+                  "intent_reasons": [
+                    "Hiring first sales reps",
+                    "Matches target industry and size"
+                  ],
+                  "recommended_angle": "Lead with ramp time for new reps.",
+                  "reasoning": "Strong ICP match with an active hiring signal."
                 }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
               }
             }
           },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
           "401": {
-            "description": "Missing, invalid, inactive or expired API key"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Account plan or access restriction"
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "429": {
-            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
           }
         },
         "description": "Returns lead scoring, intent, signal layers and recommendations. Inspect reasoning rather than assuming a purchase prediction."
@@ -513,7 +826,8 @@
             "in": "query",
             "schema": {
               "type": "string"
-            }
+            },
+            "description": "Only deals in this stage."
           },
           {
             "name": "limit",
@@ -523,7 +837,8 @@
               "default": 50,
               "minimum": 1,
               "maximum": 100
-            }
+            },
+            "description": "Maximum records to return (1-100). Default 50."
           },
           {
             "name": "offset",
@@ -533,7 +848,8 @@
               "default": 0,
               "minimum": 0,
               "maximum": 100000
-            }
+            },
+            "description": "Number of records to skip. Use `offset + limit` for the next page."
           }
         ],
         "responses": {
@@ -542,38 +858,52 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/Deal"
-                      }
-                    },
-                    "count": {
-                      "type": "integer"
-                    },
-                    "limit": {
-                      "type": "integer"
-                    },
-                    "offset": {
-                      "type": "integer"
+                  "$ref": "#/components/schemas/DealList"
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": "0b9d6c1e-2f3a-4b5c-8d7e-1a2b3c4d5e6f",
+                      "title": "Northwind - annual plan",
+                      "company_name": "Northwind Analytics",
+                      "contact_name": "Jordan Lee",
+                      "value": 12000,
+                      "stage": "proposal",
+                      "probability": 60,
+                      "expected_close_date": "2026-12-15",
+                      "lead_id": "6f1c2a9e-3b7d-4c1a-9e2f-8a4b5c6d7e8f",
+                      "notes": "Wants SSO in Q1."
                     }
-                  }
+                  ],
+                  "count": 1,
+                  "limit": 50,
+                  "offset": 0
                 }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
               }
             }
           },
           "401": {
-            "description": "Missing, invalid, inactive or expired API key"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Account plan or access restriction"
+            "$ref": "#/components/responses/Forbidden"
           },
           "429": {
-            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
           }
-        }
+        },
+        "description": "List pipeline deals, newest first. Filter by `stage`."
       },
       "post": {
         "tags": [
@@ -587,6 +917,17 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/DealInput"
+              },
+              "example": {
+                "title": "Northwind - annual plan",
+                "company_name": "Northwind Analytics",
+                "contact_name": "Jordan Lee",
+                "value": 12000,
+                "stage": "proposal",
+                "probability": 60,
+                "expected_close_date": "2026-12-15",
+                "lead_id": "6f1c2a9e-3b7d-4c1a-9e2f-8a4b5c6d7e8f",
+                "notes": "Wants SSO in Q1."
               }
             }
           }
@@ -603,20 +944,49 @@
                       "$ref": "#/components/schemas/Deal"
                     }
                   }
+                },
+                "example": {
+                  "data": {
+                    "id": "0b9d6c1e-2f3a-4b5c-8d7e-1a2b3c4d5e6f",
+                    "title": "Northwind - annual plan",
+                    "company_name": "Northwind Analytics",
+                    "contact_name": "Jordan Lee",
+                    "value": 12000,
+                    "stage": "proposal",
+                    "probability": 60,
+                    "expected_close_date": "2026-12-15",
+                    "lead_id": "6f1c2a9e-3b7d-4c1a-9e2f-8a4b5c6d7e8f",
+                    "notes": "Wants SSO in Q1."
+                  }
                 }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
               }
             }
           },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
           "401": {
-            "description": "Missing, invalid, inactive or expired API key"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Account plan or access restriction"
+            "$ref": "#/components/responses/Forbidden"
           },
           "429": {
-            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
           }
-        }
+        },
+        "description": "Create a pipeline deal. `title` and `company_name` are required. Link it to a saved lead with `lead_id`."
       }
     },
     "/deals/{id}": {
@@ -628,7 +998,8 @@
           "schema": {
             "type": "string",
             "format": "uuid"
-          }
+          },
+          "description": "The record's UUID."
         }
       ],
       "patch": {
@@ -643,6 +1014,10 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/DealUpdate"
+              },
+              "example": {
+                "stage": "negotiation",
+                "probability": 75
               }
             }
           }
@@ -659,18 +1034,49 @@
                       "$ref": "#/components/schemas/Deal"
                     }
                   }
+                },
+                "example": {
+                  "data": {
+                    "id": "0b9d6c1e-2f3a-4b5c-8d7e-1a2b3c4d5e6f",
+                    "title": "Northwind - annual plan",
+                    "company_name": "Northwind Analytics",
+                    "contact_name": "Jordan Lee",
+                    "value": 12000,
+                    "stage": "proposal",
+                    "probability": 60,
+                    "expected_close_date": "2026-12-15",
+                    "lead_id": "6f1c2a9e-3b7d-4c1a-9e2f-8a4b5c6d7e8f",
+                    "notes": "Wants SSO in Q1."
+                  }
                 }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
               }
             }
           },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
           "401": {
-            "description": "Missing, invalid, inactive or expired API key"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Account plan or access restriction"
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "429": {
-            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
           }
         },
         "description": "Current update normalization may clear omitted optional fields or apply defaults. Read the current record first and include writable values that must be preserved; inspect the returned record."
@@ -688,20 +1094,40 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Deleted"
+                },
+                "example": {
+                  "data": {
+                    "deleted": true
+                  }
                 }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
               }
             }
           },
           "401": {
-            "description": "Missing, invalid, inactive or expired API key"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Account plan or access restriction"
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "429": {
-            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
           }
-        }
+        },
+        "description": "Permanently delete a deal."
       },
       "get": {
         "tags": [
@@ -721,20 +1147,49 @@
                       "$ref": "#/components/schemas/Deal"
                     }
                   }
+                },
+                "example": {
+                  "data": {
+                    "id": "0b9d6c1e-2f3a-4b5c-8d7e-1a2b3c4d5e6f",
+                    "title": "Northwind - annual plan",
+                    "company_name": "Northwind Analytics",
+                    "contact_name": "Jordan Lee",
+                    "value": 12000,
+                    "stage": "proposal",
+                    "probability": 60,
+                    "expected_close_date": "2026-12-15",
+                    "lead_id": "6f1c2a9e-3b7d-4c1a-9e2f-8a4b5c6d7e8f",
+                    "notes": "Wants SSO in Q1."
+                  }
                 }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
               }
             }
           },
           "401": {
-            "description": "Missing, invalid, inactive or expired API key"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Account plan or access restriction"
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "429": {
-            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
           }
-        }
+        },
+        "description": "Retrieve one deal by ID."
       }
     },
     "/activities": {
@@ -750,7 +1205,8 @@
             "in": "query",
             "schema": {
               "type": "string"
-            }
+            },
+            "description": "Only activities of this type."
           },
           {
             "name": "limit",
@@ -760,7 +1216,8 @@
               "default": 50,
               "minimum": 1,
               "maximum": 100
-            }
+            },
+            "description": "Maximum records to return (1-100). Default 50."
           },
           {
             "name": "offset",
@@ -770,7 +1227,8 @@
               "default": 0,
               "minimum": 0,
               "maximum": 100000
-            }
+            },
+            "description": "Number of records to skip. Use `offset + limit` for the next page."
           }
         ],
         "responses": {
@@ -779,38 +1237,49 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/Activity"
-                      }
-                    },
-                    "count": {
-                      "type": "integer"
-                    },
-                    "limit": {
-                      "type": "integer"
-                    },
-                    "offset": {
-                      "type": "integer"
+                  "$ref": "#/components/schemas/ActivityList"
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": "9c8b7a6d-5e4f-4a3b-2c1d-0e9f8a7b6c5d",
+                      "subject": "Discovery call",
+                      "type": "call",
+                      "completed": false,
+                      "due_date": "2026-11-10T16:00:00.000Z",
+                      "lead_id": "6f1c2a9e-3b7d-4c1a-9e2f-8a4b5c6d7e8f",
+                      "description": "Confirm budget and timeline."
                     }
-                  }
+                  ],
+                  "count": 1,
+                  "limit": 50,
+                  "offset": 0
                 }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
               }
             }
           },
           "401": {
-            "description": "Missing, invalid, inactive or expired API key"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Account plan or access restriction"
+            "$ref": "#/components/responses/Forbidden"
           },
           "429": {
-            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
           }
-        }
+        },
+        "description": "List activities, newest first. Filter by `type`."
       },
       "post": {
         "tags": [
@@ -824,6 +1293,14 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ActivityInput"
+              },
+              "example": {
+                "subject": "Discovery call",
+                "type": "call",
+                "completed": false,
+                "due_date": "2026-11-10T16:00:00.000Z",
+                "lead_id": "6f1c2a9e-3b7d-4c1a-9e2f-8a4b5c6d7e8f",
+                "description": "Confirm budget and timeline."
               }
             }
           }
@@ -840,20 +1317,46 @@
                       "$ref": "#/components/schemas/Activity"
                     }
                   }
+                },
+                "example": {
+                  "data": {
+                    "id": "9c8b7a6d-5e4f-4a3b-2c1d-0e9f8a7b6c5d",
+                    "subject": "Discovery call",
+                    "type": "call",
+                    "completed": false,
+                    "due_date": "2026-11-10T16:00:00.000Z",
+                    "lead_id": "6f1c2a9e-3b7d-4c1a-9e2f-8a4b5c6d7e8f",
+                    "description": "Confirm budget and timeline."
+                  }
                 }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
               }
             }
           },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
           "401": {
-            "description": "Missing, invalid, inactive or expired API key"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Account plan or access restriction"
+            "$ref": "#/components/responses/Forbidden"
           },
           "429": {
-            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
           }
-        }
+        },
+        "description": "Log an activity such as a call, meeting or task. `subject` and `type` are required. Link it with `lead_id` or `deal_id`."
       }
     },
     "/activities/{id}": {
@@ -865,7 +1368,8 @@
           "schema": {
             "type": "string",
             "format": "uuid"
-          }
+          },
+          "description": "The record's UUID."
         }
       ],
       "patch": {
@@ -880,6 +1384,9 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ActivityUpdate"
+              },
+              "example": {
+                "completed": true
               }
             }
           }
@@ -896,18 +1403,46 @@
                       "$ref": "#/components/schemas/Activity"
                     }
                   }
+                },
+                "example": {
+                  "data": {
+                    "id": "9c8b7a6d-5e4f-4a3b-2c1d-0e9f8a7b6c5d",
+                    "subject": "Discovery call",
+                    "type": "call",
+                    "completed": false,
+                    "due_date": "2026-11-10T16:00:00.000Z",
+                    "lead_id": "6f1c2a9e-3b7d-4c1a-9e2f-8a4b5c6d7e8f",
+                    "description": "Confirm budget and timeline."
+                  }
                 }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
               }
             }
           },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
           "401": {
-            "description": "Missing, invalid, inactive or expired API key"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Account plan or access restriction"
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "429": {
-            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
           }
         },
         "description": "Current update normalization may clear omitted optional fields or apply defaults. Read the current record first and include writable values that must be preserved; inspect the returned record."
@@ -925,20 +1460,40 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Deleted"
+                },
+                "example": {
+                  "data": {
+                    "deleted": true
+                  }
                 }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
               }
             }
           },
           "401": {
-            "description": "Missing, invalid, inactive or expired API key"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Account plan or access restriction"
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "429": {
-            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
           }
-        }
+        },
+        "description": "Permanently delete an activity."
       },
       "get": {
         "tags": [
@@ -958,20 +1513,46 @@
                       "$ref": "#/components/schemas/Activity"
                     }
                   }
+                },
+                "example": {
+                  "data": {
+                    "id": "9c8b7a6d-5e4f-4a3b-2c1d-0e9f8a7b6c5d",
+                    "subject": "Discovery call",
+                    "type": "call",
+                    "completed": false,
+                    "due_date": "2026-11-10T16:00:00.000Z",
+                    "lead_id": "6f1c2a9e-3b7d-4c1a-9e2f-8a4b5c6d7e8f",
+                    "description": "Confirm budget and timeline."
+                  }
                 }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
               }
             }
           },
           "401": {
-            "description": "Missing, invalid, inactive or expired API key"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Account plan or access restriction"
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "429": {
-            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
           }
-        }
+        },
+        "description": "Retrieve one activity by ID."
       }
     },
     "/contacts": {
@@ -987,7 +1568,8 @@
             "in": "query",
             "schema": {
               "type": "string"
-            }
+            },
+            "description": "Only records whose `lead_status` exactly matches this value."
           },
           {
             "name": "limit",
@@ -997,7 +1579,8 @@
               "default": 50,
               "minimum": 1,
               "maximum": 100
-            }
+            },
+            "description": "Maximum records to return (1-100). Default 50."
           },
           {
             "name": "offset",
@@ -1007,7 +1590,8 @@
               "default": 0,
               "minimum": 0,
               "maximum": 100000
-            }
+            },
+            "description": "Number of records to skip. Use `offset + limit` for the next page."
           }
         ],
         "responses": {
@@ -1016,38 +1600,52 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/Contact"
-                      }
-                    },
-                    "count": {
-                      "type": "integer"
-                    },
-                    "limit": {
-                      "type": "integer"
-                    },
-                    "offset": {
-                      "type": "integer"
+                  "$ref": "#/components/schemas/ContactList"
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+                      "first_name": "Priya",
+                      "last_name": "Shah",
+                      "email": "priya@northwind.io",
+                      "job_title": "VP Marketing",
+                      "seniority": "vp",
+                      "city": "Austin",
+                      "country": "United States",
+                      "lead_status": "discovered",
+                      "source": "api"
                     }
-                  }
+                  ],
+                  "count": 1,
+                  "limit": 50,
+                  "offset": 0
                 }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
               }
             }
           },
           "401": {
-            "description": "Missing, invalid, inactive or expired API key"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Account plan or access restriction"
+            "$ref": "#/components/responses/Forbidden"
           },
           "429": {
-            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
           }
-        }
+        },
+        "description": "List contacts, newest first. Filter by `status`."
       },
       "post": {
         "tags": [
@@ -1061,6 +1659,17 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ContactInput"
+              },
+              "example": {
+                "first_name": "Priya",
+                "last_name": "Shah",
+                "email": "priya@northwind.io",
+                "job_title": "VP Marketing",
+                "seniority": "vp",
+                "city": "Austin",
+                "country": "United States",
+                "lead_status": "discovered",
+                "source": "api"
               }
             }
           }
@@ -1077,20 +1686,49 @@
                       "$ref": "#/components/schemas/Contact"
                     }
                   }
+                },
+                "example": {
+                  "data": {
+                    "id": "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+                    "first_name": "Priya",
+                    "last_name": "Shah",
+                    "email": "priya@northwind.io",
+                    "job_title": "VP Marketing",
+                    "seniority": "vp",
+                    "city": "Austin",
+                    "country": "United States",
+                    "lead_status": "discovered",
+                    "source": "api"
+                  }
                 }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
               }
             }
           },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
           "401": {
-            "description": "Missing, invalid, inactive or expired API key"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Account plan or access restriction"
+            "$ref": "#/components/responses/Forbidden"
           },
           "429": {
-            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
           }
-        }
+        },
+        "description": "Create a contact. At least one of `first_name`, `last_name` or `email` is required."
       }
     },
     "/contacts/{id}": {
@@ -1102,7 +1740,8 @@
           "schema": {
             "type": "string",
             "format": "uuid"
-          }
+          },
+          "description": "The record's UUID."
         }
       ],
       "patch": {
@@ -1117,6 +1756,9 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ContactUpdate"
+              },
+              "example": {
+                "job_title": "CMO"
               }
             }
           }
@@ -1133,20 +1775,52 @@
                       "$ref": "#/components/schemas/Contact"
                     }
                   }
+                },
+                "example": {
+                  "data": {
+                    "id": "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+                    "first_name": "Priya",
+                    "last_name": "Shah",
+                    "email": "priya@northwind.io",
+                    "job_title": "VP Marketing",
+                    "seniority": "vp",
+                    "city": "Austin",
+                    "country": "United States",
+                    "lead_status": "discovered",
+                    "source": "api"
+                  }
                 }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
               }
             }
           },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
           "401": {
-            "description": "Missing, invalid, inactive or expired API key"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Account plan or access restriction"
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "429": {
-            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
           }
-        }
+        },
+        "description": "Update a contact. Only the fields you send change; omitted fields are kept. Sending none of the writable fields returns 400."
       },
       "delete": {
         "tags": [
@@ -1161,20 +1835,40 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Deleted"
+                },
+                "example": {
+                  "data": {
+                    "deleted": true
+                  }
                 }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
               }
             }
           },
           "401": {
-            "description": "Missing, invalid, inactive or expired API key"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Account plan or access restriction"
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "429": {
-            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
           }
-        }
+        },
+        "description": "Permanently delete a contact."
       },
       "get": {
         "tags": [
@@ -1194,20 +1888,49 @@
                       "$ref": "#/components/schemas/Contact"
                     }
                   }
+                },
+                "example": {
+                  "data": {
+                    "id": "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+                    "first_name": "Priya",
+                    "last_name": "Shah",
+                    "email": "priya@northwind.io",
+                    "job_title": "VP Marketing",
+                    "seniority": "vp",
+                    "city": "Austin",
+                    "country": "United States",
+                    "lead_status": "discovered",
+                    "source": "api"
+                  }
                 }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
               }
             }
           },
           "401": {
-            "description": "Missing, invalid, inactive or expired API key"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Account plan or access restriction"
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "429": {
-            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
           }
-        }
+        },
+        "description": "Retrieve one contact by ID."
       }
     },
     "/email/generate": {
@@ -1344,6 +2067,20 @@
                     "type": "object"
                   }
                 }
+              },
+              "example": {
+                "lead": {
+                  "id": "6f1c2a9e-3b7d-4c1a-9e2f-8a4b5c6d7e8f",
+                  "contact_name": "Jordan Lee",
+                  "company_name": "Northwind Analytics",
+                  "job_title": "Head of Sales",
+                  "company_website": "https://northwind.io",
+                  "industry": "Software"
+                },
+                "tone": "professional",
+                "goal": "introduction",
+                "senderCompany": "Acme Outbound",
+                "businessDescription": "We help small B2B sales teams book more meetings from cold email."
               }
             }
           }
@@ -1384,18 +2121,36 @@
                       "type": "string"
                     }
                   }
+                },
+                "example": {
+                  "email": "Hi Jordan,\n\nSaw Northwind is hiring its first two AEs...\n\nAlex",
+                  "quality_weak": false
                 }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
               }
             }
           },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
           "401": {
-            "description": "Missing, invalid, inactive or expired API key"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Account plan or access restriction"
+            "$ref": "#/components/responses/Forbidden"
           },
           "429": {
-            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
           }
         }
       }
@@ -1407,7 +2162,7 @@
         "type": "apiKey",
         "in": "header",
         "name": "X-API-Key",
-        "description": "Create keys in OutReign \u2192 Settings \u2192 API Keys."
+        "description": "Your secret API key. Create it in OutReign → Settings → API Keys and send it on every request as `X-API-Key: <key>`. The key acts as its owner: every request reads and writes that owner's data. Keep it server-side; never ship it in browser or mobile code."
       }
     },
     "schemas": {
@@ -1430,97 +2185,121 @@
           "id": {
             "type": "string",
             "format": "uuid",
-            "readOnly": true
+            "readOnly": true,
+            "description": "Unique ID (UUID) assigned by OutReign."
           },
           "contact_name": {
             "type": "string",
-            "maxLength": 500
+            "maxLength": 500,
+            "description": "Full name of the person."
           },
           "contact_email": {
             "type": "string",
-            "maxLength": 255
+            "maxLength": 255,
+            "description": "Business email address."
           },
           "company_name": {
             "type": "string",
-            "maxLength": 500
+            "maxLength": 500,
+            "description": "Company name."
           },
           "job_title": {
             "type": "string",
-            "maxLength": 200
+            "maxLength": 200,
+            "description": "Job title."
           },
           "industry": {
             "type": "string",
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "Industry label."
           },
           "country": {
-            "type": "string"
+            "type": "string",
+            "description": "Country."
           },
           "linkedin_url": {
             "type": "string",
-            "maxLength": 500
+            "maxLength": 500,
+            "description": "Personal LinkedIn profile URL."
           },
           "lead_status": {
             "type": "string",
-            "maxLength": 50
+            "maxLength": 50,
+            "description": "Record status. Leads default to `active`; contacts default to `discovered`."
           },
           "pipeline_stage": {
-            "type": "string"
+            "type": "string",
+            "description": "Pipeline stage: `new`, `contacted`, `no_response`, `replied`, `bounced`, `meeting_booked`, `qualified`, `not_interested`, `won` or `lost`."
           },
           "icp_score": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Fit score (0-100) from the last scoring run."
           },
           "created_at": {
             "type": "string",
             "format": "date-time",
-            "readOnly": true
+            "readOnly": true,
+            "description": "When the record was created (ISO 8601, UTC)."
           },
           "contact_phone": {
             "type": "string",
-            "maxLength": 50
+            "maxLength": 50,
+            "description": "Phone number as entered."
           },
           "company_size": {
             "type": "string",
-            "maxLength": 50
+            "maxLength": 50,
+            "description": "Company size band, e.g. `11-50`."
           },
           "source": {
             "type": "string",
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "Where the record came from, e.g. `api`, `csv`, `mcp`."
           },
           "notes": {
             "type": "string",
-            "maxLength": 2000
+            "maxLength": 2000,
+            "description": "Free-text notes."
           },
           "department": {
             "type": "string",
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "Department, e.g. `Sales`."
           },
           "seniority": {
             "type": "string",
-            "maxLength": 50
+            "maxLength": 50,
+            "description": "Seniority, e.g. `founder`, `vp`, `director`."
           },
           "company_website": {
             "type": "string",
-            "maxLength": 500
+            "maxLength": 500,
+            "description": "Company website URL or domain."
           },
           "company_linkedin": {
             "type": "string",
-            "maxLength": 500
+            "maxLength": 500,
+            "description": "Company LinkedIn page URL."
           },
           "company_description": {
             "type": "string",
-            "maxLength": 2000
+            "maxLength": 2000,
+            "description": "Short description of the company."
           },
           "employee_count": {
             "type": "string",
-            "maxLength": 50
+            "maxLength": 50,
+            "description": "Employee count as text, e.g. `42`."
           },
           "annual_revenue": {
             "type": "string",
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "Annual revenue as text, e.g. `$5M-$10M`."
           },
           "engagement_state": {
             "type": "string",
-            "maxLength": 50
+            "maxLength": 50,
+            "description": "Outreach engagement state. Defaults to `new`."
           }
         }
       },
@@ -1542,7 +2321,8 @@
             }
           },
           "count": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Total matching records, ignoring limit/offset."
           },
           "limit": {
             "type": "integer"
@@ -1558,38 +2338,48 @@
           "id": {
             "type": "string",
             "format": "uuid",
-            "readOnly": true
+            "readOnly": true,
+            "description": "Unique ID (UUID) assigned by OutReign."
           },
           "title": {
-            "type": "string"
+            "type": "string",
+            "description": "Deal name."
           },
           "company_name": {
-            "type": "string"
+            "type": "string",
+            "description": "Company name."
           },
           "value": {
-            "type": "number"
+            "type": "number",
+            "description": "Deal value in your account currency."
           },
           "stage": {
-            "type": "string"
+            "type": "string",
+            "description": "Deal stage. Defaults to `new`; `closed_won` and `closed_lost` close the deal."
           },
           "probability": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 100
+            "maximum": 100,
+            "description": "Win probability, 0-100."
           },
           "contact_name": {
-            "type": "string"
+            "type": "string",
+            "description": "Full name of the person."
           },
           "expected_close_date": {
             "type": "string",
-            "format": "date"
+            "format": "date",
+            "description": "Expected close date, `YYYY-MM-DD`."
           },
           "notes": {
-            "type": "string"
+            "type": "string",
+            "description": "Free-text notes."
           },
           "lead_id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "ID of the linked saved lead."
           }
         }
       },
@@ -1599,31 +2389,39 @@
           "id": {
             "type": "string",
             "format": "uuid",
-            "readOnly": true
+            "readOnly": true,
+            "description": "Unique ID (UUID) assigned by OutReign."
           },
           "subject": {
-            "type": "string"
+            "type": "string",
+            "description": "Short summary of the activity."
           },
           "type": {
-            "type": "string"
+            "type": "string",
+            "description": "Activity type, e.g. `call`, `email`, `meeting`, `task`, `note`."
           },
           "due_date": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When the activity is due (ISO 8601)."
           },
           "completed": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the activity is done."
           },
           "lead_id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "ID of the linked saved lead."
           },
           "description": {
-            "type": "string"
+            "type": "string",
+            "description": "Longer description."
           },
           "deal_id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "ID of the linked deal."
           }
         }
       },
@@ -1633,44 +2431,57 @@
           "id": {
             "type": "string",
             "format": "uuid",
-            "readOnly": true
+            "readOnly": true,
+            "description": "Unique ID (UUID) assigned by OutReign."
           },
           "first_name": {
-            "type": "string"
+            "type": "string",
+            "description": "First name."
           },
           "last_name": {
-            "type": "string"
+            "type": "string",
+            "description": "Last name."
           },
           "email": {
-            "type": "string"
+            "type": "string",
+            "description": "Email address."
           },
           "job_title": {
-            "type": "string"
+            "type": "string",
+            "description": "Job title."
           },
           "lead_status": {
-            "type": "string"
+            "type": "string",
+            "description": "Record status. Leads default to `active`; contacts default to `discovered`."
           },
           "department": {
-            "type": "string"
+            "type": "string",
+            "description": "Department, e.g. `Sales`."
           },
           "seniority": {
-            "type": "string"
+            "type": "string",
+            "description": "Seniority, e.g. `founder`, `vp`, `director`."
           },
           "linkedin_url": {
-            "type": "string"
+            "type": "string",
+            "description": "Personal LinkedIn profile URL."
           },
           "city": {
-            "type": "string"
+            "type": "string",
+            "description": "City."
           },
           "country": {
-            "type": "string"
+            "type": "string",
+            "description": "Country."
           },
           "source": {
-            "type": "string"
+            "type": "string",
+            "description": "Where the record came from, e.g. `api`, `csv`, `mcp`."
           },
           "company_id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "ID of the linked company record."
           }
         }
       },
@@ -1679,79 +2490,98 @@
         "properties": {
           "contact_name": {
             "type": "string",
-            "maxLength": 500
+            "maxLength": 500,
+            "description": "Full name of the person."
           },
           "company_name": {
             "type": "string",
-            "maxLength": 500
+            "maxLength": 500,
+            "description": "Company name."
           },
           "contact_email": {
             "type": "string",
-            "maxLength": 255
+            "maxLength": 255,
+            "description": "Business email address."
           },
           "contact_phone": {
             "type": "string",
-            "maxLength": 50
+            "maxLength": 50,
+            "description": "Phone number as entered."
           },
           "industry": {
             "type": "string",
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "Industry label."
           },
           "company_size": {
             "type": "string",
-            "maxLength": 50
+            "maxLength": 50,
+            "description": "Company size band, e.g. `11-50`."
           },
           "source": {
             "type": "string",
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "Where the record came from, e.g. `api`, `csv`, `mcp`."
           },
           "notes": {
             "type": "string",
-            "maxLength": 2000
+            "maxLength": 2000,
+            "description": "Free-text notes."
           },
           "linkedin_url": {
             "type": "string",
-            "maxLength": 500
+            "maxLength": 500,
+            "description": "Personal LinkedIn profile URL."
           },
           "job_title": {
             "type": "string",
-            "maxLength": 200
+            "maxLength": 200,
+            "description": "Job title."
           },
           "department": {
             "type": "string",
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "Department, e.g. `Sales`."
           },
           "seniority": {
             "type": "string",
-            "maxLength": 50
+            "maxLength": 50,
+            "description": "Seniority, e.g. `founder`, `vp`, `director`."
           },
           "company_website": {
             "type": "string",
-            "maxLength": 500
+            "maxLength": 500,
+            "description": "Company website URL or domain."
           },
           "company_linkedin": {
             "type": "string",
-            "maxLength": 500
+            "maxLength": 500,
+            "description": "Company LinkedIn page URL."
           },
           "company_description": {
             "type": "string",
-            "maxLength": 2000
+            "maxLength": 2000,
+            "description": "Short description of the company."
           },
           "employee_count": {
             "type": "string",
-            "maxLength": 50
+            "maxLength": 50,
+            "description": "Employee count as text, e.g. `42`."
           },
           "annual_revenue": {
             "type": "string",
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "Annual revenue as text, e.g. `$5M-$10M`."
           },
           "lead_status": {
             "type": "string",
-            "maxLength": 50
+            "maxLength": 50,
+            "description": "Record status. Leads default to `active`; contacts default to `discovered`."
           },
           "engagement_state": {
             "type": "string",
-            "maxLength": 50
+            "maxLength": 50,
+            "description": "Outreach engagement state. Defaults to `new`."
           }
         },
         "additionalProperties": false,
@@ -1765,79 +2595,98 @@
         "properties": {
           "contact_name": {
             "type": "string",
-            "maxLength": 500
+            "maxLength": 500,
+            "description": "Full name of the person."
           },
           "company_name": {
             "type": "string",
-            "maxLength": 500
+            "maxLength": 500,
+            "description": "Company name."
           },
           "contact_email": {
             "type": "string",
-            "maxLength": 255
+            "maxLength": 255,
+            "description": "Business email address."
           },
           "contact_phone": {
             "type": "string",
-            "maxLength": 50
+            "maxLength": 50,
+            "description": "Phone number as entered."
           },
           "industry": {
             "type": "string",
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "Industry label."
           },
           "company_size": {
             "type": "string",
-            "maxLength": 50
+            "maxLength": 50,
+            "description": "Company size band, e.g. `11-50`."
           },
           "source": {
             "type": "string",
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "Where the record came from, e.g. `api`, `csv`, `mcp`."
           },
           "notes": {
             "type": "string",
-            "maxLength": 2000
+            "maxLength": 2000,
+            "description": "Free-text notes."
           },
           "linkedin_url": {
             "type": "string",
-            "maxLength": 500
+            "maxLength": 500,
+            "description": "Personal LinkedIn profile URL."
           },
           "job_title": {
             "type": "string",
-            "maxLength": 200
+            "maxLength": 200,
+            "description": "Job title."
           },
           "department": {
             "type": "string",
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "Department, e.g. `Sales`."
           },
           "seniority": {
             "type": "string",
-            "maxLength": 50
+            "maxLength": 50,
+            "description": "Seniority, e.g. `founder`, `vp`, `director`."
           },
           "company_website": {
             "type": "string",
-            "maxLength": 500
+            "maxLength": 500,
+            "description": "Company website URL or domain."
           },
           "company_linkedin": {
             "type": "string",
-            "maxLength": 500
+            "maxLength": 500,
+            "description": "Company LinkedIn page URL."
           },
           "company_description": {
             "type": "string",
-            "maxLength": 2000
+            "maxLength": 2000,
+            "description": "Short description of the company."
           },
           "employee_count": {
             "type": "string",
-            "maxLength": 50
+            "maxLength": 50,
+            "description": "Employee count as text, e.g. `42`."
           },
           "annual_revenue": {
             "type": "string",
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "Annual revenue as text, e.g. `$5M-$10M`."
           },
           "lead_status": {
             "type": "string",
-            "maxLength": 50
+            "maxLength": 50,
+            "description": "Record status. Leads default to `active`; contacts default to `discovered`."
           },
           "engagement_state": {
             "type": "string",
-            "maxLength": 50
+            "maxLength": 50,
+            "description": "Outreach engagement state. Defaults to `new`."
           }
         },
         "additionalProperties": false
@@ -1846,35 +2695,44 @@
         "type": "object",
         "properties": {
           "title": {
-            "type": "string"
+            "type": "string",
+            "description": "Deal name."
           },
           "company_name": {
-            "type": "string"
+            "type": "string",
+            "description": "Company name."
           },
           "contact_name": {
-            "type": "string"
+            "type": "string",
+            "description": "Full name of the person."
           },
           "stage": {
-            "type": "string"
+            "type": "string",
+            "description": "Deal stage. Defaults to `new`; `closed_won` and `closed_lost` close the deal."
           },
           "value": {
-            "type": "number"
+            "type": "number",
+            "description": "Deal value in your account currency."
           },
           "probability": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 100
+            "maximum": 100,
+            "description": "Win probability, 0-100."
           },
           "expected_close_date": {
             "type": "string",
-            "format": "date"
+            "format": "date",
+            "description": "Expected close date, `YYYY-MM-DD`."
           },
           "notes": {
-            "type": "string"
+            "type": "string",
+            "description": "Free-text notes."
           },
           "lead_id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "ID of the linked saved lead."
           }
         },
         "additionalProperties": false,
@@ -1887,35 +2745,44 @@
         "type": "object",
         "properties": {
           "title": {
-            "type": "string"
+            "type": "string",
+            "description": "Deal name."
           },
           "company_name": {
-            "type": "string"
+            "type": "string",
+            "description": "Company name."
           },
           "contact_name": {
-            "type": "string"
+            "type": "string",
+            "description": "Full name of the person."
           },
           "stage": {
-            "type": "string"
+            "type": "string",
+            "description": "Deal stage. Defaults to `new`; `closed_won` and `closed_lost` close the deal."
           },
           "value": {
-            "type": "number"
+            "type": "number",
+            "description": "Deal value in your account currency."
           },
           "probability": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 100
+            "maximum": 100,
+            "description": "Win probability, 0-100."
           },
           "expected_close_date": {
             "type": "string",
-            "format": "date"
+            "format": "date",
+            "description": "Expected close date, `YYYY-MM-DD`."
           },
           "notes": {
-            "type": "string"
+            "type": "string",
+            "description": "Free-text notes."
           },
           "lead_id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "ID of the linked saved lead."
           }
         },
         "additionalProperties": false
@@ -1924,28 +2791,35 @@
         "type": "object",
         "properties": {
           "subject": {
-            "type": "string"
+            "type": "string",
+            "description": "Short summary of the activity."
           },
           "type": {
-            "type": "string"
+            "type": "string",
+            "description": "Activity type, e.g. `call`, `email`, `meeting`, `task`, `note`."
           },
           "description": {
-            "type": "string"
+            "type": "string",
+            "description": "Longer description."
           },
           "completed": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the activity is done."
           },
           "due_date": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When the activity is due (ISO 8601)."
           },
           "deal_id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "ID of the linked deal."
           },
           "lead_id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "ID of the linked saved lead."
           }
         },
         "additionalProperties": false,
@@ -1958,28 +2832,35 @@
         "type": "object",
         "properties": {
           "subject": {
-            "type": "string"
+            "type": "string",
+            "description": "Short summary of the activity."
           },
           "type": {
-            "type": "string"
+            "type": "string",
+            "description": "Activity type, e.g. `call`, `email`, `meeting`, `task`, `note`."
           },
           "description": {
-            "type": "string"
+            "type": "string",
+            "description": "Longer description."
           },
           "completed": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the activity is done."
           },
           "due_date": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When the activity is due (ISO 8601)."
           },
           "deal_id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "ID of the linked deal."
           },
           "lead_id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "ID of the linked saved lead."
           }
         },
         "additionalProperties": false
@@ -1988,41 +2869,53 @@
         "type": "object",
         "properties": {
           "first_name": {
-            "type": "string"
+            "type": "string",
+            "description": "First name."
           },
           "last_name": {
-            "type": "string"
+            "type": "string",
+            "description": "Last name."
           },
           "email": {
-            "type": "string"
+            "type": "string",
+            "description": "Email address."
           },
           "job_title": {
-            "type": "string"
+            "type": "string",
+            "description": "Job title."
           },
           "department": {
-            "type": "string"
+            "type": "string",
+            "description": "Department, e.g. `Sales`."
           },
           "seniority": {
-            "type": "string"
+            "type": "string",
+            "description": "Seniority, e.g. `founder`, `vp`, `director`."
           },
           "linkedin_url": {
-            "type": "string"
+            "type": "string",
+            "description": "Personal LinkedIn profile URL."
           },
           "city": {
-            "type": "string"
+            "type": "string",
+            "description": "City."
           },
           "country": {
-            "type": "string"
+            "type": "string",
+            "description": "Country."
           },
           "source": {
-            "type": "string"
+            "type": "string",
+            "description": "Where the record came from, e.g. `api`, `csv`, `mcp`."
           },
           "lead_status": {
-            "type": "string"
+            "type": "string",
+            "description": "Record status. Leads default to `active`; contacts default to `discovered`."
           },
           "company_id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "ID of the linked company record."
           }
         },
         "additionalProperties": false,
@@ -2048,44 +2941,258 @@
         "type": "object",
         "properties": {
           "first_name": {
-            "type": "string"
+            "type": "string",
+            "description": "First name."
           },
           "last_name": {
-            "type": "string"
+            "type": "string",
+            "description": "Last name."
           },
           "email": {
-            "type": "string"
+            "type": "string",
+            "description": "Email address."
           },
           "job_title": {
-            "type": "string"
+            "type": "string",
+            "description": "Job title."
           },
           "department": {
-            "type": "string"
+            "type": "string",
+            "description": "Department, e.g. `Sales`."
           },
           "seniority": {
-            "type": "string"
+            "type": "string",
+            "description": "Seniority, e.g. `founder`, `vp`, `director`."
           },
           "linkedin_url": {
-            "type": "string"
+            "type": "string",
+            "description": "Personal LinkedIn profile URL."
           },
           "city": {
-            "type": "string"
+            "type": "string",
+            "description": "City."
           },
           "country": {
-            "type": "string"
+            "type": "string",
+            "description": "Country."
           },
           "source": {
-            "type": "string"
+            "type": "string",
+            "description": "Where the record came from, e.g. `api`, `csv`, `mcp`."
           },
           "lead_status": {
-            "type": "string"
+            "type": "string",
+            "description": "Record status. Leads default to `active`; contacts default to `discovered`."
           },
           "company_id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "ID of the linked company record."
           }
         },
         "additionalProperties": false
+      },
+      "Error": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "description": "Error body returned with every non-2xx status.",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Human-readable explanation. Safe to log; never contains your key."
+          },
+          "resetAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Present on rate-limit errors: when you can retry."
+          },
+          "available": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Present on unknown-resource errors: the valid resources."
+          }
+        }
+      },
+      "DealList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Deal"
+            }
+          },
+          "count": {
+            "type": "integer",
+            "description": "Total matching records, ignoring limit/offset."
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          }
+        }
+      },
+      "ActivityList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Activity"
+            }
+          },
+          "count": {
+            "type": "integer",
+            "description": "Total matching records, ignoring limit/offset."
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          }
+        }
+      },
+      "ContactList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Contact"
+            }
+          },
+          "count": {
+            "type": "integer",
+            "description": "Total matching records, ignoring limit/offset."
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "headers": {
+      "X-RateLimit-Remaining": {
+        "description": "Requests left in the current per-minute window for this key and resource.",
+        "schema": {
+          "type": "string"
+        },
+        "example": "28"
+      },
+      "X-RateLimit-Reset": {
+        "description": "ISO 8601 time when the window refills.",
+        "schema": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "example": "2026-11-06T06:01:00.000Z"
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "The body is not valid JSON or a required field is missing.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": "contact_name and company_name are required"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "The `X-API-Key` header is missing, or the key is invalid, inactive or expired.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": "Invalid API key"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Your plan does not include API access, or the daily allowance is used up.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": "API access is included on Starter and above. Upgrade your plan to use the API."
+            }
+          }
+        },
+        "headers": {
+          "X-RateLimit-Remaining": {
+            "$ref": "#/components/headers/X-RateLimit-Remaining"
+          },
+          "X-RateLimit-Reset": {
+            "$ref": "#/components/headers/X-RateLimit-Reset"
+          }
+        }
+      },
+      "NotFound": {
+        "description": "No record with this ID exists in your account.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": "Not found"
+            }
+          }
+        }
+      },
+      "RateLimited": {
+        "description": "Too many requests. Wait until `resetAt` before retrying.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": "Rate limit exceeded",
+              "resetAt": "2026-11-06T06:01:00.000Z"
+            }
+          }
+        },
+        "headers": {
+          "X-RateLimit-Remaining": {
+            "$ref": "#/components/headers/X-RateLimit-Remaining"
+          },
+          "X-RateLimit-Reset": {
+            "$ref": "#/components/headers/X-RateLimit-Reset"
+          }
+        }
+      },
+      "ServerError": {
+        "description": "Unexpected failure. Retry reads with backoff; read a record back before retrying a write.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": "Internal server error"
+            }
+          }
+        }
       }
     }
   }

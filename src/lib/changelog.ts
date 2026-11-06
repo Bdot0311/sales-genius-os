@@ -116,6 +116,15 @@ export const ROADMAP: RoadmapItem[] = [
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-11-06-ai-assistant-connection",
+    date: "2026-11-06",
+    title: "Connect Grok, Cursor and other AI assistants",
+    summary: "AI assistants that refused to load OutReign's tools can now connect and sign in.",
+    items: [
+      { tag: "fixed", title: "AI assistant connection", description: "Assistants such as Grok and Cursor that showed \"failed to load\" for OutReign now connect at api.outreign.io/mcp. Remove the connector, add it again, and sign in.", href: "/connect" },
+    ],
+  },
+  {
     id: "2026-11-05-enriched-filter",
     date: "2026-11-05",
     title: "Filter saved leads by enrichment",

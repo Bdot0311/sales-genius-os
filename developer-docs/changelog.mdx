@@ -1,0 +1,18 @@
+---
+title: "API changelog"
+description: "Changes to the REST API, MCP server and webhooks."
+---
+
+<Update label="November 2026" description="v1.1">
+- **MCP:** AI assistants connecting to `https://api.outreign.io/mcp` now receive sign-in details for that exact address. Clients such as Grok and Cursor that previously reported `failed_to_load` should reconnect.
+- **Docs:** every endpoint now has a description, request and response examples, and documented error responses with rate-limit headers.
+- **Docs:** added [capabilities by interface](/developer-docs/capabilities), [core concepts](/developer-docs/concepts) and workflow recipes.
+- **Hosts:** the API and MCP server are served from `api.outreign.io`; documentation moved to `docs.outreign.io`.
+</Update>
+
+<Update label="October 2026" description="v1.0">
+- REST API for leads, deals, activities, contacts and AI email drafts.
+- MCP server with 15 tools for leads, sequences, replies, deals, ICP profiles and the AI SDR agent.
+- Outbound and inbound webhooks for lead and deal events.
+- The legacy `workflows` resource returns `410 Gone`.
+</Update>

@@ -1,0 +1,54 @@
+---
+title: "Recipe: keep an external CRM in sync"
+description: "Back-fill with pagination, then stay current with webhooks."
+---
+
+## 1. Back-fill existing records
+
+Page through every list with `limit=100`. Stop when `offset >= count`.
+
+```javascript
+async function* all(resource) {
+  let offset = 0;
+  while (true) {
+    const res = await fetch(`https://api.outreign.io/rest-api/${resource}?limit=100&offset=${offset}`, {
+      headers: { 'X-API-Key': process.env.OUTREIGN_API_KEY },
+    });
+    const page = await res.json();
+    if (!res.ok || page.error) throw new Error(page.error);
+    yield* page.data;
+    offset += page.data.length;
+    if (page.data.length === 0 || offset >= page.count) return;
+  }
+}
+
+for await (const lead of all('leads')) await upsertIntoCrm(lead);
+for await (const deal of all('deals')) await upsertDealIntoCrm(deal);
+```
+
+Lists are sorted newest first. Records created while you page can shift later pages, so upsert by OutReign `id` rather than inserting blindly.
+
+## 2. Subscribe to changes
+
+In OutReign open **Settings → Webhooks**, add your HTTPS endpoint and select `lead.created`, `lead.updated`, `lead.deleted`, `deal.created`, `deal.updated`, `deal.stage_changed` and `deal.closed`. See [webhook events](/developer-docs/webhooks/events) for payloads and [security and retries](/developer-docs/webhooks/security-and-retries) to verify signatures.
+
+```javascript
+app.post('/outreign-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  // verifyOutReignWebhook is defined in "Security and retries"
+  const ok = verifyOutReignWebhook(req.body, req.get('X-Webhook-Signature'), process.env.OUTREIGN_WEBHOOK_SECRET);
+  if (!ok) return res.sendStatus(401);
+  const event = JSON.parse(req.body);
+  res.sendStatus(200); // acknowledge fast, process after
+  if (event.event === 'lead.deleted') await deleteFromCrm(event.data.id);
+  else if (event.event.startsWith('lead.')) await upsertIntoCrm(event.data);
+  else if (event.event.startsWith('deal.')) await upsertDealIntoCrm(event.data);
+});
+```
+
+## 3. Write back from the CRM
+
+Push changes into OutReign with `PATCH /leads/{id}` or `PATCH /deals/{id}`. Lead, deal and activity updates normalize the whole record, so read the record first and send back the values you want to keep. Contact updates only change the fields you send.
+
+## 4. Reconcile nightly
+
+Webhooks can be delayed or retried. Run the back-fill again once a day with your upsert logic to catch anything missed.

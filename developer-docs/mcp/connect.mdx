@@ -32,6 +32,31 @@ ChatGPT's menu names and developer-mode availability depend on its current plan 
 
 Use a client that supports remote Streamable HTTP and OAuth with PKCE. Configure the server URL, then let the client perform discovery and consent. A client that only supports local stdio servers or static API keys cannot use this connection directly.
 
+## Grok, Cursor and other clients
+
+Enter the URL exactly as shown above, with OAuth (not an API key). Do not use `mcp.outreign.io`, the docs address, or any other host: sign-in is issued for `https://api.outreign.io/mcp` only, and clients refuse the connection if the address differs.
+
+## How the connection works
+
+```text
+1. Client  ──POST /mcp──▶  OutReign          ◀── 401 + WWW-Authenticate: resource_metadata="https://api.outreign.io/mcp-oauth-metadata"
+2. Client  ──GET metadata──▶                 ◀── { "resource": "https://api.outreign.io/mcp", "authorization_servers": [...] }
+3. Client  registers itself, opens the OutReign sign-in page, you approve access (OAuth 2.1 + PKCE)
+4. Client  ──POST /mcp  Authorization: Bearer <token>──▶  initialize, tools/list, tools/call
+```
+
+You never handle the token yourself. If step 2 returns a `resource` other than the URL you entered, the client must stop; that is a configuration problem on our side, so contact support.
+
+## Troubleshooting
+
+| Symptom | Cause and fix |
+| --- | --- |
+| `failed_to_load` or "no tools available" | Remove the connector, add it again with the exact URL above, complete sign-in, then start a new conversation. |
+| `401 unauthorized` before sign-in | Expected. It tells the client to start OAuth. If the client never opens a sign-in page, it does not support remote OAuth MCP servers. |
+| `403` or a "challenge" page | A security filter blocked the client's request. Contact support with the time of the attempt and the client name. |
+| Sign-in succeeds but calls fail | Your plan may not include MCP access, or the per-user call allowance is used up. Check your plan in OutReign. |
+| Tools are out of date | Refresh the connector and start a new conversation; clients cache tool lists. |
+
 ## Refresh and revoke
 
 After tool updates, refresh or reconnect OutReign and start a new conversation. Clients may cache tool definitions. To stop an assistant's access, revoke the authorized connection in your OutReign account settings and remove it from the assistant.

@@ -1,0 +1,118 @@
+---
+title: "Recipe: import, enrich, score and draft"
+description: "A complete server-side workflow that imports leads, enriches and scores them, and generates a first-touch draft."
+---
+
+This recipe takes a list of prospects you already have, saves them to OutReign, fills in verified data, ranks them against your ICP and writes a draft email for the best ones. Nothing is sent.
+
+<Steps>
+<Step title="Import in batches of 100">
+`POST /leads/bulk` saves valid entries and reports invalid ones by array position. A partial import still returns `201`.
+
+```javascript
+const BASE = 'https://api.outreign.io/rest-api';
+const headers = { 'X-API-Key': process.env.OUTREIGN_API_KEY, 'Content-Type': 'application/json' };
+
+async function call(method, path, body) {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const res = await fetch(`${BASE}${path}`, { method, headers, body: body && JSON.stringify(body) });
+    const json = await res.json();
+    if (res.status === 429) {
+      const wait = Math.max(1000, new Date(json.resetAt ?? Date.now() + 2000) - Date.now());
+      await new Promise(r => setTimeout(r, wait));
+      continue;
+    }
+    if (!res.ok || json.error) throw new Error(`${res.status} ${json.error ?? 'request failed'}`);
+    return json;
+  }
+  throw new Error('Rate limited after 5 attempts');
+}
+
+const saved = [];
+for (let i = 0; i < prospects.length; i += 100) {
+  const batch = prospects.slice(i, i + 100);
+  const result = await call('POST', '/leads/bulk', { leads: batch });
+  saved.push(...result.leads);
+  for (const e of result.errors) console.warn('Skipped', batch[e.index], e.error);
+}
+```
+</Step>
+
+<Step title="Enrich each lead">
+Enrichment uses your plan's enrichment credits. Check `noMatch`: a successful call can still find nothing new.
+
+```javascript
+for (const lead of saved) {
+  const r = await call('POST', `/leads/${lead.id}/enrich`);
+  if (r.noMatch) console.log(lead.company_name, 'no new data:', r.message);
+}
+```
+</Step>
+
+<Step title="Score against your ICP">
+Scoring compares the lead with your saved ICP profile and returns fit, intent and a suggested angle.
+
+```javascript
+const scored = [];
+for (const lead of saved) {
+  const s = await call('POST', `/leads/${lead.id}/score`);
+  scored.push({ lead, score: s.score, angle: s.recommended_angle });
+}
+scored.sort((a, b) => b.score - a.score);
+```
+</Step>
+
+<Step title="Draft emails for the top leads">
+Send the lead object, a `tone` and a `goal`. Your sender name comes from your OutReign profile when you omit it. Read the JSON `error` even on HTTP 200.
+
+```javascript
+for (const { lead } of scored.slice(0, 10)) {
+  const fresh = (await call('GET', `/leads/${lead.id}`)).data;
+  const draft = await call('POST', '/email/generate', {
+    lead: fresh,
+    tone: 'professional',
+    goal: 'introduction',
+    senderCompany: 'Acme Outbound',
+    businessDescription: 'We help small B2B sales teams book more meetings from cold email.',
+  });
+  console.log(fresh.contact_name, '\n', draft.email);
+}
+```
+</Step>
+</Steps>
+
+## Python version
+
+```python
+import os, time, requests
+
+BASE = "https://api.outreign.io/rest-api"
+S = requests.Session()
+S.headers.update({"X-API-Key": os.environ["OUTREIGN_API_KEY"]})
+
+def call(method, path, body=None):
+    for _ in range(5):
+        r = S.request(method, BASE + path, json=body, timeout=60)
+        data = r.json()
+        if r.status_code == 429:
+            time.sleep(2)
+            continue
+        if not r.ok or data.get("error"):
+            raise RuntimeError(f"{r.status_code} {data.get('error')}")
+        return data
+    raise RuntimeError("rate limited")
+
+result = call("POST", "/leads/bulk", {"leads": prospects[:100]})
+for lead in result["leads"]:
+    call("POST", f"/leads/{lead['id']}/enrich")
+    score = call("POST", f"/leads/{lead['id']}/score")
+    print(lead["company_name"], score["score"])
+```
+
+## Production checklist
+
+- Keep the key in a secret manager, never in client code.
+- Budget requests: each enrich, score and draft call counts against your per-minute and daily allowance, and enrichment uses credits.
+- Writes are not idempotent. After a timeout, `GET` the record before retrying a create.
+- Store OutReign lead IDs next to your own IDs so you can update instead of duplicating.
+- To send the drafts, enroll leads in a sequence from the app or over MCP (`enroll_lead_in_sequence`).

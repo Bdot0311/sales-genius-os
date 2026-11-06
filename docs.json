@@ -61,7 +61,9 @@
             "pages": [
               "developer-docs/introduction",
               "developer-docs/quickstart",
-              "developer-docs/authentication"
+              "developer-docs/authentication",
+              "developer-docs/concepts",
+              "developer-docs/capabilities"
             ]
           },
           {
@@ -71,6 +73,19 @@
               "developer-docs/errors-and-limits",
               "developer-docs/integrations",
               "developer-docs/troubleshooting"
+            ]
+          },
+          {
+            "group": "Recipes",
+            "pages": [
+              "developer-docs/guides/import-enrich-draft",
+              "developer-docs/guides/sync-crm"
+            ]
+          },
+          {
+            "group": "Reference",
+            "pages": [
+              "developer-docs/changelog"
             ]
           }
         ]

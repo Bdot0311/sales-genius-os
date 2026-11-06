@@ -5,6 +5,8 @@
   "auth": {
     "type": "oauth",
     "issuer": "https://ghgfjnepvxvxrncmskys.supabase.co/auth/v1",
+    "resource": "https://api.outreign.io/mcp",
+    "protected_resource_metadata_url": "https://api.outreign.io/mcp-oauth-metadata",
     "accepted_audiences": [
       "authenticated"
     ]
