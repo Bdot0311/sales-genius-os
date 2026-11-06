@@ -36,7 +36,19 @@ curl --fail-with-body -X POST "$OUTREIGN_INBOUND_URL" \
 
 Send the action as `event`, `action` or `type`. If omitted, it defaults to `lead.created`. The action must be enabled on the endpoint.
 
-Use an explicit `{ "event": "…", "data": { … } }` envelope for predictable integrations. Batch requests can supply `records` or `leads` arrays with at most 100 records. Lead matching uses email, or a matching OutReign lead UUID when email is absent.
+Use an explicit `{ "event": "…", "data": { … } }` envelope for predictable integrations. Batch requests can supply `leads`, `records` or `data` arrays with at most 100 records; one action applies to the whole batch. Lead matching uses email, or a matching OutReign lead UUID when email is absent.
+
+Single-record payloads can place the record in `data`, `lead`, `record`, `contact` or `deal`; the handler also supports top-level record fields and person/company combinations. Prefer the explicit envelope to avoid alias ambiguity. `leads` arrays take precedence over `records`, which take precedence over array-valued record data.
+
+```json
+{
+  "event": "lead.created",
+  "records": [
+    { "email": "example-one@example.com", "company_name": "Example Software" },
+    { "email": "example-two@example.com", "company_name": "Example Agency" }
+  ]
+}
+```
 
 ## Common lead field aliases
 

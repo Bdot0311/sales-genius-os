@@ -19,7 +19,7 @@ Parse the JSON body as well as the HTTP status. Responses may contain an `error`
 
 ## Rate-limit headers
 
-REST responses that pass the rate check include `X-RateLimit-Remaining` and `X-RateLimit-Reset`. Rate-limit rejections also include these headers. Read them when present; early authentication failures may not include them.
+Conventional REST resource responses that pass the rate check include `X-RateLimit-Remaining` and `X-RateLimit-Reset`. Delegated app-action routes and early failures may omit them. Read headers and body reset information when present, not as a universal response guarantee.
 
 | Plan | Requests per minute | Requests per day |
 | --- | --- | --- |
@@ -39,3 +39,14 @@ REST daily usage is shared across the owner's API keys; its short-window buckets
 - Avoid running enrichment or generation repeatedly just to poll progress; these operations may consume allowance.
 
 No public idempotency-key contract is documented for the REST API. Implement reconciliation in your integration rather than assuming duplicate writes will be ignored.
+
+## Feature counters are separate
+
+Search result caps, daily searches, reveal/lookup credits, API calls, MCP calls and verification requests are different limits. Increasing the requested result count or rotating keys does not bypass account entitlements.
+
+- [Prospecting](/developer-docs/prospecting): plan result caps and calendar-day search meter.
+- [Verification](/developer-docs/email-verification): 10/minute and a rolling 24-hour account cap, zero reveal credits.
+- [Workspace](/developer-docs/workspace-actions): additional 30/minute action cap; mutation previews do not change data.
+- Company autocomplete has an additional 60/minute user-level limit and returns at most eight candidates.
+
+The request table reflects the current tier policy used by REST and MCP; it is not a throughput guarantee. Active subscription/account restrictions still apply. See [production handling](/developer-docs/production) for timeout and recovery choices.

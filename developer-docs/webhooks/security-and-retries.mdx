@@ -26,7 +26,7 @@ Pass your framework's raw-body `Buffer`, the header value and a secret from your
 
 ## Queued delivery retries
 
-Normal queued deliveries have a 15-second request timeout and up to five attempts. Failed attempts become eligible for retry after 2, 4, 8 and 16 minutes respectively. Processing timing depends on the worker schedule; these are eligibility delays, not a delivery-time guarantee. After the fifth failed attempt, a queued delivery is marked `permanently_failed`.
+Normal queued deliveries have up to five attempts. Failed attempts become eligible for retry after 2, 4, 8 and 16 minutes respectively. Processing timing depends on the worker schedule; these are eligibility delays, not a delivery-time guarantee. After the fifth failed attempt, a queued delivery is marked `permanently_failed`. No fixed queued-request timeout is part of the documented contract.
 
 The legacy direct-trigger path retries inline with shorter backoff and records failed attempts separately. Do not build a receiver that depends on one exact retry timetable. Use the delivery log as the source of truth for an individual attempt.
 
