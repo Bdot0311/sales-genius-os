@@ -1,8 +1,9 @@
 export type InboxFolder = "all" | "unread" | "replied" | "awaiting" | "sent" | "drafts" | "scheduled" | "failed";
 
 export function mailState(status: string | null, sentAt?: string | null): string {
-  if (sentAt) return "sent";
   const state = (status || "pending").toLowerCase();
+  if (["draft", "scheduled", "queued", "pending", "sending", "failed", "bounced", "cancelled"].includes(state)) return state;
+  if (sentAt) return "sent";
   if (["sent", "opened", "replied", "delivered"].includes(state)) return "sent";
   return state;
 }

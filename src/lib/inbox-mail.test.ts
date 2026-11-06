@@ -23,6 +23,11 @@ describe("Unified Inbox email coverage", () => {
   it("shows completed sends as awaiting reply", () => {
     expect(matchesMailFolder("awaiting", { unread: false, hasReply: false, messages: [{ direction: "out", state: mailState("sent", "2026-11-06T00:00:00Z") }] })).toBe(true);
   });
+  it("does not mistake a queued send time for completed delivery", () => {
+    expect(mailState("queued", "2026-11-07T00:00:00Z")).toBe("queued");
+    expect(mailState("scheduled", "2026-11-07T00:00:00Z")).toBe("scheduled");
+    expect(mailState("failed", "2026-11-06T00:00:00Z")).toBe("failed");
+  });
   it("reads beyond the old 300-row cutoff", async () => {
     const all = Array.from({ length: 1201 }, (_, id) => ({ id }));
     const result = await readAllMail(async (from, to) => ({ data: all.slice(from, to + 1), error: null }));

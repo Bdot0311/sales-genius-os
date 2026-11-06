@@ -1,7 +1,8 @@
 # Unified Inbox coverage
 
-- [ ] Trace email creation and sending across Outreach Studio, agents, API and MCP; close missing inbox records without duplicates.
-- [ ] Add regressions, verify signed-in inbox read-back, deploy affected functions and add What's New.
+- [x] Trace email creation and sending across Outreach Studio, agents, API and MCP; include drafts and all outbound states without adding duplicate send records.
+- [x] Add regressions, verify a temporary unsent draft in signed-in Inbox and clean it up, deploy generate-email/rest-api and add What's New.
+- [ ] Publish the Inbox and MCP generator changes (requires app publishing); API draft saving is deployed, no real outbound email was sent.
 
 # Documentation completeness review
 

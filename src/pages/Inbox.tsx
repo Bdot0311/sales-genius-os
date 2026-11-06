@@ -619,6 +619,7 @@ const Inbox = () => {
                       size="sm"
                       className="h-7 shrink-0 px-2 text-[0.6875rem] text-muted-foreground hover:text-foreground"
                       onClick={() => archiveConversation.mutate(selected)}
+                      disabled={selected.replyThreadIds.length === 0}
                     >
                       <Archive className="mr-1.5 h-3.5 w-3.5" /> Archive
                     </Button>
