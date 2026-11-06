@@ -34,7 +34,9 @@ In OutReign open **Settings → Webhooks**, add your HTTPS endpoint and select `
 
 ```javascript
 app.post('/outreign-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
-  if (!verifySignature(req)) return res.sendStatus(401);
+  // verifyOutReignWebhook is defined in "Security and retries"
+  const ok = verifyOutReignWebhook(req.body, req.get('X-Webhook-Signature'), process.env.OUTREIGN_WEBHOOK_SECRET);
+  if (!ok) return res.sendStatus(401);
   const event = JSON.parse(req.body);
   res.sendStatus(200); // acknowledge fast, process after
   if (event.event === 'lead.deleted') await deleteFromCrm(event.data.id);

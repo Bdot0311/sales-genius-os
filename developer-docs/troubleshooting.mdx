@@ -13,7 +13,7 @@ description: "Diagnose connection issues without sharing credentials."
 
 ## MCP connects but tools are missing
 
-Refresh or reconnect the assistant's connector and start a new conversation. Clients can cache tool definitions. Check that the client supports remote Streamable HTTP and OAuth, and use the endpoint in the [connection guide](/developer-docs/mcp/connect).
+If the client reports `failed_to_load`, remove the connector and add it again with exactly `https://api.outreign.io/mcp`, then complete sign-in. Refresh or reconnect the assistant's connector and start a new conversation. Clients can cache tool definitions. Check that the client supports remote Streamable HTTP and OAuth, and use the endpoint in the [connection guide](/developer-docs/mcp/connect).
 
 ## Webhook deliveries fail
 

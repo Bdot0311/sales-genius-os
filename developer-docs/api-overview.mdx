@@ -17,6 +17,45 @@ All REST endpoints use `https://api.outreign.io/rest-api`. Send `X-API-Key` on e
 
 Use the endpoint groups in this tab for request fields, response shapes and code examples. The reference is generated from the [OpenAPI specification](https://outreign.io/openapi.json).
 
+## Request anatomy
+
+```http
+POST /rest-api/leads HTTP/1.1
+Host: api.outreign.io
+X-API-Key: YOUR_OUTREIGN_API_KEY
+Content-Type: application/json
+
+{ "contact_name": "Jordan Lee", "company_name": "Northwind Analytics" }
+```
+
+| Header | Direction | Purpose |
+| --- | --- | --- |
+| `X-API-Key` | Request | Required on every call. |
+| `Content-Type: application/json` | Request | Required when sending a body. |
+| `X-RateLimit-Remaining` | Response | Requests left in the current minute for this key and resource. |
+| `X-RateLimit-Reset` | Response | When the window refills (ISO 8601). |
+
+## Status codes
+
+| Code | Meaning |
+| --- | --- |
+| `200` | Success. |
+| `201` | Created (including partial bulk imports; check `failed`). |
+| `400` | Invalid JSON or missing required field. |
+| `401` | Missing, invalid, inactive or expired API key. |
+| `403` | Plan does not include API access, or daily allowance used. |
+| `404` | Record not found in your account, or unknown resource. |
+| `405` | Method not supported on this path. |
+| `410` | Retired endpoint (`/workflows`). |
+| `429` | Rate limited; wait until `resetAt`. |
+| `500` | Unexpected error. |
+
+Full details and retry guidance: [errors and limits](/developer-docs/errors-and-limits). What the API can and cannot do compared with the app and MCP: [capabilities](/developer-docs/capabilities).
+
+## Versioning
+
+The API is unversioned in the URL. Additive changes (new fields, endpoints or optional parameters) ship without notice, so ignore fields you do not recognize. Breaking changes are announced in the [changelog](/developer-docs/changelog) before they take effect.
+
 ## Common conventions
 
 - Resource IDs are UUIDs returned by OutReign; use your own account's IDs.
