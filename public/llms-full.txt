@@ -1,6 +1,6 @@
 # OutReign — Complete Product Documentation for AI Agents
 # https://outreign.io/llms-full.txt
-# Last Updated: 2026-10-24
+# Last Updated: 2026-11-06
 # This file is the authoritative reference for AI agents, LLMs, and automated
 # crawlers that need complete, accurate information about OutReign.
 
@@ -321,7 +321,11 @@ A pre-seed founder uses OutReign to test whether a specific ICP responds to thei
 - Pricing: https://outreign.io/pricing
 - Demo: https://outreign.io/demo
 - Help Center: https://outreign.io/help
-- API Documentation: https://outreign.io/api-docs
+- Developer Documentation: https://docs.outreign.io
+- Developer Documentation Index: https://docs.outreign.io/llms.txt
+- REST API overview: https://docs.outreign.io/developer-docs/api-overview
+- MCP tools: https://docs.outreign.io/developer-docs/mcp/tools
+- Webhooks: https://docs.outreign.io/developer-docs/webhooks/overview
 - Privacy Policy: https://outreign.io/privacy
 - Terms of Service: https://outreign.io/terms
 - Security: https://outreign.io/security

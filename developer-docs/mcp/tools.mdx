@@ -1,0 +1,99 @@
+---
+title: "MCP tool reference"
+description: "Inputs, result keys and side effects for all 15 registered tools."
+---
+
+All tools require an authenticated, authorized MCP session and pass an account-plan usage check. The client obtains the machine-readable schemas with MCP `tools/list`.
+
+## Read tools
+
+| Tool | Inputs | Structured result key |
+| --- | --- | --- |
+| `list_leads` | Optional `limit` (1–100, default 25), `status` (pipeline stage) | `leads` |
+| `search_leads` | Required nonempty `query`; optional `limit` (1–50, default 20) | `leads` |
+| `list_sequences` | Optional `limit` (1–100, default 25) | `sequences` |
+| `list_recent_replies` | Optional `limit` (1–50, default 20), `unread_only` (boolean) | `replies` |
+| `list_recent_sent_emails` | Optional `limit` (1–50, default 20) | `sent_emails` |
+| `list_deals` | Optional `limit` (1–100, default 25), `stage` (string) | `deals` |
+| `list_icp_profiles` | Optional `limit` (1–50, default 20) | `icp_profiles` |
+| `get_agent_stats` | Optional `days` (1–90, default 7) | `agent_stats` |
+
+`search_leads` matches saved lead names, companies, emails and job titles. Read-list tools have result limits and do not expose REST-style offset pagination. `get_agent_stats` summarizes up to 1,000 activity rows in the requested look-back window; it is not an unlimited historical export.
+
+For lead tools, `status`/`pipeline_stage` values are: `new`, `contacted`, `no_response`, `replied`, `bounced`, `meeting_booked`, `qualified`, `not_interested`, `won`, `lost`.
+
+## Create and update leads
+
+### `create_lead`
+
+Required: nonempty `company_name`.
+
+Optional: `contact_name`, valid `contact_email`, `job_title`, `company_website`, `industry`, `linkedin_url`, `notes`, `pipeline_stage`, `source`.
+
+Creates a saved lead. Defaults: `source` is `mcp`, `lead_status` is `active`, and `pipeline_stage` is `new`. Returns `lead`. It does not send outreach or enrich the lead.
+
+### `update_lead`
+
+Required: `id` (UUID).
+
+Optional: `company_name`, `contact_name`, valid `contact_email`, `job_title`, `company_website`, `industry`, `linkedin_url`, `notes`, `pipeline_stage`.
+
+Updates the specified saved lead. Returns `lead`.
+
+## Sequence enrollment and replies
+
+### `enroll_lead_in_sequence`
+
+Required: `lead_id` and `sequence_id` (UUIDs).
+
+Creates an active enrollment at step zero with the next action due immediately. The outreach worker processes the first sequence step. Returns `enrollment`. Treat this as an outbound action, not a read-only operation.
+
+### `send_reply`
+
+Required: `reply_thread_id` (UUID), nonempty plain-text `body`.
+
+Optional: `subject`; when omitted, it uses a reply subject based on the original thread.
+
+Queues an outbound reply linked to the original lead/thread. Returns `queued_email`. Delivery happens later through the connected mailbox; inspect the inbox/sent state rather than treating a queue response as delivered.
+
+## Deals and ICP profiles
+
+### `update_deal`
+
+Required: `id` (UUID).
+
+Optional: `title`, `company_name`, `contact_name`, `value` (number), `stage`, `probability` (integer 0–100), `expected_close_date` (`YYYY-MM-DD`), `notes`.
+
+Returns `deal`.
+
+### `update_icp_profile`
+
+Required: `id` (UUID).
+
+Optional string fields: `name`, `revenue_range`, `value_proposition`, `disqualifiers`, `notes`.
+
+Optional string arrays: `industries`, `target_titles`, `departments`, `seniority_levels`, `geographies`, `tech_stack`, `buying_signals`, `intent_keywords`, `pain_points`.
+
+Optional integer fields: `company_size_min`, `company_size_max`.
+
+Returns `icp_profile`.
+
+## AI SDR configuration
+
+### `update_agent_config`
+
+Select an agent with optional `agent_id` (UUID) or `agent_name_match`; without either, the tool targets the primary agent. It can create a configuration when no matching configuration exists.
+
+Optional fields:
+
+- `enabled` (boolean), `agent_name`, `persona`, `tone`, `company_context`, `signature`, `calendly_url`.
+- `role`: `full_cycle`, `lead_gen`, `outreach` or `replies`.
+- `can_reply_interested`, `can_handle_objections`, `can_book_meetings` (booleans).
+- `max_daily_auto_replies` (integer 0–500).
+- `reply_delay_minutes` (integer 0–1440).
+
+Returns `agent_config`. Accepted input ranges do not override your plan's feature or sending restrictions. Enabling an agent can affect future automated outreach; review settings before making the call.
+
+## Results and failures
+
+Tools return text content and, on successful structured responses, the result keys listed above. A tool failure can set `isError: true` even when the MCP transport itself succeeds. Inspect the tool result before assuming a write completed.

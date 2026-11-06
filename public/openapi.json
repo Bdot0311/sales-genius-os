@@ -4,7 +4,7 @@
     "title": "OutReign API",
     "version": "1.0.0",
     "summary": "B2B lead intelligence and outbound sales API",
-    "description": "REST API for OutReign leads, deals, activities, contacts and AI email generation. Authenticate with an X-API-Key header generated in OutReign \u2192 Settings \u2192 API Keys.",
+    "description": "REST API for OutReign saved leads, deals, activities, contacts and AI email generation. Authenticate with X-API-Key from Settings \u2192 API Keys. MCP OAuth and webhook contracts are documented separately at https://docs.outreign.io.",
     "contact": {
       "name": "OutReign support",
       "email": "support@bdotindustries.com",
@@ -20,7 +20,7 @@
   ],
   "externalDocs": {
     "description": "Human API documentation",
-    "url": "https://outreign.io/api-docs"
+    "url": "https://docs.outreign.io"
   },
   "security": [
     {
@@ -70,7 +70,6 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Values outside 1-100 are clamped.",
             "schema": {
               "type": "integer",
               "default": 50,
@@ -81,7 +80,6 @@
           {
             "name": "offset",
             "in": "query",
-            "description": "Values outside 0-100000 are clamped.",
             "schema": {
               "type": "integer",
               "default": 0,
@@ -102,13 +100,13 @@
             }
           },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "Missing, invalid, inactive or expired API key"
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
+            "description": "Account plan or access restriction"
           },
           "429": {
-            "$ref": "#/components/responses/RateLimited"
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
         }
       },
@@ -123,15 +121,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "allOf": [
-                  {
-                    "$ref": "#/components/schemas/Lead"
-                  }
-                ],
-                "required": [
-                  "contact_name",
-                  "company_name"
-                ]
+                "$ref": "#/components/schemas/LeadInput"
               }
             }
           }
@@ -147,24 +137,14 @@
               }
             }
           },
-          "400": {
-            "description": "Invalid JSON body, or contact_name and company_name are required",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "Missing, invalid, inactive or expired API key"
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
+            "description": "Account plan or access restriction"
           },
           "429": {
-            "$ref": "#/components/responses/RateLimited"
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
         }
       }
@@ -176,7 +156,6 @@
         ],
         "operationId": "bulkImportLeads",
         "summary": "Bulk import up to 100 leads",
-        "description": "Each lead is validated and inserted separately. Leads that fail are reported in errors by their index in the request.",
         "requestBody": {
           "required": true,
           "content": {
@@ -187,15 +166,7 @@
                   "leads": {
                     "type": "array",
                     "items": {
-                      "allOf": [
-                        {
-                          "$ref": "#/components/schemas/Lead"
-                        }
-                      ],
-                      "required": [
-                        "contact_name",
-                        "company_name"
-                      ]
+                      "$ref": "#/components/schemas/LeadInput"
                     },
                     "maxItems": 100
                   }
@@ -221,12 +192,6 @@
                     "failed": {
                       "type": "integer"
                     },
-                    "leads": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/Lead"
-                      }
-                    },
                     "errors": {
                       "type": "array",
                       "items": {
@@ -240,30 +205,26 @@
                           }
                         }
                       }
+                    },
+                    "leads": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Lead"
+                      }
                     }
                   }
                 }
               }
             }
           },
-          "400": {
-            "description": "Invalid JSON body, leads array is required, or Maximum 100 leads per request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "Missing, invalid, inactive or expired API key"
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
+            "description": "Account plan or access restriction"
           },
           "429": {
-            "$ref": "#/components/responses/RateLimited"
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
         }
       }
@@ -298,23 +259,13 @@
             }
           },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "Missing, invalid, inactive or expired API key"
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
+            "description": "Account plan or access restriction"
           },
           "429": {
-            "$ref": "#/components/responses/RateLimited"
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
         }
       },
@@ -324,13 +275,12 @@
         ],
         "operationId": "updateLead",
         "summary": "Update a lead",
-        "description": "Send the full record. Fields you omit are cleared, and fields with a default are reset to it.",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Lead"
+                "$ref": "#/components/schemas/LeadUpdate"
               }
             }
           }
@@ -346,36 +296,17 @@
               }
             }
           },
-          "400": {
-            "description": "Invalid JSON body",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "Missing, invalid, inactive or expired API key"
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "description": "Not found or update failed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
+            "description": "Account plan or access restriction"
           },
           "429": {
-            "$ref": "#/components/responses/RateLimited"
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
-        }
+        },
+        "description": "Current update normalization may clear omitted optional fields or apply defaults. Read the current record first and include writable values that must be preserved; inspect the returned record."
       },
       "delete": {
         "tags": [
@@ -395,23 +326,13 @@
             }
           },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "Missing, invalid, inactive or expired API key"
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "description": "Not found or delete failed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
+            "description": "Account plan or access restriction"
           },
           "429": {
-            "$ref": "#/components/responses/RateLimited"
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
         }
       }
@@ -434,18 +355,7 @@
         ],
         "operationId": "enrichLead",
         "summary": "Enrich a lead",
-        "description": "Consumes one enrichment credit from the authenticated account's plan. Send a JSON body; {} is enough. Some failures (free plan, no credits left) return 200 with error and error_code.",
-        "requestBody": {
-          "required": true,
-          "description": "Any JSON object. {} is enough.",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object"
-              }
-            }
-          }
-        },
+        "description": "Enrich a saved lead using the account\u2019s entitlement and credit checks. Inspect noMatch and enrichedFields; success does not guarantee a new match.",
         "responses": {
           "200": {
             "description": "Enrichment result",
@@ -471,65 +381,21 @@
                     },
                     "alreadyUpToDate": {
                       "type": "boolean"
-                    },
-                    "error": {
-                      "type": "string"
-                    },
-                    "error_code": {
-                      "type": "string",
-                      "enum": [
-                        "free_tier_blocked",
-                        "credits_exhausted"
-                      ]
                     }
                   }
                 }
               }
             }
           },
-          "400": {
-            "description": "Invalid JSON body or Operation failed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "Missing, invalid, inactive or expired API key"
           },
           "403": {
-            "description": "Lead not found or unauthorized, or API access is not included in your plan",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Resource not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
+            "description": "Account plan or access restriction"
           },
           "429": {
-            "$ref": "#/components/responses/RateLimited"
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
-        },
-        "x-payment-info": {
-          "intent": "charge",
-          "method": "stripe",
-          "amount": 0.25,
-          "currency": "USD",
-          "description": "Lead enrichment call"
         }
       }
     },
@@ -551,18 +417,6 @@
         ],
         "operationId": "scoreLead",
         "summary": "Score a lead against the saved ICP",
-        "description": "Send a JSON body; {} is enough.",
-        "requestBody": {
-          "required": true,
-          "description": "Any JSON object. {} is enough.",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object"
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "description": "Score",
@@ -574,14 +428,38 @@
                     "score": {
                       "type": "integer"
                     },
-                    "icp_score": {
-                      "type": "integer"
-                    },
                     "intent_score": {
                       "type": "integer"
                     },
+                    "icp_score": {
+                      "type": "integer"
+                    },
+                    "enrichment_score": {
+                      "type": "integer"
+                    },
+                    "signal_score": {
+                      "type": "integer"
+                    },
                     "intent_label": {
+                      "type": "string",
+                      "enum": [
+                        "Cold",
+                        "Warm",
+                        "Hot",
+                        "Very Hot"
+                      ]
+                    },
+                    "reasoning": {
                       "type": "string"
+                    },
+                    "recommended_angle": {
+                      "type": "string"
+                    },
+                    "recommendations": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
                     },
                     "intent_reasons": {
                       "type": "array",
@@ -589,61 +467,37 @@
                         "type": "string"
                       }
                     },
-                    "recommended_angle": {
-                      "type": "string"
+                    "buying_signals": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
                     },
-                    "reasoning": {
-                      "type": "string"
+                    "signals": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "signal_layers": {
+                      "type": "object"
                     }
                   }
                 }
               }
             }
           },
-          "400": {
-            "description": "Invalid JSON body",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "Missing, invalid, inactive or expired API key"
           },
           "403": {
-            "description": "Lead not found or unauthorized, or API access is not included in your plan",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Lead not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
+            "description": "Account plan or access restriction"
           },
           "429": {
-            "$ref": "#/components/responses/RateLimited"
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
         },
-        "x-payment-info": {
-          "intent": "charge",
-          "method": "stripe",
-          "amount": 0.05,
-          "currency": "USD",
-          "description": "ICP scoring call"
-        }
+        "description": "Returns lead scoring, intent, signal layers and recommendations. Inspect reasoning rather than assuming a purchase prediction."
       }
     },
     "/deals": {
@@ -664,7 +518,6 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Values outside 1-100 are clamped.",
             "schema": {
               "type": "integer",
               "default": 50,
@@ -675,7 +528,6 @@
           {
             "name": "offset",
             "in": "query",
-            "description": "Values outside 0-100000 are clamped.",
             "schema": {
               "type": "integer",
               "default": 0,
@@ -713,13 +565,13 @@
             }
           },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "Missing, invalid, inactive or expired API key"
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
+            "description": "Account plan or access restriction"
           },
           "429": {
-            "$ref": "#/components/responses/RateLimited"
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
         }
       },
@@ -734,15 +586,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "allOf": [
-                  {
-                    "$ref": "#/components/schemas/Deal"
-                  }
-                ],
-                "required": [
-                  "title",
-                  "company_name"
-                ]
+                "$ref": "#/components/schemas/DealInput"
               }
             }
           }
@@ -763,24 +607,14 @@
               }
             }
           },
-          "400": {
-            "description": "Invalid JSON body, or title and company_name are required",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "Missing, invalid, inactive or expired API key"
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
+            "description": "Account plan or access restriction"
           },
           "429": {
-            "$ref": "#/components/responses/RateLimited"
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
         }
       }
@@ -797,62 +631,18 @@
           }
         }
       ],
-      "get": {
-        "tags": [
-          "Deals"
-        ],
-        "operationId": "getDeal",
-        "summary": "Get a deal",
-        "responses": {
-          "200": {
-            "description": "The deal",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/Deal"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          }
-        }
-      },
       "patch": {
         "tags": [
           "Deals"
         ],
         "operationId": "updateDeal",
         "summary": "Update a deal",
-        "description": "Send the full record. Fields you omit are cleared, and fields with a default are reset to it.",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Deal"
+                "$ref": "#/components/schemas/DealUpdate"
               }
             }
           }
@@ -873,36 +663,17 @@
               }
             }
           },
-          "400": {
-            "description": "Invalid JSON body",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "Missing, invalid, inactive or expired API key"
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "description": "Not found or update failed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
+            "description": "Account plan or access restriction"
           },
           "429": {
-            "$ref": "#/components/responses/RateLimited"
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
-        }
+        },
+        "description": "Current update normalization may clear omitted optional fields or apply defaults. Read the current record first and include writable values that must be preserved; inspect the returned record."
       },
       "delete": {
         "tags": [
@@ -922,23 +693,46 @@
             }
           },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "Missing, invalid, inactive or expired API key"
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
+            "description": "Account plan or access restriction"
           },
-          "404": {
-            "description": "Not found or delete failed",
+          "429": {
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Deals"
+        ],
+        "operationId": "getDeal",
+        "summary": "Get a deal",
+        "responses": {
+          "200": {
+            "description": "Resource belonging to the authenticated account",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Deal"
+                    }
+                  }
                 }
               }
             }
           },
+          "401": {
+            "description": "Missing, invalid, inactive or expired API key"
+          },
+          "403": {
+            "description": "Account plan or access restriction"
+          },
           "429": {
-            "$ref": "#/components/responses/RateLimited"
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
         }
       }
@@ -961,7 +755,6 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Values outside 1-100 are clamped.",
             "schema": {
               "type": "integer",
               "default": 50,
@@ -972,7 +765,6 @@
           {
             "name": "offset",
             "in": "query",
-            "description": "Values outside 0-100000 are clamped.",
             "schema": {
               "type": "integer",
               "default": 0,
@@ -1010,13 +802,13 @@
             }
           },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "Missing, invalid, inactive or expired API key"
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
+            "description": "Account plan or access restriction"
           },
           "429": {
-            "$ref": "#/components/responses/RateLimited"
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
         }
       },
@@ -1031,15 +823,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "allOf": [
-                  {
-                    "$ref": "#/components/schemas/Activity"
-                  }
-                ],
-                "required": [
-                  "subject",
-                  "type"
-                ]
+                "$ref": "#/components/schemas/ActivityInput"
               }
             }
           }
@@ -1060,24 +844,14 @@
               }
             }
           },
-          "400": {
-            "description": "Invalid JSON body, or subject and type are required",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "Missing, invalid, inactive or expired API key"
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
+            "description": "Account plan or access restriction"
           },
           "429": {
-            "$ref": "#/components/responses/RateLimited"
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
         }
       }
@@ -1094,62 +868,18 @@
           }
         }
       ],
-      "get": {
-        "tags": [
-          "Activities"
-        ],
-        "operationId": "getActivity",
-        "summary": "Get an activity",
-        "responses": {
-          "200": {
-            "description": "The activity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/Activity"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          }
-        }
-      },
       "patch": {
         "tags": [
           "Activities"
         ],
         "operationId": "updateActivity",
         "summary": "Update an activity",
-        "description": "Send the full record. Fields you omit are cleared, and fields with a default are reset to it.",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Activity"
+                "$ref": "#/components/schemas/ActivityUpdate"
               }
             }
           }
@@ -1170,36 +900,17 @@
               }
             }
           },
-          "400": {
-            "description": "Invalid JSON body",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "Missing, invalid, inactive or expired API key"
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "description": "Not found or update failed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
+            "description": "Account plan or access restriction"
           },
           "429": {
-            "$ref": "#/components/responses/RateLimited"
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
-        }
+        },
+        "description": "Current update normalization may clear omitted optional fields or apply defaults. Read the current record first and include writable values that must be preserved; inspect the returned record."
       },
       "delete": {
         "tags": [
@@ -1219,23 +930,46 @@
             }
           },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "Missing, invalid, inactive or expired API key"
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
+            "description": "Account plan or access restriction"
           },
-          "404": {
-            "description": "Not found or delete failed",
+          "429": {
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Activities"
+        ],
+        "operationId": "getActivity",
+        "summary": "Get a activity",
+        "responses": {
+          "200": {
+            "description": "Resource belonging to the authenticated account",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Activity"
+                    }
+                  }
                 }
               }
             }
           },
+          "401": {
+            "description": "Missing, invalid, inactive or expired API key"
+          },
+          "403": {
+            "description": "Account plan or access restriction"
+          },
           "429": {
-            "$ref": "#/components/responses/RateLimited"
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
         }
       }
@@ -1258,7 +992,6 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Values outside 1-100 are clamped.",
             "schema": {
               "type": "integer",
               "default": 50,
@@ -1269,7 +1002,6 @@
           {
             "name": "offset",
             "in": "query",
-            "description": "Values outside 0-100000 are clamped.",
             "schema": {
               "type": "integer",
               "default": 0,
@@ -1307,13 +1039,13 @@
             }
           },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "Missing, invalid, inactive or expired API key"
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
+            "description": "Account plan or access restriction"
           },
           "429": {
-            "$ref": "#/components/responses/RateLimited"
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
         }
       },
@@ -1323,13 +1055,12 @@
         ],
         "operationId": "createContact",
         "summary": "Create a contact",
-        "description": "Send at least one of first_name, last_name or email.",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Contact"
+                "$ref": "#/components/schemas/ContactInput"
               }
             }
           }
@@ -1350,24 +1081,14 @@
               }
             }
           },
-          "400": {
-            "description": "Invalid JSON body, or At least first_name, last_name, or email is required",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "Missing, invalid, inactive or expired API key"
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
+            "description": "Account plan or access restriction"
           },
           "429": {
-            "$ref": "#/components/responses/RateLimited"
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
         }
       }
@@ -1384,62 +1105,18 @@
           }
         }
       ],
-      "get": {
-        "tags": [
-          "Contacts"
-        ],
-        "operationId": "getContact",
-        "summary": "Get a contact",
-        "responses": {
-          "200": {
-            "description": "The contact",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/Contact"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "description": "Not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          }
-        }
-      },
       "patch": {
         "tags": [
           "Contacts"
         ],
         "operationId": "updateContact",
         "summary": "Update a contact",
-        "description": "Only the fields you send are changed. Other fields, including id, are ignored.",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Contact"
+                "$ref": "#/components/schemas/ContactUpdate"
               }
             }
           }
@@ -1460,34 +1137,14 @@
               }
             }
           },
-          "400": {
-            "description": "Invalid JSON body, or No updatable fields provided",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "Missing, invalid, inactive or expired API key"
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "description": "Not found or update failed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
+            "description": "Account plan or access restriction"
           },
           "429": {
-            "$ref": "#/components/responses/RateLimited"
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
         }
       },
@@ -1509,54 +1166,100 @@
             }
           },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "Missing, invalid, inactive or expired API key"
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
+            "description": "Account plan or access restriction"
           },
-          "404": {
-            "description": "Not found or delete failed",
+          "429": {
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Contacts"
+        ],
+        "operationId": "getContact",
+        "summary": "Get a contact",
+        "responses": {
+          "200": {
+            "description": "Resource belonging to the authenticated account",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Contact"
+                    }
+                  }
                 }
               }
             }
           },
+          "401": {
+            "description": "Missing, invalid, inactive or expired API key"
+          },
+          "403": {
+            "description": "Account plan or access restriction"
+          },
           "429": {
-            "$ref": "#/components/responses/RateLimited"
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
         }
       }
     },
-    "/email": {
+    "/email/generate": {
       "post": {
         "tags": [
           "Outreach"
         ],
         "operationId": "generateEmail",
         "summary": "Generate an AI email draft for a lead",
-        "description": "Consumes AI email credits from the authenticated account's plan. Some failures return 200 with error and error_code instead of a draft.",
+        "description": "Generate a draft, not a sent email. Send a lead object plus tone and goal; leadId alone is not accepted by the generator. Supply your own sender/business context. Inspect JSON error even on HTTP 200.",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
+                "required": [
+                  "lead",
+                  "tone",
+                  "goal"
+                ],
                 "properties": {
                   "lead": {
                     "type": "object",
-                    "description": "The lead to write to. id is required; other lead fields are used to personalize the draft.",
+                    "required": [
+                      "id"
+                    ],
                     "properties": {
                       "id": {
                         "type": "string",
                         "format": "uuid"
+                      },
+                      "contact_name": {
+                        "type": "string"
+                      },
+                      "contact_email": {
+                        "type": "string"
+                      },
+                      "company_name": {
+                        "type": "string"
+                      },
+                      "job_title": {
+                        "type": "string"
+                      },
+                      "company_website": {
+                        "type": "string"
+                      },
+                      "industry": {
+                        "type": "string"
                       }
                     },
-                    "required": [
-                      "id"
-                    ]
+                    "additionalProperties": true
                   },
                   "tone": {
                     "type": "string",
@@ -1586,25 +1289,61 @@
                       "4ps_elusive_followup"
                     ]
                   },
+                  "senderName": {
+                    "type": "string"
+                  },
+                  "senderEmail": {
+                    "type": "string"
+                  },
+                  "senderCompany": {
+                    "type": "string"
+                  },
+                  "businessDescription": {
+                    "type": "string"
+                  },
                   "triggerContext": {
                     "type": "string"
                   },
-                  "senderName": {
-                    "type": "string",
-                    "maxLength": 100,
-                    "description": "Defaults to your profile name."
+                  "subjectLine": {
+                    "type": "string"
                   },
-                  "senderEmail": {
-                    "type": "string",
-                    "maxLength": 200,
-                    "description": "Used to sign the draft when senderName is empty and your profile has no name. Defaults to your first connected sending account."
+                  "socialProof": {
+                    "type": "string"
+                  },
+                  "customInstruction": {
+                    "type": "string"
+                  },
+                  "templateDescription": {
+                    "type": "string"
+                  },
+                  "templateValue": {
+                    "type": "string"
+                  },
+                  "templateGoal": {
+                    "type": "string"
+                  },
+                  "openerWord": {
+                    "type": "string"
+                  },
+                  "strict_mode": {
+                    "type": "boolean"
+                  },
+                  "variantNum": {
+                    "type": "integer"
+                  },
+                  "use4SentenceFramework": {
+                    "type": "boolean"
+                  },
+                  "avoidSubjects": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "thread": {
+                    "type": "object"
                   }
-                },
-                "required": [
-                  "lead",
-                  "tone",
-                  "goal"
-                ]
+                }
               }
             }
           }
@@ -1620,8 +1359,23 @@
                     "email": {
                       "type": "string"
                     },
+                    "rubric": {
+                      "type": "object"
+                    },
                     "quality_weak": {
                       "type": "boolean"
+                    },
+                    "research": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "skills_used": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
                     },
                     "error": {
                       "type": "string"
@@ -1634,49 +1388,15 @@
               }
             }
           },
-          "400": {
-            "description": "Invalid JSON body, or tone, goal or lead data is missing or invalid",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "402": {
-            "description": "AI credits exhausted",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
+            "description": "Missing, invalid, inactive or expired API key"
           },
           "403": {
-            "description": "Lead not found or unauthorized, or API access is not included in your plan",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
+            "description": "Account plan or access restriction"
           },
           "429": {
-            "$ref": "#/components/responses/RateLimited"
+            "description": "Rate limit exceeded; inspect resetAt and rate-limit headers"
           }
-        },
-        "x-payment-info": {
-          "intent": "charge",
-          "method": "stripe",
-          "amount": 0.1,
-          "currency": "USD",
-          "description": "AI email generation call"
         }
       }
     }
@@ -1688,66 +1408,6 @@
         "in": "header",
         "name": "X-API-Key",
         "description": "Create keys in OutReign \u2192 Settings \u2192 API Keys."
-      },
-      "OAuth2": {
-        "type": "oauth2",
-        "description": "Human-delegated OAuth 2.1 with PKCE, used by the OutReign MCP server.",
-        "flows": {
-          "authorizationCode": {
-            "authorizationUrl": "https://ghgfjnepvxvxrncmskys.supabase.co/auth/v1/oauth/authorize",
-            "tokenUrl": "https://ghgfjnepvxvxrncmskys.supabase.co/auth/v1/oauth/token",
-            "scopes": {
-              "openid": "Subject identifier",
-              "profile": "Basic profile",
-              "email": "Email address"
-            }
-          }
-        }
-      }
-    },
-    "responses": {
-      "Unauthorized": {
-        "description": "Missing, invalid or expired API key",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/Error"
-            }
-          }
-        }
-      },
-      "Forbidden": {
-        "description": "API access is not included in your plan (Starter and above)",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/RateLimitError"
-            }
-          }
-        }
-      },
-      "RateLimited": {
-        "description": "Rate limit or daily request limit reached",
-        "headers": {
-          "X-RateLimit-Remaining": {
-            "schema": {
-              "type": "string"
-            }
-          },
-          "X-RateLimit-Reset": {
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          }
-        },
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/RateLimitError"
-            }
-          }
-        }
       }
     },
     "schemas": {
@@ -1766,7 +1426,6 @@
       },
       "Lead": {
         "type": "object",
-        "description": "String fields longer than their maxLength are truncated, not rejected. country, pipeline_stage and icp_score are returned but ignored on create and update.",
         "properties": {
           "id": {
             "type": "string",
@@ -1779,12 +1438,7 @@
           },
           "contact_email": {
             "type": "string",
-            "format": "email",
             "maxLength": 255
-          },
-          "contact_phone": {
-            "type": "string",
-            "maxLength": 50
           },
           "company_name": {
             "type": "string",
@@ -1794,6 +1448,48 @@
             "type": "string",
             "maxLength": 200
           },
+          "industry": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "country": {
+            "type": "string"
+          },
+          "linkedin_url": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "lead_status": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "pipeline_stage": {
+            "type": "string"
+          },
+          "icp_score": {
+            "type": "integer"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
+          },
+          "contact_phone": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "company_size": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2000
+          },
           "department": {
             "type": "string",
             "maxLength": 100
@@ -1801,22 +1497,6 @@
           "seniority": {
             "type": "string",
             "maxLength": 50
-          },
-          "industry": {
-            "type": "string",
-            "maxLength": 100
-          },
-          "company_size": {
-            "type": "string",
-            "maxLength": 50
-          },
-          "employee_count": {
-            "type": "string",
-            "maxLength": 50
-          },
-          "annual_revenue": {
-            "type": "string",
-            "maxLength": 100
           },
           "company_website": {
             "type": "string",
@@ -1830,45 +1510,17 @@
             "type": "string",
             "maxLength": 2000
           },
-          "country": {
+          "employee_count": {
             "type": "string",
-            "readOnly": true
+            "maxLength": 50
           },
-          "linkedin_url": {
-            "type": "string",
-            "format": "uri",
-            "maxLength": 500
-          },
-          "source": {
+          "annual_revenue": {
             "type": "string",
             "maxLength": 100
           },
-          "notes": {
-            "type": "string",
-            "maxLength": 2000
-          },
-          "lead_status": {
-            "type": "string",
-            "default": "active",
-            "maxLength": 50
-          },
           "engagement_state": {
             "type": "string",
-            "default": "new",
             "maxLength": 50
-          },
-          "pipeline_stage": {
-            "type": "string",
-            "readOnly": true
-          },
-          "icp_score": {
-            "type": "integer",
-            "readOnly": true
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "readOnly": true
           }
         }
       },
@@ -1902,7 +1554,6 @@
       },
       "Deal": {
         "type": "object",
-        "description": "String fields longer than their maxLength are truncated, not rejected.",
         "properties": {
           "id": {
             "type": "string",
@@ -1910,58 +1561,40 @@
             "readOnly": true
           },
           "title": {
-            "type": "string",
-            "maxLength": 500
+            "type": "string"
           },
           "company_name": {
-            "type": "string",
-            "maxLength": 500
-          },
-          "contact_name": {
-            "type": "string",
-            "maxLength": 500
+            "type": "string"
           },
           "value": {
             "type": "number"
           },
           "stage": {
-            "type": "string",
-            "enum": [
-              "new",
-              "contacted",
-              "qualified",
-              "proposal",
-              "negotiation",
-              "closed_won",
-              "closed_lost"
-            ],
-            "default": "new"
+            "type": "string"
           },
           "probability": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 100,
-            "default": 0,
-            "description": "Values outside 0-100 are clamped."
+            "maximum": 100
+          },
+          "contact_name": {
+            "type": "string"
           },
           "expected_close_date": {
             "type": "string",
-            "maxLength": 20
+            "format": "date"
           },
           "notes": {
-            "type": "string",
-            "maxLength": 2000
+            "type": "string"
           },
           "lead_id": {
             "type": "string",
-            "format": "uuid",
-            "maxLength": 36
+            "format": "uuid"
           }
         }
       },
       "Activity": {
         "type": "object",
-        "description": "String fields longer than their maxLength are truncated, not rejected.",
         "properties": {
           "id": {
             "type": "string",
@@ -1969,50 +1602,33 @@
             "readOnly": true
           },
           "subject": {
-            "type": "string",
-            "maxLength": 500
+            "type": "string"
           },
           "type": {
-            "type": "string",
-            "enum": [
-              "call",
-              "email",
-              "meeting",
-              "task",
-              "note",
-              "follow_up",
-              "assignment",
-              "other"
-            ]
-          },
-          "description": {
-            "type": "string",
-            "maxLength": 2000
+            "type": "string"
           },
           "due_date": {
             "type": "string",
-            "format": "date-time",
-            "maxLength": 30
+            "format": "date-time"
           },
           "completed": {
-            "type": "boolean",
-            "default": false
-          },
-          "deal_id": {
-            "type": "string",
-            "format": "uuid",
-            "maxLength": 36
+            "type": "boolean"
           },
           "lead_id": {
             "type": "string",
-            "format": "uuid",
-            "maxLength": 36
+            "format": "uuid"
+          },
+          "description": {
+            "type": "string"
+          },
+          "deal_id": {
+            "type": "string",
+            "format": "uuid"
           }
         }
       },
       "Contact": {
         "type": "object",
-        "description": "String fields longer than their maxLength are truncated, not rejected.",
         "properties": {
           "id": {
             "type": "string",
@@ -2020,17 +1636,82 @@
             "readOnly": true
           },
           "first_name": {
-            "type": "string",
-            "maxLength": 100
+            "type": "string"
           },
           "last_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "job_title": {
+            "type": "string"
+          },
+          "lead_status": {
+            "type": "string"
+          },
+          "department": {
+            "type": "string"
+          },
+          "seniority": {
+            "type": "string"
+          },
+          "linkedin_url": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "company_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "LeadInput": {
+        "type": "object",
+        "properties": {
+          "contact_name": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "company_name": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "contact_email": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "contact_phone": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "industry": {
             "type": "string",
             "maxLength": 100
           },
-          "email": {
+          "company_size": {
             "type": "string",
-            "format": "email",
-            "maxLength": 255
+            "maxLength": 50
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "linkedin_url": {
+            "type": "string",
+            "maxLength": 500
           },
           "job_title": {
             "type": "string",
@@ -2044,67 +1725,368 @@
             "type": "string",
             "maxLength": 50
           },
-          "linkedin_url": {
+          "company_website": {
             "type": "string",
-            "format": "uri",
             "maxLength": 500
           },
-          "city": {
+          "company_linkedin": {
             "type": "string",
-            "maxLength": 100
+            "maxLength": 500
           },
-          "country": {
+          "company_description": {
             "type": "string",
-            "maxLength": 100
+            "maxLength": 2000
           },
-          "source": {
+          "employee_count": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "annual_revenue": {
             "type": "string",
             "maxLength": 100
           },
           "lead_status": {
             "type": "string",
-            "default": "discovered",
             "maxLength": 50
+          },
+          "engagement_state": {
+            "type": "string",
+            "maxLength": 50
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "contact_name",
+          "company_name"
+        ]
+      },
+      "LeadUpdate": {
+        "type": "object",
+        "properties": {
+          "contact_name": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "company_name": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "contact_email": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "contact_phone": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "industry": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "company_size": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "linkedin_url": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "job_title": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "department": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "seniority": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "company_website": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "company_linkedin": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "company_description": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "employee_count": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "annual_revenue": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "lead_status": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "engagement_state": {
+            "type": "string",
+            "maxLength": 50
+          }
+        },
+        "additionalProperties": false
+      },
+      "DealInput": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "company_name": {
+            "type": "string"
+          },
+          "contact_name": {
+            "type": "string"
+          },
+          "stage": {
+            "type": "string"
+          },
+          "value": {
+            "type": "number"
+          },
+          "probability": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "expected_close_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "lead_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "company_name"
+        ]
+      },
+      "DealUpdate": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "company_name": {
+            "type": "string"
+          },
+          "contact_name": {
+            "type": "string"
+          },
+          "stage": {
+            "type": "string"
+          },
+          "value": {
+            "type": "number"
+          },
+          "probability": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "expected_close_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "lead_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ActivityInput": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "completed": {
+            "type": "boolean"
+          },
+          "due_date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deal_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "lead_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "subject",
+          "type"
+        ]
+      },
+      "ActivityUpdate": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "completed": {
+            "type": "boolean"
+          },
+          "due_date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deal_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "lead_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ContactInput": {
+        "type": "object",
+        "properties": {
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "job_title": {
+            "type": "string"
+          },
+          "department": {
+            "type": "string"
+          },
+          "seniority": {
+            "type": "string"
+          },
+          "linkedin_url": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "lead_status": {
+            "type": "string"
           },
           "company_id": {
             "type": "string",
-            "format": "uuid",
-            "maxLength": 36
+            "format": "uuid"
           }
-        }
+        },
+        "additionalProperties": false,
+        "anyOf": [
+          {
+            "required": [
+              "first_name"
+            ]
+          },
+          {
+            "required": [
+              "last_name"
+            ]
+          },
+          {
+            "required": [
+              "email"
+            ]
+          }
+        ]
       },
-      "Error": {
+      "ContactUpdate": {
         "type": "object",
         "properties": {
-          "error": {
+          "first_name": {
             "type": "string"
           },
-          "status": {
-            "type": "integer",
-            "description": "HTTP status, included on 404 responses for a record."
-          }
-        }
-      },
-      "RateLimitError": {
-        "type": "object",
-        "properties": {
-          "error": {
+          "last_name": {
             "type": "string"
           },
-          "resetAt": {
+          "email": {
+            "type": "string"
+          },
+          "job_title": {
+            "type": "string"
+          },
+          "department": {
+            "type": "string"
+          },
+          "seniority": {
+            "type": "string"
+          },
+          "linkedin_url": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "lead_status": {
+            "type": "string"
+          },
+          "company_id": {
             "type": "string",
-            "format": "date-time"
+            "format": "uuid"
           }
-        }
+        },
+        "additionalProperties": false
       }
     }
-  },
-  "x-payment-info": {
-    "intent": "session",
-    "method": "stripe",
-    "currency": "USD",
-    "checkout": "https://outreign.io/checkout",
-    "discovery": "https://outreign.io/.well-known/x402.json",
-    "description": "Metered API usage is billed against an OutReign subscription; agent-native per-call payment is available via x402/MPP."
   }
 }

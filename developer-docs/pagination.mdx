@@ -1,0 +1,30 @@
+---
+title: "Pagination and filters"
+description: "Read lists in manageable pages and apply resource-specific filters."
+---
+
+## Page through a list
+
+Start with a small page and an offset of zero:
+
+```http
+GET https://api.outreign.io/rest-api/leads?limit=50&offset=0
+X-API-Key: YOUR_OUTREIGN_API_KEY
+```
+
+The default page size is 50, with a maximum of 100. `offset` ranges from 0 to 100,000. For the next page, increase `offset` by the returned page size. Continue until an empty page is returned or the reported count has been reached. Lists can change between requests; avoid assuming offset pagination is a permanent snapshot.
+
+## Filters
+
+| List | Query parameters |
+| --- | --- |
+| Leads | `industry`, `status`, `limit`, `offset` |
+| Deals | `stage`, `limit`, `offset` |
+| Activities | `type`, `limit`, `offset` |
+| Contacts | `status`, `limit`, `offset` |
+
+Use URL encoding when building filter values. Check each endpoint's reference for the fields it accepts rather than assuming the Saved Leads page's filters are all available through REST.
+
+## Bulk imports are separate
+
+Pagination controls reads. For importing leads, send `POST /leads/bulk` with `{ "leads": [...] }`, splitting larger imports into batches of at most 100 leads. Inspect the import result for individual failures before retrying.

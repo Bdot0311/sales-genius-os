@@ -1,0 +1,38 @@
+---
+title: "OutReign developer documentation"
+description: "Start with the REST API, connect an AI assistant, or receive workflow events."
+---
+
+OutReign connects B2B lead intelligence and outbound workflows to your own tools. Choose the interface that matches what you are building.
+
+## REST API
+
+Read and manage saved leads, contacts, pipeline deals and activities. Enrich or score a saved lead, or generate an email draft.
+
+- Base URL: `https://api.outreign.io/rest-api`
+- Authentication: an OutReign API key in the `X-API-Key` header
+- [Make your first request](/developer-docs/quickstart)
+- [Browse the API reference](/developer-docs/api-overview)
+
+## MCP for AI assistants
+
+Connect a compatible assistant to your OutReign account. The assistant can discover tools for leads, sequences, inbox replies, deals, ICP profiles and agent configuration.
+
+- Endpoint: `https://api.outreign.io/mcp`
+- Authentication: sign in and approve access using OAuth
+- [Connect your assistant](/developer-docs/mcp/connect)
+- [Read the tool reference](/developer-docs/mcp/tools)
+
+## Webhooks
+
+Receive subscribed events at your own HTTPS endpoint, or use an inbound webhook to bring external events into OutReign.
+
+- [Configure outbound events](/developer-docs/webhooks/overview)
+- [Verify signatures and handle retries](/developer-docs/webhooks/security-and-retries)
+- [Set up inbound webhooks](/developer-docs/webhooks/inbound)
+
+## Before you begin
+
+Use an OutReign account with access to the feature you need. API and MCP access is available on paid plans; plan restrictions and usage limits still apply. Never place API keys, OAuth tokens or webhook secrets in public browser code.
+
+For product setup rather than developer integration, visit the [Help Center](https://outreign.io/help). Check [API status](https://outreign.io/api-status) when troubleshooting availability.
