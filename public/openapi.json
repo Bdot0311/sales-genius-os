@@ -2047,7 +2047,10 @@
                       "type": "string"
                     },
                     "draft_id": {
-                      "type": ["string", "null"],
+                      "type": [
+                        "string",
+                        "null"
+                      ],
                       "format": "uuid",
                       "description": "Saved email_drafts ID for full-email generation; null for subject-only and trigger-only goals."
                     },
@@ -2841,6 +2844,80 @@
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/email/send": {
+      "post": {
+        "summary": "Send an email",
+        "description": "Sends from your connected Gmail mailbox with the same send limits, suppression list and quality check as the app. Replies in a thread where the prospect already replied skip the cold-email quality check. Sent emails appear in Unified Inbox.",
+        "tags": [
+          "Prospecting"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "to",
+                  "subject",
+                  "body"
+                ],
+                "properties": {
+                  "to": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "subject": {
+                    "type": "string",
+                    "maxLength": 300
+                  },
+                  "body": {
+                    "type": "string",
+                    "maxLength": 50000
+                  },
+                  "leadId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "threadId": {
+                    "type": "string"
+                  },
+                  "integrationRowId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Connected mailbox to send from"
+                  },
+                  "appendSignature": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              "example": {
+                "to": "jane@acme.io",
+                "subject": "Quick question",
+                "body": "Hi Jane, ...",
+                "leadId": "00000000-0000-0000-0000-000000000000"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sent"
+          },
+          "401": {
+            "description": "Invalid API key"
+          },
+          "422": {
+            "description": "Quality check failed; findings explain what to fix"
+          },
+          "429": {
+            "description": "Send or request limit reached"
           }
         }
       }
