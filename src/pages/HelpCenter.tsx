@@ -23,6 +23,7 @@ import {
   ArrowLeft,
   Clock,
   ChevronRight,
+  Headphones,
 } from "lucide-react";
 
 const FooterSection = lazy(() =>
@@ -423,6 +424,24 @@ const HelpCenter = () => {
               {helpCategories.map((category) => (
                 <HelpCategoryCard key={category.id} category={category} />
               ))}
+              <a
+                href="mailto:support@bdotindustries.com"
+                className="group h-full rounded-2xl border border-primary/20 bg-primary/5 p-6 transition-colors hover:border-primary/40"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="shrink-0 rounded-xl border border-primary/20 bg-primary/10 p-3">
+                    <Headphones className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="mb-1 text-lg font-semibold text-foreground">Contact Support</h3>
+                    <p className="text-sm text-muted-foreground">Get help with your account or OutReign workflows</p>
+                    <div className="mt-4 flex items-center justify-between">
+                      <span className="text-xs text-foreground/70">Email support</span>
+                      <ChevronRight className="h-4 w-4 text-primary/70 transition-transform group-hover:translate-x-1" />
+                    </div>
+                  </div>
+                </div>
+              </a>
             </div>
           </div>
         </section>
