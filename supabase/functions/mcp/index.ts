@@ -353,6 +353,15 @@ var enroll_lead_default = defineTool8({
       if (blocked) return blocked;
     }
     const supabase = supabaseForUser(ctx);
+    const userId = ctx.getUserId();
+    const [{ data: lead, error: leadErr }, { data: sequence, error: seqErr }] = await Promise.all([
+      supabase.from("leads").select("id").eq("id", lead_id).eq("user_id", userId).maybeSingle(),
+      supabase.from("email_sequences").select("id").eq("id", sequence_id).eq("user_id", userId).maybeSingle()
+    ]);
+    if (leadErr) return err(leadErr.message);
+    if (seqErr) return err(seqErr.message);
+    if (!lead) return err("Lead not found");
+    if (!sequence) return err("Sequence not found");
     const now = (/* @__PURE__ */ new Date()).toISOString();
     const { data, error } = await supabase.from("sequence_enrollments").insert({
       user_id: ctx.getUserId(),

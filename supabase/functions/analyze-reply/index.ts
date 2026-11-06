@@ -63,16 +63,22 @@ serve(async (req) => {
       });
     }
 
-    // Get lead context if leadId provided
+    // Get lead context if leadId provided. The id has to be this account's:
+    // the query used to load any lead by primary key, which put another
+    // account's contact into the prompt and then wrote a draft and a sequence
+    // update against that lead id.
     let leadContext = '';
+    let ownedLeadId: string | null = null;
     if (leadId) {
       const { data: lead } = await supabase
         .from('leads')
         .select('contact_name, company_name, job_title, industry')
         .eq('id', leadId)
-        .single();
-      
+        .eq('user_id', user.id)
+        .maybeSingle();
+
       if (lead) {
+        ownedLeadId = leadId;
         leadContext = `Lead: ${lead.contact_name} at ${lead.company_name}, ${lead.job_title || 'Unknown role'}, ${lead.industry || 'Unknown industry'}`;
       }
     }
@@ -233,7 +239,7 @@ Priority rules:
       .from('reply_analysis')
       .insert({
         user_id: user.id,
-        lead_id: leadId || null,
+        lead_id: ownedLeadId,
         sent_email_id: sentEmailId || null,
         reply_content: replyContent,
         intent_score: analysis.intent_score,
@@ -270,10 +276,10 @@ Priority rules:
      * is already stored, and losing it as well would leave no record at all.
      */
     let sequenceOutcome: unknown = null;
-    if (leadId) {
+    if (ownedLeadId) {
       const { data: applied, error: applyError } = await supabase.rpc('apply_reply_to_sequence', {
         p_user_id: user.id,
-        p_lead_id: leadId,
+        p_lead_id: ownedLeadId,
         p_triage: triage,
         p_check_back_at: checkBackAt,
       });
@@ -291,7 +297,7 @@ Priority rules:
      * sends it, and nothing here decides it is good enough to send.
      */
     let draftId: string | null = null;
-    if (suggestedReply && leadId) {
+    if (suggestedReply && ownedLeadId) {
       const { data: draft, error: draftError } = await supabase
         .from('email_drafts')
         /*
@@ -308,7 +314,7 @@ Priority rules:
          */
         .upsert({
           user_id: user.id,
-          lead_id: leadId,
+          lead_id: ownedLeadId,
           subject: `Re: ${(analysis.summary ?? 'your reply').toString().slice(0, 120)}`,
           body: suggestedReply,
           trigger_context: `Drafted from their reply — ${triage}`,

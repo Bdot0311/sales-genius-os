@@ -4165,6 +4165,15 @@ serve(async (req) => {
         case "enroll_lead_in_sequence": {
           const lead = await loadLead(String(args.lead_id ?? ""));
           if (!lead) return { error: "Lead not found" };
+          // Service role bypasses the enrollment insert policy, so the
+          // sequence has to be checked here. loadLead already scoped the lead.
+          const { data: sequence } = await admin
+            .from("email_sequences")
+            .select("id")
+            .eq("id", String(args.sequence_id ?? ""))
+            .eq("user_id", userId)
+            .maybeSingle();
+          if (!sequence) return { error: "Sequence not found" };
           if (!autonomous && args.confirmed !== true && !confirmedByUser) {
             // No queue. Say what would happen and write nothing; the user's
             // next message decides.

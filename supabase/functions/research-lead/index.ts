@@ -24,6 +24,7 @@ import {
 } from "../_shared/lead-research.ts";
 import { AI_SMART, aiFetch } from "../_shared/ai-provider.ts";
 import { diffBriefs } from "../_shared/brief-diff.ts";
+import { sourceWasFetched } from "../_shared/research-citation.ts";
 import {
   FALLBACK_PATHS,
   isSitemapIndex,
@@ -704,7 +705,16 @@ serve(async (req) => {
     // generator could only lose or soften them — and the model has already
     // shown it will write around evidence it was given. They lead the
     // observation list because recency is what a cold open trades on.
-    const modelObservations = (result.brief.observations ?? []).filter((o) => o?.fact);
+    const citedObservations = (result.brief.observations ?? []).filter(
+      (o) => o?.fact && sourceWasFetched(o.source, sources),
+    );
+    const droppedObservations = (result.brief.observations ?? []).filter((o) => o?.fact).length - citedObservations.length;
+    if (droppedObservations > 0) {
+      console.warn(
+        `[research-lead] ${host}: dropped ${droppedObservations} observation(s) whose source was not a page this run fetched`,
+      );
+    }
+    const modelObservations = citedObservations;
     const mergedObservations = [
       // occurred_at rides along. Dropping it made a verified, dated event
       // indistinguishable from an undated line scraped off an About page —
@@ -721,7 +731,9 @@ serve(async (req) => {
     const baseBrief: LeadResearchBrief = {
       ...result.brief,
       observations: mergedObservations,
-      confidence: thinSite && result.brief.confidence === "high"
+      confidence: mergedObservations.length === 0
+        ? "low"
+        : thinSite && result.brief.confidence === "high"
         // A dated, sourced event is evidence a thin website cannot undo.
         ? (signalFacts.length ? "high" : "medium")
         : result.brief.confidence,

@@ -458,11 +458,23 @@ serve(async (req) => {
     if (leadId) {
       const { data: leadRow } = await supabase
         .from('leads')
-        .select('email_verification_status')
+        .select('id, email_verification_status')
         .eq('id', leadId)
+        .eq('user_id', user.id)
         .maybeSingle();
 
-      if (leadRow?.email_verification_status === 'invalid') {
+      // A lead id the caller does not own must not decide whether this send
+      // is allowed, and must not be stored on the sent row. Treating it as
+      // missing and continuing would let a valid foreign lead bypass this
+      // account's own invalid-address block.
+      if (!leadRow) {
+        return new Response(
+          JSON.stringify({ error: 'Lead not found', code: 'lead_not_found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (leadRow.email_verification_status === 'invalid') {
         return new Response(
           JSON.stringify({
             error: 'This address failed verification and would bounce. Sending was blocked to protect your sender reputation.',

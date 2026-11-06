@@ -543,6 +543,13 @@ export async function draftForLead(
     senderCompany: settings.senderCompany,
     businessDescription: settings.businessDescription,
     avoidSubjects,
+    // A first touch with nothing researched is a guess about the company.
+    // generate-email already knows how to refuse that; the batch path was
+    // the caller that never asked it to. Follow-ups are about the thread,
+    // which is a different kind of evidence, and are left alone.
+    ...(String(settings.goal ?? "").trim().toLowerCase() === "introduction"
+      ? { blockOnThinResearch: true }
+      : {}),
     ...(settings.customInstruction
       ? { customInstruction: settings.customInstruction, variantNum: settings.variantNum ?? 1 }
       : {}),
@@ -561,6 +568,27 @@ export async function draftForLead(
   if (!r?.email && /rate limit/i.test(JSON.stringify(r?.error ?? ""))) {
     await new Promise((res) => setTimeout(res, 2500));
     r = await deps.invokeFn("generate-email", payload);
+  }
+
+  if (!r?.email && r?.error_code === "research_too_thin") {
+    return {
+      lead_id: lead.id,
+      draft_id: null,
+      company: (lead.company_name as string) ?? null,
+      contact: (lead.contact_name as string) ?? null,
+      contact_email: (lead.contact_email as string) ?? null,
+      subject: null,
+      body: null,
+      email: null,
+      research: r?.research ?? null,
+      skills_used: [],
+      style_warnings: [],
+      name_warnings: [],
+      name_repairs: [],
+      skipped: typeof r.error === "string" && r.error
+        ? r.error
+        : "Research on this lead is too thin to personalize safely.",
+    };
   }
 
   const raw: string = typeof r?.email === "string" ? r.email : "";

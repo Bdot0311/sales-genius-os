@@ -75,7 +75,9 @@ describe("the guard that never fired now has a writer", () => {
     const at = ANALYZE.indexOf("apply_reply_to_sequence");
     expect(at, "classifying a reply and doing nothing is the defect").toBeGreaterThan(-1);
     const call = ANALYZE.slice(at, ANALYZE.indexOf("}", ANALYZE.indexOf("p_check_back_at", at)));
-    expect(call).toContain("p_lead_id: leadId");
+    // The id has to be the one the caller owns. Passing the raw argument
+    // applied another account's lead.
+    expect(call).toContain("p_lead_id: ownedLeadId");
     expect(call).toContain("p_triage: triage");
     // Logged, not thrown: the classification is already stored and losing it
     // as well would leave no record at all.
@@ -383,7 +385,7 @@ describe("a question comes back with an answer drafted", () => {
     expect(at, "a question should leave a draft behind").toBeGreaterThan(-1);
     const block = ANALYZE.slice(at, at + 500);
     expect(block).toContain("body: suggestedReply");
-    expect(block).toContain("lead_id: leadId");
+    expect(block).toContain("lead_id: ownedLeadId");
     // Nothing here sends it or decides it is good enough to send.
     expect(block).not.toMatch(/send-email|gmailSend|messages\/send/);
   });

@@ -1180,19 +1180,18 @@ STRICT RULES:
       ? `\n\nCRM SIGNALS on record for this prospect (verified data, safe to reference):\n${crmSignalLines.join('\n')}`
       : '';
 
-    const combinedResearch = [
-      websiteResearchBlock ? `From ${sanitizedCompanyName}'s own website:\n${websiteResearchBlock}` : '',
-      // Labelled for what it is. It is not read from a page and nothing
-      // verified it, so it may shape which angle is chosen and may never be
-      // stated in the email as something about this company.
-      verifiedResearch
-        ? `BACKGROUND, RECALLED BY A MODEL — NOT READ FROM ANY PAGE AND NOT VERIFIED.\nUse it only to decide which angle is worth taking. You may NOT state any of it in the email, cite it, or imply you saw it anywhere:\n${verifiedResearch}`
-        : '',
-    ].filter(Boolean).join('\n\n');
+    // Recalled text is not verified. It used to be concatenated into the
+    // string that the next line then labelled "VERIFIED RESEARCH", so the
+    // prohibition and the heading contradicted each other. It is appended
+    // after that heading, under its own label.
+    const recalledBlock = verifiedResearch
+      ? `BACKGROUND, RECALLED BY A MODEL — NOT READ FROM ANY PAGE AND NOT VERIFIED.\nUse it only to decide which angle is worth taking. You may NOT state any of it in the email, cite it, or imply you saw it anywhere:\n${verifiedResearch}`
+      : '';
 
-    const researchBlock = combinedResearch
-      ? `\n\nVERIFIED RESEARCH for ${sanitizedContactName} at ${sanitizedCompanyName} (treat as the ONLY source of external facts about this prospect — do not invent anything beyond this):\n${combinedResearch}${crmSignalBlock}`
+    let researchBlock = websiteResearchBlock
+      ? `\n\nVERIFIED RESEARCH for ${sanitizedContactName} at ${sanitizedCompanyName} (treat as the ONLY source of external facts about this prospect — do not invent anything beyond this):\nFrom ${sanitizedCompanyName}'s own website:\n${websiteResearchBlock}${crmSignalBlock}`
       : `\n\nVERIFIED RESEARCH: none available. You MUST NOT invent any external facts about this prospect. Stick to the provided lead fields (role, industry, size, tech stack) and operational inferences a peer in this space could reasonably make from role/industry alone. NEVER claim a funding round, launch, hire, customer, metric, or initiative.${crmSignalBlock}`;
+    if (recalledBlock) researchBlock += `\n\n${recalledBlock}`;
 
 
     const NO_HALLUCINATION_RULE = `\n\nNO-HALLUCINATION RULE — non-negotiable:

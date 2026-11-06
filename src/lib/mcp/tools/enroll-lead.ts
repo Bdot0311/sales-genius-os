@@ -16,6 +16,21 @@ export default defineTool({
     if (!ctx.isAuthenticated()) return notAuthed();
     { const blocked = await planGate(ctx, "enroll_lead_in_sequence"); if (blocked) return blocked; }
     const supabase = supabaseForUser(ctx);
+    const userId = ctx.getUserId();
+
+    // The enrollment insert policy used to check only user_id. A lead or
+    // sequence id from another account still satisfied the foreign key, and
+    // the dispatcher would then mail that lead. Both rows have to be this
+    // account's before a row is written. RLS hides the other account's rows,
+    // so a miss here is "not yours" and is reported as not found.
+    const [{ data: lead, error: leadErr }, { data: sequence, error: seqErr }] = await Promise.all([
+      supabase.from("leads").select("id").eq("id", lead_id).eq("user_id", userId).maybeSingle(),
+      supabase.from("email_sequences").select("id").eq("id", sequence_id).eq("user_id", userId).maybeSingle(),
+    ]);
+    if (leadErr) return err(leadErr.message);
+    if (seqErr) return err(seqErr.message);
+    if (!lead) return err("Lead not found");
+    if (!sequence) return err("Sequence not found");
 
     const now = new Date().toISOString();
     const { data, error } = await supabase

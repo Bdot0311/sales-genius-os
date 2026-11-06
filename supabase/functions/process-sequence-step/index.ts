@@ -73,6 +73,34 @@ serve(async (req) => {
       });
     }
 
+    // The row can name another account's lead. Insert policies did not
+    // require the lead and the sequence to belong to enrollment.user_id, and
+    // this function runs as service role, so it would queue that lead's
+    // address and stamp last_contacted_at on a row the account does not own.
+    // Pause it and stop. A 200 with action "stopped" is a finished outcome:
+    // the row is no longer active, so the dispatcher must not treat it as a
+    // crash and retry it.
+    const leadOwner = enrollment.lead?.user_id;
+    const sequenceOwner = enrollment.sequence?.user_id;
+    if (!enrollment.lead || !enrollment.sequence || leadOwner !== enrollment.user_id || sequenceOwner !== enrollment.user_id) {
+      await supabase
+        .from('sequence_enrollments')
+        .update({
+          status: 'paused',
+          paused_reason: 'Stopped because the lead or sequence belongs to a different account.',
+        })
+        .eq('id', enrollmentId)
+        .eq('user_id', enrollment.user_id);
+      console.error(`[process-sequence-step] stopped ${enrollmentId}: lead or sequence is not owned by ${enrollment.user_id}`);
+      return new Response(JSON.stringify({
+        success: false,
+        action: 'stopped',
+        reason: 'lead_or_sequence_not_owned',
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Check if enrollment is active
     if (enrollment.status !== 'active') {
       return new Response(JSON.stringify({
@@ -253,7 +281,8 @@ serve(async (req) => {
         engagement_state: 'contacted',
         last_contacted_at: new Date().toISOString(),
       })
-      .eq('id', enrollment.lead_id);
+      .eq('id', enrollment.lead_id)
+      .eq('user_id', enrollment.user_id);
 
     return new Response(JSON.stringify({
       success: true,

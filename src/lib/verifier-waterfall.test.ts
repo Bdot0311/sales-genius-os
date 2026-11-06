@@ -165,7 +165,8 @@ describe("the waterfall's vocabulary is understood", () => {
 describe("what actually gets refused has not widened", () => {
   it("still refuses only a proven-dead mailbox", () => {
     const send = code(SEND);
-    expect(send).toContain("leadRow?.email_verification_status === 'invalid'");
+    expect(send).toContain("leadRow.email_verification_status === 'invalid'");
+    expect(send).toContain(".eq('user_id', user.id)");
     expect(send).toContain("code: 'email_unverifiable'");
   });
 
