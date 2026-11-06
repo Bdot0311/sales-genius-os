@@ -269,7 +269,9 @@ serve(async (req) => {
         headers: { 'Content-Type': 'application/json', 'X-API-Key': req.headers.get('X-API-Key') ?? '', apikey: Deno.env.get('SUPABASE_ANON_KEY') ?? '', Authorization: `Bearer ${Deno.env.get('SUPABASE_ANON_KEY') ?? ''}` },
         body: JSON.stringify(appRoute === 'people/lookup' ? { ...input, action: 'lookup' } : input),
       });
-      return respond(await forwarded.json(), forwarded.status);
+      const payload = await forwarded.json().catch(() => null);
+      if (payload === null) return respond({ error: 'App action unavailable; retry later' }, 502);
+      return respond(payload, forwarded.status);
     }
 
     // ── Rate limit ──
