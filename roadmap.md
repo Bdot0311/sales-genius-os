@@ -1,7 +1,7 @@
 # Mintlify repository setup
 
 - [x] Add root Mintlify configuration using the existing public API specification.
-- [ ] Validate configuration and API reference discovery.
+- [x] Validate against Mintlify's official schema and discover all 21 API operations.
 - [ ] Complete Mintlify repository connection (requires the configuration on GitHub's default branch and user confirmation in Mintlify).
 
 # DFY sales-model questions
