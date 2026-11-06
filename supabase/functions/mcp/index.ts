@@ -13,11 +13,15 @@ import { z } from "npm:zod@^3.25.76";
 // src/lib/mcp/tools/_supabase.ts
 import { createClient } from "npm:@supabase/supabase-js@^2.76.1";
 function supabaseForUser(ctx) {
+  const token = ctx.getToken();
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY;
+  if (!token || !url || !key) throw new Error("Authenticated app connection unavailable");
   return createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY,
+    url,
+    key,
     {
-      global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
+      global: { headers: { Authorization: `Bearer ${token}` } },
       auth: { persistSession: false, autoRefreshToken: false }
     }
   );
