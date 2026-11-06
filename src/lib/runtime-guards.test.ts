@@ -246,6 +246,8 @@ describe("local postgres serializes the credit debit", () => {
       DROP TABLE IF EXISTS search_transactions;
       DROP TABLE IF EXISTS subscriptions;
       DROP TABLE IF EXISTS sent_emails;
+      DROP TABLE IF EXISTS topup_payments;
+      DROP TABLE IF EXISTS ai_usage_events;
       CREATE TABLE subscriptions (
         user_id uuid PRIMARY KEY,
         search_credits_remaining integer,
@@ -267,10 +269,24 @@ describe("local postgres serializes the credit debit", () => {
         status text,
         enrollment_id uuid,
         sequence_step integer,
-        gmail_thread_id text
+        gmail_thread_id text,
+        send_attempted_at timestamptz,
+        error_message text,
+        created_at timestamptz NOT NULL DEFAULT now()
       );
     `);
     await sql.unsafe(fn);
+    const enrollment = "22222222-2222-2222-2222-222222222222";
+    await sql`
+      INSERT INTO sent_emails (user_id, to_email, subject, status, enrollment_id, sequence_step)
+      VALUES
+        (${"11111111-1111-1111-1111-111111111111"}::uuid, 'a@b.co', 'dup', 'scheduled', ${enrollment}::uuid, 1),
+        (${"11111111-1111-1111-1111-111111111111"}::uuid, 'a@b.co', 'dup', 'scheduled', ${enrollment}::uuid, 1)
+    `;
+    const dedupe = migration.slice(migration.indexOf("WITH ranked_steps"), migration.indexOf("CREATE UNIQUE INDEX"));
+    await sql.unsafe(dedupe);
+    const [collapsed] = await sql`SELECT count(*)::int AS n FROM sent_emails WHERE status = 'cancelled'`;
+    expect(collapsed.n).toBe(1);
     await sql.unsafe(migration.slice(migration.indexOf("CREATE UNIQUE INDEX")));
     const userId = "11111111-1111-1111-1111-111111111111";
     await sql`INSERT INTO subscriptions (user_id, search_credits_remaining, daily_searches_used) VALUES (${userId}::uuid, 1, 0)`;
@@ -285,11 +301,161 @@ describe("local postgres serializes the credit debit", () => {
 
     const step = async () => sql!`
       INSERT INTO sent_emails (user_id, to_email, subject, status, enrollment_id, sequence_step)
-      VALUES (${userId}::uuid, 'a@b.co', 'step', 'scheduled', '22222222-2222-2222-2222-222222222222'::uuid, 1)
+      VALUES (${userId}::uuid, 'a@b.co', 'step', 'scheduled', '77777777-7777-7777-7777-777777777777'::uuid, 1)
     `;
     const queued = await Promise.allSettled([step(), step()]);
     expect(queued.filter((item) => item.status === "fulfilled")).toHaveLength(1);
     expect(queued.filter((item) => item.status === "rejected")).toHaveLength(1);
+
+    const floorUser = "44444444-4444-4444-4444-444444444444";
+    await sql`INSERT INTO subscriptions (user_id, search_credits_remaining, daily_searches_used) VALUES (${floorUser}::uuid, 0, 0)`;
+    const [refused] = await sql`SELECT public.apply_search_meter(${floorUser}::uuid, -1, 0, 'floor-gate', true, NULL) AS result`;
+    expect((refused.result as { applied: boolean }).applied).toBe(false);
+    const [clamped] = await sql`SELECT public.apply_search_meter(${floorUser}::uuid, -1, 0, 'floor-admin', false, NULL) AS result`;
+    expect((clamped.result as { applied: boolean; credits: number }).applied).toBe(true);
+    expect((clamped.result as { credits: number }).credits).toBe(0);
+    const [still] = await sql`SELECT search_credits_remaining FROM subscriptions WHERE user_id = ${floorUser}::uuid`;
+    expect(still.search_credits_remaining).toBe(0);
+
+    await sql.unsafe(`
+      CREATE OR REPLACE FUNCTION auth.role() RETURNS text LANGUAGE plpgsql AS $fn$
+      BEGIN
+        RETURN COALESCE(current_setting('app.role', true), 'service_role');
+      END $fn$;
+      CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE plpgsql AS $fn$
+      BEGIN
+        RETURN NULLIF(current_setting('app.uid', true), '')::uuid;
+      END $fn$;
+    `);
+    const victim = "55555555-5555-5555-5555-555555555555";
+    await sql`INSERT INTO subscriptions (user_id, search_credits_remaining, daily_searches_used) VALUES (${victim}::uuid, 4, 0)`;
+    await expect(sql.begin(async (tx) => {
+      await tx`SELECT set_config('app.role', 'authenticated', true)`;
+      await tx`SELECT set_config('app.uid', '66666666-6666-6666-6666-666666666666', true)`;
+      await tx`SELECT public.apply_search_meter(${victim}::uuid, -1, 0, 'other-tenant', true, NULL)`;
+    })).rejects.toThrow(/denied/);
+    const [untouched] = await sql`SELECT search_credits_remaining FROM subscriptions WHERE user_id = ${victim}::uuid`;
+    expect(untouched.search_credits_remaining).toBe(4);
+
+    await sql.unsafe(`
+      CREATE TABLE topup_payments (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id uuid NOT NULL,
+        stripe_session_id text NOT NULL UNIQUE,
+        prospects_added integer NOT NULL,
+        amount_paid integer NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+    `);
+    const topupSql = readFileSync("supabase/migrations/20261106064000_topup_and_ai_credit_lock.sql", "utf8");
+    const grantFn = topupSql.slice(
+      topupSql.indexOf("CREATE OR REPLACE FUNCTION public.grant_topup_credits"),
+      topupSql.lastIndexOf("REVOKE ALL ON FUNCTION public.grant_topup_credits"),
+    );
+    await sql.unsafe(grantFn);
+    const grants = await Promise.all([
+      sql`SELECT public.grant_topup_credits(${victim}::uuid, 'cs_test_1', 10, 500) AS result`,
+      sql`SELECT public.grant_topup_credits(${victim}::uuid, 'cs_test_1', 10, 500) AS result`,
+    ]);
+    const grantStates = grants.map((row) => row[0].result as { applied: boolean; reason?: string; credits?: number });
+    expect(grantStates.filter((row) => row.applied)).toHaveLength(1);
+    expect(grantStates.filter((row) => row.reason === "already_granted")).toHaveLength(1);
+    const [afterTopup] = await sql`SELECT search_credits_remaining FROM subscriptions WHERE user_id = ${victim}::uuid`;
+    expect(afterTopup.search_credits_remaining).toBe(14);
+
+    let gmailCalls = 0;
+    const touch = {
+      userId: victim,
+      to: "prospect@example.com",
+      subject: "one question",
+      bodyHtml: "<p>hi</p>",
+      bodyText: "hi",
+      leadId: null,
+      templateId: null,
+      threadId: null,
+      trackingPixelId: null,
+      sendingAccountId: null,
+      allowDuplicate: false,
+    };
+    const pgStore = {
+      findAttempted: async (id: string, to: string, subject: string) => {
+        const rows = await sql!`
+          SELECT id FROM sent_emails
+           WHERE user_id = ${id}::uuid AND to_email = ${to} AND subject = ${subject}
+             AND status = 'pending' AND send_attempted_at IS NOT NULL
+           LIMIT 1`;
+        return rows[0] ? { id: String(rows[0].id) } : null;
+      },
+      insertPending: async (row: { userId: string; to: string; subject: string; threadId: string | null }) => {
+        try {
+          const rows = await sql!`
+            INSERT INTO sent_emails (user_id, to_email, subject, status, gmail_thread_id)
+            VALUES (${row.userId}::uuid, ${row.to}, ${row.subject}, 'pending', ${row.threadId})
+            RETURNING id`;
+          return { id: String(rows[0].id) };
+        } catch (err) {
+          const code = (err as { code?: string }).code;
+          if (code === "23505") return { conflict: true as const };
+          return { error: err instanceof Error ? err.message : String(err) };
+        }
+      },
+      markAttempted: async (id: string) => {
+        const rows = await sql!`
+          UPDATE sent_emails SET send_attempted_at = now()
+           WHERE id = ${id}::uuid AND send_attempted_at IS NULL
+          RETURNING id`;
+        return rows.length > 0;
+      },
+      markSent: async (id: string) => {
+        const rows = await sql!`UPDATE sent_emails SET status = 'sent' WHERE id = ${id}::uuid RETURNING id`;
+        return rows.length > 0;
+      },
+      markFailed: async () => {},
+    };
+    const mailbox = {
+      send: async () => {
+        gmailCalls += 1;
+        return { ok: true as const, messageId: `m-${gmailCalls}`, threadId: null };
+      },
+    };
+    const raced = await Promise.all([
+      deliverReserved(pgStore, mailbox, touch),
+      deliverReserved(pgStore, mailbox, touch),
+    ]);
+    expect(gmailCalls).toBe(1);
+    expect(raced.filter((result) => result.kind === "sent")).toHaveLength(1);
+    expect(raced.filter((result) => result.kind === "duplicate")).toHaveLength(1);
+
+    await sql.unsafe(`
+      ALTER TABLE subscriptions ADD COLUMN billing_exempt boolean DEFAULT false;
+      CREATE TABLE ai_usage_events (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id uuid,
+        fn text NOT NULL,
+        provider text NOT NULL,
+        model text NOT NULL,
+        prompt_tokens integer NOT NULL DEFAULT 0,
+        completion_tokens integer NOT NULL DEFAULT 0,
+        cost_usd numeric NOT NULL DEFAULT 0,
+        credits_charged integer NOT NULL DEFAULT 0
+      );
+      CREATE OR REPLACE FUNCTION public.has_role(uuid, text) RETURNS boolean LANGUAGE sql AS $$ SELECT false $$;
+    `);
+    const aiFn = topupSql.slice(
+      topupSql.indexOf("CREATE OR REPLACE FUNCTION public.record_ai_usage"),
+      topupSql.indexOf("REVOKE ALL ON FUNCTION public.record_ai_usage"),
+    );
+    await sql.unsafe(aiFn);
+    const aiUser = "88888888-8888-8888-8888-888888888888";
+    await sql`INSERT INTO subscriptions (user_id, search_credits_remaining, daily_searches_used) VALUES (${aiUser}::uuid, 5, 0)`;
+    await Promise.all([
+      sql`SELECT public.record_ai_usage('a', 'bedrock', 'm', 0, 0, 0.006, ${aiUser}::uuid)`,
+      sql`SELECT public.record_ai_usage('b', 'bedrock', 'm', 0, 0, 0.006, ${aiUser}::uuid)`,
+    ]);
+    const [aiBalance] = await sql`SELECT search_credits_remaining FROM subscriptions WHERE user_id = ${aiUser}::uuid`;
+    // 5 - 3 - 3, floored at 0. Without the row lock both calls would write 2.
+    expect(aiBalance.search_credits_remaining).toBe(0);
+
     await sql.end({ timeout: 2 });
   });
 });

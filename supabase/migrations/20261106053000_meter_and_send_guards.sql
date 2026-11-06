@@ -87,6 +87,60 @@ REVOKE ALL ON FUNCTION public.apply_search_meter(uuid, integer, integer, text, b
 GRANT EXECUTE ON FUNCTION public.apply_search_meter(uuid, integer, integer, text, boolean, integer)
   TO service_role;
 
+-- Existing duplicate queue rows would make the unique indexes fail and roll
+-- this migration back, including the credit function above. Keep one live row
+-- in each duplicate group and cancel the rest. Cancelled is outside the
+-- index predicate, and the rows stay in the table.
+WITH ranked_steps AS (
+  SELECT id,
+         row_number() OVER (
+           PARTITION BY enrollment_id, sequence_step
+           ORDER BY
+             CASE
+               WHEN status IN ('sent', 'delivered', 'opened', 'clicked', 'replied') THEN 0
+               ELSE 1
+             END,
+             created_at NULLS LAST,
+             id
+         ) AS n
+    FROM public.sent_emails
+   WHERE enrollment_id IS NOT NULL
+     AND sequence_step IS NOT NULL
+     AND status IN ('scheduled', 'pending', 'sent', 'delivered', 'opened', 'clicked', 'replied')
+)
+UPDATE public.sent_emails AS s
+   SET status = 'cancelled',
+       error_message = COALESCE(
+         s.error_message,
+         'Cancelled as a duplicate sequence step so a single live step can be enforced.'
+       )
+  FROM ranked_steps AS r
+ WHERE s.id = r.id
+   AND r.n > 1;
+
+WITH ranked_touches AS (
+  SELECT id,
+         row_number() OVER (
+           PARTITION BY user_id, to_email, subject
+           ORDER BY
+             CASE WHEN send_attempted_at IS NOT NULL THEN 0 ELSE 1 END,
+             created_at NULLS LAST,
+             id
+         ) AS n
+    FROM public.sent_emails
+   WHERE status = 'pending'
+     AND gmail_thread_id IS NULL
+)
+UPDATE public.sent_emails AS s
+   SET status = 'cancelled',
+       error_message = COALESCE(
+         s.error_message,
+         'Cancelled as a duplicate first-touch reservation so only one pending send remains.'
+       )
+  FROM ranked_touches AS r
+ WHERE s.id = r.id
+   AND r.n > 1;
+
 CREATE UNIQUE INDEX IF NOT EXISTS sent_emails_one_live_sequence_step
   ON public.sent_emails (enrollment_id, sequence_step)
   WHERE enrollment_id IS NOT NULL
