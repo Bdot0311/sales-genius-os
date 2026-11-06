@@ -1,0 +1,78 @@
+---
+title: "Enrichment, research, scoring and drafts"
+description: "Use saved lead IDs for intelligence actions and read persisted results back safely."
+---
+
+These operations require a saved lead belonging to the approving account. A transient network candidate is not a saved UUID; [save it first](/developer-docs/guides/prospect-verify-save).
+
+| Operation | REST | MCP | Effect |
+| --- | --- | --- | --- |
+| Enrich | POST /leads/{id}/enrich | enrich_lead | Updates owned saved lead; one-credit app reserve/refund rules |
+| Research | POST /leads/{id}/research | research_lead | Stores sourced brief; fresh cached research can be reused |
+| Score | POST /leads/{id}/score | score_lead | Updates fit/scores through the existing app pipeline |
+| Draft | POST /email/generate | generate_email | Returns generated email copy; does not send |
+
+## Enrich and read back
+
+Set `LEAD_ID` to the saved UUID, not an invented/example ID.
+
+```bash
+curl --fail-with-body "https://api.outreign.io/rest-api/leads/$LEAD_ID/enrich" \
+  -H "X-API-Key: $OUTREIGN_API_KEY" -H 'Content-Type: application/json' -d '{}'
+
+curl --fail-with-body "https://api.outreign.io/rest-api/leads/$LEAD_ID" \
+  -H "X-API-Key: $OUTREIGN_API_KEY"
+```
+
+Read the returned record's contact/company fields, `enrichment_status` and `enriched_at`. Enrichment is not a guarantee of a work email for every person. Avoid repeating requests simply because one field is absent.
+
+## Research with sources
+
+```bash
+curl --fail-with-body "https://api.outreign.io/rest-api/leads/$LEAD_ID/research" \
+  -H "X-API-Key: $OUTREIGN_API_KEY" -H 'Content-Type: application/json' \
+  -d '{"force":false}'
+```
+
+Research combines the existing website and external-source pipeline. Inspect `brief`, `sources`, `confidence`, `quality`, `researched_at` and `cached` when present. Briefs can include what the company does, its audience, observations, hooks and changes since previous research. Thin evidence must remain low-confidence; missing publication dates are not fabricated.
+
+`force: false` permits fresh cached results. `force: true` requests a new run; it does not bypass account restrictions or make sources authoritative. New research is bounded by the app's usage checks. A lead without a company website can return `error_code: "no_domain"`; add a verified website or enrich first. Lead research is separate from the app's account-level why-now research; the latter is not a documented public endpoint.
+
+## Score fit
+
+```bash
+curl --fail-with-body "https://api.outreign.io/rest-api/leads/$LEAD_ID/score" \
+  -H "X-API-Key: $OUTREIGN_API_KEY" -H 'Content-Type: application/json' -d '{}'
+```
+
+Read persisted scores and explanations back from the saved record. Fit does not prove buying intent, budget or mailbox validity. Maintain your actual ICP configuration instead of interpreting an empty/default profile as a tailored qualification.
+
+## Generate copy
+
+REST uses a `lead` object with `id`, `tone` and `goal`; it does not accept a top-level `leadId`-only request. Populate the lead with its saved data. Keep sender context accurate and use the user's company, not OutReign, as the sender business.
+
+```javascript
+const response = await fetch('https://api.outreign.io/rest-api/email/generate', {
+  method: 'POST',
+  headers: {
+    'X-API-Key': process.env.OUTREIGN_API_KEY,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    lead: savedLead,
+    tone: 'professional',
+    goal: 'introduction',
+    senderName: 'Your name',
+    senderCompany: 'Your actual company',
+    businessDescription: 'Your actual offer and target customer'
+  }),
+  signal: AbortSignal.timeout(90000)
+});
+const result = await response.json();
+if (!response.ok || result.error) throw new Error(result.error || `HTTP ${response.status}`);
+// Review result.email and any quality_weak/rubric fields before using the copy.
+```
+
+MCP `generate_email` instead accepts `lead_id`, `tone`, `goal`, `senderName`, and optional `businessDescription`/`customInstruction`. Its goal set is introduction, follow-up, meeting, demo or proposal; REST exposes additional template-specific goals in the reference. Tone is professional, friendly, casual or formal.
+
+Generated copy is not delivery and is not an automatic CRM draft-save contract. Do not fabricate customer results, source facts or social proof. Sending requires a separate supported app or MCP outbound action with user approval.

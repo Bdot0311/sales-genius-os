@@ -1,0 +1,55 @@
+---
+title: "Agent quickstart"
+description: "Give a connected assistant a bounded discovery-to-CRM workflow with clear approval gates."
+---
+
+First [connect with OAuth](/developer-docs/mcp/connect) to `https://api.outreign.io/mcp`. The docs URL is not a connector endpoint. A URL pasted into an ordinary chat does not install or authorize the connector.
+
+## Verify the connection
+
+Ask: **“List up to five saved OutReign leads. Do not modify anything or send messages.”**
+
+The client should discover `list_leads` via `tools/list`. Empty results can mean the account has no saved leads; “failed_to_load”, authorization errors or a tool `isError` are not an empty successful result. The current source catalog contains 24 tools; availability of a new revision depends on app publication and refreshing the connector.
+
+## Bounded prospecting prompt
+
+```text
+Use my OutReign connection to find up to 10 founders or sales leaders at
+small B2B SaaS, tech or marketing agencies in my selected geography.
+Do not include local consumer-service businesses. Do not broaden the
+targeting without asking me.
+
+Discover the actual tool schemas first. Use search_prospects for new
+prospects, not search_leads, which searches saved CRM records.
+Show company, role, fit rationale and returned sources where available.
+Do not invent contact details. If an email is returned, check it with
+verify_email and preserve unknown/catch_all/role verdicts as unconfirmed.
+
+Show candidates for my approval before saving, enriching or spending
+lookup credits. After I select records, create_lead, retain the saved
+UUID and use it for enrichment, research, scoring and drafting.
+Never enroll sequences, send replies or enable automation without
+separate approval of the exact action. Report failures honestly.
+```
+
+## What each step proves
+
+| Step | Evidence | Not proof of |
+| --- | --- | --- |
+| tools/list | Available schemas | Permission or quota for every call |
+| search_prospects | Returned network candidates | Saved CRM records or email validity |
+| verify_email | Mailbox verdict | Consent or guaranteed delivery |
+| create_lead | Returned saved lead UUID | Enrichment completion |
+| research_lead | Brief and cited sources | A buying commitment |
+| generate_email | Draft copy | Email sent or saved as a CRM draft |
+| send_reply | Queued reply | Delivered message |
+
+## Workspace confirmation
+
+For `workspace_action`, first request the exact edit without `confirmed`. Review the returned `confirmation_required` preview. After the user approves, repeat the same action and arguments with `confirmed: true`. Approval is a client/user responsibility; do not infer consent from a previous unrelated request.
+
+Other outbound tools must also respect user approval; a tool accepting arguments is not proof the user approved it. Pausing/resuming sequences or enabling an agent can change later automated sending.
+
+## Recover safely
+
+Refresh cached tools after publication. Reconnect if authorization expired or was revoked. Inspect MCP `isError` and app-action JSON errors. If the client reports a challenge page/403 rather than a JSON tool error, preserve the attempt time and client name for support. Never share tokens.

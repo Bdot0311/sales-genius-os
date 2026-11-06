@@ -1,0 +1,40 @@
+---
+title: "Delivery logs and recovery"
+description: "Diagnose receiver failures and replay only after making downstream actions duplicate-safe."
+---
+
+Use the OutReign webhook delivery log to inspect attempts. HTTP success from a trigger request is not proof every destination accepted its event; inspect individual results and delivery records.
+
+## Delivery states
+
+| State | Operational interpretation |
+| --- | --- |
+| pending | Eligible now or waiting until the next retry time |
+| delivered | Receiver returned a successful response; not proof its later workflow completed |
+| failed | Failed attempt/direct delivery; inspect the specific log/path |
+| permanently_failed | Queued worker exhausted five attempts |
+
+The queued worker handles up to 100 eligible pending deliveries per run. Retry delays describe eligibility, not exact arrival time. The direct-trigger path has its own inline attempts, so do not assume every `failed` record is terminal or follows the same timetable.
+
+## Diagnose in order
+
+1. Confirm the subscription is active and the event is selected.
+2. Confirm the public receiver URL and TLS certificate work.
+3. Check the logged response status: authentication, signature, timeout and receiver validation failures have different remedies.
+4. Verify HMAC against the raw body; do not reserialize before verification.
+5. Ensure your receiver returns `2xx` promptly after durable acceptance.
+6. Confirm downstream processing separately from transport acceptance.
+
+Do not expose webhook signing secrets, credential-bearing endpoint URLs or customer payloads when sharing diagnostics.
+
+## Replay carefully
+
+Use the app's supported replay control for owned deliveries when available. A replay resends the stored payload and records a new delivery attempt; it does not undo the original business effect. It is not a documented `/rest-api` resource or MCP tool.
+
+Before replay, fix the receiver and verify duplicate handling. Replaying an event can repeat a CRM write, start an automation or send a message on your receiver. Require approval and avoid bulk replay until a controlled test succeeds.
+
+## Receiver deduplication
+
+No globally unique event-ID or exactly-once guarantee is documented. Use an event/body fingerprint plus your own business identifier to deduplicate where appropriate. Retain raw bytes for verification, then hash/store only the information needed for your recovery policy. Do not impose a short timestamp rejection window that rejects legitimate delayed retries.
+
+See [signatures and retries](/developer-docs/webhooks/security-and-retries) and [event payloads](/developer-docs/webhooks/events).

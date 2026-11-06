@@ -1,0 +1,62 @@
+---
+title: "Email verification"
+description: "Interpret mailbox verdicts without treating catch-all or DNS evidence as a verified address."
+---
+
+REST: `POST https://api.outreign.io/rest-api/email/verify`. MCP: `verify_email`.
+
+Accepts only `email`: a nonempty string up to 320 characters. The handler trims and lowercases it. Malformed syntax can produce an `invalid` verdict rather than a request-validation error. Checking an address never sends email or creates a lead.
+
+```bash
+curl --fail-with-body https://api.outreign.io/rest-api/email/verify \
+  -H "X-API-Key: $OUTREIGN_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"prospect@example.com"}'
+```
+
+## Response fields
+
+| Field | Meaning |
+| --- | --- |
+| email | Normalized address on a completed check |
+| status | valid, invalid, catch_all, role or unknown |
+| verified | true, false or null; not a confidence score |
+| reason | Explanation; treat as diagnostic text, not a stable enum |
+| cached | Whether the verdict was reused from cache |
+| credits_charged | 0 reveal credits |
+| error | Check failed; do not treat it as a confirmed result |
+
+Illustrative response, not evidence about an actual mailbox:
+
+```json
+{
+  "email": "prospect@example.com",
+  "status": "unknown",
+  "verified": null,
+  "reason": "Mailbox could not be confirmed",
+  "cached": false,
+  "credits_charged": 0
+}
+```
+
+## Decide what to do
+
+| Status | verified | Interpretation |
+| --- | --- | --- |
+| valid | true | Mailbox confirmed by the check; delivery is still not guaranteed |
+| invalid | false | Address rejected; do not send to it |
+| catch_all | null | Domain accepts arbitrary addresses; this mailbox is unproven |
+| role | null | Shared/function address; not a confirmed individual mailbox |
+| unknown | null | Insufficient evidence or verification unavailable |
+
+DNS/MX records only establish domain mail capability. They do not establish a particular person's mailbox, consent, ownership or inbox placement. A valid result is not permission to contact someone.
+
+## Limits and freshness
+
+Paid account required. Checks charge no reveal credit, but share a 10-request/minute account limit and a rolling 24-hour verification allowance across API, MCP and agent chat: Starter 100, Growth 250, Pro 500, Agency 1,500. These checks are a separate counter from calendar-day prospect searches. Cache results can be reused for 30 days; no public force-refresh argument is supported.
+
+Request limits still apply to cached checks and malformed addresses. Do not poll verification aggressively. When limited, wait rather than changing API keys: the verification cap is owner-scoped.
+
+## Failure handling
+
+Inspect both HTTP status and JSON `error`. A handled provider failure can return HTTP 200 with `status: "unknown"`, `verified: null` and an error. Preserve that uncertainty; do not convert null to true or false. See [production guidance](/developer-docs/production).
