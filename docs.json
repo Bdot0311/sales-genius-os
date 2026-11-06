@@ -1,6 +1,6 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
+  "theme": "maple",
   "name": "OutReign API",
   "description": "OutReign API reference for B2B lead intelligence and outbound sales.",
   "colors": {
