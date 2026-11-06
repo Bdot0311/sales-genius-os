@@ -1,10 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0?target=deno";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders as sdkCorsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { resolveAppUser } from "../_shared/app-user.ts";
 import { verifyEmail } from "../_shared/email-verify.ts";
 import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
 import { getPlanSearchLimits } from "../_shared/plan-limits.ts";
 
+const corsHeaders = { ...sdkCorsHeaders, "Access-Control-Allow-Headers": `${sdkCorsHeaders["Access-Control-Allow-Headers"]}, x-api-key` };
 Deno.serve(async (req) => {
   const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });

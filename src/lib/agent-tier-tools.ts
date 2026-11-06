@@ -11,6 +11,7 @@ export type AgentTierId = "free" | "starter" | "growth" | "pro" | "elite";
 
 export const TIER_BLOCKED_TOOLS: Record<AgentTierId, string[]> = {
   free: [
+    "verify_email",
     "send_drafts",
     "send_outreach",
     "schedule_drafts",

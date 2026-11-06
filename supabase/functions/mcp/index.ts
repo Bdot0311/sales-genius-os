@@ -733,7 +733,7 @@ var prospectSearchSchema = {
   seniority: text.optional(),
   limit: z16.number().int().min(1).max(200).optional(),
   page: z16.number().int().min(1).max(1e3).optional(),
-  cursor: z16.string().max(4e3).optional(),
+  cursor: z16.string().min(1).max(4e3).optional(),
   strict: z16.boolean().optional(),
   relax: z16.boolean().optional(),
   exclude_seen: z16.boolean().optional()
@@ -750,6 +750,31 @@ async function callAppAction(ctx, tool, fn, body) {
   return { content: [{ type: "text", text: JSON.stringify(data) }] };
 }
 
+// supabase/functions/_shared/api-action-contract.ts
+function validateAppAction(route, body) {
+  if (!body || typeof body !== "object" || Array.isArray(body)) return "A JSON object is required";
+  const input = body;
+  const search = ["query", "job_title", "industry", "company_size", "country", "company", "company_domain", "companies", "seniority", "keywords", "limit", "page", "cursor", "job_titles", "industries", "countries", "seniority_levels", "exclude_titles", "exclude_industries", "exclude_keywords", "strict", "relax", "exclude_seen"];
+  const fields = route === "prospects/search" ? search : route === "companies/search" ? ["query"] : route === "people/lookup" ? ["full_name", "company", "company_domain", "email", "linkedin_url"] : route === "email/verify" ? ["email"] : [];
+  if (!fields.length || Object.keys(input).some((k) => !fields.includes(k))) return "Unsupported input field";
+  for (const [key, value] of Object.entries(input)) {
+    if (["limit", "page"].includes(key)) {
+      if (!Number.isInteger(value) || Number(value) < 1 || Number(value) > (key === "limit" ? 200 : 1e3)) return `Invalid ${key}`;
+    } else if (["strict", "relax", "exclude_seen"].includes(key)) {
+      if (typeof value !== "boolean") return `Invalid ${key}`;
+    } else if (["keywords", "job_titles", "industries", "countries", "seniority_levels", "exclude_titles", "exclude_industries", "exclude_keywords"].includes(key)) {
+      if (!Array.isArray(value) || value.length > 20 || value.some((v) => typeof v !== "string" || !v.trim() || v.length > 500)) return `Invalid ${key}`;
+    } else if (key === "companies") {
+      if (!Array.isArray(value) || value.length > 20 || value.some((v) => !v || typeof v !== "object" || Array.isArray(v) || Object.keys(v).some((k) => !["name", "domain"].includes(k)) || Object.values(v).some((v2) => typeof v2 !== "string" || !v2.trim() || v2.length > 500))) return "Invalid companies";
+    } else if (typeof value !== "string" || !value.trim() || value.length > (key === "cursor" ? 4e3 : key === "email" ? 320 : 500)) return `Invalid ${key}`;
+  }
+  if (route === "companies/search" && (typeof input.query !== "string" || input.query.trim().length < 2)) return "query must have at least 2 characters";
+  if (route === "email/verify" && typeof input.email !== "string") return "email is required";
+  if (route === "people/lookup" && !input.linkedin_url && !input.email && !(input.full_name && (input.company || input.company_domain))) return "Provide a LinkedIn URL, email, or full name and company";
+  if (route === "prospects/search" && !["query", "job_title", "industry", "company", "company_domain", "job_titles", "industries", "companies"].some((k) => input[k] && (!Array.isArray(input[k]) || input[k].length))) return "Provide at least one targeting filter";
+  return null;
+}
+
 // src/lib/mcp/tools/search-prospects.ts
 var search_prospects_default = defineTool16({
   name: "search_prospects",
@@ -757,7 +782,10 @@ var search_prospects_default = defineTool16({
   description: "Search the real B2B lead network using the app's ICP filters, result caps and daily search meter. Returns candidates without saving or sending; pass next_cursor to continue. Paid searching costs no reveal credits; enrichment does.",
   inputSchema: prospectSearchSchema,
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
-  handler: (input, ctx) => callAppAction(ctx, "search_prospects", "fetch-external-leads", input)
+  handler: (input, ctx) => {
+    const invalid = validateAppAction("prospects/search", input);
+    return invalid ? err(invalid) : callAppAction(ctx, "search_prospects", "fetch-external-leads", input);
+  }
 });
 
 // src/lib/mcp/tools/search-companies.ts
@@ -779,7 +807,7 @@ var find_person_default = defineTool18({
   name: "find_person",
   title: "Look up a person",
   description: "Look up a known person by LinkedIn profile, work email or full name plus company. Uses the app's one-credit lookup and no-match refund; does not save. Use create_lead to save an approved result.",
-  inputSchema: { full_name: z18.string().max(500).optional(), company: z18.string().max(500).optional(), company_domain: z18.string().max(500).optional(), email: z18.string().email().optional(), linkedin_url: z18.string().url().max(500).optional() },
+  inputSchema: { full_name: z18.string().trim().min(1).max(500).optional(), company: z18.string().trim().min(1).max(500).optional(), company_domain: z18.string().trim().min(1).max(500).optional(), email: z18.string().trim().email().max(320).optional(), linkedin_url: z18.string().url().max(500).optional() },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
   handler: (input, ctx) => callAppAction(ctx, "find_person", "find-person", { ...input, action: "lookup" })
 });
