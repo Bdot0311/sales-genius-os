@@ -18,7 +18,7 @@ These tools return the app action's JSON as text content. Parse that JSON and ch
 | `enrich_lead` | Required lead_id UUID | App enrichment result; writes owned lead, reserves one credit under app refund rules. |
 | `score_lead` | Required lead_id UUID | App scoring result; writes owned lead's scores. |
 | `research_lead` | Required lead_id UUID; optional force boolean | Sourced brief from existing combined research; stores brief, fresh cache reused. |
-| `generate_email` | Required lead_id UUID, tone, goal and senderName; optional businessDescription and customInstruction | Generated draft copy only, no sending. Tone: professional/friendly/casual/formal. Goal: introduction/follow-up/meeting/demo/proposal. |
+| `generate_email` | Required lead_id UUID, tone, goal and senderName; optional businessDescription and customInstruction | Generated copy and saved draft_id, visible in Outreach Studio and Unified Inbox; no sending. Each generation saves a new draft. Tone: professional/friendly/casual/formal. Goal: introduction/follow-up/meeting/demo/proposal. |
 
 Verification status is `valid`, `invalid`, `catch_all`, `role` or `unknown`. `verified` is true only for valid, false for invalid and null otherwise. A domain accepting mail is not proof that the mailbox exists. Reconnect clients that cache an older tool list after the new revision is published.
 

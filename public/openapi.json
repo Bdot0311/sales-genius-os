@@ -46,7 +46,7 @@
     },
     {
       "name": "Outreach",
-      "description": "AI email drafts for a lead. Drafts are returned to you; nothing is sent."
+      "description": "AI email drafts for a lead. Full-email drafts are returned and saved to Outreach Studio and Unified Inbox; nothing is sent."
     },
     {
       "name": "Prospecting",
@@ -1890,7 +1890,7 @@
         ],
         "operationId": "generateEmail",
         "summary": "Generate an AI email draft for a lead",
-        "description": "Generate a draft, not a sent email. Send a lead object plus tone and goal; leadId alone is not accepted by the generator. Supply your own sender/business context. Inspect JSON error even on HTTP 200.",
+        "description": "Generate and save a draft, not a sent email. Full-email responses include draft_id for the draft visible in Outreach Studio and Unified Inbox. Subject-only and trigger-only responses do not create drafts. Each generation creates a new draft; retries are not idempotent. Send a lead object plus tone and goal; leadId alone is not accepted by the generator. Supply your own sender/business context. Inspect JSON error even on HTTP 200.",
         "requestBody": {
           "required": true,
           "content": {
@@ -2037,7 +2037,7 @@
         },
         "responses": {
           "200": {
-            "description": "Draft",
+            "description": "Generated copy and saved draft ID for full-email goals",
             "content": {
               "application/json": {
                 "schema": {
@@ -2045,6 +2045,11 @@
                   "properties": {
                     "email": {
                       "type": "string"
+                    },
+                    "draft_id": {
+                      "type": ["string", "null"],
+                      "format": "uuid",
+                      "description": "Saved email_drafts ID for full-email generation; null for subject-only and trigger-only goals."
                     },
                     "rubric": {
                       "type": "object"

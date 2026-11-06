@@ -312,7 +312,7 @@
       {
         "name": "generate_email",
         "title": "Generate an email draft",
-        "description": "Generate email copy for your saved lead through the app generator, grounded in your own company context. Returns a draft only; no message is sent.",
+        "description": "Generate and save an email draft for your saved lead, grounded in your own company context. The draft appears in Outreach Studio and Unified Inbox; no message is sent.",
         "annotations": {
           "readOnlyHint": false,
           "destructiveHint": false,

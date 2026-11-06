@@ -470,7 +470,7 @@ serve(async (req) => {
         const genRes = await fetch(`${supabaseUrl}/functions/v1/generate-email`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${serviceKey}` },
-          body: JSON.stringify({ ...body, senderName, senderEmail, userId }),
+          body: JSON.stringify({ ...body, senderName, senderEmail, saveDraft: true }),
         });
         result = await genRes.json();
         statusCode = genRes.status;

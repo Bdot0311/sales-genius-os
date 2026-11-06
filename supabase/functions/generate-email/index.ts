@@ -1,4 +1,5 @@
 import { resolveAppUser } from "../_shared/app-user.ts";
+import { generatedDraftFields } from "../_shared/generated-email-draft.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 // Frameworks come from the GTM skills at request time rather than being retyped
 // here — see _shared/email-skills.ts.
@@ -2097,8 +2098,24 @@ conversation that is already going, not as someone chasing silence.`}`;
       }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
+    let draftId: string | null = null;
+    // Existing Studio/agent callers already manage their working draft. External
+    // generation opts in to saving once, using only the verified lead owner.
+    if (requestData.saveDraft === true && needsSignature) {
+      const { data: draft, error: draftError } = await adminClient.from("email_drafts")
+        .insert(generatedDraftFields({ userId, leadId: lead.id, email, subject: subjectLine, tone }))
+        .select("id").single();
+      if (draftError || !draft) {
+        return new Response(JSON.stringify({ error: "The email could not be saved. Please try again." }), {
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      draftId = draft.id;
+    }
+
     return new Response(JSON.stringify({
       email,
+      draft_id: draftId,
       rubric,
       // Filler the retry could not shift is reported as weakness rather than
       // hidden: the caller decides whether to show it, but it never ships

@@ -26,8 +26,9 @@ import {
 import { formatDistanceToNow, format } from "date-fns";
 import { Classification, CLASSIFICATION_CONFIG } from "@/lib/reply-classifier";
 import { toast } from "sonner";
+import { mailState, matchesMailFolder, readAllMail, type InboxFolder } from "@/lib/inbox-mail";
 
-type Folder = "all" | "unread" | "replied" | "awaiting" | "sent";
+type Folder = InboxFolder;
 
 const FOLDERS: { value: Folder; label: string }[] = [
   { value: "all", label: "All Mail" },
@@ -35,6 +36,9 @@ const FOLDERS: { value: Folder; label: string }[] = [
   { value: "replied", label: "Replied" },
   { value: "awaiting", label: "Awaiting Reply" },
   { value: "sent", label: "Sent" },
+  { value: "drafts", label: "Drafts" },
+  { value: "scheduled", label: "Scheduled / Queued" },
+  { value: "failed", label: "Failed" },
 ];
 
 interface SentRow {
@@ -79,6 +83,7 @@ interface Message {
   at: string;
   classification?: string | null;
   opened?: boolean;
+  state?: string;
 }
 
 interface Conversation {
@@ -155,13 +160,14 @@ const Inbox = () => {
 
   const { data: sent, isLoading: loadingSent } = useQuery({
     queryKey: ["inbox-sent-emails"],
+    enabled: !inboxGated,
+    refetchInterval: 15000,
     queryFn: async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
-      const since = new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString();
-      const { data, error } = await supabase
+      const data = await readAllMail((from, to) => supabase
         .from("sent_emails")
         .select(
           `id, to_email, subject, body_text, body_html, sent_at, created_at, status,
@@ -170,38 +176,60 @@ const Inbox = () => {
            reply_analysis(id, reply_content, intent_classification, analyzed_at, created_at)`
         )
         .eq("user_id", user.id)
-        .gte("created_at", since)
         .order("created_at", { ascending: false })
-        .limit(300);
-      if (error) throw error;
+        .order("id", { ascending: false })
+        .range(from, to));
       return (data || []) as unknown as SentRow[];
+    },
+  });
+
+  const { data: drafts, isLoading: loadingDrafts } = useQuery({
+    queryKey: ["inbox-email-drafts"],
+    enabled: !inboxGated,
+    refetchInterval: 15000,
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      return readAllMail((from, to) => supabase.from("email_drafts")
+        .select("id, lead_id, subject, body, created_at, updated_at, leads(contact_name, company_name, contact_email)")
+        .eq("user_id", user.id).order("created_at", { ascending: false })
+        .order("id", { ascending: false }).range(from, to));
     },
   });
 
   const { data: replyThreads, isLoading: loadingReplies } = useQuery({
     queryKey: ["inbox-reply-threads"],
+    enabled: !inboxGated,
+    refetchInterval: 15000,
     queryFn: async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
-      const { data, error } = await supabase
+      const data = await readAllMail((from, to) => supabase
         .from("reply_threads")
         .select("id, lead_id, subject, reply_body, sender_email, classification, read, created_at")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
-        .limit(300);
-      if (error) throw error;
+        .order("id", { ascending: false })
+        .range(from, to));
       return (data || []) as ReplyThreadRow[];
     },
   });
 
-  const isLoading = loadingSent || loadingReplies;
+  const isLoading = loadingSent || loadingReplies || loadingDrafts;
 
   const conversations = useMemo<Conversation[]>(() => {
     const map = new Map<string, Conversation>();
 
-    for (const row of [...(sent || [])].reverse()) {
+    const draftRows: SentRow[] = (drafts || []).map(d => ({
+      id: `draft:${d.id}`, to_email: d.leads?.contact_email || "No email address",
+      subject: d.subject, body_text: d.body, body_html: null,
+      sent_at: null, created_at: d.updated_at || d.created_at || new Date(0).toISOString(),
+      status: "draft", gmail_thread_id: null, opened_at: null, replied_at: null,
+      lead_id: d.lead_id, leads: d.leads,
+    }));
+    for (const row of [...(sent || []), ...draftRows].reverse()) {
       const key = row.gmail_thread_id || `sent:${row.id}`;
       const at = row.sent_at || row.created_at;
       const existing = map.get(key);
@@ -212,6 +240,7 @@ const Inbox = () => {
         body: toReadableText(row.body_text || row.body_html),
         at,
         opened: !!row.opened_at,
+        state: mailState(row.status, row.sent_at),
       };
       const inMessages: Message[] = (row.reply_analysis || []).map((ra) => ({
         id: `in:${ra.id}`,
@@ -296,15 +325,12 @@ const Inbox = () => {
     }
 
     return all.sort((a, b) => (a.lastAt < b.lastAt ? 1 : -1));
-  }, [sent, replyThreads]);
+  }, [sent, drafts, replyThreads]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return conversations.filter((c) => {
-      if (folder === "unread" && !c.unread) return false;
-      if (folder === "replied" && !c.hasReply) return false;
-      if (folder === "awaiting" && c.hasReply) return false;
-      if (folder === "sent" && !c.messages.some((m) => m.direction === "out")) return false;
+      if (!matchesMailFolder(folder, c)) return false;
       if (!q) return true;
       return (
         c.counterpart.toLowerCase().includes(q) ||
@@ -393,13 +419,9 @@ const Inbox = () => {
   // Sent" and nothing else, so picking one was a guess about whether it held
   // anything. The counts are the whole reason to have folders.
   const counts = useMemo(() => {
-    const c = { all: 0, unread: 0, replied: 0, awaiting: 0, sent: 0 } as Record<Folder, number>;
+    const c = Object.fromEntries(FOLDERS.map(f => [f.value, 0])) as Record<Folder, number>;
     for (const conv of conversations) {
-      c.all += 1;
-      if (conv.unread) c.unread += 1;
-      if (conv.hasReply) c.replied += 1;
-      else c.awaiting += 1;
-      if (conv.messages.some((m) => m.direction === "out")) c.sent += 1;
+      for (const f of FOLDERS) if (matchesMailFolder(f.value, conv)) c[f.value] += 1;
     }
     return c;
   }, [conversations]);
@@ -556,8 +578,10 @@ const Inbox = () => {
                             <span className="mt-1 flex items-center gap-1.5 text-[0.625rem] text-muted-foreground/70">
                               {config ? (
                                 <span className={config.color}>{config.emoji} {config.label}</span>
-                              ) : !conv.hasReply ? (
+                              ) : matchesMailFolder("awaiting", conv) ? (
                                 <span>Awaiting reply</span>
+                              ) : last?.direction === "out" ? (
+                                <span className="capitalize">{last.state}</span>
                               ) : null}
                               {conv.companyName ? <span className="truncate">{conv.companyName}</span> : null}
                             </span>
@@ -595,6 +619,7 @@ const Inbox = () => {
                       size="sm"
                       className="h-7 shrink-0 px-2 text-[0.6875rem] text-muted-foreground hover:text-foreground"
                       onClick={() => archiveConversation.mutate(selected)}
+                      disabled={selected.replyThreadIds.length === 0}
                     >
                       <Archive className="mr-1.5 h-3.5 w-3.5" /> Archive
                     </Button>
@@ -629,7 +654,7 @@ const Inbox = () => {
                           {m.direction === "out" ? (
                             <span className="inline-flex items-center gap-1 text-[0.625rem] text-muted-foreground/70">
                               {m.opened ? <Eye className="h-3 w-3" /> : <MailOpen className="h-3 w-3" />}
-                              {m.opened ? "Opened" : "Sent"}
+                              {m.state === "sent" ? (m.opened ? "Opened" : "Sent") : <span className="capitalize">{m.state}</span>}
                             </span>
                           ) : null}
                           {m.classification && CLASSIFICATION_CONFIG[m.classification as Classification] ? (
@@ -647,7 +672,7 @@ const Inbox = () => {
                     ))}
                   </div>
 
-                  <div className="shrink-0 border-t border-border/40 bg-muted/10 px-4 py-3">
+                  {selected.messages.some(m => m.direction === "in" || m.state === "sent") ? <div className="shrink-0 border-t border-border/40 bg-muted/10 px-4 py-3">
                     <Textarea
                       value={draftReply}
                       onChange={(e) => setDraftReply(e.target.value)}
@@ -673,7 +698,11 @@ const Inbox = () => {
                         {sendReply.isPending ? "Sending…" : "Send"}
                       </Button>
                     </div>
-                  </div>
+                  </div> : selected.messages.some(m => m.state === "draft") ? (
+                    <div className="shrink-0 border-t border-border/40 px-4 py-3">
+                      <Button asChild size="sm"><a href="/dashboard/outreach">Open Outreach Studio</a></Button>
+                    </div>
+                  ) : null}
                 </>
               ) : (
                 <div className="flex h-full w-full items-center justify-center px-6 text-center">
