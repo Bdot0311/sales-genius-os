@@ -61,7 +61,8 @@ describe("API and MCP app action boundaries", () => {
   });
   it("REST app forwarding satisfies the gateway without a privileged bearer", () => {
     const src = readFileSync("supabase/functions/rest-api/index.ts", "utf8");
-    const delegated = src.slice(src.indexOf("const appRoute"), src.indexOf("// ── Rate limit"));
+    const start = src.indexOf("const appRoute");
+    const delegated = src.slice(start, src.indexOf("// ── Rate limit", start));
     expect(delegated).toContain("Authorization: `Bearer ${Deno.env.get('SUPABASE_ANON_KEY') ?? ''}`");
     expect(delegated).not.toContain("Bearer ${serviceKey}");
   });
