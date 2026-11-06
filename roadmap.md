@@ -1,3 +1,9 @@
+# Documentation completeness review
+
+- [ ] Compare published docs with Context.dev's reference and audit API/MCP/webhook contracts.
+- [ ] Add detailed feature guides, runnable client examples, agent setup and production operations guidance.
+- [ ] Validate documentation navigation, examples and contracts; distinguish repository updates from hosted Mintlify publication.
+
 # API and MCP app-access parity
 
 - [x] Expose real app prospect search and email verification with the same owner, plan and credit checks.
