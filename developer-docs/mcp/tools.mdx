@@ -15,7 +15,7 @@ All tools require an authenticated, authorized MCP session and pass an account-p
 | `list_recent_replies` | Optional `limit` (1–50, default 20), `unread_only` (boolean) | `replies` |
 | `list_recent_sent_emails` | Optional `limit` (1–50, default 20) | `sent_emails` |
 | `list_deals` | Optional `limit` (1–100, default 25), `stage` (string) | `deals` |
-| `list_icp_profiles` | Optional `limit` (1–50) | `icp_profiles` |
+| `list_icp_profiles` | Optional `limit` (1–50, default 20) | `icp_profiles` |
 | `get_agent_stats` | Optional `days` (1–90, default 7) | `agent_stats` |
 
 `search_leads` matches saved lead names, companies, emails and job titles. Read-list tools have result limits and do not expose REST-style offset pagination. `get_agent_stats` summarizes up to 1,000 activity rows in the requested look-back window; it is not an unlimited historical export.

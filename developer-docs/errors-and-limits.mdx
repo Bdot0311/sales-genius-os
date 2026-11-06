@@ -21,7 +21,15 @@ Parse the JSON body as well as the HTTP status. Responses may contain an `error`
 
 REST responses that pass the rate check include `X-RateLimit-Remaining` and `X-RateLimit-Reset`. Rate-limit rejections also include these headers. Read them when present; early authentication failures may not include them.
 
-Plan limits differ by tier. Check your current allowance in OutReign and on the [pricing page](https://outreign.io/pricing). API request allowance, MCP call allowance and feature-specific credits are not interchangeable balances.
+| Plan | Requests per minute | Requests per day |
+| --- | --- | --- |
+| Explore | No API/MCP access | No API/MCP access |
+| Starter | 30 | 2,000 |
+| Growth | 60 | 10,000 |
+| Pro | 120 | 50,000 |
+| Agency | 300 | 200,000 |
+
+REST daily usage is shared across the owner's API keys; its short-window buckets are per key and resource. MCP checks its own per-user call allowance. API request allowance, MCP call allowance and feature-specific credits are not interchangeable balances. Check your current allowance in OutReign and on the [pricing page](https://outreign.io/pricing).
 
 ## Retry safely
 

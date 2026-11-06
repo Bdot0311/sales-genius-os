@@ -11,7 +11,7 @@ All REST endpoints use `https://api.outreign.io/rest-api`. Send `X-API-Key` on e
 | --- | --- |
 | Leads | List, create, retrieve, update, delete, bulk import, enrich and score saved leads |
 | Deals | List, create, retrieve, update and delete pipeline deals |
-| Activities | List, create, retrieve and delete activities |
+| Activities | List, create, retrieve, update and delete activities |
 | Contacts | List, create, retrieve, update and delete contacts |
 | Outreach | Generate an email draft |
 
@@ -20,7 +20,7 @@ Use the endpoint groups in this tab for request fields, response shapes and code
 ## Common conventions
 
 - Resource IDs are UUIDs returned by OutReign; use your own account's IDs.
-- Partial updates use `PATCH`. Only send fields you intend to change.
+- Updates use `PATCH`. Contact updates preserve omitted fields; the current lead, deal and activity normalizers can clear omitted optional fields or apply defaults. Read the current record first and include writable values you need to retain, then inspect the result.
 - List endpoints use `limit` and `offset`; see [pagination](/developer-docs/pagination).
 - Bulk lead import accepts a `leads` array with at most 100 entries per request.
 - Email generation creates a draft; it is not a send-email endpoint.

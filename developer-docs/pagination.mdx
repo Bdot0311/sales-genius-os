@@ -12,7 +12,7 @@ GET https://api.outreign.io/rest-api/leads?limit=50&offset=0
 X-API-Key: YOUR_OUTREIGN_API_KEY
 ```
 
-For the next page, increase `offset` by the page size. Continue until an empty page is returned or the reported count has been reached. Lists can change between requests; avoid assuming offset pagination is a permanent snapshot.
+The default page size is 50, with a maximum of 100. `offset` ranges from 0 to 100,000. For the next page, increase `offset` by the returned page size. Continue until an empty page is returned or the reported count has been reached. Lists can change between requests; avoid assuming offset pagination is a permanent snapshot.
 
 ## Filters
 
@@ -20,8 +20,8 @@ For the next page, increase `offset` by the page size. Continue until an empty p
 | --- | --- |
 | Leads | `industry`, `status`, `limit`, `offset` |
 | Deals | `stage`, `limit`, `offset` |
-| Activities | `type`, `lead_id`, `limit`, `offset` |
-| Contacts | `limit`, `offset` |
+| Activities | `type`, `limit`, `offset` |
+| Contacts | `status`, `limit`, `offset` |
 
 Use URL encoding when building filter values. Check each endpoint's reference for the fields it accepts rather than assuming the Saved Leads page's filters are all available through REST.
 
