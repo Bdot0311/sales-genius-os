@@ -1,0 +1,55 @@
+---
+title: "Inbound webhooks"
+description: "Create leads, update contacts or push deals from an external tool."
+---
+
+## Create an endpoint
+
+Open **Settings → Webhooks → Incoming**, choose **Create Endpoint**, give it a name, select enabled actions and optionally set a default source. Copy the unique endpoint URL and secret.
+
+```text
+https://api.outreign.io/inbound-webhook/YOUR_ENDPOINT_TOKEN
+```
+
+The token in this URL is a credential. Keep it private. If your sender supports custom headers, send `x-webhook-secret` with the endpoint secret. The header is optional for providers that cannot attach one, but any supplied value must match. `x-outreign-secret` is an accepted alternative.
+
+## Example request
+
+The following request writes a lead; only run it against an endpoint you control with appropriate test data. Set `OUTREIGN_INBOUND_URL` to the full URL copied from Settings and store the secret securely.
+
+```bash
+curl --fail-with-body -X POST "$OUTREIGN_INBOUND_URL" \
+  -H 'Content-Type: application/json' \
+  -H "x-webhook-secret: $OUTREIGN_WEBHOOK_SECRET" \
+  -d '{"event":"lead.created","data":{"email":"prospect@example.com","first_name":"Example","last_name":"Contact","company":"Example B2B Software","title":"Head of Sales"}}'
+```
+
+## Supported actions
+
+| Action | Behavior |
+| --- | --- |
+| `lead.created` | Create a lead, or update a matching lead by email |
+| `lead.updated` | Update a matching lead; skip if no match exists |
+| `lead.stage_changed` | Update an existing matched lead's `pipeline_stage`; requires a stage |
+| `contact.created` | Create or update a contact by email; email is required |
+| `deal.created` | Create a deal; requires `title` and `company_name` (or supported aliases) |
+
+Send the action as `event`, `action` or `type`. If omitted, it defaults to `lead.created`. The action must be enabled on the endpoint.
+
+Use an explicit `{ "event": "…", "data": { … } }` envelope for predictable integrations. Batch requests can supply `records` or `leads` arrays with at most 100 records. Lead matching uses email, or a matching OutReign lead UUID when email is absent.
+
+## Common lead field aliases
+
+- Email: `contact_email`, `email`, `email_address`, `work_email`.
+- Name: `contact_name`, `full_name`, `name`, or `first_name` + `last_name`.
+- Company: `company_name`, `company`, `organization`, `org`, `account_name`.
+- Job title: `job_title`, `title`, `position`, `role`.
+- Stage: `pipeline_stage`, `stage`, `status`.
+
+## Responses and limits
+
+Responses report `received`, `accepted`, `failed`, `action` and per-record `results`. A `200` response can still include skipped records or partial failures, so inspect the result entries. If all processed records fail with errors, the response can be `422`.
+
+The endpoint limits requests to 100 records per request and 500 recorded inbound requests per hour per endpoint. Disabled endpoints reject requests. Invalid JSON, unknown tokens, invalid supplied secrets and unsupported actions are rejected with an error response.
+
+Inbound endpoints do not verify outbound HMAC signatures; they use their private URL token and optional secret header. Keep the two webhook directions distinct.

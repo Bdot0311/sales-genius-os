@@ -57,7 +57,7 @@ const VsZoomInfo = lazy(() => import("./pages/VsZoomInfo"));
 const VsRocketReach = lazy(() => import("./pages/VsRocketReach"));
 const Partners = lazy(() => import("./pages/Partners"));
 
-const ApiDocs = lazy(() => import("./pages/ApiDocs"));
+const ApiDocs = lazy(() => import("./pages/DeveloperDocsRedirect"));
 const ApiStatus = lazy(() => import("./pages/ApiStatus"));
 const RequestIntegration = lazy(() => import("./pages/RequestIntegration"));
 const Settings = lazy(() => import("./pages/Settings"));

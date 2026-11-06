@@ -1,7 +1,7 @@
 {
   "resource": "https://api.outreign.io/mcp",
   "resource_name": "OutReign MCP server",
-  "resource_documentation": "https://outreign.io/connect",
+  "resource_documentation": "https://docs.outreign.io/developer-docs/authentication",
   "authorization_servers": [
     "https://ghgfjnepvxvxrncmskys.supabase.co/auth/v1"
   ],

@@ -1,0 +1,33 @@
+---
+title: "REST API overview"
+description: "Resources, request conventions and the complete generated endpoint reference."
+---
+
+All REST endpoints use `https://api.outreign.io/rest-api`. Send `X-API-Key` on every request and `Content-Type: application/json` for JSON request bodies.
+
+## Resources
+
+| Resource | Operations |
+| --- | --- |
+| Leads | List, create, retrieve, update, delete, bulk import, enrich and score saved leads |
+| Deals | List, create, retrieve, update and delete pipeline deals |
+| Activities | List, create, retrieve, update and delete activities |
+| Contacts | List, create, retrieve, update and delete contacts |
+| Outreach | Generate an email draft |
+
+Use the endpoint groups in this tab for request fields, response shapes and code examples. The reference is generated from the [OpenAPI specification](https://outreign.io/openapi.json).
+
+## Common conventions
+
+- Resource IDs are UUIDs returned by OutReign; use your own account's IDs.
+- Updates use `PATCH`. Contact updates preserve omitted fields; the current lead, deal and activity normalizers can clear omitted optional fields or apply defaults. Read the current record first and include writable values you need to retain, then inspect the result.
+- List endpoints use `limit` and `offset`; see [pagination](/developer-docs/pagination).
+- Bulk lead import accepts a `leads` array with at most 100 entries per request.
+- Email generation creates a draft; it is not a send-email endpoint.
+- Enrichment, scoring and generation are subject to account entitlements and usage checks. Do not treat an API key as unlimited access.
+
+## Separate interfaces
+
+MCP tools and webhook configuration are not REST resources in this specification. Read the [MCP reference](/developer-docs/mcp/tools) and [webhook guides](/developer-docs/webhooks/overview) for their contracts.
+
+The legacy workflows resource is retired and returns `410`. Use OutReign's AI SDR agent for agent workflows instead.

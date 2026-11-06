@@ -4,6 +4,7 @@ import { helpCategories, helpArticles } from "@/components/help/helpArticles";
 import { blogPostsMeta } from "@/data/blog-index";
 import { ALL_BADGES } from "@/lib/directory-badges";
 import DOMPurify from 'dompurify';
+import { PUBLIC_DOCS_URL } from "@/lib/public-api";
 
 // Guides and support links are generated from the same content data the pages
 // render. Help articles and categories previously had no link path from the
@@ -35,7 +36,7 @@ const footerLinks = {
     { label: "Blog", href: "/blog" },
     { label: "Help Center", href: "/help" },
     { label: "Partners", href: "/partners" },
-    { label: "API Docs", href: "/api-docs" },
+    { label: "API Docs", href: PUBLIC_DOCS_URL },
     { label: "API Status", href: "/api-status" },
     ...helpCategories.map((category) => ({
       label: category.title,
@@ -133,12 +134,18 @@ export const FooterSection = () => {
               <ul className="space-y-3">
                 {footerLinks.resources.map((link) => (
                   <li key={link.label}>
+                    {link.href.startsWith("https://") ? (
+                      <a href={link.href} className="inline-flex min-h-[40px] items-center px-1 py-2 text-sm text-foreground/70 transition-colors hover:text-primary">
+                        {link.label}
+                      </a>
+                    ) : (
                     <Link 
                       to={link.href} 
                       className="text-sm transition-colors duration-150 inline-flex items-center py-2 min-h-[40px] min-w-[40px] px-1" style={{ color: "hsl(var(--foreground) / 0.7)" }} onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")} onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(var(--foreground) / 0.7)")}
                     >
                       {link.label}
                     </Link>
+                    )}
                   </li>
                 ))}
               </ul>

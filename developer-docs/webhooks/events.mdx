@@ -1,0 +1,30 @@
+---
+title: "Webhook events"
+description: "Available lead and deal subscriptions and their payload differences."
+---
+
+## Outgoing subscriptions
+
+The customer webhook editor offers these events:
+
+| Event | Trigger | `data` |
+| --- | --- | --- |
+| `lead.created` | A saved lead is inserted | New lead record |
+| `lead.updated` | A saved lead is updated | Updated lead record |
+| `lead.deleted` | A saved lead is deleted | `id`, `contact_email`, `company_name` |
+| `deal.created` | A pipeline deal is inserted | New deal record |
+| `deal.updated` | A pipeline deal is updated | Updated deal record |
+| `deal.stage_changed` | A deal's stage changes | Updated deal plus `old_stage`, `new_stage` |
+| `deal.closed` | A deal changes to `closed_won` or `closed_lost` | Updated deal record |
+
+A stage change can emit both an update event and a stage-change event. Closing a deal can also emit `deal.closed`; do not treat these different event names as duplicate deliveries of the same subscription.
+
+## Lead stage-change caveat
+
+The event producer also emits `lead.stage_changed` with `old_stage` and `new_stage`, but the current outgoing subscription editor does not offer that event as a selectable option. Use `lead.updated` for a UI-configured lead subscription rather than assuming you can select `lead.stage_changed` there.
+
+## Incoming actions are different
+
+Inbound endpoints accept `lead.created`, `lead.updated`, `lead.stage_changed`, `contact.created` and `deal.created`. These are commands to create or update data, not outgoing notification subscriptions. See [inbound reference](/developer-docs/webhooks/inbound).
+
+No generic outbound email-open, bounce or contact event catalog is promised here. Only subscribe to events supported by the interface you are using.

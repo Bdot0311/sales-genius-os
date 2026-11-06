@@ -1,0 +1,20 @@
+# Mintlify shares this repository with the app; do not inject app CSS or scripts.
+*.css
+*.js
+/src/
+/supabase/
+/drizzle/
+/workers/
+/scripts/
+/docs/
+/node_modules/
+/.git/
+/.github/
+/.lovable/
+/.agents/
+/.claude/
+/.workspace/
+/.env*
+/*.md
+/*.ts
+/*.tsx

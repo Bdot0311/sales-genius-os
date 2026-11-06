@@ -1,0 +1,24 @@
+---
+title: "Troubleshooting"
+description: "Diagnose connection issues without sharing credentials."
+---
+
+## REST requests fail
+
+- Confirm the base URL is `https://api.outreign.io/rest-api`, not the documentation hostname.
+- Send `X-API-Key`, not an MCP Bearer token.
+- Confirm the key is active and the account has API access.
+- Use a resource ID returned by your account; another account's record is not accessible.
+- Inspect both the HTTP status and JSON `error`; check [errors and limits](/developer-docs/errors-and-limits).
+
+## MCP connects but tools are missing
+
+Refresh or reconnect the assistant's connector and start a new conversation. Clients can cache tool definitions. Check that the client supports remote Streamable HTTP and OAuth, and use the endpoint in the [connection guide](/developer-docs/mcp/connect).
+
+## Webhook deliveries fail
+
+Review delivery logs in **Settings → Webhooks**. Your receiver must be publicly reachable over HTTPS and should acknowledge accepted events quickly. Verify signatures against the raw request bytes, not reformatted JSON.
+
+## Contact support
+
+Check [API status](https://outreign.io/api-status), then contact [support@bdotindustries.com](mailto:support@bdotindustries.com) with the endpoint, approximate UTC time, HTTP status and a redacted error message. Never include API keys, OAuth tokens, webhook secrets or full private payloads.
