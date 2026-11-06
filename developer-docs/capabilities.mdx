@@ -27,7 +27,7 @@ OutReign has four interfaces. They share the same account and data but expose di
 | Read sent emails and replies | Yes | No | `list_recent_sent_emails`, `list_recent_replies` | — |
 | Deals | Yes | Full create/read/update/delete | `list_deals`, `update_deal` | `deal.*` events |
 | Activities and contacts | Yes | Full create/read/update/delete | No | Inbound `contact.created` |
-| ICP profiles | Yes | No | `list_icp_profiles`, `update_icp_profile` | — |
+| ICP profiles | Yes | `POST /workspace/actions` | `list_icp_profiles`, `update_icp_profile`, `workspace_action` | — |
 | AI SDR agent settings and stats | Yes | No | `update_agent_config`, `get_agent_stats` | — |
 | Get notified when data changes | — | — | — | Outbound `lead.*`, `deal.*` |
 

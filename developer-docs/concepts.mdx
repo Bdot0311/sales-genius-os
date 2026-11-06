@@ -21,13 +21,13 @@ Contact (separate people database, optional company_id)
 | **Deal** | A pipeline opportunity with value, stage and probability. | Yes | Yes |
 | **Activity** | A call, meeting, task, email or note, linked to a lead or deal. | Yes | — |
 | **Contact** | A person in your contact database. Separate from saved leads. | Yes | — |
-| **ICP profile** | Your ideal-customer definition used for scoring. | — | Yes |
+| **ICP profile** | Your ideal-customer definition used for scoring. | Workspace actions | Yes |
 | **Sequence** | A multi-step email cadence leads are enrolled in. | — | Yes |
 | **Agent** | Your AI SDR configuration and activity. | — | Yes |
 
 ## Ownership
 
-Every record belongs to one OutReign user. An API key or MCP session acts as that user, so you only ever see and change that user's records. Requesting another account's ID returns `404`, never the record.
+API keys and MCP sessions act as their verified user. Account-scoped endpoints do not expose another account's records; an inaccessible ID is reported as not found or unauthorized depending on the action. Do not rely on one universal error status across interfaces.
 
 ## IDs and timestamps
 
@@ -36,6 +36,8 @@ Every record belongs to one OutReign user. An API key or MCP session acts as tha
 - Dates without a time (`expected_close_date`) use `YYYY-MM-DD`.
 
 ## Response envelopes
+
+The examples below are REST CRUD envelopes. Prospecting, intelligence and workspace routes use app-action response shapes; MCP tools use content blocks and, for some tools, structured results. See each operation's reference.
 
 Single record:
 

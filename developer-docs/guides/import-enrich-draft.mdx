@@ -15,7 +15,7 @@ const headers = { 'X-API-Key': process.env.OUTREIGN_API_KEY, 'Content-Type': 'ap
 
 async function call(method, path, body) {
   for (let attempt = 0; attempt < 5; attempt++) {
-    const res = await fetch(`${BASE}${path}`, { method, headers, body: body && JSON.stringify(body) });
+    const res = await fetch(`${BASE}${path}`, { method, headers, body: body && JSON.stringify(body), signal: AbortSignal.timeout(90000) });
     const json = await res.json();
     if (res.status === 429) {
       const wait = Math.max(1000, new Date(json.resetAt ?? Date.now() + 2000) - Date.now());
@@ -33,7 +33,7 @@ for (let i = 0; i < prospects.length; i += 100) {
   const batch = prospects.slice(i, i + 100);
   const result = await call('POST', '/leads/bulk', { leads: batch });
   saved.push(...result.leads);
-  for (const e of result.errors) console.warn('Skipped', batch[e.index], e.error);
+  for (const e of result.errors) console.warn('Skipped record index', i + e.index);
 }
 ```
 </Step>
@@ -63,7 +63,7 @@ scored.sort((a, b) => b.score - a.score);
 </Step>
 
 <Step title="Draft emails for the top leads">
-Send the lead object, a `tone` and a `goal`. Your sender name comes from your OutReign profile when you omit it. Read the JSON `error` even on HTTP 200.
+Send the lead object, a `tone` and a `goal`. Supply accurate sender/business context rather than relying on a fallback. Read the JSON `error` even on HTTP 200.
 
 ```javascript
 for (const { lead } of scored.slice(0, 10)) {
@@ -72,6 +72,7 @@ for (const { lead } of scored.slice(0, 10)) {
     lead: fresh,
     tone: 'professional',
     goal: 'introduction',
+    senderName: 'Your actual name',
     senderCompany: 'Acme Outbound',
     businessDescription: 'We help small B2B sales teams book more meetings from cold email.',
   });
@@ -112,6 +113,7 @@ for lead in result["leads"]:
 ## Production checklist
 
 - Keep the key in a secret manager, never in client code.
+- `prospects` is your reviewed input array, with each item containing at least `contact_name` and `company_name`; the examples do not supply real prospects.
 - Budget requests: each enrich, score and draft call counts against your per-minute and daily allowance, and enrichment uses credits.
 - Writes are not idempotent. After a timeout, `GET` the record before retrying a create.
 - Store OutReign lead IDs next to your own IDs so you can update instead of duplicating.
