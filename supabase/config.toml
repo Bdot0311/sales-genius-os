@@ -186,3 +186,5 @@ project_id = "ghgfjnepvxvxrncmskys"
 
   [functions.calendly-webhook]
     verify_jwt = false
+  [functions.mcp-oauth-metadata]
+    verify_jwt = false

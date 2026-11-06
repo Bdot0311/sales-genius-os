@@ -709,9 +709,14 @@ var mcp_default = defineMcp({
   title: "OutReign",
   version: "0.2.0",
   instructions: "Tools for OutReign \u2014 an AI sales outreach and lead intelligence platform. Read and manage the signed-in user's leads, sequences, deals, ICP profiles, AI agent, sent emails, and inbox replies. All operations are scoped to the authenticated user by row-level security.",
+  // Clients connect through https://api.outreign.io/mcp and reject a server
+  // whose advertised `resource` differs from that URL, so pin both the resource
+  // and the metadata document (served by the mcp-oauth-metadata function).
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
-    acceptedAudiences: "authenticated"
+    acceptedAudiences: "authenticated",
+    resource: "https://api.outreign.io/mcp",
+    protectedResourceMetadataUrl: "https://api.outreign.io/mcp-oauth-metadata"
   }),
   tools: [
     // Read
