@@ -1,0 +1,40 @@
+---
+title: "Find, verify and save prospects"
+description: "A real network-search workflow with honest verification results and explicit saving."
+---
+
+Use `https://api.outreign.io/rest-api` and keep your API key on your server. These actions reuse the app's account checks, search pipeline and verifier.
+
+## 1. Search the B2B network
+
+```bash
+curl https://api.outreign.io/rest-api/prospects/search \
+  -H "X-API-Key: $OUTREIGN_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"Founders at B2B SaaS companies in the US","job_title":"Founder","industry":"Software","limit":10,"exclude_seen":true}'
+```
+
+Inspect `leads` and any `error`/`error_code`, even with HTTP 200. The response uses the app's search-candidate fields such as `contact_name`, `company_name`, `business_email`, `company_domain`, `job_title`, `scores` and email-verification labels. A missing email remains missing; it is not invented. Continue with the returned `next_cursor` when present. Searches are not automatically saved.
+
+Paid search is free of reveal credits, but counts against your app daily-search meter. Your current plan further caps results; `limit: 200` cannot override Starter's 25-result cap. `relax` is off unless explicitly requested; do not silently broaden the user's targeting.
+
+## 2. Check an email, if needed
+
+```bash
+curl https://api.outreign.io/rest-api/email/verify \
+  -H "X-API-Key: $OUTREIGN_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"jordan@northwind.io"}'
+```
+
+Only `verified: true` confirms a mailbox. `invalid` means rejected; `catch_all`, `role` and `unknown` are unconfirmed, not green lights. No message is sent and no reveal credit is charged. Checks share a 10/minute and plan-sized rolling daily allowance across API, MCP and agent chat.
+
+## 3. Save explicitly
+
+Map the selected candidate's `business_email` to `contact_email`; map `company_domain` to `company_website` only when an actual domain was returned. Use `POST /leads` with `contact_name` and `company_name` to save the approved record. Keep saved record IDs separate from provider search identifiers.
+
+Then call `POST /leads/{id}/enrich`, `/research` and `/score` as needed. Enrichment and known-person lookup use the app's one-credit reserve/refund behavior. Read the saved lead again to inspect persisted changes.
+
+## Equivalent MCP workflow
+
+Call `search_prospects`, optionally `verify_email`, then `create_lead`, `enrich_lead`, `research_lead`, `score_lead` and `generate_email`. These tools do not send outreach. Ask the user before any sequence enrollment or reply tool. Reconnect after publication if the assistant has cached the previous catalog.

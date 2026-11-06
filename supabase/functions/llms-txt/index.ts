@@ -102,6 +102,8 @@ For sales inquiries or support, visit our help center at https://outreign.io/hel
 
 ## Technical Details
 
+- API/MCP discovery and intelligence: POST /prospects/search, /companies/search, /people/lookup, /email/verify and /leads/{id}/research; MCP search_prospects, search_companies, find_person, verify_email, enrich_lead, research_lead, score_lead and generate_email. Same app handlers, caller ownership, plans, credits and limits. Discovery does not save or send. search_leads searches saved CRM records only. Only verified=true confirms a mailbox; catch_all/role/unknown remain unproven. Exact contract: https://docs.outreign.io/developer-docs/capabilities.
+
 - Platform: Web-based SaaS application
 - API: RESTful API and MCP access available on all paid plans; Starter 30 requests/minute and 2,000/day, Growth 60/min and 10,000/day, Pro 120/min and 50,000/day, Agency 300/min and 200,000/day
 - Security: SOC 2 compliant infrastructure, GDPR-ready, encrypted in transit

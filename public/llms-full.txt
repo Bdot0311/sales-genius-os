@@ -304,6 +304,8 @@ A pre-seed founder uses OutReign to test whether a specific ICP responds to thei
 
 ## Technical Details
 
+- **Discovery and intelligence API/MCP:** New B2B prospects via POST /prospects/search / search_prospects; companies via /companies/search / search_companies; known people via /people/lookup / find_person; mailbox checks via /email/verify / verify_email; saved-lead enrichment, research, scoring and draft generation via their API/MCP actions. Same app handlers, ownership, plan/result caps and credits. Discovery never automatically saves or sends. Paid search costs no reveal credits but counts against daily searches; lookup/enrichment reserve one credit under app refund rules. Standalone verification uses the app verifier, no reveal charge, 10/minute and plan daily allowance shared across API/MCP/chat. valid=true, invalid=false, catch_all/role/unknown=null. See https://docs.outreign.io/developer-docs/capabilities for exact supported actions; not every app settings/admin screen is remotely exposed.
+
 - **Platform type:** Web-based SaaS application
 - **Frontend:** React, TypeScript
 - **Backend:** Supabase (PostgreSQL, Edge Functions)

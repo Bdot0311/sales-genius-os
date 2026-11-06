@@ -1,9 +1,26 @@
 ---
 title: "MCP tool reference"
-description: "Inputs, result keys and side effects for all 15 registered tools."
+description: "Inputs, results and side effects for registered account and prospecting tools."
 ---
 
 All tools require an authenticated, authorized MCP session and pass an account-plan usage check. The client obtains the machine-readable schemas with MCP `tools/list`.
+
+## Prospecting and intelligence tools
+
+These tools return the app action's JSON as text content. Parse that JSON and check its fields; there is no `structuredContent` wrapper for these new actions.
+
+| Tool | Inputs | Result and side effects |
+| --- | --- | --- |
+| `search_prospects` | Same targeting fields as `POST /prospects/search`: query/title/industry/company/geography, ICP arrays, exclusions, limit, page/cursor, strict/relax/exclude_seen | Real network `leads` and pagination metadata; no save/send. Daily search meter and plan result caps apply. |
+| `search_companies` | Required query (2–500 characters) | Up to eight company candidates; free autocomplete, no save/enrich. |
+| `find_person` | LinkedIn URL, work email, or full_name plus company/company_domain | Person match and comparison metadata; one-credit app lookup with no-match refund, no automatic save. |
+| `verify_email` | Required email string, max 320 | email, status, verified, reason, cached, credits_charged=0. 10/minute plus plan daily cap; no send/save. |
+| `enrich_lead` | Required lead_id UUID | App enrichment result; writes owned lead, reserves one credit under app refund rules. |
+| `score_lead` | Required lead_id UUID | App scoring result; writes owned lead's scores. |
+| `research_lead` | Required lead_id UUID; optional force boolean | Sourced brief from existing combined research; stores brief, fresh cache reused. |
+| `generate_email` | Required lead_id UUID, tone, goal and senderName; optional businessDescription and customInstruction | Generated draft copy only, no sending. Tone: professional/friendly/casual/formal. Goal: introduction/follow-up/meeting/demo/proposal. |
+
+Verification status is `valid`, `invalid`, `catch_all`, `role` or `unknown`. `verified` is true only for valid, false for invalid and null otherwise. A domain accepting mail is not proof that the mailbox exists. Reconnect clients that cache an older tool list after the new revision is published.
 
 ## Read tools
 

@@ -78,6 +78,7 @@
           {
             "group": "Recipes",
             "pages": [
+              "developer-docs/guides/prospect-verify-save",
               "developer-docs/guides/import-enrich-draft",
               "developer-docs/guides/sync-crm"
             ]
