@@ -17,14 +17,16 @@ Also return up to 5 suggestions. Each suggestion names the exact snippet it appl
 
 Copy style for every justification and suggestion string: lowercase-first, plain and direct, no em-dashes, no exclamation points, no hype, at most one sentence. Do not invent facts about the prospect.
 
+Each score is one integer, 0, 1, 2, 3, 4, or 5. Do not write a range.
+
 Return only this JSON:
 {
   "dimensions": {
-    "relevance": {"score": 0-5, "justification": "..."},
-    "empathy": {"score": 0-5, "justification": "..."},
-    "payoff": {"score": 0-5, "justification": "..."},
-    "low_friction_ask": {"score": 0-5, "justification": "..."},
-    "you_focused": {"score": 0-5, "justification": "..."}
+    "relevance": {"score": 4, "justification": "..."},
+    "empathy": {"score": 4, "justification": "..."},
+    "payoff": {"score": 4, "justification": "..."},
+    "low_friction_ask": {"score": 4, "justification": "..."},
+    "you_focused": {"score": 4, "justification": "..."}
   },
   "suggestions": [
     {"snippet": "<verbatim text from the email>", "dimension": "relevance|empathy|payoff|low_friction_ask|you_focused", "suggestion": "<one line>"}
@@ -33,4 +35,22 @@ Return only this JSON:
 
 export function rubricUserPayload(subject: string, body: string): string {
   return `Subject: ${subject}\n\nBody:\n${body}`;
+}
+
+/**
+ * A dimension score, or null when the model did not give one.
+ *
+ * The prompt used to show `"score": 0-5` as the schema. Models copy that
+ * token. `Number("0-5")` is NaN, and `NaN || 0` stored a zero, so every bar
+ * rendered as a failure. A range is not a score. "4/5" is.
+ */
+export function parseDimensionScore(raw: unknown): number | null {
+  if (typeof raw === "number" && Number.isFinite(raw)) {
+    const score = Math.round(raw);
+    return score >= 0 && score <= 5 ? score : null;
+  }
+  if (typeof raw !== "string") return null;
+  const match = raw.trim().match(/^([0-5])(?:\s*\/\s*5)?$/);
+  if (!match) return null;
+  return Number(match[1]);
 }

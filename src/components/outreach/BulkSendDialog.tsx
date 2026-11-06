@@ -11,7 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Send, Sparkles, Users, Search, Settings2, Mail, ChevronLeft, ChevronRight, AlertTriangle, Shield, CheckCircle2, XCircle, HelpCircle } from "lucide-react";
-import { EmailQualityChecker, blockerSummary, scoreEmailQuality } from "./EmailQualityChecker";
+import { EmailQualityChecker, blockerSummary, redQualityRows, scoreEmailQuality } from "./EmailQualityChecker";
 import { readGeneratedEmail, readGeneratedSubject } from "@/lib/read-generated-email";
 import { generateComplianceFooter, parseSpintax, validateSenderDomain } from "@/lib/compliance";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -413,13 +413,17 @@ export const BulkSendDialog = ({
           company: lead.company_name,
           contactName: lead.contact_name,
         });
-        if (quality.blockers.length > 0) {
+        const failingRows = redQualityRows(quality);
+        if (failingRows.length > 0) {
           // The per-lead failure is recorded against this lead, so it has to
           // say which rule stopped it. "Failed outbound quality checks" on
           // forty rows is a report nobody can act on.
           // A content block is not a delivery failure, so it must not count
           // toward the "check your Gmail connection" pause.
-          const err = new Error(`Blocked: ${blockerSummary(quality.blockers)}`);
+          const detail = quality.blockers.length > 0
+            ? blockerSummary(quality.blockers)
+            : failingRows.map((row) => `${row.label}: ${row.message}`).join("; ");
+          const err = new Error(`Blocked: ${detail}`);
           (err as Error & { qualityBlock?: boolean }).qualityBlock = true;
           throw err;
         }

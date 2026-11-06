@@ -74,7 +74,7 @@ describe("every caller can supply a name", () => {
   it("the REST API fills the sender from the account", () => {
     // API callers rarely pass one; erroring for something the server already
     // knows would be a regression, not a safeguard.
-    expect(REST).toContain("senderName, senderEmail, userId");
+    expect(REST).toContain("senderName, senderEmail, saveDraft: true");
     expect(REST).toContain("sending_accounts");
   });
 });

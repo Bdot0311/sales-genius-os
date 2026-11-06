@@ -251,11 +251,11 @@ describe("a blocker fails the draft on its own", () => {
     expect(card.blockers.map((f) => f.rule)).toContain("name_mismatch");
   });
 
-  it("both send gates key on the blockers, not on the score", () => {
+  it("both send gates key on the red rows, which include the blockers", () => {
     const STUDIO = readFileSync("src/pages/Outreach.tsx", "utf8");
     const BULK = readFileSync("src/components/outreach/BulkSendDialog.tsx", "utf8");
-    expect(STUDIO).toContain("if (quality.blockers.length > 0)");
-    expect(BULK).toContain("if (quality.blockers.length > 0)");
+    expect(STUDIO).toContain("redQualityRows(quality)");
+    expect(BULK).toContain("redQualityRows(quality)");
     expect(STUDIO).toContain("blockerSummary(quality.blockers)");
     expect(BULK).toContain("blockerSummary(quality.blockers)");
   });

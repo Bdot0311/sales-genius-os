@@ -163,6 +163,14 @@ export const scoreEmailQuality = (
   return { checks, overallScore, overallStatus, wordCount: metrics.words, findings, blockers };
 };
 
+/**
+ * Rows the card paints red. A warning is red here on purpose, and a send that
+ * ignores those rows shows a failing draft as sendable. Notes stay yellow and
+ * do not block.
+ */
+export const redQualityRows = (quality: QualityScore): CheckResult[] =>
+  quality.checks.filter((check) => check.status === "red");
+
 /** The sentence a refused send shows, naming what to fix rather than a score. */
 export const blockerSummary = (blockers: Finding[]): string =>
   blockers.map((f) => `${f.rule.replace(/_/g, " ")}: ${f.evidence}`).join("; ");

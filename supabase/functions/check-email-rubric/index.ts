@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
-import { RUBRIC_SYSTEM_PROMPT, rubricUserPayload } from "./prompt.ts";
+import { RUBRIC_SYSTEM_PROMPT, parseDimensionScore, rubricUserPayload } from "./prompt.ts";
 import { AI_SMART, aiFetch } from "../_shared/ai-provider.ts";
 
 const corsHeaders = {
@@ -88,7 +88,12 @@ serve(async (req) => {
     const dimensions: Record<string, { score: number; justification: string }> = {};
     for (const d of DIMS) {
       const raw = parsed?.dimensions?.[d] || {};
-      const score = Math.max(0, Math.min(5, Math.round(Number(raw.score) || 0)));
+      const score = parseDimensionScore(raw.score);
+      // A missing score is not a zero. Zero is a real judgment, and storing
+      // it for an unparsed range painted every dimension red.
+      if (score === null) {
+        return json({ error: "could not score this email right now.", error_code: "unparseable" }, 200);
+      }
       dimensions[d] = { score, justification: clean(raw.justification) };
     }
     const suggestions = Array.isArray(parsed?.suggestions)

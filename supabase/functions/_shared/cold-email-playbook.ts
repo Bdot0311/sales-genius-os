@@ -1,3 +1,4 @@
+import { stripInstructionLines } from "./evidence.ts";
 import { composeSkillContext } from "./email-skills.ts";
 import { bannedPhrasesLine } from "./email-rules.ts";
 import type { StepType, TriggerCondition } from "./sequence-steps.ts";
@@ -120,7 +121,7 @@ export function buildTouchPrompt(input: {
   /** The research brief block, or empty when research produced nothing. */
   research?: string | null;
 }): string {
-  const research = (input.research ?? "").trim();
+  const research = stripInstructionLines(input.research ?? "");
   return `Write the full 4-touch sequence for this prospect. Return JSON only.
 
 PROSPECT:

@@ -48,33 +48,72 @@ export function overallScore(dimensions: Record<string, RubricDimension>): numbe
  * down, unparseable output) collapses to null, and callers treat null as
  * "unscored" rather than "bad".
  */
-export async function scoreEmail(
+export type RubricAvailability = "scored" | "plan_gated" | "unavailable";
+
+export interface RubricReport {
+  rubric: RubricResult | null;
+  availability: RubricAvailability;
+}
+
+/**
+ * Whether an autonomous send may use this attempt.
+ *
+ * A perfect card is still required when a score exists. A missing score is
+ * not a pass: the scorer being down, unparseable, or rate-limited holds the
+ * draft. Plan gating is the exception already documented — starter plans
+ * cannot call the rubric — and those drafts are still held when a rule blocks.
+ */
+export function autonomousSendAllowed(
+  attempt: Attempt,
+  availability: RubricAvailability,
+): boolean {
+  if (availability === "unavailable") return false;
+  if (availability === "plan_gated") return attempt.blocking.length === 0;
+  return isPerfect(attempt);
+}
+
+export async function scoreEmailReport(
   supabaseUrl: string,
   authHeader: string,
   apikey: string,
   input: { subject?: string; body: string },
-): Promise<RubricResult | null> {
-  if (!input.body?.trim()) return null;
+): Promise<RubricReport> {
+  if (!input.body?.trim()) return { rubric: null, availability: "unavailable" };
   try {
     const res = await fetch(`${supabaseUrl}/functions/v1/check-email-rubric`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: authHeader, apikey },
       body: JSON.stringify({ subject: input.subject ?? "", body: input.body }),
     });
-    if (!res.ok) return null;
     const data = await res.json().catch(() => null);
-    // The function answers 200 with an error_code for soft failures, and is
-    // explicitly fail-closed: it never fabricates a score. Respect that here.
-    if (!data || data.error || !data.dimensions) return null;
+    if (res.status === 403 || data?.error_code === "upgrade_required") {
+      return { rubric: null, availability: "plan_gated" };
+    }
+    if (!res.ok || !data || data.error || !data.dimensions) {
+      return { rubric: null, availability: "unavailable" };
+    }
     return {
-      dimensions: data.dimensions,
-      suggestions: Array.isArray(data.suggestions) ? data.suggestions : [],
-      weakest: typeof data.weakest === "string" ? data.weakest : null,
-      overall: overallScore(data.dimensions),
+      availability: "scored",
+      rubric: {
+        dimensions: data.dimensions,
+        suggestions: Array.isArray(data.suggestions) ? data.suggestions : [],
+        weakest: typeof data.weakest === "string" ? data.weakest : null,
+        overall: overallScore(data.dimensions),
+      },
     };
   } catch {
-    return null;
+    return { rubric: null, availability: "unavailable" };
   }
+}
+
+export async function scoreEmail(
+  supabaseUrl: string,
+  authHeader: string,
+  apikey: string,
+  input: { subject?: string; body: string },
+): Promise<RubricResult | null> {
+  const report = await scoreEmailReport(supabaseUrl, authHeader, apikey, input);
+  return report.rubric;
 }
 
 /** True only when a real score came back and it is below the bar. */
@@ -134,6 +173,8 @@ export interface Attempt {
   subject: string;
   body: string;
   rubric: RubricResult | null;
+  /** Why the rubric is or is not a score. Missing means the caller did not ask. */
+  availability?: RubricAvailability;
   /** Deterministic findings that would stop a send: blockers and warnings. */
   blocking: { rule: string; severity: string; why: string; fix: string }[];
 }

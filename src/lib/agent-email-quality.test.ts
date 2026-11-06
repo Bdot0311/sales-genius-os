@@ -136,25 +136,18 @@ describe("the autonomous run", () => {
   });
 
   it("holds anything short of the bar instead of sending it", () => {
-    // Pinned on the shape rather than on which predicate names the bar. The
-    // score the agent rewrites toward and the score a draft has to clear to go
-    // out are two separate decisions, and they have already diverged once:
-    // naming one of them here turned a deliberate change into a red suite.
-    expect(RUN).toMatch(
-      /const qualityHold = scored \? !is\w+\(best\) : isWeak\(rubric\) \|\| best\.blocking\.length > 0;/,
-    );
+    expect(RUN).toContain("autonomousSendAllowed(best, best.availability");
+    expect(RUN).toContain("while (!isPerfect(best) && attempts < AGENT_MAX_ATTEMPTS)");
   });
 
   it("sends nothing autonomously below the score it writes toward", () => {
-    // The product is sold on replies, not volume: an email that scores 84 and
-    // gets ignored spends the one first impression that address will ever give
-    // us. So the bar the loop rewrites toward and the bar a send has to clear
-    // are the same bar. Read as a pair rather than by predicate name, so a
-    // rename stays free and a lowered bar does not.
-    const loop = RUN.match(/while \(!(\w+)\(best\) && attempts < AGENT_MAX_ATTEMPTS\)/);
-    const gate = RUN.match(/const qualityHold = scored \? !(\w+)\(best\)/);
-    expect(loop?.[1], "the rewrite loop's predicate").toBeTruthy();
-    expect(gate?.[1], "the send gate's predicate").toBe(loop?.[1]);
+    // The product is sold on replies, not volume. The loop rewrites until
+    // isPerfect. The send decision uses that same bar when a score exists,
+    // and it also holds when the scorer did not return a score.
+    const QUALITY = readFileSync("supabase/functions/_shared/email-quality.ts", "utf8");
+    expect(RUN).toContain("while (!isPerfect(best) && attempts < AGENT_MAX_ATTEMPTS)");
+    expect(QUALITY).toContain("return isPerfect(attempt);");
+    expect(QUALITY).toContain('if (availability === "unavailable") return false;');
   });
 
   it("keeps the lower chat floor out of the autonomous path", () => {
@@ -199,10 +192,13 @@ describe("the autonomous run", () => {
   });
 
   it("still sends for an account the rubric cannot score", () => {
-    // It is plan-gated to growth and above. Holding every email on a starter
-    // plan would stop the agent working rather than improve it.
-    expect(RUN).toContain("const scored = rubric !== null;");
-    expect(RUN).toContain("isWeak(rubric) || best.blocking.length > 0");
+    // Plan gating is not an outage. A starter plan cannot call the rubric, and
+    // holding every email there would stop the agent. A scorer that is down
+    // or returns junk is different: that draft is held.
+    const QUALITY = readFileSync("supabase/functions/_shared/email-quality.ts", "utf8");
+    expect(QUALITY).toContain('if (availability === "plan_gated") return attempt.blocking.length === 0;');
+    expect(QUALITY).toContain('if (availability === "unavailable") return false;');
+    expect(RUN).toContain("scoreEmailReport(");
   });
 
   it("records the score where the user can see it", () => {

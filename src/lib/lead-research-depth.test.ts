@@ -121,10 +121,13 @@ describe("nothing unverified is presented as verified", () => {
   });
 
   it("the website brief is still the source that counts", () => {
-    // Only observations and hooks from the scraped brief feed the grounding
-    // check — recall must not be able to satisfy it.
-    expect(GEN).toContain("researchBrief?.observations ?? []");
+    // Prospect claims are checked against the fetched brief and the lead
+    // record. Recalled text is labelled separately and is not in that corpus,
+    // so it cannot make an event true.
+    expect(GEN).toContain("websiteResearchBlock");
+    expect(GEN).toContain("unsupportedClaims(email, prospectCorpus)");
     expect(GEN).not.toContain("verifiedResearch.split");
+    expect(GEN).not.toContain("isGroundedIn");
   });
 });
 

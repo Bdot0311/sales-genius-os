@@ -604,7 +604,7 @@ serve(async (req) => {
           try {
             const r = await fetch(`${base}/functions/v1/${fn}`, {
               method: "POST",
-              headers: { "Content-Type": "application/json", Authorization: authHeader, apikey: anon },
+              headers: { "Content-Type": "application/json", Authorization: authHeader ?? "", apikey: anon },
               body: JSON.stringify({ leadId }),
               signal: ctrl.signal,
             });

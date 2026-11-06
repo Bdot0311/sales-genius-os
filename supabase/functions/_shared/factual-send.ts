@@ -9,6 +9,7 @@
  * prompt.
  */
 
+import { unsupportedClaims } from "./evidence.ts";
 import { findUnverifiedClaims } from "./email-rules.ts";
 
 export interface SendFinding {
@@ -87,11 +88,18 @@ export function unauthorizedCommitments(text: string, allowedProof = ""): Commit
   return hits;
 }
 
-/** Why an autonomous reply must not be sent. Empty when it may. */
-export function replySendBlockers(body: string, allowedProof = ""): string[] {
+/**
+ * Why an autonomous reply must not be sent. Empty when it may.
+ *
+ * `prospectCorpus` is what the prospect wrote and what research supplied.
+ * The account's offer is `allowedProof`. A number in the offer does not make
+ * a claim about the prospect true.
+ */
+export function replySendBlockers(body: string, allowedProof = "", prospectCorpus = ""): string[] {
   return [
     ...findUnverifiedClaims(body, allowedProof).map((claim) => `unverified: ${claim}`),
     ...unauthorizedCommitments(body, allowedProof).map((hit) => `${hit.id}: ${hit.evidence}`),
+    ...unsupportedClaims(body, prospectCorpus).map((hit) => `ungrounded: ${hit.evidence}`),
   ];
 }
 
@@ -114,16 +122,17 @@ export function firstTouchBlockers(input: {
   const proof = `${input.allowedProof ?? ""}\n${input.researchBlock ?? ""}`;
   const findings: SendFinding[] = [];
 
-  if (!String(input.researchBlock ?? "").trim()) {
-    for (const hit of unsupportedProspectAssertions(text)) {
-      findings.push({
-        rule: "ungrounded_prospect_claim",
-        severity: "blocker",
-        evidence: hit,
-        why: "This asserts something specific about the company, and no research was available.",
-        fix: "Remove the claim. With no research, write only from the role and industry.",
-      });
-    }
+  // Research being non-empty used to skip this. A page about the product
+  // then cleared "you just raised", because the other nouns overlapped.
+  // The corpus is the research and the lead record, not the sender's offer.
+  for (const hit of unsupportedClaims(text, input.researchBlock ?? "")) {
+    findings.push({
+      rule: hit.rule,
+      severity: "blocker",
+      evidence: hit.evidence,
+      why: hit.why,
+      fix: "Remove the claim. If research did not say it, write from the role and industry, or ask.",
+    });
   }
 
   for (const hit of unauthorizedCommitments(text, proof)) {
