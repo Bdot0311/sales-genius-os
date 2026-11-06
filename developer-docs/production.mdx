@@ -1,0 +1,46 @@
+---
+title: "Production checklist"
+description: "Ship reliable integrations with bounded requests, safe retries, honest results and protected credentials."
+---
+
+## Before launch
+
+- Use a paid account and verify the exact feature entitlement, not just API connectivity.
+- Keep the REST key in server-side secret storage. OAuth and webhook credentials are separate.
+- Verify a read-only request, then a permitted write with controlled test data and read it back.
+- Record your own mapping between external IDs and OutReign UUIDs.
+- Check [capabilities](/developer-docs/capabilities) before depending on a feature that is only available in the app.
+- Require human approval for outbound or consequential actions; an AI-generated instruction is not approval.
+- Treat all sample names, companies and response payloads in these guides as illustrative.
+
+## Timeouts and retries
+
+Choose explicit client timeouts. A 30-second budget for ordinary reads and a longer bounded budget for intelligence operations are integration choices, not service latency guarantees. Abort does not prove server-side work stopped.
+
+| Situation | Safe next step |
+| --- | --- |
+| 401 | Fix/reconnect credentials; do not retry unchanged credentials |
+| 403 | Inspect the error for plan or authorization restrictions |
+| 429 | Pause, use reset information when present, retry with bounded backoff |
+| Read timed out | Retry with a capped attempt count |
+| Create/import timed out | Reconcile against saved data before creating duplicates |
+| Enrich/research/draft timed out | Inspect persisted state and usage; do not blindly repeat paid work |
+| HTTP 200 with error / MCP isError | Failure, not empty successful data |
+
+No public REST idempotency-key contract or snapshot pagination guarantee exists. Build reconciliation explicitly. List resources can change between offset pages; deduplicate by returned UUID.
+
+## Observe without exposing data
+
+Keep local request timestamps, endpoint/action, status, latency and safe error codes. Do not log keys, bearer tokens, webhook URL tokens, raw authorization headers or unnecessary personal data. Diagnostics should distinguish authentication, request quota, feature credit, validation and upstream failure.
+
+Rate headers are available on conventional REST routes when provided; delegated app-action routes may not include them. Do not assume `Retry-After`, a request ID or a universal reset header is present on every failure.
+
+## Webhook receivers
+
+Verify raw-body HMAC before parsing or processing. Store accepted work durably before responding with `2xx`, then perform slow work asynchronously. Handle duplicate/reordered events. Replays must not duplicate sends or CRM writes. See [delivery operations](/developer-docs/webhooks/delivery-operations).
+
+## Contract changes
+
+Use the [OpenAPI reference](/developer-docs/api-overview) for current REST fields and MCP `tools/list` for current tool schemas. Ignore unfamiliar additive response fields. Do not assume identical response wrappers across REST CRUD, app actions and MCP. Refresh cached MCP definitions after a server update.
+
+The API URL is unversioned. The [developer changelog](/developer-docs/changelog) records documented changes; it is not a guaranteed advance-notice or compatibility service-level agreement.

@@ -1,0 +1,67 @@
+---
+title: "JavaScript and Python clients"
+description: "Small server-side HTTP helpers without an invented SDK dependency."
+---
+
+These are sample helpers, not an official SDK. Use built-in `fetch` in modern Node.js or Python `requests` (`python -m pip install requests`). No browser-side key is safe, even if cross-origin requests work.
+
+<CodeGroup>
+```javascript JavaScript
+const baseUrl = 'https://api.outreign.io/rest-api';
+const key = process.env.OUTREIGN_API_KEY;
+if (!key) throw new Error('OUTREIGN_API_KEY is required');
+
+export async function outreign(path, { method = 'GET', body, timeoutMs = 30000 } = {}) {
+  const response = await fetch(`${baseUrl}${path}`, {
+    method,
+    headers: {
+      'X-API-Key': key,
+      ...(body === undefined ? {} : { 'Content-Type': 'application/json' })
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+    signal: AbortSignal.timeout(timeoutMs)
+  });
+  const text = await response.text();
+  let result;
+  try { result = JSON.parse(text); }
+  catch { throw new Error(`Non-JSON response: HTTP ${response.status}`); }
+  if (!response.ok || result.error || result.success === false) {
+    const error = new Error(result.error || `HTTP ${response.status}`);
+    error.status = response.status;
+    error.code = result.error_code;
+    error.resetAt = result.resetAt || response.headers.get('X-RateLimit-Reset');
+    throw error;
+  }
+  return result;
+}
+
+const page = await outreign('/leads?limit=10&offset=0');
+console.log({ returned: page.data.length, total: page.count });
+```
+
+```python Python
+import os
+import requests
+
+BASE_URL = "https://api.outreign.io/rest-api"
+session = requests.Session()
+session.headers.update({"X-API-Key": os.environ["OUTREIGN_API_KEY"]})
+
+def outreign(path, method="GET", body=None, timeout=30):
+    response = session.request(method, BASE_URL + path, json=body, timeout=timeout)
+    try:
+        result = response.json()
+    except ValueError:
+        raise RuntimeError(f"Non-JSON response: HTTP {response.status_code}")
+    if not response.ok or result.get("error") or result.get("success") is False:
+        raise RuntimeError(result.get("error") or f"HTTP {response.status_code}")
+    return result
+
+page = outreign("/leads?limit=10&offset=0")
+print({"returned": len(page["data"]), "total": page["count"]})
+```
+</CodeGroup>
+
+These helpers deliberately do not retry writes automatically. Inspect individual `errors` after bulk import and `confirmation_required` before treating workspace requests as completed. Do not pass full API responses or credentials into logs by default.
+
+Use [pagination](/developer-docs/pagination), [errors and limits](/developer-docs/errors-and-limits) and [production checks](/developer-docs/production) to extend the helper for your workload.

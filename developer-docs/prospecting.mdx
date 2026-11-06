@@ -1,0 +1,80 @@
+---
+title: "Search and person lookup"
+description: "Target the B2B network, continue searches and distinguish candidates from saved CRM records."
+---
+
+## Choose the right operation
+
+| Input | Goal | REST | MCP |
+| --- | --- | --- | --- |
+| Ideal-customer filters | Find new prospects | `POST /prospects/search` | `search_prospects` |
+| Company name | Resolve company candidates | `POST /companies/search` | `search_companies` |
+| Known person | Look up contact information | `POST /people/lookup` | `find_person` |
+| Saved CRM records | Retrieve your existing leads | `GET /leads` | `list_leads`, `search_leads` |
+
+Network candidates are not automatically saved. Only save selected records after reviewing them. Missing names, emails, dates and domains must remain missing rather than being inferred.
+
+## Targeting fields
+
+`POST /prospects/search` accepts a JSON object; undeclared fields are rejected. At least one of `query`, `job_title`, `industry`, `company`, `company_domain`, `job_titles`, `industries` or `companies` must contain a targeting value. A country or page size alone is insufficient.
+
+| Fields | Type and bounds | Purpose |
+| --- | --- | --- |
+| query, job_title, industry, company_size, country, company, company_domain, seniority | Nonempty string, up to 500 characters | Targeting criteria |
+| job_titles, industries, countries, seniority_levels, keywords | Up to 20 nonempty strings, each up to 500 characters | Multiple targeting values |
+| exclude_titles, exclude_industries, exclude_keywords | Same array bounds | Exclusions |
+| companies | Up to 20 objects with optional name and domain | Company targeting |
+| limit | Integer 1–200; further capped by plan | Requested result count |
+| page | Integer 1–1,000 | Search page |
+| cursor | Opaque nonempty string, up to 4,000 characters | Continuation returned as next_cursor |
+| strict, relax, exclude_seen | Boolean | Matching controls, explicit broadening and previously-seen exclusions |
+
+Use explicit title, industry and geography fields rather than expecting a sentence in `query` to encode every constraint. Set `relax` only if the user permits broader matches.
+
+```bash
+curl --fail-with-body https://api.outreign.io/rest-api/prospects/search \
+  -H "X-API-Key: $OUTREIGN_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{"job_title":"Founder","industry":"Software","country":"United States","limit":10,"exclude_seen":true,"relax":false}'
+```
+
+## Results and continuation
+
+Inspect `error` and `error_code` before consuming `leads`, even on HTTP 200. Candidate fields can include `contact_name`, `company_name`, `job_title`, `company_domain`, `business_email`, `linkedin_url` and `scores`. Provider fields and verification labels can vary; an absent email is not a successful reveal.
+
+Pass `next_cursor` as `cursor` with the same targeting fields. Do not construct or decode the cursor. Stop when continuation is absent, results are empty, or the user has enough candidates. Never repeatedly broaden an empty search without approval.
+
+## Company autocomplete
+
+```bash
+curl --fail-with-body https://api.outreign.io/rest-api/companies/search \
+  -H "X-API-Key: $OUTREIGN_API_KEY" -H 'Content-Type: application/json' \
+  -d '{"query":"Notion"}'
+```
+
+`query` requires 2–500 characters. Returns up to eight company candidates. Autocomplete does not save companies, reveal a person or consume reveal credits; account/API request limits still apply.
+
+## Known-person lookup
+
+Use one identification form: a LinkedIn profile URL, a work email, or `full_name` with `company` or `company_domain`.
+
+```bash
+curl --fail-with-body https://api.outreign.io/rest-api/people/lookup \
+  -H "X-API-Key: $OUTREIGN_API_KEY" -H 'Content-Type: application/json' \
+  -d '{"full_name":"Example Contact","company":"Example B2B Software"}'
+```
+
+The result includes `person`, `found_fields` and optional `existing_lead` comparison metadata. An existing lead ID identifies an already-saved match, not a newly created record. Review contributed fields before overwriting CRM data. No-match lookup follows the app's refund behavior; a failure is not proof the person does not exist.
+
+## Limits and saving
+
+| Plan | Results per search | Daily search cap |
+| --- | --- | --- |
+| Starter | 25 | 100 |
+| Growth | 50 | 250 |
+| Pro | 100 | 500 |
+| Agency | 200 | 1,500 |
+
+Paid searches consume the daily search meter, not reveal credits. Person lookup and enrichment reserve one credit under app rules. API/MCP request allowances are separate. See [usage limits](/developer-docs/errors-and-limits).
+
+Map a search candidate's `business_email` to `contact_email` and `company_domain` to `company_website`. Person lookup already returns contact-style fields. Save with `POST /leads` or `create_lead`, then use the returned saved UUID for [intelligence actions](/developer-docs/intelligence).

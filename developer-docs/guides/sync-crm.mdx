@@ -38,12 +38,14 @@ app.post('/outreign-webhook', express.raw({ type: 'application/json' }), async (
   const ok = verifyOutReignWebhook(req.body, req.get('X-Webhook-Signature'), process.env.OUTREIGN_WEBHOOK_SECRET);
   if (!ok) return res.sendStatus(401);
   const event = JSON.parse(req.body);
-  res.sendStatus(200); // acknowledge fast, process after
-  if (event.event === 'lead.deleted') await deleteFromCrm(event.data.id);
-  else if (event.event.startsWith('lead.')) await upsertIntoCrm(event.data);
-  else if (event.event.startsWith('deal.')) await upsertDealIntoCrm(event.data);
+  // Implement durable acceptance and duplicate protection in your receiver.
+  // Return 2xx only after acceptance succeeds; otherwise let OutReign retry.
+  await enqueueDurablyOnce(event, req.body);
+  res.sendStatus(200);
 });
 ```
+
+`upsertIntoCrm`, `upsertDealIntoCrm`, `enqueueDurablyOnce`, `app` and `express` are your integration's adapter/framework functions, not OutReign SDK exports. A separate worker consumes accepted events: handle deletion by ID and fetch current records when an event contains only partial stage-change data. Do not acknowledge first and then risk losing an in-memory task.
 
 ## 3. Write back from the CRM
 

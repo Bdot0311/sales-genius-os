@@ -5,6 +5,37 @@ description: "Start with the REST API, connect an AI assistant, or receive workf
 
 OutReign connects B2B lead intelligence and outbound workflows to your own tools. Choose the interface that matches what you are building.
 
+<CardGroup cols={2}>
+  <Card title="API quickstart" icon="terminal" href="/developer-docs/quickstart">Create a key and verify your first read-only request.</Card>
+  <Card title="Agent quickstart" icon="robot" href="/developer-docs/mcp/agent-quickstart">Connect an assistant and run an approved prospect-to-CRM workflow.</Card>
+  <Card title="API reference" icon="code" href="/developer-docs/api-overview">Request fields, response shapes and endpoint examples.</Card>
+  <Card title="Webhooks" icon="bolt" href="/developer-docs/webhooks/overview">Event subscriptions, signatures, deliveries and recovery.</Card>
+</CardGroup>
+
+## Make a request
+
+Read saved leads without changing data. Set `OUTREIGN_API_KEY` in secure server-side environment storage first.
+
+```bash
+curl --fail-with-body 'https://api.outreign.io/rest-api/leads?limit=5&offset=0' \
+  -H "X-API-Key: $OUTREIGN_API_KEY"
+```
+
+The response contains `data`, `count`, `limit` and `offset`. Empty data is valid for an account with no saved leads. For new prospects use [network search](/developer-docs/prospecting), not the saved-leads endpoint.
+
+## Choose a workflow
+
+| You want to | Start here |
+| --- | --- |
+| Find B2B prospects and resolve people | [Prospecting](/developer-docs/prospecting) |
+| Check a mailbox honestly | [Email verification](/developer-docs/email-verification) |
+| Enrich, research, score or draft | [Lead intelligence](/developer-docs/intelligence) |
+| Sync saved data with a CRM | [CRM recipe](/developer-docs/guides/sync-crm) |
+| Control templates, sequences or mailbox health | [Workspace actions](/developer-docs/workspace-actions) |
+| Ship a reliable integration | [Production checklist](/developer-docs/production) |
+
+Use [JavaScript/Python HTTP helpers](/developer-docs/clients) without relying on an undocumented SDK. Each guide separates actual supported operations from app-only functionality.
+
 ## REST API
 
 Find fresh B2B prospects, resolve companies, look up people and check emails. Read and manage saved leads, contacts, pipeline deals and activities; enrich, research, score or draft for a saved lead.

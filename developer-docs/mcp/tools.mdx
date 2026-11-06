@@ -22,6 +22,34 @@ These tools return the app action's JSON as text content. Parse that JSON and ch
 
 Verification status is `valid`, `invalid`, `catch_all`, `role` or `unknown`. `verified` is true only for valid, false for invalid and null otherwise. A domain accepting mail is not proof that the mailbox exists. Reconnect clients that cache an older tool list after the new revision is published.
 
+The source catalog contains 24 tools. The published catalog is authoritative: a new tool is not reachable merely because it appears in this reference. `verify_email` validates a nonempty string, not mailbox syntax at the tool-schema layer. `find_person`'s fields are individually optional in the schema; send one of the supported identification combinations for a meaningful lookup. See [prospecting](/developer-docs/prospecting) for all targeting bounds.
+
+### Protocol examples
+
+Illustrative JSON-RPC calls below assume initialization, session handling and OAuth have already completed in your MCP client. Do not manually paste bearer tokens into an assistant.
+
+```json
+{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"list_leads","arguments":{"limit":5}}}
+```
+
+```json
+{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"search_prospects","arguments":{"job_title":"Founder","industry":"Software","country":"United States","limit":10,"relax":false}}}
+```
+
+```json
+{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"verify_email","arguments":{"email":"invalid-address"}}}
+```
+
+An app-action success returns JSON encoded in a text content block. For the malformed-address example, parse that text and expect an invalid verdict, not a transport failure. Direct database tools can also return `structuredContent` with their documented result key. Never assume every tool has the same wrapper.
+
+For a safe mutation preview:
+
+```json
+{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"workspace_action","arguments":{"action":"save_email_template","args":{"name":"Example template","goal":"introduction"}}}}
+```
+
+The preview returns `confirmation_required` in its JSON text without performing the edit. Only repeat with `confirmed: true` after approval of those exact arguments. Follow the [agent quickstart](/developer-docs/mcp/agent-quickstart) for a complete workflow.
+
 `workspace_action` provides the app's existing ICP/signal/campaign/template/objection/mailbox/inbox-classification/sequence-control/statistics actions. Required `action`, optional `args`, `agent_id` and `confirmed`; all edits require a preview followed by explicit approval. Exact fields: [workspace actions](/developer-docs/workspace-actions).
 
 ## Read tools

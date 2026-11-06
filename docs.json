@@ -20,6 +20,18 @@
   "appearance": {
     "default": "dark"
   },
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/developer-docs/introduction",
+      "permanent": false
+    },
+    {
+      "source": "/introduction",
+      "destination": "/developer-docs/introduction",
+      "permanent": false
+    }
+  ],
   "api": {
     "params": {
       "expanded": "closed"
@@ -72,6 +84,11 @@
               "developer-docs/pagination",
               "developer-docs/errors-and-limits",
               "developer-docs/integrations",
+              "developer-docs/prospecting",
+              "developer-docs/email-verification",
+              "developer-docs/intelligence",
+              "developer-docs/clients",
+              "developer-docs/production",
               "developer-docs/workspace-actions",
               "developer-docs/troubleshooting"
             ]
@@ -115,6 +132,7 @@
             "pages": [
               "developer-docs/mcp/overview",
               "developer-docs/mcp/connect",
+              "developer-docs/mcp/agent-quickstart",
               "developer-docs/mcp/tools"
             ]
           }
@@ -129,6 +147,7 @@
               "developer-docs/webhooks/overview",
               "developer-docs/webhooks/events",
               "developer-docs/webhooks/security-and-retries",
+              "developer-docs/webhooks/delivery-operations",
               "developer-docs/webhooks/inbound"
             ]
           }

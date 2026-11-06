@@ -5,6 +5,7 @@
 
 - Root `docs.json` configures Mintlify using `public/openapi.json` directly. Why: repository onboarding requires a discoverable config, and a single API specification prevents documentation drift.
 - Mintlify guides live under `developer-docs/`; `.mintignore` excludes application code, CSS and scripts, and retired `/api-docs` and API help guides redirect to the documentation host instead of maintaining duplicate app pages. Why: sharing the repository must not inject app styles/scripts into docs or leave old bookmarks on a stale reference.
+- Developer guides separate CRUD, app-action and MCP response envelopes, and distinguish source contracts from hosted deployment. Why: generated catalogs and repository changes do not prove Mintlify or MCP is serving the newest revision.
 
 - DFY sales-model answers share normalization between the public form and submission function and persist in request metadata; admin summaries retain legacy fields. Why: pricing changes must preserve applicants' actual values and timelines without breaking older requests.
 

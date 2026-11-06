@@ -110,26 +110,8 @@
                   "$ref": "#/components/schemas/LeadList"
                 },
                 "example": {
-                  "data": [
-                    {
-                      "id": "6f1c2a9e-3b7d-4c1a-9e2f-8a4b5c6d7e8f",
-                      "contact_name": "Jordan Lee",
-                      "contact_email": "jordan@northwind.io",
-                      "company_name": "Northwind Analytics",
-                      "job_title": "Head of Sales",
-                      "industry": "Software",
-                      "company_website": "https://northwind.io",
-                      "company_size": "11-50",
-                      "linkedin_url": "https://www.linkedin.com/in/jordanlee",
-                      "lead_status": "active",
-                      "engagement_state": "new",
-                      "pipeline_stage": "new",
-                      "icp_score": 82,
-                      "source": "api",
-                      "created_at": "2026-11-05T14:02:11.000Z"
-                    }
-                  ],
-                  "count": 1,
+                  "data": [],
+                  "count": 0,
                   "limit": 50,
                   "offset": 0
                 }
@@ -865,21 +847,8 @@
                   "$ref": "#/components/schemas/DealList"
                 },
                 "example": {
-                  "data": [
-                    {
-                      "id": "0b9d6c1e-2f3a-4b5c-8d7e-1a2b3c4d5e6f",
-                      "title": "Northwind - annual plan",
-                      "company_name": "Northwind Analytics",
-                      "contact_name": "Jordan Lee",
-                      "value": 12000,
-                      "stage": "proposal",
-                      "probability": 60,
-                      "expected_close_date": "2026-12-15",
-                      "lead_id": "6f1c2a9e-3b7d-4c1a-9e2f-8a4b5c6d7e8f",
-                      "notes": "Wants SSO in Q1."
-                    }
-                  ],
-                  "count": 1,
+                  "data": [],
+                  "count": 0,
                   "limit": 50,
                   "offset": 0
                 }
@@ -1244,18 +1213,8 @@
                   "$ref": "#/components/schemas/ActivityList"
                 },
                 "example": {
-                  "data": [
-                    {
-                      "id": "9c8b7a6d-5e4f-4a3b-2c1d-0e9f8a7b6c5d",
-                      "subject": "Discovery call",
-                      "type": "call",
-                      "completed": false,
-                      "due_date": "2026-11-10T16:00:00.000Z",
-                      "lead_id": "6f1c2a9e-3b7d-4c1a-9e2f-8a4b5c6d7e8f",
-                      "description": "Confirm budget and timeline."
-                    }
-                  ],
-                  "count": 1,
+                  "data": [],
+                  "count": 0,
                   "limit": 50,
                   "offset": 0
                 }
@@ -1607,21 +1566,8 @@
                   "$ref": "#/components/schemas/ContactList"
                 },
                 "example": {
-                  "data": [
-                    {
-                      "id": "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
-                      "first_name": "Priya",
-                      "last_name": "Shah",
-                      "email": "priya@northwind.io",
-                      "job_title": "VP Marketing",
-                      "seniority": "vp",
-                      "city": "Austin",
-                      "country": "United States",
-                      "lead_status": "discovered",
-                      "source": "api"
-                    }
-                  ],
-                  "count": 1,
+                  "data": [],
+                  "count": 0,
                   "limit": 50,
                   "offset": 0
                 }
@@ -2166,7 +2112,7 @@
       "post": {
         "operationId": "searchProspects",
         "summary": "Search new B2B prospects",
-        "description": "Same real Lead Search pipeline, ICP scoring, exclusions, verified/unconfirmed email labels and daily meter. At least one targeting filter required. Paid search costs zero reveal credits; enrichment is charged separately. Does not save or send. Use next_cursor for pagination; relax=true broadens only when explicitly requested.",
+        "description": "Same real Lead Search pipeline, ICP scoring, exclusions, verified/unconfirmed email labels and daily meter. At least one targeting filter required. Paid search costs zero reveal credits; enrichment is charged separately. Does not save or send. Use next_cursor for pagination; relax=true broadens only when explicitly requested. Detailed field guide: https://docs.outreign.io/developer-docs/prospecting.",
         "tags": [
           "Prospecting"
         ],
@@ -2313,7 +2259,8 @@
                   "cursor": {
                     "type": "string",
                     "maxLength": 4000,
-                    "description": "Opaque next_cursor from prior response."
+                    "description": "Opaque next_cursor from prior response.",
+                    "minLength": 1
                   },
                   "companies": {
                     "type": "array",
@@ -2349,7 +2296,7 @@
         },
         "responses": {
           "200": {
-            "description": "App action result. Check error/error_code even on HTTP 200.",
+            "description": "App action result. Check error/error_code even on HTTP 200. Examples are illustrative, not actual customer results.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2379,6 +2326,12 @@
                     }
                   },
                   "additionalProperties": true
+                },
+                "example": {
+                  "success": true,
+                  "leads": [],
+                  "has_more": false,
+                  "next_cursor": null
                 }
               }
             }
@@ -2435,7 +2388,7 @@
         },
         "responses": {
           "200": {
-            "description": "App action result. Check error/error_code even on HTTP 200.",
+            "description": "App action result. Check error/error_code even on HTTP 200. Examples are illustrative, not actual customer results.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2449,6 +2402,9 @@
                       }
                     }
                   }
+                },
+                "example": {
+                  "companies": []
                 }
               }
             }
@@ -2523,7 +2479,7 @@
         },
         "responses": {
           "200": {
-            "description": "App action result. Check error/error_code even on HTTP 200.",
+            "description": "App action result. Check error/error_code even on HTTP 200. Examples are illustrative, not actual customer results.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2544,6 +2500,10 @@
                     }
                   },
                   "additionalProperties": true
+                },
+                "example": {
+                  "person": null,
+                  "error": "No matching contact found"
                 }
               }
             }
@@ -2600,7 +2560,7 @@
         },
         "responses": {
           "200": {
-            "description": "App action result. Check error/error_code even on HTTP 200.",
+            "description": "App action result. Check error/error_code even on HTTP 200. Examples are illustrative, not actual customer results.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2639,6 +2599,14 @@
                       "type": "string"
                     }
                   }
+                },
+                "example": {
+                  "email": "invalid-address",
+                  "status": "invalid",
+                  "verified": false,
+                  "reason": "Invalid email format",
+                  "cached": false,
+                  "credits_charged": 0
                 }
               }
             }
@@ -2691,7 +2659,7 @@
         },
         "responses": {
           "200": {
-            "description": "App action result. Check error/error_code even on HTTP 200.",
+            "description": "App action result. Check error/error_code even on HTTP 200. Examples are illustrative, not actual customer results.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2725,6 +2693,16 @@
                     }
                   },
                   "additionalProperties": true
+                },
+                "example": {
+                  "brief": {
+                    "what_they_do": "",
+                    "observations": [],
+                    "confidence": "low"
+                  },
+                  "sources": [],
+                  "confidence": "low",
+                  "cached": false
                 }
               }
             }
@@ -2769,7 +2747,7 @@
         "tags": [
           "Outreach"
         ],
-        "description": "Existing app workspace handlers with caller ownership, plan and optional agent role checks. All edits return confirmation_required until confirmed=true after explicit approval. Does not directly send email; resuming sequences/mailboxes permits future automation. Additional 30/minute account cap.",
+        "description": "Existing app workspace handlers with caller ownership, plan and optional agent role checks. All edits return confirmation_required until confirmed=true after explicit approval. Does not directly send email; resuming sequences/mailboxes permits future automation. Additional 30/minute account cap. See https://docs.outreign.io/developer-docs/workspace-actions for exact action-specific fields. Confirmation is a client/user responsibility; no server-issued approval token is required.",
         "requestBody": {
           "required": true,
           "content": {
@@ -2829,12 +2807,20 @@
         },
         "responses": {
           "200": {
-            "description": "Action data, confirmation preview or app action error; inspect response.",
+            "description": "Action data, confirmation preview or app action error; inspect response. Examples are illustrative, not actual customer results.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "additionalProperties": true
+                },
+                "example": {
+                  "confirmation_required": true,
+                  "action": "save_email_template",
+                  "args": {
+                    "name": "Example template"
+                  },
+                  "message": "Review these exact changes and confirm before calling again. Nothing changed."
                 }
               }
             }
@@ -2932,7 +2918,10 @@
           },
           "icp_score": {
             "type": "integer",
-            "description": "Fit score (0-100) from the last scoring run."
+            "description": "Fit score (0-100) from the last scoring run.",
+            "minimum": 0,
+            "maximum": 100,
+            "example": 78
           },
           "created_at": {
             "type": "string",
@@ -2999,6 +2988,46 @@
             "type": "string",
             "maxLength": 50,
             "description": "Outreach engagement state. Defaults to `new`."
+          },
+          "enrichment_status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Persisted enrichment state; missing/null does not establish successful enrichment."
+          },
+          "enriched_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Recorded enrichment time when available."
+          },
+          "research_brief": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": true,
+            "description": "Persisted sourced research brief when available."
+          },
+          "research_sources": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "Stored research source URLs."
+          },
+          "researched_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
           }
         }
       },
