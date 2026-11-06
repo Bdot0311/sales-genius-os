@@ -63,7 +63,10 @@ All four paid plans start with a 14-day free trial and a 30-day money-back guara
 
 - Homepage: https://outreign.io/
 - Pricing: https://outreign.io/pricing
-- API Documentation: https://outreign.io/api-docs
+- Developer Documentation: https://docs.outreign.io
+- Developer Documentation Index: https://docs.outreign.io/llms.txt
+- MCP tools: https://docs.outreign.io/developer-docs/mcp/tools
+- Webhooks: https://docs.outreign.io/developer-docs/webhooks/overview
 - Help Center: https://outreign.io/help
 - Privacy Policy: https://outreign.io/privacy
 - Terms of Service: https://outreign.io/terms
