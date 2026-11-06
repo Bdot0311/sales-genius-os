@@ -22,7 +22,7 @@ These tools return the app action's JSON as text content. Parse that JSON and ch
 
 Verification status is `valid`, `invalid`, `catch_all`, `role` or `unknown`. `verified` is true only for valid, false for invalid and null otherwise. A domain accepting mail is not proof that the mailbox exists. Reconnect clients that cache an older tool list after the new revision is published.
 
-The source catalog contains 24 tools. The published catalog is authoritative: a new tool is not reachable merely because it appears in this reference. `verify_email` validates a nonempty string, not mailbox syntax at the tool-schema layer. `find_person`'s fields are individually optional in the schema; send one of the supported identification combinations for a meaningful lookup. See [prospecting](/developer-docs/prospecting) for all targeting bounds.
+The source catalog contains 25 tools. The published catalog is authoritative: a new tool is not reachable merely because it appears in this reference. `verify_email` validates a nonempty string, not mailbox syntax at the tool-schema layer. `find_person`'s fields are individually optional in the schema; send one of the supported identification combinations for a meaningful lookup. See [prospecting](/developer-docs/prospecting) for all targeting bounds.
 
 ### Protocol examples
 
@@ -102,6 +102,14 @@ Required: `reply_thread_id` (UUID), nonempty plain-text `body`.
 Optional: `subject`; when omitted, it uses a reply subject based on the original thread.
 
 Queues an outbound reply linked to the original lead/thread. Returns `queued_email`. Delivery happens later through the connected mailbox; inspect the inbox/sent state rather than treating a queue response as delivered.
+
+### `send_email`
+
+Required: valid `to` email (max 320 characters), nonempty `subject` (max 300), nonempty `body` (plain text or simple HTML, max 50,000).
+
+Optional: `lead_id` (UUID), `thread_id` (Gmail thread ID when replying in an existing conversation, max 200), `mailbox_id` (UUID of a connected mailbox; defaults to the most recent), `append_signature` (boolean).
+
+Sends the email immediately from your connected Gmail mailbox with the same send limits, suppression list and quality check as the app, and logs it to Unified Inbox. Returns the send result as JSON text: `success`, `provider`, `messageId` and `threadId`. A refused send, such as an unsubscribed recipient, a repeat of a recent email with the same recipient and subject outside a thread, a reached send limit or a failed quality check, returns `isError: true` with the reason. Unlike `send_reply`, this is not queued; only call it after the user approves the final recipient, subject and body. The REST equivalent is `POST /email/send`.
 
 ## Deals and ICP profiles
 

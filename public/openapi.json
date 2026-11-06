@@ -2910,11 +2910,17 @@
           "200": {
             "description": "Sent"
           },
+          "400": {
+            "description": "Invalid or unsupported input field, or no active Gmail mailbox connected"
+          },
           "401": {
             "description": "Invalid API key"
           },
+          "409": {
+            "description": "Sending is paused for this mailbox, or the same recipient and subject were already sent recently outside a thread"
+          },
           "422": {
-            "description": "Quality check failed; findings explain what to fix"
+            "description": "Not sent: recipient unsubscribed, address failed verification, or quality check failed; the error explains what to fix"
           },
           "429": {
             "description": "Send or request limit reached"

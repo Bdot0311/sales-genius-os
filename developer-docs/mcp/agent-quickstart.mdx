@@ -9,7 +9,7 @@ First [connect with OAuth](/developer-docs/mcp/connect) to `https://api.outreign
 
 Ask: **“List up to five saved OutReign leads. Do not modify anything or send messages.”**
 
-The client should discover `list_leads` via `tools/list`. Empty results can mean the account has no saved leads; “failed_to_load”, authorization errors or a tool `isError` are not an empty successful result. The current source catalog contains 24 tools; availability of a new revision depends on app publication and refreshing the connector.
+The client should discover `list_leads` via `tools/list`. Empty results can mean the account has no saved leads; “failed_to_load”, authorization errors or a tool `isError` are not an empty successful result. The current source catalog contains 25 tools; availability of a new revision depends on app publication and refreshing the connector.
 
 ## Bounded prospecting prompt
 
@@ -43,6 +43,7 @@ separate approval of the exact action. Report failures honestly.
 | research_lead | Brief and cited sources | A buying commitment |
 | generate_email | Draft copy and saved draft_id in Unified Inbox | Email sent or delivered |
 | send_reply | Queued reply | Delivered message |
+| send_email | Gmail accepted the message (`messageId`) | Inbox placement or a reply |
 
 ## Workspace confirmation
 
