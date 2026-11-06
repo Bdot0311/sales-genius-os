@@ -121,7 +121,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     title: "Connect Grok, Cursor and other AI assistants",
     summary: "AI assistants that refused to load OutReign's tools can now connect and sign in.",
     items: [
-      { tag: "fixed", title: "AI assistant connection", description: "Assistants such as Grok and Cursor that showed \"failed to load\" for OutReign now connect at api.outreign.io/mcp. Remove the connector, add it again, and sign in.", href: "https://docs.outreign.io/developer-docs/mcp/connect" },
+      { tag: "fixed", title: "AI assistant connection", description: "Assistants such as Grok and Cursor that showed \"failed to load\" for OutReign now connect at api.outreign.io/mcp. Remove the connector, add it again, and sign in.", href: "/connect" },
     ],
   },
   {
