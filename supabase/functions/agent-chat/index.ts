@@ -1020,6 +1020,14 @@ const TOOLS = [
       parameters: { type: "object", properties: {} },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "verify_email",
+      description: "Check one business email with the same verifier used in search and enrichment. Returns valid, invalid, catch_all, role or unknown. Only verified=true confirms a mailbox. Sends nothing and charges no reveal credit; paid plan and request limits apply.",
+      parameters: { type: "object", properties: { email: { type: "string", maxLength: 320 } }, required: ["email"], additionalProperties: false },
+    },
+  },
 ];
 
 serve(async (req) => {
@@ -4658,6 +4666,14 @@ serve(async (req) => {
             pending_approvals: pending ?? 0,
             actions_today: (todayActions ?? []).length,
           };
+        }
+
+        case "verify_email": {
+          const email = typeof args.email === "string" ? args.email.trim() : "";
+          if (!email || email.length > 320) return { error: "Provide an email address of at most 320 characters." };
+          const result = await invokeFn("check-lead-email", { email });
+          toolEvents.push({ name, label: "Checked email", status: result?.error ? "error" : "ok", detail: result?.status ?? result?.error ?? "unknown" });
+          return result;
         }
 
         case "search_companies": {

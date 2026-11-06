@@ -20,9 +20,9 @@ REST API keys are not used for this connection. The client discovers authorizati
 
 ## What is available
 
-Read saved leads, search existing saved records, inspect sequences, replies, sent emails, deals and ICP profiles, and review agent activity. Write tools can create or update records, enroll a lead, queue a reply and edit agent settings.
+Find fresh B2B prospects, search companies, look up people, verify emails, enrich/research/score saved leads and generate email drafts. Read saved records, inspect sequences, replies, sent emails, deals and ICP profiles, and review agent activity. Write tools can create or update records, enroll a lead, queue a reply and edit agent settings.
 
-`search_leads` searches the user's saved records. It does not perform a fresh external prospect search or enrichment. MCP tools are distinct from OutReign's in-app agent tools and the REST endpoint catalog.
+`search_leads` searches saved records; use `search_prospects` for new external prospects. Discovery/intelligence tools call the same app handlers under your OAuth identity, preserving app permissions and credit rules. The current tool catalog is explicit; it does not expose every app settings/admin screen.
 
 ## Before calling write tools
 

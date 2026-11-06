@@ -72,12 +72,14 @@
               "developer-docs/pagination",
               "developer-docs/errors-and-limits",
               "developer-docs/integrations",
+              "developer-docs/workspace-actions",
               "developer-docs/troubleshooting"
             ]
           },
           {
             "group": "Recipes",
             "pages": [
+              "developer-docs/guides/prospect-verify-save",
               "developer-docs/guides/import-enrich-draft",
               "developer-docs/guides/sync-crm"
             ]

@@ -1,3 +1,10 @@
+# API and MCP app-access parity
+
+- [x] Expose real app prospect search and email verification with the same owner, plan and credit checks.
+- [x] Extend matching API/MCP enrichment, research and bounded workspace-action access; document exact capabilities and remaining gaps without claiming full parity.
+- [x] Run 112 authorization/contract regressions; verify API search, save, score and Saved Leads read-back, MCP authenticated handlers, confirmation previews and temporary-record cleanup; deploy eligible functions.
+- [ ] Publish the new MCP revision and verify hosted tool discovery (requires app publishing; local catalog has 24 tools).
+
 # Retire built-in API documentation
 
 - [x] Remove the duplicate API reference and developer help category/articles; keep external documentation links and legacy redirects.

@@ -10,7 +10,7 @@ import { applySearchMeter, asMeterClient } from "../_shared/search-meter.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
 };
 
 const JOB_TITLE_PATTERNS = new Set([
@@ -111,7 +111,7 @@ serve(async (req) => {
     if (!leadId) throw new Error('Lead ID is required');
 
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) throw new Error('No authorization header');
+    if (!authHeader && !req.headers.get('X-API-Key')) throw new Error('No authorization header');
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;

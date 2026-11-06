@@ -21,6 +21,8 @@ OutReign is email-only. We do not provide phone numbers, cold calling tools, or 
 
 ## Key Features
 
+- **API/MCP discovery and intelligence**: Paid accounts can use POST /prospects/search, /companies/search, /people/lookup, /email/verify and /leads/{id}/research. MCP equivalents: search_prospects, search_companies, find_person, verify_email, enrich_lead, research_lead, score_lead and generate_email. These reuse app identity, limits and credit rules; discovery does not automatically save or send. search_leads searches saved CRM only. Only verified=true confirms a mailbox; catch_all/role/unknown remain unproven. Exact reference: https://docs.outreign.io/developer-docs/capabilities.
+
 - **Plain-English ICP search**: Describe your target customer naturally, no boolean syntax or filter juggling.
 - **ICP fit scoring**: Every prospect is scored against your ICP so you know who to email first.
 - **SMTP-verified email enrichment**: Emails verified via SMTP handshake plus multi-source validation before delivery.

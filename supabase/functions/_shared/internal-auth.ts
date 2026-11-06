@@ -2,9 +2,12 @@
 // Accepts either:
 //   Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>  (admin/user callers)
 //   Authorization: Bearer <INTERNAL_TRIGGER_SECRET>    (DB triggers/cron via vault)
+import { resolveAppUser } from "./app-user.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0?target=deno";
+
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-api-key",
 };
 
 export function requireServiceRole(req: Request): Response | null {
@@ -86,8 +89,15 @@ export async function resolveCaller(req: Request): Promise<Caller> {
   });
 
   const authHeader = req.headers.get("Authorization") ?? "";
-  if (!authHeader) return unauthorized();
+  if (!authHeader && !req.headers.get("X-API-Key")) return unauthorized();
   if (isInternalCaller(req)) return { ok: true, internal: true, userId: null };
+
+  if (req.headers.get("X-API-Key")) {
+    const db = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
+    const resolved = await resolveAppUser(req, db);
+    if (!resolved.user) return { ok: false, response: new Response(JSON.stringify({ error: resolved.error }), { status: resolved.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }) };
+    return { ok: true, internal: false, userId: resolved.user.id };
+  }
 
   const token = authHeader.replace(/^Bearer\s+/i, "").trim();
   const url = Deno.env.get("SUPABASE_URL") ?? "";

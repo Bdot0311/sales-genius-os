@@ -39,7 +39,7 @@ import {
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-api-key",
 };
 
 // The guessed paths are now the floor, not the plan — see _shared/site-discovery.ts.
@@ -258,7 +258,7 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    if (!authHeader && !req.headers.get('X-API-Key')) {
       return new Response(JSON.stringify({ error: "Authorization required" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -53,6 +53,7 @@ export const AGENT_TOOL_GROUPS: {
     tools: [
       { name: "find_leads", label: "Source new leads" },
       { name: "search_companies", label: "Search companies" },
+      { name: "verify_email", label: "Check an email address" },
       { name: "enrich_leads", label: "Enrich leads" },
       { name: "research_leads", label: "Research leads" },
       { name: "score_leads", label: "Score against ICP" },

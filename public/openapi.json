@@ -2,9 +2,9 @@
   "openapi": "3.1.0",
   "info": {
     "title": "OutReign API",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "summary": "B2B lead intelligence and outbound sales API",
-    "description": "The OutReign REST API lets your server read and manage the data in an OutReign account: saved leads, pipeline deals, activities and contacts. It can also enrich and score saved leads and generate AI email drafts.\n\n**Base URL:** `https://api.outreign.io/rest-api`\n\n**Authentication:** send your key in the `X-API-Key` header. Create keys in OutReign under Settings → API Keys. API access is included on Starter and above.\n\n**Format:** JSON request and response bodies, UTF-8. Single records are returned in `data`; lists return `data`, `count`, `limit` and `offset`. Errors return `error` with a message.\n\n**Scope:** this API works on data already in your account. Finding new prospects and verifying email addresses happen inside the OutReign app; see https://docs.outreign.io/developer-docs/capabilities.\n\nMCP (for AI assistants) and webhooks are documented at https://docs.outreign.io.",
+    "description": "The OutReign REST API lets your server read and manage the data in an OutReign account: saved leads, pipeline deals, activities and contacts. It can also enrich and score saved leads and generate AI email drafts.\n\n**Base URL:** `https://api.outreign.io/rest-api`\n\n**Authentication:** send your key in the `X-API-Key` header. Create keys in OutReign under Settings \u2192 API Keys. API access is included on Starter and above.\n\n**Format:** JSON request and response bodies, UTF-8. Single records are returned in `data`; lists return `data`, `count`, `limit` and `offset`. Errors return `error` with a message.\n\n**Scope:** Fresh B2B prospect search, company search, person lookup, email verification and saved-lead research use the same app handlers and account restrictions. Nothing is automatically saved or sent by discovery. See https://docs.outreign.io/developer-docs/capabilities.\n\nMCP (for AI assistants) and webhooks are documented at https://docs.outreign.io.",
     "contact": {
       "name": "OutReign support",
       "email": "support@bdotindustries.com",
@@ -47,6 +47,10 @@
     {
       "name": "Outreach",
       "description": "AI email drafts for a lead. Drafts are returned to you; nothing is sent."
+    },
+    {
+      "name": "Prospecting",
+      "description": "Real app discovery and verification with account limits."
     }
   ],
   "paths": {
@@ -609,7 +613,7 @@
         ],
         "operationId": "enrichLead",
         "summary": "Enrich a lead",
-        "description": "Enrich a saved lead using the account’s entitlement and credit checks. Inspect noMatch and enrichedFields; success does not guarantee a new match.",
+        "description": "Enrich a saved lead using the account\u2019s entitlement and credit checks. Inspect noMatch and enrichedFields; success does not guarantee a new match.",
         "responses": {
           "200": {
             "description": "Enrichment result",
@@ -2154,6 +2158,695 @@
           }
         }
       }
+    },
+    "/prospects/search": {
+      "post": {
+        "operationId": "searchProspects",
+        "summary": "Search new B2B prospects",
+        "description": "Same real Lead Search pipeline, ICP scoring, exclusions, verified/unconfirmed email labels and daily meter. At least one targeting filter required. Paid search costs zero reveal credits; enrichment is charged separately. Does not save or send. Use next_cursor for pagination; relax=true broadens only when explicitly requested.",
+        "tags": [
+          "Prospecting"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "query": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "job_title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "industry": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "company_size": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "country": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "company": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "company_domain": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "seniority": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "job_titles": {
+                    "type": "array",
+                    "maxItems": 20,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500
+                    }
+                  },
+                  "industries": {
+                    "type": "array",
+                    "maxItems": 20,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500
+                    }
+                  },
+                  "countries": {
+                    "type": "array",
+                    "maxItems": 20,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500
+                    }
+                  },
+                  "seniority_levels": {
+                    "type": "array",
+                    "maxItems": 20,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500
+                    }
+                  },
+                  "keywords": {
+                    "type": "array",
+                    "maxItems": 20,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500
+                    }
+                  },
+                  "exclude_titles": {
+                    "type": "array",
+                    "maxItems": 20,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500
+                    }
+                  },
+                  "exclude_industries": {
+                    "type": "array",
+                    "maxItems": 20,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500
+                    }
+                  },
+                  "exclude_keywords": {
+                    "type": "array",
+                    "maxItems": 20,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500
+                    }
+                  },
+                  "strict": {
+                    "type": "boolean"
+                  },
+                  "relax": {
+                    "type": "boolean"
+                  },
+                  "exclude_seen": {
+                    "type": "boolean"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 200,
+                    "description": "Further capped by plan: Starter 25, Growth 50, Pro 100, Agency 200."
+                  },
+                  "page": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1000
+                  },
+                  "cursor": {
+                    "type": "string",
+                    "maxLength": 4000,
+                    "description": "Opaque next_cursor from prior response."
+                  },
+                  "companies": {
+                    "type": "array",
+                    "maxItems": 20,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 500
+                        },
+                        "domain": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 500
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "example": {
+                "query": "Founders at B2B SaaS companies in the US",
+                "job_title": "Founder",
+                "industry": "Software",
+                "limit": 10,
+                "exclude_seen": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "App action result. Check error/error_code even on HTTP 200.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "leads": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                      }
+                    },
+                    "next_cursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    },
+                    "error": {
+                      "type": "string"
+                    },
+                    "error_code": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/companies/search": {
+      "post": {
+        "operationId": "searchCompanies",
+        "summary": "Search company autocomplete",
+        "description": "Up to eight name/domain matches, free of reveal charges. Does not find people, enrich or save companies.",
+        "tags": [
+          "Prospecting"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "query": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "query"
+                ]
+              },
+              "example": {
+                "query": "Notion"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "App action result. Check error/error_code even on HTTP 200.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "companies": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/people/lookup": {
+      "post": {
+        "operationId": "findPerson",
+        "summary": "Look up a known person",
+        "description": "Provide LinkedIn profile, email, or full name plus company/domain. Same one-credit lookup and no-match refund as the app. Returns match without saving; POST /leads explicitly saves an approved result.",
+        "tags": [
+          "Prospecting"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "full_name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "company": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "company_domain": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "email": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "linkedin_url": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  }
+                }
+              },
+              "example": {
+                "full_name": "Jordan Lee",
+                "company": "Northwind Analytics"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "App action result. Check error/error_code even on HTTP 200.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "person": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "additionalProperties": true
+                    },
+                    "error": {
+                      "type": "string"
+                    },
+                    "error_code": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/email/verify": {
+      "post": {
+        "operationId": "verifyEmail",
+        "summary": "Check email deliverability",
+        "description": "Same verifier as app search/enrichment, not signup validation. No reveal credit charged. Limit 10 checks/minute and a rolling daily allowance equal to plan daily search cap (100/250/500/1500); shared by API/MCP. Sends nothing. verified=true only for valid; invalid=false; catch_all, role and unknown=null. Not a delivery guarantee.",
+        "tags": [
+          "Prospecting"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 320
+                  }
+                },
+                "required": [
+                  "email"
+                ]
+              },
+              "example": {
+                "email": "jordan@northwind.io"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "App action result. Check error/error_code even on HTTP 200.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "email": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "valid",
+                        "invalid",
+                        "catch_all",
+                        "role",
+                        "unknown"
+                      ]
+                    },
+                    "verified": {
+                      "type": [
+                        "boolean",
+                        "null"
+                      ]
+                    },
+                    "reason": {
+                      "type": "string"
+                    },
+                    "cached": {
+                      "type": "boolean"
+                    },
+                    "credits_charged": {
+                      "type": "integer",
+                      "const": 0
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/leads/{id}/research": {
+      "post": {
+        "operationId": "researchLead",
+        "summary": "Research a saved lead",
+        "description": "Uses combined app research sources and stores a sourced brief on your owned lead. Fresh research is reused unless force=true. Does not send.",
+        "tags": [
+          "Leads"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "force": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                }
+              },
+              "example": {
+                "force": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "App action result. Check error/error_code even on HTTP 200.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "brief": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "sources": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "confidence": {
+                      "type": [
+                        "number",
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "researched_at": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "cached": {
+                      "type": "boolean"
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "description": "The record's UUID."
+        }
+      ]
+    },
+    "/workspace/actions": {
+      "post": {
+        "operationId": "workspaceAction",
+        "summary": "Read or update sales workspace",
+        "tags": [
+          "Outreach"
+        ],
+        "description": "Existing app workspace handlers with caller ownership, plan and optional agent role checks. All edits return confirmation_required until confirmed=true after explicit approval. Does not directly send email; resuming sequences/mailboxes permits future automation. Additional 30/minute account cap.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "action"
+                ],
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "list_icp_profiles",
+                      "update_icp_profile",
+                      "list_signals",
+                      "refresh_signals",
+                      "list_sequence_enrollments",
+                      "update_enrollment",
+                      "update_sequence_status",
+                      "classify_reply",
+                      "list_sending_accounts",
+                      "update_sending_account",
+                      "list_deliverability_alerts",
+                      "resolve_deliverability_alert",
+                      "list_email_templates",
+                      "save_email_template",
+                      "list_objections",
+                      "save_objection",
+                      "list_campaign_briefs",
+                      "save_campaign_brief",
+                      "get_outbound_stats"
+                    ]
+                  },
+                  "args": {
+                    "type": "object",
+                    "additionalProperties": true,
+                    "description": "Action-specific fields at https://docs.outreign.io/developer-docs/workspace-actions; handler rejects unknown fields."
+                  },
+                  "agent_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "confirmed": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                }
+              },
+              "example": {
+                "action": "list_email_templates",
+                "args": {}
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Action data, confirmation preview or app action error; inspect response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2162,7 +2855,7 @@
         "type": "apiKey",
         "in": "header",
         "name": "X-API-Key",
-        "description": "Your secret API key. Create it in OutReign → Settings → API Keys and send it on every request as `X-API-Key: <key>`. The key acts as its owner: every request reads and writes that owner's data. Keep it server-side; never ship it in browser or mobile code."
+        "description": "Your secret API key. Create it in OutReign \u2192 Settings \u2192 API Keys and send it on every request as `X-API-Key: <key>`. The key acts as its owner: every request reads and writes that owner's data. Keep it server-side; never ship it in browser or mobile code."
       }
     },
     "schemas": {

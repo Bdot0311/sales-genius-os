@@ -1,0 +1,50 @@
+---
+title: "Sales workspace actions"
+description: "Use existing app actions for targeting, campaigns, inbox triage and mailbox health."
+---
+
+REST: `POST https://api.outreign.io/rest-api/workspace/actions`, authenticated with `X-API-Key`.
+MCP: `workspace_action`, authenticated with your authorized OAuth session.
+
+Both call the same app agent-workspace handlers, with ownership, plan and optional agent-build role checks. These actions do not directly send email. Resuming sequences or mailboxes can permit later automated sending; review before confirming.
+
+## Request
+
+```json
+{
+  "action": "list_email_templates",
+  "args": {}
+}
+```
+
+Optional `agent_id` (UUID) restricts the call to that owned build's role/custom tool list. Without it, account-level tools are capped by your plan. Unknown actions, unknown argument fields and caller-supplied ownership fields are rejected. Arguments are limited to 16 KB; request rate is at most 30/minute in addition to API/MCP plan allowances.
+
+Read actions return results immediately. Edit/refresh actions return `confirmation_required: true` and an exact action/argument preview without changing anything. After the user approves that preview, repeat it with `confirmed: true`. Do not set confirmation on a first call or reuse approval for different arguments.
+
+## Action fields
+
+| Action | Arguments | Results |
+| --- | --- | --- |
+| `list_icp_profiles` | None | `icp_profiles` |
+| `update_icp_profile` | Required `icp_id`; optional name, industries, target_titles, seniority_levels, geographies, departments, company_size_min/max, pain_points, buying_signals, intent_keywords, exclude_industries/titles/domains/geographies, disqualifiers, notes | Changes owned ICP fields; arrays replace old lists |
+| `list_signals` | Required lead_id; optional limit | signals and checkable facts |
+| `refresh_signals` | Required lead_id | Refresh hiring signals only; no news/tech provider spend |
+| `list_sequence_enrollments` | Optional sequence_id, status, limit | enrollments |
+| `update_enrollment` | Required enrollment_id, action (pause/resume/stop); optional reason | Changes owned enrollment |
+| `update_sequence_status` | Required sequence_id, status (active/paused/draft) | Changes owned sequence |
+| `classify_reply` | Required reply_id; optional classification, read | Changes owned reply tag/read state |
+| `list_sending_accounts` | None | Mailbox health and limits, never credentials |
+| `update_sending_account` | Required account_id; optional status (active/paused), daily_limit, reason | Changes owned mailbox settings |
+| `list_deliverability_alerts` | Optional include_resolved | alerts |
+| `resolve_deliverability_alert` | Required alert_id | Resolves owned alert |
+| `list_email_templates` | None | templates |
+| `save_email_template` | Optional template_id for update; name required for create; goal, suggested_subject, trigger_context, social_proof | Creates/edits owned template |
+| `list_objections` | None | objections |
+| `save_objection` | Optional objection_id for update; label required for create; type (objection/competitor), competitor_name, talk_track, positioning, proof_points, do_not_say, trigger_terms, strengths, weaknesses | Creates/edits owned objection |
+| `list_campaign_briefs` | None | briefs |
+| `save_campaign_brief` | Optional brief_id for update; name required for create; offer, proof, pain_by_persona, forbidden_claims, replaces | Creates/edits owned brief |
+| `get_outbound_stats` | Optional days | Aggregate and per-mailbox outbound statistics |
+
+Lists/fields use the app's existing limits and validations; successful transport does not imply a successful action. Inspect `error`, `success`, `confirmation_required` and returned data.
+
+Reply classifications: interested, meeting_request, not_interested, objection, out_of_office, referral, unsubscribe, question, other. Plan exclusions still apply: Starter cannot use sequence enrollment actions that require Growth. Optional agent role restrictions can further narrow access.
