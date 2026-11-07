@@ -10,6 +10,7 @@ import {
 } from '../_shared/unsubscribe.ts';
 import { injectClickTracking } from "../_shared/click-tracking.ts";
 import { proofFromLead, queuedCopyBlockers } from "../_shared/template-send-gate.ts";
+import { bodyViolations, evaluateStoredSnapshots } from "../_shared/evidence-contract.ts";
 
 // RFC 2047 MIME encode subject for non-ASCII characters
 const mimeEncodeSubject = (subject: string) => {
@@ -249,9 +250,41 @@ serve(async (req) => {
     if (leadIds.length > 0) {
       const { data: leadRows } = await supabase
         .from("leads")
-        .select("id, research_brief, job_title, industry, company_name, contact_name")
+        .select("id, user_id, research_brief, job_title, industry, company_name, contact_name, company_website")
         .in("id", leadIds);
       for (const lead of leadRows ?? []) proofByLead.set(lead.id, proofFromLead(lead));
+    }
+    const factsByLead = new Map<string, ReturnType<typeof evaluateStoredSnapshots>>();
+    if (leadIds.length > 0) {
+      const { data: snapRows } = await supabase
+        .from("research_snapshots")
+        .select("lead_id, user_id, payload")
+        .in("lead_id", leadIds);
+      const grouped = new Map<string, unknown[]>();
+      for (const row of snapRows ?? []) {
+        const list = grouped.get(row.lead_id) ?? [];
+        list.push(row.payload);
+        grouped.set(row.lead_id, list);
+      }
+      const { data: leadRows } = await supabase
+        .from("leads")
+        .select("id, user_id, company_name, company_website")
+        .in("id", leadIds);
+      for (const lead of leadRows ?? []) {
+        const host = (() => {
+          const raw = String(lead.company_website ?? "");
+          try { return new URL(raw.includes("://") ? raw : `https://${raw}`).hostname.replace(/^www\./, ""); }
+          catch { return null; }
+        })();
+        factsByLead.set(lead.id, evaluateStoredSnapshots({
+          userId: lead.user_id,
+          leadId: lead.id,
+          company: String(lead.company_name ?? ""),
+          websiteHost: host,
+          now: new Date().toISOString(),
+          stored: grouped.get(lead.id) ?? [],
+        }));
+      }
     }
 
     for (const email of scheduledEmails) {
@@ -578,6 +611,18 @@ serve(async (req) => {
          * a claim with no attempt was never sent and is handed back, a claim
          * with one may be in the recipient's inbox and is never retried.
          */
+        const evidenceDecision = email.lead_id ? factsByLead.get(email.lead_id) : undefined;
+        const evidenceBlockers = bodyViolations(email.body_text || email.body_html || "", evidenceDecision ?? {
+          status: "absent", reason: "", evidenceId: "", facts: [], conflicts: [],
+        });
+        if (evidenceBlockers.length > 0) {
+          await failEmail(
+            email.id,
+            `Not sent (research_required). ${evidenceBlockers[0]}`,
+          );
+          failed++;
+          continue;
+        }
         const copyBlockers = queuedCopyBlockers(
           email.subject || "",
           email.body_text || email.body_html || "",

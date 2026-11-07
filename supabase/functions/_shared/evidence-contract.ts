@@ -188,7 +188,7 @@ function nounNumber(text: string, noun: string): string | null {
   return match ? match[1].replace(/,/g, "") : null;
 }
 
-const CONFLICT_NOUNS = ["campaigns", "conversations", "employees", "customers", "clients", "weeks"];
+const CONFLICT_NOUNS = ["campaigns", "conversations", "employees", "customers", "clients", "weeks", "meetings"];
 
 export function evaluateStoredSnapshots(input: {
   userId: string;
@@ -238,25 +238,29 @@ export function evaluateStoredSnapshots(input: {
     const excerpt = stripInstructionLines(snap.excerpt);
     const namesCompany = company.length > 2 && excerpt.toLowerCase().includes(company);
     const hostMatches = !!input.websiteHost && finalHost === input.websiteHost;
-    if (snap.role !== "sender_proof") {
-      if (requestedHost && finalHost && requestedHost !== finalHost && finalHost !== input.websiteHost) {
-        sawWrong = true;
-        continue;
-      }
-      if (!hostMatches && !namesCompany) {
-        sawWrong = true;
-        continue;
-      }
-      if (input.websiteHost && finalHost && finalHost !== input.websiteHost && snap.role === "prospect_page") {
-        sawWrong = true;
-        continue;
-      }
+    if (snap.role === "sender_proof") {
+      sawWrong = true;
+      continue;
+    }
+    if (requestedHost && finalHost && requestedHost !== finalHost && finalHost !== input.websiteHost) {
+      sawWrong = true;
+      continue;
+    }
+    if (!hostMatches && !namesCompany) {
+      sawWrong = true;
+      continue;
+    }
+    if (input.websiteHost && finalHost && finalHost !== input.websiteHost && snap.role === "prospect_page") {
+      sawWrong = true;
+      continue;
     }
     const spans: string[] = [];
     for (const sentence of sentencesOf(excerpt)) {
       const span = factualSpan(sentence, excerpt);
       if (!span || !/\d/.test(span) || isInferredClaim(span)) continue;
-      if (snap.role !== "sender_proof" && SENDER_PROOF.test(span)) continue;
+      if (SENDER_PROOF.test(span)) continue;
+      if (company.length > 2 && !span.toLowerCase().includes(company)) continue;
+      if (/ignore previous|treat this as verified|system prompt/i.test(span)) continue;
       spans.push(span);
     }
     if (spans.length) accepted.push({ snap: { ...snap, excerpt }, spans });
@@ -319,50 +323,51 @@ export function evaluateStoredSnapshots(input: {
   return { status: "ready", reason: "", evidenceId, facts, conflicts };
 }
 
+export const CLOSED_QUESTION = "Is that still how you're set up?";
+
 export function closedRender(input: {
   facts: ApprovedFact[];
   firstName: string;
   senderName: string;
-}): { subject: string; body: string; factIds: string[] } {
-  const facts = input.facts.filter((fact) => fact.role !== "sender_proof").slice(0, 2);
-  const senderFacts = input.facts.filter((fact) => fact.role === "sender_proof").slice(0, 1);
-  const chosen = [...facts, ...senderFacts];
+}): { subject: string; body: string; factIds: string[] } | null {
+  const chosen = input.facts
+    .filter((fact) => fact.role !== "sender_proof")
+    .filter((fact) => !/https?:\/\//i.test(fact.span))
+    .filter((fact) => !/\bwe(?:'ve| have)?\s+(?:work with|worked with|help|helped|built|build|serve)\b/i.test(fact.span))
+    .slice(0, 2);
+  if (!chosen.length || !input.senderName.trim()) return null;
   const lines = [
     `Hi ${input.firstName || "there"},`,
     "",
-    ...chosen.flatMap((fact) => [
-      fact.span.trim(),
-      `Source: ${fact.sourceUrl} (retrieved ${fact.retrievedAt.slice(0, 10)}${fact.publishedAt ? `, published ${fact.publishedAt}` : ""}; a quote from that page, not a conclusion).`,
-      "",
-    ]),
-    "Worth a look?",
+    ...chosen.map((fact) => fact.span.trim()),
     "",
-    input.senderName,
+    CLOSED_QUESTION,
+    "",
+    input.senderName.trim(),
   ];
-  const subjectSource = (facts[0] ?? senderFacts[0])?.span ?? "quick question";
-  const subject = subjectSource.split(/\s+/).slice(0, 6).join(" ").replace(/[.!?]+$/g, "");
+  const subject = chosen[0].span.split(/\s+/).slice(0, 6).join(" ").replace(/[.!?]+$/g, "");
   return { subject, body: lines.join("\n"), factIds: chosen.map((fact) => fact.id) };
 }
 
-export function bodyViolations(body: string, decision: EvidenceDecision): string[] {
+function sameLine(a: string, b: string): boolean {
+  return a.replace(/\s+/g, " ").trim().toLowerCase() === b.replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+/**
+ * A line may be sent only when it is the greeting, the one fixed question,
+ * the sender's name, or an approved span copied exactly. A shared digit is
+ * not enough, and a sender case study has no approved source.
+ */
+export function bodyViolations(body: string, decision: EvidenceDecision, senderName = ""): string[] {
+  const allowed = decision.facts.filter((fact) => fact.role !== "sender_proof");
   const violations: string[] = [];
-  const prospect = decision.facts.filter((fact) => fact.role !== "sender_proof");
-  const sender = decision.facts.filter((fact) => fact.role === "sender_proof");
-  for (const sentence of body.split(/(?<=[.!?])\s+|\n+/).map((part) => part.trim()).filter(Boolean)) {
-    if (/\bmeans\b/i.test(sentence) && /\byou|your\b/i.test(sentence)) {
-      violations.push(`Inferred consequence is not an approved fact: ${sentence}`);
-    }
-    if (SENDER_PROOF.test(sentence) && !sender.some((fact) => fact.span.includes(sentence) || sentence.includes(fact.span))) {
-      violations.push(`Sender result is not in an approved sender source: ${sentence}`);
-    }
-    if (/\byou|your\b/i.test(sentence)) {
-      for (const match of sentence.matchAll(/\b\d[\d,]*(?:\s*(?:to|-)\s*\d[\d,]*)?\b/g)) {
-        const token = match[0];
-        if (!prospect.some((fact) => fact.span.includes(token))) {
-          violations.push(`Quantity ${token} is not in a retrieved excerpt for this company.`);
-        }
-      }
-    }
+  for (const line of body.split("\n").map((part) => part.trim()).filter(Boolean)) {
+    if (/^Hi [^,\n]{1,60},$/.test(line)) continue;
+    if (line === CLOSED_QUESTION) continue;
+    if (senderName && sameLine(line, senderName)) continue;
+    if (!/[.?!]/.test(line) && !/\d/.test(line) && !/\b(you|your|we|our|means)\b/i.test(line) && line.length < 80) continue;
+    if (allowed.some((fact) => sameLine(line, fact.span))) continue;
+    violations.push(line);
   }
   return violations;
 }
@@ -386,5 +391,12 @@ export function repairToApprovedFacts(input: {
     firstName: input.firstName,
     senderName: input.senderName,
   });
+  if (!rendered) {
+    return {
+      ok: false,
+      body: input.body,
+      message: "The retrieved sentences are not usable as a first touch. The draft was not changed.",
+    };
+  }
   return { ok: true, body: rendered.body, subject: rendered.subject };
 }

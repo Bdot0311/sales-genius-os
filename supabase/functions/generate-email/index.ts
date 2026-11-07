@@ -9,7 +9,8 @@ import { composeSkillContext, skillNamesUsed } from "../_shared/email-skills.ts"
 import { isWeak, rubricFeedback, scoreEmail } from "../_shared/email-quality.ts";
 import { AI_CREDITS_USER_MESSAGE, isAiCreditError, reportAiCreditsExhausted } from "../_shared/ai-credits.ts";
 import { stripInstructionLines, unsupportedClaims } from "../_shared/evidence.ts";
-import { POLICY_VERSION, closedRender, evaluateStoredSnapshots } from "../_shared/evidence-contract.ts";
+import { POLICY_VERSION, bodyViolations, closedRender, evaluateStoredSnapshots } from "../_shared/evidence-contract.ts";
+import { holdReason, researchStep, type RetrievalReceipt } from "../_shared/research-orchestration.ts";
 import { reviseUntilClear } from "../_shared/quality-gate.ts";
 // The writing rules live in one module so the three copies that used to exist
 // cannot drift apart — see _shared/email-rules.ts.
@@ -1108,11 +1109,40 @@ STRICT RULES:
           leadSignal = `${what} (${when})`;
         }
 
-        if (leadRow && isResearchFresh(leadRow as Record<string, unknown>)) {
-          researchBrief = leadRow.research_brief as LeadResearchBrief;
+        if (leadRow) {
+          researchBrief = (leadRow.research_brief as LeadResearchBrief) ?? null;
           researchSources = (leadRow.research_sources as string[]) || [];
-          researchedAt = leadRow.researched_at as string;
-        } else {
+          researchedAt = (leadRow.researched_at as string) ?? null;
+        }
+        const ownedWebsite = String(leadRow?.company_website ?? "");
+        const ownedHost = (() => {
+          try { return new URL(ownedWebsite.includes("://") ? ownedWebsite : `https://${ownedWebsite}`).hostname.replace(/^www\./, ""); }
+          catch { return null; }
+        })();
+        const loadPayloads = async () => {
+          const { data } = await serviceClient
+            .from("research_snapshots")
+            .select("payload")
+            .eq("user_id", userId)
+            .eq("lead_id", lead.id);
+          return (data ?? []).map((row: { payload?: unknown }) => row.payload).filter(Boolean);
+        };
+        let payloads = leadRow ? await loadPayloads() : [];
+        let retrieval = (researchBrief as { retrieval?: RetrievalReceipt } | null)?.retrieval ?? null;
+        let decision = evaluateStoredSnapshots({
+          userId,
+          leadId: String(lead.id),
+          company: String(leadRow?.company_name ?? sanitizedCompanyName),
+          websiteHost: ownedHost,
+          now: new Date().toISOString(),
+          stored: payloads,
+        });
+        const step = researchStep({
+          hasTrustedFacts: decision.status === "ready",
+          receipt: retrieval,
+          now: new Date().toISOString(),
+        });
+        if (step === "fetch") {
           const res = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/research-lead`, {
             method: 'POST',
             headers: {
@@ -1128,13 +1158,95 @@ STRICT RULES:
             researchBrief = rj.brief as LeadResearchBrief;
             researchSources = Array.isArray(rj.sources) ? rj.sources : [];
             researchedAt = typeof rj.researched_at === 'string' ? rj.researched_at : null;
+            retrieval = (researchBrief as { retrieval?: RetrievalReceipt }).retrieval ?? retrieval;
           } else if (rj?.error) {
             console.warn('[generate-email] research skipped:', rj.error_code || rj.error);
           }
+          payloads = await loadPayloads();
+          decision = evaluateStoredSnapshots({
+            userId,
+            leadId: String(lead.id),
+            company: String(leadRow?.company_name ?? sanitizedCompanyName),
+            websiteHost: ownedHost,
+            now: new Date().toISOString(),
+            stored: payloads,
+          });
+        }
+        if (!isPrecisionEditPre && (decision.status !== "ready" || !resolvedSenderName)) {
+          return new Response(JSON.stringify({
+            error: decision.status !== "ready"
+              ? (retrieval ? holdReason(retrieval) : decision.reason)
+              : "A draft was not written because the sender name is missing.",
+            error_code: decision.status !== "ready" ? "research_required" : "no_sender_name",
+            research_status: step === "hold" ? "held" : decision.status,
+            retrieval,
+            policy_version: POLICY_VERSION,
+          }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        if (!isPrecisionEditPre && decision.status === "ready") {
+          if (goal === "subject_only") {
+            const rendered = closedRender({ facts: decision.facts, firstName: firstName || "there", senderName: resolvedSenderName });
+            if (!rendered) {
+              return new Response(JSON.stringify({
+                error: "Retrieved sentences are not usable as a subject, so none was written.",
+                error_code: "research_required",
+                retrieval,
+                policy_version: POLICY_VERSION,
+              }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+            }
+            return new Response(JSON.stringify({
+              email: rendered.subject,
+              subject: rendered.subject,
+              fact_ids: rendered.factIds,
+              evidence_id: decision.evidenceId,
+              policy_version: POLICY_VERSION,
+              retrieval,
+            }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+          }
+          if (goal === "trigger_context") {
+            return new Response(JSON.stringify({
+              email: decision.facts[0].span,
+              fact_ids: [decision.facts[0].id],
+              evidence_id: decision.evidenceId,
+              policy_version: POLICY_VERSION,
+              retrieval,
+            }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+          }
+          const rendered = closedRender({
+            facts: decision.facts,
+            firstName: firstName || "there",
+            senderName: resolvedSenderName,
+          });
+          if (!rendered || bodyViolations(rendered.body, decision, resolvedSenderName).length) {
+            return new Response(JSON.stringify({
+              error: "Research ran, and the retrieved sentences cannot be sent without breaking the writing rules. Nothing was drafted.",
+              error_code: "research_required",
+              research_status: "held",
+              retrieval,
+              policy_version: POLICY_VERSION,
+            }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+          }
+          return new Response(JSON.stringify({
+            email: rendered.body,
+            subject: rendered.subject,
+            fact_ids: rendered.factIds,
+            evidence_id: decision.evidenceId,
+            policy_version: POLICY_VERSION,
+            research_status: "ready",
+            retrieval,
+          }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
         websiteResearchBlock = briefToPromptBlock(researchBrief, researchSources);
       } catch (err) {
         console.warn('[generate-email] research step failed:', err instanceof Error ? err.message : err);
+        if (!isPrecisionEditPre) {
+          return new Response(JSON.stringify({
+            error: "Research could not be completed, so nothing was drafted.",
+            error_code: "research_required",
+            research_status: "failed",
+            policy_version: POLICY_VERSION,
+          }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
       }
     }
 
@@ -1142,45 +1254,6 @@ STRICT RULES:
     const researchQuality: ResearchQuality = scoreResearchQuality(researchBrief, researchSources);
     if (researchBrief) researchBrief = { ...researchBrief, quality: researchQuality };
     const blockOnThinResearch = requestData.blockOnThinResearch === true;
-    if (!isPrecisionEditPre) {
-      const websiteHost = (() => {
-        const raw = String(lead.company_website || lead.website || "");
-        try { return new URL(raw.includes("://") ? raw : `https://${raw}`).hostname.replace(/^www\./, ""); }
-        catch { return null; }
-      })();
-      const decision = evaluateStoredSnapshots({
-        userId,
-        leadId: String(lead.id ?? ""),
-        company: sanitizedCompanyName,
-        websiteHost,
-        now: new Date().toISOString(),
-        stored: (researchBrief as { snapshots?: unknown } | null)?.snapshots,
-      });
-      if (decision.status !== "ready" || !resolvedSenderName) {
-        return new Response(JSON.stringify({
-          error: decision.status !== "ready"
-            ? decision.reason
-            : "A draft was not written because the sender name is missing.",
-          error_code: decision.status !== "ready" ? "research_required" : "no_sender_name",
-          research_status: decision.status,
-          policy_version: POLICY_VERSION,
-        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
-      const rendered = closedRender({
-        facts: decision.facts,
-        firstName: firstName || "there",
-        senderName: resolvedSenderName,
-      });
-      return new Response(JSON.stringify({
-        email: rendered.body,
-        subject: rendered.subject,
-        fact_ids: rendered.factIds,
-        evidence_id: decision.evidenceId,
-        policy_version: POLICY_VERSION,
-        research_status: "ready",
-        research_quality: researchQuality,
-      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
     if (!isPrecisionEditPre && blockOnThinResearch && !researchQuality.safe_to_personalize) {
       return new Response(JSON.stringify({
         error: researchBrief

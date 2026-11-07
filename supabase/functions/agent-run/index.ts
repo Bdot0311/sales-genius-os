@@ -1108,13 +1108,18 @@ ${playbookSystemRules()}`;
                 try { return new URL(rawSite.includes("://") ? rawSite : `https://${rawSite}`).hostname.replace(/^www\./, ""); }
                 catch { return null; }
               })();
+              const { data: snapRows } = await adminClient
+                .from("research_snapshots")
+                .select("payload")
+                .eq("user_id", user.id)
+                .eq("lead_id", lead.id);
               const evidenceDecision = evaluateStoredSnapshots({
                 userId: user.id,
                 leadId: lead.id,
                 company: String(lead.company_name ?? ""),
                 websiteHost,
                 now: new Date().toISOString(),
-                stored: (lead as { research_brief?: { snapshots?: unknown } }).research_brief?.snapshots,
+                stored: (snapRows ?? []).map((row: { payload?: unknown }) => row.payload).filter(Boolean),
               });
               if (evidenceDecision.status !== "ready") {
                 await logAction({
@@ -1132,6 +1137,17 @@ ${playbookSystemRules()}`;
                 firstName,
                 senderName: senderFirstName,
               });
+              if (!closed) {
+                await logAction({
+                  user_id: user.id,
+                  action_type: "skipped",
+                  status: "skipped",
+                  prospect_email: to,
+                  description: "Retrieved sentences cannot be sent without breaking the writing rules, so nothing was drafted.",
+                  metadata: { phase: "outreach", reason: "no_research", lead_id: lead.id },
+                });
+                continue;
+              }
               let raw = "";
               const draftPhase = await runPhase(stepStore, {
                 userId: user.id, leadId: lead.id, runId, owner: stepOwner, requireDurable: durableMode === "on",
@@ -1194,8 +1210,9 @@ ${playbookSystemRules()}`;
               // sent. That is the whole point of the bar: an agent allowed to
               // send its fourth-best attempt has no bar at all.
               //
-              // A null rubric score means no verdict was available (it is
-              // plan-gated to growth and above), and never blocks a send.
+              // A missing rubric holds the send. Plan gating is the only exception,
+              // and it still holds when a rule blocks. autonomousSendAllowed
+              // is that rule.
               // An unfilled merge token must never reach a prospect. Unlike a weak
               // score this is not a judgement call, so it skips outright rather
               // than queueing a draft a human would only reject.
@@ -1257,30 +1274,18 @@ ${playbookSystemRules()}`;
                 userId: user.id, leadId: lead.id, runId, owner: stepOwner, requireDurable: durableMode === "on",
               }, "score", async (ctx) => {
               if (!await ctx.owned()) return { hold: true, done: false };
-              const blocking = [
-                ...auditEmail({
-                  subject,
-                  body,
-                  position: 1,
-                  verifiedProof: evidenceDecision.facts.map((fact) => fact.span).join("\n"),
-                  lead: { company: lead.company_name, contactName: lead.contact_name },
-                }).filter((f) => f.severity !== "note"),
-                ...firstTouchBlockers({
-                  researchBlock: evidenceDecision.facts.map((fact) => fact.span).join("\n"),
-                  subject,
-                  body,
-                  allowedProof: "",
-                }),
-              ];
-              qualityHold = blocking.length > 0;
-              best = { subject, body, rubric: null, blocking, availability: "unavailable" };
+              best = await assess(subject, body);
+              rubric = best.rubric;
+              qualityHold = !autonomousSendAllowed(best, best.availability ?? "unavailable");
               quality = {
-                score: null,
-                dimensions: null,
+                score: rubric?.overall ?? null,
+                dimensions: rubric
+                  ? Object.fromEntries(Object.entries(rubric.dimensions ?? {}).map(([k, d]) => [k, d.score]))
+                  : null,
                 attempts: 1,
-                blocking: blocking.map((finding) => finding.rule),
+                blocking: best.blocking.map((finding) => finding.rule),
               };
-              return { hold: qualityHold, subject, body, availability: "unavailable" };
+              return { hold: qualityHold, subject: best.subject, body: best.body, availability: best.availability ?? "unavailable" };
               });
               if (scorePhase.action === "stopped" || scorePhase.status === "left_open") continue;
               if (scorePhase.action === "skipped") {

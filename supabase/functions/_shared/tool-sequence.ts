@@ -13,9 +13,9 @@ export interface SequencedMessage {
 }
 
 export const MISSING_TOOL_RESULT = {
-  error: "no_tool_result",
-  status: "error",
-  note: "This tool call has no recorded result. It did not succeed. Do not treat it as completed and do not invent its outcome.",
+  error: "unknown_outcome",
+  status: "unknown",
+  note: "No result was recorded for this tool call. The outcome is unknown. Do not treat it as success or failure, and do not run a send or a charge again unless a durable receipt says it did not start.",
 };
 
 export function repairToolSequence<T extends SequencedMessage>(messages: T[]): T[] {
@@ -27,11 +27,6 @@ export function repairToolSequence<T extends SequencedMessage>(messages: T[]): T
       out.push(message);
       continue;
     }
-    const repairedCalls = calls.map((call, index) => ({
-      ...call,
-      id: call.id || `tool-call-${i}-${index}`,
-    }));
-    out.push({ ...message, tool_calls: repairedCalls });
     const results: T[] = [];
     const between: T[] = [];
     let j = i + 1;
@@ -40,9 +35,18 @@ export function repairToolSequence<T extends SequencedMessage>(messages: T[]): T
       else between.push(messages[j]);
       j++;
     }
-    const byId = new Map(results.map((result) => [String(result.tool_call_id ?? ""), result]));
+    const unused = [...results];
+    const repairedCalls = calls.map((call, index) => {
+      if (call.id) return { ...call, id: call.id };
+      const open = unused.findIndex((result) => !result.tool_call_id);
+      const id = `tool-call-${i}-${index}`;
+      if (open >= 0) unused[open] = { ...unused[open], tool_call_id: id };
+      return { ...call, id };
+    });
+    out.push({ ...message, tool_calls: repairedCalls });
+    const byId = new Map(unused.map((result) => [String(result.tool_call_id ?? ""), result]));
     for (const call of repairedCalls) {
-      const existing = byId.get(call.id);
+      const existing = byId.get(call.id!);
       if (existing) out.push(existing);
       else {
         out.push({

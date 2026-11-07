@@ -40,6 +40,7 @@ export interface LeadResearchBrief {
   changes?: BriefChanges | null;
   /** Exact retrieved excerpts. Model observations are not this list. */
   snapshots?: unknown[];
+  retrieval?: unknown;
 }
 
 export type ResearchQualityLabel = "strong" | "usable" | "thin" | "insufficient";

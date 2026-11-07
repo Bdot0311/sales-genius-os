@@ -8,7 +8,10 @@ import { toSignalFacts, type SignalEventRow } from "../_shared/signal-facts.ts";
 import { backfillSourceFilter, detectorsToBackfill } from "../_shared/signal-backfill.ts";
 import { coldiqConfigured, coldiqFetchPages } from "../_shared/coldiq.ts";
 import { externalResearchConfigured, externalResearchSearch } from "../_shared/external-research.ts";
-import { sealSnapshot, type StoredSnapshot } from "../_shared/evidence-contract.ts";
+import { parallelConfigured } from "../_shared/parallel.ts";
+import { contextDevConfigured } from "../_shared/context-dev.ts";
+import { evaluateStoredSnapshots, sealSnapshot, type StoredSnapshot } from "../_shared/evidence-contract.ts";
+import { receiptFromProviders, researchStep, type RetrievalReceipt } from "../_shared/research-orchestration.ts";
 import {
   leadResearchQueries,
   parallelPromptBlock,
@@ -120,21 +123,42 @@ async function fetchText(url: string): Promise<string | null> {
   }
 }
 
-async function fetchPage(url: string): Promise<string | null> {
+interface PageFetch {
+  requestedUrl: string;
+  finalUrl: string;
+  status: number;
+  html: string | null;
+  ok: boolean;
+  cacheState: "hit" | "miss" | "unknown";
+}
+
+function cacheStateOf(headers: Headers): PageFetch["cacheState"] {
+  const value = `${headers.get("cf-cache-status") ?? ""} ${headers.get("x-cache") ?? ""}`;
+  if (/hit/i.test(value)) return "hit";
+  if (/miss/i.test(value)) return "miss";
+  return "unknown";
+}
+
+async function fetchPage(url: string): Promise<PageFetch> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  const failed = (status: number): PageFetch => ({
+    requestedUrl: url, finalUrl: url, status, html: null, ok: false, cacheState: "unknown",
+  });
   try {
     const res = await fetch(url, {
       headers: { "User-Agent": BROWSER_UA, Accept: "text/html" },
       signal: controller.signal,
       redirect: "follow",
     });
-    if (!res.ok) return null;
+    const cacheState = cacheStateOf(res.headers);
     const ct = res.headers.get("content-type") || "";
-    if (!ct.includes("html")) return null;
-    return await res.text();
+    if (!res.ok || !ct.includes("html")) {
+      return { requestedUrl: url, finalUrl: res.url || url, status: res.status, html: null, ok: false, cacheState };
+    }
+    return { requestedUrl: url, finalUrl: res.url || url, status: res.status, html: await res.text(), ok: true, cacheState };
   } catch {
-    return null;
+    return failed(0);
   } finally {
     clearTimeout(timer);
   }
@@ -316,8 +340,30 @@ serve(async (req) => {
       });
     }
 
+    const ownedHost = (resolveLeadDomain(lead as Record<string, unknown>) ?? "").replace(/^www\./, "");
+    const priorReceipt = (lead.research_brief as { retrieval?: RetrievalReceipt } | null)?.retrieval ?? null;
+    const { data: existingSnaps } = await supabase
+      .from("research_snapshots")
+      .select("payload")
+      .eq("user_id", userId)
+      .eq("lead_id", leadId);
+    const existingPayloads = (existingSnaps ?? []).map((row: { payload?: unknown }) => row.payload).filter(Boolean);
+    const existingFacts = evaluateStoredSnapshots({
+      userId,
+      leadId,
+      company: String(lead.company_name ?? ""),
+      websiteHost: ownedHost || null,
+      now: new Date().toISOString(),
+      stored: existingPayloads,
+    });
+    const step = researchStep({
+      hasTrustedFacts: existingFacts.status === "ready",
+      receipt: priorReceipt,
+      now: new Date().toISOString(),
+      force,
+    });
     // Fresh brief already stored — hand it back without spending a scrape.
-    if (!force && isResearchFresh(lead as Record<string, unknown>)) {
+    if (step !== "fetch" && !force && isResearchFresh(lead as Record<string, unknown>)) {
       const cachedBrief = lead.research_brief as LeadResearchBrief;
       const cachedSources = (lead.research_sources as string[]) || [];
       const quality = scoreResearchQuality(cachedBrief, cachedSources);
@@ -383,8 +429,8 @@ serve(async (req) => {
         : Promise.resolve({ results: [], sessionId: null, error: "not_configured" });
 
     const homepage = await fetchPage(origin);
-    const pages: { url: string; html: string }[] = [];
-    if (homepage === null) {
+    const pages: PageFetch[] = [];
+    if (!homepage.html) {
       const fallbackWeb = await webPromise;
       if (!fallbackWeb.results.length) {
         return new Response(
@@ -399,7 +445,7 @@ serve(async (req) => {
         `[research-lead] ${host} unreachable — researching from ${fallbackWeb.results.length} external sources`,
       );
     } else {
-      pages.push({ url: origin, html: homepage });
+      pages.push(homepage);
     }
 
     // ─── Which other pages to read ───────────────────────────────────────────
@@ -468,9 +514,9 @@ serve(async (req) => {
     const wanted = discovered.slice(0, MAX_PAGES - 1);
     const fetchedPages = await Promise.all(wanted.map((p) => fetchPage(p.url)));
     for (let i = 0; i < wanted.length; i++) {
-      const html = fetchedPages[i];
-      if (!html) continue;
-      pages.push({ url: wanted[i].url, html });
+      const fetched = fetchedPages[i];
+      if (!fetched?.html) continue;
+      pages.push(fetched);
       readWithDates.push(wanted[i]);
     }
 
@@ -479,7 +525,7 @@ serve(async (req) => {
       const guesses = CANDIDATE_PATHS.slice(0, MAX_PAGES - 1);
       const guessed = await Promise.all(guesses.map((path) => fetchPage(`${origin}${path}`)));
       for (let i = 0; i < guesses.length; i++) {
-        if (guessed[i]) pages.push({ url: `${origin}${guesses[i]}`, html: guessed[i] as string });
+        if (guessed[i]?.html) pages.push(guessed[i]);
       }
     }
 
@@ -487,10 +533,10 @@ serve(async (req) => {
     const metaParts: string[] = [];
     const chunks: string[] = [];
     for (const page of pages) {
-      const { text, meta } = extractText(page.html);
-      if (meta) metaParts.push(`${page.url}\n${meta}`);
+      const { text, meta } = extractText(page.html ?? "");
+      if (meta) metaParts.push(`${page.finalUrl}\n${meta}`);
       bodyText += ` ${text}`;
-      chunks.push(`--- PAGE: ${page.url} ---\n${text.slice(0, 4_000)}`);
+      chunks.push(`--- PAGE: ${page.finalUrl} ---\n${text.slice(0, 4_000)}`);
     }
     bodyText = bodyText.replace(/\s+/g, " ").trim();
 
@@ -507,7 +553,7 @@ serve(async (req) => {
     // Only fires when the direct read came back thin, so a site we could
     // already read never costs a credit.
     if (bodyText.length < 400 && coldiqConfigured()) {
-      const { text: rescued, error: fetchErr } = await coldiqFetchPages(pages.map((p) => p.url));
+      const { text: rescued, error: fetchErr } = await coldiqFetchPages(pages.map((p) => p.finalUrl));
       if (fetchErr) {
         console.log('[research-lead] web fetch rescue unavailable:', fetchErr);
       } else if (rescued.length > bodyText.length) {
@@ -666,7 +712,7 @@ serve(async (req) => {
 
     // External sources are citable material like any page we read, so they
     // count toward the brief's sources and its completeness score.
-    const sources = [...pages.map((p) => p.url), ...web.results.map((r) => r.url)];
+    const sources = [...pages.map((p) => p.finalUrl), ...web.results.map((r) => r.url)];
 
     /*
      * Say when the outside half of the research did not run.
@@ -772,22 +818,22 @@ serve(async (req) => {
     const retrievedAt = new Date().toISOString();
     const snapshots: StoredSnapshot[] = [];
     for (const page of pages) {
-      const excerpt = extractText(page.html).text.replace(/\s+/g, " ").trim().slice(0, 4000);
+      const excerpt = extractText(page.html ?? "").text.replace(/\s+/g, " ").trim().slice(0, 4000);
       if (!excerpt) continue;
       snapshots.push(sealSnapshot({
         userId,
         leadId,
         provider: "site",
         role: "prospect_page",
-        requestedUrl: page.url,
-        finalUrl: page.url,
-        pageStatus: 200,
+        requestedUrl: page.requestedUrl,
+        finalUrl: page.finalUrl,
+        pageStatus: page.status,
         excerpt,
         retrievedAt,
         publishedAt: null,
-        providerOk: true,
+        providerOk: page.ok && page.status >= 200 && page.status < 300,
         partial: excerpt.length < 80,
-        fromCache: false,
+        fromCache: page.cacheState === "hit",
       }));
     }
     for (const result of web.results) {
@@ -800,16 +846,38 @@ serve(async (req) => {
         role: "external",
         requestedUrl: result.url,
         finalUrl: result.url,
-        pageStatus: 200,
+        pageStatus: 0,
         excerpt,
         retrievedAt,
         publishedAt: result.publish_date || null,
-        providerOk: true,
-        partial: excerpt.length < 40,
+        providerOk: false,
+        partial: true,
         fromCache: false,
       }));
     }
-    const brief: LeadResearchBrief = { ...baseBrief, quality, changes, snapshots };
+    const providerReport = (web as { providers?: { parallel?: { error: string | null; sources: number }; context_dev?: { error: string | null; sources: number } } }).providers;
+    let snapshotWrite: "written" | "failed" | "none" = snapshots.length ? "written" : "none";
+    const removed = await supabase.from("research_snapshots").delete().eq("user_id", userId).eq("lead_id", leadId);
+    if (removed.error) snapshotWrite = "failed";
+    if (snapshots.length && !removed.error) {
+      const inserted = await supabase.from("research_snapshots").insert(
+        snapshots.map((payload) => ({ user_id: userId, lead_id: leadId, payload })),
+      );
+      if (inserted.error) snapshotWrite = "failed";
+    }
+    const retrieval = receiptFromProviders({
+      now: retrievedAt,
+      parallelConfigured: parallelConfigured(),
+      parallelError: providerReport?.parallel?.error ?? null,
+      parallelCount: providerReport?.parallel?.sources ?? 0,
+      contextConfigured: contextDevConfigured(),
+      contextError: providerReport?.context_dev?.error ?? null,
+      contextCount: providerReport?.context_dev?.sources ?? 0,
+      siteStatuses: pages.map((page) => page.status),
+      siteHosts: pages.map((page) => page.finalUrl),
+      snapshotWrite,
+    });
+    const brief: LeadResearchBrief = { ...baseBrief, quality, changes, snapshots, retrieval };
     const researchedAt = new Date().toISOString();
 
     const { error: writeError } = await supabase

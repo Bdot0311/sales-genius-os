@@ -65,12 +65,15 @@ describe("closed rendering from approved snapshots", () => {
     expect(decision.facts[0].span.toLowerCase()).toContain("8 to 12 weeks");
     expect(decision.facts.some((fact) => /means|solved|18 qualified|we talk to/i.test(fact.span))).toBe(false);
     const rendered = closedRender({ facts: decision.facts, firstName: "Talha", senderName: "Brandon Yakubov" });
-    expect(rendered.body).toContain("8 to 12 weeks");
-    expect(rendered.body).toContain("https://tf.example/");
-    expect(rendered.body).not.toMatch(/means you've solved|18 qualified|we talk to|already looking/i);
-    expect(rendered.body).not.toMatch(/^PS:/m);
-    expect(bodyViolations(rendered.body, decision)).toEqual([]);
+    expect(rendered?.body).toContain("8 to 12 weeks");
+    expect(rendered?.body).not.toContain("http");
+    expect(rendered?.body).not.toMatch(/means you've solved|18 qualified|we talk to|already looking/i);
+    expect(rendered?.body).not.toMatch(/^PS:/m);
+    expect(bodyViolations(rendered?.body ?? "", decision, "Brandon Yakubov")).toEqual([]);
     expect(bodyViolations(FROZEN, decision).length).toBeGreaterThan(0);
+    expect(bodyViolations("your team still has to fill the pipeline yourselves", decision)).not.toEqual([]);
+    expect(bodyViolations("Our customers booked 18 meetings last quarter.", decision)).not.toEqual([]);
+    expect(bodyViolations("You closed 8 offices last year and your team runs 12 regions.", decision)).not.toEqual([]);
   });
 
   it("does not draft when research is missing, partial, stale, down, or the wrong company", () => {
@@ -130,7 +133,11 @@ describe("closed rendering from approved snapshots", () => {
       fromCache: false,
     });
     const withSender = decide([sender]);
-    expect(withSender.facts.some((fact) => fact.role === "sender_proof" && /18 qualified/.test(fact.span))).toBe(true);
+    expect(withSender.facts.some((fact) => fact.role === "sender_proof")).toBe(false);
+    const directory = decide([snap({
+      excerpt: "A directory published in 2012 mentions TF Business Solutions once. Our marketplace has run 500 campaigns since 2012 for other agencies.",
+    })]);
+    expect(directory.facts.some((fact) => /500 campaigns/.test(fact.span))).toBe(false);
   });
 });
 

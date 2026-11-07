@@ -485,7 +485,12 @@ serve(async (req) => {
       leadProof = proofFromLead(leadRow);
       leadCompany = String(leadRow.company_name ?? "");
       leadWebsite = typeof leadRow.company_website === "string" ? leadRow.company_website : null;
-      storedSnapshots = (leadRow.research_brief as { snapshots?: unknown } | null)?.snapshots ?? null;
+      const { data: snapRows } = await supabase
+        .from("research_snapshots")
+        .select("payload")
+        .eq("user_id", user.id)
+        .eq("lead_id", leadId);
+      storedSnapshots = (snapRows ?? []).map((row: { payload?: unknown }) => row.payload).filter(Boolean);
 
       if (leadRow.email_verification_status === 'invalid') {
         return new Response(

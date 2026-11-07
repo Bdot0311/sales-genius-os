@@ -50,10 +50,25 @@ const call = (admin: unknown, f: typeof fetch) =>
   researchBlockForLead(admin, "https://x.test", "Bearer t", "anon", "lead-1", f);
 
 describe("researchBlockForLead reports why it has nothing", () => {
-  it("uses a fresh cached brief without calling research-lead", async () => {
-    const r = await call(adminWith(freshRow(USABLE_BRIEF)), never);
-    expect(r.outcome).toBe("cached");
-    expect(r.block).toContain("route planning for freight brokers");
+  it("calls research-lead when a fresh model brief has no retrieval receipt", async () => {
+    let calls = 0;
+    const fetchImpl = (async () => {
+      calls += 1;
+      return new Response(JSON.stringify({ brief: USABLE_BRIEF, sources: ["https://acme.com"] }), { status: 200 });
+    }) as unknown as typeof fetch;
+    const r = await call(adminWith(freshRow(USABLE_BRIEF)), fetchImpl);
+    expect(calls).toBe(1);
+    expect(r.outcome).toBe("researched");
+  });
+
+  it("does not call research-lead again inside the retry window", async () => {
+    const brief = {
+      ...USABLE_BRIEF,
+      retrieval: { attemptedAt: new Date().toISOString() },
+    };
+    const r = await call(adminWith(freshRow(brief)), never);
+    expect(r.outcome).toBe("held");
+    expect(r.block).toBe("");
   });
 
   /*
@@ -62,8 +77,8 @@ describe("researchBlockForLead reports why it has nothing", () => {
    * run that reported this as cached research was reporting a success.
    */
   it("separates a fresh but empty brief from a useful one", async () => {
-    const r = await call(adminWith(freshRow({})), never);
-    expect(r.outcome).toBe("empty_brief");
+    const r = await call(adminWith(freshRow({ retrieval: { attemptedAt: new Date().toISOString() } })), never);
+    expect(r.outcome).toBe("held");
     expect(r.block).toBe("");
   });
 
@@ -121,7 +136,7 @@ describe("researchBlockForLead reports why it has nothing", () => {
    */
   it("never reports an empty block as a working outcome", async () => {
     const cases: Array<[unknown, typeof fetch]> = [
-      [adminWith(freshRow({})), never],
+      [adminWith(freshRow({ retrieval: { attemptedAt: new Date().toISOString() } })), never],
       [adminWith(null), jsonFetch({})],
       [adminWith(null), jsonFetch({ brief: {} })],
       [adminWith(null), jsonFetch({ error: "x" })],
@@ -157,20 +172,29 @@ describe("a brief with no facts is treated as no research", () => {
 
   for (const [i, brief] of factless.entries()) {
     it(`case ${i} yields no block even though briefToPromptBlock would`, async () => {
-      const r = await call(adminWith(freshRow(brief)), never);
-      expect(r.outcome).toBe("empty_brief");
+      const r = await call(adminWith(freshRow({ ...brief, retrieval: { attemptedAt: new Date().toISOString() } })), never);
+      expect(r.outcome).toBe("held");
       expect(r.block).toBe("");
     });
   }
 
-  it("a single real observation is enough to count as research", async () => {
-    const r = await call(adminWith(freshRow({ observations: [{ fact: "hiring 3 AEs" }] })), never);
-    expect(r.outcome).toBe("cached");
+  it("a model observation does not skip the research call", async () => {
+    let calls = 0;
+    const fetchImpl = (async () => {
+      calls += 1;
+      return new Response(JSON.stringify({ brief: { observations: [{ fact: "hiring 3 AEs" }] }, sources: [] }), { status: 200 });
+    }) as unknown as typeof fetch;
+    const r = await call(adminWith(freshRow({ observations: [{ fact: "hiring 3 AEs" }] })), fetchImpl);
+    expect(calls).toBe(1);
+    expect(r.outcome).toBe("researched");
     expect(r.block).toContain("hiring 3 AEs");
   });
 
-  it("a hook alone counts, since it is drawn from their material", async () => {
-    const r = await call(adminWith(freshRow({ hooks: ["expanding into freight"] })), never);
-    expect(r.outcome).toBe("cached");
+  it("a hook alone does not count as retrieved evidence", async () => {
+    const r = await call(adminWith(freshRow({
+      hooks: ["expanding into freight"],
+      retrieval: { attemptedAt: new Date().toISOString() },
+    })), never);
+    expect(r.outcome).toBe("held");
   });
 });

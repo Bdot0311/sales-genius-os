@@ -5159,10 +5159,8 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
        * trace's own tool_results column for anyone reading back.
        */
       const sequenced = repairToolSequence(messages);
-      if (sequenced.length !== messages.length) {
-        messages.length = 0;
-        messages.push(...sequenced);
-      }
+      messages.length = 0;
+      messages.push(...sequenced);
       const pruned = pruneTurnContext(messages);
       if (pruned.prunedCount > 0) {
         console.log(
@@ -5373,9 +5371,20 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
              * right for one request and worth nothing across the restart that
              * causes a resume — which is the moment a repeat is most likely.
              */
-            void trace.saveMutation(threadId, userId, mutationKey, toolName).catch((e) =>
-              console.warn(`[agent-chat] completed mutation not recorded: ${e instanceof Error ? e.message : e}`)
-            );
+            try {
+              await trace.saveMutation(threadId, userId, mutationKey, toolName);
+            } catch (e) {
+              console.warn(`[agent-chat] completed mutation not recorded: ${e instanceof Error ? e.message : e}`);
+              return {
+                role: "tool",
+                tool_call_id: call.id,
+                content: JSON.stringify({
+                  error: "unknown_outcome",
+                  status: "unknown",
+                  note: "The action may have started, and its receipt was not saved. Do not run it again until the receipt is checked.",
+                }),
+              };
+            }
           }
         } catch (e) {
           stepStatus = "error";

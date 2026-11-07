@@ -92,3 +92,4 @@ These live in [`docs/`](docs/) and were not linked from anywhere until now.
 | [AGENT_RELIABILITY_SCOPE.md](docs/AGENT_RELIABILITY_SCOPE.md) | Why the agent hallucinates, what actually fixes it, and what not to buy. Not built |
 | [E2E_AUDIT_2026-11-06.md](docs/E2E_AUDIT_2026-11-06.md) | November 2026 end-to-end audit: findings, fixes, test evidence, and what is still untested |
 | [AGENT_QUALITY_AND_INFRA.md](docs/AGENT_QUALITY_AND_INFRA.md) | Why the quality card stays red, what this branch enforces, and the agent infrastructure that is proposed and not built |
+| [RESEARCH_PROVIDERS.md](docs/RESEARCH_PROVIDERS.md) | Which research providers exist in the app, what calls them, and what this repo cannot verify about live use |

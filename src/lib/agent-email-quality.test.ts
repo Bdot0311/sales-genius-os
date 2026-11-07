@@ -136,8 +136,8 @@ describe("the autonomous run", () => {
     expect(RUN).toContain('.filter((f) => f.severity !== "note")');
   });
 
-  it("holds a closed draft when a deterministic blocker remains", () => {
-    expect(RUN).toContain("qualityHold = blocking.length > 0");
+  it("holds a closed draft when the rubric is missing or a rule blocks", () => {
+    expect(RUN).toContain("qualityHold = !autonomousSendAllowed(best, best.availability");
     expect(RUN).not.toContain("while (!isPerfect(best) && attempts < AGENT_MAX_ATTEMPTS)");
   });
 
