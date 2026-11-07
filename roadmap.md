@@ -1,3 +1,7 @@
+# Credit-ledger health alert
+
+- [x] Correct the missing-grant false alarm without giving customers access to the internal credit ledger; migration regression checks passed, signed-in health reports zero broken checks, and dashboard banner is absent. Resolve only the matching alert; the internal-ledger no-policy warning is informational and remains.
+
 # Unified Inbox coverage
 
 - [x] Trace email creation and sending across Outreach Studio, agents, API and MCP; include drafts and all outbound states without adding duplicate send records.

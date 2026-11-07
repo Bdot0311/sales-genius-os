@@ -1,5 +1,7 @@
 # Agent rules
 
+- Health grant checks treat the Stripe credit-grant ledger as internal only while RLS denies customer roles and backend CRUD grants remain present. Why: deliberate privacy must not trigger an outage banner, and missing backend access must still fail monitoring.
+
 - Unified Inbox reads owner-scoped sent_emails and email_drafts without source-specific filtering; external generators save drafts through generate-email, while existing Studio/agent callers retain their own draft writes. Why: all creation channels appear once and unsent mail is never reported as sent.
 
 - API prospect/lookup actions forward the real API key to shared app-user authentication; MCP forwards its OAuth token to app handlers. Why: identity comes from verified credentials, not owner arguments or service-role forwarding, so app credit and plan rules stay authoritative.

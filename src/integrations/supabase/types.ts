@@ -2131,143 +2131,6 @@ export type Database = {
           },
         ]
       }
-      outbound_durable_runs: {
-        Row: {
-          enabled: boolean
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          enabled?: boolean
-          user_id: string
-        }
-        Update: {
-          enabled?: boolean
-        }
-        Relationships: []
-      }
-      outbound_runs: {
-        Row: {
-          created_at: string
-          id: string
-          status: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          id: string
-          status?: string
-          user_id: string
-        }
-        Update: {
-          status?: string
-        }
-        Relationships: []
-      }
-      outbound_run_steps: {
-        Row: {
-          attempt_count: number
-          created_at: string
-          id: string
-          lead_id: string
-          lease_expires_at: string | null
-          lease_owner: string | null
-          payload: Json | null
-          phase: string
-          run_id: string
-          status: string
-          subject_key: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          attempt_count?: number
-          id?: string
-          lead_id: string
-          phase: string
-          run_id: string
-          status?: string
-          user_id: string
-        }
-        Update: {
-          status?: string
-          attempt_count?: number
-        }
-        Relationships: []
-      }
-      agent_tool_receipts: {
-        Row: {
-          created_at: string
-          detail: string | null
-          id: string
-          run_id: string | null
-          status: string
-          tool_name: string
-          user_id: string
-        }
-        Insert: {
-          detail?: string | null
-          run_id?: string | null
-          status: string
-          tool_name: string
-          user_id: string
-        }
-        Update: {
-          status?: string
-        }
-        Relationships: []
-      }
-      outbound_gate_canary: {
-        Row: {
-          enabled: boolean
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          enabled?: boolean
-          user_id: string
-        }
-        Update: {
-          enabled?: boolean
-        }
-        Relationships: []
-      }
-      outbound_verdicts: {
-        Row: {
-          body: string
-          content_hash: string
-          created_at: string
-          findings: Json
-          gate_status: string
-          id: string
-          lead_id: string | null
-          prompt_hash: string
-          rubric: Json | null
-          rubric_availability: string
-          rubric_prompt_hash: string
-          sent_email_id: string | null
-          shadow: boolean
-          shadow_mismatch: boolean
-          subject: string
-          user_id: string
-        }
-        Insert: {
-          body: string
-          content_hash: string
-          findings?: Json
-          gate_status: string
-          lead_id?: string | null
-          prompt_hash: string
-          rubric_availability: string
-          rubric_prompt_hash: string
-          subject: string
-          user_id: string
-        }
-        Update: {
-          sent_email_id?: string | null
-        }
-        Relationships: []
-      }
       email_drafts: {
         Row: {
           body: string | null
@@ -5332,6 +5195,27 @@ export type Database = {
         }
         Relationships: []
       }
+      stripe_credit_grants: {
+        Row: {
+          created_at: string
+          delta: number
+          event_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          delta: number
+          event_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          delta?: number
+          event_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       stripe_webhook_events: {
         Row: {
           attempts: number
@@ -7094,6 +6978,15 @@ export type Database = {
         }[]
       }
       get_webhook_secret: { Args: { webhook_id: string }; Returns: string }
+      grant_topup_credits: {
+        Args: {
+          p_amount_paid: number
+          p_prospects: number
+          p_session_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       has_active_support_grant: {
         Args: { _scope?: string; _user_id: string }
         Returns: boolean
@@ -7120,6 +7013,13 @@ export type Database = {
       internal_job_key: { Args: never; Returns: string }
       is_demo_mode: { Args: { _user_id: string }; Returns: boolean }
       lead_intelligence_enabled: { Args: never; Returns: boolean }
+      leads_due_for_hiring_refresh: {
+        Args: { p_limit?: number }
+        Returns: {
+          lead_id: string
+          user_id: string
+        }[]
+      }
       lock_expired_trials: { Args: never; Returns: undefined }
       log_security_event: {
         Args: {
@@ -7266,6 +7166,7 @@ export type Database = {
         Returns: undefined
       }
       trigger_agent_jobs: { Args: never; Returns: undefined }
+      trigger_hiring_refresh: { Args: never; Returns: undefined }
       trigger_rescore_queue: { Args: never; Returns: undefined }
       webhook_has_secret: { Args: { _webhook_id: string }; Returns: boolean }
       webhook_secret_masked: { Args: { _webhook_id: string }; Returns: string }
