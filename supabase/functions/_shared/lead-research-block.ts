@@ -55,19 +55,23 @@ export async function researchBlockForLead(
       .eq("id", leadId)
       .maybeSingle();
 
-    const brief = (row?.research_brief ?? null) as (LeadResearchBrief & { retrieval?: RetrievalReceipt }) | null;
     const payloads = await readSnapshotPayloads(admin, userId, leadId);
+    const latestRun = await readLatestRun(admin, userId, leadId);
     const decision = evaluateStoredSnapshots({
       userId: userId || "unknown",
       leadId,
       company: String(row?.company_name ?? ""),
-      websiteHost: null,
+      websiteHost: (() => {
+        const raw = String(row?.company_website ?? "");
+        try { return new URL(raw.includes("://") ? raw : `https://${raw}`).hostname.replace(/^www\./, ""); }
+        catch { return null; }
+      })(),
       now: new Date().toISOString(),
       stored: payloads,
     });
     const step = researchStep({
       hasTrustedFacts: decision.status === "ready",
-      receipt: brief?.retrieval ?? null,
+      receipt: latestRun,
       now: new Date().toISOString(),
     });
     if (row && isResearchFresh(row as Record<string, unknown>) && step !== "fetch") {
@@ -112,6 +116,26 @@ export async function researchBlockForLead(
     const detail = err instanceof Error ? err.message : String(err);
     console.warn("[agent-run] research step failed:", detail);
     return { block: "", outcome: "failed", detail };
+  }
+}
+
+async function readLatestRun(admin: { from: (table: string) => any }, userId: string, leadId: string): Promise<RetrievalReceipt | null> {
+  if (!userId) return null;
+  try {
+    const first = admin.from("research_runs").select("attempted_at, receipt").eq("user_id", userId);
+    if (!first || typeof first.eq !== "function") return null;
+    const second = first.eq("lead_id", leadId);
+    if (!second || typeof second.order !== "function") return null;
+    const query = second.order("attempted_at", { ascending: false }).limit(1);
+    if (!query || typeof query.maybeSingle !== "function") return null;
+    const result = await query.maybeSingle();
+    const row = result?.data;
+    if (!row?.attempted_at) return null;
+    const receipt = (row.receipt ?? {}) as RetrievalReceipt;
+    receipt.attemptedAt = String(row.attempted_at);
+    return receipt;
+  } catch {
+    return null;
   }
 }
 

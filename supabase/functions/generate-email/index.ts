@@ -6,10 +6,11 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { composeSkillContext, skillNamesUsed } from "../_shared/email-skills.ts";
 // One quality verdict for every caller — Outreach Studio, agent-chat and the
 // autonomous agent all reach the rubric through this rather than each other.
-import { isWeak, rubricFeedback, scoreEmail } from "../_shared/email-quality.ts";
+import { isWeak, rubricFeedback, scoreEmailReport, type RubricAvailability } from "../_shared/email-quality.ts";
+import { releaseAllows } from "../_shared/draft-release.ts";
 import { AI_CREDITS_USER_MESSAGE, isAiCreditError, reportAiCreditsExhausted } from "../_shared/ai-credits.ts";
 import { stripInstructionLines, unsupportedClaims } from "../_shared/evidence.ts";
-import { POLICY_VERSION, bodyViolations, closedRender, evaluateStoredSnapshots } from "../_shared/evidence-contract.ts";
+import { POLICY_VERSION, evaluateStoredSnapshots, type ApprovedFact } from "../_shared/evidence-contract.ts";
 import { holdReason, researchStep, type RetrievalReceipt } from "../_shared/research-orchestration.ts";
 import { reviseUntilClear } from "../_shared/quality-gate.ts";
 // The writing rules live in one module so the three copies that used to exist
@@ -1049,6 +1050,8 @@ STRICT RULES:
     const isPrecisionEditPre = goal === 'custom' && typeof requestData.customInstruction === 'string' && requestData.customInstruction.length > 0;
 
     let researchBrief: LeadResearchBrief | null = null;
+    let approvedFacts: ApprovedFact[] = [];
+    let evidenceId = "";
     let researchSources: string[] = [];
     let researchedAt: string | null = null;
     let websiteResearchBlock = '';
@@ -1128,7 +1131,16 @@ STRICT RULES:
           return (data ?? []).map((row: { payload?: unknown }) => row.payload).filter(Boolean);
         };
         let payloads = leadRow ? await loadPayloads() : [];
-        let retrieval = (researchBrief as { retrieval?: RetrievalReceipt } | null)?.retrieval ?? null;
+        const { data: latestRun } = await serviceClient
+          .from("research_runs")
+          .select("attempted_at, receipt")
+          .eq("user_id", userId)
+          .eq("lead_id", lead.id)
+          .order("attempted_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        let retrieval = (latestRun?.receipt ?? null) as RetrievalReceipt | null;
+        if (retrieval && latestRun?.attempted_at) retrieval.attemptedAt = String(latestRun.attempted_at);
         let decision = evaluateStoredSnapshots({
           userId,
           leadId: String(lead.id),
@@ -1183,60 +1195,14 @@ STRICT RULES:
             policy_version: POLICY_VERSION,
           }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
-        if (!isPrecisionEditPre && decision.status === "ready") {
-          if (goal === "subject_only") {
-            const rendered = closedRender({ facts: decision.facts, firstName: firstName || "there", senderName: resolvedSenderName });
-            if (!rendered) {
-              return new Response(JSON.stringify({
-                error: "Retrieved sentences are not usable as a subject, so none was written.",
-                error_code: "research_required",
-                retrieval,
-                policy_version: POLICY_VERSION,
-              }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-            }
-            return new Response(JSON.stringify({
-              email: rendered.subject,
-              subject: rendered.subject,
-              fact_ids: rendered.factIds,
-              evidence_id: decision.evidenceId,
-              policy_version: POLICY_VERSION,
-              retrieval,
-            }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-          }
-          if (goal === "trigger_context") {
-            return new Response(JSON.stringify({
-              email: decision.facts[0].span,
-              fact_ids: [decision.facts[0].id],
-              evidence_id: decision.evidenceId,
-              policy_version: POLICY_VERSION,
-              retrieval,
-            }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-          }
-          const rendered = closedRender({
-            facts: decision.facts,
-            firstName: firstName || "there",
-            senderName: resolvedSenderName,
-          });
-          if (!rendered || bodyViolations(rendered.body, decision, resolvedSenderName).length) {
-            return new Response(JSON.stringify({
-              error: "Research ran, and the retrieved sentences cannot be sent without breaking the writing rules. Nothing was drafted.",
-              error_code: "research_required",
-              research_status: "held",
-              retrieval,
-              policy_version: POLICY_VERSION,
-            }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-          }
-          return new Response(JSON.stringify({
-            email: rendered.body,
-            subject: rendered.subject,
-            fact_ids: rendered.factIds,
-            evidence_id: decision.evidenceId,
-            policy_version: POLICY_VERSION,
-            research_status: "ready",
-            retrieval,
-          }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (decision.status === "ready") {
+          approvedFacts = decision.facts;
+          evidenceId = decision.evidenceId;
+          // The model brief is not a source. The prompt may use only these sentences.
+          websiteResearchBlock = decision.facts.map((fact) => fact.span).join("\n");
+        } else {
+          websiteResearchBlock = briefToPromptBlock(researchBrief, researchSources);
         }
-        websiteResearchBlock = briefToPromptBlock(researchBrief, researchSources);
       } catch (err) {
         console.warn('[generate-email] research step failed:', err instanceof Error ? err.message : err);
         if (!isPrecisionEditPre) {
@@ -2084,15 +2050,30 @@ conversation that is already going, not as someone chasing silence.`}`;
     // Score the finished draft. Every path that writes an email comes through
     // this function, so scoring here is what puts the agent and the Studio on
     // the same verdict instead of the panel being the only thing that checks.
-    // Advisory on this response: the caller decides what to do about a weak
-    // score, and a null score (plan-gated, provider down) blocks nothing.
-    const scoreNow = (body: string) => scoreEmail(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      authHeader ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { subject: subjectLineForRubric, body },
-    );
+    // A missing score is not a pass. Plan gating is the entitlement exception.
+    // Provider down, an unparseable score, and a timeout hold the draft.
+    let rubricAvailability: RubricAvailability = "unavailable";
+    const scoreNow = async (body: string) => {
+      const report = await scoreEmailReport(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        authHeader ?? '',
+        Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+        { subject: subjectLineForRubric, body },
+      );
+      rubricAvailability = report.availability;
+      return report.rubric;
+    };
     let rubric = await scoreNow(email);
+    const scoresAsEmail = goal !== "subject_only" && goal !== "trigger_context";
+    if (scoresAsEmail && rubricAvailability === "unavailable") {
+      return new Response(JSON.stringify({
+        error: "The reply rubric did not return a score, so this draft was not saved.",
+        error_code: "rubric_unavailable",
+        policy_version: POLICY_VERSION,
+        evidence_id: evidenceId,
+        fact_ids: approvedFacts.map((fact) => fact.id),
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
     if (rubric) {
       console.log(`[generate-email] rubric: ${rubric.overall}/100 weakest=${rubric.weakest}${isWeak(rubric) ? ' WEAK' : ''}`);
     }
@@ -2300,6 +2281,25 @@ conversation that is already going, not as someone chasing silence.`}`;
         quality_findings: checkerBlockers.map((f) => ({ rule: f.rule, evidence: f.evidence, fix: f.fix })),
       }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+    if (scoresAsEmail) {
+      const release = releaseAllows({
+        subject: checkedSubject,
+        body: revised.body || checkedBody,
+        facts: approvedFacts,
+        availability: rubricAvailability,
+        rubric,
+        mode: "studio",
+      });
+      if (!release.allow) {
+        return new Response(JSON.stringify({
+          error: release.reason,
+          error_code: release.code,
+          policy_version: POLICY_VERSION,
+          evidence_id: evidenceId,
+          fact_ids: approvedFacts.map((fact) => fact.id),
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
 
     let draftId: string | null = null;
     // Existing Studio/agent callers already manage their working draft. External
@@ -2320,6 +2320,10 @@ conversation that is already going, not as someone chasing silence.`}`;
       email,
       draft_id: draftId,
       rubric,
+      rubric_availability: rubricAvailability,
+      fact_ids: approvedFacts.map((fact) => fact.id),
+      evidence_id: evidenceId,
+      policy_version: POLICY_VERSION,
       // Warnings that survived the rewrite. The studio paints those rows red
       // and will not send until they are gone. This is not a pass.
       quality_status: checkerFailures.length ? "needs_review" : "clear",

@@ -341,7 +341,16 @@ serve(async (req) => {
     }
 
     const ownedHost = (resolveLeadDomain(lead as Record<string, unknown>) ?? "").replace(/^www\./, "");
-    const priorReceipt = (lead.research_brief as { retrieval?: RetrievalReceipt } | null)?.retrieval ?? null;
+    const { data: latestRun } = await supabase
+      .from("research_runs")
+      .select("attempted_at, receipt")
+      .eq("user_id", userId)
+      .eq("lead_id", leadId)
+      .order("attempted_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const priorReceipt = (latestRun?.receipt ?? null) as RetrievalReceipt | null;
+    if (priorReceipt && latestRun?.attempted_at) priorReceipt.attemptedAt = String(latestRun.attempted_at);
     const { data: existingSnaps } = await supabase
       .from("research_snapshots")
       .select("payload")
@@ -836,35 +845,31 @@ serve(async (req) => {
         fromCache: page.cacheState === "hit",
       }));
     }
-    for (const result of web.results) {
-      const excerpt = result.excerpts.join("\n").replace(/\s+/g, " ").trim().slice(0, 4000);
+    // A search snippet is not a page. Fetch at most two cited URLs and store
+    // that response. If the fetch fails, the snippet is not approved.
+    for (const result of web.results.filter((item) => /^https?:\/\//i.test(item.url)).slice(0, 2)) {
+      const fetched = await fetchPage(result.url);
+      if (!fetched.html) continue;
+      const excerpt = extractText(fetched.html).text.replace(/\s+/g, " ").trim().slice(0, 4000);
       if (!excerpt) continue;
       snapshots.push(sealSnapshot({
         userId,
         leadId,
         provider: result.provider === "context_dev" ? "context_dev" : "parallel",
         role: "external",
-        requestedUrl: result.url,
-        finalUrl: result.url,
-        pageStatus: 0,
+        requestedUrl: fetched.requestedUrl,
+        finalUrl: fetched.finalUrl,
+        pageStatus: fetched.status,
         excerpt,
         retrievedAt,
         publishedAt: result.publish_date || null,
-        providerOk: false,
-        partial: true,
-        fromCache: false,
+        providerOk: fetched.ok && fetched.status >= 200 && fetched.status < 300,
+        partial: excerpt.length < 80,
+        fromCache: fetched.cacheState === "hit",
       }));
     }
     const providerReport = (web as { providers?: { parallel?: { error: string | null; sources: number }; context_dev?: { error: string | null; sources: number } } }).providers;
-    let snapshotWrite: "written" | "failed" | "none" = snapshots.length ? "written" : "none";
-    const removed = await supabase.from("research_snapshots").delete().eq("user_id", userId).eq("lead_id", leadId);
-    if (removed.error) snapshotWrite = "failed";
-    if (snapshots.length && !removed.error) {
-      const inserted = await supabase.from("research_snapshots").insert(
-        snapshots.map((payload) => ({ user_id: userId, lead_id: leadId, payload })),
-      );
-      if (inserted.error) snapshotWrite = "failed";
-    }
+    const snapshotWrite: "written" | "failed" | "none" = snapshots.length ? "written" : "none";
     const retrieval = receiptFromProviders({
       now: retrievedAt,
       parallelConfigured: parallelConfigured(),
@@ -877,6 +882,16 @@ serve(async (req) => {
       siteHosts: pages.map((page) => page.finalUrl),
       snapshotWrite,
     });
+    const replaced = await supabase.rpc("replace_research_snapshots", {
+      p_user_id: userId,
+      p_lead_id: leadId,
+      p_rows: snapshots,
+      p_receipt: retrieval,
+    });
+    if (replaced.error) {
+      console.warn(`[research-lead] snapshot replace failed: ${replaced.error.message}`);
+      retrieval.snapshotWrite = "failed";
+    }
     const brief: LeadResearchBrief = { ...baseBrief, quality, changes, snapshots, retrieval };
     const researchedAt = new Date().toISOString();
 

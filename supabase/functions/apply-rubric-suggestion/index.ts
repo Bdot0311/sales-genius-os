@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
 import { AI_FAST, aiFetch } from "../_shared/ai-provider.ts";
+import { bodyViolations } from "../_shared/evidence-contract.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -82,6 +83,25 @@ serve(async (req) => {
     const raw = (await res.json()).choices?.[0]?.message?.content || "";
     const replacement = clean(String(raw));
     if (!replacement) return json({ error: "could not apply this suggestion right now.", error_code: "empty" }, 200);
+    const invented = bodyViolations(`${emailBody}\n${replacement}`, {
+      status: emailBody.trim() ? "ready" : "absent",
+      reason: "",
+      evidenceId: "",
+      facts: emailBody.trim() ? [{
+        id: "draft",
+        snapshotId: "draft",
+        span: emailBody,
+        sourceUrl: "",
+        retrievedAt: "",
+        publishedAt: null,
+        role: "prospect_page",
+        provider: "site",
+      }] : [],
+      conflicts: [],
+    });
+    if (invented.length) {
+      return json({ error: "The suggestion added a claim the draft does not already support, so it was not applied.", error_code: "unsupported_prospect_claim" }, 200);
+    }
 
     return json({ replacement });
   } catch (e) {

@@ -23,9 +23,10 @@ import { acceptedUnpersistedBody, deliverReserved, type OutboundStore } from "..
 import { outboundGateFindings } from "../_shared/quality-gate.ts";
 import { resolveAppUser } from "../_shared/app-user.ts";
 import { proofFromLead } from "../_shared/template-send-gate.ts";
-import { bodyViolations, evaluateStoredSnapshots } from "../_shared/evidence-contract.ts";
+import { POLICY_VERSION, bodyViolations, evaluateStoredSnapshots } from "../_shared/evidence-contract.ts";
+import { sha256Hex } from "../_shared/prompt-versions.ts";
 import { evaluateSend } from "../_shared/outbound-verdict.ts";
-import { contentHash, gatePromptHash, rubricPromptHash } from "../_shared/prompt-versions.ts";
+import { gatePromptHash, rubricPromptHash } from "../_shared/prompt-versions.ts";
 import { scoreEmailReport } from "../_shared/email-quality.ts";
 
 const corsHeaders = {
@@ -602,7 +603,8 @@ serve(async (req) => {
         now: new Date().toISOString(),
         stored: storedSnapshots,
       });
-      const evidenceViolations = bodyViolations(plainBody, evidenceDecision);
+      const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle();
+      const evidenceViolations = bodyViolations(plainBody, evidenceDecision, String(profile?.full_name ?? ""), String(subject ?? ""));
       if (evidenceViolations.length) {
         return new Response(JSON.stringify({
           error: `Not sent. ${evidenceViolations[0]}`,
@@ -612,6 +614,7 @@ serve(async (req) => {
       }
       const liveBlocked = gateFindings.length > 0;
       let allowSend = !liveBlocked;
+      let rubricMissing = false;
       let verdictId: string | null = null;
       let canary = false;
       let canaryKnown = false;
@@ -627,7 +630,7 @@ serve(async (req) => {
       try {
         const callerAuthorization = req.headers.get("Authorization") ?? "";
         const [hash, promptHash, rubricHash, rubricReport] = await Promise.all([
-          contentHash(String(subject ?? ""), plainBody),
+          sha256Hex(`${String(subject ?? "")}\n${plainBody}\n${evidenceDecision.evidenceId}\n${POLICY_VERSION}`),
           gatePromptHash(),
           rubricPromptHash(),
           scoreEmailReport(supabaseUrl, callerAuthorization, anonKey, {
@@ -672,7 +675,10 @@ serve(async (req) => {
         });
         const persisted = !writeErr && typeof id === "string";
         verdictId = persisted ? id : null;
-        if (!canaryKnown) {
+        if (rubricReport.availability === "unavailable") {
+          allowSend = false;
+          rubricMissing = true;
+        } else if (!canaryKnown) {
           allowSend = !liveBlocked;
         } else {
           const decision = evaluateSend({
@@ -689,15 +695,17 @@ serve(async (req) => {
         }
       } catch (verdictErr) {
         console.warn("[send-email] verdict write failed", verdictErr);
-        allowSend = canary ? false : !liveBlocked;
+        allowSend = false;
       }
       if (!allowSend) {
         return new Response(
           JSON.stringify({
             error: liveBlocked
               ? `Not sent. The quality check failed: ${gateFindings.slice(0, 4).map((f) => f.rule).join(", ")}.`
-              : "Not sent. This account's canary requires a current clear verdict for this exact text, including the signature. A missing or stale verdict is not permission.",
-            code: liveBlocked ? "quality_checker" : "verdict_required",
+              : rubricMissing
+                ? "Not sent. The reply rubric did not return a score, so this email was held."
+                : "Not sent. This text has no current clear verdict. A missing score or a stale verdict is not permission to send.",
+            code: liveBlocked ? "quality_checker" : rubricMissing ? "rubric_unavailable" : "verdict_required",
             findings: gateFindings.slice(0, 8).map((f) => ({ rule: f.rule, evidence: f.evidence, fix: f.fix })),
           }),
           { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } },

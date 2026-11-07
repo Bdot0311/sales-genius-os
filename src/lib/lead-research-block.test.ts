@@ -61,14 +61,16 @@ describe("researchBlockForLead reports why it has nothing", () => {
     expect(r.outcome).toBe("researched");
   });
 
-  it("does not call research-lead again inside the retry window", async () => {
-    const brief = {
-      ...USABLE_BRIEF,
-      retrieval: { attemptedAt: new Date().toISOString() },
-    };
-    const r = await call(adminWith(freshRow(brief)), never);
-    expect(r.outcome).toBe("held");
-    expect(r.block).toBe("");
+  it("does not treat a timestamp on the owner-writable brief as a cooldown", async () => {
+    let calls = 0;
+    const fetchImpl = (async () => {
+      calls += 1;
+      return new Response(JSON.stringify({ brief: USABLE_BRIEF, sources: [] }), { status: 200 });
+    }) as unknown as typeof fetch;
+    const brief = { ...USABLE_BRIEF, retrieval: { attemptedAt: new Date().toISOString() } };
+    const r = await call(adminWith(freshRow(brief)), fetchImpl);
+    expect(calls).toBe(1);
+    expect(r.outcome).toBe("researched");
   });
 
   /*
@@ -77,8 +79,8 @@ describe("researchBlockForLead reports why it has nothing", () => {
    * run that reported this as cached research was reporting a success.
    */
   it("separates a fresh but empty brief from a useful one", async () => {
-    const r = await call(adminWith(freshRow({ retrieval: { attemptedAt: new Date().toISOString() } })), never);
-    expect(r.outcome).toBe("held");
+    const r = await call(adminWith(freshRow({})), jsonFetch({ brief: {}, sources: [] }));
+    expect(r.outcome).toBe("empty_brief");
     expect(r.block).toBe("");
   });
 
@@ -172,8 +174,8 @@ describe("a brief with no facts is treated as no research", () => {
 
   for (const [i, brief] of factless.entries()) {
     it(`case ${i} yields no block even though briefToPromptBlock would`, async () => {
-      const r = await call(adminWith(freshRow({ ...brief, retrieval: { attemptedAt: new Date().toISOString() } })), never);
-      expect(r.outcome).toBe("held");
+      const r = await call(adminWith(freshRow(brief)), jsonFetch({ brief: {}, sources: [] }));
+      expect(r.outcome).toBe("empty_brief");
       expect(r.block).toBe("");
     });
   }
@@ -194,7 +196,7 @@ describe("a brief with no facts is treated as no research", () => {
     const r = await call(adminWith(freshRow({
       hooks: ["expanding into freight"],
       retrieval: { attemptedAt: new Date().toISOString() },
-    })), never);
-    expect(r.outcome).toBe("held");
+    })), jsonFetch({ brief: {}, sources: [] }));
+    expect(r.outcome).toBe("empty_brief");
   });
 });

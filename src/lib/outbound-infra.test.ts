@@ -221,7 +221,7 @@ describe("production wiring", () => {
   it("stores the scorer result for the signed plain text and still reserves the send", () => {
     const signed = SEND.indexOf("appendSignatureToBody");
     const scored = SEND.indexOf("scoreEmailReport");
-    const hashed = SEND.indexOf("contentHash(String(subject");
+    const hashed = SEND.indexOf("sha256Hex(`${String(subject ?? \"\")}\\n${plainBody}\\n${evidenceDecision.evidenceId}\\n${POLICY_VERSION}`)");
     expect(signed).toBeGreaterThan(-1);
     expect(scored).toBeGreaterThan(signed);
     expect(hashed).toBeGreaterThan(signed);

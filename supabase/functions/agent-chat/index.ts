@@ -18,7 +18,7 @@ import { invalidArgsResult, validateToolArgs, type ToolSchema } from "../_shared
 import { mergeCompleted, resultOk, resumeFrom, supabaseTraceStore, trimResult } from "../_shared/agent-trace.ts";
 import { budgetExhausted, budgetNote, carriedTokens, tokensIn, turnTokenBudget } from "../_shared/agent-budget.ts";
 import { pruneTurnContext } from "../_shared/turn-context.ts";
-import { repairToolSequence } from "../_shared/tool-sequence.ts";
+import { repairToolSequence, unknownMutationKeys } from "../_shared/tool-sequence.ts";
 import {
   AGENT_MAX_ATTEMPTS,
   AGENT_TARGET_SCORE,
@@ -5161,6 +5161,7 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
       const sequenced = repairToolSequence(messages);
       messages.length = 0;
       messages.push(...sequenced);
+      for (const key of unknownMutationKeys(messages, mutationKeyFor)) completedMutationKeys.add(key);
       const pruned = pruneTurnContext(messages);
       if (pruned.prunedCount > 0) {
         console.log(
@@ -5349,7 +5350,7 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
             tool_call_id: call.id,
             content: JSON.stringify({
               already_completed: true,
-              note: "This exact action already succeeded during this request. Do not run it again; continue only unfinished work.",
+              note: "This action already has a recorded result or an unknown outcome for this request. Do not run it again.",
             }),
           };
         }

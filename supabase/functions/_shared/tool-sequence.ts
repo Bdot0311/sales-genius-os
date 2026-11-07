@@ -22,7 +22,7 @@ export function repairToolSequence<T extends SequencedMessage>(messages: T[]): T
   const out: T[] = [];
   for (let i = 0; i < messages.length; i++) {
     const message = messages[i];
-    const calls = message?.role === "assistant" ? message.tool_calls ?? [] : [];
+    const calls = callsOf(message);
     if (!calls.length) {
       out.push(message);
       continue;
@@ -43,7 +43,7 @@ export function repairToolSequence<T extends SequencedMessage>(messages: T[]): T
       if (open >= 0) unused[open] = { ...unused[open], tool_call_id: id };
       return { ...call, id };
     });
-    out.push({ ...message, tool_calls: repairedCalls });
+    out.push({ ...message, tool_calls: repairedCalls } as T);
     const byId = new Map(unused.map((result) => [String(result.tool_call_id ?? ""), result]));
     for (const call of repairedCalls) {
       const existing = byId.get(call.id!);
@@ -60,4 +60,39 @@ export function repairToolSequence<T extends SequencedMessage>(messages: T[]): T
     i = j - 1;
   }
   return out;
+}
+
+function callsOf(message: SequencedMessage): Array<{ id?: string; function?: { name?: string; arguments?: string } }> {
+  if (message?.tool_calls?.length) return message.tool_calls;
+  if (!Array.isArray(message?.content)) return [];
+  return message.content.flatMap((part) => {
+    if (!part || typeof part !== "object") return [];
+    const block = part as { type?: string; id?: string; name?: string; input?: unknown };
+    if (block.type !== "tool_use") return [];
+    return [{ id: block.id, function: { name: block.name, arguments: JSON.stringify(block.input ?? {}) } }];
+  });
+}
+
+/** Mutating calls whose recorded result is unknown must not be run again. */
+export function unknownMutationKeys(messages: SequencedMessage[], keyFor: (name: string, args: Record<string, unknown>) => string | null): string[] {
+  const keys: string[] = [];
+  const repaired = repairToolSequence(messages);
+  for (let i = 0; i < repaired.length; i++) {
+    const calls = repaired[i]?.tool_calls ?? [];
+    if (!calls.length) continue;
+    const results = repaired.slice(i + 1).filter((message) => message.role === "tool");
+    for (const call of calls) {
+      const result = results.find((message) => message.tool_call_id === call.id);
+      const content = String(result?.content ?? "");
+      if (!content.includes("unknown_outcome")) continue;
+      let args: Record<string, unknown> = {};
+      try {
+        const parsed = JSON.parse(call.function?.arguments || "{}");
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) args = parsed;
+      } catch { /* the key stays absent */ }
+      const key = keyFor(String(call.function?.name ?? ""), args);
+      if (key) keys.push(key);
+    }
+  }
+  return keys;
 }

@@ -258,7 +258,7 @@ export function supabaseTraceStore(admin: any): TraceStore {
           mutation_key: normaliseMutationKey(key),
           tool_name: toolName,
         }, { onConflict: "thread_id,mutation_key" });
-      if (error) console.warn(`[agent-trace] could not record a completed mutation: ${error.message}`);
+      if (error) throw new Error(error.message);
     },
 
     async clearMutations(threadId) {

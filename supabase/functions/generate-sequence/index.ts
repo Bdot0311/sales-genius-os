@@ -8,6 +8,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
 import { sequenceSystemPrompt, buildSequenceUserPayload } from "./prompt-v2.ts";
 import { lintTouch } from "../_shared/style-lint.ts";
 import { AI_SMART, aiFetch } from "../_shared/ai-provider.ts";
+import { SENDER_PROOF } from "../_shared/evidence-contract.ts";
+import { scoreEmailReport } from "../_shared/email-quality.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -162,9 +164,25 @@ serve(async (req) => {
           }
         }
         if (/\{\{|\[[a-z]|<[a-z]/i.test(String(t.body || ""))) problems.push("resolve all tokens, leave no placeholder");
+        if (SENDER_PROOF.test(String(t.body || "")) || (/\bmeans\b/i.test(String(t.body || "")) && /\byou|your\b/i.test(String(t.body || "")))) {
+          problems.push("remove the sender result or the inferred consequence");
+        }
       }
       if (problems.length === 0) break;
       retryNote = Array.from(new Set(problems)).join("; ");
+    }
+
+    if (retryNote.includes("sender result")) {
+      return json({ error: "The sequence added a sender result or an inferred consequence, so it was not saved.", error_code: "unsupported_prospect_claim" });
+    }
+    if (growthPlus && touches[0]) {
+      const scored = await scoreEmailReport(Deno.env.get("SUPABASE_URL") ?? "", authHeader, Deno.env.get("SUPABASE_ANON_KEY") ?? "", {
+        subject: String(touches[0].subject ?? ""),
+        body: String(touches[0].body ?? ""),
+      });
+      if (scored.availability === "unavailable") {
+        return json({ error: "The reply rubric did not return a score, so this sequence was not saved.", error_code: "rubric_unavailable" });
+      }
     }
 
     // Growth+: attach the R.E.P.L.Y. rubric to each touch so the user sees scores.

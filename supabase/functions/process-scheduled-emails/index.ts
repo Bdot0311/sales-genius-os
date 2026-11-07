@@ -614,7 +614,7 @@ serve(async (req) => {
         const evidenceDecision = email.lead_id ? factsByLead.get(email.lead_id) : undefined;
         const evidenceBlockers = bodyViolations(email.body_text || email.body_html || "", evidenceDecision ?? {
           status: "absent", reason: "", evidenceId: "", facts: [], conflicts: [],
-        });
+        }, "", email.subject || "");
         if (evidenceBlockers.length > 0) {
           await failEmail(
             email.id,

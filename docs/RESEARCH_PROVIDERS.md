@@ -14,3 +14,5 @@ Search snippets from Parallel and Context.dev are stored as partial and are not 
 Generation calls `research-lead` before drafting when that table has no ready fact and the last receipt is older than 10 minutes. A click inside the window holds and does not call the providers again. Refresh passes `force: true` and does spend another retrieval.
 
 ColdIQ is a separate rescue for a page this app's own fetch could not read. It is not Firecrawl and it is not one of the three providers above.
+
+A ready fact does not have to contain a number. The model writes the draft with the tenant skills and may state only those sentences. The reply rubric runs before a full email is saved. If it does not return a score, the draft is held, including when the send canary is off. A starter plan that cannot call the rubric is plan-gated and is still held when a writing rule fails. Subject-only and trigger generation keep their own return shapes and still require the research step.

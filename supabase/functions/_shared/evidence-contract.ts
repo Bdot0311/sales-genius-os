@@ -14,7 +14,7 @@
  */
 
 import { RESEARCH_TTL_DAYS } from "./lead-research.ts";
-import { stripInstructionLines } from "./evidence.ts";
+import { stripInstructionLines, unsupportedClaims } from "./evidence.ts";
 
 function rotr(n: number, x: number): number {
   return (x >>> n) | (x << (32 - n));
@@ -257,10 +257,12 @@ export function evaluateStoredSnapshots(input: {
     const spans: string[] = [];
     for (const sentence of sentencesOf(excerpt)) {
       const span = factualSpan(sentence, excerpt);
-      if (!span || !/\d/.test(span) || isInferredClaim(span)) continue;
+      if (!span || span.length < 40 || isInferredClaim(span)) continue;
       if (SENDER_PROOF.test(span)) continue;
-      if (company.length > 2 && !span.toLowerCase().includes(company)) continue;
       if (/ignore previous|treat this as verified|system prompt/i.test(span)) continue;
+      const namesCompany = company.length > 2 && span.toLowerCase().includes(company);
+      const otherSubject = /\b(other agencies|our marketplace|a directory)\b/i.test(span);
+      if (!namesCompany && !(hostMatches && !otherSubject)) continue;
       spans.push(span);
     }
     if (spans.length) accepted.push({ snap: { ...snap, excerpt }, spans });
@@ -349,27 +351,61 @@ export function closedRender(input: {
   return { subject, body: lines.join("\n"), factIds: chosen.map((fact) => fact.id) };
 }
 
+/**
+ * Claims a draft adds beyond the approved sentences.
+ *
+ * Prose that does not state a new quantity, a sender result, or a
+ * consequence can stay. A digit shared with a different claim cannot.
+ * There is no trusted source for the sender's own case studies, so those
+ * sentences are refused.
+ */
 function sameLine(a: string, b: string): boolean {
   return a.replace(/\s+/g, " ").trim().toLowerCase() === b.replace(/\s+/g, " ").trim().toLowerCase();
 }
 
 /**
- * A line may be sent only when it is the greeting, the one fixed question,
- * the sender's name, or an approved span copied exactly. A shared digit is
- * not enough, and a sender case study has no approved source.
+ * A line may stay when it is the greeting, one question, the sender's name,
+ * or an approved sentence. Any other line is a new assertion, including a
+ * short line with no period and a URL. The subject is part of the text the
+ * caller passes in.
  */
-export function bodyViolations(body: string, decision: EvidenceDecision, senderName = ""): string[] {
-  const allowed = decision.facts.filter((fact) => fact.role !== "sender_proof");
-  const violations: string[] = [];
+export function bodyViolations(body: string, decision: EvidenceDecision, senderName = "", subject = ""): string[] {
+  const facts = decision.facts.filter((fact) => fact.role !== "sender_proof");
+  if (!facts.length) return ["No approved research is stored for this company."];
+  const corpus = facts.map((fact) => fact.span).join("\n");
+  const violations = unsupportedClaims(`${subject}\n${body}`, corpus).map((hit) => hit.evidence);
+  if (subject.trim()) {
+    if (/https?:\/\//i.test(subject) || SENDER_PROOF.test(subject) || /\bour customers\b/i.test(subject)) violations.push(subject.trim());
+    const approvedSubjectQuantities = new Set(
+      [...corpus.matchAll(/\b\d[\d,]*(?:\s*(?:to|-)\s*\d[\d,]*)?\b/g)].map((match) => match[0]),
+    );
+    for (const match of subject.matchAll(/\b\d[\d,]*(?:\s*(?:to|-)\s*\d[\d,]*)?\b/g)) {
+      if (!approvedSubjectQuantities.has(match[0])) violations.push(`Quantity ${match[0]} is not in an approved sentence.`);
+    }
+  }
+  const approvedQuantities = new Set(
+    [...corpus.matchAll(/\b\d[\d,]*(?:\s*(?:to|-)\s*\d[\d,]*)?\b/g)].map((match) => match[0]),
+  );
   for (const line of body.split("\n").map((part) => part.trim()).filter(Boolean)) {
-    if (/^Hi [^,\n]{1,60},$/.test(line)) continue;
-    if (line === CLOSED_QUESTION) continue;
-    if (senderName && sameLine(line, senderName)) continue;
-    if (!/[.?!]/.test(line) && !/\d/.test(line) && !/\b(you|your|we|our|means)\b/i.test(line) && line.length < 80) continue;
-    if (allowed.some((fact) => sameLine(line, fact.span))) continue;
+    const question = /\?\s*$/.test(line);
+    const greeting = /^Hi [^,\n]{1,60},$/.test(line);
+    const signoff = !!senderName && sameLine(line, senderName);
+    const quoted = facts.some((fact) => sameLine(line, fact.span));
+    if (question || !greeting && !signoff && !quoted) {
+      if (SENDER_PROOF.test(line) || /\bour customers\b/i.test(line) || /https?:\/\//i.test(line)) violations.push(line);
+      const meansAt = line.search(/\bmeans\b/i);
+      if (meansAt >= 0 && /\byou|your\b/i.test(line.slice(meansAt))) {
+        const clause = line.slice(meansAt).trim();
+        if (!corpus.toLowerCase().includes(clause.toLowerCase())) violations.push(clause);
+      }
+      for (const match of line.matchAll(/\b\d[\d,]*(?:\s*(?:to|-)\s*\d[\d,]*)?\b/g)) {
+        if (!approvedQuantities.has(match[0])) violations.push(`Quantity ${match[0]} is not in an approved sentence.`);
+      }
+    }
+    if (greeting || signoff || quoted || question) continue;
     violations.push(line);
   }
-  return violations;
+  return [...new Set(violations)];
 }
 
 /** Replace a free-form draft with the closed render when at least one fact is approved. */

@@ -348,6 +348,7 @@ const Outreach = () => {
 
   // Per-lead website research brief (shared engine with the AI SDR agent).
   const [leadResearch, setLeadResearch] = useState<LeadResearch | null>(null);
+  const [trustedPayloads, setTrustedPayloads] = useState<unknown[]>([]);
   const [researchLoading, setResearchLoading] = useState(false);
   const [researchRefreshing, setResearchRefreshing] = useState(false);
 
@@ -1322,9 +1323,13 @@ const Outreach = () => {
       userId: authData.user?.id ?? "",
       leadId: selectedLead,
       company: leadForFix?.company_name ?? "",
-      websiteHost: null,
+      websiteHost: (() => {
+        const raw = String((leadForFix as { company_website?: string } | undefined)?.company_website ?? "");
+        try { return new URL(raw.includes("://") ? raw : `https://${raw}`).hostname.replace(/^www\./, ""); }
+        catch { return null; }
+      })(),
       now: new Date().toISOString(),
-      stored: (leadResearch as { snapshots?: unknown } | null)?.snapshots,
+      stored: trustedPayloads,
     });
     // The writing rules are no longer built here. generate-email applies them
     // itself for a precision edit, from _shared/email-rules.ts — posting them
@@ -1388,7 +1393,11 @@ const Outreach = () => {
     if (checkLabel === "Naturalness") {
       const shouted = shoutingTokens(generatedEmail);
       if (!shouted.length) {
-        toast({ title: "Nothing to change", description: "Those capitals are short acronyms or names. The draft was not changed." });
+        toast({
+          title: "Could not fix naturalness",
+          description: `${row?.message || "This is not a capital-letter run."} The draft was not changed.`,
+          variant: "destructive",
+        });
         setFixingCheck(null);
         return;
       }
@@ -1413,34 +1422,12 @@ const Outreach = () => {
       return;
     }
     if (checkLabel === "Ungrounded prospect claim") {
-      const repaired = repairToApprovedFacts({
-        body: generatedEmail,
-        decision: fixDecision,
-        firstName: (leadForFix?.contact_name ?? "there").split(" ")[0],
-        senderName: senderProfileName || "there",
+      const blocked = bodyViolations(`${subjectLine}\n${generatedEmail}`, fixDecision, senderProfileName || "");
+      toast({
+        title: "Could not fix ungrounded prospect claim",
+        description: blocked[0] || "Regenerate the draft from research. The current text was not changed.",
+        variant: "destructive",
       });
-      if ("message" in repaired) {
-        toast({
-          title: "Could not fix ungrounded prospect claim",
-          description: repaired.message,
-          variant: "destructive",
-        });
-        setFixingCheck(null);
-        return;
-      }
-      const stillBlocked = bodyViolations(repaired.body, fixDecision);
-      if (stillBlocked.length) {
-        toast({
-          title: "Could not fix ungrounded prospect claim",
-          description: stillBlocked[0],
-          variant: "destructive",
-        });
-        setFixingCheck(null);
-        return;
-      }
-      await persistFixedDraft(repaired.body);
-      if (repaired.subject) setSubjectLine(repaired.subject);
-      toast({ title: "Ungrounded claim removed", description: "The draft now quotes only an approved source span. Inferred pain and unsourced results were not kept." });
       setFixingCheck(null);
       return;
     }
@@ -1586,6 +1573,11 @@ Return ONLY the corrected email body. No subject line. No explanation. No "Here 
             }
           : null,
       );
+      const snaps = await (supabase as unknown as { from: (table: string) => { select: (columns: string) => { eq: (column: string, value: string) => Promise<{ data: { payload?: unknown }[] | null }> } } })
+        .from("research_snapshots")
+        .select("payload")
+        .eq("lead_id", selectedLead);
+      if (!cancelled) setTrustedPayloads((snaps.data ?? []).map((row) => row.payload).filter(Boolean));
       setResearchLoading(false);
     })();
     return () => {
@@ -3291,9 +3283,13 @@ For logos, use HTML:
                             userId: complianceSettings.userId,
                             leadId: selectedLead,
                             company: l?.company_name ?? "",
-                            websiteHost: null,
+                            websiteHost: (() => {
+                              const raw = String((l as { company_website?: string }).company_website ?? "");
+                              try { return new URL(raw.includes("://") ? raw : `https://${raw}`).hostname.replace(/^www\./, ""); }
+                              catch { return null; }
+                            })(),
                             now: new Date().toISOString(),
-                            stored: (leadResearch as { snapshots?: unknown } | null)?.snapshots,
+                            stored: trustedPayloads,
                           });
                           return decision.facts.map((fact) => fact.span).join("\n");
                         })()}
@@ -3308,9 +3304,13 @@ For logos, use HTML:
                             userId: complianceSettings.userId,
                             leadId: selectedLead,
                             company: l?.company_name ?? "",
-                            websiteHost: null,
+                            websiteHost: (() => {
+                              const raw = String((l as { company_website?: string }).company_website ?? "");
+                              try { return new URL(raw.includes("://") ? raw : `https://${raw}`).hostname.replace(/^www\./, ""); }
+                              catch { return null; }
+                            })(),
                             now: new Date().toISOString(),
-                            stored: (leadResearch as { snapshots?: unknown } | null)?.snapshots,
+                            stored: trustedPayloads,
                           }).facts.map((fact) => fact.span).join("\n");
                         })()).blockers.some((finding) => finding.rule === "ungrounded_prospect_claim")
                           ? "A relevance score does not check those details against retrieved pages, and it does not approve sending while a grounding blocker is present."

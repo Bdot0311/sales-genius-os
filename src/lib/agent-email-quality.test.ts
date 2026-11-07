@@ -125,9 +125,9 @@ describe("what the next attempt is told", () => {
 });
 
 describe("the autonomous run", () => {
-  it("renders approved facts instead of asking the model to invent a bridge", () => {
-    expect(RUN).toContain("closedRender(");
-    expect(RUN).toContain("research_status: evidenceDecision.status");
+  it("drafts from approved facts and still scores the result", () => {
+    expect(RUN).toContain("APPROVED FACTS, the only statements you may make about this company");
+    expect(RUN).toContain("callGemini(");
   });
 
   it("scores every attempt on both checks", () => {
@@ -146,7 +146,7 @@ describe("the autonomous run", () => {
     // isPerfect. The send decision uses that same bar when a score exists,
     // and it also holds when the scorer did not return a score.
     const QUALITY = readFileSync("supabase/functions/_shared/email-quality.ts", "utf8");
-    expect(RUN).toContain("closedRender(");
+    expect(RUN).toContain("autonomousSendAllowed(best, best.availability");
     expect(QUALITY).toContain("return isPerfect(attempt);");
     expect(QUALITY).toContain('if (availability === "unavailable") return false;');
   });

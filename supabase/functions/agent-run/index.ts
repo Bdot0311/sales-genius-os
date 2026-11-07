@@ -17,7 +17,7 @@ import {
 import { auditEmail } from "../_shared/email-audit.ts";
 import { buildAgentRunSummary, classifyProviderSend, reconcileReceipts, type ToolReceipt } from "../_shared/run-receipts.ts";
 import { advanceReply, rpcStepStore, runPhase, type StepStore } from "../_shared/lead-run.ts";
-import { closedRender, evaluateStoredSnapshots } from "../_shared/evidence-contract.ts";
+import { evaluateStoredSnapshots } from "../_shared/evidence-contract.ts";
 import { contentHash, gatePromptHash, rubricPromptHash } from "../_shared/prompt-versions.ts";
 import { agentProhibitions } from "../_shared/agent-prohibitions.ts";
 import { deliverabilityCheck } from "../_shared/email-deliverability.ts";
@@ -1132,28 +1132,27 @@ ${playbookSystemRules()}`;
                 });
                 continue;
               }
-              const closed = closedRender({
-                facts: evidenceDecision.facts,
+              const factBlock = evidenceDecision.facts.map((fact) => fact.span).join("\n");
+              const groundedPrompt = buildTouchPrompt({
+                research: factBlock,
                 firstName,
-                senderName: senderFirstName,
+                jobTitle: lead.job_title,
+                companyName: lead.company_name,
+                industry: lead.industry,
+                signals: Array.isArray(lead.signals) ? lead.signals : [],
+                senderFirstName,
+                companyContext: config.company_context,
+                valueProps: cfgValuePropsText,
               });
-              if (!closed) {
-                await logAction({
-                  user_id: user.id,
-                  action_type: "skipped",
-                  status: "skipped",
-                  prospect_email: to,
-                  description: "Retrieved sentences cannot be sent without breaking the writing rules, so nothing was drafted.",
-                  metadata: { phase: "outreach", reason: "no_research", lead_id: lead.id },
-                });
-                continue;
-              }
               let raw = "";
               const draftPhase = await runPhase(stepStore, {
                 userId: user.id, leadId: lead.id, runId, owner: stepOwner, requireDurable: durableMode === "on",
               }, "draft", async () => {
-                raw = JSON.stringify({ touches: [{ day: 0, purpose: "sourced", subject: closed.subject, body: closed.body }] });
-                return { raw, factIds: closed.factIds };
+                raw = await callGemini(
+                  groundedPrompt,
+                  `${outreachSystemPrompt}\n\nAPPROVED FACTS, the only statements you may make about this company:\n${factBlock}\nDo not add a number, a customer result, or a consequence that is not in those sentences.`,
+                );
+                return { raw, factIds: evidenceDecision.facts.map((fact) => fact.id) };
               });
               if (draftPhase.action === "stopped" || draftPhase.status === "left_open") continue;
               if (draftPhase.action === "skipped") {

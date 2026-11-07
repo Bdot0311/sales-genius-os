@@ -22,7 +22,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
 import { composeSkillContext, skillNamesUsed } from "../_shared/email-skills.ts";
 import { bannedPhrasesBlock, findPlaceholders, hasPlaceholder } from "../_shared/email-rules.ts";
-import { isWeak, rubricFeedback, scoreEmail } from "../_shared/email-quality.ts";
+import { isWeak, rubricFeedback, scoreEmailReport } from "../_shared/email-quality.ts";
+import { bodyViolations } from "../_shared/evidence-contract.ts";
 import { AI_SMART, aiFetch } from "../_shared/ai-provider.ts";
 
 const corsHeaders = {
@@ -210,18 +211,49 @@ Respond in this EXACT JSON format:
     // A null score is "unscored", not "bad" — the rubric is plan-gated to
     // growth and above, so it must never block a starter user's draft.
     if (suggestion) {
-      const rubric = await scoreEmail(supabaseUrl, authHeader, anonKey, {
+      const report = await scoreEmailReport(supabaseUrl, authHeader, anonKey, {
         subject: suggestion.suggestedSubject,
         body: suggestion.suggestedBody,
       });
+      if (report.availability === "unavailable") {
+        return new Response(JSON.stringify({
+          error: "The reply rubric did not return a score, so this follow-up was not saved.",
+          error_code: "rubric_unavailable",
+        }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const rubric = report.rubric;
+      const prior = String(originalBody ?? "");
+      const invented = bodyViolations(suggestion.suggestedBody, {
+        status: prior.trim() ? "ready" : "absent",
+        reason: "",
+        evidenceId: "",
+        facts: prior.trim() ? [{
+          id: "prior",
+          snapshotId: "prior",
+          span: prior,
+          sourceUrl: "",
+          retrievedAt: "",
+          publishedAt: null,
+          role: "prospect_page",
+          provider: "site",
+        }] : [],
+        conflicts: [],
+      });
+      if (invented.length) {
+        return new Response(JSON.stringify({
+          error: `The follow-up added a claim the earlier email does not support (${invented[0]}), so it was not saved.`,
+          error_code: "unsupported_prospect_claim",
+        }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
       if (isWeak(rubric)) {
         const retry = await callModel(prompt + rubricFeedback(rubric!)).catch(() => null);
         const retrySuggestion = retry ? parseSuggestion(retry) : null;
         if (retrySuggestion) {
-          const retryRubric = await scoreEmail(supabaseUrl, authHeader, anonKey, {
+          const retryReport = await scoreEmailReport(supabaseUrl, authHeader, anonKey, {
             subject: retrySuggestion.suggestedSubject,
             body: retrySuggestion.suggestedBody,
           });
+          const retryRubric = retryReport.rubric;
           // Keep whichever attempt actually scored better; a rewrite is not
           // automatically an improvement.
           if ((retryRubric?.overall ?? 0) > (rubric?.overall ?? 0)) suggestion = retrySuggestion;
