@@ -19,6 +19,7 @@ interface EmailRubricPanelProps {
   onApplyBody?: (nextBody: string) => void;
   onApplySubject?: (nextSubject: string) => void;
   groundingNote?: string | null;
+  leadId?: string;
 }
 
 interface Dim { score: number; justification: string }
@@ -68,7 +69,7 @@ function locateSpan(text: string, snippet: string): { start: number; end: number
   return null;
 }
 
-export const EmailRubricPanel = ({ subject, body, onApplyBody, onApplySubject, groundingNote }: EmailRubricPanelProps) => {
+export const EmailRubricPanel = ({ subject, body, onApplyBody, onApplySubject, groundingNote, leadId }: EmailRubricPanelProps) => {
   const mech = useMemo(() => computeMechanicalChecks(subject, body), [subject, body]);
 
   const [dims, setDims] = useState<Record<string, Dim> | null>(null);
@@ -103,7 +104,7 @@ export const EmailRubricPanel = ({ subject, body, onApplyBody, onApplySubject, g
     setApplyingKey(key);
     try {
       const { data, error } = await supabase.functions.invoke("apply-rubric-suggestion", {
-        body: { subject, body, snippet: matched, suggestion: s.suggestion, dimension: s.dimension },
+        body: { subject, body, snippet: matched, suggestion: s.suggestion, dimension: s.dimension, leadId },
       });
       if (error) { toast.error("couldn't apply that suggestion"); return; }
       if (data?.error) { toast.error(data.error); return; }

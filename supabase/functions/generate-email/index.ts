@@ -2289,6 +2289,7 @@ conversation that is already going, not as someone chasing silence.`}`;
         availability: rubricAvailability,
         rubric,
         mode: "studio",
+        senderName: resolvedSenderName,
       });
       if (!release.allow) {
         return new Response(JSON.stringify({

@@ -246,7 +246,7 @@ serve(async (req) => {
       now: new Date().toISOString(),
       stored: (snapRows ?? []).map((row: { payload?: unknown }) => row.payload).filter(Boolean),
     });
-    const evidenceBlockers = bodyViolations(`${subject}\n${body}`, evidenceDecision);
+    const evidenceBlockers = bodyViolations(body, evidenceDecision, "", subject);
     const copyBlockers = [...evidenceBlockers, ...queuedCopyBlockers(subject, body, proofFromLead(lead))];
     if (copyBlockers.length > 0) {
       const retryAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();

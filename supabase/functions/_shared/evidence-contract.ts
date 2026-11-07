@@ -242,7 +242,7 @@ export function evaluateStoredSnapshots(input: {
       sawWrong = true;
       continue;
     }
-    if (requestedHost && finalHost && requestedHost !== finalHost && finalHost !== input.websiteHost) {
+    if (requestedHost && finalHost && requestedHost !== finalHost) {
       sawWrong = true;
       continue;
     }
@@ -260,7 +260,7 @@ export function evaluateStoredSnapshots(input: {
       if (!span || span.length < 40 || isInferredClaim(span)) continue;
       if (SENDER_PROOF.test(span)) continue;
       if (/ignore previous|treat this as verified|system prompt/i.test(span)) continue;
-      const namesCompany = company.length > 2 && span.toLowerCase().includes(company);
+      const namesCompany = company.length > 2 && new RegExp(`(?:^|[^a-z0-9])${company.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:$|[^a-z0-9])`, "i").test(span);
       const otherSubject = /\b(other agencies|our marketplace|a directory)\b/i.test(span);
       if (!namesCompany && !(hostMatches && !otherSubject)) continue;
       spans.push(span);
@@ -363,47 +363,54 @@ function sameLine(a: string, b: string): boolean {
   return a.replace(/\s+/g, " ").trim().toLowerCase() === b.replace(/\s+/g, " ").trim().toLowerCase();
 }
 
+const FUNCTION_WORDS = new Set(
+  "a an the is are was were be been being do does did to for of in on at by with from and or but so as it this that these those you your we our i hi how what when where who why still just not no yes".split(" "),
+);
+
+const EXACT_CTA = new Set(["worth a look?", "open to a look?"]);
+
+/** Words that have to be backed by an approved sentence. Punctuation is ignored. */
+export function contentTokens(line: string): string[] {
+  return line.toLowerCase().replace(/https?:\/\/\S+/g, " ").split(/[^a-z0-9]+/).filter((token) => token && !FUNCTION_WORDS.has(token));
+}
+
+function tokenCovered(token: string, known: Set<string>): boolean {
+  if (known.has(token)) return true;
+  if (token.length < 4) return false;
+  for (const word of known) {
+    if (word.length >= 4 && (word.startsWith(token) || token.startsWith(word))) return true;
+  }
+  return false;
+}
+
+/** Content words in a line that no approved sentence contains. A question is not exempt. */
+export function uncoveredTokens(line: string, corpus: string): string[] {
+  const known = new Set(contentTokens(corpus));
+  return contentTokens(line).filter((token) => !tokenCovered(token, known));
+}
+
 /**
- * A line may stay when it is the greeting, one question, the sender's name,
- * or an approved sentence. Any other line is a new assertion, including a
- * short line with no period and a URL. The subject is part of the text the
- * caller passes in.
+ * Every line is either the greeting, the sender's name, an exact nonfactual
+ * CTA, or made only of words from the approved sentences. A question that
+ * adds "projects" or "customers" is the same unsupported claim as the
+ * statement with a period.
  */
 export function bodyViolations(body: string, decision: EvidenceDecision, senderName = "", subject = ""): string[] {
   const facts = decision.facts.filter((fact) => fact.role !== "sender_proof");
   if (!facts.length) return ["No approved research is stored for this company."];
   const corpus = facts.map((fact) => fact.span).join("\n");
-  const violations = unsupportedClaims(`${subject}\n${body}`, corpus).map((hit) => hit.evidence);
-  if (subject.trim()) {
-    if (/https?:\/\//i.test(subject) || SENDER_PROOF.test(subject) || /\bour customers\b/i.test(subject)) violations.push(subject.trim());
-    const approvedSubjectQuantities = new Set(
-      [...corpus.matchAll(/\b\d[\d,]*(?:\s*(?:to|-)\s*\d[\d,]*)?\b/g)].map((match) => match[0]),
-    );
-    for (const match of subject.matchAll(/\b\d[\d,]*(?:\s*(?:to|-)\s*\d[\d,]*)?\b/g)) {
-      if (!approvedSubjectQuantities.has(match[0])) violations.push(`Quantity ${match[0]} is not in an approved sentence.`);
+  const violations: string[] = [];
+  const lines = [subject, ...body.split("\n")].map((part) => part.trim()).filter(Boolean);
+  for (const line of lines) {
+    if (/^Hi [^,\n]{1,60},$/i.test(line)) continue;
+    if (senderName && sameLine(line, senderName)) continue;
+    if (EXACT_CTA.has(line.toLowerCase().replace(/\s+/g, " "))) continue;
+    if (/https?:\/\//i.test(line)) {
+      violations.push(line);
+      continue;
     }
-  }
-  const approvedQuantities = new Set(
-    [...corpus.matchAll(/\b\d[\d,]*(?:\s*(?:to|-)\s*\d[\d,]*)?\b/g)].map((match) => match[0]),
-  );
-  for (const line of body.split("\n").map((part) => part.trim()).filter(Boolean)) {
-    const question = /\?\s*$/.test(line);
-    const greeting = /^Hi [^,\n]{1,60},$/.test(line);
-    const signoff = !!senderName && sameLine(line, senderName);
-    const quoted = facts.some((fact) => sameLine(line, fact.span));
-    if (question || !greeting && !signoff && !quoted) {
-      if (SENDER_PROOF.test(line) || /\bour customers\b/i.test(line) || /https?:\/\//i.test(line)) violations.push(line);
-      const meansAt = line.search(/\bmeans\b/i);
-      if (meansAt >= 0 && /\byou|your\b/i.test(line.slice(meansAt))) {
-        const clause = line.slice(meansAt).trim();
-        if (!corpus.toLowerCase().includes(clause.toLowerCase())) violations.push(clause);
-      }
-      for (const match of line.matchAll(/\b\d[\d,]*(?:\s*(?:to|-)\s*\d[\d,]*)?\b/g)) {
-        if (!approvedQuantities.has(match[0])) violations.push(`Quantity ${match[0]} is not in an approved sentence.`);
-      }
-    }
-    if (greeting || signoff || quoted || question) continue;
-    violations.push(line);
+    const missing = uncoveredTokens(line, corpus);
+    if (missing.length) violations.push(line);
   }
   return [...new Set(violations)];
 }

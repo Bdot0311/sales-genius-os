@@ -23,7 +23,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
 import { composeSkillContext, skillNamesUsed } from "../_shared/email-skills.ts";
 import { bannedPhrasesBlock, findPlaceholders, hasPlaceholder } from "../_shared/email-rules.ts";
 import { isWeak, rubricFeedback, scoreEmailReport } from "../_shared/email-quality.ts";
-import { bodyViolations } from "../_shared/evidence-contract.ts";
+import { bodyViolations, evaluateStoredSnapshots } from "../_shared/evidence-contract.ts";
 import { AI_SMART, aiFetch } from "../_shared/ai-provider.ts";
 
 const corsHeaders = {
@@ -88,7 +88,7 @@ serve(async (req) => {
     }
 
     const {
-      leadName, companyName, originalSubject, leadEmail, jobTitle, industry,
+      leadId, leadName, companyName, originalSubject, leadEmail, jobTitle, industry,
       companyDescription, technologies, senderName, originalBody,
     } = await req.json();
 
@@ -222,23 +222,31 @@ Respond in this EXACT JSON format:
         }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       const rubric = report.rubric;
-      const prior = String(originalBody ?? "");
-      const invented = bodyViolations(suggestion.suggestedBody, {
-        status: prior.trim() ? "ready" : "absent",
-        reason: "",
-        evidenceId: "",
-        facts: prior.trim() ? [{
-          id: "prior",
-          snapshotId: "prior",
-          span: prior,
-          sourceUrl: "",
-          retrievedAt: "",
-          publishedAt: null,
-          role: "prospect_page",
-          provider: "site",
-        }] : [],
-        conflicts: [],
+      const { data: leadRow } = leadId
+        ? await supabase.from("leads").select("company_name, company_website").eq("id", leadId).eq("user_id", user.id).maybeSingle()
+        : { data: null };
+      const { data: snapRows } = leadId
+        ? await supabase.from("research_snapshots").select("payload").eq("lead_id", leadId)
+        : { data: [] };
+      const host = (() => {
+        const raw = String(leadRow?.company_website ?? "");
+        try { return new URL(raw.includes("://") ? raw : `https://${raw}`).hostname.replace(/^www\./, ""); }
+        catch { return null; }
+      })();
+      const evidence = evaluateStoredSnapshots({
+        userId: user.id,
+        leadId: String(leadId ?? ""),
+        company: String(leadRow?.company_name ?? companyName ?? ""),
+        websiteHost: host,
+        now: new Date().toISOString(),
+        stored: (snapRows ?? []).map((row: { payload?: unknown }) => row.payload).filter(Boolean),
       });
+      const invented = bodyViolations(
+        suggestion.suggestedBody,
+        evidence,
+        senderFirstName,
+        suggestion.suggestedSubject,
+      );
       if (invented.length) {
         return new Response(JSON.stringify({
           error: `The follow-up added a claim the earlier email does not support (${invented[0]}), so it was not saved.`,

@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
 import { AI_FAST, aiFetch } from "../_shared/ai-provider.ts";
-import { bodyViolations } from "../_shared/evidence-contract.ts";
+import { bodyViolations, evaluateStoredSnapshots } from "../_shared/evidence-contract.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -50,6 +50,7 @@ serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({} as Record<string, unknown>));
+    const leadId = typeof body.leadId === "string" ? body.leadId : "";
     const snippet = typeof body.snippet === "string" ? body.snippet.trim() : "";
     const suggestion = typeof body.suggestion === "string" ? body.suggestion.trim() : "";
     const dimension = typeof body.dimension === "string" ? body.dimension : "";
@@ -83,22 +84,25 @@ serve(async (req) => {
     const raw = (await res.json()).choices?.[0]?.message?.content || "";
     const replacement = clean(String(raw));
     if (!replacement) return json({ error: "could not apply this suggestion right now.", error_code: "empty" }, 200);
-    const invented = bodyViolations(`${emailBody}\n${replacement}`, {
-      status: emailBody.trim() ? "ready" : "absent",
-      reason: "",
-      evidenceId: "",
-      facts: emailBody.trim() ? [{
-        id: "draft",
-        snapshotId: "draft",
-        span: emailBody,
-        sourceUrl: "",
-        retrievedAt: "",
-        publishedAt: null,
-        role: "prospect_page",
-        provider: "site",
-      }] : [],
-      conflicts: [],
-    });
+    const { data: leadRow } = leadId
+      ? await supabase.from("leads").select("company_name, company_website, user_id").eq("id", leadId).eq("user_id", user.id).maybeSingle()
+      : { data: null };
+    const { data: snapRows } = leadId
+      ? await supabase.from("research_snapshots").select("payload").eq("lead_id", leadId)
+      : { data: [] };
+    const host = (() => {
+      const raw = String(leadRow?.company_website ?? "");
+      try { return new URL(raw.includes("://") ? raw : `https://${raw}`).hostname.replace(/^www\./, ""); }
+      catch { return null; }
+    })();
+    const invented = bodyViolations(replacement, evaluateStoredSnapshots({
+      userId: user.id,
+      leadId,
+      company: String(leadRow?.company_name ?? ""),
+      websiteHost: host,
+      now: new Date().toISOString(),
+      stored: (snapRows ?? []).map((row: { payload?: unknown }) => row.payload).filter(Boolean),
+    }));
     if (invented.length) {
       return json({ error: "The suggestion added a claim the draft does not already support, so it was not applied.", error_code: "unsupported_prospect_claim" }, 200);
     }

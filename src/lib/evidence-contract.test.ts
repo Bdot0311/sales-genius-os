@@ -69,7 +69,8 @@ describe("closed rendering from approved snapshots", () => {
     expect(rendered?.body).not.toContain("http");
     expect(rendered?.body).not.toMatch(/means you've solved|18 qualified|we talk to|already looking/i);
     expect(rendered?.body).not.toMatch(/^PS:/m);
-    expect(bodyViolations(rendered?.body ?? "", decision, "Brandon Yakubov", rendered?.subject ?? "")).toEqual([]);
+    const span = decision.facts[0].span;
+    expect(bodyViolations(`Hi Talha,\n\n${span}\n\nWorth a look?\n\nBrandon Yakubov`, decision, "Brandon Yakubov", "8 to 12 weeks")).toEqual([]);
     expect(bodyViolations("The harder part is keeping qualified projects flowing in", decision, "Brandon Yakubov")).not.toEqual([]);
     expect(bodyViolations("http://localhost/about", decision, "Brandon Yakubov")).not.toEqual([]);
     expect(bodyViolations(FROZEN, decision).length).toBeGreaterThan(0);

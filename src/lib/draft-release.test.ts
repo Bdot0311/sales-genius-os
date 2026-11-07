@@ -66,13 +66,17 @@ describe("research-backed drafts, numeric and not", () => {
     const decision = decide("TF Business Solutions hires freight brokers for shippers across the region.");
     const body = `Hi Talha,
 
-TF Business Solutions hires freight brokers for shippers across the region. How is that desk staffed this quarter?
+TF Business Solutions hires freight brokers for shippers across the region.
+
+Do you still hire freight brokers for shippers?
+
+Worth a look?
 
 Brandon Yakubov`;
-    expect(bodyViolations(body, decision, "Brandon Yakubov", "staffing")).toEqual([]);
+    expect(bodyViolations(body, decision, "Brandon Yakubov", "freight brokers")).toEqual([]);
     expect(outboundGateFindings("staffing", body, decision.facts.map((fact) => fact.span).join("\n")).map((finding) => finding.rule)).not.toContain("ungrounded_prospect_claim");
     expect(releaseAllows({
-      subject: "staffing",
+      subject: "freight brokers",
       body,
       facts: decision.facts,
       availability: "scored",
@@ -85,9 +89,21 @@ Brandon Yakubov`;
     expect(bodyViolations("Hi Talha,\n\nThe harder part is keeping qualified projects flowing in", {
       status: "absent", reason: "", evidenceId: "", facts: [], conflicts: [],
     })).not.toEqual([]);
-    expect(bodyViolations(TALHA, decision).length).toBeGreaterThan(0);
+    expect(bodyViolations(TALHA, decision, "Brandon Yakubov").length).toBeGreaterThan(0);
+    const unsupported = [
+      "Are you short on new projects?",
+      "How are you handling the meetings your customers booked?",
+      "Worth a look if the founders still do the outreach?",
+      "Still the hard part is keeping qualified projects flowing?",
+      "The harder part is keeping qualified projects flowing in",
+    ];
+    for (const line of unsupported) {
+      expect(bodyViolations(line, decision, "Brandon Yakubov").length, line).toBeGreaterThan(0);
+      expect(bodyViolations(line.replace("?", "!"), decision, "Brandon Yakubov").length, line).toBeGreaterThan(0);
+      expect(bodyViolations(line.replace(/ /g, "\n"), decision, "Brandon Yakubov").length, line).toBeGreaterThan(0);
+    }
     expect(releaseAllows({
-      subject: "staffing",
+      subject: "freight brokers",
       body,
       facts: decision.facts,
       availability: "unavailable",
@@ -99,10 +115,10 @@ Brandon Yakubov`;
 
   it("holds an autonomous send that is clean on the rules but not 5/5", () => {
     const decision = decide("TF Business Solutions hires freight brokers for shippers across the region.");
-    const body = "Hi Talha,\n\nTF Business Solutions hires freight brokers for shippers across the region. How is that desk staffed this quarter?\n\nBrandon Yakubov";
+    const body = "Hi Talha,\n\nTF Business Solutions hires freight brokers for shippers across the region.\n\nDo you still hire freight brokers for shippers?\n\nWorth a look?\n\nBrandon Yakubov";
     const weak = { ...perfect, overall: 80, dimensions: { ...perfect.dimensions, relevance: { score: 4, justification: "close" } } };
     expect(releaseAllows({
-      subject: "staffing",
+      subject: "freight brokers",
       body,
       facts: decision.facts,
       availability: "scored",

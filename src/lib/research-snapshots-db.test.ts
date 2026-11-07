@@ -40,6 +40,7 @@ describe("research snapshots are service-written", () => {
       }
       await sql.unsafe(readFileSync("supabase/migrations/20261107120000_research_snapshots.sql", "utf8"));
       await sql.unsafe(readFileSync("supabase/migrations/20261107133000_research_run_lock.sql", "utf8"));
+      await sql.unsafe(readFileSync("supabase/migrations/20261107143000_research_claim_and_mutation.sql", "utf8"));
       const owner = crypto.randomUUID();
       const other = crypto.randomUUID();
       const lead = crypto.randomUUID();
@@ -74,6 +75,16 @@ describe("research snapshots are service-written", () => {
       await expect(sql.begin(async (tx) => {
         await tx`SET LOCAL ROLE anon`;
         await tx`SELECT id FROM public.research_snapshots`;
+      })).rejects.toThrow(/permission denied/i);
+      const [first, second] = await Promise.all([
+        sql`SELECT public.begin_research_run(${owner}::uuid, ${lead}::uuid, false) AS id`,
+        sql`SELECT public.begin_research_run(${owner}::uuid, ${lead}::uuid, false) AS id`,
+      ]);
+      const ids = [first[0].id, second[0].id].filter(Boolean);
+      expect(ids).toHaveLength(1);
+      await expect(sql.begin(async (tx) => {
+        await tx`SET LOCAL ROLE authenticated`;
+        await tx`SELECT public.begin_research_run(${owner}::uuid, ${lead}::uuid, false)`;
       })).rejects.toThrow(/permission denied/i);
     } finally {
       await sql.end({ timeout: 1 });

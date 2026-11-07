@@ -1386,21 +1386,16 @@ const Outreach = () => {
     // same way. The old version returned early when no draft row existed yet,
     // so a fix applied before the first save was silently kept in memory only;
     // saveDraft inserts in that case instead of dropping the edit.
-    const persistFixedDraft = async (fixedBody: string) => {
+    const persistFixedDraft = async (fixedBody: string, nextSubject = subjectLine) => {
       setGeneratedEmail(fixedBody);
-      await saveDraft({ body: fixedBody });
+      setSubjectLine(nextSubject);
+      await saveDraft({ body: fixedBody, subject: nextSubject });
     };
     if (checkLabel === "Naturalness") {
       const shouted = shoutingTokens(generatedEmail);
       if (!shouted.length) {
-        toast({
-          title: "Could not fix naturalness",
-          description: `${row?.message || "This is not a capital-letter run."} The draft was not changed.`,
-          variant: "destructive",
-        });
-        setFixingCheck(null);
-        return;
-      }
+        // Not a capital run. Fall through to the same editor as the other rows.
+      } else {
       const fixed = repairShouting(generatedEmail);
       if (fixed !== generatedEmail && !shoutingTokens(fixed).length) {
         await persistFixedDraft(fixed);
@@ -1411,6 +1406,7 @@ const Outreach = () => {
       toast({ title: "Could not fix naturalness", description: `${shouted.join(", ")} is still in capitals. The draft was not changed.`, variant: "destructive" });
       setFixingCheck(null);
       return;
+      }
     }
     if (checkLabel === "Mechanism") {
       toast({
@@ -1422,7 +1418,7 @@ const Outreach = () => {
       return;
     }
     if (checkLabel === "Ungrounded prospect claim") {
-      const blocked = bodyViolations(`${subjectLine}\n${generatedEmail}`, fixDecision, senderProfileName || "");
+      const blocked = bodyViolations(generatedEmail, fixDecision, senderProfileName || "", subjectLine);
       toast({
         title: "Could not fix ungrounded prospect claim",
         description: blocked[0] || "Regenerate the draft from research. The current text was not changed.",
@@ -3298,6 +3294,7 @@ For logos, use HTML:
                       <EmailRubricPanel
                         subject={subjectLine}
                         body={generatedEmail}
+                        leadId={selectedLead}
                         groundingNote={scoreEmailQuality(subjectLine, generatedEmail, isFirstTouch, undefined, (() => {
                           const l = leads.find((x) => x.id === selectedLead);
                           return evaluateStoredSnapshots({

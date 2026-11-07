@@ -11,6 +11,7 @@ import { externalResearchConfigured, externalResearchSearch } from "../_shared/e
 import { parallelConfigured } from "../_shared/parallel.ts";
 import { contextDevConfigured } from "../_shared/context-dev.ts";
 import { evaluateStoredSnapshots, sealSnapshot, type StoredSnapshot } from "../_shared/evidence-contract.ts";
+import { blockedHost, publicHttpUrl } from "../_shared/safe-url.ts";
 import { receiptFromProviders, researchStep, type RetrievalReceipt } from "../_shared/research-orchestration.ts";
 import {
   leadResearchQueries,
@@ -142,21 +143,37 @@ function cacheStateOf(headers: Headers): PageFetch["cacheState"] {
 async function fetchPage(url: string): Promise<PageFetch> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-  const failed = (status: number): PageFetch => ({
-    requestedUrl: url, finalUrl: url, status, html: null, ok: false, cacheState: "unknown",
+  const failed = (status: number, finalUrl = url): PageFetch => ({
+    requestedUrl: url, finalUrl, status, html: null, ok: false, cacheState: "unknown",
   });
   try {
-    const res = await fetch(url, {
-      headers: { "User-Agent": BROWSER_UA, Accept: "text/html" },
-      signal: controller.signal,
-      redirect: "follow",
-    });
-    const cacheState = cacheStateOf(res.headers);
-    const ct = res.headers.get("content-type") || "";
-    if (!res.ok || !ct.includes("html")) {
-      return { requestedUrl: url, finalUrl: res.url || url, status: res.status, html: null, ok: false, cacheState };
+    let current = publicHttpUrl(url);
+    if (!current.ok) return failed(0);
+    for (let hop = 0; hop < 3; hop++) {
+      const res = await fetch(current.href, {
+        headers: { "User-Agent": BROWSER_UA, Accept: "text/html" },
+        signal: controller.signal,
+        redirect: "manual",
+      });
+      if (res.status >= 300 && res.status < 400) {
+        const location = res.headers.get("location");
+        await res.body?.cancel();
+        if (!location) return failed(res.status, current.href);
+        const next = publicHttpUrl(new URL(location, current.href).href);
+        if (!next.ok) return failed(res.status, current.href);
+        current = next;
+        continue;
+      }
+      const cacheState = cacheStateOf(res.headers);
+      const ct = res.headers.get("content-type") || "";
+      if (blockedHost(new URL(current.href).hostname)) return failed(res.status, current.href);
+      if (!res.ok || !ct.includes("html")) {
+        await res.body?.cancel();
+        return { requestedUrl: url, finalUrl: current.href, status: res.status, html: null, ok: false, cacheState };
+      }
+      return { requestedUrl: url, finalUrl: current.href, status: res.status, html: await res.text(), ok: true, cacheState };
     }
-    return { requestedUrl: url, finalUrl: res.url || url, status: res.status, html: await res.text(), ok: true, cacheState };
+    return failed(0);
   } catch {
     return failed(0);
   } finally {
@@ -371,6 +388,23 @@ serve(async (req) => {
       now: new Date().toISOString(),
       force,
     });
+    let researchRunId: string | null = null;
+    if (step === "fetch" || force) {
+      const { data: reserved } = await supabase.rpc("begin_research_run", {
+        p_user_id: userId,
+        p_lead_id: leadId,
+        p_force: force,
+      });
+      researchRunId = typeof reserved === "string" ? reserved : null;
+      if (!researchRunId && !force) {
+        return new Response(JSON.stringify({
+          error: "Research for this company already ran recently and did not produce a new approved sentence.",
+          error_code: "research_required",
+          research_status: "held",
+          cached: true,
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
     // Fresh brief already stored — hand it back without spending a scrape.
     if (step !== "fetch" && !force && isResearchFresh(lead as Record<string, unknown>)) {
       const cachedBrief = lead.research_brief as LeadResearchBrief;
@@ -882,11 +916,12 @@ serve(async (req) => {
       siteHosts: pages.map((page) => page.finalUrl),
       snapshotWrite,
     });
-    const replaced = await supabase.rpc("replace_research_snapshots", {
+    const replaced = await supabase.rpc("store_research_snapshots", {
       p_user_id: userId,
       p_lead_id: leadId,
       p_rows: snapshots,
       p_receipt: retrieval,
+      p_run_id: researchRunId,
     });
     if (replaced.error) {
       console.warn(`[research-lead] snapshot replace failed: ${replaced.error.message}`);

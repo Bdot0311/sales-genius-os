@@ -19,6 +19,7 @@ import { mergeCompleted, resultOk, resumeFrom, supabaseTraceStore, trimResult } 
 import { budgetExhausted, budgetNote, carriedTokens, tokensIn, turnTokenBudget } from "../_shared/agent-budget.ts";
 import { pruneTurnContext } from "../_shared/turn-context.ts";
 import { repairToolSequence, unknownMutationKeys } from "../_shared/tool-sequence.ts";
+import { replayDecision } from "../_shared/mutation-replay.ts";
 import {
   AGENT_MAX_ATTEMPTS,
   AGENT_TARGET_SCORE,
@@ -5350,9 +5351,36 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
             tool_call_id: call.id,
             content: JSON.stringify({
               already_completed: true,
+              status: "unknown",
               note: "This action already has a recorded result or an unknown outcome for this request. Do not run it again.",
             }),
           };
+        }
+        if (mutationKey) {
+          try {
+            const claim = await trace.claimMutation(threadId, userId, mutationKey, toolName);
+            if (replayDecision(claim === "present" ? "dispatching" : null) === "skip") {
+              return {
+                role: "tool",
+                tool_call_id: call.id,
+                content: JSON.stringify({
+                  error: "unknown_outcome",
+                  status: "unknown",
+                  note: "This action was already dispatched. Its outcome is not replayed.",
+                }),
+              };
+            }
+          } catch (e) {
+            return {
+              role: "tool",
+              tool_call_id: call.id,
+              content: JSON.stringify({
+                error: "unknown_outcome",
+                status: "unknown",
+                note: "The dispatch could not be recorded, so the action was not run.",
+              }),
+            };
+          }
         }
         if (!autonomous && MUTATING_TOOLS.has(toolName)) {
           console.log("approval-mode mutating tool", toolName);
@@ -5363,6 +5391,9 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
         let stepDetail: string | null = null;
         try {
           result = await runTool(toolName, args);
+          if (mutationKey) {
+            await trace.finishMutation(threadId, mutationKey, didMutate(result) ? "completed" : "unknown");
+          }
           if (mutationKey && didMutate(result)) {
             completedMutationKeys.add(mutationKey);
             /*
