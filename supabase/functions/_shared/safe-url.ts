@@ -53,13 +53,18 @@ export function publicHttpUrl(raw: string): { ok: true; href: string } | { ok: f
  * the lookup so a test can answer for a name like 127.0.0.1.nip.io without
  * a live query. A hostname regex is not this check.
  */
+/**
+ * One public address for this name.
+ * The caller dials `address`. Looking the name up again is a different
+ * connection and is not this check.
+ */
 export async function resolvePublicHost(
   hostname: string,
   lookup: (host: string) => Promise<string[]>,
-): Promise<{ ok: true } | { ok: false; reason: string }> {
+): Promise<{ ok: true; address: string } | { ok: false; reason: string }> {
   const host = unwrapIp(hostname);
   if (blockedHost(host)) return { ok: false, reason: blockedHost(host) ?? "private" };
-  if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(host) || host.includes(":")) return { ok: true };
+  if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(host) || host.includes(":")) return { ok: true, address: host };
   let addresses: string[] = [];
   try {
     addresses = await lookup(host);
@@ -70,5 +75,5 @@ export async function resolvePublicHost(
   for (const address of addresses) {
     if (blockedHost(address)) return { ok: false, reason: "private_dns" };
   }
-  return { ok: true };
+  return { ok: true, address: addresses[0] };
 }

@@ -7,7 +7,7 @@ import { composeSkillContext, skillNamesUsed } from "../_shared/email-skills.ts"
 // One quality verdict for every caller — Outreach Studio, agent-chat and the
 // autonomous agent all reach the rubric through this rather than each other.
 import { isWeak, rubricFeedback, scoreEmailReport, type RubricAvailability } from "../_shared/email-quality.ts";
-import { releaseAllows } from "../_shared/draft-release.ts";
+import { ownedLeadCompany, releaseAllows } from "../_shared/draft-release.ts";
 import { AI_CREDITS_USER_MESSAGE, isAiCreditError, reportAiCreditsExhausted } from "../_shared/ai-credits.ts";
 import { stripInstructionLines, unsupportedClaims } from "../_shared/evidence.ts";
 import { POLICY_VERSION, evaluateStoredSnapshots, type ApprovedFact } from "../_shared/evidence-contract.ts";
@@ -858,7 +858,7 @@ serve(async (req) => {
      */
     const ownerClient = internal ? adminClient : supabaseClient;
     const { data: leadData, error: leadError } = await ownerClient
-      .from('leads').select('id, user_id').eq('id', lead.id).single();
+      .from('leads').select('id, user_id, company_name').eq('id', lead.id).single();
     if (leadError || !leadData || (!internal && leadData.user_id !== userId)) {
       return new Response(JSON.stringify({ error: 'Lead not found or unauthorized' }), {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -1144,7 +1144,7 @@ STRICT RULES:
         let decision = evaluateStoredSnapshots({
           userId,
           leadId: String(lead.id),
-          company: String(leadRow?.company_name ?? sanitizedCompanyName),
+          company: ownedLeadCompany(leadData),
           websiteHost: ownedHost,
           now: new Date().toISOString(),
           stored: payloads,
@@ -1178,7 +1178,7 @@ STRICT RULES:
           decision = evaluateStoredSnapshots({
             userId,
             leadId: String(lead.id),
-            company: String(leadRow?.company_name ?? sanitizedCompanyName),
+            company: ownedLeadCompany(leadData),
             websiteHost: ownedHost,
             now: new Date().toISOString(),
             stored: payloads,
@@ -2297,7 +2297,7 @@ conversation that is already going, not as someone chasing silence.`}`;
         rubric,
         mode: "studio",
         senderName: resolvedSenderName,
-        company: sanitizedCompanyName,
+        company: ownedLeadCompany(leadData),
       });
       if (!release.allow) {
         return new Response(JSON.stringify({

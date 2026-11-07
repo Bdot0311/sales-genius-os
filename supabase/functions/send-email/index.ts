@@ -23,7 +23,8 @@ import { acceptedUnpersistedBody, deliverReserved, type OutboundStore } from "..
 import { outboundGateFindings } from "../_shared/quality-gate.ts";
 import { resolveAppUser } from "../_shared/app-user.ts";
 import { proofFromLead } from "../_shared/template-send-gate.ts";
-import { POLICY_VERSION, bodyViolations, evaluateStoredSnapshots, releaseBinding } from "../_shared/evidence-contract.ts";
+import { POLICY_VERSION, evaluateStoredSnapshots, releaseBinding } from "../_shared/evidence-contract.ts";
+import { ownedDraftViolations, ownedLeadCompany } from "../_shared/draft-release.ts";
 import { sha256Hex } from "../_shared/prompt-versions.ts";
 import { evaluateSend } from "../_shared/outbound-verdict.ts";
 import { gatePromptHash, rubricPromptHash } from "../_shared/prompt-versions.ts";
@@ -484,7 +485,7 @@ serve(async (req) => {
 
       // Evidence is the lead row this account owns, not a score the caller sent.
       leadProof = proofFromLead(leadRow);
-      leadCompany = String(leadRow.company_name ?? "");
+      leadCompany = ownedLeadCompany(leadRow);
       leadWebsite = typeof leadRow.company_website === "string" ? leadRow.company_website : null;
       const { data: snapRows } = await supabase
         .from("research_snapshots")
@@ -607,7 +608,15 @@ serve(async (req) => {
       // A verified reply is the prospect's thread, not a first-touch snippet.
       // Their sentences are not a stored research snapshot, so the cold-email
       // allow-list would block the reply. It still needs a rubric score below.
-      const evidenceViolations = isVerifiedReply ? [] : bodyViolations(plainBody, evidenceDecision, String(profile?.full_name ?? ""), String(subject ?? ""), leadCompany, "first_touch");
+      const ownedClaims = ownedDraftViolations({
+        lead: { company_name: leadCompany },
+        body: plainBody,
+        subject: String(subject ?? ""),
+        facts: evidenceDecision.facts,
+        senderName: String(profile?.full_name ?? ""),
+        shape: "first_touch",
+      });
+      const evidenceViolations = isVerifiedReply ? [] : ownedClaims.violations;
       const bound = releaseBinding(String(subject ?? ""), plainBody, evidenceDecision.evidenceId);
       if (evidenceViolations.length) {
         return new Response(JSON.stringify({

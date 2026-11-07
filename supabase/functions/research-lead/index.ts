@@ -11,8 +11,7 @@ import { externalResearchConfigured, externalResearchSearch } from "../_shared/e
 import { parallelConfigured } from "../_shared/parallel.ts";
 import { contextDevConfigured } from "../_shared/context-dev.ts";
 import { evaluateStoredSnapshots, sealSnapshot, type StoredSnapshot } from "../_shared/evidence-contract.ts";
-import { blockedHost, publicHttpUrl, resolvePublicHost, sameSiteHost } from "../_shared/safe-url.ts";
-import { lookup } from "node:dns/promises";
+import { fetchPinnedPage, type PageFetch } from "../_shared/pinned-fetch.ts";
 import { receiptFromProviders, researchAction, researchStep, type RetrievalReceipt } from "../_shared/research-orchestration.ts";
 import {
   leadResearchQueries,
@@ -125,75 +124,11 @@ async function fetchText(url: string): Promise<string | null> {
   }
 }
 
-interface PageFetch {
-  requestedUrl: string;
-  finalUrl: string;
-  status: number;
-  html: string | null;
-  ok: boolean;
-  cacheState: "hit" | "miss" | "unknown";
-}
-
-function cacheStateOf(headers: Headers): PageFetch["cacheState"] {
-  const value = `${headers.get("cf-cache-status") ?? ""} ${headers.get("x-cache") ?? ""}`;
-  if (/hit/i.test(value)) return "hit";
-  if (/miss/i.test(value)) return "miss";
-  return "unknown";
-}
-
-async function fetchPage(url: string): Promise<PageFetch> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-  const failed = (status: number, finalUrl = url): PageFetch => ({
-    requestedUrl: url, finalUrl, status, html: null, ok: false, cacheState: "unknown",
+function fetchPage(url: string): Promise<PageFetch> {
+  return fetchPinnedPage(url, {
+    timeoutMs: FETCH_TIMEOUT_MS,
+    headers: { "User-Agent": BROWSER_UA, Accept: "text/html" },
   });
-  try {
-    let current = publicHttpUrl(url);
-    if (!current.ok) return failed(0);
-    const citedHost = new URL(current.href).hostname;
-    const resolved = await resolvePublicHost(citedHost, async (host) => {
-      const found = await lookup(host, { all: true, verbatim: true });
-      return found.map((entry) => entry.address);
-    });
-    if (!resolved.ok) return failed(0);
-    for (let hop = 0; hop < 3; hop++) {
-      const hopHost = new URL(current.href).hostname;
-      if (!sameSiteHost(hopHost, citedHost)) return failed(0, current.href);
-      const hopResolved = await resolvePublicHost(hopHost, async (host) => {
-        const found = await lookup(host, { all: true, verbatim: true });
-        return found.map((entry) => entry.address);
-      });
-      if (!hopResolved.ok) return failed(0, current.href);
-      const res = await fetch(current.href, {
-        headers: { "User-Agent": BROWSER_UA, Accept: "text/html" },
-        signal: controller.signal,
-        redirect: "manual",
-      });
-      if (res.status >= 300 && res.status < 400) {
-        const location = res.headers.get("location");
-        await res.body?.cancel();
-        if (!location) return failed(res.status, current.href);
-        const next = publicHttpUrl(new URL(location, current.href).href);
-        if (!next.ok) return failed(res.status, current.href);
-        if (!sameSiteHost(new URL(next.href).hostname, citedHost)) return failed(res.status, current.href);
-        current = next;
-        continue;
-      }
-      const cacheState = cacheStateOf(res.headers);
-      const ct = res.headers.get("content-type") || "";
-      if (blockedHost(new URL(current.href).hostname)) return failed(res.status, current.href);
-      if (!res.ok || !ct.includes("html")) {
-        await res.body?.cancel();
-        return { requestedUrl: url, finalUrl: current.href, status: res.status, html: null, ok: false, cacheState };
-      }
-      return { requestedUrl: url, finalUrl: current.href, status: res.status, html: await res.text(), ok: true, cacheState };
-    }
-    return failed(0);
-  } catch {
-    return failed(0);
-  } finally {
-    clearTimeout(timer);
-  }
 }
 
 const SYSTEM_PROMPT = `You are a B2B sales researcher. You read a prospect company's own website and produce a research brief a rep can use to write a genuinely personalized cold email.

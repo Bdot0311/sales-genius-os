@@ -9,7 +9,34 @@
 
 import { outboundGateFindings } from "./quality-gate.ts";
 import { autonomousSendAllowed, type RubricAvailability, type RubricResult } from "./email-quality.ts";
-import { bodyViolations, type ApprovedFact } from "./evidence-contract.ts";
+import { bodyViolations, type ApprovedFact, type DraftShape } from "./evidence-contract.ts";
+
+/** The lead row's company. A name on the request is not an actor the draft may shift. */
+export function ownedLeadCompany(row: { company_name?: string | null } | null | undefined): string {
+  return String(row?.company_name ?? "").replace(/\s+/g, " ").trim();
+}
+
+export function ownedDraftViolations(input: {
+  lead: { company_name?: string | null } | null;
+  body: string;
+  subject: string;
+  facts: ApprovedFact[];
+  senderName?: string;
+  shape?: DraftShape;
+}): { company: string; violations: string[] } {
+  const company = ownedLeadCompany(input.lead);
+  const decision = {
+    status: input.facts.length ? "ready" as const : "absent" as const,
+    reason: "",
+    evidenceId: "",
+    facts: input.facts,
+    conflicts: [] as string[],
+  };
+  return {
+    company,
+    violations: bodyViolations(input.body, decision, input.senderName ?? "", input.subject, company, input.shape ?? "first_touch"),
+  };
+}
 
 export function releaseAllows(input: {
   subject: string;
