@@ -1199,7 +1199,12 @@ STRICT RULES:
           approvedFacts = decision.facts;
           evidenceId = decision.evidenceId;
           // The model brief is not a source. The prompt may use only these sentences.
-          websiteResearchBlock = decision.facts.map((fact) => fact.span).join("\n");
+          websiteResearchBlock = [
+            decision.facts.map((fact) => fact.span).join("\n"),
+            "Each prospect sentence you write must be one of those sentences unchanged, or the same verb and the same following words with the actor changed to you.",
+            "A question has to be exactly: Do you still <that verb> <those same following words>?",
+            "Do not reverse who does what, drop a number, or join two sentences into one.",
+          ].join("\n");
         } else {
           websiteResearchBlock = briefToPromptBlock(researchBrief, researchSources);
         }

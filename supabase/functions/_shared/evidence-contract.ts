@@ -363,45 +363,84 @@ function sameLine(a: string, b: string): boolean {
   return a.replace(/\s+/g, " ").trim().toLowerCase() === b.replace(/\s+/g, " ").trim().toLowerCase();
 }
 
-const FUNCTION_WORDS = new Set(
-  "a an the is are was were be been being do does did to for of in on at by with from and or but so as it this that these those you your we our i hi how what when where who why still just not no yes".split(" "),
-);
-
 const EXACT_CTA = new Set(["worth a look?", "open to a look?"]);
 
-/** Words that have to be backed by an approved sentence. Punctuation is ignored. */
-export function contentTokens(line: string): string[] {
-  return line.toLowerCase().replace(/https?:\/\/\S+/g, " ").split(/[^a-z0-9]+/).filter((token) => token && !FUNCTION_WORDS.has(token));
+function norm(value: string): string {
+  return value.replace(/\s+/g, " ").trim().replace(/[.?!]+$/g, "").toLowerCase();
 }
 
-function tokenCovered(token: string, known: Set<string>): boolean {
-  if (known.has(token)) return true;
-  if (token.length < 4) return false;
-  for (const word of known) {
-    if (word.length >= 4 && (word.startsWith(token) || token.startsWith(word))) return true;
+export interface BoundClaim {
+  sentence: string;
+  actor: string;
+  verb: string;
+  complement: string;
+}
+
+/**
+ * One source sentence, split once into who did what.
+ * Two sentences are never merged. The complement stays in order.
+ */
+export function bindClaim(sentence: string): BoundClaim | null {
+  const match = sentence.trim().match(/^((?:we|our team)|(?:[A-Z][\p{L}0-9&'.-]*(?:\s+[A-Z][\p{L}0-9&'.-]*)*))\s+([A-Za-z]+)\s+(.+)$/u);
+  if (!match) return null;
+  return {
+    sentence: sentence.trim(),
+    actor: match[1],
+    verb: match[2],
+    complement: match[3].replace(/[.?!]+$/g, "").trim(),
+  };
+}
+
+function youForm(verb: string): string {
+  const lower = verb.toLowerCase();
+  if (lower === "has") return "have";
+  if (lower === "is") return "are";
+  if (/[^s]s$/i.test(lower) && !lower.endsWith("ss")) return lower.slice(0, -1);
+  return lower;
+}
+
+/** Verbatim sentence, or the same verb and complement with the actor shifted to "you". */
+export function matchesClaim(line: string, claim: BoundClaim): boolean {
+  const got = norm(line);
+  if (got === norm(claim.sentence)) return true;
+  const verb = youForm(claim.verb);
+  const rest = `${verb} ${claim.complement}`;
+  if (got === norm(`You ${rest}`)) return true;
+  if (got === norm(`Do you still ${rest}`)) return true;
+  return false;
+}
+
+function quantityPhrases(text: string): string[] {
+  return [...text.matchAll(/\b\d[\d,]*(?:\s*(?:to|-)\s*\d[\d,]*)?\b/g)].map((match) => match[0]);
+}
+
+/** A subject may repeat a contiguous piece of one sentence. It may not keep half of a quantity. */
+export function subjectAllowed(subject: string, sentences: string[]): boolean {
+  const got = norm(subject);
+  if (!got) return true;
+  for (const sentence of sentences) {
+    if (!norm(sentence).includes(got)) continue;
+    const dropsQuantity = quantityPhrases(sentence).some((phrase) => {
+      const piece = phrase.split(/\s+/).some((part) => /\d/.test(part) && got.includes(norm(part)));
+      return piece && !got.includes(norm(phrase));
+    });
+    if (!dropsQuantity) return true;
   }
   return false;
 }
 
-/** Content words in a line that no approved sentence contains. A question is not exempt. */
-export function uncoveredTokens(line: string, corpus: string): string[] {
-  const known = new Set(contentTokens(corpus));
-  return contentTokens(line).filter((token) => !tokenCovered(token, known));
-}
-
 /**
- * Every line is either the greeting, the sender's name, an exact nonfactual
- * CTA, or made only of words from the approved sentences. A question that
- * adds "projects" or "customers" is the same unsupported claim as the
- * statement with a period.
+ * A line is the greeting, the sender's name, an exact CTA, one approved
+ * sentence, or that sentence with the actor changed to "you".
+ * Shared words are not enough: the actor, verb, and complement stay together.
  */
 export function bodyViolations(body: string, decision: EvidenceDecision, senderName = "", subject = ""): string[] {
   const facts = decision.facts.filter((fact) => fact.role !== "sender_proof");
   if (!facts.length) return ["No approved research is stored for this company."];
-  const corpus = facts.map((fact) => fact.span).join("\n");
+  const claims = facts.map((fact) => bindClaim(fact.span)).filter((claim): claim is BoundClaim => !!claim);
   const violations: string[] = [];
-  const lines = [subject, ...body.split("\n")].map((part) => part.trim()).filter(Boolean);
-  for (const line of lines) {
+  if (subject.trim() && !subjectAllowed(subject, facts.map((fact) => fact.span))) violations.push(subject.trim());
+  for (const line of body.split("\n").map((part) => part.trim()).filter(Boolean)) {
     if (/^Hi [^,\n]{1,60},$/i.test(line)) continue;
     if (senderName && sameLine(line, senderName)) continue;
     if (EXACT_CTA.has(line.toLowerCase().replace(/\s+/g, " "))) continue;
@@ -409,8 +448,9 @@ export function bodyViolations(body: string, decision: EvidenceDecision, senderN
       violations.push(line);
       continue;
     }
-    const missing = uncoveredTokens(line, corpus);
-    if (missing.length) violations.push(line);
+    const verbatim = facts.some((fact) => norm(line) === norm(fact.span));
+    const framed = claims.some((claim) => matchesClaim(line, claim));
+    if (!verbatim && !framed) violations.push(line);
   }
   return [...new Set(violations)];
 }
