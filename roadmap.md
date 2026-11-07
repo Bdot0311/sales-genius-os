@@ -1,6 +1,6 @@
 # Credit-ledger health alert
 
-- [ ] Correct the missing-grant false alarm without giving customers access to the internal credit ledger; verify the live health check and resolve only the matching alert.
+- [x] Correct the missing-grant false alarm without giving customers access to the internal credit ledger; migration regression checks passed, signed-in health reports zero broken checks, and dashboard banner is absent. Resolve only the matching alert; the internal-ledger no-policy warning is informational and remains.
 
 # Unified Inbox coverage
 
