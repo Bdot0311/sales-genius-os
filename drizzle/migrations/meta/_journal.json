@@ -351,6 +351,13 @@
       "when": 1793945796971,
       "tag": "0049_restore_app_search_meter",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1794049189201,
+      "tag": "0050_enrollment_same_tenant",
+      "breakpoints": true
     }
   ]
 }
