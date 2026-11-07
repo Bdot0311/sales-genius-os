@@ -9,6 +9,7 @@ import { composeSkillContext, skillNamesUsed } from "../_shared/email-skills.ts"
 import { isWeak, rubricFeedback, scoreEmail } from "../_shared/email-quality.ts";
 import { AI_CREDITS_USER_MESSAGE, isAiCreditError, reportAiCreditsExhausted } from "../_shared/ai-credits.ts";
 import { stripInstructionLines, unsupportedClaims } from "../_shared/evidence.ts";
+import { POLICY_VERSION, closedRender, evaluateStoredSnapshots } from "../_shared/evidence-contract.ts";
 import { reviseUntilClear } from "../_shared/quality-gate.ts";
 // The writing rules live in one module so the three copies that used to exist
 // cannot drift apart — see _shared/email-rules.ts.
@@ -1141,6 +1142,45 @@ STRICT RULES:
     const researchQuality: ResearchQuality = scoreResearchQuality(researchBrief, researchSources);
     if (researchBrief) researchBrief = { ...researchBrief, quality: researchQuality };
     const blockOnThinResearch = requestData.blockOnThinResearch === true;
+    if (!isPrecisionEditPre) {
+      const websiteHost = (() => {
+        const raw = String(lead.company_website || lead.website || "");
+        try { return new URL(raw.includes("://") ? raw : `https://${raw}`).hostname.replace(/^www\./, ""); }
+        catch { return null; }
+      })();
+      const decision = evaluateStoredSnapshots({
+        userId,
+        leadId: String(lead.id ?? ""),
+        company: sanitizedCompanyName,
+        websiteHost,
+        now: new Date().toISOString(),
+        stored: (researchBrief as { snapshots?: unknown } | null)?.snapshots,
+      });
+      if (decision.status !== "ready" || !resolvedSenderName) {
+        return new Response(JSON.stringify({
+          error: decision.status !== "ready"
+            ? decision.reason
+            : "A draft was not written because the sender name is missing.",
+          error_code: decision.status !== "ready" ? "research_required" : "no_sender_name",
+          research_status: decision.status,
+          policy_version: POLICY_VERSION,
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const rendered = closedRender({
+        facts: decision.facts,
+        firstName: firstName || "there",
+        senderName: resolvedSenderName,
+      });
+      return new Response(JSON.stringify({
+        email: rendered.body,
+        subject: rendered.subject,
+        fact_ids: rendered.factIds,
+        evidence_id: decision.evidenceId,
+        policy_version: POLICY_VERSION,
+        research_status: "ready",
+        research_quality: researchQuality,
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
     if (!isPrecisionEditPre && blockOnThinResearch && !researchQuality.safe_to_personalize) {
       return new Response(JSON.stringify({
         error: researchBrief

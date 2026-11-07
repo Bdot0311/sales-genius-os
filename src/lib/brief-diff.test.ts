@@ -172,7 +172,7 @@ describe("the diff is computed against the brief being replaced", () => {
   it("rides inside the brief JSON, so no migration can lag the code", () => {
     // A new column is only live once Lovable applies the migration; code that
     // reads it before then 500s. research_brief is already jsonb.
-    expect(SRC).toContain("quality, changes };");
+    expect(SRC).toContain("quality, changes, snapshots };");
     const MIGRATIONS = readFileSync("supabase/migrations/20260904180000_allow_custom_sequence_trigger.sql", "utf8");
     expect(MIGRATIONS).not.toContain("research_changes");
   });

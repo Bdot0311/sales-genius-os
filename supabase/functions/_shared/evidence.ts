@@ -219,6 +219,17 @@ export function unsupportedClaims(text: string, corpus: string): ClaimHit[] {
         "This states a cause or an outcome as fact. Nothing supplied says that.",
       );
     }
+    const meansAt = sentence.search(/\bmeans\b/i);
+    if (meansAt > 0 && /\byou|your\b/i.test(sentence.slice(meansAt))) {
+      const clause = sentence.slice(meansAt).trim();
+      if (!source.toLowerCase().includes(clause.toLowerCase())) {
+        push(
+          hits,
+          clause,
+          "This states a consequence as known. A sourced detail before it can stay. This part cannot.",
+        );
+      }
+    }
   }
   return hits;
 }

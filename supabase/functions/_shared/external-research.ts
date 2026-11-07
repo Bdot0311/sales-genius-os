@@ -24,7 +24,11 @@ export function mergeResearchResults(primary: ParallelResult[], supplementary: P
 export async function externalResearchSearch(opts: ParallelSearchOptions) {
   const [parallel, context] = await Promise.all([parallelSearch(opts), contextDevSearch(opts)]);
   return {
-    results: mergeResearchResults(parallel.results, context.results, opts.maxResults ?? 8),
+    results: mergeResearchResults(
+      parallel.results.map((result) => ({ ...result, provider: "parallel" as const })),
+      context.results.map((result) => ({ ...result, provider: "context_dev" as const })),
+      opts.maxResults ?? 8,
+    ),
     sessionId: parallel.sessionId,
     error: parallel.error === null || context.error === null ? null
       : parallel.error === "not_configured" ? context.error : parallel.error,

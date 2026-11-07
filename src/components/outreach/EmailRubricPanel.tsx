@@ -18,6 +18,7 @@ interface EmailRubricPanelProps {
   /** When provided, each suggestion gets an "apply" button that rewrites the snippet in place. */
   onApplyBody?: (nextBody: string) => void;
   onApplySubject?: (nextSubject: string) => void;
+  groundingNote?: string | null;
 }
 
 interface Dim { score: number; justification: string }
@@ -67,7 +68,7 @@ function locateSpan(text: string, snippet: string): { start: number; end: number
   return null;
 }
 
-export const EmailRubricPanel = ({ subject, body, onApplyBody, onApplySubject }: EmailRubricPanelProps) => {
+export const EmailRubricPanel = ({ subject, body, onApplyBody, onApplySubject, groundingNote }: EmailRubricPanelProps) => {
   const mech = useMemo(() => computeMechanicalChecks(subject, body), [subject, body]);
 
   const [dims, setDims] = useState<Record<string, Dim> | null>(null);
@@ -169,7 +170,12 @@ export const EmailRubricPanel = ({ subject, body, onApplyBody, onApplySubject }:
           </div>
         ) : dims ? (
           <div className="space-y-2">
-            {allStrong(dims) && (
+            {groundingNote && (
+              <p className="text-[11px] text-destructive">
+                {groundingNote}
+              </p>
+            )}
+            {allStrong(dims) && !groundingNote && (
               <p className="text-[11px] text-green-500">
                 Every dimension is at or above the bar. Nothing here is holding this email back.
               </p>

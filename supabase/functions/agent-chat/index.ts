@@ -18,6 +18,7 @@ import { invalidArgsResult, validateToolArgs, type ToolSchema } from "../_shared
 import { mergeCompleted, resultOk, resumeFrom, supabaseTraceStore, trimResult } from "../_shared/agent-trace.ts";
 import { budgetExhausted, budgetNote, carriedTokens, tokensIn, turnTokenBudget } from "../_shared/agent-budget.ts";
 import { pruneTurnContext } from "../_shared/turn-context.ts";
+import { repairToolSequence } from "../_shared/tool-sequence.ts";
 import {
   AGENT_MAX_ATTEMPTS,
   AGENT_TARGET_SCORE,
@@ -5157,6 +5158,11 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
        * and a restart does not re-inflate it. The full result is still in the
        * trace's own tool_results column for anyone reading back.
        */
+      const sequenced = repairToolSequence(messages);
+      if (sequenced.length !== messages.length) {
+        messages.length = 0;
+        messages.push(...sequenced);
+      }
       const pruned = pruneTurnContext(messages);
       if (pruned.prunedCount > 0) {
         console.log(
@@ -5435,6 +5441,15 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
             label: "Stopped before running",
             status: "error",
             detail: "You stopped this run before this action started.",
+          });
+          serialResults.push({
+            role: "tool",
+            tool_call_id: call.id,
+            content: JSON.stringify({
+              error: "cancelled",
+              status: "error",
+              note: "You stopped this run before this action started. It did not run.",
+            }),
           });
           continue;
         }

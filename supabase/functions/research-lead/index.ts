@@ -8,6 +8,7 @@ import { toSignalFacts, type SignalEventRow } from "../_shared/signal-facts.ts";
 import { backfillSourceFilter, detectorsToBackfill } from "../_shared/signal-backfill.ts";
 import { coldiqConfigured, coldiqFetchPages } from "../_shared/coldiq.ts";
 import { externalResearchConfigured, externalResearchSearch } from "../_shared/external-research.ts";
+import { sealSnapshot, type StoredSnapshot } from "../_shared/evidence-contract.ts";
 import {
   leadResearchQueries,
   parallelPromptBlock,
@@ -768,7 +769,47 @@ serve(async (req) => {
 
     // Deterministic completeness score so every surface gates the same way.
     const quality = scoreResearchQuality(baseBrief, sources);
-    const brief: LeadResearchBrief = { ...baseBrief, quality, changes };
+    const retrievedAt = new Date().toISOString();
+    const snapshots: StoredSnapshot[] = [];
+    for (const page of pages) {
+      const excerpt = extractText(page.html).text.replace(/\s+/g, " ").trim().slice(0, 4000);
+      if (!excerpt) continue;
+      snapshots.push(sealSnapshot({
+        userId,
+        leadId,
+        provider: "site",
+        role: "prospect_page",
+        requestedUrl: page.url,
+        finalUrl: page.url,
+        pageStatus: 200,
+        excerpt,
+        retrievedAt,
+        publishedAt: null,
+        providerOk: true,
+        partial: excerpt.length < 80,
+        fromCache: false,
+      }));
+    }
+    for (const result of web.results) {
+      const excerpt = result.excerpts.join("\n").replace(/\s+/g, " ").trim().slice(0, 4000);
+      if (!excerpt) continue;
+      snapshots.push(sealSnapshot({
+        userId,
+        leadId,
+        provider: result.provider === "context_dev" ? "context_dev" : "parallel",
+        role: "external",
+        requestedUrl: result.url,
+        finalUrl: result.url,
+        pageStatus: 200,
+        excerpt,
+        retrievedAt,
+        publishedAt: result.publish_date || null,
+        providerOk: true,
+        partial: excerpt.length < 40,
+        fromCache: false,
+      }));
+    }
+    const brief: LeadResearchBrief = { ...baseBrief, quality, changes, snapshots };
     const researchedAt = new Date().toISOString();
 
     const { error: writeError } = await supabase

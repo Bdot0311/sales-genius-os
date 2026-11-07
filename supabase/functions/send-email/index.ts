@@ -23,6 +23,7 @@ import { acceptedUnpersistedBody, deliverReserved, type OutboundStore } from "..
 import { outboundGateFindings } from "../_shared/quality-gate.ts";
 import { resolveAppUser } from "../_shared/app-user.ts";
 import { proofFromLead } from "../_shared/template-send-gate.ts";
+import { bodyViolations, evaluateStoredSnapshots } from "../_shared/evidence-contract.ts";
 import { evaluateSend } from "../_shared/outbound-verdict.ts";
 import { contentHash, gatePromptHash, rubricPromptHash } from "../_shared/prompt-versions.ts";
 import { scoreEmailReport } from "../_shared/email-quality.ts";
@@ -458,10 +459,13 @@ serve(async (req) => {
     // are unproven rather than bad, and blocking those would ground most of a
     // list to prevent a minority of bounces.
     let leadProof = "";
+    let storedSnapshots: unknown = null;
+    let leadCompany = "";
+    let leadWebsite: string | null = null;
     if (leadId) {
       const { data: leadRow } = await supabase
         .from('leads')
-        .select('id, email_verification_status, research_brief, job_title, industry, company_name, contact_name')
+        .select('id, email_verification_status, research_brief, job_title, industry, company_name, contact_name, company_website')
         .eq('id', leadId)
         .eq('user_id', user.id)
         .maybeSingle();
@@ -479,6 +483,9 @@ serve(async (req) => {
 
       // Evidence is the lead row this account owns, not a score the caller sent.
       leadProof = proofFromLead(leadRow);
+      leadCompany = String(leadRow.company_name ?? "");
+      leadWebsite = typeof leadRow.company_website === "string" ? leadRow.company_website : null;
+      storedSnapshots = (leadRow.research_brief as { snapshots?: unknown } | null)?.snapshots ?? null;
 
       if (leadRow.email_verification_status === 'invalid') {
         return new Response(
@@ -577,6 +584,27 @@ serve(async (req) => {
         leadProof,
         0,
       );
+      const websiteHost = (() => {
+        const raw = String(leadWebsite ?? "");
+        try { return new URL(raw.includes("://") ? raw : `https://${raw}`).hostname.replace(/^www\./, ""); }
+        catch { return null; }
+      })();
+      const evidenceDecision = evaluateStoredSnapshots({
+        userId: user.id,
+        leadId: String(leadId ?? ""),
+        company: leadCompany,
+        websiteHost,
+        now: new Date().toISOString(),
+        stored: storedSnapshots,
+      });
+      const evidenceViolations = bodyViolations(plainBody, evidenceDecision);
+      if (evidenceViolations.length) {
+        return new Response(JSON.stringify({
+          error: `Not sent. ${evidenceViolations[0]}`,
+          code: "research_required",
+          findings: evidenceViolations.slice(0, 4),
+        }), { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
       const liveBlocked = gateFindings.length > 0;
       let allowSend = !liveBlocked;
       let verdictId: string | null = null;

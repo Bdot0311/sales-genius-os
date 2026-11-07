@@ -125,8 +125,9 @@ describe("what the next attempt is told", () => {
 });
 
 describe("the autonomous run", () => {
-  it("loops rather than retrying once", () => {
-    expect(RUN).toContain("while (!isPerfect(best) && attempts < AGENT_MAX_ATTEMPTS)");
+  it("renders approved facts instead of asking the model to invent a bridge", () => {
+    expect(RUN).toContain("closedRender(");
+    expect(RUN).toContain("research_status: evidenceDecision.status");
   });
 
   it("scores every attempt on both checks", () => {
@@ -135,9 +136,9 @@ describe("the autonomous run", () => {
     expect(RUN).toContain('.filter((f) => f.severity !== "note")');
   });
 
-  it("holds anything short of the bar instead of sending it", () => {
-    expect(RUN).toContain("autonomousSendAllowed(best, best.availability");
-    expect(RUN).toContain("while (!isPerfect(best) && attempts < AGENT_MAX_ATTEMPTS)");
+  it("holds a closed draft when a deterministic blocker remains", () => {
+    expect(RUN).toContain("qualityHold = blocking.length > 0");
+    expect(RUN).not.toContain("while (!isPerfect(best) && attempts < AGENT_MAX_ATTEMPTS)");
   });
 
   it("sends nothing autonomously below the score it writes toward", () => {
@@ -145,7 +146,7 @@ describe("the autonomous run", () => {
     // isPerfect. The send decision uses that same bar when a score exists,
     // and it also holds when the scorer did not return a score.
     const QUALITY = readFileSync("supabase/functions/_shared/email-quality.ts", "utf8");
-    expect(RUN).toContain("while (!isPerfect(best) && attempts < AGENT_MAX_ATTEMPTS)");
+    expect(RUN).toContain("closedRender(");
     expect(QUALITY).toContain("return isPerfect(attempt);");
     expect(QUALITY).toContain('if (availability === "unavailable") return false;');
   });

@@ -22,6 +22,7 @@ export interface ParallelResult {
   /** YYYY-MM-DD when the source published it, "" when unknown. */
   publish_date: string;
   excerpts: string[];
+  provider?: "parallel" | "context_dev";
 }
 
 export function parallelConfigured(): boolean {
