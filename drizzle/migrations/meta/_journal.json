@@ -351,6 +351,48 @@
       "when": 1793945796971,
       "tag": "0049_restore_app_search_meter",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1794049189201,
+      "tag": "0050_enrollment_same_tenant",
+      "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1794049211899,
+      "tag": "0051_meter_and_send_guards",
+      "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1794049236605,
+      "tag": "0052_topup_and_ai_credit_lock",
+      "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1794049281294,
+      "tag": "0053_stripe_credit_delta_lock",
+      "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1794049345762,
+      "tag": "0054_hiring_signal_refresh",
+      "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1794049380739,
+      "tag": "0055_register_stripe_credit_grants_contract",
+      "breakpoints": true
     }
   ]
 }

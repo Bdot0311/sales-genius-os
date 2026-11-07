@@ -1,8 +1,14 @@
+# November 7 deployment and Grok Inbox audit
+
+- [x] Redeploy all 155 directly deployable functions; apply five missing repository migrations byte-exact, register invoice-grant schema health checks, and verify live definitions/indexes/cron. MCP publication requested separately.
+- [x] Trace sending records and signed-in Inbox: no recent sent row or send_email call for the owner; newest hosted MCP calls reject an expired login. Inbox displays stored drafts and sent history; no real email resent.
+- [ ] Verify hosted MCP catalog and the reported send after Grok reconnects (blocked by expired Grok OAuth; ordinary preview session also receives MCP 401). Publication requested, not confirmed.
+
 # Unified Inbox coverage
 
 - [x] Trace email creation and sending across Outreach Studio, agents, API and MCP; include drafts and all outbound states without adding duplicate send records.
 - [x] Add regressions, verify a temporary unsent draft in signed-in Inbox and clean it up, deploy generate-email/rest-api and add What's New.
-- [ ] Publish the Inbox and MCP generator changes (requires app publishing); API draft saving is deployed, no real outbound email was sent.
+- [ ] Confirm scheduled Inbox/MCP publication finished; API draft saving is deployed, no real outbound email was sent.
 
 # Documentation completeness review
 
