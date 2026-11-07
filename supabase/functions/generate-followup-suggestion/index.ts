@@ -246,6 +246,8 @@ Respond in this EXACT JSON format:
         evidence,
         senderFirstName,
         suggestion.suggestedSubject,
+        String(leadRow?.company_name ?? companyName ?? ""),
+        "continuation",
       );
       if (invented.length) {
         return new Response(JSON.stringify({
@@ -262,9 +264,16 @@ Respond in this EXACT JSON format:
             body: retrySuggestion.suggestedBody,
           });
           const retryRubric = retryReport.rubric;
-          // Keep whichever attempt actually scored better; a rewrite is not
-          // automatically an improvement.
-          if ((retryRubric?.overall ?? 0) > (rubric?.overall ?? 0)) suggestion = retrySuggestion;
+          const retryInvented = bodyViolations(
+            retrySuggestion.suggestedBody,
+            evidence,
+            senderFirstName,
+            retrySuggestion.suggestedSubject,
+            String(leadRow?.company_name ?? companyName ?? ""),
+            "continuation",
+          );
+          // A higher score does not excuse a new unsupported claim.
+          if ((retryRubric?.overall ?? 0) > (rubric?.overall ?? 0) && retryInvented.length === 0) suggestion = retrySuggestion;
         }
       }
     }

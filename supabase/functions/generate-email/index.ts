@@ -1201,9 +1201,11 @@ STRICT RULES:
           // The model brief is not a source. The prompt may use only these sentences.
           websiteResearchBlock = [
             decision.facts.map((fact) => fact.span).join("\n"),
-            "Each prospect sentence you write must be one of those sentences unchanged, or the same verb and the same following words with the actor changed to you.",
-            "A question has to be exactly: Do you still <that verb> <those same following words>?",
-            "Do not reverse who does what, drop a number, or join two sentences into one.",
+            "A releasable first touch is Hi {first name}, one of these sentences, one ask, and the sender's name.",
+            "The sentence may stay unchanged. The company, We, or Our team may become you only for a listed verb (has/have, is/are, does/do, goes/go, hires/hire, builds/build) with every following word copied.",
+            "Do not shift a different capitalized actor, do not shift has been, and do not leave we, our, or us in the rest.",
+            "Use exactly one ask: Worth a look?, Open to a look?, or Do you still plus that verb and the full remainder. Do not use both.",
+            "A pain bridge or a case study is not in these sentences. Do not add one.",
           ].join("\n");
         } else {
           websiteResearchBlock = briefToPromptBlock(researchBrief, researchSources);
@@ -2295,6 +2297,7 @@ conversation that is already going, not as someone chasing silence.`}`;
         rubric,
         mode: "studio",
         senderName: resolvedSenderName,
+        company: sanitizedCompanyName,
       });
       if (!release.allow) {
         return new Response(JSON.stringify({

@@ -11,8 +11,9 @@ import { externalResearchConfigured, externalResearchSearch } from "../_shared/e
 import { parallelConfigured } from "../_shared/parallel.ts";
 import { contextDevConfigured } from "../_shared/context-dev.ts";
 import { evaluateStoredSnapshots, sealSnapshot, type StoredSnapshot } from "../_shared/evidence-contract.ts";
-import { blockedHost, publicHttpUrl } from "../_shared/safe-url.ts";
-import { receiptFromProviders, researchStep, type RetrievalReceipt } from "../_shared/research-orchestration.ts";
+import { blockedHost, publicHttpUrl, resolvePublicHost, sameSiteHost } from "../_shared/safe-url.ts";
+import { lookup } from "node:dns/promises";
+import { receiptFromProviders, researchAction, researchStep, type RetrievalReceipt } from "../_shared/research-orchestration.ts";
 import {
   leadResearchQueries,
   parallelPromptBlock,
@@ -149,7 +150,20 @@ async function fetchPage(url: string): Promise<PageFetch> {
   try {
     let current = publicHttpUrl(url);
     if (!current.ok) return failed(0);
+    const citedHost = new URL(current.href).hostname;
+    const resolved = await resolvePublicHost(citedHost, async (host) => {
+      const found = await lookup(host, { all: true, verbatim: true });
+      return found.map((entry) => entry.address);
+    });
+    if (!resolved.ok) return failed(0);
     for (let hop = 0; hop < 3; hop++) {
+      const hopHost = new URL(current.href).hostname;
+      if (!sameSiteHost(hopHost, citedHost)) return failed(0, current.href);
+      const hopResolved = await resolvePublicHost(hopHost, async (host) => {
+        const found = await lookup(host, { all: true, verbatim: true });
+        return found.map((entry) => entry.address);
+      });
+      if (!hopResolved.ok) return failed(0, current.href);
       const res = await fetch(current.href, {
         headers: { "User-Agent": BROWSER_UA, Accept: "text/html" },
         signal: controller.signal,
@@ -161,6 +175,7 @@ async function fetchPage(url: string): Promise<PageFetch> {
         if (!location) return failed(res.status, current.href);
         const next = publicHttpUrl(new URL(location, current.href).href);
         if (!next.ok) return failed(res.status, current.href);
+        if (!sameSiteHost(new URL(next.href).hostname, citedHost)) return failed(res.status, current.href);
         current = next;
         continue;
       }
@@ -388,8 +403,21 @@ serve(async (req) => {
       now: new Date().toISOString(),
       force,
     });
+    const action = researchAction({
+      step,
+      force,
+      fresh: isResearchFresh(lead as Record<string, unknown>),
+    });
+    if (action === "hold") {
+      return new Response(JSON.stringify({
+        error: "Research for this company already ran recently and did not produce a new approved sentence.",
+        error_code: "research_required",
+        research_status: "held",
+        cached: true,
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
     let researchRunId: string | null = null;
-    if (step === "fetch" || force) {
+    if (action === "fetch") {
       const { data: reserved } = await supabase.rpc("begin_research_run", {
         p_user_id: userId,
         p_lead_id: leadId,
@@ -406,7 +434,7 @@ serve(async (req) => {
       }
     }
     // Fresh brief already stored — hand it back without spending a scrape.
-    if (step !== "fetch" && !force && isResearchFresh(lead as Record<string, unknown>)) {
+    if (action === "cache") {
       const cachedBrief = lead.research_brief as LeadResearchBrief;
       const cachedSources = (lead.research_sources as string[]) || [];
       const quality = scoreResearchQuality(cachedBrief, cachedSources);

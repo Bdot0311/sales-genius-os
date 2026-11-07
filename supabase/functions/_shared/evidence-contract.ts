@@ -8,9 +8,9 @@
  * template. The model does not get to add a bridge, a P.S., or a case study.
  *
  * A clause detector is used only to refuse spans. It is not the release
- * boundary. The release boundary is `closedRender`: if the text was not
- * produced by that function from approved fact ids, generation does not
- * return it.
+ * boundary. The release boundary is the line parser below: one sourced
+ * observation, one ask, and the sender's name. `closedRender` is not that
+ * parser, and its canned question is not a releasable ask.
  */
 
 import { RESEARCH_TTL_DAYS } from "./lead-research.ts";
@@ -381,33 +381,71 @@ export interface BoundClaim {
  * Two sentences are never merged. The complement stays in order.
  */
 export function bindClaim(sentence: string): BoundClaim | null {
-  const match = sentence.trim().match(/^((?:we|our team)|(?:[A-Z][\p{L}0-9&'.-]*(?:\s+[A-Z][\p{L}0-9&'.-]*)*))\s+([A-Za-z]+)\s+(.+)$/u);
+  const text = sentence.trim();
+  const voice = text.match(/^(we|our team)\s+([A-Za-z]+)\s+(.+)$/i);
+  const match = voice ?? text.match(/^((?:[A-Z][\p{L}0-9&'.-]*(?:\s+[A-Z][\p{L}0-9&'.-]*)*))\s+([A-Za-z]+)\s+(.+)$/u);
   if (!match) return null;
   return {
-    sentence: sentence.trim(),
+    sentence: text,
     actor: match[1],
     verb: match[2],
     complement: match[3].replace(/[.?!]+$/g, "").trim(),
   };
 }
 
-function youForm(verb: string): string {
-  const lower = verb.toLowerCase();
-  if (lower === "has") return "have";
-  if (lower === "is") return "are";
-  if (/[^s]s$/i.test(lower) && !lower.endsWith("ss")) return lower.slice(0, -1);
-  return lower;
+/**
+ * Explicit agreement only. A verb that is not listed is not rewritten.
+ * "does" is "do". A final s is not stripped from an unlisted verb.
+ */
+const YOU_VERB: Record<string, string> = {
+  has: "have",
+  is: "are",
+  does: "do",
+  goes: "go",
+  hires: "hire",
+  builds: "build",
+  runs: "run",
+  ships: "ship",
+  hire: "hire",
+  build: "build",
+  run: "run",
+  ship: "ship",
+  go: "go",
+};
+const NO_QUESTION_VERB = new Set(["has", "is", "are", "does", "have"]);
+
+export function youForm(verb: string): string | null {
+  return YOU_VERB[verb.toLowerCase()] ?? null;
 }
 
-/** Verbatim sentence, or the same verb and complement with the actor shifted to "you". */
-export function matchesClaim(line: string, claim: BoundClaim): boolean {
+function prospectVoice(actor: string, company: string): boolean {
+  const who = actor.trim().toLowerCase();
+  if (who === "we" || who === "our team") return true;
+  return company.trim().length > 2 && who === company.trim().toLowerCase();
+}
+
+/**
+ * Verbatim, or one shift of the prospect's own actor to "you".
+ * The complement is copied whole. "our" / "we" / "us" in that complement
+ * blocks the shift. Another capitalized actor is not the prospect.
+ */
+export function matchesClaim(line: string, claim: BoundClaim, company = ""): boolean {
   const got = norm(line);
   if (got === norm(claim.sentence)) return true;
+  if (!prospectVoice(claim.actor, company)) return false;
+  if (/\b(?:we|our|us)\b/i.test(claim.complement)) return false;
+  if (/^(?:been|being)\b/i.test(claim.complement)) return false;
   const verb = youForm(claim.verb);
-  const rest = `${verb} ${claim.complement}`;
-  if (got === norm(`You ${rest}`)) return true;
-  if (got === norm(`Do you still ${rest}`)) return true;
-  return false;
+  if (!verb) return false;
+  if (got === norm(`You ${verb} ${claim.complement}`)) return true;
+  if (NO_QUESTION_VERB.has(claim.verb.toLowerCase())) return false;
+  if (/^(?:not|never)\b/i.test(claim.complement)) return false;
+  return got === norm(`Do you still ${verb} ${claim.complement}`);
+}
+
+/** Subject, body, evidence id, and policy. Send paths hash this string. */
+export function releaseBinding(subject: string, body: string, evidenceId: string): string {
+  return `${subject}\n${body}\n${evidenceId}\n${POLICY_VERSION}`;
 }
 
 function quantityPhrases(text: string): string[] {
@@ -434,13 +472,33 @@ export function subjectAllowed(subject: string, sentences: string[]): boolean {
  * sentence, or that sentence with the actor changed to "you".
  * Shared words are not enough: the actor, verb, and complement stay together.
  */
-export function bodyViolations(body: string, decision: EvidenceDecision, senderName = "", subject = ""): string[] {
+function isAsk(line: string): boolean {
+  const compact = line.toLowerCase().replace(/\s+/g, " ");
+  return EXACT_CTA.has(compact) || /\?\s*$/.test(line);
+}
+
+export type DraftShape = "first_touch" | "continuation";
+
+/**
+ * First touch: greeting, one sourced observation, one ask, sender name.
+ * Continuation keeps that claim allow-list and may omit the ask. It is not
+ * rewritten into a first-touch snippet. A second ask is refused in both.
+ */
+export function bodyViolations(
+  body: string,
+  decision: EvidenceDecision,
+  senderName = "",
+  subject = "",
+  company = "",
+  shape: DraftShape = "first_touch",
+): string[] {
   const facts = decision.facts.filter((fact) => fact.role !== "sender_proof");
   if (!facts.length) return ["No approved research is stored for this company."];
-  const claims = facts.map((fact) => bindClaim(fact.span)).filter((claim): claim is BoundClaim => !!claim);
   const violations: string[] = [];
   if (subject.trim() && !subjectAllowed(subject, facts.map((fact) => fact.span))) violations.push(subject.trim());
-  for (const line of body.split("\n").map((part) => part.trim()).filter(Boolean)) {
+  const lines = body.split("\n").map((part) => part.trim()).filter(Boolean);
+  let observations = 0;
+  for (const line of lines) {
     if (/^Hi [^,\n]{1,60},$/i.test(line)) continue;
     if (senderName && sameLine(line, senderName)) continue;
     if (EXACT_CTA.has(line.toLowerCase().replace(/\s+/g, " "))) continue;
@@ -448,10 +506,18 @@ export function bodyViolations(body: string, decision: EvidenceDecision, senderN
       violations.push(line);
       continue;
     }
-    const verbatim = facts.some((fact) => norm(line) === norm(fact.span));
-    const framed = claims.some((claim) => matchesClaim(line, claim));
-    if (!verbatim && !framed) violations.push(line);
+    const allowed = facts.some((fact) => {
+      if (norm(line) === norm(fact.span)) return true;
+      const claim = bindClaim(fact.span);
+      return !!claim && fact.role === "prospect_page" && matchesClaim(line, claim, company);
+    });
+    if (!allowed) violations.push(line);
+    else observations += 1;
   }
+  const asks = lines.filter(isAsk);
+  if (shape === "first_touch" && observations !== 1) violations.push("The draft needs exactly one sourced observation.");
+  if (shape === "first_touch" && asks.length !== 1) violations.push("The draft needs exactly one ask.");
+  if (shape === "continuation" && asks.length > 1) violations.push("The draft needs exactly one ask.");
   return [...new Set(violations)];
 }
 

@@ -4,8 +4,25 @@
  * any request. Redirects are checked one hop at a time by the caller.
  */
 
-export function blockedHost(hostname: string): string | null {
+/** ::ffff:127.0.0.1 and ::ffff:7f00:1 are IPv4, not a different family. */
+export function unwrapIp(hostname: string): string {
   const host = hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  const dotted = host.match(/^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i);
+  if (dotted) return dotted[1];
+  const hex = host.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/i);
+  if (!hex) return host;
+  const hi = parseInt(hex[1], 16);
+  const lo = parseInt(hex[2], 16);
+  return `${(hi >> 8) & 255}.${hi & 255}.${(lo >> 8) & 255}.${lo & 255}`;
+}
+
+export function sameSiteHost(a: string, b: string): boolean {
+  const norm = (host: string) => unwrapIp(host).toLowerCase().replace(/\.$/, "").replace(/^www\./, "");
+  return norm(a) === norm(b);
+}
+
+export function blockedHost(hostname: string): string | null {
+  const host = unwrapIp(hostname);
   if (!host || host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host === "metadata.google.internal" || host === "0.0.0.0") {
     return "local";
   }
@@ -29,4 +46,29 @@ export function publicHttpUrl(raw: string): { ok: true; href: string } | { ok: f
   const blocked = blockedHost(url.hostname);
   if (blocked) return { ok: false, reason: blocked };
   return { ok: true, href: url.href };
+}
+
+/**
+ * A public name can still resolve to a private address. The caller supplies
+ * the lookup so a test can answer for a name like 127.0.0.1.nip.io without
+ * a live query. A hostname regex is not this check.
+ */
+export async function resolvePublicHost(
+  hostname: string,
+  lookup: (host: string) => Promise<string[]>,
+): Promise<{ ok: true } | { ok: false; reason: string }> {
+  const host = unwrapIp(hostname);
+  if (blockedHost(host)) return { ok: false, reason: blockedHost(host) ?? "private" };
+  if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(host) || host.includes(":")) return { ok: true };
+  let addresses: string[] = [];
+  try {
+    addresses = await lookup(host);
+  } catch {
+    return { ok: false, reason: "dns" };
+  }
+  if (!addresses.length) return { ok: false, reason: "dns" };
+  for (const address of addresses) {
+    if (blockedHost(address)) return { ok: false, reason: "private_dns" };
+  }
+  return { ok: true };
 }

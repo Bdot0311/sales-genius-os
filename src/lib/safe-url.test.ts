@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { publicHttpUrl } from "../../supabase/functions/_shared/safe-url";
+import { publicHttpUrl, resolvePublicHost } from "../../supabase/functions/_shared/safe-url";
 import { replayDecision } from "../../supabase/functions/_shared/mutation-replay";
 
 describe("cited URLs are refused before a request", () => {
@@ -11,6 +11,15 @@ describe("cited URLs are refused before a request", () => {
     expect(publicHttpUrl("file:///etc/passwd").ok).toBe(false);
     expect(publicHttpUrl("https://user:pass@tf.example/").ok).toBe(false);
     expect(publicHttpUrl("https://tf.example/about").ok).toBe(true);
+    expect(publicHttpUrl("http://[::ffff:127.0.0.1]/").ok).toBe(false);
+    expect(publicHttpUrl("http://[::ffff:7f00:1]/").ok).toBe(false);
+  });
+
+  it("rejects a public name whose lookup answers with a private address", async () => {
+    const result = await resolvePublicHost("127.0.0.1.nip.io", async () => ["127.0.0.1"]);
+    expect(result).toEqual({ ok: false, reason: "private_dns" });
+    const allowed = await resolvePublicHost("tf.example", async () => ["93.184.216.34"]);
+    expect(allowed.ok).toBe(true);
   });
 });
 

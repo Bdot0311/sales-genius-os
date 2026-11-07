@@ -221,10 +221,12 @@ describe("production wiring", () => {
   it("stores the scorer result for the signed plain text and still reserves the send", () => {
     const signed = SEND.indexOf("appendSignatureToBody");
     const scored = SEND.indexOf("scoreEmailReport");
-    const hashed = SEND.indexOf("sha256Hex(`${String(subject ?? \"\")}\\n${plainBody}\\n${evidenceDecision.evidenceId}\\n${POLICY_VERSION}`)");
+    const hashed = SEND.indexOf("sha256Hex(bound)");
     expect(signed).toBeGreaterThan(-1);
     expect(scored).toBeGreaterThan(signed);
     expect(hashed).toBeGreaterThan(signed);
+    expect(SEND).toContain("releaseBinding(String(subject ?? \"\"), plainBody, evidenceDecision.evidenceId)");
+    expect(readFileSync("supabase/functions/_shared/evidence-contract.ts", "utf8")).toMatch(/\$\{evidenceId\}\\n\$\{POLICY_VERSION\}/);
     expect(SEND).toContain("p_rubric_availability: rubricReport.availability");
     expect(SEND).toContain("deliverReserved(");
     expect(MIGRATION).toContain("REVOKE ALL ON FUNCTION %s FROM authenticated");

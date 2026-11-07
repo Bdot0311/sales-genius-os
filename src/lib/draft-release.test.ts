@@ -68,8 +68,6 @@ describe("research-backed drafts, numeric and not", () => {
 
 TF Business Solutions hires freight brokers for shippers across the region.
 
-Do you still hire freight brokers for shippers across the region?
-
 Worth a look?
 
 Brandon Yakubov`;
@@ -115,7 +113,7 @@ Brandon Yakubov`;
 
   it("holds an autonomous send that is clean on the rules but not 5/5", () => {
     const decision = decide("TF Business Solutions hires freight brokers for shippers across the region.");
-    const body = "Hi Talha,\n\nTF Business Solutions hires freight brokers for shippers across the region.\n\nDo you still hire freight brokers for shippers across the region?\n\nWorth a look?\n\nBrandon Yakubov";
+    const body = "Hi Talha,\n\nTF Business Solutions hires freight brokers for shippers across the region.\n\nWorth a look?\n\nBrandon Yakubov";
     const weak = { ...perfect, overall: 80, dimensions: { ...perfect.dimensions, relevance: { score: 4, justification: "close" } } };
     expect(releaseAllows({
       subject: "freight brokers",

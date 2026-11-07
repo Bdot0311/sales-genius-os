@@ -30,6 +30,16 @@ export interface RetrievalReceipt {
 
 export type ResearchStep = "use" | "fetch" | "hold";
 
+/**
+ * Hold on a recent run even when the lead was never successfully researched.
+ * Freshness is only the cache path. It does not cancel a failed-run cooldown.
+ */
+export function researchAction(input: { step: ResearchStep; force: boolean; fresh: boolean }): "hold" | "cache" | "fetch" {
+  if (!input.force && input.step === "hold") return "hold";
+  if (!input.force && input.step !== "fetch" && input.fresh) return "cache";
+  return "fetch";
+}
+
 export function researchStep(input: {
   hasTrustedFacts: boolean;
   receipt: RetrievalReceipt | null;

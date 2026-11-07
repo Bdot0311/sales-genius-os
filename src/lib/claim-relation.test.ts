@@ -8,7 +8,10 @@ import {
   bodyViolations,
   evaluateStoredSnapshots,
   matchesClaim,
+  releaseBinding,
   sealSnapshot,
+  youForm,
+  POLICY_VERSION,
 } from "../../supabase/functions/_shared/evidence-contract";
 
 const NOW = "2026-11-07T12:00:00.000Z";
@@ -88,26 +91,98 @@ describe("source voice and the real checker and rubric", () => {
     globalThis.fetch = originalFetch;
   });
 
-  it("releases a you-shift of a first-person source sentence and holds a sender we-build line", async () => {
+  it("keeps a copied company sentence and a closed you-shift, and refuses the unsafe ones", async () => {
     const decision = ready(BUILD);
     const skills = composeSkillContext({ goal: "introduction" });
     expect(skills.length).toBeGreaterThan(200);
     expect(skills).toContain("STYLE FLOOR");
-    const usable = email([
+    expect(youForm("does")).toBe("do");
+    expect(youForm("has")).toBe("have");
+    expect(youForm("hires")).toBe("hire");
+    expect(youForm("addresses")).toBeNull();
+    const company = "TF Business Solutions";
+    const youBuild = email([
       "Hi Talha,",
       "",
       "You build MVPs for VC-backed startups in 8 to 12 weeks.",
       "",
-      "Do you still build MVPs for VC-backed startups in 8 to 12 weeks?",
+      "Worth a look?",
       "",
       "Brandon Yakubov",
     ]);
-    expect(bodyViolations(usable, decision, "Brandon Yakubov", "8 to 12 weeks")).toEqual([]);
-    expect(outboundGateFindings("8 to 12 weeks", usable, BUILD).map((finding) => finding.rule)).not.toContain("touch_one_pitch");
+    expect(bodyViolations(youBuild, decision, "Brandon Yakubov", "8 to 12 weeks", company)).toEqual([]);
+    expect(outboundGateFindings("8 to 12 weeks", youBuild, BUILD).some((finding) => finding.severity !== "note")).toBe(false);
+    const youHire = email([
+      "Hi Talha,",
+      "",
+      "You hire freight brokers for shippers across the region.",
+      "",
+      "Worth a look?",
+      "",
+      "Brandon Yakubov",
+    ]);
+    const hired = ready(HIRE);
+    expect(bodyViolations(youHire, hired, "Brandon Yakubov", "freight brokers", company)).toEqual([]);
+    expect(outboundGateFindings("freight brokers", youHire, HIRE).some((finding) => finding.severity !== "note")).toBe(false);
+    const onlyAsk = email([
+      "Hi Talha,",
+      "",
+      "Do you still hire freight brokers for shippers across the region?",
+      "",
+      "Brandon Yakubov",
+    ]);
+    expect(bodyViolations(onlyAsk, hired, "Brandon Yakubov", "freight brokers", company)).toEqual([]);
+    const ran = ready("TF Business Solutions has run 500 campaigns since 2012.");
+    const youRan = email([
+      "Hi Talha,",
+      "",
+      "You have run 500 campaigns since 2012.",
+      "",
+      "Worth a look?",
+      "",
+      "Brandon Yakubov",
+    ]);
+    expect(bodyViolations(youRan, ran, "Brandon Yakubov", "500 campaigns", company)).toEqual([]);
+    expect(outboundGateFindings("500 campaigns", youRan, ran.facts.map((fact) => fact.span).join("\n")).some((finding) => finding.severity !== "note")).toBe(false);
+    const twoAsks = email([
+      "Hi Talha,",
+      "",
+      "Do you still hire freight brokers for shippers across the region?",
+      "",
+      "Worth a look?",
+      "",
+      "Brandon Yakubov",
+    ]);
+    expect(bodyViolations(twoAsks, hired, "Brandon Yakubov", "freight brokers", company).join(" ")).toContain("exactly one ask");
+    expect(bodyViolations("You hire TF Business Solutions for freight brokerage across the region.", ready("Customers hire TF Business Solutions for freight brokerage across the region."), "Brandon Yakubov", "", company).length).toBeGreaterThan(0);
+    expect(bodyViolations("You ship 12 loads for our customers every month across the region.", ready("We ship 12 loads for our customers every month across the region."), "Brandon Yakubov", "", company).length).toBeGreaterThan(0);
+    expect(bodyViolations("You have been building MVPs for VC-backed startups in 8 to 12 weeks.", ready("TF Business Solutions has been building MVPs for VC-backed startups in 8 to 12 weeks."), "Brandon Yakubov", "", company).length).toBeGreaterThan(0);
+    expect(bodyViolations("You doe not hire freight brokers for shippers across the region.", ready("TF Business Solutions does not hire freight brokers for shippers across the region."), "Brandon Yakubov", "", company).length).toBeGreaterThan(0);
+    expect(matchesClaim("You doe not hire freight brokers for shippers across the region.", bindClaim("TF Business Solutions does not hire freight brokers for shippers across the region.")!, company)).toBe(false);
+    expect(bodyViolations(youBuild, { ...decision, facts: decision.facts.map((fact) => ({ ...fact, role: "external" as const })) }, "Brandon Yakubov", "8 to 12 weeks", company).length).toBeGreaterThan(0);
+    expect(bodyViolations(youBuild + "\nFounder, BDØT Industries LLC", decision, "Brandon Yakubov", "8 to 12 weeks", company).length).toBeGreaterThan(0);
+    expect(bodyViolations("You build MVPs for VC-backed startups in 8 to 12 weeks.", decision, "Brandon Yakubov", "", company, "continuation")).toEqual([]);
+    expect(bodyViolations("You build MVPs for VC-backed startups in 8 to 12 weeks.", decision, "Brandon Yakubov", "", company, "first_touch").join(" ")).toContain("exactly one ask");
+    const usable = email([
+      "Hi Talha,",
+      "",
+      "TF Business Solutions hires freight brokers for shippers across the region.",
+      "",
+      "Worth a look?",
+      "",
+      "Brandon Yakubov",
+    ]);
+    expect(bodyViolations(usable, hired, "Brandon Yakubov", "freight brokers", company)).toEqual([]);
+    expect(bodyViolations(usable, hired, "Brandon Yakubov", "8", company).length).toBeGreaterThan(0);
+    expect(outboundGateFindings("freight brokers", usable, HIRE).some((finding) => finding.severity !== "note")).toBe(false);
+    expect(releaseBinding("freight brokers", usable, hired.evidenceId)).toContain(POLICY_VERSION);
+    expect(releaseBinding("freight brokers", usable, hired.evidenceId)).toContain(hired.evidenceId);
     const pitched = email([
       "Hi Talha,",
       "",
       BUILD,
+      "",
+      "Worth a look?",
       "",
       "Brandon Yakubov",
     ]);
@@ -125,43 +200,68 @@ describe("source voice and the real checker and rubric", () => {
       weakest: "payoff",
     }), { status: 200, headers: { "Content-Type": "application/json" } })) as typeof fetch;
     const report = await scoreEmailReport("https://example.test", "Bearer t", "anon", {
-      subject: "8 to 12 weeks",
+      subject: "freight brokers",
       body: usable,
     });
     expect(report.availability).toBe("scored");
     expect(report.rubric?.overall).toBeLessThan(100);
     expect(releaseAllows({
-      subject: "8 to 12 weeks",
+      subject: "freight brokers",
       body: usable,
-      facts: decision.facts,
+      facts: hired.facts,
       availability: report.availability,
       rubric: report.rubric,
       mode: "studio",
       senderName: "Brandon Yakubov",
     }).allow).toBe(true);
     expect(releaseAllows({
-      subject: "8 to 12 weeks",
+      subject: "freight brokers",
       body: usable,
-      facts: decision.facts,
+      facts: hired.facts,
       availability: report.availability,
       rubric: report.rubric,
       mode: "autonomous",
       senderName: "Brandon Yakubov",
     }).allow).toBe(false);
-  });
-
-  it("releases a nonnumeric company sentence copied whole, and a you-form question of that same complement", () => {
-    const decision = ready(HIRE);
-    const body = email([
-      "Hi Talha,",
-      "",
-      HIRE,
-      "",
-      "Do you still hire freight brokers for shippers across the region?",
-      "",
-      "Brandon Yakubov",
-    ]);
-    expect(bodyViolations(body, decision, "Brandon Yakubov", "freight brokers")).toEqual([]);
-    expect(outboundGateFindings("freight brokers", body, HIRE).some((finding) => finding.severity !== "note")).toBe(false);
+    const shifted = await scoreEmailReport("https://example.test", "Bearer t", "anon", {
+      subject: "8 to 12 weeks",
+      body: youBuild,
+    });
+    expect(shifted.availability).toBe("scored");
+    expect(shifted.rubric?.overall).toBeLessThan(100);
+    expect(releaseAllows({
+      subject: "8 to 12 weeks",
+      body: youBuild,
+      facts: decision.facts,
+      availability: shifted.availability,
+      rubric: shifted.rubric,
+      mode: "studio",
+      senderName: "Brandon Yakubov",
+      company,
+    }).allow).toBe(true);
+    expect(releaseAllows({
+      subject: "8 to 12 weeks",
+      body: youBuild,
+      facts: decision.facts,
+      availability: shifted.availability,
+      rubric: shifted.rubric,
+      mode: "autonomous",
+      senderName: "Brandon Yakubov",
+      company,
+    }).allow).toBe(false);
+    const numeric = await scoreEmailReport("https://example.test", "Bearer t", "anon", {
+      subject: "500 campaigns",
+      body: youRan,
+    });
+    expect(releaseAllows({
+      subject: "500 campaigns",
+      body: youRan,
+      facts: ran.facts,
+      availability: numeric.availability,
+      rubric: numeric.rubric,
+      mode: "studio",
+      senderName: "Brandon Yakubov",
+      company,
+    }).allow).toBe(true);
   });
 });

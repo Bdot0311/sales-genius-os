@@ -5389,12 +5389,49 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
         const startedAt = Date.now();
         let stepStatus = "success";
         let stepDetail: string | null = null;
+        let toolFailed = false;
         try {
           result = await runTool(toolName, args);
+        } catch (e) {
+          toolFailed = true;
+          stepStatus = "error";
+          stepDetail = e instanceof Error ? e.message : "unknown error";
+          result = { error: stepDetail ?? "tool failed" };
           if (mutationKey) {
-            await trace.finishMutation(threadId, mutationKey, didMutate(result) ? "completed" : "unknown");
+            try { await trace.finishMutation(threadId, mutationKey, "unknown"); } catch { /* row stays dispatching */ }
+            return {
+              role: "tool",
+              tool_call_id: call.id,
+              content: JSON.stringify({
+                error: "unknown_outcome",
+                status: "unknown",
+                note: "The action did not return a result. Whether it finished is unknown. Do not run it again.",
+              }),
+            };
           }
-          if (mutationKey && didMutate(result)) {
+          toolEvents.push({
+            name: toolName,
+            label: "Action failed",
+            status: "error",
+            detail: stepDetail ?? "unknown error",
+          });
+        }
+        if (!toolFailed && mutationKey) {
+          try {
+            await trace.finishMutation(threadId, mutationKey, didMutate(result) ? "completed" : "unknown");
+          } catch {
+            return {
+              role: "tool",
+              tool_call_id: call.id,
+              content: JSON.stringify({
+                error: "unknown_outcome",
+                status: "unknown",
+                note: "The action finished and its receipt could not be updated. The outcome is unknown. Do not run it again.",
+              }),
+            };
+          }
+        }
+        if (mutationKey && didMutate(result)) {
             completedMutationKeys.add(mutationKey);
             /*
              * And on disk, because the in-memory Set dies with the worker.
@@ -5418,17 +5455,6 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
               };
             }
           }
-        } catch (e) {
-          stepStatus = "error";
-          stepDetail = e instanceof Error ? e.message : "unknown error";
-          result = { error: stepDetail ?? "tool failed" };
-          toolEvents.push({
-            name: toolName,
-            label: "Action failed",
-            status: "error",
-            detail: stepDetail ?? "unknown error",
-          });
-        }
         const stepRow = {
           tool_name: toolName || "unknown",
           step_type: PARALLEL_SAFE_TOOLS.has(toolName) ? "tool_parallel" : "tool_serial",

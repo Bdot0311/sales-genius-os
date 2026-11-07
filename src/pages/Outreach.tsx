@@ -1418,7 +1418,7 @@ const Outreach = () => {
       return;
     }
     if (checkLabel === "Ungrounded prospect claim") {
-      const blocked = bodyViolations(generatedEmail, fixDecision, senderProfileName || "", subjectLine);
+      const blocked = bodyViolations(generatedEmail, fixDecision, senderProfileName || "", subjectLine, String(lead?.company_name ?? ""));
       toast({
         title: "Could not fix ungrounded prospect claim",
         description: blocked[0] || "Regenerate the draft from research. The current text was not changed.",
@@ -1520,7 +1520,8 @@ Return ONLY the corrected email body. No subject line. No explanation. No "Here 
       if (!fixed) throw new Error("The rewrite was empty. The draft was not changed.");
       if (fixed === generatedEmail.trim()) throw new Error(`The rewrite was identical, so ${checkLabel} is still there. The draft was not changed.`);
       if (newProblems.length) throw new Error(`The rewrite added ${newProblems[0].label}: ${newProblems[0].message}. The draft was not changed.`);
-      if (bodyViolations(fixed, fixDecision).length) throw new Error(`${bodyViolations(fixed, fixDecision)[0]} The draft was not changed.`);
+      const stillBlocked = bodyViolations(fixed, fixDecision, senderProfileName || "", subjectLine, String(lead?.company_name ?? ""));
+      if (stillBlocked.length) throw new Error(`${stillBlocked[0]} The draft was not changed.`);
       if (!aiImproved) throw new Error(`${checkLabel} is still: ${aiCheck?.message || "unresolved"}. The draft was not changed.`);
       await persistFixedDraft(fixed);
       toast({ title: `${checkLabel} fixed`, description: aiCheck ? aiCheck.message : "The draft was updated and saved." });
@@ -3312,8 +3313,13 @@ For logos, use HTML:
                         })()).blockers.some((finding) => finding.rule === "ungrounded_prospect_claim")
                           ? "A relevance score does not check those details against retrieved pages, and it does not approve sending while a grounding blocker is present."
                           : null}
-                        onApplyBody={(next) => { setGeneratedEmail(next); void saveDraft({ body: next }); }}
-                        onApplySubject={(next) => { setSubjectLine(next); void saveDraft({ subject: next }); }}
+                        onApplyBody={(next) => { setGeneratedEmail(next); void saveDraft({ body: next, subject: subjectLine }); }}
+                        onApplySubject={(next) => { setSubjectLine(next); void saveDraft({ subject: next, body: generatedEmail }); }}
+                        onApplyDraft={(nextSubject, nextBody) => {
+                          setSubjectLine(nextSubject);
+                          setGeneratedEmail(nextBody);
+                          void saveDraft({ subject: nextSubject, body: nextBody });
+                        }}
                       />
                       <EmailAuditPanel
                         subject={subjectLine}

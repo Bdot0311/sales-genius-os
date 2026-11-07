@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 const PG_URL = process.env.AUDIT_PG_URL ?? "postgresql://audit:audit@127.0.0.1/audit_test";
 
 describe("research snapshots are service-written", () => {
-  it("lets the owner read a row and refuses insert, update, and another tenant", async () => {
+  it("lets the owner read a row and refuses insert, update, and another tenant", async (ctx) => {
     if (!PG_URL.includes("127.0.0.1") && !PG_URL.includes("localhost")) {
       throw new Error("refusing to create test roles outside local postgres");
     }
@@ -17,6 +17,7 @@ describe("research snapshots are service-written", () => {
     } catch (err) {
       if (sql) await sql.end({ timeout: 1 });
       if (process.env.AUDIT_PG_REQUIRED === "1") throw err;
+      ctx.skip();
       return;
     }
     try {

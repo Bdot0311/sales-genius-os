@@ -23,7 +23,7 @@ import { acceptedUnpersistedBody, deliverReserved, type OutboundStore } from "..
 import { outboundGateFindings } from "../_shared/quality-gate.ts";
 import { resolveAppUser } from "../_shared/app-user.ts";
 import { proofFromLead } from "../_shared/template-send-gate.ts";
-import { POLICY_VERSION, bodyViolations, evaluateStoredSnapshots } from "../_shared/evidence-contract.ts";
+import { POLICY_VERSION, bodyViolations, evaluateStoredSnapshots, releaseBinding } from "../_shared/evidence-contract.ts";
 import { sha256Hex } from "../_shared/prompt-versions.ts";
 import { evaluateSend } from "../_shared/outbound-verdict.ts";
 import { gatePromptHash, rubricPromptHash } from "../_shared/prompt-versions.ts";
@@ -604,7 +604,11 @@ serve(async (req) => {
         stored: storedSnapshots,
       });
       const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle();
-      const evidenceViolations = bodyViolations(plainBody, evidenceDecision, String(profile?.full_name ?? ""), String(subject ?? ""));
+      // A verified reply is the prospect's thread, not a first-touch snippet.
+      // Their sentences are not a stored research snapshot, so the cold-email
+      // allow-list would block the reply. It still needs a rubric score below.
+      const evidenceViolations = isVerifiedReply ? [] : bodyViolations(plainBody, evidenceDecision, String(profile?.full_name ?? ""), String(subject ?? ""), leadCompany, "first_touch");
+      const bound = releaseBinding(String(subject ?? ""), plainBody, evidenceDecision.evidenceId);
       if (evidenceViolations.length) {
         return new Response(JSON.stringify({
           error: `Not sent. ${evidenceViolations[0]}`,
@@ -630,7 +634,7 @@ serve(async (req) => {
       try {
         const callerAuthorization = req.headers.get("Authorization") ?? "";
         const [hash, promptHash, rubricHash, rubricReport] = await Promise.all([
-          sha256Hex(`${String(subject ?? "")}\n${plainBody}\n${evidenceDecision.evidenceId}\n${POLICY_VERSION}`),
+          sha256Hex(bound),
           gatePromptHash(),
           rubricPromptHash(),
           scoreEmailReport(supabaseUrl, callerAuthorization, anonKey, {

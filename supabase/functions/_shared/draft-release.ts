@@ -19,6 +19,7 @@ export function releaseAllows(input: {
   rubric: RubricResult | null;
   mode: "studio" | "autonomous";
   senderName?: string;
+  company?: string;
 }): { allow: boolean; code: string; reason: string } {
   const decision = {
     status: input.facts.length ? "ready" as const : "absent" as const,
@@ -27,7 +28,7 @@ export function releaseAllows(input: {
     facts: input.facts,
     conflicts: [] as string[],
   };
-  const claims = bodyViolations(input.body, decision, input.senderName ?? "", input.subject);
+  const claims = bodyViolations(input.body, decision, input.senderName ?? "", input.subject, input.company ?? "");
   if (claims.length) {
     return { allow: false, code: input.facts.length ? "unsupported_prospect_claim" : "research_required", reason: claims[0] };
   }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { researchBlockForLead } from "../../supabase/functions/_shared/lead-research-block";
-import { holdReason, researchStep, RETRY_WINDOW_MS } from "../../supabase/functions/_shared/research-orchestration";
+import { holdReason, researchAction, researchStep, RETRY_WINDOW_MS } from "../../supabase/functions/_shared/research-orchestration";
 import { externalResearchSearch } from "../../supabase/functions/_shared/external-research";
 
 describe("research is fetched before a draft and not repeated inside the window", () => {
@@ -49,6 +49,14 @@ describe("research is fetched before a draft and not repeated inside the window"
       firecrawl: { configured: false, called: false, reason: "no adapter in this repository" },
       snapshotWrite: "none",
     })).toContain("Firecrawl has no adapter");
+  });
+});
+
+describe("a failed run stays on cooldown even when the lead is not fresh", () => {
+  it("holds instead of fetching", () => {
+    expect(researchAction({ step: "hold", force: false, fresh: false })).toBe("hold");
+    expect(researchAction({ step: "fetch", force: false, fresh: false })).toBe("fetch");
+    expect(researchAction({ step: "use", force: false, fresh: true })).toBe("cache");
   });
 });
 

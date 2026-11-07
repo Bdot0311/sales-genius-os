@@ -10,7 +10,7 @@ import {
 } from '../_shared/unsubscribe.ts';
 import { injectClickTracking } from "../_shared/click-tracking.ts";
 import { proofFromLead, queuedCopyBlockers } from "../_shared/template-send-gate.ts";
-import { bodyViolations, evaluateStoredSnapshots } from "../_shared/evidence-contract.ts";
+import { bodyViolations, evaluateStoredSnapshots, releaseBinding } from "../_shared/evidence-contract.ts";
 
 // RFC 2047 MIME encode subject for non-ASCII characters
 const mimeEncodeSubject = (subject: string) => {
@@ -254,7 +254,16 @@ serve(async (req) => {
         .in("id", leadIds);
       for (const lead of leadRows ?? []) proofByLead.set(lead.id, proofFromLead(lead));
     }
+    const senderByUser = new Map<string, string>();
+    const senderIds = [...new Set(scheduledEmails.map((email: { user_id?: string }) => email.user_id).filter(Boolean))] as string[];
+    if (senderIds.length) {
+      const { data: profiles } = await supabase.from("profiles").select("id, full_name").in("id", senderIds);
+      for (const profile of profiles ?? []) {
+        if (profile.full_name) senderByUser.set(profile.id, profile.full_name);
+      }
+    }
     const factsByLead = new Map<string, ReturnType<typeof evaluateStoredSnapshots>>();
+    const companyByLead = new Map<string, string>();
     if (leadIds.length > 0) {
       const { data: snapRows } = await supabase
         .from("research_snapshots")
@@ -276,6 +285,7 @@ serve(async (req) => {
           try { return new URL(raw.includes("://") ? raw : `https://${raw}`).hostname.replace(/^www\./, ""); }
           catch { return null; }
         })();
+        companyByLead.set(lead.id, String(lead.company_name ?? ""));
         factsByLead.set(lead.id, evaluateStoredSnapshots({
           userId: lead.user_id,
           leadId: lead.id,
@@ -612,9 +622,17 @@ serve(async (req) => {
          * with one may be in the recipient's inbox and is never retried.
          */
         const evidenceDecision = email.lead_id ? factsByLead.get(email.lead_id) : undefined;
-        const evidenceBlockers = bodyViolations(email.body_text || email.body_html || "", evidenceDecision ?? {
-          status: "absent", reason: "", evidenceId: "", facts: [], conflicts: [],
-        }, "", email.subject || "");
+        const senderName = senderByUser.get(email.user_id) ?? "";
+        const plain = email.body_text || email.body_html || "";
+        const evidence = evidenceDecision ?? {
+          status: "absent" as const, reason: "", evidenceId: "", facts: [], conflicts: [],
+        };
+        const stepShape = Number(email.sequence_step) > 1 ? "continuation" as const : "first_touch" as const;
+        const evidenceBlockers = bodyViolations(plain, evidence, senderName, email.subject || "", companyByLead.get(email.lead_id) ?? "", stepShape);
+        const bound = releaseBinding(String(email.subject || ""), plain, evidence.evidenceId);
+        if (!evidenceBlockers.length && !evidence.evidenceId) {
+          evidenceBlockers.push(`The send is missing the evidence id for this body (${bound.length} bytes).`);
+        }
         if (evidenceBlockers.length > 0) {
           await failEmail(
             email.id,

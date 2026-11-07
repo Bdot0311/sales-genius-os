@@ -95,14 +95,19 @@ serve(async (req) => {
       try { return new URL(raw.includes("://") ? raw : `https://${raw}`).hostname.replace(/^www\./, ""); }
       catch { return null; }
     })();
-    const invented = bodyViolations(replacement, evaluateStoredSnapshots({
+    const evidence = evaluateStoredSnapshots({
       userId: user.id,
       leadId,
       company: String(leadRow?.company_name ?? ""),
       websiteHost: host,
       now: new Date().toISOString(),
       stored: (snapRows ?? []).map((row: { payload?: unknown }) => row.payload).filter(Boolean),
-    }));
+    });
+    const nextBody = emailBody.includes(snippet) ? emailBody.replace(snippet, replacement) : emailBody;
+    const nextSubject = !emailBody.includes(snippet) && emailSubject.includes(snippet)
+      ? emailSubject.replace(snippet, replacement)
+      : emailSubject;
+    const invented = bodyViolations(nextBody, evidence, "", nextSubject, String(leadRow?.company_name ?? ""));
     if (invented.length) {
       return json({ error: "The suggestion added a claim the draft does not already support, so it was not applied.", error_code: "unsupported_prospect_claim" }, 200);
     }
