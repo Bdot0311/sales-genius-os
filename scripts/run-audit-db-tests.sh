@@ -20,4 +20,4 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 export AUDIT_PG_URL="${AUDIT_PG_URL:-postgresql://audit:audit@127.0.0.1/audit_test}"
 export AUDIT_PG_REQUIRED=1
-exec npx vitest run src/lib/runtime-guards.test.ts
+exec npx vitest run src/lib/runtime-guards.test.ts src/lib/outbound-infra.test.ts

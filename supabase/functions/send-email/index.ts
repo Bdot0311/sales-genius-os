@@ -23,6 +23,9 @@ import { acceptedUnpersistedBody, deliverReserved, type OutboundStore } from "..
 import { outboundGateFindings } from "../_shared/quality-gate.ts";
 import { resolveAppUser } from "../_shared/app-user.ts";
 import { proofFromLead } from "../_shared/template-send-gate.ts";
+import { evaluateSend } from "../_shared/outbound-verdict.ts";
+import { contentHash, gatePromptHash, rubricPromptHash } from "../_shared/prompt-versions.ts";
+import { scoreEmailReport } from "../_shared/email-quality.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -63,6 +66,7 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const payload = await req.json();
@@ -566,17 +570,101 @@ serve(async (req) => {
           .limit(1);
         isVerifiedReply = Array.isArray(replied) && replied.length > 0;
       }
+      const plainBody = htmlToPlainText(body);
       const gateFindings = isVerifiedReply ? [] : outboundGateFindings(
         String(subject ?? ""),
-        htmlToPlainText(body),
+        plainBody,
         leadProof,
         0,
       );
-      if (gateFindings.length > 0) {
+      const liveBlocked = gateFindings.length > 0;
+      let allowSend = !liveBlocked;
+      let verdictId: string | null = null;
+      let canary = false;
+      let canaryKnown = false;
+      try {
+        const { data: enabled, error: canaryErr } = await supabase.rpc("outbound_canary_enabled", { p_user_id: user.id });
+        if (!canaryErr) {
+          canaryKnown = true;
+          canary = enabled === true;
+        }
+      } catch (canaryReadErr) {
+        console.warn("[send-email] canary flag unread", canaryReadErr);
+      }
+      try {
+        const callerAuthorization = req.headers.get("Authorization") ?? "";
+        const [hash, promptHash, rubricHash, rubricReport] = await Promise.all([
+          contentHash(String(subject ?? ""), plainBody),
+          gatePromptHash(),
+          rubricPromptHash(),
+          scoreEmailReport(supabaseUrl, callerAuthorization, anonKey, {
+            subject: String(subject ?? ""),
+            body: plainBody,
+          }),
+        ]);
+        const gateStatus = liveBlocked
+          ? (gateFindings.some((f) => f.severity === "blocker") ? "refused" : "needs_review")
+          : "clear";
+        const { data: priorRows } = await supabase.rpc("latest_outbound_verdict", {
+          p_user_id: user.id,
+          p_content_hash: hash,
+        });
+        const prior = Array.isArray(priorRows) ? priorRows[0] : priorRows;
+        const shadowMismatch = !!prior && (
+          String(prior.gate_status) !== gateStatus
+          || String(prior.prompt_hash) !== promptHash
+          || String(prior.rubric_prompt_hash) !== rubricHash
+        );
+        const stored = {
+          contentHash: hash,
+          gateStatus,
+          promptHash,
+          rubricPromptHash: rubricHash,
+          userId: user.id,
+        } as const;
+        const { data: id, error: writeErr } = await supabase.rpc("record_outbound_verdict", {
+          p_user_id: user.id,
+          p_lead_id: leadId ?? null,
+          p_content_hash: hash,
+          p_subject: String(subject ?? ""),
+          p_body: plainBody,
+          p_findings: gateFindings,
+          p_rubric_availability: rubricReport.availability,
+          p_rubric: rubricReport.rubric,
+          p_prompt_hash: promptHash,
+          p_rubric_prompt_hash: rubricHash,
+          p_gate_status: gateStatus,
+          p_shadow: !canary,
+          p_shadow_mismatch: shadowMismatch,
+        });
+        const persisted = !writeErr && typeof id === "string";
+        verdictId = persisted ? id : null;
+        if (!canaryKnown) {
+          allowSend = !liveBlocked;
+        } else {
+          const decision = evaluateSend({
+            liveBlocked,
+            contentHash: hash,
+            promptHash,
+            rubricPromptHash: rubricHash,
+            stored: persisted ? stored : null,
+            persisted,
+            canary,
+            userId: user.id,
+          });
+          allowSend = decision.allow;
+        }
+      } catch (verdictErr) {
+        console.warn("[send-email] verdict write failed", verdictErr);
+        allowSend = canary ? false : !liveBlocked;
+      }
+      if (!allowSend) {
         return new Response(
           JSON.stringify({
-            error: `Not sent. The quality check failed: ${gateFindings.slice(0, 4).map((f) => f.rule).join(", ")}.`,
-            code: "quality_checker",
+            error: liveBlocked
+              ? `Not sent. The quality check failed: ${gateFindings.slice(0, 4).map((f) => f.rule).join(", ")}.`
+              : "Not sent. This account's canary requires a current clear verdict for this exact text, including the signature. A missing or stale verdict is not permission.",
+            code: liveBlocked ? "quality_checker" : "verdict_required",
             findings: gateFindings.slice(0, 8).map((f) => ({ rule: f.rule, evidence: f.evidence, fix: f.fix })),
           }),
           { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -788,7 +876,15 @@ ${unsubscribeFooterHtml}
             gmail_thread_id: gmail.threadId,
             sent_at: new Date().toISOString(),
           }).eq('id', id).select('id');
-          return !error && Array.isArray(data) && data.length > 0;
+          const stored = !error && Array.isArray(data) && data.length > 0;
+          if (stored && verdictId) {
+            await supabase.rpc("attach_verdict_to_send", {
+              p_verdict_id: verdictId,
+              p_sent_email_id: id,
+              p_user_id: user.id,
+            }).then(() => {}, () => {});
+          }
+          return stored;
         },
         markFailed: async (id, reason) => {
           await supabase.from('sent_emails').update({

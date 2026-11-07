@@ -68,12 +68,14 @@ const IMMEDIATE_TIME =
  * "Usually" and "most teams" are claims. A question that does not use them
  * is not. A sentence that labels itself a hypothesis is not stated as fact.
  */
-const PREVALENCE =
-  /\b(?:usually|typically|tend(?:s)? to|most (?:teams|companies|founders|reps|brokers|operators)|the majority)\b/i;
+export const PREVALENCE_SOURCE =
+  "\\b(?:usually|typically|tend(?:s)? to|most (?:teams|companies|founders|reps|brokers|operators)|the majority)\\b";
+const PREVALENCE = new RegExp(PREVALENCE_SOURCE, "i");
 
 /** An outcome stated as the mechanism, rather than asked about. */
-const CAUSAL_OUTCOME =
-  /\b(?:is where it dies|dies here|kills (?:your|the|their)|causes (?:your|the|their))\b/i;
+export const CAUSAL_SOURCE =
+  "\\b(?:is where it dies|dies here|kills (?:your|the|their)|causes (?:your|the|their))\\b";
+const CAUSAL_OUTCOME = new RegExp(CAUSAL_SOURCE, "i");
 
 const INSTRUCTION_LINE =
   /ignore (?:all |any )?(?:previous|prior|above) instructions|disregard (?:the |all )?(?:above|previous)|you are now|system prompt|do not follow the rules/i;

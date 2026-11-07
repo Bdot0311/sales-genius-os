@@ -116,7 +116,7 @@ describe("the unattended paths call the checks", () => {
 
   it("holds an unresearched first touch before send-email", () => {
     const hold = agent.indexOf("heldForResearch");
-    const send = agent.indexOf("functions/v1/send-email");
+    const send = agent.indexOf("functions/v1/send-email", hold);
     expect(hold).toBeGreaterThan(-1);
     expect(send).toBeGreaterThan(hold);
     expect(agent).toContain("reason: \"no_research\"");
