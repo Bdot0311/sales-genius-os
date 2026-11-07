@@ -1,3 +1,7 @@
+# Credit-ledger health alert
+
+- [ ] Correct the missing-grant false alarm without giving customers access to the internal credit ledger; verify the live health check and resolve only the matching alert.
+
 # Unified Inbox coverage
 
 - [x] Trace email creation and sending across Outreach Studio, agents, API and MCP; include drafts and all outbound states without adding duplicate send records.
