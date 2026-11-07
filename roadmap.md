@@ -1,3 +1,8 @@
+# November 7 deployment and Grok Inbox audit
+
+- [ ] Audit recent GitHub function changes and deploy affected functions; verify latest migrations against the live database.
+- [ ] Trace the reported Grok email through hosted MCP, sending records and signed-in Inbox; fix a reproduced gap or report the exact blocker.
+
 # Unified Inbox coverage
 
 - [x] Trace email creation and sending across Outreach Studio, agents, API and MCP; include drafts and all outbound states without adding duplicate send records.
