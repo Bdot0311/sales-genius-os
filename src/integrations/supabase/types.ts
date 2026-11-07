@@ -5195,6 +5195,27 @@ export type Database = {
         }
         Relationships: []
       }
+      stripe_credit_grants: {
+        Row: {
+          created_at: string
+          delta: number
+          event_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          delta: number
+          event_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          delta?: number
+          event_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       stripe_webhook_events: {
         Row: {
           attempts: number
