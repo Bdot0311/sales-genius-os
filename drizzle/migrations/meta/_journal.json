@@ -386,6 +386,13 @@
       "when": 1794049345762,
       "tag": "0054_hiring_signal_refresh",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1794049380739,
+      "tag": "0055_register_stripe_credit_grants_contract",
+      "breakpoints": true
     }
   ]
 }
