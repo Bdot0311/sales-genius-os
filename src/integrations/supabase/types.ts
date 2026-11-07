@@ -6957,6 +6957,15 @@ export type Database = {
         }[]
       }
       get_webhook_secret: { Args: { webhook_id: string }; Returns: string }
+      grant_topup_credits: {
+        Args: {
+          p_amount_paid: number
+          p_prospects: number
+          p_session_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       has_active_support_grant: {
         Args: { _scope?: string; _user_id: string }
         Returns: boolean
