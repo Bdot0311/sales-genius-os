@@ -379,6 +379,13 @@
       "when": 1794049281294,
       "tag": "0053_stripe_credit_delta_lock",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1794049345762,
+      "tag": "0054_hiring_signal_refresh",
+      "breakpoints": true
     }
   ]
 }
