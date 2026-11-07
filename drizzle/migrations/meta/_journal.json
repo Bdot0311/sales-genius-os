@@ -351,6 +351,13 @@
       "when": 1793945796971,
       "tag": "0049_restore_app_search_meter",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1794079911762,
+      "tag": "0050_credit_ledger_health_grant_scope",
+      "breakpoints": true
     }
   ]
 }
