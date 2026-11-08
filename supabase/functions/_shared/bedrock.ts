@@ -59,12 +59,16 @@ export function bedrockConfigured(): boolean {
  */
 export const BEDROCK_STANDARD_MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0";
 /**
- * Pro tier. The bare id `anthropic.claude-opus-5-5` is in-region only in
- * eu-west-2. From us-east-1 the documented profile is the US geo id.
- * `BEDROCK_MODEL_ID_PRO` replaces it without moving Standard.
- * Setting the variable is not the same as the account being entitled to it.
+ * Pro tier. Sonnet 4.5 until an operator sets `BEDROCK_MODEL_ID_PRO`.
+ * Opus 5.5 is that opt-in, not this default: the US geo profile has no
+ * confirmed price, and publishing it as the default would refuse every Pro call.
  */
-export const BEDROCK_PRO_MODEL_ID = "us.anthropic.claude-opus-5-5";
+export const BEDROCK_PRO_MODEL_ID = "us.anthropic.claude-sonnet-4-5-20250929-v1:0";
+/**
+ * US geo Opus 5.5. Not selected unless `BEDROCK_MODEL_ID_PRO` is this id.
+ * The bare id is in-region only in eu-west-2. This profile is unpriced here.
+ */
+export const BEDROCK_OPUS_55_US_ID = "us.anthropic.claude-opus-5-5";
 
 /**
  * Request ids the server itself uses for the Pro tier.

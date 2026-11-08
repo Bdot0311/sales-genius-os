@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   AUDIT_TOOL_CHOICE,
+  BEDROCK_OPUS_55_US_ID,
   BEDROCK_PRO_MODEL_ID,
   BEDROCK_STANDARD_MODEL_ID,
   bedrockDefaultModel,
@@ -18,7 +19,7 @@ import { pruneTurnContext } from "../../supabase/functions/_shared/turn-context"
 
 const SIGNATURE = "sig-opus-55-do-not-rewrite";
 
-describe("Pro is Opus 5.5 and Standard stays Haiku", () => {
+describe("Pro stays Sonnet until Opus is opted in", () => {
   it("allowlists the server Pro ids and refuses a caller-supplied Opus id", () => {
     expect(bedrockTierForRequest("google/gemini-2.5-pro")).toBe("pro");
     expect(bedrockTierForRequest("openai/gpt-5.6-sol")).toBe("pro");
@@ -26,22 +27,25 @@ describe("Pro is Opus 5.5 and Standard stays Haiku", () => {
     expect(bedrockTierForRequest("anthropic.claude-opus-5-5")).toBe("fast");
     expect(bedrockTierForRequest("us.anthropic.claude-opus-5-5")).toBe("fast");
     expect(bedrockTierForRequest("please use opus")).toBe("fast");
-    expect(BEDROCK_PRO_MODEL_ID).toBe("us.anthropic.claude-opus-5-5");
+    expect(BEDROCK_PRO_MODEL_ID).toBe("us.anthropic.claude-sonnet-4-5-20250929-v1:0");
+    expect(BEDROCK_OPUS_55_US_ID).toBe("us.anthropic.claude-opus-5-5");
     expect(BEDROCK_STANDARD_MODEL_ID).toContain("haiku-4-5");
   });
 
   it("lets each environment variable replace only its own tier", () => {
     const previous = globalThis.Deno;
+    globalThis.Deno = { env: { get: () => "" } } as typeof Deno;
+    try {
+      expect(bedrockProModel()).toBe(BEDROCK_PRO_MODEL_ID);
+      expect(bedrockDefaultModel()).toBe(BEDROCK_STANDARD_MODEL_ID);
+    } finally {
+      globalThis.Deno = previous;
+    }
     globalThis.Deno = {
-      env: {
-        get: (name: string) => {
-          if (name === "BEDROCK_MODEL_ID_PRO") return "us.anthropic.claude-sonnet-4-5-20250929-v1:0";
-          return undefined;
-        },
-      },
+      env: { get: (name: string) => (name === "BEDROCK_MODEL_ID_PRO" ? BEDROCK_OPUS_55_US_ID : "") },
     } as typeof Deno;
     try {
-      expect(bedrockProModel()).toBe("us.anthropic.claude-sonnet-4-5-20250929-v1:0");
+      expect(bedrockProModel()).toBe(BEDROCK_OPUS_55_US_ID);
       expect(bedrockDefaultModel()).toBe(BEDROCK_STANDARD_MODEL_ID);
     } finally {
       globalThis.Deno = previous;
@@ -77,7 +81,7 @@ describe("Opus thinking blocks round-trip and old histories do not grow one", ()
     expect(JSON.stringify(message.bedrock_reasoning)).toContain(SIGNATURE);
 
     const next = toConverseBody({
-      model: BEDROCK_PRO_MODEL_ID,
+      model: BEDROCK_OPUS_55_US_ID,
       temperature: 0.2,
       max_tokens: 200,
       messages: [
@@ -115,9 +119,12 @@ describe("Opus is not billed at the cheap default", () => {
   it("prices Global cross-region at the captured table and blocks the US geo profile", () => {
     expect(bedrockPrice("global.anthropic.claude-opus-5-5")).toEqual({ in: 4, out: 20 });
     expect(usdForBedrockModel("global.anthropic.claude-opus-5-5", 1_000_000, 1_000_000)).toBe(24);
-    expect(bedrockPrice(BEDROCK_PRO_MODEL_ID)).toBeNull();
-    expect(opusPriceBlock(BEDROCK_PRO_MODEL_ID)).toMatch(/not sent/);
-    expect(() => usdForBedrockModel(BEDROCK_PRO_MODEL_ID, 1_000_000, 1_000_000)).toThrow(/not confirmed/);
+    expect(bedrockPrice(BEDROCK_PRO_MODEL_ID)).toEqual({ in: 3, out: 15 });
+    expect(usdForBedrockModel(BEDROCK_PRO_MODEL_ID, 1_000_000, 1_000_000)).toBe(18);
+    expect(opusPriceBlock(BEDROCK_PRO_MODEL_ID)).toBeNull();
+    expect(bedrockPrice(BEDROCK_OPUS_55_US_ID)).toBeNull();
+    expect(opusPriceBlock(BEDROCK_OPUS_55_US_ID)).toMatch(/not sent/);
+    expect(() => usdForBedrockModel(BEDROCK_OPUS_55_US_ID, 1_000_000, 1_000_000)).toThrow(/not confirmed/);
     expect(bedrockPrice(BEDROCK_STANDARD_MODEL_ID)).toEqual({ in: 1, out: 5 });
     expect(usdForBedrockModel(BEDROCK_STANDARD_MODEL_ID, 1_000_000, 1_000_000)).toBe(6);
   });
@@ -126,7 +133,8 @@ describe("Opus is not billed at the cheap default", () => {
 describe("copy audit stays mandatory without a forced Opus tool choice", () => {
   it("keeps a named tool_choice for Haiku and runs the audit before an Opus call", () => {
     expect(copyAuditDispatch(BEDROCK_STANDARD_MODEL_ID)).toBe("tool_choice");
-    expect(copyAuditDispatch(BEDROCK_PRO_MODEL_ID)).toBe("server");
+    expect(copyAuditDispatch(BEDROCK_PRO_MODEL_ID)).toBe("tool_choice");
+    expect(copyAuditDispatch(BEDROCK_OPUS_55_US_ID)).toBe("server");
     const forced = toConverseBody({
       model: BEDROCK_STANDARD_MODEL_ID,
       messages: [{ role: "user", content: "Review this." }],
@@ -137,7 +145,7 @@ describe("copy audit stays mandatory without a forced Opus tool choice", () => {
 
     const prelude = serverAuditPrelude(JSON.stringify({ findings: [{ rule: "no_ask" }], blockers: 1 }));
     const opus = toConverseBody({
-      model: BEDROCK_PRO_MODEL_ID,
+      model: BEDROCK_OPUS_55_US_ID,
       messages: [{ role: "user", content: "Review this: Hi Sam, note." }, ...prelude],
       tools: [{ type: "function", function: { name: "audit_email", parameters: { type: "object" } } }],
       tool_choice: AUDIT_TOOL_CHOICE,
