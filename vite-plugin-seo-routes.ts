@@ -66,7 +66,7 @@ const ROUTES: RouteMeta[] = [
       "Give your outbound superpowers: find ranked leads with verified emails, send personal outreach, and let AI work the follow-ups and replies. Start free.",
     socialTitle: "Outbound superpowers. Headcount of one.",
     socialDescription:
-      "Ranked prospects, verified emails, and AI that works your replies from Gmail.",
+      "Ranked prospects, verified emails, and AI that works your replies.",
   },
   {
     path: "/pricing",
