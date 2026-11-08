@@ -53,12 +53,51 @@ export function bedrockConfigured(): boolean {
 }
 
 
-/** Fast/cheap workhorse model, and a stronger one for "pro"-class requests. */
+/**
+ * Standard tier. A US inference profile, matching the default region us-east-1.
+ * `BEDROCK_MODEL_ID` replaces it without moving the Pro tier.
+ */
+export const BEDROCK_STANDARD_MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0";
+/**
+ * Pro tier. The bare id `anthropic.claude-opus-5-5` is in-region only in
+ * eu-west-2. From us-east-1 the documented profile is the US geo id.
+ * `BEDROCK_MODEL_ID_PRO` replaces it without moving Standard.
+ * Setting the variable is not the same as the account being entitled to it.
+ */
+export const BEDROCK_PRO_MODEL_ID = "us.anthropic.claude-opus-5-5";
+
+/**
+ * Request ids the server itself uses for the Pro tier.
+ * A caller-supplied string that merely contains "pro" or "opus" is not one of these.
+ */
+export const PRO_TIER_REQUESTS = new Set([
+  "google/gemini-2.5-pro",
+  "openai/gpt-5.6-sol",
+]);
+
+export function bedrockTierForRequest(model: string): "pro" | "fast" {
+  return PRO_TIER_REQUESTS.has(model.trim()) ? "pro" : "fast";
+}
+
+function envValue(name: "BEDROCK_MODEL_ID" | "BEDROCK_MODEL_ID_PRO"): string {
+  try {
+    if (name === "BEDROCK_MODEL_ID") return Deno.env.get("BEDROCK_MODEL_ID") || "";
+    return Deno.env.get("BEDROCK_MODEL_ID_PRO") || "";
+  } catch {
+    return "";
+  }
+}
+
+/** Fast/cheap workhorse model, and a stronger one for the Pro tier. */
 export function bedrockDefaultModel(): string {
-  return Deno.env.get("BEDROCK_MODEL_ID") || "us.anthropic.claude-haiku-4-5-20251001-v1:0";
+  return envValue("BEDROCK_MODEL_ID") || BEDROCK_STANDARD_MODEL_ID;
 }
 export function bedrockProModel(): string {
-  return Deno.env.get("BEDROCK_MODEL_ID_PRO") || "us.anthropic.claude-sonnet-4-5-20250929-v1:0";
+  return envValue("BEDROCK_MODEL_ID_PRO") || BEDROCK_PRO_MODEL_ID;
+}
+
+function opus55(modelId: string): boolean {
+  return modelId.includes("claude-opus-5-5");
 }
 
 /** USD per 1M tokens for the Bedrock ids we route to. */
@@ -222,6 +261,14 @@ export function toConverseBody(body: Record<string, unknown>): Record<string, un
       continue;
     }
     if (msg.role === "assistant") {
+      const carried = (msg as { bedrock_reasoning?: unknown }).bedrock_reasoning;
+      if (Array.isArray(carried)) {
+        for (const block of carried) {
+          if (block && typeof block === "object" && "reasoningContent" in (block as Record<string, unknown>)) {
+            push("assistant", block);
+          }
+        }
+      }
       const text = textOf(msg.content);
       if (text) push("assistant", { text });
       for (const call of msg.tool_calls ?? []) {
@@ -244,8 +291,12 @@ export function toConverseBody(body: Record<string, unknown>): Record<string, un
   }
 
   const inferenceConfig: Record<string, unknown> = {};
-  if (typeof body.temperature === "number") inferenceConfig.temperature = body.temperature;
-  if (typeof body.top_p === "number") inferenceConfig.topP = body.top_p;
+  // Opus 5.5 keeps adaptive thinking on. A manual temperature is not a
+  // thinking budget and is omitted so the request does not fight that mode.
+  if (!opus55(String(body.model ?? ""))) {
+    if (typeof body.temperature === "number") inferenceConfig.temperature = body.temperature;
+    if (typeof body.top_p === "number") inferenceConfig.topP = body.top_p;
+  }
   const maxTokens = body.max_completion_tokens ?? body.max_tokens;
   if (typeof maxTokens === "number") inferenceConfig.maxTokens = maxTokens;
 
@@ -295,7 +346,9 @@ export function fromConverseBody(model: string, data: Record<string, unknown>): 
 
   let text = "";
   const toolCalls: Array<Record<string, unknown>> = [];
+  const reasoning: Record<string, unknown>[] = [];
   for (const block of blocks) {
+    if (block.reasoningContent && typeof block.reasoningContent === "object") reasoning.push(block);
     if (typeof block.text === "string") text += block.text;
     const use = block.toolUse as Record<string, unknown> | undefined;
     if (use) {
@@ -321,6 +374,7 @@ export function fromConverseBody(model: string, data: Record<string, unknown>): 
         message: {
           role: "assistant",
           content: text || null,
+          ...(reasoning.length ? { bedrock_reasoning: reasoning } : {}),
           ...(toolCalls.length ? { tool_calls: toolCalls } : {}),
         },
         finish_reason: toolCalls.length ? "tool_calls" : stopReason === "max_tokens" ? "length" : "stop",
