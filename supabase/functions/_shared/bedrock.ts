@@ -109,13 +109,13 @@ export function copyAuditDispatch(modelId: string): "server" | "tool_choice" {
 export const AUDIT_TOOL_CHOICE = { type: "function" as const, function: { name: "audit_email" } };
 
 /** The audit already ran. The model answers from this result and is not asked to force the tool. */
-export function serverAuditPrelude(payload: string): Array<Record<string, unknown>> {
+export function serverAuditPrelude(payload: string, toolArguments = "{}"): Array<Record<string, unknown>> {
   const id = "audit-email-required";
   return [
     {
       role: "assistant",
       content: "",
-      tool_calls: [{ id, type: "function", function: { name: "audit_email", arguments: "{}" } }],
+      tool_calls: [{ id, type: "function", function: { name: "audit_email", arguments: toolArguments } }],
     },
     { role: "tool", tool_call_id: id, content: payload },
   ];

@@ -395,9 +395,12 @@ describe("the agent audits the same two rule sets the card shows", () => {
 
   it("runs both in audit_email", () => {
     // An agent that audits an email and says nothing about the three links in
-    // it is reporting half of what the user is already looking at.
-    expect(CHAT).toContain("auditDeliverability({");
-    expect(CHAT).toContain('from "../_shared/email-deliverability.ts"');
+    // it is reporting half of what the user is already looking at. The tool
+    // and the Opus prelude share one function, so the two rule sets cannot drift.
+    const shared = readFileSync("supabase/functions/_shared/copy-audit.ts", "utf8");
+    expect(CHAT).toContain("runMechanicalAudit({");
+    expect(shared).toContain("auditDeliverability({");
+    expect(shared).toContain('from "./email-deliverability.ts"');
   });
 
   it("does not let a deliverability warning block its send", () => {
