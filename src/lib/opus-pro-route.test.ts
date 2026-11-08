@@ -1,13 +1,20 @@
 import { describe, expect, it } from "vitest";
 import {
+  AUDIT_TOOL_CHOICE,
   BEDROCK_PRO_MODEL_ID,
   BEDROCK_STANDARD_MODEL_ID,
   bedrockDefaultModel,
+  bedrockPrice,
   bedrockProModel,
   bedrockTierForRequest,
+  copyAuditDispatch,
+  usdForBedrockModel,
   fromConverseBody,
+  opusPriceBlock,
+  serverAuditPrelude,
   toConverseBody,
 } from "../../supabase/functions/_shared/bedrock";
+import { pruneTurnContext } from "../../supabase/functions/_shared/turn-context";
 
 const SIGNATURE = "sig-opus-55-do-not-rewrite";
 
@@ -101,5 +108,77 @@ describe("Opus thinking blocks round-trip and old histories do not grow one", ()
     expect(JSON.stringify(assistant?.content)).not.toContain("reasoningContent");
     expect(JSON.stringify(assistant?.content)).not.toContain("signature");
     expect((next.inferenceConfig as Record<string, unknown>).temperature).toBe(0.2);
+  });
+});
+
+describe("Opus is not billed at the cheap default", () => {
+  it("prices Global cross-region at the captured table and blocks the US geo profile", () => {
+    expect(bedrockPrice("global.anthropic.claude-opus-5-5")).toEqual({ in: 4, out: 20 });
+    expect(usdForBedrockModel("global.anthropic.claude-opus-5-5", 1_000_000, 1_000_000)).toBe(24);
+    expect(bedrockPrice(BEDROCK_PRO_MODEL_ID)).toBeNull();
+    expect(opusPriceBlock(BEDROCK_PRO_MODEL_ID)).toMatch(/not sent/);
+    expect(() => usdForBedrockModel(BEDROCK_PRO_MODEL_ID, 1_000_000, 1_000_000)).toThrow(/not confirmed/);
+    expect(bedrockPrice(BEDROCK_STANDARD_MODEL_ID)).toEqual({ in: 1, out: 5 });
+    expect(usdForBedrockModel(BEDROCK_STANDARD_MODEL_ID, 1_000_000, 1_000_000)).toBe(6);
+  });
+});
+
+describe("copy audit stays mandatory without a forced Opus tool choice", () => {
+  it("keeps a named tool_choice for Haiku and runs the audit before an Opus call", () => {
+    expect(copyAuditDispatch(BEDROCK_STANDARD_MODEL_ID)).toBe("tool_choice");
+    expect(copyAuditDispatch(BEDROCK_PRO_MODEL_ID)).toBe("server");
+    const forced = toConverseBody({
+      model: BEDROCK_STANDARD_MODEL_ID,
+      messages: [{ role: "user", content: "Review this." }],
+      tools: [{ type: "function", function: { name: "audit_email", parameters: { type: "object" } } }],
+      tool_choice: AUDIT_TOOL_CHOICE,
+    });
+    expect((forced.toolConfig as { toolChoice?: { tool?: { name?: string } } }).toolChoice?.tool?.name).toBe("audit_email");
+
+    const prelude = serverAuditPrelude(JSON.stringify({ findings: [{ rule: "no_ask" }], blockers: 1 }));
+    const opus = toConverseBody({
+      model: BEDROCK_PRO_MODEL_ID,
+      messages: [{ role: "user", content: "Review this: Hi Sam, note." }, ...prelude],
+      tools: [{ type: "function", function: { name: "audit_email", parameters: { type: "object" } } }],
+      tool_choice: AUDIT_TOOL_CHOICE,
+    });
+    expect((opus.toolConfig as { toolChoice?: unknown }).toolChoice).toBeUndefined();
+    const encoded = JSON.stringify(opus.messages);
+    expect(encoded).toContain("audit-email-required");
+    expect(encoded).toContain("no_ask");
+    expect(encoded).not.toContain("toolChoice");
+  });
+});
+
+describe("pruning does not replay a signature against a rewritten tool result", () => {
+  it("drops only the signature whose prefix changed", () => {
+    const earlier = { reasoningContent: { reasoningText: { text: "first", signature: "sig-keep" } } };
+    const later = { reasoningContent: { reasoningText: { text: "second", signature: "sig-drop" } } };
+    const messages = [
+      { role: "user", content: "List them." },
+      {
+        role: "assistant",
+        content: "",
+        bedrock_reasoning: [earlier],
+        tool_calls: [{ id: "call-1", function: { name: "list_leads" } }],
+      },
+      { role: "tool", tool_call_id: "call-1", content: "x".repeat(2_000) },
+      {
+        role: "assistant",
+        content: "",
+        bedrock_reasoning: [later],
+        tool_calls: [{ id: "call-2", function: { name: "draft" } }],
+      },
+    ];
+    const outcome = pruneTurnContext(messages, { budget: 10, minChars: 100 });
+    expect(outcome.prunedCount).toBe(1);
+    expect(messages[1].bedrock_reasoning).toEqual([earlier]);
+    expect(messages[3].bedrock_reasoning).toBeUndefined();
+    expect(messages[2].tool_call_id).toBe("call-1");
+    const converse = toConverseBody({ model: BEDROCK_PRO_MODEL_ID, messages });
+    const encoded = JSON.stringify(converse.messages);
+    expect(encoded).toContain("sig-keep");
+    expect(encoded).not.toContain("sig-drop");
+    expect(encoded).toContain("call-1");
   });
 });

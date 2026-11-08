@@ -18,6 +18,7 @@ import { invalidArgsResult, validateToolArgs, type ToolSchema } from "../_shared
 import { mergeCompleted, resultOk, resumeFrom, supabaseTraceStore, trimResult } from "../_shared/agent-trace.ts";
 import { budgetExhausted, budgetNote, carriedTokens, tokensIn, turnTokenBudget } from "../_shared/agent-budget.ts";
 import { pruneTurnContext } from "../_shared/turn-context.ts";
+import { AUDIT_TOOL_CHOICE, bedrockConfigured, bedrockProModel, copyAuditDispatch, serverAuditPrelude } from "../_shared/bedrock.ts";
 import { repairToolSequence, unknownMutationKeys } from "../_shared/tool-sequence.ts";
 import { replayDecision } from "../_shared/mutation-replay.ts";
 import {
@@ -5171,6 +5172,29 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
         );
       }
 
+      const auditModel = bedrockConfigured() ? bedrockProModel() : "";
+      const auditHow = step === 0 && forceAudit ? copyAuditDispatch(auditModel) : null;
+      if (auditHow === "server" && !messages.some((message) =>
+        (message.tool_calls ?? []).some((call: { function?: { name?: string } }) => call.function?.name === "audit_email")
+      )) {
+        const subject = String(userMessage ?? "").match(/^subject:\s*(.+)$/im)?.[1]?.trim() ?? "";
+        const findings = [
+          ...auditEmail({ subject, body: String(userMessage ?? ""), verifiedProof: "" }),
+          ...auditDeliverability({
+            subject,
+            body: String(userMessage ?? ""),
+            isFirstTouch: true,
+          }),
+        ];
+        const blockers = findings.filter((finding) => finding.severity === "blocker").length;
+        messages.push(...serverAuditPrelude(JSON.stringify({
+          findings,
+          blockers,
+          summary: auditSummary(findings),
+          note: "Report every finding. Do not claim the email is fine when findings exist.",
+        })) as typeof messages);
+      }
+
       let res: Response;
       try {
         res = await aiFetch("agent-chat", {
@@ -5206,9 +5230,7 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
             // So the request shape decides, not the model. Only on the first
             // step, and only when the tool is in scope: afterwards it is back
             // to auto so the turn can go on to redraft, send or anything else.
-            ...(step === 0 && forceAudit
-              ? { tool_choice: { type: "function", function: { name: "audit_email" } } }
-              : {}),
+            ...(auditHow === "tool_choice" ? { tool_choice: AUDIT_TOOL_CHOICE } : {}),
           }),
         });
       } catch (e) {

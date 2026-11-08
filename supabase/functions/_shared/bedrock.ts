@@ -100,6 +100,26 @@ function opus55(modelId: string): boolean {
   return modelId.includes("claude-opus-5-5");
 }
 
+/** Opus 5.5 rejects a forced tool. Other models keep the named tool_choice. */
+export function copyAuditDispatch(modelId: string): "server" | "tool_choice" {
+  return opus55(modelId) ? "server" : "tool_choice";
+}
+
+export const AUDIT_TOOL_CHOICE = { type: "function" as const, function: { name: "audit_email" } };
+
+/** The audit already ran. The model answers from this result and is not asked to force the tool. */
+export function serverAuditPrelude(payload: string): Array<Record<string, unknown>> {
+  const id = "audit-email-required";
+  return [
+    {
+      role: "assistant",
+      content: "",
+      tool_calls: [{ id, type: "function", function: { name: "audit_email", arguments: "{}" } }],
+    },
+    { role: "tool", tool_call_id: id, content: payload },
+  ];
+}
+
 /** USD per 1M tokens for the Bedrock ids we route to. */
 export const BEDROCK_PRICING: Record<string, { in: number; out: number }> = {
   "anthropic.claude-3-5-haiku": { in: 0.8, out: 4 },
@@ -113,8 +133,46 @@ export const BEDROCK_PRICING: Record<string, { in: number; out: number }> = {
   "meta.llama3": { in: 0.3, out: 0.6 },
 };
 
+/**
+ * Global cross-region Opus 5.5, from the AWS pricing table the account owner
+ * captured: Global cross-region inference, region selector US East (Ohio).
+ * $4 / $20 per 1M input / output tokens. Not applied to us./eu./au./jp. profiles.
+ * Cache write/read rates on that same table are not used: this meter only
+ * prices input and output tokens.
+ */
+const GLOBAL_OPUS_55_PRICE = { in: 4, out: 20 };
+
+/**
+ * Null means this Opus profile has no confirmed rate. Callers must not
+ * substitute the generic $0.30/$2.50 fallback.
+ */
+export function confirmedOpusPrice(modelId: string): { in: number; out: number } | null {
+  if (!modelId.includes("claude-opus-5-5")) return null;
+  if (modelId.startsWith("global.")) return GLOBAL_OPUS_55_PRICE;
+  return null;
+}
+
+/** Input plus output dollars. Unpriced Opus throws rather than using another model's rate. */
+export function usdForBedrockModel(modelId: string, promptTokens: number, completionTokens: number): number {
+  const listed = bedrockPrice(modelId);
+  if (modelId.includes("claude-opus-5-5") && !listed) {
+    throw new Error("opus price is not confirmed for this profile");
+  }
+  if (!listed) throw new Error("not a listed bedrock model");
+  return (promptTokens / 1_000_000) * listed.in + (completionTokens / 1_000_000) * listed.out;
+}
+
+/** Why a paid Opus call must not be sent. Null when the call may proceed. */
+export function opusPriceBlock(modelId: string): string | null {
+  if (!modelId.includes("claude-opus-5-5")) return null;
+  if (confirmedOpusPrice(modelId)) return null;
+  return "Claude Opus 5.5 on this inference profile has no confirmed per-token price, so the call was not sent. The published $4 and $20 per million tokens are Global cross-region rates, not a rate for the US geo profile.";
+}
+
 /** Price a Bedrock model id by longest matching family prefix. */
 export function bedrockPrice(modelId: string): { in: number; out: number } | null {
+  const opus = confirmedOpusPrice(modelId);
+  if (modelId.includes("claude-opus-5-5")) return opus;
   const id = modelId.replace(/^(us|eu|apac)\./, "");
   let best: { in: number; out: number } | null = null;
   let bestLen = 0;
@@ -322,11 +380,16 @@ export function toConverseBody(body: Record<string, unknown>): Record<string, un
       .filter(Boolean);
     if (specs.length) {
       const toolConfig: Record<string, unknown> = { tools: specs };
-      const choice = body.tool_choice;
-      if (choice === "required" || choice === "any") toolConfig.toolChoice = { any: {} };
-      else if (choice && typeof choice === "object") {
-        const name = ((choice as Record<string, unknown>).function as Record<string, unknown> | undefined)?.name;
-        if (name) toolConfig.toolChoice = { tool: { name: String(name) } };
+      // Opus 5.5 accepts tool_choice auto and none. any and a named tool 400.
+      // Omitting the field is auto. The copy audit is made mandatory by the
+      // caller running it before this request, not by a forced tool choice.
+      if (!opus55(String(body.model ?? ""))) {
+        const choice = body.tool_choice;
+        if (choice === "required" || choice === "any") toolConfig.toolChoice = { any: {} };
+        else if (choice && typeof choice === "object") {
+          const name = ((choice as Record<string, unknown>).function as Record<string, unknown> | undefined)?.name;
+          if (name) toolConfig.toolChoice = { tool: { name: String(name) } };
+        }
       }
       out.toolConfig = toolConfig;
     }

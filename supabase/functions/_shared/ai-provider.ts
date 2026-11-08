@@ -25,6 +25,8 @@ import {
   bedrockPrice,
   bedrockProModel,
   bedrockTierForRequest,
+  opusPriceBlock,
+  usdForBedrockModel,
 } from "./bedrock.ts";
 
 import { DEFAULT_FALLBACK_ENDPOINT } from "./ai-gateway.ts";
@@ -100,8 +102,11 @@ export function routeFor(model: string): { provider: AiProvider; url: string; mo
 }
 
 
-function priceOf(model: string, promptTokens: number, completionTokens: number): number {
-  const p = bedrockPrice(model) ?? PRICING[model] ?? DEFAULT_PRICE;
+export function chargeUsd(model: string, promptTokens: number, completionTokens: number): number {
+  if (model.includes("claude-opus-5-5") || bedrockPrice(model)) {
+    return usdForBedrockModel(model, promptTokens, completionTokens);
+  }
+  const p = PRICING[model] ?? DEFAULT_PRICE;
   return (promptTokens / 1_000_000) * p.in + (completionTokens / 1_000_000) * p.out;
 }
 
@@ -130,7 +135,7 @@ async function meter(opts: {
       p_model: opts.model,
       p_prompt_tokens: promptTokens,
       p_completion_tokens: completionTokens,
-      p_cost_usd: priceOf(opts.model, promptTokens, completionTokens),
+      p_cost_usd: chargeUsd(opts.model, promptTokens, completionTokens),
       p_user_id: opts.userId ?? null,
     });
   } catch (err) {
@@ -186,6 +191,13 @@ export async function aiFetch(
       controller.signal;
 
     if (route.provider === "bedrock") {
+      const priceBlock = opusPriceBlock(route.model);
+      if (priceBlock) {
+        return new Response(JSON.stringify({ error: { message: priceBlock, code: "model_price_unconfigured" } }), {
+          status: 422,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
       const wantsStream = body.stream === true;
       if (wantsStream) {
         // Real token-by-token streaming: usage arrives in the stream's metadata

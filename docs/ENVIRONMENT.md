@@ -142,8 +142,11 @@ the public Bedrock pricing page retrieved for this change. The model card
 bills it through AWS Marketplace (`prod-e5xo6z26ie45g`) and does not state a
 rate. Do not treat the old Sonnet $3/$15 figure as the Opus price. The AWS
 account must be entitled to `us.anthropic.claude-opus-5-5` before Pro calls
-succeed. Rollback is setting `BEDROCK_MODEL_ID_PRO` back to
-`us.anthropic.claude-sonnet-4-5-20250929-v1:0`.
+succeed. That US geo profile is not billed at the Global cross-region rate
+($4 input and $20 output per million tokens, region selector US East Ohio).
+Until a confirmed rate exists for the profile in use, the call is refused
+instead of metered at the generic $0.30/$2.50 fallback. Rollback is setting
+`BEDROCK_MODEL_ID_PRO` back to `us.anthropic.claude-sonnet-4-5-20250929-v1:0`.
 `src/lib/ai-model-tier.test.ts` checks each constant still lands on the tier
 it claims, and that a caller-supplied Opus id does not.
 
