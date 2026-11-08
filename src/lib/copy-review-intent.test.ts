@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { AUDIT_TOOL_CHOICE, BEDROCK_PRO_MODEL_ID, BEDROCK_STANDARD_MODEL_ID, copyAuditDispatch } from "../../supabase/functions/_shared/bedrock";
 import { readFileSync } from "node:fs";
 import { wantsCopyAudit, looksLikePastedEmail } from "../../supabase/functions/_shared/copy-review-intent.ts";
 
@@ -66,7 +67,11 @@ describe("the model is required to call it, not asked", () => {
   const AGENT = readFileSync("supabase/functions/agent-chat/index.ts", "utf8");
 
   it("pins audit_email with tool_choice", () => {
-    expect(AGENT).toContain('tool_choice: { type: "function", function: { name: "audit_email" } }');
+    expect(AUDIT_TOOL_CHOICE).toEqual({ type: "function", function: { name: "audit_email" } });
+    expect(AGENT).toContain("tool_choice: AUDIT_TOOL_CHOICE");
+    expect(AGENT).toContain("serverAuditPrelude");
+    expect(copyAuditDispatch(BEDROCK_STANDARD_MODEL_ID)).toBe("tool_choice");
+    expect(copyAuditDispatch(BEDROCK_PRO_MODEL_ID)).toBe("server");
   });
 
   it("only on the first step, so the turn can still redraft or send afterwards", () => {
