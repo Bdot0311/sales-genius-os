@@ -42,7 +42,7 @@ describe("a failed send says why", () => {
   it("leaves no path that fails a send silently", () => {
     // Nine: the original eight, plus a saved template whose claims are not in
     // the lead research. That one is failed before Gmail is called.
-    expect(PROC.match(/await failEmail\(/g) ?? []).toHaveLength(9);
+    expect(PROC.match(/await failEmail\(/g) ?? []).toHaveLength(10);
     expect(PROC).toContain("ungrounded_template");
     expect(PROC).not.toMatch(/from\(["']sent_emails["']\)[\s\S]{0,80}?update\(\{ status: ["']failed["'] \}\)/);
   });

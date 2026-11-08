@@ -47,7 +47,7 @@ describe("the site is asked what it has, not guessed at", () => {
   it("still guesses when the site publishes no sitemap", () => {
     // The floor has to survive: plenty of small company sites have no sitemap
     // at all, and those are exactly the leads that need researching.
-    expect(RESEARCH).toContain("if (pages.length === 1)");
+    expect(RESEARCH).toContain("discovered.length");
     expect(RESEARCH).toContain("CANDIDATE_PATHS");
   });
 });
@@ -166,13 +166,14 @@ describe("the playbooks behind a draft are visible", () => {
  */
 describe("depth does not come out of the time budget", () => {
   it("reads the discovered pages together, not one after another", () => {
-    const block = RESEARCH.slice(RESEARCH.indexOf("const readWithDates"));
-    expect(block.slice(0, 900)).toContain("Promise.all");
+    const gather = readFileSync("supabase/functions/_shared/research-gather.ts", "utf8");
+    expect(gather).toContain("Promise.all(input.websiteUrls.map");
+    expect(RESEARCH).toContain("gatherLeadResearch");
   });
 
   it("reads the fallback guesses together too", () => {
-    const block = RESEARCH.slice(RESEARCH.indexOf("if (pages.length === 1)"));
-    expect(block.slice(0, 600)).toContain("Promise.all");
+    expect(RESEARCH).toContain("CANDIDATE_PATHS.slice(0, MAX_PAGES - 1)");
+    expect(RESEARCH).toContain("websiteUrls: [origin, ...extraUrls]");
   });
 
   it("waits less for the small static files than for a page", () => {
@@ -183,7 +184,8 @@ describe("depth does not come out of the time budget", () => {
   });
 
   it("keeps rank order, so the best page is still read first", () => {
-    const block = RESEARCH.slice(RESEARCH.indexOf("const wanted = discovered"));
-    expect(block.slice(0, 500)).toContain("for (let i = 0; i < wanted.length; i++)");
+    const block = RESEARCH.slice(RESEARCH.indexOf("const extraUrls"));
+    expect(block.slice(0, 400)).toContain("discovered.slice(0, MAX_PAGES - 1)");
+    expect(block).toContain("[origin, ...extraUrls]");
   });
 });

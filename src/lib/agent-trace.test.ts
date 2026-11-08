@@ -164,7 +164,7 @@ describe("the turn records itself", () => {
 
   it("records a completed mutation on disk beside the in-memory set", () => {
     expect(bare).toContain("completedMutationKeys.add(mutationKey);");
-    expect(bare).toContain("void trace.saveMutation(threadId, userId, mutationKey, toolName)");
+    expect(bare).toContain("await trace.saveMutation(threadId, userId, mutationKey, toolName)");
   });
 
   it("clears them when the turn ends, in the one place that ends it", () => {

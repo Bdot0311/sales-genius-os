@@ -7,7 +7,13 @@ import { AI_CREDITS_USER_MESSAGE, isAiCreditError, reportAiCreditsExhausted } fr
 import { toSignalFacts, type SignalEventRow } from "../_shared/signal-facts.ts";
 import { backfillSourceFilter, detectorsToBackfill } from "../_shared/signal-backfill.ts";
 import { coldiqConfigured, coldiqFetchPages } from "../_shared/coldiq.ts";
-import { externalResearchConfigured, externalResearchSearch } from "../_shared/external-research.ts";
+import { externalResearchSearch } from "../_shared/external-research.ts";
+import { gatherLeadResearch } from "../_shared/research-gather.ts";
+import { parallelConfigured } from "../_shared/parallel.ts";
+import { contextDevConfigured } from "../_shared/context-dev.ts";
+import { evaluateStoredSnapshots, sealSnapshot, type StoredSnapshot } from "../_shared/evidence-contract.ts";
+import { fetchPinnedPage, type PageFetch } from "../_shared/pinned-fetch.ts";
+import { receiptFromProviders, researchAction, researchStep, type RetrievalReceipt } from "../_shared/research-orchestration.ts";
 import {
   leadResearchQueries,
   parallelPromptBlock,
@@ -95,48 +101,20 @@ const MAX_SITEMAP_ENTRIES = 2_000;
  * every time.
  */
 async function fetchText(url: string): Promise<string | null> {
-  const controller = new AbortController();
-  // Shorter than a page fetch on purpose: robots.txt and a sitemap are small
-  // static files, so one that is slow is one that is not coming, and every
-  // second spent here comes out of the caller's 60-second budget.
-  const timer = setTimeout(() => controller.abort(), META_TIMEOUT_MS);
-  try {
-    const res = await fetch(url, {
-      headers: { "User-Agent": BROWSER_UA, Accept: "text/plain, application/xml, text/xml, */*" },
-      signal: controller.signal,
-      redirect: "follow",
-    });
-    if (!res.ok) return null;
-    const text = await res.text();
-    // A site that answers 200 with its SPA shell for every unknown path would
-    // otherwise have its index.html parsed as a sitemap.
-    if (/^\s*<!doctype html/i.test(text) || /^\s*<html/i.test(text)) return null;
-    return text.slice(0, 4_000_000);
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timer);
-  }
+  // Same pinned dial as HTML pages. An HTML shell is not a sitemap.
+  const page = await fetchPinnedPage(url, {
+    timeoutMs: META_TIMEOUT_MS,
+    headers: { "User-Agent": BROWSER_UA, Accept: "text/plain, application/xml, text/xml, */*" },
+    accept: "text",
+  });
+  return page.ok ? page.html : null;
 }
 
-async function fetchPage(url: string): Promise<string | null> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-  try {
-    const res = await fetch(url, {
-      headers: { "User-Agent": BROWSER_UA, Accept: "text/html" },
-      signal: controller.signal,
-      redirect: "follow",
-    });
-    if (!res.ok) return null;
-    const ct = res.headers.get("content-type") || "";
-    if (!ct.includes("html")) return null;
-    return await res.text();
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timer);
-  }
+function fetchPage(url: string): Promise<PageFetch> {
+  return fetchPinnedPage(url, {
+    timeoutMs: FETCH_TIMEOUT_MS,
+    headers: { "User-Agent": BROWSER_UA, Accept: "text/html" },
+  });
 }
 
 const SYSTEM_PROMPT = `You are a B2B sales researcher. You read a prospect company's own website and produce a research brief a rep can use to write a genuinely personalized cold email.
@@ -315,8 +293,69 @@ serve(async (req) => {
       });
     }
 
+    const ownedHost = (resolveLeadDomain(lead as Record<string, unknown>) ?? "").replace(/^www\./, "");
+    const { data: latestRun } = await supabase
+      .from("research_runs")
+      .select("attempted_at, receipt")
+      .eq("user_id", userId)
+      .eq("lead_id", leadId)
+      .order("attempted_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const priorReceipt = (latestRun?.receipt ?? null) as RetrievalReceipt | null;
+    if (priorReceipt && latestRun?.attempted_at) priorReceipt.attemptedAt = String(latestRun.attempted_at);
+    const { data: existingSnaps } = await supabase
+      .from("research_snapshots")
+      .select("payload")
+      .eq("user_id", userId)
+      .eq("lead_id", leadId);
+    const existingPayloads = (existingSnaps ?? []).map((row: { payload?: unknown }) => row.payload).filter(Boolean);
+    const existingFacts = evaluateStoredSnapshots({
+      userId,
+      leadId,
+      company: String(lead.company_name ?? ""),
+      websiteHost: ownedHost || null,
+      now: new Date().toISOString(),
+      stored: existingPayloads,
+    });
+    const step = researchStep({
+      hasTrustedFacts: existingFacts.status === "ready",
+      receipt: priorReceipt,
+      now: new Date().toISOString(),
+      force,
+    });
+    const action = researchAction({
+      step,
+      force,
+      fresh: isResearchFresh(lead as Record<string, unknown>),
+    });
+    if (action === "hold") {
+      return new Response(JSON.stringify({
+        error: "Research for this company already ran recently and did not produce a new approved sentence.",
+        error_code: "research_required",
+        research_status: "held",
+        cached: true,
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    let researchRunId: string | null = null;
+    if (action === "fetch") {
+      const { data: reserved } = await supabase.rpc("begin_research_run", {
+        p_user_id: userId,
+        p_lead_id: leadId,
+        p_force: force,
+      });
+      researchRunId = typeof reserved === "string" ? reserved : null;
+      if (!researchRunId && !force) {
+        return new Response(JSON.stringify({
+          error: "Research for this company already ran recently and did not produce a new approved sentence.",
+          error_code: "research_required",
+          research_status: "held",
+          cached: true,
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
     // Fresh brief already stored — hand it back without spending a scrape.
-    if (!force && isResearchFresh(lead as Record<string, unknown>)) {
+    if (action === "cache") {
       const cachedBrief = lead.research_brief as LeadResearchBrief;
       const cachedSources = (lead.research_sources as string[]) || [];
       const quality = scoreResearchQuality(cachedBrief, cachedSources);
@@ -359,47 +398,7 @@ serve(async (req) => {
       );
     }
 
-    // ─── External web research, run alongside the site read ──────────────────
-    //
-    // The company's own pages say the same thing to every visitor and almost
-    // never carry a date. Independent sources do, which is what lets an
-    // observation be dated — and a site we cannot read at all no longer ends
-    // the research, because the outside world still has material on them.
-    const webPromise: Promise<{ results: ParallelResult[]; sessionId: string | null; error: string | null }> =
-      externalResearchConfigured()
-        ? externalResearchSearch({
-          objective:
-            `Recent, dated developments at the company ${lead.company_name || host} (website ${host}): funding, ` +
-            `acquisitions, product launches, partnerships, leadership hires, expansion or hiring pushes. ` +
-            `Used to open a relevant cold email, so timing and a citable source matter more than background.`,
-          queries: leadResearchQueries(String(lead.company_name ?? ""), host),
-          maxResults: 8,
-          timeoutMs: 20_000,
-          // Their own site is read directly a few lines below; these slots are
-          // for coverage they did not write themselves.
-          excludeDomains: [host.replace(/^www\./, "")],
-        })
-        : Promise.resolve({ results: [], sessionId: null, error: "not_configured" });
-
-    const homepage = await fetchPage(origin);
-    const pages: { url: string; html: string }[] = [];
-    if (homepage === null) {
-      const fallbackWeb = await webPromise;
-      if (!fallbackWeb.results.length) {
-        return new Response(
-          JSON.stringify({
-            error: `We couldn't reach ${host}. The email will use the lead's existing data instead.`,
-            error_code: "unreachable",
-          }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
-      console.log(
-        `[research-lead] ${host} unreachable — researching from ${fallbackWeb.results.length} external sources`,
-      );
-    } else {
-      pages.push({ url: origin, html: homepage });
-    }
+    const pages: PageFetch[] = [];
 
     // ─── Which other pages to read ───────────────────────────────────────────
     //
@@ -456,40 +455,53 @@ serve(async (req) => {
       console.warn("[research-lead] sitemap discovery failed:", err instanceof Error ? err.message : err);
     }
 
-    // Read them together rather than one after another.
-    //
-    // Serially, seven pages at a nine-second timeout is over a minute on a
-    // slow host, and generate-email gives this whole function sixty seconds.
-    // The old code had the same shape with fewer pages and was already close
-    // to the edge. Rank order is preserved because the results come back in
-    // the order they were requested.
     const readWithDates: DiscoveredPage[] = [];
-    const wanted = discovered.slice(0, MAX_PAGES - 1);
-    const fetchedPages = await Promise.all(wanted.map((p) => fetchPage(p.url)));
-    for (let i = 0; i < wanted.length; i++) {
-      const html = fetchedPages[i];
-      if (!html) continue;
-      pages.push({ url: wanted[i].url, html });
-      readWithDates.push(wanted[i]);
+    const extraUrls = discovered.length
+      ? discovered.slice(0, MAX_PAGES - 1).map((page) => page.url)
+      : CANDIDATE_PATHS.slice(0, MAX_PAGES - 1).map((path) => `${origin}${path}`);
+    // Firecrawl reads the company site first. Parallel and Context then run
+    // even when that read succeeds. A missing Firecrawl key does not become a
+    // direct fetch labeled as Firecrawl.
+    const gathered = await gatherLeadResearch({
+      websiteUrls: [origin, ...extraUrls],
+      search: {
+        objective:
+          `Recent, dated developments at the company ${lead.company_name || host} (website ${host}): funding, ` +
+          `acquisitions, product launches, partnerships, leadership hires, expansion or hiring pushes. ` +
+          `Used to open a relevant cold email, so timing and a citable source matter more than background.`,
+        queries: leadResearchQueries(String(lead.company_name ?? ""), host),
+        maxResults: 8,
+        timeoutMs: 20_000,
+        excludeDomains: [host.replace(/^www\./, "")],
+      },
+    });
+    for (const site of gathered.sitePages) {
+      pages.push({
+        requestedUrl: site.requestedUrl,
+        finalUrl: site.finalUrl,
+        status: site.status,
+        html: site.text,
+        ok: true,
+        cacheState: "unknown",
+      });
+      const dated = discovered.find((page) => page.url === site.requestedUrl);
+      if (dated) readWithDates.push(dated);
     }
-
-    // No sitemap, or one that yielded nothing readable: fall back to guessing.
-    if (pages.length === 1) {
-      const guesses = CANDIDATE_PATHS.slice(0, MAX_PAGES - 1);
-      const guessed = await Promise.all(guesses.map((path) => fetchPage(`${origin}${path}`)));
-      for (let i = 0; i < guesses.length; i++) {
-        if (guessed[i]) pages.push({ url: `${origin}${guesses[i]}`, html: guessed[i] as string });
-      }
-    }
+    const outsideError = gathered.providers.parallel.error && gathered.providers.context_dev.error
+      ? (gathered.providers.parallel.error === "not_configured" && gathered.providers.context_dev.error === "not_configured"
+        ? "not_configured"
+        : gathered.providers.parallel.error)
+      : null;
+    const web = { results: gathered.outside, providers: gathered.providers, error: outsideError };
 
     let bodyText = "";
     const metaParts: string[] = [];
     const chunks: string[] = [];
     for (const page of pages) {
-      const { text, meta } = extractText(page.html);
-      if (meta) metaParts.push(`${page.url}\n${meta}`);
+      const { text, meta } = extractText(page.html ?? "");
+      if (meta) metaParts.push(`${page.finalUrl}\n${meta}`);
       bodyText += ` ${text}`;
-      chunks.push(`--- PAGE: ${page.url} ---\n${text.slice(0, 4_000)}`);
+      chunks.push(`--- PAGE: ${page.finalUrl} ---\n${text.slice(0, 4_000)}`);
     }
     bodyText = bodyText.replace(/\s+/g, " ").trim();
 
@@ -506,7 +518,7 @@ serve(async (req) => {
     // Only fires when the direct read came back thin, so a site we could
     // already read never costs a credit.
     if (bodyText.length < 400 && coldiqConfigured()) {
-      const { text: rescued, error: fetchErr } = await coldiqFetchPages(pages.map((p) => p.url));
+      const { text: rescued, error: fetchErr } = await coldiqFetchPages(pages.map((p) => p.finalUrl));
       if (fetchErr) {
         console.log('[research-lead] web fetch rescue unavailable:', fetchErr);
       } else if (rescued.length > bodyText.length) {
@@ -520,7 +532,6 @@ serve(async (req) => {
     // what lets an observation carry an `occurred` when the page copy states no
     // date — which is most pages.
     const dateBlock = lastmodNote(readWithDates);
-    const web = await webPromise;
     const webBlock = parallelPromptBlock(web.results);
     if (web.results.length) {
       console.log(`[research-lead] ${host}: ${web.results.length} external web sources`);
@@ -665,7 +676,7 @@ serve(async (req) => {
 
     // External sources are citable material like any page we read, so they
     // count toward the brief's sources and its completeness score.
-    const sources = [...pages.map((p) => p.url), ...web.results.map((r) => r.url)];
+    const sources = [...pages.map((p) => p.finalUrl), ...web.results.map((r) => r.url)];
 
     /*
      * Say when the outside half of the research did not run.
@@ -768,7 +779,79 @@ serve(async (req) => {
 
     // Deterministic completeness score so every surface gates the same way.
     const quality = scoreResearchQuality(baseBrief, sources);
-    const brief: LeadResearchBrief = { ...baseBrief, quality, changes };
+    const retrievedAt = new Date().toISOString();
+    const snapshots: StoredSnapshot[] = [];
+    for (const page of pages) {
+      const excerpt = extractText(page.html ?? "").text.replace(/\s+/g, " ").trim().slice(0, 4000);
+      if (!excerpt) continue;
+      snapshots.push(sealSnapshot({
+        userId,
+        leadId,
+        provider: "firecrawl",
+        role: "prospect_page",
+        requestedUrl: page.requestedUrl,
+        finalUrl: page.finalUrl,
+        pageStatus: page.status,
+        excerpt,
+        retrievedAt,
+        publishedAt: null,
+        providerOk: page.ok && page.status >= 200 && page.status < 300,
+        partial: excerpt.length < 80,
+        fromCache: page.cacheState === "hit",
+      }));
+    }
+    // A search snippet is not a page. Fetch at most two cited URLs and store
+    // that response. If the fetch fails, the snippet is not approved.
+    for (const result of web.results.filter((item) => /^https?:\/\//i.test(item.url)).slice(0, 2)) {
+      const fetched = await fetchPage(result.url);
+      if (!fetched.html) continue;
+      const excerpt = extractText(fetched.html).text.replace(/\s+/g, " ").trim().slice(0, 4000);
+      if (!excerpt) continue;
+      snapshots.push(sealSnapshot({
+        userId,
+        leadId,
+        provider: result.provider === "context_dev" ? "context_dev" : "parallel",
+        role: "external",
+        requestedUrl: fetched.requestedUrl,
+        finalUrl: fetched.finalUrl,
+        pageStatus: fetched.status,
+        excerpt,
+        retrievedAt,
+        publishedAt: result.publish_date || null,
+        providerOk: fetched.ok && fetched.status >= 200 && fetched.status < 300,
+        partial: excerpt.length < 80,
+        fromCache: fetched.cacheState === "hit",
+      }));
+    }
+    const providerReport = (web as { providers?: { parallel?: { error: string | null; sources: number }; context_dev?: { error: string | null; sources: number } } }).providers;
+    const snapshotWrite: "written" | "failed" | "none" = snapshots.length ? "written" : "none";
+    const retrieval = receiptFromProviders({
+      now: retrievedAt,
+      parallelConfigured: parallelConfigured(),
+      parallelError: providerReport?.parallel?.error ?? null,
+      parallelCount: providerReport?.parallel?.sources ?? 0,
+      contextConfigured: contextDevConfigured(),
+      contextError: providerReport?.context_dev?.error ?? null,
+      contextCount: providerReport?.context_dev?.sources ?? 0,
+      siteStatuses: pages.map((page) => page.status),
+      siteHosts: pages.map((page) => page.finalUrl),
+      firecrawlConfigured: gathered.firecrawlConfigured,
+      firecrawlError: gathered.firecrawlError,
+      firecrawlCount: gathered.sitePages.length,
+      snapshotWrite,
+    });
+    const replaced = await supabase.rpc("store_research_snapshots", {
+      p_user_id: userId,
+      p_lead_id: leadId,
+      p_rows: snapshots,
+      p_receipt: retrieval,
+      p_run_id: researchRunId,
+    });
+    if (replaced.error) {
+      console.warn(`[research-lead] snapshot replace failed: ${replaced.error.message}`);
+      retrieval.snapshotWrite = "failed";
+    }
+    const brief: LeadResearchBrief = { ...baseBrief, quality, changes, snapshots, retrieval };
     const researchedAt = new Date().toISOString();
 
     const { error: writeError } = await supabase

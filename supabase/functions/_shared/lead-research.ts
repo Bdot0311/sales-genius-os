@@ -38,6 +38,9 @@ export interface LeadResearchBrief {
    * reading a column the live database has not got yet.
    */
   changes?: BriefChanges | null;
+  /** Exact retrieved excerpts. Model observations are not this list. */
+  snapshots?: unknown[];
+  retrieval?: unknown;
 }
 
 export type ResearchQualityLabel = "strong" | "usable" | "thin" | "insufficient";

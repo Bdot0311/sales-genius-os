@@ -22,7 +22,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
 import { composeSkillContext, skillNamesUsed } from "../_shared/email-skills.ts";
 import { bannedPhrasesBlock, findPlaceholders, hasPlaceholder } from "../_shared/email-rules.ts";
-import { isWeak, rubricFeedback, scoreEmail } from "../_shared/email-quality.ts";
+import { isWeak, rubricFeedback, scoreEmailReport } from "../_shared/email-quality.ts";
+import { bodyViolations, evaluateStoredSnapshots } from "../_shared/evidence-contract.ts";
 import { AI_SMART, aiFetch } from "../_shared/ai-provider.ts";
 
 const corsHeaders = {
@@ -87,7 +88,7 @@ serve(async (req) => {
     }
 
     const {
-      leadName, companyName, originalSubject, leadEmail, jobTitle, industry,
+      leadId, leadName, companyName, originalSubject, leadEmail, jobTitle, industry,
       companyDescription, technologies, senderName, originalBody,
     } = await req.json();
 
@@ -210,21 +211,69 @@ Respond in this EXACT JSON format:
     // A null score is "unscored", not "bad" — the rubric is plan-gated to
     // growth and above, so it must never block a starter user's draft.
     if (suggestion) {
-      const rubric = await scoreEmail(supabaseUrl, authHeader, anonKey, {
+      const report = await scoreEmailReport(supabaseUrl, authHeader, anonKey, {
         subject: suggestion.suggestedSubject,
         body: suggestion.suggestedBody,
       });
+      if (report.availability === "unavailable") {
+        return new Response(JSON.stringify({
+          error: "The reply rubric did not return a score, so this follow-up was not saved.",
+          error_code: "rubric_unavailable",
+        }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const rubric = report.rubric;
+      const { data: leadRow } = leadId
+        ? await supabase.from("leads").select("company_name, company_website").eq("id", leadId).eq("user_id", user.id).maybeSingle()
+        : { data: null };
+      const { data: snapRows } = leadId
+        ? await supabase.from("research_snapshots").select("payload").eq("lead_id", leadId)
+        : { data: [] };
+      const host = (() => {
+        const raw = String(leadRow?.company_website ?? "");
+        try { return new URL(raw.includes("://") ? raw : `https://${raw}`).hostname.replace(/^www\./, ""); }
+        catch { return null; }
+      })();
+      const evidence = evaluateStoredSnapshots({
+        userId: user.id,
+        leadId: String(leadId ?? ""),
+        company: String(leadRow?.company_name ?? companyName ?? ""),
+        websiteHost: host,
+        now: new Date().toISOString(),
+        stored: (snapRows ?? []).map((row: { payload?: unknown }) => row.payload).filter(Boolean),
+      });
+      const invented = bodyViolations(
+        suggestion.suggestedBody,
+        evidence,
+        senderFirstName,
+        suggestion.suggestedSubject,
+        String(leadRow?.company_name ?? companyName ?? ""),
+        "continuation",
+      );
+      if (invented.length) {
+        return new Response(JSON.stringify({
+          error: `The follow-up added a claim the earlier email does not support (${invented[0]}), so it was not saved.`,
+          error_code: "unsupported_prospect_claim",
+        }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
       if (isWeak(rubric)) {
         const retry = await callModel(prompt + rubricFeedback(rubric!)).catch(() => null);
         const retrySuggestion = retry ? parseSuggestion(retry) : null;
         if (retrySuggestion) {
-          const retryRubric = await scoreEmail(supabaseUrl, authHeader, anonKey, {
+          const retryReport = await scoreEmailReport(supabaseUrl, authHeader, anonKey, {
             subject: retrySuggestion.suggestedSubject,
             body: retrySuggestion.suggestedBody,
           });
-          // Keep whichever attempt actually scored better; a rewrite is not
-          // automatically an improvement.
-          if ((retryRubric?.overall ?? 0) > (rubric?.overall ?? 0)) suggestion = retrySuggestion;
+          const retryRubric = retryReport.rubric;
+          const retryInvented = bodyViolations(
+            retrySuggestion.suggestedBody,
+            evidence,
+            senderFirstName,
+            retrySuggestion.suggestedSubject,
+            String(leadRow?.company_name ?? companyName ?? ""),
+            "continuation",
+          );
+          // A higher score does not excuse a new unsupported claim.
+          if ((retryRubric?.overall ?? 0) > (rubric?.overall ?? 0) && retryInvented.length === 0) suggestion = retrySuggestion;
         }
       }
     }

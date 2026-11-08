@@ -17,6 +17,7 @@ import {
 import { auditEmail } from "../_shared/email-audit.ts";
 import { buildAgentRunSummary, classifyProviderSend, reconcileReceipts, type ToolReceipt } from "../_shared/run-receipts.ts";
 import { advanceReply, rpcStepStore, runPhase, type StepStore } from "../_shared/lead-run.ts";
+import { evaluateStoredSnapshots } from "../_shared/evidence-contract.ts";
 import { contentHash, gatePromptHash, rubricPromptHash } from "../_shared/prompt-versions.ts";
 import { agentProhibitions } from "../_shared/agent-prohibitions.ts";
 import { deliverabilityCheck } from "../_shared/email-deliverability.ts";
@@ -961,7 +962,7 @@ const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
             coolingOff.length > 0
               ? adminClient
                   .from("leads")
-                  .select("id, contact_name, contact_email, company_name, job_title, industry, signals")
+                  .select("id, contact_name, contact_email, company_name, company_website, job_title, industry, signals, research_brief")
                   .eq("user_id", user.id)
                   .not("contact_email", "is", null)
                   .is("last_contacted_at", null)
@@ -969,7 +970,7 @@ const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
                   .not("id", "in", `(${coolingOff.join(",")})`)
               : adminClient
                   .from("leads")
-                  .select("id, contact_name, contact_email, company_name, job_title, industry, signals")
+                  .select("id, contact_name, contact_email, company_name, company_website, job_title, industry, signals, research_brief")
                   .eq("user_id", user.id)
                   .not("contact_email", "is", null)
                   .is("last_contacted_at", null);
@@ -1102,15 +1103,56 @@ ${playbookSystemRules()}`;
 
               // Not appended here any more: buildTouchPrompt takes it, so the
               // empty case can be stated to the model rather than vanishing.
+              const websiteHost = (() => {
+                const rawSite = String((lead as { company_website?: string }).company_website ?? "");
+                try { return new URL(rawSite.includes("://") ? rawSite : `https://${rawSite}`).hostname.replace(/^www\./, ""); }
+                catch { return null; }
+              })();
+              const { data: snapRows } = await adminClient
+                .from("research_snapshots")
+                .select("payload")
+                .eq("user_id", user.id)
+                .eq("lead_id", lead.id);
+              const evidenceDecision = evaluateStoredSnapshots({
+                userId: user.id,
+                leadId: lead.id,
+                company: String(lead.company_name ?? ""),
+                websiteHost,
+                now: new Date().toISOString(),
+                stored: (snapRows ?? []).map((row: { payload?: unknown }) => row.payload).filter(Boolean),
+              });
+              if (evidenceDecision.status !== "ready") {
+                await logAction({
+                  user_id: user.id,
+                  action_type: "skipped",
+                  status: "skipped",
+                  prospect_email: to,
+                  description: evidenceDecision.reason,
+                  metadata: { phase: "outreach", reason: "no_research", research_status: evidenceDecision.status, lead_id: lead.id },
+                });
+                continue;
+              }
+              const factBlock = evidenceDecision.facts.map((fact) => fact.span).join("\n");
+              const groundedPrompt = buildTouchPrompt({
+                research: factBlock,
+                firstName,
+                jobTitle: lead.job_title,
+                companyName: lead.company_name,
+                industry: lead.industry,
+                signals: Array.isArray(lead.signals) ? lead.signals : [],
+                senderFirstName,
+                companyContext: config.company_context,
+                valueProps: cfgValuePropsText,
+              });
               let raw = "";
               const draftPhase = await runPhase(stepStore, {
                 userId: user.id, leadId: lead.id, runId, owner: stepOwner, requireDurable: durableMode === "on",
               }, "draft", async () => {
                 raw = await callGemini(
-                  outreachPrompt,
-                  `${outreachSystemPrompt}${leadStrategyBlock}`,
+                  groundedPrompt,
+                  `${outreachSystemPrompt}\n\nAPPROVED FACTS, the only statements you may make about this company:\n${factBlock}\nDo not add a number, a customer result, or a consequence that is not in those sentences.`,
                 );
-                return { raw };
+                return { raw, factIds: evidenceDecision.facts.map((fact) => fact.id) };
               });
               if (draftPhase.action === "stopped" || draftPhase.status === "left_open") continue;
               if (draftPhase.action === "skipped") {
@@ -1167,8 +1209,9 @@ ${playbookSystemRules()}`;
               // sent. That is the whole point of the bar: an agent allowed to
               // send its fourth-best attempt has no bar at all.
               //
-              // A null rubric score means no verdict was available (it is
-              // plan-gated to growth and above), and never blocks a send.
+              // A missing rubric holds the send. Plan gating is the only exception,
+              // and it still holds when a rule blocks. autonomousSendAllowed
+              // is that rule.
               // An unfilled merge token must never reach a prospect. Unlike a weak
               // score this is not a judgement call, so it skips outright rather
               // than queueing a draft a human would only reject.
@@ -1231,68 +1274,17 @@ ${playbookSystemRules()}`;
               }, "score", async (ctx) => {
               if (!await ctx.owned()) return { hold: true, done: false };
               best = await assess(subject, body);
-              attempts = 1;
-              while (!isPerfect(best) && attempts < AGENT_MAX_ATTEMPTS) {
-                if (!await ctx.owned()) return { hold: true, done: false };
-                attempts++;
-                const retryRaw = await callGemini(
-                  outreachPrompt + attemptFeedback(best),
-                  outreachSystemPrompt,
-                ).catch(() => null);
-                const rt = retryRaw ? parseTouches(retryRaw)[0] : null;
-                if (!rt?.subject || !rt?.body) break;
-                const candidate = await assess(rt.subject, rt.body);
-                if (better(candidate, best)) {
-                  best = candidate;
-                  touches[0] = rt;
-                }
-              }
-              subject = best.subject;
-              body = best.body;
               rubric = best.rubric;
-
-              // Held unless it is clean on both checks. The exception is an
-              // account with no rubric available at all, where holding every
-              // email would stop the agent working rather than improve it — for
-              // those the original floor still applies.
-              // Carried onto every action this draft produces, so the score is
-              // visible where the work is rather than only in a server log.
+              qualityHold = !autonomousSendAllowed(best, best.availability ?? "unavailable");
               quality = {
                 score: rubric?.overall ?? null,
                 dimensions: rubric
-                  ? Object.fromEntries(
-                      Object.entries(rubric?.dimensions ?? {}).map(([k, d]) => [k, (d as RubricDimension).score]),
-                    )
+                  ? Object.fromEntries(Object.entries(rubric.dimensions ?? {}).map(([k, d]) => [k, d.score]))
                   : null,
-                attempts,
-                blocking: best.blocking.map((f) => f.rule),
+                attempts: 1,
+                blocking: best.blocking.map((finding) => finding.rule),
               };
-
-              const scored = rubric !== null;
-              /**
-               * Nothing leaves autonomously below a perfect card.
-               *
-               * This briefly sent at AGENT_SEND_SCORE instead, to stop the
-               * agent rewriting all day and reaching nobody. The product is
-               * positioned on replies rather than volume, so the opposite
-               * trade is the right one: an email that scores 84 and gets
-               * ignored costs more than an email never sent, because it spends
-               * the one first impression that address will ever give us.
-               *
-               * The starvation that motivated the lower bar is handled instead
-               * of tolerated. A lead the agent cannot write a perfect email to
-               * is skipped and cooled off for COOLDOWN_DAYS, so the run moves
-               * to the next lead rather than spending the quota re-attempting
-               * the same one — and it comes back once enrichment has given the
-               * agent something more to work with.
-               */
-              qualityHold = !autonomousSendAllowed(best, best.availability ?? (scored ? "scored" : "unavailable"));
-              return {
-                hold: qualityHold,
-                subject: best.subject,
-                body: best.body,
-                availability: best.availability ?? (scored ? "scored" : "unavailable"),
-              };
+              return { hold: qualityHold, subject: best.subject, body: best.body, availability: best.availability ?? "unavailable" };
               });
               if (scorePhase.action === "stopped" || scorePhase.status === "left_open") continue;
               if (scorePhase.action === "skipped") {
@@ -1363,7 +1355,7 @@ ${playbookSystemRules()}`;
                   description:
                     `Skipped ${lead.contact_name ?? to} at ${lead.company_name ?? "their company"} — ` +
                     `after ${attempts} attempt${attempts === 1 ? "" : "s"} the best draft scored ` +
-                    `${rubric?.overall ?? "unscored"}/100` +
+                    `${best.rubric?.overall ?? "unscored"}/100` +
                     `${best.blocking.length ? ` with ${best.blocking.length} rule problem${best.blocking.length === 1 ? "" : "s"}` : ""}` +
                     `, so nothing was sent or saved. Enriching this lead usually fixes it.`,
                   metadata: {

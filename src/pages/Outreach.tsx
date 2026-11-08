@@ -40,6 +40,8 @@ import { EmailRubricPanel } from "@/components/outreach/EmailRubricPanel";
 import { EmailAuditPanel } from "@/components/outreach/EmailAuditPanel";
 import { readGeneratedEmail, readGeneratedSubject, stripLeadingSubject } from "@/lib/read-generated-email";
 import { applyEmailQualityFix } from "@/lib/email-quality-fixes";
+import { bodyViolations, evaluateStoredSnapshots, repairToApprovedFacts } from "../../supabase/functions/_shared/evidence-contract";
+import { repairShouting, shoutingTokens } from "../../supabase/functions/_shared/email-deliverability";
 import { LeadResearchPanel, type LeadResearch } from "@/components/outreach/LeadResearchPanel";
 import { SequencesList, MessageBlocksList } from "@/components/sequences";
 import { AiSequenceBuilder } from "@/components/sequences/AiSequenceBuilder";
@@ -346,6 +348,7 @@ const Outreach = () => {
 
   // Per-lead website research brief (shared engine with the AI SDR agent).
   const [leadResearch, setLeadResearch] = useState<LeadResearch | null>(null);
+  const [trustedPayloads, setTrustedPayloads] = useState<unknown[]>([]);
   const [researchLoading, setResearchLoading] = useState(false);
   const [researchRefreshing, setResearchRefreshing] = useState(false);
 
@@ -1258,6 +1261,14 @@ const Outreach = () => {
       if (error) throw error;
 
       // Soft block: research too thin to personalize safely.
+      if (data?.error_code === "research_required") {
+        toast({
+          title: "Research required before a draft",
+          description: data.error || "Nothing was drafted because retrieved evidence for this company is missing.",
+          variant: "destructive",
+        });
+        return;
+      }
       if (data?.error_code === "research_too_thin") {
         if (data?.research) setLeadResearch(data.research as LeadResearch);
         toast({
@@ -1273,6 +1284,7 @@ const Outreach = () => {
       }
       const emailBody = appendSenderLine(sanitizeGeneratedEmailBody(readGeneratedEmail(data, error)), resolvedSender);
       setGeneratedEmail(emailBody);
+      if (typeof data?.subject === "string" && data.subject.trim()) setSubjectLine(data.subject.trim());
       if (data?.research) {
         setLeadResearch({
           ...(data.research as LeadResearch),
@@ -1305,7 +1317,20 @@ const Outreach = () => {
   const handleQualityFix = async (checkLabel: string) => {
     if (!generatedEmail || fixingCheck) return;
     setFixingCheck(checkLabel);
-
+    const leadForFix = leads.find((l) => l.id === selectedLead);
+    const { data: authData } = await supabase.auth.getUser();
+    const fixDecision = evaluateStoredSnapshots({
+      userId: authData.user?.id ?? "",
+      leadId: selectedLead,
+      company: leadForFix?.company_name ?? "",
+      websiteHost: (() => {
+        const raw = String((leadForFix as { company_website?: string } | undefined)?.company_website ?? "");
+        try { return new URL(raw.includes("://") ? raw : `https://${raw}`).hostname.replace(/^www\./, ""); }
+        catch { return null; }
+      })(),
+      now: new Date().toISOString(),
+      stored: trustedPayloads,
+    });
     // The writing rules are no longer built here. generate-email applies them
     // itself for a precision edit, from _shared/email-rules.ts — posting them
     // from the browser made the client a third copy that drifted from the two
@@ -1361,10 +1386,47 @@ const Outreach = () => {
     // same way. The old version returned early when no draft row existed yet,
     // so a fix applied before the first save was silently kept in memory only;
     // saveDraft inserts in that case instead of dropping the edit.
-    const persistFixedDraft = async (fixedBody: string) => {
+    const persistFixedDraft = async (fixedBody: string, nextSubject = subjectLine) => {
       setGeneratedEmail(fixedBody);
-      await saveDraft({ body: fixedBody });
+      setSubjectLine(nextSubject);
+      await saveDraft({ body: fixedBody, subject: nextSubject });
     };
+    if (checkLabel === "Naturalness") {
+      const shouted = shoutingTokens(generatedEmail);
+      if (!shouted.length) {
+        // Not a capital run. Fall through to the same editor as the other rows.
+      } else {
+      const fixed = repairShouting(generatedEmail);
+      if (fixed !== generatedEmail && !shoutingTokens(fixed).length) {
+        await persistFixedDraft(fixed);
+        toast({ title: "Naturalness fixed", description: `Lowercased ${shouted.join(", ")}. Acronyms were left as written.` });
+        setFixingCheck(null);
+        return;
+      }
+      toast({ title: "Could not fix naturalness", description: `${shouted.join(", ")} is still in capitals. The draft was not changed.`, variant: "destructive" });
+      setFixingCheck(null);
+      return;
+      }
+    }
+    if (checkLabel === "Mechanism") {
+      toast({
+        title: "Could not add a bridge",
+        description: "A connecting pain is not an approved fact, so it was not invented. The draft was not changed.",
+        variant: "destructive",
+      });
+      setFixingCheck(null);
+      return;
+    }
+    if (checkLabel === "Ungrounded prospect claim") {
+      const blocked = bodyViolations(generatedEmail, fixDecision, senderProfileName || "", subjectLine, String(lead?.company_name ?? ""));
+      toast({
+        title: "Could not fix ungrounded prospect claim",
+        description: blocked[0] || "Regenerate the draft from research. The current text was not changed.",
+        variant: "destructive",
+      });
+      setFixingCheck(null);
+      return;
+    }
 
     if (checkLabel === 'Placeholders') {
       const fixed = applyPersonalizationFixLocally(generatedEmail, lead).trim();
@@ -1449,9 +1511,18 @@ Return ONLY the corrected email body. No subject line. No explanation. No "Here 
       // Strip any "Here is the rewritten email:" style preambles
       fixed = fixed.replace(/^(?:here is|here's|below is|the (?:updated|revised|rewritten|fixed) email[:\s]*)\n+/i, '').trim();
 
-      const aiCheck = scoreEmailQuality(subjectLine, fixed, isFirstTouch).checks.find((check) => check.label === checkLabel);
+      const proof = fixDecision.facts.map((fact) => fact.span).join("\n");
+      const beforeAll = scoreEmailQuality(subjectLine, generatedEmail, isFirstTouch, undefined, proof);
+      const afterAll = scoreEmailQuality(subjectLine, fixed, isFirstTouch, undefined, proof);
+      const aiCheck = afterAll.checks.find((check) => check.label === checkLabel);
       const aiImproved = fixed && fixed !== generatedEmail.trim() && checkImproved(beforeCheck, aiCheck);
-      if (!aiImproved) throw new Error(`The ${checkLabel.toLowerCase()} fix did not improve the draft.`);
+      const newProblems = afterAll.checks.filter((check) => check.status !== "green" && beforeAll.checks.find((row) => row.label === check.label)?.status === "green");
+      if (!fixed) throw new Error("The rewrite was empty. The draft was not changed.");
+      if (fixed === generatedEmail.trim()) throw new Error(`The rewrite was identical, so ${checkLabel} is still there. The draft was not changed.`);
+      if (newProblems.length) throw new Error(`The rewrite added ${newProblems[0].label}: ${newProblems[0].message}. The draft was not changed.`);
+      const stillBlocked = bodyViolations(fixed, fixDecision, senderProfileName || "", subjectLine, String(lead?.company_name ?? ""));
+      if (stillBlocked.length) throw new Error(`${stillBlocked[0]} The draft was not changed.`);
+      if (!aiImproved) throw new Error(`${checkLabel} is still: ${aiCheck?.message || "unresolved"}. The draft was not changed.`);
       await persistFixedDraft(fixed);
       toast({ title: `${checkLabel} fixed`, description: aiCheck ? aiCheck.message : "The draft was updated and saved." });
     } catch (err: any) {
@@ -1499,6 +1570,11 @@ Return ONLY the corrected email body. No subject line. No explanation. No "Here 
             }
           : null,
       );
+      const snaps = await (supabase as unknown as { from: (table: string) => { select: (columns: string) => { eq: (column: string, value: string) => Promise<{ data: { payload?: unknown }[] | null }> } } })
+        .from("research_snapshots")
+        .select("payload")
+        .eq("lead_id", selectedLead);
+      if (!cancelled) setTrustedPayloads((snaps.data ?? []).map((row) => row.payload).filter(Boolean));
       setResearchLoading(false);
     })();
     return () => {
@@ -3198,13 +3274,52 @@ For logos, use HTML:
                         isFirstTouch={isFirstTouch}
                         onFix={handleQualityFix}
                         fixingCheck={fixingCheck}
+                        verifiedProof={(() => {
+                          const l = leads.find((x) => x.id === selectedLead);
+                          const decision = evaluateStoredSnapshots({
+                            userId: complianceSettings.userId,
+                            leadId: selectedLead,
+                            company: l?.company_name ?? "",
+                            websiteHost: (() => {
+                              const raw = String((l as { company_website?: string }).company_website ?? "");
+                              try { return new URL(raw.includes("://") ? raw : `https://${raw}`).hostname.replace(/^www\./, ""); }
+                              catch { return null; }
+                            })(),
+                            now: new Date().toISOString(),
+                            stored: trustedPayloads,
+                          });
+                          return decision.facts.map((fact) => fact.span).join("\n");
+                        })()}
                         lead={(() => { const l = leads.find((x) => x.id === selectedLead); return l ? { company: l.company_name, contactName: l.contact_name } : undefined; })()}
                       />
                       <EmailRubricPanel
                         subject={subjectLine}
                         body={generatedEmail}
-                        onApplyBody={(next) => { setGeneratedEmail(next); void saveDraft({ body: next }); }}
-                        onApplySubject={(next) => { setSubjectLine(next); void saveDraft({ subject: next }); }}
+                        leadId={selectedLead}
+                        groundingNote={scoreEmailQuality(subjectLine, generatedEmail, isFirstTouch, undefined, (() => {
+                          const l = leads.find((x) => x.id === selectedLead);
+                          return evaluateStoredSnapshots({
+                            userId: complianceSettings.userId,
+                            leadId: selectedLead,
+                            company: l?.company_name ?? "",
+                            websiteHost: (() => {
+                              const raw = String((l as { company_website?: string }).company_website ?? "");
+                              try { return new URL(raw.includes("://") ? raw : `https://${raw}`).hostname.replace(/^www\./, ""); }
+                              catch { return null; }
+                            })(),
+                            now: new Date().toISOString(),
+                            stored: trustedPayloads,
+                          }).facts.map((fact) => fact.span).join("\n");
+                        })()).blockers.some((finding) => finding.rule === "ungrounded_prospect_claim")
+                          ? "A relevance score does not check those details against retrieved pages, and it does not approve sending while a grounding blocker is present."
+                          : null}
+                        onApplyBody={(next) => { setGeneratedEmail(next); void saveDraft({ body: next, subject: subjectLine }); }}
+                        onApplySubject={(next) => { setSubjectLine(next); void saveDraft({ subject: next, body: generatedEmail }); }}
+                        onApplyDraft={(nextSubject, nextBody) => {
+                          setSubjectLine(nextSubject);
+                          setGeneratedEmail(nextBody);
+                          void saveDraft({ subject: nextSubject, body: nextBody });
+                        }}
                       />
                       <EmailAuditPanel
                         subject={subjectLine}

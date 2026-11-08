@@ -18,6 +18,9 @@ interface EmailRubricPanelProps {
   /** When provided, each suggestion gets an "apply" button that rewrites the snippet in place. */
   onApplyBody?: (nextBody: string) => void;
   onApplySubject?: (nextSubject: string) => void;
+  onApplyDraft?: (nextSubject: string, nextBody: string) => void;
+  groundingNote?: string | null;
+  leadId?: string;
 }
 
 interface Dim { score: number; justification: string }
@@ -67,7 +70,7 @@ function locateSpan(text: string, snippet: string): { start: number; end: number
   return null;
 }
 
-export const EmailRubricPanel = ({ subject, body, onApplyBody, onApplySubject }: EmailRubricPanelProps) => {
+export const EmailRubricPanel = ({ subject, body, onApplyBody, onApplySubject, onApplyDraft, groundingNote, leadId }: EmailRubricPanelProps) => {
   const mech = useMemo(() => computeMechanicalChecks(subject, body), [subject, body]);
 
   const [dims, setDims] = useState<Record<string, Dim> | null>(null);
@@ -102,7 +105,7 @@ export const EmailRubricPanel = ({ subject, body, onApplyBody, onApplySubject }:
     setApplyingKey(key);
     try {
       const { data, error } = await supabase.functions.invoke("apply-rubric-suggestion", {
-        body: { subject, body, snippet: matched, suggestion: s.suggestion, dimension: s.dimension },
+        body: { subject, body, snippet: matched, suggestion: s.suggestion, dimension: s.dimension, leadId },
       });
       if (error) { toast.error("couldn't apply that suggestion"); return; }
       if (data?.error) { toast.error(data.error); return; }
@@ -111,7 +114,10 @@ export const EmailRubricPanel = ({ subject, body, onApplyBody, onApplySubject }:
 
       const next = target.text.slice(0, target.span.start) + replacement + target.text.slice(target.span.end);
       if (next.trim() === target.text.trim()) { toast.error("that suggestion didn't change the draft"); return; }
-      target.apply(next);
+      const nextBody = bodySpan ? next : body;
+      const nextSubject = subjectSpan ? next : subject;
+      if (onApplyDraft) onApplyDraft(nextSubject, nextBody);
+      else target.apply(next);
 
       setApplied((prev) => new Set(prev).add(key));
       toast.success("suggestion applied");
@@ -169,7 +175,12 @@ export const EmailRubricPanel = ({ subject, body, onApplyBody, onApplySubject }:
           </div>
         ) : dims ? (
           <div className="space-y-2">
-            {allStrong(dims) && (
+            {groundingNote && (
+              <p className="text-[11px] text-destructive">
+                {groundingNote}
+              </p>
+            )}
+            {allStrong(dims) && !groundingNote && (
               <p className="text-[11px] text-green-500">
                 Every dimension is at or above the bar. Nothing here is holding this email back.
               </p>

@@ -23,8 +23,11 @@ import { acceptedUnpersistedBody, deliverReserved, type OutboundStore } from "..
 import { outboundGateFindings } from "../_shared/quality-gate.ts";
 import { resolveAppUser } from "../_shared/app-user.ts";
 import { proofFromLead } from "../_shared/template-send-gate.ts";
+import { POLICY_VERSION, evaluateStoredSnapshots, releaseBinding } from "../_shared/evidence-contract.ts";
+import { ownedDraftViolations, ownedLeadCompany } from "../_shared/draft-release.ts";
+import { sha256Hex } from "../_shared/prompt-versions.ts";
 import { evaluateSend } from "../_shared/outbound-verdict.ts";
-import { contentHash, gatePromptHash, rubricPromptHash } from "../_shared/prompt-versions.ts";
+import { gatePromptHash, rubricPromptHash } from "../_shared/prompt-versions.ts";
 import { scoreEmailReport } from "../_shared/email-quality.ts";
 
 const corsHeaders = {
@@ -458,10 +461,13 @@ serve(async (req) => {
     // are unproven rather than bad, and blocking those would ground most of a
     // list to prevent a minority of bounces.
     let leadProof = "";
+    let storedSnapshots: unknown = null;
+    let leadCompany = "";
+    let leadWebsite: string | null = null;
     if (leadId) {
       const { data: leadRow } = await supabase
         .from('leads')
-        .select('id, email_verification_status, research_brief, job_title, industry, company_name, contact_name')
+        .select('id, email_verification_status, research_brief, job_title, industry, company_name, contact_name, company_website')
         .eq('id', leadId)
         .eq('user_id', user.id)
         .maybeSingle();
@@ -479,6 +485,14 @@ serve(async (req) => {
 
       // Evidence is the lead row this account owns, not a score the caller sent.
       leadProof = proofFromLead(leadRow);
+      leadCompany = ownedLeadCompany(leadRow);
+      leadWebsite = typeof leadRow.company_website === "string" ? leadRow.company_website : null;
+      const { data: snapRows } = await supabase
+        .from("research_snapshots")
+        .select("payload")
+        .eq("user_id", user.id)
+        .eq("lead_id", leadId);
+      storedSnapshots = (snapRows ?? []).map((row: { payload?: unknown }) => row.payload).filter(Boolean);
 
       if (leadRow.email_verification_status === 'invalid') {
         return new Response(
@@ -577,8 +591,43 @@ serve(async (req) => {
         leadProof,
         0,
       );
+      const websiteHost = (() => {
+        const raw = String(leadWebsite ?? "");
+        try { return new URL(raw.includes("://") ? raw : `https://${raw}`).hostname.replace(/^www\./, ""); }
+        catch { return null; }
+      })();
+      const evidenceDecision = evaluateStoredSnapshots({
+        userId: user.id,
+        leadId: String(leadId ?? ""),
+        company: leadCompany,
+        websiteHost,
+        now: new Date().toISOString(),
+        stored: storedSnapshots,
+      });
+      const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle();
+      // A verified reply is the prospect's thread, not a first-touch snippet.
+      // Their sentences are not a stored research snapshot, so the cold-email
+      // allow-list would block the reply. It still needs a rubric score below.
+      const ownedClaims = ownedDraftViolations({
+        lead: { company_name: leadCompany },
+        body: plainBody,
+        subject: String(subject ?? ""),
+        facts: evidenceDecision.facts,
+        senderName: String(profile?.full_name ?? ""),
+        shape: "first_touch",
+      });
+      const evidenceViolations = isVerifiedReply ? [] : ownedClaims.violations;
+      const bound = releaseBinding(String(subject ?? ""), plainBody, evidenceDecision.evidenceId);
+      if (evidenceViolations.length) {
+        return new Response(JSON.stringify({
+          error: `Not sent. ${evidenceViolations[0]}`,
+          code: "research_required",
+          findings: evidenceViolations.slice(0, 4),
+        }), { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
       const liveBlocked = gateFindings.length > 0;
       let allowSend = !liveBlocked;
+      let rubricMissing = false;
       let verdictId: string | null = null;
       let canary = false;
       let canaryKnown = false;
@@ -594,7 +643,7 @@ serve(async (req) => {
       try {
         const callerAuthorization = req.headers.get("Authorization") ?? "";
         const [hash, promptHash, rubricHash, rubricReport] = await Promise.all([
-          contentHash(String(subject ?? ""), plainBody),
+          sha256Hex(bound),
           gatePromptHash(),
           rubricPromptHash(),
           scoreEmailReport(supabaseUrl, callerAuthorization, anonKey, {
@@ -639,7 +688,10 @@ serve(async (req) => {
         });
         const persisted = !writeErr && typeof id === "string";
         verdictId = persisted ? id : null;
-        if (!canaryKnown) {
+        if (rubricReport.availability === "unavailable") {
+          allowSend = false;
+          rubricMissing = true;
+        } else if (!canaryKnown) {
           allowSend = !liveBlocked;
         } else {
           const decision = evaluateSend({
@@ -656,15 +708,17 @@ serve(async (req) => {
         }
       } catch (verdictErr) {
         console.warn("[send-email] verdict write failed", verdictErr);
-        allowSend = canary ? false : !liveBlocked;
+        allowSend = false;
       }
       if (!allowSend) {
         return new Response(
           JSON.stringify({
             error: liveBlocked
               ? `Not sent. The quality check failed: ${gateFindings.slice(0, 4).map((f) => f.rule).join(", ")}.`
-              : "Not sent. This account's canary requires a current clear verdict for this exact text, including the signature. A missing or stale verdict is not permission.",
-            code: liveBlocked ? "quality_checker" : "verdict_required",
+              : rubricMissing
+                ? "Not sent. The reply rubric did not return a score, so this email was held."
+                : "Not sent. This text has no current clear verdict. A missing score or a stale verdict is not permission to send.",
+            code: liveBlocked ? "quality_checker" : rubricMissing ? "rubric_unavailable" : "verdict_required",
             findings: gateFindings.slice(0, 8).map((f) => ({ rule: f.rule, evidence: f.evidence, fix: f.fix })),
           }),
           { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } },

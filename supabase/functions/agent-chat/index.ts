@@ -18,6 +18,8 @@ import { invalidArgsResult, validateToolArgs, type ToolSchema } from "../_shared
 import { mergeCompleted, resultOk, resumeFrom, supabaseTraceStore, trimResult } from "../_shared/agent-trace.ts";
 import { budgetExhausted, budgetNote, carriedTokens, tokensIn, turnTokenBudget } from "../_shared/agent-budget.ts";
 import { pruneTurnContext } from "../_shared/turn-context.ts";
+import { repairToolSequence, unknownMutationKeys } from "../_shared/tool-sequence.ts";
+import { replayDecision } from "../_shared/mutation-replay.ts";
 import {
   AGENT_MAX_ATTEMPTS,
   AGENT_TARGET_SCORE,
@@ -5157,6 +5159,10 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
        * and a restart does not re-inflate it. The full result is still in the
        * trace's own tool_results column for anyone reading back.
        */
+      const sequenced = repairToolSequence(messages);
+      messages.length = 0;
+      messages.push(...sequenced);
+      for (const key of unknownMutationKeys(messages, mutationKeyFor)) completedMutationKeys.add(key);
       const pruned = pruneTurnContext(messages);
       if (pruned.prunedCount > 0) {
         console.log(
@@ -5345,9 +5351,36 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
             tool_call_id: call.id,
             content: JSON.stringify({
               already_completed: true,
-              note: "This exact action already succeeded during this request. Do not run it again; continue only unfinished work.",
+              status: "unknown",
+              note: "This action already has a recorded result or an unknown outcome for this request. Do not run it again.",
             }),
           };
+        }
+        if (mutationKey) {
+          try {
+            const claim = await trace.claimMutation(threadId, userId, mutationKey, toolName);
+            if (replayDecision(claim === "present" ? "dispatching" : null) === "skip") {
+              return {
+                role: "tool",
+                tool_call_id: call.id,
+                content: JSON.stringify({
+                  error: "unknown_outcome",
+                  status: "unknown",
+                  note: "This action was already dispatched. Its outcome is not replayed.",
+                }),
+              };
+            }
+          } catch (e) {
+            return {
+              role: "tool",
+              tool_call_id: call.id,
+              content: JSON.stringify({
+                error: "unknown_outcome",
+                status: "unknown",
+                note: "The dispatch could not be recorded, so the action was not run.",
+              }),
+            };
+          }
         }
         if (!autonomous && MUTATING_TOOLS.has(toolName)) {
           console.log("approval-mode mutating tool", toolName);
@@ -5356,9 +5389,49 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
         const startedAt = Date.now();
         let stepStatus = "success";
         let stepDetail: string | null = null;
+        let toolFailed = false;
         try {
           result = await runTool(toolName, args);
-          if (mutationKey && didMutate(result)) {
+        } catch (e) {
+          toolFailed = true;
+          stepStatus = "error";
+          stepDetail = e instanceof Error ? e.message : "unknown error";
+          result = { error: stepDetail ?? "tool failed" };
+          if (mutationKey) {
+            try { await trace.finishMutation(threadId, mutationKey, "unknown"); } catch { /* row stays dispatching */ }
+            return {
+              role: "tool",
+              tool_call_id: call.id,
+              content: JSON.stringify({
+                error: "unknown_outcome",
+                status: "unknown",
+                note: "The action did not return a result. Whether it finished is unknown. Do not run it again.",
+              }),
+            };
+          }
+          toolEvents.push({
+            name: toolName,
+            label: "Action failed",
+            status: "error",
+            detail: stepDetail ?? "unknown error",
+          });
+        }
+        if (!toolFailed && mutationKey) {
+          try {
+            await trace.finishMutation(threadId, mutationKey, didMutate(result) ? "completed" : "unknown");
+          } catch {
+            return {
+              role: "tool",
+              tool_call_id: call.id,
+              content: JSON.stringify({
+                error: "unknown_outcome",
+                status: "unknown",
+                note: "The action finished and its receipt could not be updated. The outcome is unknown. Do not run it again.",
+              }),
+            };
+          }
+        }
+        if (mutationKey && didMutate(result)) {
             completedMutationKeys.add(mutationKey);
             /*
              * And on disk, because the in-memory Set dies with the worker.
@@ -5367,21 +5440,21 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
              * right for one request and worth nothing across the restart that
              * causes a resume — which is the moment a repeat is most likely.
              */
-            void trace.saveMutation(threadId, userId, mutationKey, toolName).catch((e) =>
-              console.warn(`[agent-chat] completed mutation not recorded: ${e instanceof Error ? e.message : e}`)
-            );
+            try {
+              await trace.saveMutation(threadId, userId, mutationKey, toolName);
+            } catch (e) {
+              console.warn(`[agent-chat] completed mutation not recorded: ${e instanceof Error ? e.message : e}`);
+              return {
+                role: "tool",
+                tool_call_id: call.id,
+                content: JSON.stringify({
+                  error: "unknown_outcome",
+                  status: "unknown",
+                  note: "The action may have started, and its receipt was not saved. Do not run it again until the receipt is checked.",
+                }),
+              };
+            }
           }
-        } catch (e) {
-          stepStatus = "error";
-          stepDetail = e instanceof Error ? e.message : "unknown error";
-          result = { error: stepDetail ?? "tool failed" };
-          toolEvents.push({
-            name: toolName,
-            label: "Action failed",
-            status: "error",
-            detail: stepDetail ?? "unknown error",
-          });
-        }
         const stepRow = {
           tool_name: toolName || "unknown",
           step_type: PARALLEL_SAFE_TOOLS.has(toolName) ? "tool_parallel" : "tool_serial",
@@ -5435,6 +5508,15 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
             label: "Stopped before running",
             status: "error",
             detail: "You stopped this run before this action started.",
+          });
+          serialResults.push({
+            role: "tool",
+            tool_call_id: call.id,
+            content: JSON.stringify({
+              error: "cancelled",
+              status: "error",
+              note: "You stopped this run before this action started. It did not run.",
+            }),
           });
           continue;
         }

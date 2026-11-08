@@ -7,6 +7,7 @@
 // Crypto is enough and keeps the function cold start small).
 
 import { bedrockRoute } from "./ai-gateway.ts";
+import { repairToolSequence } from "./tool-sequence.ts";
 
 /**
  * Where this request is posted, and the gateway credential if one applies.
@@ -195,7 +196,7 @@ function safeParse(json?: string): Record<string, unknown> {
 }
 
 export function toConverseBody(body: Record<string, unknown>): Record<string, unknown> {
-  const messages = Array.isArray(body.messages) ? (body.messages as OpenAiMessage[]) : [];
+  const messages = repairToolSequence(Array.isArray(body.messages) ? (body.messages as OpenAiMessage[]) : []);
   const system: Array<{ text: string }> = [];
   const converse: Array<{ role: "user" | "assistant"; content: unknown[] }> = [];
 

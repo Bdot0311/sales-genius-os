@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { htmlToPlainText } from "../_shared/plain-text.ts";
 import { proofFromLead, queuedCopyBlockers } from "../_shared/template-send-gate.ts";
+import { bodyViolations, evaluateStoredSnapshots, releaseBinding } from "../_shared/evidence-contract.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -229,7 +230,30 @@ serve(async (req) => {
       body = body.replace(new RegExp(key, 'g'), value);
     });
 
-    const copyBlockers = queuedCopyBlockers(subject, body, proofFromLead(lead));
+    const { data: snapRows } = lead?.id
+      ? await supabase.from("research_snapshots").select("payload").eq("user_id", enrollment.user_id).eq("lead_id", lead.id)
+      : { data: [] };
+    const host = (() => {
+      const raw = String(lead?.company_website ?? "");
+      try { return new URL(raw.includes("://") ? raw : `https://${raw}`).hostname.replace(/^www\./, ""); }
+      catch { return null; }
+    })();
+    const evidenceDecision = evaluateStoredSnapshots({
+      userId: String(enrollment.user_id ?? ""),
+      leadId: String(lead?.id ?? ""),
+      company: String(lead?.company_name ?? ""),
+      websiteHost: host,
+      now: new Date().toISOString(),
+      stored: (snapRows ?? []).map((row: { payload?: unknown }) => row.payload).filter(Boolean),
+    });
+    const { data: senderProfile } = await supabase.from("profiles").select("full_name").eq("id", enrollment.user_id).maybeSingle();
+    const stepShape = nextStepNumber > 1 ? "continuation" as const : "first_touch" as const;
+    const evidenceBlockers = bodyViolations(body, evidenceDecision, String(senderProfile?.full_name ?? ""), subject, String(lead?.company_name ?? ""), stepShape);
+    const bound = releaseBinding(subject, body, evidenceDecision.evidenceId);
+    if (!evidenceBlockers.length && !evidenceDecision.evidenceId) {
+      evidenceBlockers.push(`The send is missing the evidence id for this body (${bound.length} bytes).`);
+    }
+    const copyBlockers = [...evidenceBlockers, ...queuedCopyBlockers(subject, body, proofFromLead(lead))];
     if (copyBlockers.length > 0) {
       const retryAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
       await supabase

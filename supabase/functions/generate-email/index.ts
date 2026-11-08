@@ -6,9 +6,12 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { composeSkillContext, skillNamesUsed } from "../_shared/email-skills.ts";
 // One quality verdict for every caller — Outreach Studio, agent-chat and the
 // autonomous agent all reach the rubric through this rather than each other.
-import { isWeak, rubricFeedback, scoreEmail } from "../_shared/email-quality.ts";
+import { isWeak, rubricFeedback, scoreEmailReport, type RubricAvailability } from "../_shared/email-quality.ts";
+import { ownedLeadCompany, releaseAllows } from "../_shared/draft-release.ts";
 import { AI_CREDITS_USER_MESSAGE, isAiCreditError, reportAiCreditsExhausted } from "../_shared/ai-credits.ts";
 import { stripInstructionLines, unsupportedClaims } from "../_shared/evidence.ts";
+import { POLICY_VERSION, evaluateStoredSnapshots, type ApprovedFact } from "../_shared/evidence-contract.ts";
+import { holdReason, researchStep, type RetrievalReceipt } from "../_shared/research-orchestration.ts";
 import { reviseUntilClear } from "../_shared/quality-gate.ts";
 // The writing rules live in one module so the three copies that used to exist
 // cannot drift apart — see _shared/email-rules.ts.
@@ -855,7 +858,7 @@ serve(async (req) => {
      */
     const ownerClient = internal ? adminClient : supabaseClient;
     const { data: leadData, error: leadError } = await ownerClient
-      .from('leads').select('id, user_id').eq('id', lead.id).single();
+      .from('leads').select('id, user_id, company_name').eq('id', lead.id).single();
     if (leadError || !leadData || (!internal && leadData.user_id !== userId)) {
       return new Response(JSON.stringify({ error: 'Lead not found or unauthorized' }), {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -1047,6 +1050,8 @@ STRICT RULES:
     const isPrecisionEditPre = goal === 'custom' && typeof requestData.customInstruction === 'string' && requestData.customInstruction.length > 0;
 
     let researchBrief: LeadResearchBrief | null = null;
+    let approvedFacts: ApprovedFact[] = [];
+    let evidenceId = "";
     let researchSources: string[] = [];
     let researchedAt: string | null = null;
     let websiteResearchBlock = '';
@@ -1107,11 +1112,49 @@ STRICT RULES:
           leadSignal = `${what} (${when})`;
         }
 
-        if (leadRow && isResearchFresh(leadRow as Record<string, unknown>)) {
-          researchBrief = leadRow.research_brief as LeadResearchBrief;
+        if (leadRow) {
+          researchBrief = (leadRow.research_brief as LeadResearchBrief) ?? null;
           researchSources = (leadRow.research_sources as string[]) || [];
-          researchedAt = leadRow.researched_at as string;
-        } else {
+          researchedAt = (leadRow.researched_at as string) ?? null;
+        }
+        const ownedWebsite = String(leadRow?.company_website ?? "");
+        const ownedHost = (() => {
+          try { return new URL(ownedWebsite.includes("://") ? ownedWebsite : `https://${ownedWebsite}`).hostname.replace(/^www\./, ""); }
+          catch { return null; }
+        })();
+        const loadPayloads = async () => {
+          const { data } = await serviceClient
+            .from("research_snapshots")
+            .select("payload")
+            .eq("user_id", userId)
+            .eq("lead_id", lead.id);
+          return (data ?? []).map((row: { payload?: unknown }) => row.payload).filter(Boolean);
+        };
+        let payloads = leadRow ? await loadPayloads() : [];
+        const { data: latestRun } = await serviceClient
+          .from("research_runs")
+          .select("attempted_at, receipt")
+          .eq("user_id", userId)
+          .eq("lead_id", lead.id)
+          .order("attempted_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        let retrieval = (latestRun?.receipt ?? null) as RetrievalReceipt | null;
+        if (retrieval && latestRun?.attempted_at) retrieval.attemptedAt = String(latestRun.attempted_at);
+        let decision = evaluateStoredSnapshots({
+          userId,
+          leadId: String(lead.id),
+          company: ownedLeadCompany(leadData),
+          websiteHost: ownedHost,
+          now: new Date().toISOString(),
+          stored: payloads,
+        });
+        const step = researchStep({
+          hasTrustedFacts: decision.status === "ready",
+          receipt: retrieval,
+          now: new Date().toISOString(),
+        });
+        if (step === "fetch") {
           const res = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/research-lead`, {
             method: 'POST',
             headers: {
@@ -1127,13 +1170,56 @@ STRICT RULES:
             researchBrief = rj.brief as LeadResearchBrief;
             researchSources = Array.isArray(rj.sources) ? rj.sources : [];
             researchedAt = typeof rj.researched_at === 'string' ? rj.researched_at : null;
+            retrieval = (researchBrief as { retrieval?: RetrievalReceipt }).retrieval ?? retrieval;
           } else if (rj?.error) {
             console.warn('[generate-email] research skipped:', rj.error_code || rj.error);
           }
+          payloads = await loadPayloads();
+          decision = evaluateStoredSnapshots({
+            userId,
+            leadId: String(lead.id),
+            company: ownedLeadCompany(leadData),
+            websiteHost: ownedHost,
+            now: new Date().toISOString(),
+            stored: payloads,
+          });
         }
-        websiteResearchBlock = briefToPromptBlock(researchBrief, researchSources);
+        if (!isPrecisionEditPre && (decision.status !== "ready" || !resolvedSenderName)) {
+          return new Response(JSON.stringify({
+            error: decision.status !== "ready"
+              ? (retrieval ? holdReason(retrieval) : decision.reason)
+              : "A draft was not written because the sender name is missing.",
+            error_code: decision.status !== "ready" ? "research_required" : "no_sender_name",
+            research_status: step === "hold" ? "held" : decision.status,
+            retrieval,
+            policy_version: POLICY_VERSION,
+          }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        if (decision.status === "ready") {
+          approvedFacts = decision.facts;
+          evidenceId = decision.evidenceId;
+          // The model brief is not a source. The prompt may use only these sentences.
+          websiteResearchBlock = [
+            decision.facts.map((fact) => fact.span).join("\n"),
+            "A releasable first touch is Hi {first name}, one of these sentences, one ask, and the sender's name.",
+            "The sentence may stay unchanged. The company, We, or Our team may become you only for a listed verb (has/have, is/are, does/do, goes/go, hires/hire, builds/build) with every following word copied.",
+            "Do not shift a different capitalized actor, do not shift has been, and do not leave we, our, or us in the rest.",
+            "Use exactly one ask: Worth a look?, Open to a look?, or Do you still plus that verb and the full remainder. Do not use both.",
+            "A pain bridge or a case study is not in these sentences. Do not add one.",
+          ].join("\n");
+        } else {
+          websiteResearchBlock = briefToPromptBlock(researchBrief, researchSources);
+        }
       } catch (err) {
         console.warn('[generate-email] research step failed:', err instanceof Error ? err.message : err);
+        if (!isPrecisionEditPre) {
+          return new Response(JSON.stringify({
+            error: "Research could not be completed, so nothing was drafted.",
+            error_code: "research_required",
+            research_status: "failed",
+            policy_version: POLICY_VERSION,
+          }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
       }
     }
 
@@ -1971,15 +2057,30 @@ conversation that is already going, not as someone chasing silence.`}`;
     // Score the finished draft. Every path that writes an email comes through
     // this function, so scoring here is what puts the agent and the Studio on
     // the same verdict instead of the panel being the only thing that checks.
-    // Advisory on this response: the caller decides what to do about a weak
-    // score, and a null score (plan-gated, provider down) blocks nothing.
-    const scoreNow = (body: string) => scoreEmail(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      authHeader ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { subject: subjectLineForRubric, body },
-    );
+    // A missing score is not a pass. Plan gating is the entitlement exception.
+    // Provider down, an unparseable score, and a timeout hold the draft.
+    let rubricAvailability: RubricAvailability = "unavailable";
+    const scoreNow = async (body: string) => {
+      const report = await scoreEmailReport(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        authHeader ?? '',
+        Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+        { subject: subjectLineForRubric, body },
+      );
+      rubricAvailability = report.availability;
+      return report.rubric;
+    };
     let rubric = await scoreNow(email);
+    const scoresAsEmail = goal !== "subject_only" && goal !== "trigger_context";
+    if (scoresAsEmail && rubricAvailability === "unavailable") {
+      return new Response(JSON.stringify({
+        error: "The reply rubric did not return a score, so this draft was not saved.",
+        error_code: "rubric_unavailable",
+        policy_version: POLICY_VERSION,
+        evidence_id: evidenceId,
+        fact_ids: approvedFacts.map((fact) => fact.id),
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
     if (rubric) {
       console.log(`[generate-email] rubric: ${rubric.overall}/100 weakest=${rubric.weakest}${isWeak(rubric) ? ' WEAK' : ''}`);
     }
@@ -2187,6 +2288,27 @@ conversation that is already going, not as someone chasing silence.`}`;
         quality_findings: checkerBlockers.map((f) => ({ rule: f.rule, evidence: f.evidence, fix: f.fix })),
       }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+    if (scoresAsEmail) {
+      const release = releaseAllows({
+        subject: checkedSubject,
+        body: revised.body || checkedBody,
+        facts: approvedFacts,
+        availability: rubricAvailability,
+        rubric,
+        mode: "studio",
+        senderName: resolvedSenderName,
+        company: ownedLeadCompany(leadData),
+      });
+      if (!release.allow) {
+        return new Response(JSON.stringify({
+          error: release.reason,
+          error_code: release.code,
+          policy_version: POLICY_VERSION,
+          evidence_id: evidenceId,
+          fact_ids: approvedFacts.map((fact) => fact.id),
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
 
     let draftId: string | null = null;
     // Existing Studio/agent callers already manage their working draft. External
@@ -2207,6 +2329,10 @@ conversation that is already going, not as someone chasing silence.`}`;
       email,
       draft_id: draftId,
       rubric,
+      rubric_availability: rubricAvailability,
+      fact_ids: approvedFacts.map((fact) => fact.id),
+      evidence_id: evidenceId,
+      policy_version: POLICY_VERSION,
       // Warnings that survived the rewrite. The studio paints those rows red
       // and will not send until they are gone. This is not a pass.
       quality_status: checkerFailures.length ? "needs_review" : "clear",

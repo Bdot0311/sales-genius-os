@@ -54,6 +54,8 @@ export interface TraceStore {
   saveStep(row: StepRecord): Promise<void>;
   listMutations(threadId: string): Promise<string[]>;
   saveMutation(threadId: string, userId: string, key: string, toolName: string): Promise<void>;
+  claimMutation(threadId: string, userId: string, key: string, toolName: string): Promise<"claimed" | "present">;
+  finishMutation(threadId: string, key: string, status: "completed" | "unknown"): Promise<void>;
   clearMutations(threadId: string): Promise<void>;
 }
 
@@ -249,6 +251,28 @@ export function supabaseTraceStore(admin: any): TraceStore {
       return ((data ?? []) as Array<{ mutation_key: string }>).map((r) => r.mutation_key);
     },
 
+    async claimMutation(threadId, userId, key, toolName) {
+      const { error } = await admin.from("agent_run_mutations").insert({
+        thread_id: threadId,
+        user_id: userId,
+        mutation_key: normaliseMutationKey(key),
+        tool_name: toolName,
+        status: "dispatching",
+      });
+      if (!error) return "claimed" as const;
+      if (error.code === "23505") return "present" as const;
+      throw new Error(error.message);
+    },
+
+    async finishMutation(threadId, key, status: "completed" | "unknown") {
+      const { error } = await admin
+        .from("agent_run_mutations")
+        .update({ status })
+        .eq("thread_id", threadId)
+        .eq("mutation_key", normaliseMutationKey(key));
+      if (error) throw new Error(error.message);
+    },
+
     async saveMutation(threadId, userId, key, toolName) {
       const { error } = await admin
         .from("agent_run_mutations")
@@ -257,8 +281,9 @@ export function supabaseTraceStore(admin: any): TraceStore {
           user_id: userId,
           mutation_key: normaliseMutationKey(key),
           tool_name: toolName,
+          status: "completed",
         }, { onConflict: "thread_id,mutation_key" });
-      if (error) console.warn(`[agent-trace] could not record a completed mutation: ${error.message}`);
+      if (error) throw new Error(error.message);
     },
 
     async clearMutations(threadId) {

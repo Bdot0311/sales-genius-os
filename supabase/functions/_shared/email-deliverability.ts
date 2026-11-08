@@ -161,6 +161,30 @@ export function youRatio(text: string): number | null {
   return me + you === 0 ? null : you / (me + you);
 }
 
+const LONG_ACRONYMS = new Set(["HIPAA", "HTTPS", "HTTP"]);
+
+/** A token that is shouting, not an acronym or a short name. */
+export function shoutingTokens(text: string): string[] {
+  const words = stripHtml(text).split(/\s+/).filter(Boolean);
+  const found: string[] = [];
+  for (let i = 0; i < words.length; i++) {
+    const letters = words[i].replace(/[^A-Za-z]/g, "");
+    if (!letters || letters !== letters.toUpperCase() || /[a-z]/.test(words[i])) continue;
+    if (letters.length <= 4 || LONG_ACRONYMS.has(letters)) continue;
+    found.push(letters);
+  }
+  return found;
+}
+
+export function repairShouting(body: string): string {
+  const shouted = new Set(shoutingTokens(body));
+  if (!shouted.size) return body;
+  return body.replace(/\b[A-Za-z]{5,}\b/g, (word) => {
+    if (!shouted.has(word)) return word;
+    return word.charAt(0) + word.slice(1).toLowerCase();
+  });
+}
+
 export function deliverabilityReport(input: DeliverabilityInput): DeliverabilityReport {
   const raw = String(input.body ?? "");
   const subject = String(input.subject ?? "").trim();
@@ -180,7 +204,7 @@ export function deliverabilityReport(input: DeliverabilityInput): Deliverability
     links: (raw.match(/https?:\/\/[^\s<>"'{}|\\^`\[\]]+/gi) ?? []).length + (raw.match(/href\s*=/gi) ?? []).length,
     images: (raw.match(/<img/gi) ?? []).length,
     spamHits: SPAM_TRIGGERS.filter((t) => lower.includes(t)),
-    capsRuns: words.filter((w) => /^[A-Z]{3,}$/.test(w)).length,
+    capsRuns: shoutingTokens(text).length,
     punctuation: (text.match(/!{2,}|\?{2,}|!\?|\?!/g) ?? []).length + (text.match(/!/g) ?? []).length,
     mentionsAttachment: /\battach(ed|ment)\b/i.test(text),
     youRatio: youRatio(raw),
@@ -235,12 +259,13 @@ export function deliverabilityReport(input: DeliverabilityInput): Deliverability
   }
 
   if (metrics.capsRuns > 0) {
+    const shouted = shoutingTokens(text);
     add(
       "all_caps",
       metrics.capsRuns > 1 ? "warning" : "note",
-      `${metrics.capsRuns} all-caps run${metrics.capsRuns === 1 ? "" : "s"}`,
+      shouted.join(", "),
       "Shouting reads as bulk mail and scores as it too.",
-      "Use sentence case. If it is an acronym the reader knows, leave it; otherwise spell it out.",
+      `Lowercase only ${shouted.join(", ")}. Leave acronyms and names as they are.`,
     );
   }
 
