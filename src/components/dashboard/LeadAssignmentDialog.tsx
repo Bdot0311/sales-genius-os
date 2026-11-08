@@ -56,12 +56,10 @@ export const LeadAssignmentDialog = ({ open, onOpenChange, selectedLeads }: Lead
       if (activitiesError) throw activitiesError;
 
       // Send notification via edge function
-      const { error: notifyError } = await supabase.functions.invoke("send-email", {
-        body: {
-          to: teamMembers?.find(m => m.member_user_id === selectedMember)?.member_email,
-          subject: `You've been assigned ${selectedLeads.length} new lead(s)`,
-          html: `<p>You have been assigned ${selectedLeads.length} new lead(s) in OutReign. Please check your dashboard to review them.</p>`,
-        },
+      // Team notice, not prospect outreach: sent as an app notification so the
+      // outreach research/quality rules don't apply to it.
+      const { error: notifyError } = await supabase.functions.invoke("notify-lead-assignment", {
+        body: { memberUserId: selectedMember, leadIds: selectedLeads },
       });
 
       if (notifyError) console.error("Notification error:", notifyError);
