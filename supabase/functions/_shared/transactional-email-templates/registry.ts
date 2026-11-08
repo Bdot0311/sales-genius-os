@@ -28,6 +28,7 @@ import { template as churnInterview } from './churn-interview.tsx'
 import { template as customerInterview } from './customer-interview.tsx'
 import { template as inactiveSignupCheckin } from './inactive-signup-checkin.tsx'
 import { template as inactiveTrialCheckin } from './inactive-trial-checkin.tsx'
+import { template as leadAssignment } from './lead-assignment.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'welcome-email': welcomeEmail,
@@ -49,4 +50,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'customer-interview': customerInterview,
   'inactive-signup-checkin': inactiveSignupCheckin,
   'inactive-trial-checkin': inactiveTrialCheckin,
+  'lead-assignment': leadAssignment,
 }
