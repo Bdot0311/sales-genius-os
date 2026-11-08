@@ -46,10 +46,10 @@ import { decideSend, previewText } from "../_shared/send-confirmation.ts";
 import { userConfirmedSend } from "../_shared/user-confirmation.ts";
 import { duplicateGuidanceFor } from "../_shared/duplicate-send.ts";
 import { wantsCopyAudit } from "../_shared/copy-review-intent.ts";
-import { auditEmail, auditSummary } from "../_shared/email-audit.ts";
+import { prepareServerCopyAudit, runMechanicalAudit } from "../_shared/copy-audit.ts";
+import { auditEmail } from "../_shared/email-audit.ts";
 import { agentProhibitions } from "../_shared/agent-prohibitions.ts";
 import { icpPatch, patternQuery, wonDealPattern, type WonDealRow } from "../_shared/won-deal-pattern.ts";
-import { auditDeliverability } from "../_shared/email-deliverability.ts";
 import { auditSequence, sequenceSummary } from "../_shared/sequence-audit.ts";
 import {
   accountFor,
@@ -4061,43 +4061,22 @@ serve(async (req) => {
               auditLead = { company: leadRow.company_name, contactName: leadRow.contact_name };
             }
           }
-          const auditSubject = args.subject ? String(args.subject) : "";
-          const auditBody = String(args.body ?? "");
-          const auditPosition = typeof args.position === "number" ? args.position : undefined;
           // Both rule sets, because the quality card the user is looking at
-          // shows both. An agent that audits an email and says nothing about
-          // the three links in it is reporting half the answer, and the user
-          // can see the other half.
-          const findings = [
-            ...auditEmail({
-              subject: auditSubject,
-              body: auditBody,
-              position: auditPosition,
-              verifiedProof: args.verified_proof ? String(args.verified_proof) : "",
-              lead: auditLead,
-            }),
-            ...auditDeliverability({
-              subject: auditSubject,
-              body: auditBody,
-              isFirstTouch: auditPosition === undefined || auditPosition === 1,
-            }),
-          ];
-          const blockers = findings.filter((f) => f.severity === "blocker").length;
-          toolEvents.push({
-            name,
-            label: findings.length === 0 ? "Audited — clean" : `Audited — ${findings.length} finding(s)`,
-            status: blockers > 0 ? "error" : findings.length ? "queued" : "ok",
-            detail: findings.length
-              ? findings.map((f) => f.rule).join(", ")
-              : "no rule violations",
+          // shows both. The prelude calls this same function on the extracted
+          // paste, so a wrapper question is not scored as a second copy of the rules.
+          const result = runMechanicalAudit({
+            subject: args.subject ? String(args.subject) : "",
+            body: String(args.body ?? ""),
+            position: typeof args.position === "number" ? args.position : undefined,
+            verifiedProof: args.verified_proof ? String(args.verified_proof) : "",
+            lead: auditLead,
           });
+          toolEvents.push(result.event);
           return {
-            findings,
-            blockers,
-            summary: auditSummary(findings),
-            note:
-              "Report every finding to the user in your own words, quoting the evidence. " +
-              "Do not soften a blocker into a suggestion, and do not claim the email is fine when findings exist.",
+            findings: result.findings,
+            blockers: result.blockers,
+            summary: result.summary,
+            note: result.note,
           };
         }
 
@@ -5177,22 +5156,9 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
       if (auditHow === "server" && !messages.some((message) =>
         (message.tool_calls ?? []).some((call: { function?: { name?: string } }) => call.function?.name === "audit_email")
       )) {
-        const subject = String(userMessage ?? "").match(/^subject:\s*(.+)$/im)?.[1]?.trim() ?? "";
-        const findings = [
-          ...auditEmail({ subject, body: String(userMessage ?? ""), verifiedProof: "" }),
-          ...auditDeliverability({
-            subject,
-            body: String(userMessage ?? ""),
-            isFirstTouch: true,
-          }),
-        ];
-        const blockers = findings.filter((finding) => finding.severity === "blocker").length;
-        messages.push(...serverAuditPrelude(JSON.stringify({
-          findings,
-          blockers,
-          summary: auditSummary(findings),
-          note: "Report every finding. Do not claim the email is fine when findings exist.",
-        })) as typeof messages);
+        const prepared = prepareServerCopyAudit(userMessage);
+        toolEvents.push(prepared.event);
+        messages.push(...serverAuditPrelude(JSON.stringify(prepared.payload), prepared.arguments) as typeof messages);
       }
 
       let res: Response;

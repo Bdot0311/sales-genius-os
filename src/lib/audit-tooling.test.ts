@@ -86,20 +86,23 @@ describe("the agent is told to use it instead of improvising", () => {
 });
 
 describe("the tool result cannot be reported as clean when it is not", () => {
+  const shared = readFileSync("supabase/functions/_shared/copy-audit.ts", "utf8");
+
   it("says so in the note the model reads", () => {
     const branch = AGENT.slice(AGENT.indexOf('case "audit_email": {'), AGENT.indexOf('case "audit_sequence": {'));
-    expect(branch).toMatch(/do not soften a blocker into a suggestion/i);
+    expect(branch).toContain("note: result.note");
+    expect(shared).toMatch(/do not soften a blocker into a suggestion/i);
   });
 
   it("shows the user a tool event either way", () => {
     const branch = AGENT.slice(AGENT.indexOf('case "audit_email": {'), AGENT.indexOf('case "audit_sequence": {'));
-    expect(branch).toContain("toolEvents.push");
-    expect(branch).toContain("Audited");
+    expect(branch).toContain("toolEvents.push(result.event)");
+    expect(shared).toContain("Audited — clean");
+    expect(shared).toContain("Audited — ${findings.length} finding(s)");
   });
 
   it("marks a blocker as an error, not a note", () => {
-    const branch = AGENT.slice(AGENT.indexOf('case "audit_email": {'), AGENT.indexOf('case "audit_sequence": {'));
-    expect(branch).toContain('blockers > 0 ? "error"');
+    expect(shared).toContain('blockers > 0 ? "error"');
   });
 });
 
