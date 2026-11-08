@@ -25,7 +25,7 @@ import {
   bedrockPrice,
   bedrockProModel,
   bedrockTierForRequest,
-  opusPriceBlock,
+  sendIfPriced,
   usdForBedrockModel,
 } from "./bedrock.ts";
 
@@ -191,13 +191,7 @@ export async function aiFetch(
       controller.signal;
 
     if (route.provider === "bedrock") {
-      const priceBlock = opusPriceBlock(route.model);
-      if (priceBlock) {
-        return new Response(JSON.stringify({ error: { message: priceBlock, code: "model_price_unconfigured" } }), {
-          status: 422,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
+      return sendIfPriced(route.model, async () => {
       const wantsStream = body.stream === true;
       if (wantsStream) {
         // Real token-by-token streaming: usage arrives in the stream's metadata
@@ -245,7 +239,7 @@ export async function aiFetch(
         });
       }
       return bedrockChatAsStream(route.model, body, completion as Record<string, unknown>);
-
+      });
     }
 
     // Lovable gateway fallback.

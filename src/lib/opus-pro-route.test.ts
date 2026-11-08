@@ -12,6 +12,7 @@ import {
   usdForBedrockModel,
   fromConverseBody,
   opusPriceBlock,
+  sendIfPriced,
   serverAuditPrelude,
   toConverseBody,
 } from "../../supabase/functions/_shared/bedrock";
@@ -19,7 +20,7 @@ import { pruneTurnContext } from "../../supabase/functions/_shared/turn-context"
 
 const SIGNATURE = "sig-opus-55-do-not-rewrite";
 
-describe("Pro stays Sonnet until Opus is opted in", () => {
+describe("Pro is the priced US Opus profile and Standard stays Haiku", () => {
   it("allowlists the server Pro ids and refuses a caller-supplied Opus id", () => {
     expect(bedrockTierForRequest("google/gemini-2.5-pro")).toBe("pro");
     expect(bedrockTierForRequest("openai/gpt-5.6-sol")).toBe("pro");
@@ -27,13 +28,14 @@ describe("Pro stays Sonnet until Opus is opted in", () => {
     expect(bedrockTierForRequest("anthropic.claude-opus-5-5")).toBe("fast");
     expect(bedrockTierForRequest("us.anthropic.claude-opus-5-5")).toBe("fast");
     expect(bedrockTierForRequest("please use opus")).toBe("fast");
-    expect(BEDROCK_PRO_MODEL_ID).toBe("us.anthropic.claude-sonnet-4-5-20250929-v1:0");
-    expect(BEDROCK_OPUS_55_US_ID).toBe("us.anthropic.claude-opus-5-5");
+    expect(BEDROCK_PRO_MODEL_ID).toBe("us.anthropic.claude-opus-5-5");
+    expect(BEDROCK_OPUS_55_US_ID).toBe(BEDROCK_PRO_MODEL_ID);
     expect(BEDROCK_STANDARD_MODEL_ID).toContain("haiku-4-5");
   });
 
   it("lets each environment variable replace only its own tier", () => {
     const previous = globalThis.Deno;
+    const sonnet = "us.anthropic.claude-sonnet-4-5-20250929-v1:0";
     globalThis.Deno = { env: { get: () => "" } } as typeof Deno;
     try {
       expect(bedrockProModel()).toBe(BEDROCK_PRO_MODEL_ID);
@@ -42,10 +44,10 @@ describe("Pro stays Sonnet until Opus is opted in", () => {
       globalThis.Deno = previous;
     }
     globalThis.Deno = {
-      env: { get: (name: string) => (name === "BEDROCK_MODEL_ID_PRO" ? BEDROCK_OPUS_55_US_ID : "") },
+      env: { get: (name: string) => (name === "BEDROCK_MODEL_ID_PRO" ? sonnet : "") },
     } as typeof Deno;
     try {
-      expect(bedrockProModel()).toBe(BEDROCK_OPUS_55_US_ID);
+      expect(bedrockProModel()).toBe(sonnet);
       expect(bedrockDefaultModel()).toBe(BEDROCK_STANDARD_MODEL_ID);
     } finally {
       globalThis.Deno = previous;
@@ -115,26 +117,39 @@ describe("Opus thinking blocks round-trip and old histories do not grow one", ()
   });
 });
 
-describe("Opus is not billed at the cheap default", () => {
-  it("prices Global cross-region at the captured table and blocks the US geo profile", () => {
+describe("Opus prices stay on the profile that was priced", () => {
+  it("bills the US geo default at 4.40/22, Global at 4/20, and does not call out for an unpriced profile", async () => {
+    expect(bedrockPrice(BEDROCK_PRO_MODEL_ID)).toEqual({ in: 4.4, out: 22 });
+    expect(usdForBedrockModel(BEDROCK_PRO_MODEL_ID, 1_000_000, 1_000_000)).toBeCloseTo(26.4, 10);
+    expect(opusPriceBlock(BEDROCK_PRO_MODEL_ID)).toBeNull();
     expect(bedrockPrice("global.anthropic.claude-opus-5-5")).toEqual({ in: 4, out: 20 });
     expect(usdForBedrockModel("global.anthropic.claude-opus-5-5", 1_000_000, 1_000_000)).toBe(24);
-    expect(bedrockPrice(BEDROCK_PRO_MODEL_ID)).toEqual({ in: 3, out: 15 });
-    expect(usdForBedrockModel(BEDROCK_PRO_MODEL_ID, 1_000_000, 1_000_000)).toBe(18);
-    expect(opusPriceBlock(BEDROCK_PRO_MODEL_ID)).toBeNull();
-    expect(bedrockPrice(BEDROCK_OPUS_55_US_ID)).toBeNull();
-    expect(opusPriceBlock(BEDROCK_OPUS_55_US_ID)).toMatch(/not sent/);
-    expect(() => usdForBedrockModel(BEDROCK_OPUS_55_US_ID, 1_000_000, 1_000_000)).toThrow(/not confirmed/);
+    expect(bedrockPrice("eu.anthropic.claude-opus-5-5")).toBeNull();
+    expect(opusPriceBlock("eu.anthropic.claude-opus-5-5")).toMatch(/not sent/);
+    expect(() => usdForBedrockModel("eu.anthropic.claude-opus-5-5", 1_000_000, 0)).toThrow(/not confirmed/);
     expect(bedrockPrice(BEDROCK_STANDARD_MODEL_ID)).toEqual({ in: 1, out: 5 });
     expect(usdForBedrockModel(BEDROCK_STANDARD_MODEL_ID, 1_000_000, 1_000_000)).toBe(6);
+    expect(bedrockPrice("us.anthropic.claude-sonnet-4-5-20250929-v1:0")).toEqual({ in: 3, out: 15 });
+
+    let calls = 0;
+    const send = async () => {
+      calls += 1;
+      return new Response("sent", { status: 200 });
+    };
+    const allowed = await sendIfPriced(BEDROCK_PRO_MODEL_ID, send);
+    expect(allowed.status).toBe(200);
+    expect(calls).toBe(1);
+    const blocked = await sendIfPriced("eu.anthropic.claude-opus-5-5", send);
+    expect(blocked.status).toBe(422);
+    expect(calls).toBe(1);
   });
 });
 
 describe("copy audit stays mandatory without a forced Opus tool choice", () => {
   it("keeps a named tool_choice for Haiku and runs the audit before an Opus call", () => {
     expect(copyAuditDispatch(BEDROCK_STANDARD_MODEL_ID)).toBe("tool_choice");
-    expect(copyAuditDispatch(BEDROCK_PRO_MODEL_ID)).toBe("tool_choice");
-    expect(copyAuditDispatch(BEDROCK_OPUS_55_US_ID)).toBe("server");
+    expect(copyAuditDispatch("us.anthropic.claude-sonnet-4-5-20250929-v1:0")).toBe("tool_choice");
+    expect(copyAuditDispatch(BEDROCK_PRO_MODEL_ID)).toBe("server");
     const forced = toConverseBody({
       model: BEDROCK_STANDARD_MODEL_ID,
       messages: [{ role: "user", content: "Review this." }],

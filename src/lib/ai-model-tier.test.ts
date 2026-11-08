@@ -35,7 +35,7 @@ describe("the named tiers map to the models they claim", () => {
   it("AI_SMART reaches the stronger Bedrock model", () => {
     expect(tier(constant("AI_SMART"))).toBe("pro");
     // And the pro model really is the stronger one.
-    expect(BEDROCK_PRO_MODEL_ID).toBe("us.anthropic.claude-sonnet-4-5-20250929-v1:0");
+    expect(BEDROCK_PRO_MODEL_ID).toBe("us.anthropic.claude-opus-5-5");
     expect(BEDROCK).toContain("BEDROCK_PRO_MODEL_ID");
   });
 

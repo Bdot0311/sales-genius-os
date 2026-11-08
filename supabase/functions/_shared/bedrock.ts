@@ -59,16 +59,13 @@ export function bedrockConfigured(): boolean {
  */
 export const BEDROCK_STANDARD_MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0";
 /**
- * Pro tier. Sonnet 4.5 until an operator sets `BEDROCK_MODEL_ID_PRO`.
- * Opus 5.5 is that opt-in, not this default: the US geo profile has no
- * confirmed price, and publishing it as the default would refuse every Pro call.
+ * Pro tier. US geo Opus 5.5, the profile used from us-east-1.
+ * The bare id is in-region only in eu-west-2. Global is a different profile
+ * and is not this default.
  */
-export const BEDROCK_PRO_MODEL_ID = "us.anthropic.claude-sonnet-4-5-20250929-v1:0";
-/**
- * US geo Opus 5.5. Not selected unless `BEDROCK_MODEL_ID_PRO` is this id.
- * The bare id is in-region only in eu-west-2. This profile is unpriced here.
- */
-export const BEDROCK_OPUS_55_US_ID = "us.anthropic.claude-opus-5-5";
+export const BEDROCK_PRO_MODEL_ID = "us.anthropic.claude-opus-5-5";
+/** Same id, named for tests that distinguish the built-in profile from other Opus profiles. */
+export const BEDROCK_OPUS_55_US_ID = BEDROCK_PRO_MODEL_ID;
 
 /**
  * Request ids the server itself uses for the Pro tier.
@@ -138,21 +135,29 @@ export const BEDROCK_PRICING: Record<string, { in: number; out: number }> = {
 };
 
 /**
- * Global cross-region Opus 5.5, from the AWS pricing table the account owner
- * captured: Global cross-region inference, region selector US East (Ohio).
- * $4 / $20 per 1M input / output tokens. Not applied to us./eu./au./jp. profiles.
- * Cache write/read rates on that same table are not used: this meter only
- * prices input and output tokens.
+ * Global cross-region Opus 5.5 only. Account-owner screenshot: Global
+ * cross-region inference, region selector US East (Ohio). $4 / $20 per 1M
+ * input / output tokens. Not applied to us./eu./au./jp. profiles.
  */
 const GLOBAL_OPUS_55_PRICE = { in: 4, out: 20 };
+/**
+ * US geo / in-region Opus 5.5, exact profile us.anthropic.claude-opus-5-5.
+ * Account-owner screenshot, 7 Nov 2026: "Geo and In-region Cross-region
+ * Inference", region US East (N. Virginia). $4.40 / $22 per 1M input / output
+ * tokens. Not applied to EU, JP, AU, bare, or global ids.
+ * That screenshot also lists cache write and cache read. This meter does not
+ * request or price cache tokens, so those figures are not used.
+ */
+const US_OPUS_55_PRICE = { in: 4.4, out: 22 };
 
 /**
  * Null means this Opus profile has no confirmed rate. Callers must not
  * substitute the generic $0.30/$2.50 fallback.
  */
 export function confirmedOpusPrice(modelId: string): { in: number; out: number } | null {
-  if (!modelId.includes("claude-opus-5-5")) return null;
-  if (modelId.startsWith("global.")) return GLOBAL_OPUS_55_PRICE;
+  if (modelId === "global.anthropic.claude-opus-5-5") return GLOBAL_OPUS_55_PRICE;
+  if (modelId === "us.anthropic.claude-opus-5-5") return US_OPUS_55_PRICE;
+  if (modelId.includes("claude-opus-5-5")) return null;
   return null;
 }
 
@@ -170,7 +175,19 @@ export function usdForBedrockModel(modelId: string, promptTokens: number, comple
 export function opusPriceBlock(modelId: string): string | null {
   if (!modelId.includes("claude-opus-5-5")) return null;
   if (confirmedOpusPrice(modelId)) return null;
-  return "Claude Opus 5.5 on this inference profile has no confirmed per-token price, so the call was not sent. The published $4 and $20 per million tokens are Global cross-region rates, not a rate for the US geo profile.";
+  return "Claude Opus 5.5 on this inference profile has no confirmed per-token price, so the call was not sent.";
+}
+
+/** Runs send only when the Opus profile has a confirmed rate. Other models pass through. */
+export async function sendIfPriced(modelId: string, send: () => Promise<Response>): Promise<Response> {
+  const block = opusPriceBlock(modelId);
+  if (block) {
+    return new Response(JSON.stringify({ error: { message: block, code: "model_price_unconfigured" } }), {
+      status: 422,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  return send();
 }
 
 /** Price a Bedrock model id by longest matching family prefix. */
