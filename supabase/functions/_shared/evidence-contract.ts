@@ -67,7 +67,7 @@ function sha256Hex(message: string): string {
 
 export const POLICY_VERSION = "research-contract-2026-11-07";
 
-export type SnapshotProvider = "site" | "parallel" | "context_dev" | "signal";
+export type SnapshotProvider = "site" | "firecrawl" | "parallel" | "context_dev" | "signal";
 export type SnapshotRole = "prospect_page" | "external" | "sender_proof";
 
 export interface StoredSnapshot {

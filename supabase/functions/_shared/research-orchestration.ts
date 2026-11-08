@@ -6,8 +6,9 @@
  * calls research-lead once. A retry inside that window reads the receipt and
  * holds. It does not call Parallel or Context.dev again.
  *
- * Firecrawl has no adapter in this repository. The receipt says so. A site
- * fetch is not recorded as Firecrawl.
+ * Firecrawl is the lead-site reader. A direct page fetch is not recorded as
+ * Firecrawl. Parallel and Context run after the site read, including when it
+ * succeeds. A missing key is not_configured and does not invent a page.
  */
 
 export const RETRY_WINDOW_MS = 10 * 60 * 1000;
@@ -24,7 +25,7 @@ export interface RetrievalReceipt {
   site: ProviderAttempt & { statuses: number[]; finalHosts: string[] };
   parallel: ProviderAttempt;
   context_dev: ProviderAttempt;
-  firecrawl: { configured: false; called: false; reason: "no adapter in this repository" };
+  firecrawl: ProviderAttempt;
   snapshotWrite: "written" | "failed" | "none";
 }
 
@@ -60,7 +61,7 @@ export function emptyReceipt(now: string): RetrievalReceipt {
     site: { ...none, statuses: [], finalHosts: [] },
     parallel: { ...none },
     context_dev: { ...none },
-    firecrawl: { configured: false, called: false, reason: "no adapter in this repository" },
+    firecrawl: { configured: false, called: false, error: "not_configured", count: 0 },
     snapshotWrite: "none",
   };
 }
@@ -75,6 +76,9 @@ export function receiptFromProviders(input: {
   contextCount: number;
   siteStatuses: number[];
   siteHosts: string[];
+  firecrawlConfigured: boolean;
+  firecrawlError: string | null;
+  firecrawlCount: number;
   snapshotWrite: RetrievalReceipt["snapshotWrite"];
 }): RetrievalReceipt {
   return {
@@ -99,7 +103,12 @@ export function receiptFromProviders(input: {
       error: input.contextConfigured ? input.contextError : "not_configured",
       count: input.contextCount,
     },
-    firecrawl: { configured: false, called: false, reason: "no adapter in this repository" },
+    firecrawl: {
+      configured: input.firecrawlConfigured,
+      called: input.firecrawlConfigured,
+      error: input.firecrawlConfigured ? input.firecrawlError : "not_configured",
+      count: input.firecrawlCount,
+    },
     snapshotWrite: input.snapshotWrite,
   };
 }
@@ -113,8 +122,10 @@ export function holdReason(receipt: RetrievalReceipt | null): string {
     receipt.context_dev.configured
       ? `Context.dev ${receipt.context_dev.error ? `failed (${receipt.context_dev.error})` : `returned ${receipt.context_dev.count}`}`
       : "Context.dev is not configured",
-    "Firecrawl has no adapter in this app",
-    receipt.site.error ? "the company site fetch did not yield an approved sentence" : `the site fetch stored ${receipt.site.count} page(s)`,
+    receipt.firecrawl.configured
+      ? `Firecrawl ${receipt.firecrawl.error ? `failed (${receipt.firecrawl.error})` : `returned ${receipt.firecrawl.count}`}`
+      : "Firecrawl is not configured (FIRECRAWL_API_KEY)",
+    receipt.site.error ? "no approved site sentence was stored" : `stored ${receipt.site.count} site page(s)`,
   ];
   return `Research ran and did not produce an approved sentence, so nothing was drafted. ${parts.join("; ")}.`;
 }

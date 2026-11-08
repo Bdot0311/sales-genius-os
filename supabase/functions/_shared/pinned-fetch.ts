@@ -104,6 +104,8 @@ export interface PageDeps {
   dial: (target: DialTarget) => Promise<DialResult>;
   timeoutMs: number;
   headers: Record<string, string>;
+  /** html keeps a rendered page. text keeps robots.txt and sitemap XML. */
+  accept: "html" | "text";
 }
 
 const DEFAULT_HEADERS = {
@@ -128,6 +130,7 @@ export async function fetchPinnedPage(raw: string, deps: Partial<PageDeps> = {})
   const dial = deps.dial ?? nodeDial;
   const timeoutMs = deps.timeoutMs ?? 9_000;
   const headers = deps.headers ?? DEFAULT_HEADERS;
+  const accept = deps.accept ?? "html";
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   const failed = (status: number, finalUrl = raw): PageFetch => ({
@@ -154,7 +157,11 @@ export async function fetchPinnedPage(raw: string, deps: Partial<PageDeps> = {})
       }
       const cacheState = cacheStateOf(res.headers);
       const type = res.headers.get("content-type") || "";
-      if (!res.status || res.status >= 400 || !type.includes("html")) {
+      const htmlDocument = /^\s*<!doctype html/i.test(res.body) || /^\s*<html/i.test(res.body);
+      const usable = accept === "text"
+        ? res.status >= 200 && res.status < 300 && !htmlDocument
+        : Boolean(res.status) && res.status < 400 && type.includes("html");
+      if (!usable) {
         return { requestedUrl: raw, finalUrl: current.href, status: res.status, html: null, ok: false, cacheState };
       }
       return { requestedUrl: raw, finalUrl: current.href, status: res.status, html: res.body, ok: true, cacheState };

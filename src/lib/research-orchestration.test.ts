@@ -34,7 +34,7 @@ describe("research is fetched before a draft and not repeated inside the window"
         site: { configured: true, called: true, error: "no_page", count: 0, statuses: [404], finalHosts: [] },
         parallel: { configured: false, called: false, error: "not_configured", count: 0 },
         context_dev: { configured: true, called: true, error: null, count: 0 },
-        firecrawl: { configured: false, called: false, reason: "no adapter in this repository" },
+        firecrawl: { configured: false, called: false, error: "not_configured", count: 0 },
         snapshotWrite: "none",
       },
       now: new Date(Date.now() + 1000).toISOString(),
@@ -46,9 +46,9 @@ describe("research is fetched before a draft and not repeated inside the window"
       site: { configured: true, called: true, error: "no_page", count: 0, statuses: [], finalHosts: [] },
       parallel: { configured: false, called: false, error: "not_configured", count: 0 },
       context_dev: { configured: false, called: false, error: "not_configured", count: 0 },
-      firecrawl: { configured: false, called: false, reason: "no adapter in this repository" },
+      firecrawl: { configured: false, called: false, error: "not_configured", count: 0 },
       snapshotWrite: "none",
-    })).toContain("Firecrawl has no adapter");
+    })).toContain("Firecrawl is not configured");
   });
 });
 
