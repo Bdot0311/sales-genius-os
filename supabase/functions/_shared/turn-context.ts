@@ -191,6 +191,7 @@ export function pruneTurnContext(
   const boundary = lastStepStart(messages);
   let prunedCount = 0;
   let running = tokensBefore;
+  const changed: number[] = [];
 
   for (let i = 0; i < boundary && running > budget; i++) {
     const message = messages[i];
@@ -208,7 +209,19 @@ export function pruneTurnContext(
     );
     running -= approxTokens(content) - approxTokens(replacement);
     message.content = replacement;
+    changed.push(i);
     prunedCount += 1;
+  }
+
+  // A reasoning signature is bound to the prefix that produced it. A rewritten
+  // tool result is a different prefix, so the signature is dropped rather than
+  // replayed. The tool call and the pruned result stay, including an
+  // unknown-outcome result. No signature is invented for the shorter text.
+  if (changed.length) {
+    const earliest = Math.min(...changed);
+    for (let i = earliest + 1; i < messages.length; i++) {
+      if (messages[i]?.bedrock_reasoning) delete messages[i].bedrock_reasoning;
+    }
   }
 
   return { tokensBefore, tokensAfter: messagesTokens(messages), prunedCount };

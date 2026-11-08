@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";
+import { BEDROCK_PRO_MODEL_ID, BEDROCK_STANDARD_MODEL_ID, bedrockTierForRequest } from "../../supabase/functions/_shared/bedrock";
 
 /**
  * Which model a call runs on was invisible at the call site.
@@ -22,21 +23,7 @@ import { readFileSync, readdirSync } from "node:fs";
 const PROVIDER = readFileSync("supabase/functions/_shared/ai-provider.ts", "utf8");
 const BEDROCK = readFileSync("supabase/functions/_shared/bedrock.ts", "utf8");
 
-/** The regex routeFor uses, lifted from the file so it cannot drift. */
-function proTest(): { wants: RegExp; excludes: RegExp } {
-  const wants = PROVIDER.match(/const wantsPro = (\/[^\n]*?\/i)\.test\(bare\)/);
-  expect(wants, "routeFor should decide the tier with a regex over the id").toBeTruthy();
-  const excludes = PROVIDER.match(/!(\/\(\?:\^\|\[[^\]]*\]\)\([^)]*\)\/i)\.test\(bare\)/);
-  expect(excludes, "routeFor should exclude the small-model names").toBeTruthy();
-  // eslint-disable-next-line no-eval
-  return { wants: eval(wants![1]) as RegExp, excludes: eval(excludes![1]) as RegExp };
-}
-
-const tier = (id: string) => {
-  const bare = id.split("/").slice(1).join("/") || id;
-  const { wants, excludes } = proTest();
-  return wants.test(bare) && !excludes.test(bare) ? "pro" : "fast";
-};
+const tier = (id: string) => bedrockTierForRequest(id);
 
 const constant = (name: string) => {
   const m = PROVIDER.match(new RegExp(`export const ${name} = "([^"]+)"`));
@@ -48,12 +35,14 @@ describe("the named tiers map to the models they claim", () => {
   it("AI_SMART reaches the stronger Bedrock model", () => {
     expect(tier(constant("AI_SMART"))).toBe("pro");
     // And the pro model really is the stronger one.
-    expect(BEDROCK).toMatch(/BEDROCK_MODEL_ID_PRO[\s\S]{0,80}?sonnet/i);
+    expect(BEDROCK_PRO_MODEL_ID).toBe("us.anthropic.claude-opus-5-5");
+    expect(BEDROCK).toContain("BEDROCK_PRO_MODEL_ID");
   });
 
   it("AI_FAST reaches the cheap one", () => {
     expect(tier(constant("AI_FAST"))).toBe("fast");
-    expect(BEDROCK).toMatch(/BEDROCK_MODEL_ID"\)[\s\S]{0,80}?haiku/i);
+    expect(BEDROCK_STANDARD_MODEL_ID).toContain("haiku-4-5");
+    expect(BEDROCK).toContain("BEDROCK_STANDARD_MODEL_ID");
   });
 
   it("both stay valid ids for the fallback gateway", () => {

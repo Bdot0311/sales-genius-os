@@ -53,12 +53,72 @@ export function bedrockConfigured(): boolean {
 }
 
 
-/** Fast/cheap workhorse model, and a stronger one for "pro"-class requests. */
+/**
+ * Standard tier. A US inference profile, matching the default region us-east-1.
+ * `BEDROCK_MODEL_ID` replaces it without moving the Pro tier.
+ */
+export const BEDROCK_STANDARD_MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0";
+/**
+ * Pro tier. US geo Opus 5.5, the profile used from us-east-1.
+ * The bare id is in-region only in eu-west-2. Global is a different profile
+ * and is not this default.
+ */
+export const BEDROCK_PRO_MODEL_ID = "us.anthropic.claude-opus-5-5";
+/** Same id, named for tests that distinguish the built-in profile from other Opus profiles. */
+export const BEDROCK_OPUS_55_US_ID = BEDROCK_PRO_MODEL_ID;
+
+/**
+ * Request ids the server itself uses for the Pro tier.
+ * A caller-supplied string that merely contains "pro" or "opus" is not one of these.
+ */
+export const PRO_TIER_REQUESTS = new Set([
+  "google/gemini-2.5-pro",
+  "openai/gpt-5.6-sol",
+]);
+
+export function bedrockTierForRequest(model: string): "pro" | "fast" {
+  return PRO_TIER_REQUESTS.has(model.trim()) ? "pro" : "fast";
+}
+
+function envValue(name: "BEDROCK_MODEL_ID" | "BEDROCK_MODEL_ID_PRO"): string {
+  try {
+    if (name === "BEDROCK_MODEL_ID") return Deno.env.get("BEDROCK_MODEL_ID") || "";
+    return Deno.env.get("BEDROCK_MODEL_ID_PRO") || "";
+  } catch {
+    return "";
+  }
+}
+
+/** Fast/cheap workhorse model, and a stronger one for the Pro tier. */
 export function bedrockDefaultModel(): string {
-  return Deno.env.get("BEDROCK_MODEL_ID") || "us.anthropic.claude-haiku-4-5-20251001-v1:0";
+  return envValue("BEDROCK_MODEL_ID") || BEDROCK_STANDARD_MODEL_ID;
 }
 export function bedrockProModel(): string {
-  return Deno.env.get("BEDROCK_MODEL_ID_PRO") || "us.anthropic.claude-sonnet-4-5-20250929-v1:0";
+  return envValue("BEDROCK_MODEL_ID_PRO") || BEDROCK_PRO_MODEL_ID;
+}
+
+function opus55(modelId: string): boolean {
+  return modelId.includes("claude-opus-5-5");
+}
+
+/** Opus 5.5 rejects a forced tool. Other models keep the named tool_choice. */
+export function copyAuditDispatch(modelId: string): "server" | "tool_choice" {
+  return opus55(modelId) ? "server" : "tool_choice";
+}
+
+export const AUDIT_TOOL_CHOICE = { type: "function" as const, function: { name: "audit_email" } };
+
+/** The audit already ran. The model answers from this result and is not asked to force the tool. */
+export function serverAuditPrelude(payload: string): Array<Record<string, unknown>> {
+  const id = "audit-email-required";
+  return [
+    {
+      role: "assistant",
+      content: "",
+      tool_calls: [{ id, type: "function", function: { name: "audit_email", arguments: "{}" } }],
+    },
+    { role: "tool", tool_call_id: id, content: payload },
+  ];
 }
 
 /** USD per 1M tokens for the Bedrock ids we route to. */
@@ -74,8 +134,66 @@ export const BEDROCK_PRICING: Record<string, { in: number; out: number }> = {
   "meta.llama3": { in: 0.3, out: 0.6 },
 };
 
+/**
+ * Global cross-region Opus 5.5 only. Account-owner screenshot: Global
+ * cross-region inference, region selector US East (Ohio). $4 / $20 per 1M
+ * input / output tokens. Not applied to us./eu./au./jp. profiles.
+ */
+const GLOBAL_OPUS_55_PRICE = { in: 4, out: 20 };
+/**
+ * US geo / in-region Opus 5.5, exact profile us.anthropic.claude-opus-5-5.
+ * Account-owner screenshot, 7 Nov 2026: "Geo and In-region Cross-region
+ * Inference", region US East (N. Virginia). $4.40 / $22 per 1M input / output
+ * tokens. Not applied to EU, JP, AU, bare, or global ids.
+ * That screenshot also lists cache write and cache read. This meter does not
+ * request or price cache tokens, so those figures are not used.
+ */
+const US_OPUS_55_PRICE = { in: 4.4, out: 22 };
+
+/**
+ * Null means this Opus profile has no confirmed rate. Callers must not
+ * substitute the generic $0.30/$2.50 fallback.
+ */
+export function confirmedOpusPrice(modelId: string): { in: number; out: number } | null {
+  if (modelId === "global.anthropic.claude-opus-5-5") return GLOBAL_OPUS_55_PRICE;
+  if (modelId === "us.anthropic.claude-opus-5-5") return US_OPUS_55_PRICE;
+  if (modelId.includes("claude-opus-5-5")) return null;
+  return null;
+}
+
+/** Input plus output dollars. Unpriced Opus throws rather than using another model's rate. */
+export function usdForBedrockModel(modelId: string, promptTokens: number, completionTokens: number): number {
+  const listed = bedrockPrice(modelId);
+  if (modelId.includes("claude-opus-5-5") && !listed) {
+    throw new Error("opus price is not confirmed for this profile");
+  }
+  if (!listed) throw new Error("not a listed bedrock model");
+  return (promptTokens / 1_000_000) * listed.in + (completionTokens / 1_000_000) * listed.out;
+}
+
+/** Why a paid Opus call must not be sent. Null when the call may proceed. */
+export function opusPriceBlock(modelId: string): string | null {
+  if (!modelId.includes("claude-opus-5-5")) return null;
+  if (confirmedOpusPrice(modelId)) return null;
+  return "Claude Opus 5.5 on this inference profile has no confirmed per-token price, so the call was not sent.";
+}
+
+/** Runs send only when the Opus profile has a confirmed rate. Other models pass through. */
+export async function sendIfPriced(modelId: string, send: () => Promise<Response>): Promise<Response> {
+  const block = opusPriceBlock(modelId);
+  if (block) {
+    return new Response(JSON.stringify({ error: { message: block, code: "model_price_unconfigured" } }), {
+      status: 422,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  return send();
+}
+
 /** Price a Bedrock model id by longest matching family prefix. */
 export function bedrockPrice(modelId: string): { in: number; out: number } | null {
+  const opus = confirmedOpusPrice(modelId);
+  if (modelId.includes("claude-opus-5-5")) return opus;
   const id = modelId.replace(/^(us|eu|apac)\./, "");
   let best: { in: number; out: number } | null = null;
   let bestLen = 0;
@@ -222,6 +340,14 @@ export function toConverseBody(body: Record<string, unknown>): Record<string, un
       continue;
     }
     if (msg.role === "assistant") {
+      const carried = (msg as { bedrock_reasoning?: unknown }).bedrock_reasoning;
+      if (Array.isArray(carried)) {
+        for (const block of carried) {
+          if (block && typeof block === "object" && "reasoningContent" in (block as Record<string, unknown>)) {
+            push("assistant", block);
+          }
+        }
+      }
       const text = textOf(msg.content);
       if (text) push("assistant", { text });
       for (const call of msg.tool_calls ?? []) {
@@ -244,8 +370,12 @@ export function toConverseBody(body: Record<string, unknown>): Record<string, un
   }
 
   const inferenceConfig: Record<string, unknown> = {};
-  if (typeof body.temperature === "number") inferenceConfig.temperature = body.temperature;
-  if (typeof body.top_p === "number") inferenceConfig.topP = body.top_p;
+  // Opus 5.5 keeps adaptive thinking on. A manual temperature is not a
+  // thinking budget and is omitted so the request does not fight that mode.
+  if (!opus55(String(body.model ?? ""))) {
+    if (typeof body.temperature === "number") inferenceConfig.temperature = body.temperature;
+    if (typeof body.top_p === "number") inferenceConfig.topP = body.top_p;
+  }
   const maxTokens = body.max_completion_tokens ?? body.max_tokens;
   if (typeof maxTokens === "number") inferenceConfig.maxTokens = maxTokens;
 
@@ -271,11 +401,16 @@ export function toConverseBody(body: Record<string, unknown>): Record<string, un
       .filter(Boolean);
     if (specs.length) {
       const toolConfig: Record<string, unknown> = { tools: specs };
-      const choice = body.tool_choice;
-      if (choice === "required" || choice === "any") toolConfig.toolChoice = { any: {} };
-      else if (choice && typeof choice === "object") {
-        const name = ((choice as Record<string, unknown>).function as Record<string, unknown> | undefined)?.name;
-        if (name) toolConfig.toolChoice = { tool: { name: String(name) } };
+      // Opus 5.5 accepts tool_choice auto and none. any and a named tool 400.
+      // Omitting the field is auto. The copy audit is made mandatory by the
+      // caller running it before this request, not by a forced tool choice.
+      if (!opus55(String(body.model ?? ""))) {
+        const choice = body.tool_choice;
+        if (choice === "required" || choice === "any") toolConfig.toolChoice = { any: {} };
+        else if (choice && typeof choice === "object") {
+          const name = ((choice as Record<string, unknown>).function as Record<string, unknown> | undefined)?.name;
+          if (name) toolConfig.toolChoice = { tool: { name: String(name) } };
+        }
       }
       out.toolConfig = toolConfig;
     }
@@ -295,7 +430,9 @@ export function fromConverseBody(model: string, data: Record<string, unknown>): 
 
   let text = "";
   const toolCalls: Array<Record<string, unknown>> = [];
+  const reasoning: Record<string, unknown>[] = [];
   for (const block of blocks) {
+    if (block.reasoningContent && typeof block.reasoningContent === "object") reasoning.push(block);
     if (typeof block.text === "string") text += block.text;
     const use = block.toolUse as Record<string, unknown> | undefined;
     if (use) {
@@ -321,6 +458,7 @@ export function fromConverseBody(model: string, data: Record<string, unknown>): 
         message: {
           role: "assistant",
           content: text || null,
+          ...(reasoning.length ? { bedrock_reasoning: reasoning } : {}),
           ...(toolCalls.length ? { tool_calls: toolCalls } : {}),
         },
         finish_reason: toolCalls.length ? "tool_calls" : stopReason === "max_tokens" ? "length" : "stop",

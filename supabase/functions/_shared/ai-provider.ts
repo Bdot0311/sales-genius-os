@@ -24,6 +24,9 @@ import {
   bedrockDefaultModel,
   bedrockPrice,
   bedrockProModel,
+  bedrockTierForRequest,
+  sendIfPriced,
+  usdForBedrockModel,
 } from "./bedrock.ts";
 
 import { DEFAULT_FALLBACK_ENDPOINT } from "./ai-gateway.ts";
@@ -55,9 +58,8 @@ const DEFAULT_PRICE = { in: 0.3, out: 2.5 };
  *
  * Bedrock serves none of the gateway model ids, so `routeFor` collapses
  * whatever a caller asks for onto one of two models — and the test it applies
- * is a regex over the requested id. That means a call site gets the cheap
- * model unless its string happens to contain "pro", "sonnet", "opus" or a
- * gpt-5 id, which is a trap: twenty-four call sites wrote
+ * is an exact allowlist of server tier ids. A request string that merely
+ * contains "pro", "sonnet", or "opus" stays on the cheap model. Twenty-four call sites wrote
  * "google/gemini-2.5-flash" and silently ran on Haiku, including the one that
  * writes the emails and the two that grade them.
  *
@@ -77,17 +79,12 @@ export const AI_SMART = "google/gemini-2.5-pro";
 
 export function routeFor(model: string): { provider: AiProvider; url: string; model: string; key: string } {
   const gatewayId = model || "google/gemini-2.5-flash";
-  const [, ...rest] = gatewayId.split("/");
-  const bare = rest.join("/") || gatewayId;
 
   // Amazon Bedrock, billed on our own AWS account. Bedrock serves none of the
   // gateway model ids, so requested ids collapse onto two tiers: "pro"-class
   // requests get the stronger model, everything else the cheap workhorse.
   if (bedrockConfigured()) {
-    const wantsPro = /pro|gpt-5(?![-.])|gpt-5\.\d|sonnet|opus/i.test(bare) &&
-      // Word-boundary exclusions: "gemini-..." contains "mini" as a substring and
-      // must not be treated as a small model.
-      !/(?:^|[-_.\s])(mini|nano|lite)/i.test(bare);
+    const wantsPro = bedrockTierForRequest(gatewayId) === "pro";
     return {
       provider: "bedrock",
       url: "",
@@ -105,8 +102,11 @@ export function routeFor(model: string): { provider: AiProvider; url: string; mo
 }
 
 
-function priceOf(model: string, promptTokens: number, completionTokens: number): number {
-  const p = bedrockPrice(model) ?? PRICING[model] ?? DEFAULT_PRICE;
+export function chargeUsd(model: string, promptTokens: number, completionTokens: number): number {
+  if (model.includes("claude-opus-5-5") || bedrockPrice(model)) {
+    return usdForBedrockModel(model, promptTokens, completionTokens);
+  }
+  const p = PRICING[model] ?? DEFAULT_PRICE;
   return (promptTokens / 1_000_000) * p.in + (completionTokens / 1_000_000) * p.out;
 }
 
@@ -135,7 +135,7 @@ async function meter(opts: {
       p_model: opts.model,
       p_prompt_tokens: promptTokens,
       p_completion_tokens: completionTokens,
-      p_cost_usd: priceOf(opts.model, promptTokens, completionTokens),
+      p_cost_usd: chargeUsd(opts.model, promptTokens, completionTokens),
       p_user_id: opts.userId ?? null,
     });
   } catch (err) {
@@ -191,6 +191,7 @@ export async function aiFetch(
       controller.signal;
 
     if (route.provider === "bedrock") {
+      return sendIfPriced(route.model, async () => {
       const wantsStream = body.stream === true;
       if (wantsStream) {
         // Real token-by-token streaming: usage arrives in the stream's metadata
@@ -238,7 +239,7 @@ export async function aiFetch(
         });
       }
       return bedrockChatAsStream(route.model, body, completion as Record<string, unknown>);
-
+      });
     }
 
     // Lovable gateway fallback.
