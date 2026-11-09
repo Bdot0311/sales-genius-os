@@ -17,7 +17,7 @@ interface CreateUserDialogProps {
 export const CreateUserDialog = ({ open, onOpenChange, onCreated }: CreateUserDialogProps) => {
   const [newUser, setNewUser] = useState({
     email: '', password: '', full_name: '',
-    plan: 'pro' as 'free' | 'starter' | 'growth' | 'pro',
+    plan: 'pro' as 'free' | 'starter' | 'growth' | 'pro' | 'agency',
     is_admin: true
   });
 
@@ -59,8 +59,11 @@ export const CreateUserDialog = ({ open, onOpenChange, onCreated }: CreateUserDi
             <Select value={newUser.plan} onValueChange={(v) => setNewUser({ ...newUser, plan: v as any })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
+                <SelectItem value="free">Free</SelectItem>
+                <SelectItem value="starter">Starter</SelectItem>
                 <SelectItem value="growth">Growth</SelectItem>
                 <SelectItem value="pro">Pro</SelectItem>
+                <SelectItem value="agency">Agency</SelectItem>
               </SelectContent>
             </Select>
           </div>
