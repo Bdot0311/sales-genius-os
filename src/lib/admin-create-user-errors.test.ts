@@ -9,10 +9,10 @@ const safeErrors = runInNewContext(`(${mapping[1]})`) as Record<string, string>;
 
 describe('admin account creation errors', () => {
   it('allows the known weak-password rejection through the safe error mapping', () => {
-    expect(Object.hasOwn(safeErrors, 'Password is known to be weak and easy to guess, please choose a different one.')).toBe(true);
+    expect(Object.prototype.hasOwnProperty.call(safeErrors, 'Password is known to be weak and easy to guess, please choose a different one.')).toBe(true);
   });
 
   it('does not expose arbitrary internal errors', () => {
-    expect(Object.hasOwn(safeErrors, 'database connection failed: private details')).toBe(false);
+    expect(Object.prototype.hasOwnProperty.call(safeErrors, 'database connection failed: private details')).toBe(false);
   });
 });
