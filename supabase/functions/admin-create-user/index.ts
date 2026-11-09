@@ -122,6 +122,7 @@ serve(async (req) => {
       "Unauthorized": "Authentication failed",
       "Admin privileges required": "Insufficient permissions",
       "Email and password are required": "Email and password are required",
+      "Password is known to be weak and easy to guess, please choose a different one.": "This password is known to be weak or easy to guess. Please use a strong, unique password.",
     };
     
     const clientMessage = safeErrors[errorMessage] || "Failed to create user";

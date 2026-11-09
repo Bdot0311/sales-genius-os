@@ -23,8 +23,22 @@ export const CreateUserDialog = ({ open, onOpenChange, onCreated }: CreateUserDi
 
   const createUser = async () => {
     try {
-      const { error } = await supabase.functions.invoke('admin-create-user', { body: newUser });
-      if (error) throw error;
+      const { data, error } = await supabase.functions.invoke('admin-create-user', { body: newUser });
+      if (error) {
+        const response = error.context;
+        if (response instanceof Response) {
+          const result = await response.json().catch(() => null);
+          if (typeof result?.error === 'string') {
+            toast.error(result.error);
+            return;
+          }
+        }
+        throw error;
+      }
+      if (typeof data?.error === 'string') {
+        toast.error(data.error);
+        return;
+      }
       toast.success(newUser.is_admin ? 'Admin team member created' : 'User created');
       onOpenChange(false);
       setNewUser({ email: '', password: '', full_name: '', plan: 'pro', is_admin: true });
