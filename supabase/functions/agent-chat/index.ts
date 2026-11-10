@@ -28,6 +28,7 @@ import {
   listLeadGuidance,
   listLeadsKey,
   normalizeListArgs,
+  pipelineContinuation,
 } from "../_shared/list-leads-steer.ts";
 import { budgetExhausted, budgetNote, carriedTokens, tokensIn, turnTokenBudget } from "../_shared/agent-budget.ts";
 import { pruneTurnContext } from "../_shared/turn-context.ts";
@@ -5389,19 +5390,12 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
         // already said it was doing.
         const claimedDone = emptyTurnWarning(finalText, toolEvents);
         const promisedWork = claimedDone ? "" : statedIntentWithoutAction(finalText, toolEvents);
-        const pipelineStarted = toolEvents.some((event) =>
-          event.name === "research_leads" || event.name === "score_leads" || event.name === "draft_outreach",
-        );
-        const pipelineNudge = (asked.research || asked.evaluate || asked.draft) && !pipelineStarted
-          ? listLeadGuidance({
-              priorTotal: 2,
-              priorSame: 1,
-              knownCount: listedLeadIds.length,
-              queuedCount: listedQueuedCount,
-              returnedCount: listedLeadIds.length,
-              asked,
-            }).note
-          : "";
+        const pipelineNudge = pipelineContinuation({
+          message: userMessage,
+          events: toolEvents,
+          listedCount: listedLeadIds.length,
+          queuedCount: listedQueuedCount,
+        });
         if (!retriedEmptyTurn && (claimedDone || promisedWork || pipelineNudge) && step < MAX_TURN_STEPS - 1 && !outOfTime()) {
           retriedEmptyTurn = true;
           console.warn(
@@ -5411,13 +5405,13 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
           );
           messages.push({
             role: "user",
-            content: pipelineNudge
-              ? `[system check, not from the user] ${pipelineNudge} Do not call list_leads again, and do not describe the work as complete.`
-              : promisedWork
+            content: promisedWork
               ? "[system check, not from the user] You said you were starting that work, and then the turn ended without calling any tool, so nothing happened and the user is still waiting. " +
                 "Do it now: call the tool that does it. " +
                 "If you cannot — a record is missing, a limit is in the way, or you need the user to decide something — say exactly that in one or two sentences instead. " +
                 "Do not say you are about to start, and do not promise it again."
+              : pipelineNudge
+              ? `[system check, not from the user] ${pipelineNudge} Do not call list_leads again, and do not describe the work as complete.`
               : "[system check, not from the user] Your reply says the work is done, but you called no tool that changes anything, so nothing happened. " +
                 "If the user asked you to do something, call the tool that does it now. " +
                 "If you cannot — the build is not scoped for it, a record is missing, a limit is in the way — say that plainly in one or two sentences. " +

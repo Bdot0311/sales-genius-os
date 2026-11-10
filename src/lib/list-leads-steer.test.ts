@@ -5,6 +5,7 @@ import {
   listLeadGuidance,
   listLeadsKey,
   normalizeListArgs,
+  pipelineContinuation,
 } from "../../supabase/functions/_shared/list-leads-steer";
 
 const ASK = "There are 63 leads labeled New in my saved leads. Please research them evaluate them then personalize emails based on your findings";
@@ -38,7 +39,7 @@ describe("a research-then-draft request does not loop on list_leads", () => {
     expect(first.note.indexOf("score_leads")).toBeLessThan(first.note.indexOf("draft_outreach"));
   });
 
-  it("stops a second identical lookup and a third lookup of any kind", () => {
+  it("stops a repeated filter and still allows a different set", () => {
     const same = listLeadGuidance({
       priorTotal: 1,
       priorSame: 1,
@@ -51,15 +52,36 @@ describe("a research-then-draft request does not loop on list_leads", () => {
     expect(same.note).toContain("Do not call list_leads again");
     expect(same.note).toContain("63 lead ids");
 
-    const third = listLeadGuidance({
+    const tierB = listLeadGuidance({
+      priorTotal: 1,
+      priorSame: 0,
+      knownCount: 20,
+      queuedCount: 0,
+      returnedCount: 15,
+      asked,
+    });
+    expect(tierB.stop).toBe(false);
+
+    const tierC = listLeadGuidance({
       priorTotal: 2,
+      priorSame: 0,
+      knownCount: 20,
+      queuedCount: 0,
+      returnedCount: 8,
+      asked,
+    });
+    expect(tierC.stop).toBe(false);
+
+    const runaway = listLeadGuidance({
+      priorTotal: 6,
       priorSame: 0,
       knownCount: 63,
       queuedCount: 0,
       returnedCount: 0,
       asked,
     });
-    expect(third.stop).toBe(true);
+    expect(runaway.stop).toBe(true);
+    expect(listLeadsKey({ tier: "A", limit: 25 })).toBe(listLeadsKey({ tier: "A" }));
   });
 
   it("says a draft queue blocks another draft and does not block research", () => {
@@ -76,6 +98,57 @@ describe("a research-then-draft request does not loop on list_leads", () => {
     expect(queued.note).toContain("Research and scoring are not blocked");
     expect(queued.note).toContain("ask if they want them replaced");
     expect(queued.note).not.toContain("then draft_outreach once");
+  });
+
+  it("does not push a send, a sequence, or a question into draft_outreach", () => {
+    for (const message of [
+      "send my drafts",
+      "what's the difference between research and scoring?",
+      "draft a sequence",
+      "audit this draft",
+      "schedule the drafts",
+    ]) {
+      expect(pipelineContinuation({ message, events: [], listedCount: 0 }), message).toBe("");
+      expect(pipelineContinuation({
+        message,
+        events: [{ name: "list_leads" }],
+        listedCount: 0,
+      }), message).toBe("");
+    }
+    expect(pipelineContinuation({
+      message: "send my drafts",
+      events: [{ name: "list_leads" }, { name: "send_drafts" }],
+      listedCount: 12,
+    })).toBe("");
+    expect(pipelineContinuation({
+      message: "draft a sequence for my best lead",
+      events: [{ name: "draft_sequence" }],
+      listedCount: 1,
+    })).toBe("");
+    expect(askedWork("send my drafts").draft).toBe(false);
+    expect(askedWork("draft a sequence").draft).toBe(false);
+  });
+
+  it("nudges only after list_leads returned ids and nothing else acted", () => {
+    const note = pipelineContinuation({
+      message: ASK,
+      events: [{ name: "list_leads" }],
+      listedCount: 63,
+    });
+    expect(note).toContain("research_leads");
+    expect(note).toContain("score_leads");
+    expect(pipelineContinuation({
+      message: ASK,
+      events: [{ name: "list_leads" }, { name: "enrich_leads" }],
+      listedCount: 63,
+    })).toBe("");
+    const src = readFileSync("supabase/functions/agent-chat/index.ts", "utf8");
+    const stall = src.indexOf("You said you were starting that work");
+    const pipeline = src.indexOf("pipelineContinuation({");
+    const use = src.indexOf("content: promisedWork");
+    expect(pipeline).toBeGreaterThan(-1);
+    expect(use).toBeGreaterThan(-1);
+    expect(use).toBeLessThan(stall);
   });
 
   it("is applied before the query, so a repeat does not hit the database", () => {

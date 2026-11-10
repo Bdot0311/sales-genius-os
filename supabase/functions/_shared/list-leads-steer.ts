@@ -7,8 +7,8 @@
  * "new", and a draft queue from the previous turn is not something the list
  * result explained, so the model kept changing filters.
  *
- * Two calls are enough to correct a filter. After that the turn is told the
- * next tool and is not given another list.
+ * The same filter is not run twice. A different filter is still a real set.
+ * After a handful of lookups the turn is told the next tool instead.
  */
 
 export interface AskedWork {
@@ -17,12 +17,27 @@ export interface AskedWork {
   draft: boolean;
 }
 
+/**
+ * "drafts", "draft a sequence", "send my drafts" and "audit this draft" are
+ * not a request to write new outreach. Personalize / redraft / "draft emails"
+ * are.
+ */
+export function wantsNewOutreach(text: string): boolean {
+  const message = text.toLowerCase();
+  if (/\b(personaliz\w*|redraft\w*)\b/.test(message)) return true;
+  if (/\bdraft\s+(?:a\s+)?sequence\b/.test(message)) return false;
+  if (/\b(?:audit|send|schedule|delete|cancel)\b[^.]*\bdrafts?\b/.test(message)) return false;
+  if (/\bdraft\s+(?:the\s+|some\s+)?(?:emails?|outreach|them|these|those)\b/.test(message)) return true;
+  if (/\bwrite\b[^.]*\bemails?\b/.test(message)) return true;
+  return false;
+}
+
 export function askedWork(message: string): AskedWork {
   const text = message.toLowerCase();
   return {
     research: /\bresearch/.test(text),
     evaluate: /\b(evaluat|score)/.test(text),
-    draft: /\b(personaliz|redraft|draft)/.test(text) || /\b(write|send)\b[^.]*\bemails?\b/.test(text),
+    draft: wantsNewOutreach(text),
   };
 }
 
@@ -48,6 +63,8 @@ export function normalizeListArgs(args: Record<string, unknown>): Record<string,
       out[key] = value.trim().toLowerCase();
       continue;
     }
+    if (key === "limit" && (value === 25 || value === "25")) continue;
+    if (value === false) continue;
     out[key] = value;
   }
   return out;
@@ -57,8 +74,12 @@ export function listLeadsKey(args: Record<string, unknown>): string {
   return JSON.stringify(normalizeListArgs(args));
 }
 
-/** One correction is allowed. The third lookup, or a repeat of the same one, stops. */
-export const MAX_LIST_LEADS_CALLS = 2;
+/**
+ * Identical filters stop on the repeat. A different filter (tier A, then B,
+ * then C) is a real second set and is allowed. The cap is only the runaway
+ * that listed thirteen times.
+ */
+export const MAX_LIST_LEADS_CALLS = 6;
 
 export function listLeadGuidance(input: {
   priorTotal: number;
@@ -97,4 +118,61 @@ export function listLeadGuidance(input: {
     if (steps.length) parts.push(`Next, in order: ${steps.join(", then ")}.`);
   }
   return { stop, note: parts.join(" ") };
+}
+
+/**
+ * Tools that already did something this turn. A pipeline nudge must not
+ * override them, and must not invent a draft for a send, a sequence, or an audit.
+ */
+const ACTION_TOOLS = new Set([
+  "send_drafts",
+  "send_outreach",
+  "schedule_drafts",
+  "cancel_scheduled_email",
+  "draft_sequence",
+  "draft_outreach",
+  "audit_email",
+  "audit_sequence",
+  "enrich_leads",
+  "score_leads",
+  "research_leads",
+  "find_leads",
+  "run_full_agent",
+  "delete_drafts",
+  "delete_leads",
+  "delete_inbox_threads",
+  "enroll_lead_in_sequence",
+  "update_lead",
+  "update_sending_account",
+  "update_sequence_status",
+  "update_enrollment",
+]);
+
+/**
+ * The end-of-turn push from a lookup into research, scoring, and drafting.
+ *
+ * Empty unless this turn already listed leads and came back with ids, the
+ * user asked for that pipeline, and nothing else has acted. A question, a
+ * send, or "draft a sequence" stays empty so the stalled-promise nudge still
+ * owns the turn.
+ */
+export function pipelineContinuation(input: {
+  message: string;
+  events: Array<{ name?: string }>;
+  listedCount: number;
+  queuedCount?: number;
+}): string {
+  const asked = askedWork(input.message);
+  if (!(asked.research || asked.evaluate || asked.draft)) return "";
+  const names = input.events.map((event) => event.name ?? "").filter(Boolean);
+  if (!names.includes("list_leads") || input.listedCount <= 0) return "";
+  if (names.some((name) => ACTION_TOOLS.has(name))) return "";
+  return listLeadGuidance({
+    priorTotal: MAX_LIST_LEADS_CALLS,
+    priorSame: 1,
+    knownCount: input.listedCount,
+    queuedCount: input.queuedCount ?? 0,
+    returnedCount: input.listedCount,
+    asked,
+  }).note;
 }
