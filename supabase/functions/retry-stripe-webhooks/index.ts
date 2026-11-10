@@ -24,9 +24,9 @@ serve(async (req) => {
 
   // Allow either: (a) cron/service-role bearer token (cron may carry the project key),
   // or (b) authenticated admin user JWT.
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+  const internalSecret = Deno.env.get("INTERNAL_TRIGGER_SECRET") ?? "";
   let authorized = false;
-  if (token && ((serviceKey && token === serviceKey) || (anonKey && token === anonKey))) {
+  if (token && ((serviceKey && token === serviceKey) || (internalSecret && token === internalSecret))) {
     authorized = true;
   } else if (token) {
     try {

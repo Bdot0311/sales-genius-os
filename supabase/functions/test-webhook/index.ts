@@ -78,7 +78,22 @@ serve(async (req) => {
       );
     }
 
-    logStep("Testing webhook", { url, userId: user.id });
+    // Only test endpoints the caller has registered as their own webhook.
+    const { data: owned } = await supabase
+      .from('webhooks')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('url', url)
+      .limit(1)
+      .maybeSingle();
+    if (!owned) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Webhook not found for this account' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    logStep("Testing webhook", { webhookId: owned.id, userId: user.id });
 
     // Create HMAC signature if secret is provided
     let signature = null;

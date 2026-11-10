@@ -18,6 +18,7 @@
 // in. It can go once nothing reads it; see the rename migration for the query.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireInternalOrAdmin } from "../_shared/internal-auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,6 +27,9 @@ const corsHeaders = {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const denied = await requireInternalOrAdmin(req);
+  if (denied) return denied;
 
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -55,7 +59,7 @@ serve(async (req) => {
     });
   } catch (e: any) {
     console.error("sync-vault-service-key failed:", e);
-    return new Response(JSON.stringify({ success: false, error: e?.message ?? String(e) }), {
+    return new Response(JSON.stringify({ success: false, error: "sync failed" }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
