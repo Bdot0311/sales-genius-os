@@ -5,7 +5,7 @@
  * invent a history for mail that was sent before the hash existed.
  */
 
-import { RUBRIC_SYSTEM_PROMPT } from "../check-email-rubric/prompt.ts";
+import { RUBRIC_SYSTEM_PROMPT } from "./rubric-prompt.ts";
 import { PREVALENCE_SOURCE, CAUSAL_SOURCE } from "./evidence.ts";
 
 export async function sha256Hex(text: string): Promise<string> {
