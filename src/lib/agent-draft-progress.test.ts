@@ -159,7 +159,7 @@ describe("a turn that cannot finish twelve drafts does not start twelve", () => 
   });
 
   it("queues the batch instead of burning it when there is no time", () => {
-    expect(AGENT).toContain('label: "Queued instead of drafting here"');
+    expect(AGENT).toContain("backgroundDraftCopy(overflow.length)");
     expect(CODE).toContain("if (inlineLimit === 0 && overflow.length > 0)");
   });
 
@@ -209,7 +209,9 @@ describe("the drafts total comes from the drafts table", () => {
   it("puts it above the reply, not under it", () => {
     // The user was shown "43 Follow-Ups Drafted" and had 20. A contradiction
     // below the thing it contradicts arrives after it has been believed.
-    expect(AGENT).toMatch(/finalText =\s*`📝 Your drafts folder holds \$\{draftsNow \?\? 0\}[\s\S]{0,200}\$\{finalText\}`/);
+    expect(AGENT).toContain("formatDraftTurnSummary({");
+    expect(AGENT).toContain("folder: draftsNow ?? 0");
+    expect(AGENT).toContain("finalText = `${summary}\\n\\n${finalText}`");
   });
 
   it("counts the tally where the work happens, not where the reply is written", () => {
@@ -313,7 +315,7 @@ describe("the turn finishes the set it was given", () => {
   it("queues whatever the model left out, after it has finished", () => {
     expect(CODE).toContain("const missed = outstandingPool.filter((id) => !handledLeadIds.has(id));");
     expect(CODE).toContain('await queueWork("draft", sweeping, outstandingGoal, outstandingFeedback)');
-    expect(AGENT).toContain('label: "Queued the leads it skipped"');
+    expect(AGENT).toContain("sweepCopy(");
   });
 
   it("bounds what one sentence can commit someone to, and says so", () => {
@@ -323,7 +325,8 @@ describe("the turn finishes the set it was given", () => {
     expect(CODE).toContain("const SWEEP_LIMIT = 500;");
     expect(CODE).toContain("const sweeping = missed.slice(0, SWEEP_LIMIT);");
     expect(CODE).toContain("const beyondLimit = missed.length - sweeping.length;");
-    expect(AGENT).toContain("more are still without a draft");
+    expect(AGENT).toContain("stillWaiting: sweptBeyondLimit");
+    expect(readFileSync("supabase/functions/_shared/agent-step-present.ts", "utf8")).toContain("are still waiting");
   });
 
   it("only sweeps a set this turn actually drafted from", () => {

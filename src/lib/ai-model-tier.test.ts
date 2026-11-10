@@ -68,9 +68,6 @@ describe("the calls whose output is the product ask for the strong tier", () => 
    * not have produced.
    */
   it.each([
-    "generate-email",
-    "generate-sequence",
-    "generate-followup-suggestion",
     "check-email-rubric",
     "check-copy-risk",
     "research-lead",
@@ -94,12 +91,39 @@ describe("the calls whose output is the product ask for the strong tier", () => 
       .toBe(total);
   });
 
-  it("leaves the mechanical calls on the cheap tier", () => {
-    // Rubric-driven scoring and structured extraction, where a stronger model
-    // buys little and costs three times as much.
-    for (const fn of ["score-lead-v2", "map-account-committee", "build-agent"]) {
-      expect(body(fn)).toContain("model: AI_FAST");
+  it("leaves the light calls on the cheap tier", () => {
+    // Sequences, follow-up suggestions, scoring and structured extraction.
+    // Outreach Studio's own drafting is Standard too, but generate-email
+    // chooses per caller, so it is asserted on its own below.
+    for (const fn of [
+      "generate-sequence",
+      "generate-followup-suggestion",
+      "score-lead-v2",
+      "map-account-committee",
+      "build-agent",
+    ]) {
+      const src = body(fn);
+      const total = [...src.matchAll(/\bmodel: /g)].length;
+      const fast = [...src.matchAll(/\bmodel: AI_FAST\b/g)].length;
+      expect(total, `${fn} should make at least one AI request`).toBeGreaterThan(0);
+      expect(fast, `${fn} has ${total - fast} request(s) not on Standard`).toBe(total);
     }
+  });
+
+  it("agent-chat plans on Pro and meters the customer", () => {
+    const src = body("agent-chat");
+    expect(src).toContain("model: AI_SMART");
+    expect(src).toContain('{ fn: "agent-chat", userId }');
+    expect(src).not.toContain("openai/gpt-5.6-sol");
+  });
+
+  it("generate-email asks for a caller tier on every request", () => {
+    const src = body("generate-email");
+    const total = [...src.matchAll(/\bmodel: /g)].length;
+    const tiered = [...src.matchAll(/\bmodel: draftModel\b/g)].length;
+    expect(total).toBeGreaterThan(0);
+    expect(tiered).toBe(total);
+    expect(src).not.toMatch(/\bmodel: AI_SMART\b/);
   });
 });
 
@@ -111,7 +135,7 @@ describe("no call site names a model nobody serves", () => {
      * deliberately exempt — the agent chat already names a strong id, and the
      * blog writer is not customer-facing outbound.
      */
-    const exempt = new Set(["agent-chat", "agent-test", "generate-blog-post"]);
+    const exempt = new Set(["agent-test", "generate-blog-post"]);
     const offenders: string[] = [];
     for (const dir of readdirSync("supabase/functions", { withFileTypes: true })) {
       if (!dir.isDirectory() || exempt.has(dir.name)) continue;

@@ -16,11 +16,18 @@ import { leadIntelligenceMode } from "../_shared/lead-intelligence.ts";
 import { chooseMailbox, type RoutableMailbox } from "../_shared/mailbox-routing.ts";
 import { invalidArgsResult, validateToolArgs, type ToolSchema } from "../_shared/tool-args.ts";
 import { mergeCompleted, resultOk, resumeFrom, supabaseTraceStore, trimResult } from "../_shared/agent-trace.ts";
+import {
+  backgroundDraftCopy,
+  formatDraftTurnSummary,
+  listLeadsCopy,
+  researchStepCopy,
+  sweepCopy,
+} from "../_shared/agent-step-present.ts";
 import { budgetExhausted, budgetNote, carriedTokens, tokensIn, turnTokenBudget } from "../_shared/agent-budget.ts";
 import { pruneTurnContext } from "../_shared/turn-context.ts";
 import { AUDIT_TOOL_CHOICE, bedrockConfigured, bedrockProModel, copyAuditDispatch, serverAuditPrelude } from "../_shared/bedrock.ts";
 import { repairToolSequence, unknownMutationKeys } from "../_shared/tool-sequence.ts";
-import { replayDecision } from "../_shared/mutation-replay.ts";
+import { claimStartFailure, replayDecision } from "../_shared/mutation-replay.ts";
 import {
   AGENT_MAX_ATTEMPTS,
   AGENT_TARGET_SCORE,
@@ -60,7 +67,8 @@ import {
 import { buildIcpContext, icpSearchBody } from "../_shared/icp-context.ts";
 import { captureServerEvent } from "../_shared/posthog.ts";
 import { getSignatureHtml, appendSignatureToBody } from "../_shared/signature.ts";
-import { aiFetch } from "../_shared/ai-provider.ts";
+import { AI_SMART, aiFetch } from "../_shared/ai-provider.ts";
+import { DRAFT_TIER_HEADER } from "../_shared/draft-tier.ts";
 import { allowedToolsFor, scopeNoteFor } from "../_shared/agent-tool-scope.ts";
 import { OUTBOUND_TOOL_DEFS, runOutboundTool } from "../_shared/agent-outbound-tools.ts";
 import {
@@ -1518,12 +1526,17 @@ serve(async (req) => {
     const scopeNote = scopeNoteFor(config as any) + tierScopeNote(agentTier, tierRemoved);
 
     const invokeFn = async (name: string, body: unknown): Promise<any> => {
+      // generate-email prices the model from the caller. The user's JWT is
+      // what Studio sends, so an agent draft has to arrive as the service
+      // role with the agent header. Other tools keep the user's token.
+      const agentDraft = name === "generate-email";
       const res = await fetch(`${supabaseUrl}/functions/v1/${name}`, {
         method: "POST",
         headers: {
-          Authorization: authHeader,
+          Authorization: agentDraft ? `Bearer ${serviceKey}` : authHeader,
           "Content-Type": "application/json",
           apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+          ...(agentDraft ? { [DRAFT_TIER_HEADER]: "pro" } : {}),
         },
         body: JSON.stringify(body ?? {}),
       });
@@ -2460,17 +2473,15 @@ serve(async (req) => {
             outstandingPool = allUndrafted.slice(0, limit);
           }
 
+          const lookedUp = listLeadsCopy(
+            leads.length,
+            wantsUndrafted || outstanding < annotated.length ? outstanding : null,
+          );
           toolEvents.push({
             name,
-            label: "Looked up leads",
+            label: lookedUp.label,
             status: "ok",
-            detail: `${leads.length} lead(s) matched${
-              wantsUndrafted
-                ? ` — ${outstanding} still without a draft`
-                : outstanding < annotated.length
-                  ? ` (${outstanding} without a draft)`
-                  : ""
-            }`,
+            detail: lookedUp.detail,
           });
           return {
             count: leads.length,
@@ -2659,6 +2670,7 @@ serve(async (req) => {
           });
           const okCount = results.filter((r: any) => !r.error).length;
           const thinCount = results.filter((r: any) => !r.error && r.safe_to_personalize === false).length;
+          const firstResearchError = results.find((r: any) => r.error)?.error;
 
           /*
            * Say it out loud when only the prospect's own site was read.
@@ -2681,11 +2693,17 @@ serve(async (req) => {
             });
           }
           const handover = await queueSkipped("research", skipped, name, force ? { force: true } : null);
+          const researched = researchStepCopy({
+            ok: okCount,
+            total: ids.length,
+            thin: thinCount,
+            reason: typeof firstResearchError === "string" ? firstResearchError : null,
+          });
           toolEvents.push({
             name,
-            label: "Researched leads",
-            status: okCount === 0 ? "error" : "ok",
-            detail: `${okCount}/${ids.length} researched from their websites${thinCount ? ` — ${thinCount} too thin to personalize safely` : ""}${handover.note}`,
+            label: researched.label,
+            status: researched.status,
+            detail: `${researched.detail}${handover.note}`,
           });
           return {
             results,
@@ -2844,13 +2862,12 @@ serve(async (req) => {
           const ids = pending.slice(0, inlineLimit);
           const overflow = pending.slice(inlineLimit);
           if (inlineLimit === 0 && overflow.length > 0) {
+            const queuedHere = backgroundDraftCopy(overflow.length);
             toolEvents.push({
               name,
-              label: "Queued instead of drafting here",
-              status: "ok",
-              detail:
-                `Not enough time left in this turn to write a draft properly, so all ${overflow.length} ` +
-                `went to the background queue rather than being started and cut off.`,
+              label: queuedHere.label,
+              status: "queued",
+              detail: queuedHere.detail,
             });
           }
 
@@ -5074,7 +5091,13 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
     let tokensUsed = 0;
     let stoppedOnBudget = false;
     try {
-      const resumed = resumeFrom(await trace.latestStep(threadId, runPass), MAX_TURN_STEPS);
+      // A new user message is pass 0 and is not a continuation. Resuming the
+      // previous turn's pass-0 step replayed its unknown tool results into
+      // this message and then refused to run those actions again.
+      const resumed = resumeFrom(
+        autoContinue ? await trace.latestStep(threadId, runPass) : null,
+        MAX_TURN_STEPS,
+      );
       if (resumed) {
         messages.length = 0;
         messages.push(...(resumed.messages as any[]));
@@ -5086,7 +5109,10 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
       }
       // What already ran, from the client's list and from what actually
       // completed. Neither survives everything on its own.
-      for (const key of mergeCompleted(payload.completedMutationKeys, await trace.listMutations(threadId))) {
+      for (const key of mergeCompleted(
+        payload.completedMutationKeys,
+        await trace.listMutations(threadId, { excludeUnknown: !autoContinue }),
+      )) {
         completedMutationKeys.add(key);
       }
     } catch (e) {
@@ -5170,7 +5196,7 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "openai/gpt-5.6-sol",
+            model: AI_SMART,
             // Reasoning was pinned to "none" on every call, including the ones
             // that decide which of forty tools to run, on which records, in
             // which order. A model that cannot think before acting
@@ -5198,7 +5224,7 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
             // to auto so the turn can go on to redraft, send or anything else.
             ...(auditHow === "tool_choice" ? { tool_choice: AUDIT_TOOL_CHOICE } : {}),
           }),
-        });
+        }, { fn: "agent-chat", userId });
       } catch (e) {
         console.error("AI gateway request failed", e);
         failureNote =
@@ -5359,14 +5385,12 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
               };
             }
           } catch (e) {
+            const message = e instanceof Error ? e.message : String(e);
+            console.error(`[agent-chat] claim insert failed before ${toolName} started: ${message}`);
             return {
               role: "tool",
               tool_call_id: call.id,
-              content: JSON.stringify({
-                error: "unknown_outcome",
-                status: "unknown",
-                note: "The dispatch could not be recorded, so the action was not run.",
-              }),
+              content: JSON.stringify(claimStartFailure()),
             };
           }
         }
@@ -5610,7 +5634,9 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
             ? "Big batch — the work above is saved. Picking up where I left off…"
             : stoppedShortNote
           : toolEvents.length
-            ? "I finished the actions above. Tell me what you'd like next."
+            ? (toolEvents.some((event) => event.status === "error")
+              ? "Some of that didn't work. The details are in the steps above."
+              : "Tell me what you'd like next.")
             : "I couldn't complete that. Try rephrasing what you'd like me to do.";
     } else if (failureNote) {
       finalText += `\n\n${failureNote}`;
@@ -5742,16 +5768,17 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
         sweptQueued = queued;
         sweptBeyondLimit = beyondLimit;
         if (queued > 0) {
+          const swept = sweepCopy({
+            queued,
+            pool: outstandingPool.length,
+            beyondLimit,
+            cap: SWEEP_LIMIT,
+          });
           toolEvents.push({
             name: "draft_outreach",
-            label: "Queued the leads it skipped",
-            status: "ok",
-            detail:
-              `${queued} of the ${outstandingPool.length} lead(s) in this request were not drafted or ` +
-              `queued by the steps above, so they were added to the batch.` +
-              (beyondLimit > 0
-                ? ` ${beyondLimit} more are still without a draft — say "keep going" and I'll queue the next ${SWEEP_LIMIT}.`
-                : " The whole set is accounted for."),
+            label: swept.label,
+            status: "queued",
+            detail: swept.detail,
           });
           console.warn(
             `[agent-chat] sweep queued ${queued} lead(s) the model left out of ${outstandingPool.length}`,
@@ -5780,33 +5807,24 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
         .from("email_drafts")
         .select("id", { count: "exact", head: true })
         .eq("user_id", userId);
-      const parts = [`wrote ${draftTally.written}`];
-      if (draftTally.skippedAlreadyDrafted > 0) {
-        parts.push(`left ${draftTally.skippedAlreadyDrafted} that already had one alone`);
-      }
-      if (draftTally.failed > 0) parts.push(`${draftTally.failed} failed`);
-      if (draftTally.queued > 0) {
-        parts.push(`queued ${draftTally.queued} to be written in the background`);
-      }
       /*
        * Why the reply below can disagree with the line above it.
        *
        * The sweep runs after the model has finished writing, so a reply saying
        * "10 queued, 95 still to go" was true when it was written and stale by
-       * the time it was read — the 95 went into the queue a moment later. Both
-       * numbers appeared in the same message with nothing to say which was
-       * current, and the honest reading of "95 more to go" is that the user
-       * has to ask again. They do not.
+       * the time it was read. The summary is the current count. A smaller
+       * number under it was written before the rest were queued.
        */
-      const sweepNote = sweptQueued > 0
-        ? ` ${sweptQueued} of those were added at the end to cover leads the steps above left out, so` +
-          (sweptBeyondLimit > 0
-            ? ` ${sweptBeyondLimit} are still without a draft — say "keep going" for the next batch.`
-            : ` nothing from that set is still waiting. Any smaller count below this line was written before they were queued.`)
-        : "";
-      finalText =
-        `📝 Your drafts folder holds ${draftsNow ?? 0}. This turn ${parts.join(", ")}.${sweepNote}` +
-        `\n\n${finalText}`;
+      const summary = formatDraftTurnSummary({
+        written: draftTally.written,
+        queued: draftTally.queued,
+        skipped: draftTally.skippedAlreadyDrafted,
+        failed: draftTally.failed,
+        folder: draftsNow ?? 0,
+        swept: sweptQueued,
+        stillWaiting: sweptBeyondLimit,
+      });
+      finalText = `${summary}\n\n${finalText}`;
       console.log(
         `[agent-chat] draft tally written=${draftTally.written} queued=${draftTally.queued} ` +
           `skipped=${draftTally.skippedAlreadyDrafted} failed=${draftTally.failed} total=${draftsNow ?? 0}`,

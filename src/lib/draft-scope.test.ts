@@ -46,6 +46,7 @@ describe("the turn commits to what was asked for", () => {
   });
 
   it("says this request, not the whole account, when it sweeps", () => {
-    expect(CHAT).toContain("lead(s) in this request were not drafted or");
+    expect(CHAT).toContain("sweepCopy(");
+    expect(readFileSync("supabase/functions/_shared/agent-step-present.ts", "utf8")).toContain("of that request was missed");
   });
 });

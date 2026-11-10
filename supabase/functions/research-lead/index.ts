@@ -13,7 +13,7 @@ import { parallelConfigured } from "../_shared/parallel.ts";
 import { contextDevConfigured } from "../_shared/context-dev.ts";
 import { evaluateStoredSnapshots, sealSnapshot, type StoredSnapshot } from "../_shared/evidence-contract.ts";
 import { fetchPinnedPage, type PageFetch } from "../_shared/pinned-fetch.ts";
-import { receiptFromProviders, researchAction, researchStep, type RetrievalReceipt } from "../_shared/research-orchestration.ts";
+import { receiptFromProviders, researchAction, researchReservation, researchStep, type RetrievalReceipt } from "../_shared/research-orchestration.ts";
 import {
   leadResearchQueries,
   parallelPromptBlock,
@@ -339,13 +339,17 @@ serve(async (req) => {
     }
     let researchRunId: string | null = null;
     if (action === "fetch") {
-      const { data: reserved } = await supabase.rpc("begin_research_run", {
+      const { data: reserved, error: reserveError } = await supabase.rpc("begin_research_run", {
         p_user_id: userId,
         p_lead_id: leadId,
         p_force: force,
       });
-      researchRunId = typeof reserved === "string" ? reserved : null;
-      if (!researchRunId && !force) {
+      if (reserveError) {
+        console.error(`[research-lead] begin_research_run failed: ${reserveError.message}`);
+      }
+      const reservation = researchReservation(reserved, reserveError?.message ?? null, force);
+      researchRunId = reservation.runId;
+      if (reservation.hold) {
         return new Response(JSON.stringify({
           error: "Research for this company already ran recently and did not produce a new approved sentence.",
           error_code: "research_required",
@@ -378,7 +382,10 @@ serve(async (req) => {
     if (!rl.allowed) return rateLimitResponse(rl.retryAfter, corsHeaders);
 
     const host = resolveLeadDomain(lead as Record<string, unknown>);
-    if (!host) {
+    const companyName = String(lead.company_name ?? "").trim();
+    // No website does not cancel outside research. Parallel and Context can
+    // still search by company name. Only a lead with neither is a dead end.
+    if (!host && !companyName) {
       return new Response(
         JSON.stringify({
           error: "No company website on this lead, so there's nothing to research. Add a website or enrich the lead first.",
@@ -387,7 +394,7 @@ serve(async (req) => {
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
-    const origin = `https://${host}`;
+    const origin = host ? `https://${host}` : "";
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -410,6 +417,7 @@ serve(async (req) => {
     // this is recent". Accurate research the copy was forbidden to use.
     let discovered: DiscoveredPage[] = [];
     try {
+      if (host) {
       const robots = await fetchText(`${origin}/robots.txt`);
       const sitemapUrls = robots ? sitemapsFromRobots(robots, origin) : [];
       // The two conventional locations, for a site whose robots.txt says nothing.
@@ -451,28 +459,31 @@ serve(async (req) => {
           }`,
         );
       }
+      }
     } catch (err) {
       console.warn("[research-lead] sitemap discovery failed:", err instanceof Error ? err.message : err);
     }
 
     const readWithDates: DiscoveredPage[] = [];
-    const extraUrls = discovered.length
+    const extraUrls = !host
+      ? []
+      : discovered.length
       ? discovered.slice(0, MAX_PAGES - 1).map((page) => page.url)
       : CANDIDATE_PATHS.slice(0, MAX_PAGES - 1).map((path) => `${origin}${path}`);
     // Firecrawl reads the company site first. Parallel and Context then run
-    // even when that read succeeds. A missing Firecrawl key does not become a
-    // direct fetch labeled as Firecrawl.
+    // even when that read succeeds, and even when the lead has no website.
+    // A missing Firecrawl key does not become a direct fetch labeled as Firecrawl.
     const gathered = await gatherLeadResearch({
-      websiteUrls: [origin, ...extraUrls],
+      websiteUrls: host ? [origin, ...extraUrls] : [],
       search: {
         objective:
-          `Recent, dated developments at the company ${lead.company_name || host} (website ${host}): funding, ` +
+          `Recent, dated developments at the company ${companyName || host}${host ? ` (website ${host})` : ""}: funding, ` +
           `acquisitions, product launches, partnerships, leadership hires, expansion or hiring pushes. ` +
           `Used to open a relevant cold email, so timing and a citable source matter more than background.`,
-        queries: leadResearchQueries(String(lead.company_name ?? ""), host),
+        queries: leadResearchQueries(companyName, host ?? ""),
         maxResults: 8,
         timeoutMs: 20_000,
-        excludeDomains: [host.replace(/^www\./, "")],
+        excludeDomains: host ? [host.replace(/^www\./, "")] : [],
       },
     });
     for (const site of gathered.sitePages) {
@@ -539,10 +550,13 @@ serve(async (req) => {
     let siteText = `${dateBlock ? `${dateBlock}\n\n` : ""}${webBlock ? `${webBlock}\n\n` : ""}${metaParts.join("\n\n")}\n\n${chunks.join("\n\n")}`.trim();
     if (siteText.length > MAX_TEXT_CHARS) siteText = siteText.slice(0, MAX_TEXT_CHARS);
     if (!siteText) {
+      const error = host
+        ? `We couldn't read enough from ${host} to research it.`
+        : "No company website on this lead, and outside research didn't return a page we could use. Add a website or enrich the lead first.";
       return new Response(
         JSON.stringify({
-          error: `We couldn't read enough from ${host} to research it.`,
-          error_code: "empty_content",
+          error,
+          error_code: host ? "empty_content" : "no_domain",
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );

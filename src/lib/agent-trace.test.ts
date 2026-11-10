@@ -5,10 +5,12 @@ import {
   MAX_RESULT_CHARS,
   mergeCompleted,
   messagesFitInTrace,
+  mutationKeysForTurn,
   resultOk,
   resumeFrom,
   trimResult,
 } from "../../supabase/functions/_shared/agent-trace";
+import { claimStartFailure } from "../../supabase/functions/_shared/mutation-replay";
 
 /**
  * A turn is up to eight model steps and none of them were written down.
@@ -134,7 +136,7 @@ describe("the turn records itself", () => {
   const bare = AGENT.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
 
   it("resumes before the loop starts, not inside it", () => {
-    const resume = bare.indexOf("const resumed = resumeFrom(await trace.latestStep(");
+    const resume = bare.indexOf("const resumed = resumeFrom(");
     const loop = bare.indexOf("for (let step = resumeAt; step < MAX_TURN_STEPS; step++)");
     expect(resume).toBeGreaterThan(-1);
     expect(loop).toBeGreaterThan(resume);
@@ -144,8 +146,33 @@ describe("the turn records itself", () => {
     // Two copies of 8 would drift, and a resume past the ceiling is a turn
     // that does nothing and reports success.
     expect(bare).toContain("const MAX_TURN_STEPS = 8;");
-    expect(bare).toContain("resumeFrom(await trace.latestStep(threadId, runPass), MAX_TURN_STEPS)");
+    expect(bare).toContain("autoContinue ? await trace.latestStep(threadId, runPass) : null");
+    expect(bare).toContain("resumeFrom(");
     expect(bare).not.toMatch(/for \(let step = \d+; step < 8;/);
+  });
+
+  it("does not carry a previous turn's unknown results into a new message", () => {
+    expect(bare).toContain("excludeUnknown: !autoContinue");
+    const keys = mutationKeysForTurn(
+      [
+        { mutation_key: "send:1", status: "completed" },
+        { mutation_key: "draft:2", status: "unknown" },
+      ],
+      { excludeUnknown: true },
+    );
+    expect(keys).toEqual(["send:1"]);
+    expect(mutationKeysForTurn(
+      [{ mutation_key: "draft:2", status: "unknown" }],
+      { excludeUnknown: false },
+    )).toEqual(["draft:2"]);
+  });
+
+  it("treats a failed claim insert as retryable, because the action never started", () => {
+    const failure = claimStartFailure();
+    expect(failure.retryable).toBe(true);
+    expect(JSON.stringify(failure)).not.toContain("unknown_outcome");
+    expect(bare).toContain("claim insert failed before");
+    expect(bare).toContain("claimStartFailure()");
   });
 
   it("writes the step where the tool replies rejoin the working array", () => {

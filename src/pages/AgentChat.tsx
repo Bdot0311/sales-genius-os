@@ -24,8 +24,6 @@ import {
   SendHorizonal,
   Loader2,
   Trash2,
-  CheckCircle2,
-  AlertTriangle,
   Clock,
   ArrowLeft,
   Square,
@@ -37,6 +35,7 @@ import { cn } from "@/lib/utils";
 import { ChatDraftCard, type ChatDraft } from "@/components/agent/ChatDraftCard";
 import { roleLabel } from "@/components/agent/AgentRoles";
 import { AgentWorkingIndicator } from "@/components/agent/AgentWorkingIndicator";
+import { AgentStepList } from "@/components/agent/AgentStepList";
 import { useAgentRunSteps } from "@/hooks/use-agent-run-steps";
 
 
@@ -452,15 +451,6 @@ const AgentChat = () => {
     };
   }, [messages]);
 
-  const statusIcon = (status: ToolEvent["status"]) =>
-    status === "ok" ? (
-      <CheckCircle2 className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />
-    ) : status === "queued" ? (
-      <Clock className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
-    ) : (
-      <AlertTriangle className="w-3.5 h-3.5 text-red-400 flex-shrink-0" />
-    );
-
   return (
     <DashboardLayout>
       {/* 8.5rem was reserving space nothing occupied. The topbar is h-12 and
@@ -627,24 +617,8 @@ const AgentChat = () => {
                   </div>
                 ) : (
                   <div key={m.id} className="min-w-0 space-y-2">
-                    {!!m.tool_events?.length && (
-                      <div className="space-y-1">
-                        {m.tool_events
-                          .filter((e) => !e.approval_id)
-                          .map((e, i) => (
-                            <div
-                              key={`${m.id}-${i}`}
-                              className="flex min-w-0 items-start gap-2 text-xs text-muted-foreground"
-                            >
-                              <span className="mt-0.5 flex-shrink-0">{statusIcon(e.status)}</span>
-                              <span className="min-w-0 break-words">
-                                <span className="font-medium text-foreground/80">{e.label}</span>
-                                <span> — {e.detail}</span>
-                              </span>
-                            </div>
-                          ))}
-
-                      </div>
+                    {!!m.tool_events?.some((e) => !e.approval_id) && (
+                      <AgentStepList events={m.tool_events.filter((e) => !e.approval_id)} />
                     )}
 
                     {!!(m.tool_events ?? []).some((e) => e.drafts?.length) && (

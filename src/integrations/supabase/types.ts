@@ -661,6 +661,7 @@ export type Database = {
         Row: {
           created_at: string
           mutation_key: string
+          status: string
           thread_id: string
           tool_name: string | null
           user_id: string
@@ -668,6 +669,7 @@ export type Database = {
         Insert: {
           created_at?: string
           mutation_key: string
+          status?: string
           thread_id: string
           tool_name?: string | null
           user_id: string
@@ -675,6 +677,7 @@ export type Database = {
         Update: {
           created_at?: string
           mutation_key?: string
+          status?: string
           thread_id?: string
           tool_name?: string | null
           user_id?: string

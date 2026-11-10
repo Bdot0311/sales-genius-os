@@ -81,12 +81,32 @@ END $$;
 
 DO $$
 BEGIN
-  IF EXISTS (
-    SELECT 1 FROM information_schema.tables
-    WHERE table_schema = 'public' AND table_name = 'agent_run_mutations'
-  ) THEN
+  -- The first version of this migration only altered the table. A database
+  -- that created agent_run_mutations later (the Drizzle copy has no status
+  -- column) never received it. Create the table when its parent exists, then
+  -- add the column either way.
+  IF to_regclass('public.agent_chat_threads') IS NOT NULL
+     AND to_regclass('public.agent_run_mutations') IS NULL THEN
+    CREATE TABLE public.agent_run_mutations (
+      thread_id UUID NOT NULL REFERENCES public.agent_chat_threads(id) ON DELETE CASCADE,
+      user_id UUID NOT NULL,
+      mutation_key TEXT NOT NULL,
+      tool_name TEXT,
+      status TEXT NOT NULL DEFAULT 'completed',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      PRIMARY KEY (thread_id, mutation_key),
+      CONSTRAINT agent_run_mutations_status_check
+        CHECK (status IN ('dispatching', 'completed', 'unknown'))
+    );
+    ALTER TABLE public.agent_run_mutations ENABLE ROW LEVEL SECURITY;
+  END IF;
+
+  IF to_regclass('public.agent_run_mutations') IS NOT NULL THEN
     ALTER TABLE public.agent_run_mutations
       ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'completed';
+    UPDATE public.agent_run_mutations SET status = 'completed' WHERE status IS NULL;
+    ALTER TABLE public.agent_run_mutations ALTER COLUMN status SET DEFAULT 'completed';
+    ALTER TABLE public.agent_run_mutations ALTER COLUMN status SET NOT NULL;
     IF NOT EXISTS (
       SELECT 1 FROM pg_constraint WHERE conname = 'agent_run_mutations_status_check'
     ) THEN
