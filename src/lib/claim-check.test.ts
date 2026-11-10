@@ -295,7 +295,7 @@ describe("the chat loop continues a promised turn", () => {
 
   it("checks for a promise as well as for a false completion", () => {
     expect(CHAT).toContain("statedIntentWithoutAction(finalText, toolEvents)");
-    expect(CHAT).toContain("(claimedDone || promisedWork)");
+    expect(CHAT).toContain("claimedDone || promisedWork");
   });
 
   it("still only intervenes once, whichever of the two it was", () => {
@@ -306,8 +306,8 @@ describe("the chat loop continues a promised turn", () => {
   });
 
   it("tells the model it stalled, not that it lied about finishing", () => {
-    const nudge = CHAT.slice(CHAT.indexOf("content: promisedWork"), CHAT.indexOf("Do not restate"));
-    expect(nudge).toContain("You said you were starting that work");
-    expect(nudge).toContain("do not promise it again");
+    expect(CHAT).toContain("You said you were starting that work");
+    expect(CHAT).toContain("do not promise it again");
+    expect(CHAT).toContain("Do not restate the summary you just wrote");
   });
 });

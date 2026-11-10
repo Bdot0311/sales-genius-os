@@ -23,6 +23,13 @@ import {
   researchStepCopy,
   sweepCopy,
 } from "../_shared/agent-step-present.ts";
+import {
+  askedWork,
+  listLeadGuidance,
+  listLeadsKey,
+  normalizeListArgs,
+  pipelineContinuation,
+} from "../_shared/list-leads-steer.ts";
 import { budgetExhausted, budgetNote, carriedTokens, tokensIn, turnTokenBudget } from "../_shared/agent-budget.ts";
 import { pruneTurnContext } from "../_shared/turn-context.ts";
 import { AUDIT_TOOL_CHOICE, bedrockConfigured, bedrockProModel, copyAuditDispatch, serverAuditPrelude } from "../_shared/bedrock.ts";
@@ -2291,6 +2298,41 @@ serve(async (req) => {
       };
     };
 
+    const listLeadKeys = new Map<string, number>();
+    let listLeadCalls = 0;
+    let listedLeadIds: string[] = [];
+    let listedQueuedCount = 0;
+    const asked = askedWork(userMessage);
+    const draftQueueAmong = async (ids: string[]): Promise<number> => {
+      if (ids.length === 0) return 0;
+      try {
+        const { data: pendingItems } = await admin
+          .from("agent_job_items")
+          .select("lead_id, job_id")
+          .eq("user_id", userId)
+          .eq("status", "pending")
+          .in("lead_id", ids);
+        const pendingRows = (pendingItems ?? []) as Record<string, unknown>[];
+        const jobIds = [...new Set(pendingRows.map((row) => String(row.job_id ?? "")).filter(Boolean))];
+        if (jobIds.length === 0) return 0;
+        const { data: jobs } = await admin
+          .from("agent_jobs")
+          .select("id")
+          .in("id", jobIds)
+          .eq("kind", "draft")
+          .in("status", ["queued", "running"]);
+        const live = new Set((jobs ?? []).map((job: { id: string }) => String(job.id)));
+        return new Set(
+          pendingRows
+            .filter((row) => live.has(String(row.job_id ?? "")))
+            .map((row) => String(row.lead_id ?? "")),
+        ).size;
+      } catch (error) {
+        console.warn(`[agent-chat] draft queue lookup failed: ${error instanceof Error ? error.message : error}`);
+        return 0;
+      }
+    };
+
     const runTool = async (name: string, rawArgs: Record<string, any>): Promise<unknown> => {
       let args: Record<string, any> = rawArgs;
       // Hard scope gate: even if the model hallucinates a tool it wasn't given,
@@ -2358,6 +2400,34 @@ serve(async (req) => {
       }
       switch (name) {
         case "list_leads": {
+          const listKey = listLeadsKey(args);
+          const priorSame = listLeadKeys.get(listKey) ?? 0;
+          const priorTotal = listLeadCalls;
+          listLeadCalls += 1;
+          listLeadKeys.set(listKey, priorSame + 1);
+          const early = listLeadGuidance({
+            priorTotal,
+            priorSame,
+            knownCount: listedLeadIds.length,
+            queuedCount: listedQueuedCount,
+            returnedCount: listedLeadIds.length,
+            asked,
+          });
+          if (early.stop) {
+            toolEvents.push({
+              name,
+              label: "Stopped repeating the lookup",
+              status: "ok",
+              detail: early.note,
+            });
+            return {
+              repeated: true,
+              count: listedLeadIds.length,
+              lead_ids: listedLeadIds.slice(0, 100),
+              note: early.note,
+            };
+          }
+          const filters = normalizeListArgs(args);
           /*
            * "Everyone who hasn't replied", as a filter.
            *
@@ -2368,40 +2438,40 @@ serve(async (req) => {
            * below, so the page, the outstanding count and the set the turn
            * commits to finishing all mean the same thing.
            */
-          const wantsAwaitingReply = args.awaiting_reply === true;
+          const wantsAwaitingReply = filters.awaiting_reply === true;
           const awaitingIds = wantsAwaitingReply
             ? [...await leadsAwaitingReply(
                 admin,
                 userId,
-                typeof args.quiet_for_days === "number" ? args.quiet_for_days : 3,
+                typeof filters.quiet_for_days === "number" ? filters.quiet_for_days : 3,
               )]
             : null;
 
           const applyFilters = (base: any) => {
             let b = base.eq("user_id", userId);
-            if (args.pipeline_stage) b = b.eq("pipeline_stage", args.pipeline_stage);
-            if (typeof args.min_icp_score === "number") b = b.gte("icp_score", args.min_icp_score);
-            if (args.query) {
-              const term = String(args.query).replace(/[%,]/g, "");
+            if (filters.pipeline_stage) b = b.eq("pipeline_stage", filters.pipeline_stage);
+            if (typeof filters.min_icp_score === "number") b = b.gte("icp_score", filters.min_icp_score);
+            if (filters.query) {
+              const term = String(filters.query).replace(/[%,]/g, "");
               b = b.or(
                 `company_name.ilike.%${term}%,contact_name.ilike.%${term}%,contact_email.ilike.%${term}%`,
               );
             }
-            if (args.needs_enrichment) b = b.is("contact_email", null);
+            if (filters.needs_enrichment) b = b.is("contact_email", null);
             // "unscored" is an answer, not an absence: a lead nobody has
             // graded is the one most worth finding, and .eq would never match
             // a NULL.
-            if (args.tier === "unscored") b = b.is("tier", null);
-            else if (typeof args.tier === "string" && args.tier) b = b.eq("tier", args.tier);
+            if (filters.tier === "unscored") b = b.is("tier", null);
+            else if (typeof filters.tier === "string" && filters.tier) b = b.eq("tier", filters.tier);
             // An empty list means nobody is waiting on a reply, which has to
             // narrow to nothing rather than be skipped as a falsy filter.
             if (awaitingIds) b = b.in("id", awaitingIds.length > 0 ? awaitingIds : [NO_MATCH_ID]);
             return b;
           };
           const q = applyFilters(admin.from("leads").select(LEAD_FIELDS));
-          const limit = Math.min(Math.max(Number(args.limit) || 25, 1), 100);
+          const limit = Math.min(Math.max(Number(filters.limit) || 25, 1), 100);
 
-          const wantsUndrafted = args.without_draft === true;
+          const wantsUndrafted = filters.without_draft === true;
           // Scan wider than the page when filtering, or a page of already-drafted
           // leads comes back empty and reads as "nothing left to do".
           const scanLimit = wantsUndrafted ? 500 : limit;
@@ -2477,19 +2547,37 @@ serve(async (req) => {
             leads.length,
             wantsUndrafted || outstanding < annotated.length ? outstanding : null,
           );
+          const pageIds = leads.map((lead) => String((lead as { id?: unknown }).id ?? ""));
+          const draftQueued = await draftQueueAmong(pageIds.filter(Boolean));
+          if (pageIds.length > 0) {
+            listedLeadIds = pageIds;
+            listedQueuedCount = draftQueued;
+          }
+          const guidance = listLeadGuidance({
+            priorTotal: 0,
+            priorSame: 0,
+            knownCount: pageIds.length,
+            queuedCount: draftQueued,
+            returnedCount: leads.length,
+            asked,
+          });
           toolEvents.push({
             name,
             label: lookedUp.label,
             status: "ok",
-            detail: lookedUp.detail,
+            detail: draftQueued > 0
+              ? `${lookedUp.detail} ${draftQueued} already have a draft being written.`
+              : lookedUp.detail,
           });
           return {
             count: leads.length,
             // The figure to quote. The model was subtracting its own running
             // tally from the total and announcing the result as fact.
             remaining_without_draft: outstanding,
+            draft_queued: draftQueued,
             truncated: pool.length > leads.length,
             leads,
+            ...(guidance.note ? { note: guidance.note } : {}),
           };
         }
 
@@ -4899,6 +4987,7 @@ CALENDAR (never compute a weekday-to-date mapping yourself, read it here): ${upc
 
 HOW TO WORK
 - When the user says something like "I just searched some leads, take it from here", find the relevant leads with list_leads first, then chain the work: enrich -> score -> draft -> send/queue. Do not ask permission for read-only or drafting steps; just do them and report back.
+- "Labeled New" means pipeline_stage "new". Call list_leads once for that set. If the user asked you to research, evaluate, and then write the emails, the next calls are research_leads, then score_leads, then draft_outreach — not another list_leads. A background draft queue does not block research or scoring. If those leads are already being drafted, say so and ask before replacing the emails.
 - DRAFTING FOR A GROUP: call list_leads once with the filters that match what the user actually asked for, then pass EVERY id it returns to draft_outreach in ONE call. Always include without_draft: true — without it you get the same leads back on every pass and redraft work that is already done, which is how a request for eighty-two drafts produced twenty. draft_outreach skips any lead that already has a draft regardless, so a repeat call is wasted, not additive.
 - SCOPE THAT CALL TO WHAT THEY ASKED FOR. The set you pass to list_leads is the set this turn commits to finishing, so a filter you leave off is work the user never requested. "No-response leads", "everyone who never replied", "people I haven't heard back from" all mean awaiting_reply: true — they do NOT mean every lead without a draft. Asked for eighty-six no-response leads and given only without_draft, you return one hundred and five, because without_draft includes everyone who has never been contacted at all. Those people cannot be followed up with; they have heard nothing from this user.
 - NEVER COUNT DRAFTS YOURSELF. Do not add this call's result to something you said earlier and report the sum, and do not subtract your running total from the list size to get a "remaining" figure. Queued is not drafted YET, but it is not outstanding either: a worker is drafting those leads right now and they need nothing from you or the user. So they are never "remaining", "left to draft", "still to do" or "not started", and you must never close a turn by offering to continue, resume or pick up leads that are already queued — the user who waits for that offer waits for a batch that was never stopped. The only two numbers you may quote are drafted_this_call from draft_outreach and remaining_without_draft from list_leads, called with the same filters you drafted against. If you want a current total, call list_leads and read it — it costs one call and it is the number the user sees in their drafts folder.
@@ -5301,7 +5390,13 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
         // already said it was doing.
         const claimedDone = emptyTurnWarning(finalText, toolEvents);
         const promisedWork = claimedDone ? "" : statedIntentWithoutAction(finalText, toolEvents);
-        if (!retriedEmptyTurn && (claimedDone || promisedWork) && step < MAX_TURN_STEPS - 1 && !outOfTime()) {
+        const pipelineNudge = pipelineContinuation({
+          message: userMessage,
+          events: toolEvents,
+          listedCount: listedLeadIds.length,
+          queuedCount: listedQueuedCount,
+        });
+        if (!retriedEmptyTurn && (claimedDone || promisedWork || pipelineNudge) && step < MAX_TURN_STEPS - 1 && !outOfTime()) {
           retriedEmptyTurn = true;
           console.warn(
             promisedWork
@@ -5315,6 +5410,8 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
                 "Do it now: call the tool that does it. " +
                 "If you cannot — a record is missing, a limit is in the way, or you need the user to decide something — say exactly that in one or two sentences instead. " +
                 "Do not say you are about to start, and do not promise it again."
+              : pipelineNudge
+              ? `[system check, not from the user] ${pipelineNudge} Do not call list_leads again, and do not describe the work as complete.`
               : "[system check, not from the user] Your reply says the work is done, but you called no tool that changes anything, so nothing happened. " +
                 "If the user asked you to do something, call the tool that does it now. " +
                 "If you cannot — the build is not scoped for it, a record is missing, a limit is in the way — say that plainly in one or two sentences. " +

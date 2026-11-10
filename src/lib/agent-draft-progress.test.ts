@@ -124,7 +124,7 @@ describe("a lead that has a draft is not drafted again", () => {
 
 describe("list_leads can say what is left", () => {
   it("carries has_draft on every row and filters by it", () => {
-    expect(CODE).toContain("const wantsUndrafted = args.without_draft === true;");
+    expect(CODE).toContain("const wantsUndrafted = filters.without_draft === true;");
     expect(CODE).toContain("has_draft: drafted.has(String(r.id))");
     expect(CODE).toContain("wantsUndrafted ? annotated.filter((r) => !r.has_draft) : annotated");
   });

@@ -30,7 +30,7 @@ describe("the grade can be asked for", () => {
     // NULL = NULL matches nothing, so a plain equality filter would hide the
     // leads a user most wants to find.
     expect(MIGRATION).toContain("p_tier = 'unscored' AND l.tier IS NULL");
-    expect(CHAT).toContain('if (args.tier === "unscored") b = b.is("tier", null);');
+    expect(CHAT).toContain('if (filters.tier === "unscored") b = b.is("tier", null);');
   });
 
   /*
@@ -75,7 +75,7 @@ describe("the grade can be asked for", () => {
 
   it("the agent can filter and can see what it filtered", () => {
     expect(CHAT).toContain('enum: ["A", "B", "C", "unscored"]');
-    expect(CHAT).toContain('b = b.eq("tier", args.tier)');
+    expect(CHAT).toContain('b = b.eq("tier", filters.tier)');
     // Reading the grade back matters as much as filtering by it: the agent
     // reports on the set it worked.
     expect(CHAT).toMatch(/pipeline_stage, tier, icp_score/);
@@ -85,7 +85,7 @@ describe("the grade can be asked for", () => {
     // applyFilters feeds both the page query and the full id sweep, so the
     // set the turn commits to finishing is the set it reported.
     const fn = CHAT.slice(CHAT.indexOf("const applyFilters = (base: any)"));
-    expect(fn.indexOf('b.eq("tier", args.tier)')).toBeLessThan(fn.indexOf("return b;"));
+    expect(fn.indexOf('b.eq("tier", filters.tier)')).toBeLessThan(fn.indexOf("return b;"));
   });
 });
 
