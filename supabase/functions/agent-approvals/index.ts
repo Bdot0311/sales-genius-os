@@ -81,6 +81,13 @@ serve(async (req) => {
         return json({ error: "Missing recipient, subject or body" }, 400);
       }
 
+      // The approval row is caller-writable, so its lead_id must belong to the caller.
+      if (approval.lead_id) {
+        const { data: ownedLead } = await admin
+          .from("leads").select("id").eq("id", approval.lead_id).eq("user_id", user.id).maybeSingle();
+        if (!ownedLead) return json({ error: "Lead not found" }, 404);
+      }
+
       let integrationRowId: string | null = approval.integration_row_id ?? null;
       if (!integrationRowId) {
         const { data: acct } = await admin
@@ -143,7 +150,8 @@ serve(async (req) => {
         await admin
           .from("leads")
           .update({ last_contacted_at: new Date().toISOString(), lead_status: "active" })
-          .eq("id", approval.lead_id);
+          .eq("id", approval.lead_id)
+          .eq("user_id", user.id);
 
         const followUps = (approval.metadata?.follow_up_touches ?? []) as Touch[];
         if (Array.isArray(followUps) && followUps.length > 0) {
@@ -165,7 +173,8 @@ serve(async (req) => {
             agent_thread_status:
               approval.classification === "meeting_request" ? "meeting_booked" : "replied",
           })
-          .eq("id", approval.sent_email_id);
+          .eq("id", approval.sent_email_id)
+          .eq("user_id", user.id);
       }
 
       await admin.from("agent_actions").insert({

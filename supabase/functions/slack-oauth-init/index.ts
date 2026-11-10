@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { safeRedirectUri } from "../_shared/safe-origin.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,7 +13,11 @@ serve(async (req) => {
   }
 
   try {
-    const { redirectUri } = await req.json();
+    const { redirectUri: rawRedirect } = await req.json();
+    const redirectUri = safeRedirectUri(rawRedirect);
+    if (!redirectUri) {
+      return new Response(JSON.stringify({ error: "Invalid redirect URI" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     const CLIENT_ID = Deno.env.get("SLACK_CLIENT_ID");
     if (!CLIENT_ID) throw new Error("SLACK_CLIENT_ID is not configured");
