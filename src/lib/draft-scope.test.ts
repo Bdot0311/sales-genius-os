@@ -37,7 +37,7 @@ describe("the turn commits to what was asked for", () => {
     const at = bare.indexOf('case "list_leads"');
     const call = bare.slice(at, bare.indexOf("remaining_without_draft", at));
     expect(call).toContain('.order("created_at", { ascending: false })');
-    expect(call).toContain("const limit = Math.min(Math.max(Number(args.limit) || 25, 1), 100);");
+    expect(call).toContain("const limit = Math.min(Math.max(Number(filters.limit) || 25, 1), 100);");
   });
 
   it("only sweeps when the model actually worked from the pool", () => {
