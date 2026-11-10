@@ -7,6 +7,7 @@ import {
   presentSteps,
   researchStepCopy,
   sweepCopy,
+  withConfirmedClose,
 } from "../../supabase/functions/_shared/agent-step-present";
 
 describe("agent steps read as a chat, and a miss stays visible", () => {
@@ -80,15 +81,21 @@ describe("agent steps read as a chat, and a miss stays visible", () => {
     const line = confirmedClose({
       pool: 63,
       researchedOk: 12,
-      researchedFailed: 12,
+      researchedFailed: 0,
+      researchQueued: 51,
+      researchFailed: 4,
+      scoreFailed: 2,
       queued: 15,
       written: 0,
       folder: 0,
-      jobFailed: 15,
-      jobPending: 0,
+      draftFailed: 15,
+      draftPending: 0,
       jobError: "Research ran and did not produce an approved sentence.",
     });
     expect(line).toContain("Researched 12 of 63.");
+    expect(line).toContain("Queued 51 leads for research.");
+    expect(line).toContain("4 queued research jobs failed.");
+    expect(line).toContain("2 queued score jobs failed.");
     expect(line).toContain("Queued 15 drafts.");
     expect(line).toContain("Drafts holds 0.");
     expect(line).toContain("15 queued drafts failed");
@@ -97,16 +104,44 @@ describe("agent steps read as a chat, and a miss stays visible", () => {
     expect(line).not.toContain("being written");
   });
 
+  it("keeps research findings and replaces only the completion claim", () => {
+    const close = confirmedClose({
+      pool: 63,
+      researchedOk: 12,
+      researchedFailed: 0,
+      researchQueued: 0,
+      researchFailed: 0,
+      scoreFailed: 0,
+      queued: 15,
+      written: 0,
+      folder: 0,
+      draftFailed: 0,
+      draftPending: 15,
+    });
+    const reply = withConfirmedClose(
+      "Acme sells freight software to brokers. They have been researched by their own buyers for years.\n\nAll 63 leads have been researched and all drafts are queued — the background worker is writing them now.",
+      close,
+    );
+    expect(reply).toContain("Acme sells freight software to brokers.");
+    expect(reply).toContain("researched by their own buyers");
+    expect(reply).toContain("Researched 12 of 63.");
+    expect(reply).not.toMatch(/all 63 leads have been researched/i);
+    expect(reply).not.toMatch(/background worker is writing/i);
+  });
+
   it("says the queue has not confirmed drafts that are still pending", () => {
     const line = confirmedClose({
       pool: 63,
       researchedOk: 12,
       researchedFailed: 0,
+      researchQueued: 0,
+      researchFailed: 0,
+      scoreFailed: 0,
       queued: 15,
       written: 0,
       folder: 0,
-      jobFailed: 0,
-      jobPending: 15,
+      draftFailed: 0,
+      draftPending: 15,
     });
     expect(line).toContain("None are saved yet. The queue has not confirmed them.");
   });

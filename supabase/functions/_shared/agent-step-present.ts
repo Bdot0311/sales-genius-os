@@ -147,11 +147,14 @@ export function confirmedClose(input: {
   pool: number;
   researchedOk: number;
   researchedFailed: number;
+  researchQueued: number;
+  researchFailed: number;
+  scoreFailed: number;
   queued: number;
   written: number;
   folder: number;
-  jobFailed: number;
-  jobPending: number;
+  draftFailed: number;
+  draftPending: number;
   jobError?: string | null;
 }): string {
   const parts: string[] = [];
@@ -161,6 +164,15 @@ export function confirmedClose(input: {
   if (pool > 0 && attempted > 0) {
     parts.push(`Researched ${researched} of ${pool}.`);
   }
+  if (input.researchQueued > 0) {
+    parts.push(`Queued ${input.researchQueued} ${input.researchQueued === 1 ? "lead" : "leads"} for research.`);
+  }
+  if (input.researchFailed > 0) {
+    parts.push(`${input.researchFailed} queued research ${input.researchFailed === 1 ? "job" : "jobs"} failed.`);
+  }
+  if (input.scoreFailed > 0) {
+    parts.push(`${input.scoreFailed} queued score ${input.scoreFailed === 1 ? "job" : "jobs"} failed.`);
+  }
   if (input.written > 0) {
     parts.push(`Saved ${input.written} ${input.written === 1 ? "draft" : "drafts"}.`);
   }
@@ -168,19 +180,37 @@ export function confirmedClose(input: {
     parts.push(`Queued ${input.queued} ${input.queued === 1 ? "draft" : "drafts"}.`);
   }
   parts.push(`Drafts holds ${input.folder}.`);
-  if (input.folder === 0 && input.jobFailed > 0) {
+  if (input.folder === 0 && input.draftFailed > 0) {
     const why = input.jobError ? ` ${input.jobError}` : "";
     parts.push(
-      `${input.jobFailed} queued ${input.jobFailed === 1 ? "draft" : "drafts"} failed and ${input.jobFailed === 1 ? "was" : "were"} not saved.${why}`,
+      `${input.draftFailed} queued ${input.draftFailed === 1 ? "draft" : "drafts"} failed and ${input.draftFailed === 1 ? "was" : "were"} not saved.${why}`,
     );
   } else if (input.folder === 0 && input.queued > 0) {
     parts.push(
-      input.jobPending > 0
+      input.draftPending > 0
         ? "None are saved yet. The queue has not confirmed them."
         : "None are saved yet.",
     );
   }
   return parts.join(" ");
+}
+
+const COMPLETION_CLAIM = /\b(?:all \d+|every(?: one of(?: the)?)?)\b[^.!?\n]{0,100}\b(?:researched|queued)\b|\ball drafts are queued\b|\bdrafts are being written\b|\bbackground worker is writing\b/i;
+
+/**
+ * Keep the model's findings. Only the sentence that claims the batch is done
+ * is replaced by the counted status.
+ */
+export function withConfirmedClose(reply: string, close: string): string {
+  const kept = reply.split(/\n\n/).map((part) => {
+    const sentences = part.split(/(?<=[.!?])\s+/).filter((sentence) => {
+      const text = sentence.trim();
+      return text.length > 0 && !COMPLETION_CLAIM.test(text);
+    });
+    return sentences.join(" ").trim();
+  }).filter(Boolean);
+  const body = kept.join("\n\n").trim();
+  return body ? `${body}\n\n${close}` : close;
 }
 
 /** Fold neighbouring rows that say the same thing. */

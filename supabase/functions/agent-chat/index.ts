@@ -19,6 +19,7 @@ import { mergeCompleted, resultOk, resumeFrom, supabaseTraceStore, trimResult } 
 import {
   backgroundDraftCopy,
   confirmedClose,
+  withConfirmedClose,
   formatDraftTurnSummary,
   listLeadsCopy,
   researchStepCopy,
@@ -1624,6 +1625,7 @@ serve(async (req) => {
     const researchTally = {
       ok: Number(carriedResearch.ok) || 0,
       failed: Number(carriedResearch.failed) || 0,
+      queued: Number(carriedResearch.queued) || 0,
     };
     const researchedLeadIds = new Set<string>(
       Array.isArray(payload.researchedLeadIds)
@@ -1836,6 +1838,7 @@ serve(async (req) => {
       // The drafting card counts drafts. The other kinds have their own job
       // rows and are not drafts, so adding them here would overstate it.
       if (kind === "draft") draftTally.queued += toQueue.length;
+      if (kind === "research") researchTally.queued += toQueue.length;
       // The card counts this, so it has to be the batch and not the call.
       const { count: itemCount } = await admin
         .from("agent_job_items")
@@ -2746,13 +2749,15 @@ serve(async (req) => {
 
         case "research_leads": {
           const rawRequested: string[] = (Array.isArray(args.lead_ids) ? args.lead_ids : []).map((x: any) => String(x));
-          const requested = [...new Set([...rawRequested, ...listedLeadIds])];
+          if (rawRequested.length === 0) return { error: "lead_ids is required" };
+          const allDone = rawRequested.every((id) => researchedLeadIds.has(id));
+          const requested = allDone ? listedLeadIds : rawRequested;
           const { owned: ownedSeed, unknown } = await ownedLeadIds(requested);
           const ownedSet = new Set(ownedSeed);
           const plan = nextResearchSlice({
-            requested: rawRequested.filter((id) => ownedSet.has(id)),
+            requested: allDone ? [] : rawRequested.filter((id) => ownedSet.has(id)),
             done: [...researchedLeadIds],
-            pool: listedLeadIds.filter((id) => ownedSet.has(id)),
+            pool: allDone ? listedLeadIds.filter((id) => ownedSet.has(id)) : [],
             limit: 12,
           });
           if (plan.inline.length === 0 && plan.queue.length === 0) {
@@ -6019,10 +6024,12 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
 
 
 
-    if (researchTally.ok + researchTally.failed + draftTally.queued + draftTally.written > 0) {
+    if (researchTally.ok + researchTally.failed + researchTally.queued + draftTally.queued + draftTally.written > 0) {
       let folder = 0;
-      let jobFailed = 0;
-      let jobPending = 0;
+      let draftFailed = 0;
+      let draftPending = 0;
+      let researchFailed = 0;
+      let scoreFailed = 0;
       let jobError: string | null = null;
       const { count: draftsNow } = await admin
         .from("email_drafts")
@@ -6031,40 +6038,44 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
       folder = draftsNow ?? 0;
       const { data: runJobs } = await admin
         .from("agent_jobs")
-        .select("id")
+        .select("id, kind")
         .eq("thread_id", threadId)
         .eq("user_id", userId)
         .gte("created_at", runStartedAt);
-      const runJobIds = (runJobs ?? []).map((job: { id: string }) => job.id);
+      const kindByJob = new Map((runJobs ?? []).map((job: { id: string; kind?: string }) => [job.id, String(job.kind ?? "")]));
+      const runJobIds = [...kindByJob.keys()];
       if (runJobIds.length) {
         const { data: runItems } = await admin
           .from("agent_job_items")
-          .select("status, error")
+          .select("job_id, status, error")
           .in("job_id", runJobIds);
-        for (const item of (runItems ?? []) as Array<{ status?: string; error?: string | null }>) {
-          if (item.status === "failed") {
-            jobFailed += 1;
-            if (!jobError && item.error) jobError = String(item.error).slice(0, 180);
-          } else if (item.status === "pending" || item.status === "claimed") {
-            jobPending += 1;
-          }
+        for (const item of (runItems ?? []) as Array<{ job_id?: string; status?: string; error?: string | null }>) {
+          const kind = kindByJob.get(String(item.job_id ?? "")) ?? "";
+          const failed = item.status === "failed";
+          const waiting = item.status === "pending" || item.status === "claimed";
+          if (kind === "draft") {
+            if (failed) {
+              draftFailed += 1;
+              if (!jobError && item.error) jobError = String(item.error).slice(0, 180);
+            } else if (waiting) draftPending += 1;
+          } else if (failed && kind === "research") researchFailed += 1;
+          else if (failed && kind === "score") scoreFailed += 1;
         }
       }
-      const warnings = finalText
-        .split("\n\n")
-        .map((part) => part.trim())
-        .filter((part) => part.startsWith("⚠️"));
-      finalText = [...warnings, confirmedClose({
+      finalText = withConfirmedClose(finalText, confirmedClose({
         pool: Math.max(listedLeadIds.length, researchTally.ok + researchTally.failed),
         researchedOk: researchTally.ok,
         researchedFailed: researchTally.failed,
+        researchQueued: researchTally.queued,
+        researchFailed,
+        scoreFailed,
         queued: draftTally.queued,
         written: draftTally.written,
         folder,
-        jobFailed,
-        jobPending,
+        draftFailed,
+        draftPending,
         jobError,
-      })].join("\n\n");
+      }));
     }
 
     const { data: saved } = await admin

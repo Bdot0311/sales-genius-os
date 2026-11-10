@@ -20,14 +20,10 @@ export function nextResearchSlice(input: {
     seen.add(id);
     pending.push(id);
   };
-  for (const id of input.requested) add(id);
-  // The caller asked only for leads this run already finished. Continue
-  // through the list from the last lookup instead of repeating them.
-  if (pending.length === 0) {
-    for (const id of input.pool) add(id);
-  } else {
-    for (const id of input.pool) add(id);
-  }
+  const freshRequest = input.requested.some((id) => id && !done.has(id));
+  // A request that still has work stays on those ids. The saved list is only
+  // the fallback once every requested id was already researched this run.
+  for (const id of freshRequest ? input.requested : input.pool) add(id);
   const limit = Math.max(0, input.limit);
   return { inline: pending.slice(0, limit), queue: pending.slice(limit) };
 }
