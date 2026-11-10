@@ -75,7 +75,7 @@ serve(async (req) => {
     const payload = await req.json();
     const { to, subject, body: rawBody, integrationId, integrationRowId, leadId, templateId, threadId, appendSignature } = payload;
     
-    console.log('Send email request received:', { to, subject, integrationId, leadId, templateId });
+    console.log('Send email request received:', { hasRecipient: !!to, integrationId, leadId, templateId });
 
     // Get authorization header
     // Browser sessions, MCP OAuth tokens and API keys all resolve to the same
@@ -427,7 +427,7 @@ serve(async (req) => {
         .maybeSingle();
 
       if (dup) {
-        console.warn(`[send-email] duplicate blocked: ${to} already got "${subject}"`);
+        console.warn(`[send-email] duplicate blocked for lead ${leadId ?? "n/a"}`);
         // The refusal names the two remedies that work and rules out the one
         // the agent kept choosing. See _shared/duplicate-send.ts for why.
         return new Response(
@@ -875,7 +875,7 @@ ${unsubscribeFooterHtml}
 
       const encodedEmail = toBase64Url(emailContent);
 
-      console.log('Sending email via Gmail to:', to);
+      console.log('Sending email via Gmail');
 
       const recipient = normalizeRecipient(to);
       const store: OutboundStore = {

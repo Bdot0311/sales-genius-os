@@ -280,7 +280,7 @@ serve(async (req) => {
           .ilike("contact_email", email);
         if (leadErr) {
           // Counted as unfinished so the sweep retries it.
-          console.error(`Lead verdict not written for ${email}:`, leadErr.message);
+          console.error(`Lead verdict not written:`, leadErr.message);
           return false;
         }
         if ((count ?? 0) > 0) reverified++;

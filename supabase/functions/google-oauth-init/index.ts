@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { safeRedirectUri } from "../_shared/safe-origin.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -34,7 +35,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => null);
-    const redirectUri = typeof body?.redirectUri === "string" ? body.redirectUri : "";
+    const redirectUri = safeRedirectUri(body?.redirectUri) ?? "";
     if (!redirectUri) {
       return fail(400, "missing_redirect_uri", "No redirect URI was sent with the request.");
     }

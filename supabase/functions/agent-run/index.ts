@@ -1324,7 +1324,7 @@ ${playbookSystemRules()}`;
                   `${best.rubric?.overall ?? "unscored"}/100, ${best.blocking.length} blocking`,
                 );
               } else {
-                console.log(`[agent-run] quality pass for ${to} after ${attempts} attempt(s): ${best.rubric?.overall ?? "unscored"}/100`);
+                console.log(`[agent-run] quality pass after ${attempts} attempt(s): ${best.rubric?.overall ?? "unscored"}/100`);
               }
 
               // A draft that could not be written well enough is thrown away,
@@ -1533,7 +1533,7 @@ ${playbookSystemRules()}`;
               outreachSent++;
               remainingOutreach--;
             } catch (leadErr: any) {
-              console.error(`outreach error for ${to}:`, leadErr?.message);
+              console.error(`outreach error:`, leadErr?.message);
               await logAction({
                 user_id: user.id,
                 action_type: "error",

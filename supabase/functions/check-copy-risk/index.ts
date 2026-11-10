@@ -13,6 +13,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 import { AI_SMART, aiFetch } from "../_shared/ai-provider.ts";
+import { publicHttpUrl } from "../_shared/safe-url.ts";
 import { checkDomainAgainstDnsbls } from "../_shared/dnsbl.ts";
 import {
   COPY_RISK_PROMPT_VERSION,
@@ -46,6 +47,7 @@ async function traceRedirects(url: string, max = 4): Promise<string[]> {
   let current = url;
 
   for (let i = 0; i < max; i++) {
+    if (!publicHttpUrl(current).ok) return hops;
     let res: Response;
     try {
       res = await fetch(current, { method: "HEAD", redirect: "manual" });
