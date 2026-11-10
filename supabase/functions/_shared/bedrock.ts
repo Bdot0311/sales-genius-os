@@ -59,13 +59,12 @@ export function bedrockConfigured(): boolean {
  */
 export const BEDROCK_STANDARD_MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0";
 /**
- * Pro tier. US geo Opus 5.5, the profile used from us-east-1.
- * The bare id is in-region only in eu-west-2. Global is a different profile
- * and is not this default.
+ * Pro tier. US geo Claude Sonnet 4.6 — temporary until the account is granted
+ * Opus 5.5 access; switch back to BEDROCK_OPUS_55_US_ID then.
  */
-export const BEDROCK_PRO_MODEL_ID = "us.anthropic.claude-opus-5-5";
-/** Same id, named for tests that distinguish the built-in profile from other Opus profiles. */
-export const BEDROCK_OPUS_55_US_ID = BEDROCK_PRO_MODEL_ID;
+export const BEDROCK_PRO_MODEL_ID = "us.anthropic.claude-sonnet-4-6";
+/** US geo Opus 5.5 profile, kept priced and tested for when access is granted. */
+export const BEDROCK_OPUS_55_US_ID = "us.anthropic.claude-opus-5-5";
 
 /**
  * Request ids the server itself uses for the Pro tier.

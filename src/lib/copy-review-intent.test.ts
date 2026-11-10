@@ -71,7 +71,7 @@ describe("the model is required to call it, not asked", () => {
     expect(AGENT).toContain("tool_choice: AUDIT_TOOL_CHOICE");
     expect(AGENT).toContain("serverAuditPrelude");
     expect(copyAuditDispatch(BEDROCK_STANDARD_MODEL_ID)).toBe("tool_choice");
-    expect(copyAuditDispatch(BEDROCK_PRO_MODEL_ID)).toBe("server");
+    expect(copyAuditDispatch(BEDROCK_PRO_MODEL_ID)).toBe("tool_choice");
   });
 
   it("only on the first step, so the turn can still redraft or send afterwards", () => {
