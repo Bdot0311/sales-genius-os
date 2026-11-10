@@ -295,8 +295,10 @@ describe("handing a batch over", () => {
     // order of the two blocks, and pinning the number broke this test the day
     // the number became a named constant.
     const drafting = tool.search(/await mapLimit\(ids, \w+, genOne\)/);
+    const queued = tool.indexOf('queueWork("draft"');
     expect(drafting).toBeGreaterThan(-1);
-    expect(tool.indexOf('.from("agent_jobs")')).toBeLessThan(drafting);
+    expect(queued).toBeGreaterThan(-1);
+    expect(queued).toBeLessThan(drafting);
   });
 
   it("never leaves a job with no items behind", () => {

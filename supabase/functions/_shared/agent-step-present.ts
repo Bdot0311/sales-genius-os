@@ -135,6 +135,54 @@ export function formatDraftTurnSummary(input: {
   return sentences.join(" ");
 }
 
+/**
+ * The sentence the user actually reads when a turn researched or drafted.
+ *
+ * The model said "all 63 have been researched and all drafts are queued"
+ * after 12 researches and an empty Drafts folder. This line is the counts.
+ * It does not say every lead was researched unless that many succeeded, and
+ * it does not say a draft was saved when the folder and the job rows disagree.
+ */
+export function confirmedClose(input: {
+  pool: number;
+  researchedOk: number;
+  researchedFailed: number;
+  queued: number;
+  written: number;
+  folder: number;
+  jobFailed: number;
+  jobPending: number;
+  jobError?: string | null;
+}): string {
+  const parts: string[] = [];
+  const researched = input.researchedOk;
+  const attempted = researched + input.researchedFailed;
+  const pool = Math.max(input.pool, attempted);
+  if (pool > 0 && attempted > 0) {
+    parts.push(`Researched ${researched} of ${pool}.`);
+  }
+  if (input.written > 0) {
+    parts.push(`Saved ${input.written} ${input.written === 1 ? "draft" : "drafts"}.`);
+  }
+  if (input.queued > 0) {
+    parts.push(`Queued ${input.queued} ${input.queued === 1 ? "draft" : "drafts"}.`);
+  }
+  parts.push(`Drafts holds ${input.folder}.`);
+  if (input.folder === 0 && input.jobFailed > 0) {
+    const why = input.jobError ? ` ${input.jobError}` : "";
+    parts.push(
+      `${input.jobFailed} queued ${input.jobFailed === 1 ? "draft" : "drafts"} failed and ${input.jobFailed === 1 ? "was" : "were"} not saved.${why}`,
+    );
+  } else if (input.folder === 0 && input.queued > 0) {
+    parts.push(
+      input.jobPending > 0
+        ? "None are saved yet. The queue has not confirmed them."
+        : "None are saved yet.",
+    );
+  }
+  return parts.join(" ");
+}
+
 /** Fold neighbouring rows that say the same thing. */
 export function presentSteps(events: StepEvent[]): PresentedStep[] {
   const out: PresentedStep[] = [];

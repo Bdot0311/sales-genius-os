@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   backgroundDraftCopy,
+  confirmedClose,
   formatDraftTurnSummary,
   listLeadsCopy,
   presentSteps,
@@ -73,6 +74,41 @@ describe("agent steps read as a chat, and a miss stays visible", () => {
     expect(line).toContain("5 are still waiting");
     expect(sweepCopy({ queued: 28, pool: 63, beyondLimit: 0, cap: 500 }).detail).toContain("Nothing from that set is still waiting");
     expect(sweepCopy({ queued: 28, pool: 63, beyondLimit: 4, cap: 500 }).detail).toContain("4 are still waiting");
+  });
+
+  it("does not say every lead was researched or that drafts were saved", () => {
+    const line = confirmedClose({
+      pool: 63,
+      researchedOk: 12,
+      researchedFailed: 12,
+      queued: 15,
+      written: 0,
+      folder: 0,
+      jobFailed: 15,
+      jobPending: 0,
+      jobError: "Research ran and did not produce an approved sentence.",
+    });
+    expect(line).toContain("Researched 12 of 63.");
+    expect(line).toContain("Queued 15 drafts.");
+    expect(line).toContain("Drafts holds 0.");
+    expect(line).toContain("15 queued drafts failed");
+    expect(line).toContain("approved sentence");
+    expect(line).not.toMatch(/all 63/i);
+    expect(line).not.toContain("being written");
+  });
+
+  it("says the queue has not confirmed drafts that are still pending", () => {
+    const line = confirmedClose({
+      pool: 63,
+      researchedOk: 12,
+      researchedFailed: 0,
+      queued: 15,
+      written: 0,
+      folder: 0,
+      jobFailed: 0,
+      jobPending: 15,
+    });
+    expect(line).toContain("None are saved yet. The queue has not confirmed them.");
   });
 
   it("keeps lookup and background-draft lines short", () => {

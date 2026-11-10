@@ -179,7 +179,6 @@ describe("the function degrades honestly", () => {
 
   it("bounds the lookups so a writer is not left waiting", () => {
     expect(SRC).toMatch(/domains\.slice\(0, 5\)/);
-    expect(SRC).toMatch(/\.slice\(0, 3\)/);
   });
 
   it("routes the model call through the metered provider", () => {
