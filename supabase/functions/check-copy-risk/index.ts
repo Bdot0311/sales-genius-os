@@ -24,7 +24,6 @@ import {
 import {
   blacklistFinding,
   domainsToCheck,
-  redirectFinding,
   staticLinkFindings,
   type LinkFinding,
 } from "../_shared/link-risk.ts";
@@ -39,35 +38,6 @@ function json(body: unknown, status = 200) {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
-}
-
-/** Follow redirects by hand so the chain itself can be reported. */
-async function traceRedirects(url: string, max = 4): Promise<string[]> {
-  const hops: string[] = [];
-  let current = url;
-
-  for (let i = 0; i < max; i++) {
-    if (!publicHttpUrl(current).ok) return hops;
-    let res: Response;
-    try {
-      res = await fetch(current, { method: "HEAD", redirect: "manual" });
-    } catch {
-      // A link we cannot reach is not evidence of a redirect chain. Silence is
-      // the honest answer, not a fabricated hop.
-      return hops;
-    }
-    if (res.status < 300 || res.status >= 400) break;
-    const next = res.headers.get("location");
-    if (!next) break;
-    try {
-      current = new URL(next, current).toString();
-    } catch {
-      break;
-    }
-    hops.push(new URL(current).hostname);
-  }
-
-  return hops;
 }
 
 serve(async (req) => {
@@ -110,14 +80,8 @@ serve(async (req) => {
       }
     }
 
-    const uniqueLinks: string[] = [
-      ...new Set<string>(emailBody.match(/https?:\/\/[^\s<>"')\]]+/gi) ?? []),
-    ].slice(0, 3);
-    for (const link of uniqueLinks) {
-      const hops = await traceRedirects(link.replace(/[.,;:!?]+$/, ""));
-      const finding = redirectFinding(link, hops);
-      if (finding) linkFindings.push(finding);
-    }
+    // Live redirect tracing was removed: fetching caller-supplied links made
+    // this function an outbound request relay. Static link checks remain.
 
     // ---- Prose: the part that needs judgment ----
     let copyFindings: ReturnType<typeof parseCopyRiskFindings>["findings"] = [];
