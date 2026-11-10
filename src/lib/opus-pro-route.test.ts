@@ -28,8 +28,8 @@ describe("Pro is the priced US Opus profile and Standard stays Haiku", () => {
     expect(bedrockTierForRequest("anthropic.claude-opus-5-5")).toBe("fast");
     expect(bedrockTierForRequest("us.anthropic.claude-opus-5-5")).toBe("fast");
     expect(bedrockTierForRequest("please use opus")).toBe("fast");
-    expect(BEDROCK_PRO_MODEL_ID).toBe("us.anthropic.claude-opus-5-5");
-    expect(BEDROCK_OPUS_55_US_ID).toBe(BEDROCK_PRO_MODEL_ID);
+    expect(BEDROCK_PRO_MODEL_ID).toBe("us.anthropic.claude-sonnet-4-6");
+    expect(BEDROCK_OPUS_55_US_ID).toBe("us.anthropic.claude-opus-5-5");
     expect(BEDROCK_STANDARD_MODEL_ID).toContain("haiku-4-5");
   });
 
@@ -119,9 +119,9 @@ describe("Opus thinking blocks round-trip and old histories do not grow one", ()
 
 describe("Opus prices stay on the profile that was priced", () => {
   it("bills the US geo default at 4.40/22, Global at 4/20, and does not call out for an unpriced profile", async () => {
-    expect(bedrockPrice(BEDROCK_PRO_MODEL_ID)).toEqual({ in: 4.4, out: 22 });
-    expect(usdForBedrockModel(BEDROCK_PRO_MODEL_ID, 1_000_000, 1_000_000)).toBeCloseTo(26.4, 10);
-    expect(opusPriceBlock(BEDROCK_PRO_MODEL_ID)).toBeNull();
+    expect(bedrockPrice(BEDROCK_OPUS_55_US_ID)).toEqual({ in: 4.4, out: 22 });
+    expect(usdForBedrockModel(BEDROCK_OPUS_55_US_ID, 1_000_000, 1_000_000)).toBeCloseTo(26.4, 10);
+    expect(opusPriceBlock(BEDROCK_OPUS_55_US_ID)).toBeNull();
     expect(bedrockPrice("global.anthropic.claude-opus-5-5")).toEqual({ in: 4, out: 20 });
     expect(usdForBedrockModel("global.anthropic.claude-opus-5-5", 1_000_000, 1_000_000)).toBe(24);
     expect(bedrockPrice("eu.anthropic.claude-opus-5-5")).toBeNull();
@@ -136,7 +136,7 @@ describe("Opus prices stay on the profile that was priced", () => {
       calls += 1;
       return new Response("sent", { status: 200 });
     };
-    const allowed = await sendIfPriced(BEDROCK_PRO_MODEL_ID, send);
+    const allowed = await sendIfPriced(BEDROCK_OPUS_55_US_ID, send);
     expect(allowed.status).toBe(200);
     expect(calls).toBe(1);
     const blocked = await sendIfPriced("eu.anthropic.claude-opus-5-5", send);
@@ -149,7 +149,7 @@ describe("copy audit stays mandatory without a forced Opus tool choice", () => {
   it("keeps a named tool_choice for Haiku and runs the audit before an Opus call", () => {
     expect(copyAuditDispatch(BEDROCK_STANDARD_MODEL_ID)).toBe("tool_choice");
     expect(copyAuditDispatch("us.anthropic.claude-sonnet-4-5-20250929-v1:0")).toBe("tool_choice");
-    expect(copyAuditDispatch(BEDROCK_PRO_MODEL_ID)).toBe("server");
+    expect(copyAuditDispatch(BEDROCK_OPUS_55_US_ID)).toBe("server");
     const forced = toConverseBody({
       model: BEDROCK_STANDARD_MODEL_ID,
       messages: [{ role: "user", content: "Review this." }],
