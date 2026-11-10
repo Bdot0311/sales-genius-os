@@ -82,7 +82,7 @@ export const TOOL_LABELS: Record<string, string> = {
   search_companies: "Searching companies",
   enrich_leads: "Filling in missing contact details",
   score_leads: "Scoring them against your ICP",
-  research_leads: "Reading their websites",
+  research_leads: "Researching companies",
   draft_outreach: "Writing the emails",
   draft_sequence: "Building the sequence",
   list_drafts: "Gathering the drafts",

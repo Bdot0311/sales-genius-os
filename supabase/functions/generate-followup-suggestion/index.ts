@@ -24,7 +24,7 @@ import { composeSkillContext, skillNamesUsed } from "../_shared/email-skills.ts"
 import { bannedPhrasesBlock, findPlaceholders, hasPlaceholder } from "../_shared/email-rules.ts";
 import { isWeak, rubricFeedback, scoreEmailReport } from "../_shared/email-quality.ts";
 import { bodyViolations, evaluateStoredSnapshots } from "../_shared/evidence-contract.ts";
-import { AI_SMART, aiFetch } from "../_shared/ai-provider.ts";
+import { AI_FAST, aiFetch } from "../_shared/ai-provider.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -179,7 +179,7 @@ Respond in this EXACT JSON format:
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: AI_SMART,
+          model: AI_FAST,
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt },

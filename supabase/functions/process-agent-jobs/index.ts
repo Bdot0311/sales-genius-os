@@ -25,6 +25,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { htmlToPlainText } from "../_shared/plain-text.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
 import { requireServiceRole } from "../_shared/internal-auth.ts";
+import { DRAFT_TIER_HEADER } from "../_shared/draft-tier.ts";
 import {
   draftForLead,
   goalForLead,
@@ -256,6 +257,8 @@ serve(async (req) => {
         Authorization: `Bearer ${serviceKey}`,
         "Content-Type": "application/json",
         apikey: serviceKey,
+        // Only drafts are Pro. Enrich, score and research keep their own tiers.
+        ...(name === "generate-email" ? { [DRAFT_TIER_HEADER]: "pro" } : {}),
       },
       body: JSON.stringify(body ?? {}),
     });

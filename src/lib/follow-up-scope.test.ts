@@ -203,23 +203,26 @@ describe("the counts in one message agree with each other", () => {
 
   it("says how many the sweep added after the reply was written", () => {
     expect(agent).toContain("sweptQueued = queued");
-    expect(agent).toContain("const sweepNote = sweptQueued > 0");
-    expect(agent).toContain("added at the end to cover leads the steps above left out");
+    expect(agent).toContain("formatDraftTurnSummary");
+    expect(agent).toContain("swept: sweptQueued");
   });
 
   it("says plainly that nothing is left when nothing is", () => {
-    expect(agent).toContain("nothing from that set is still waiting");
-    expect(agent).toContain("Any smaller count below this line was written before they were queued");
+    const present = code(readFileSync("supabase/functions/_shared/agent-step-present.ts", "utf8"));
+    expect(present).toContain("nothing from that set is still waiting");
+    expect(present).toContain("Any smaller number below was from before these were queued");
   });
 
   it("still names the remainder when the sweep hit its limit", () => {
-    expect(agent).toContain("sweptBeyondLimit = beyondLimit");
-    expect(agent).toContain("are still without a draft");
+    expect(agent).toContain("stillWaiting: sweptBeyondLimit");
+    const present = code(readFileSync("supabase/functions/_shared/agent-step-present.ts", "utf8"));
+    expect(present).toContain("are still waiting");
   });
 
   it("keeps the folder total from the database above the reply", () => {
     expect(agent).toContain('.from("email_drafts")');
-    expect(agent).toContain("Your drafts folder holds ${draftsNow ?? 0}");
+    expect(agent).toContain("folder: draftsNow ?? 0");
+    expect(agent).toContain("finalText = `${summary}\\n\\n${finalText}`");
   });
 });
 

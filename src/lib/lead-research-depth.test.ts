@@ -173,7 +173,7 @@ describe("depth does not come out of the time budget", () => {
 
   it("reads the fallback guesses together too", () => {
     expect(RESEARCH).toContain("CANDIDATE_PATHS.slice(0, MAX_PAGES - 1)");
-    expect(RESEARCH).toContain("websiteUrls: [origin, ...extraUrls]");
+    expect(RESEARCH).toContain("websiteUrls: host ? [origin, ...extraUrls] : []");
   });
 
   it("waits less for the small static files than for a page", () => {

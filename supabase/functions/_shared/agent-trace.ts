@@ -52,7 +52,7 @@ export interface StoredStep {
 export interface TraceStore {
   latestStep(threadId: string, runPass: number): Promise<StoredStep | null>;
   saveStep(row: StepRecord): Promise<void>;
-  listMutations(threadId: string): Promise<string[]>;
+  listMutations(threadId: string, opts?: { excludeUnknown?: boolean }): Promise<string[]>;
   saveMutation(threadId: string, userId: string, key: string, toolName: string): Promise<void>;
   claimMutation(threadId: string, userId: string, key: string, toolName: string): Promise<"claimed" | "present">;
   finishMutation(threadId: string, key: string, status: "completed" | "unknown"): Promise<void>;
@@ -175,6 +175,23 @@ export function normaliseMutationKey(key: string): string {
  * survives a worker restart, the database's survives a client that never came
  * back. The union is what the turn uses.
  */
+/**
+ * Keys that should block a repeat.
+ *
+ * A new user message must not inherit unknown rows from the previous turn:
+ * those are "we never learned what happened", not "this already finished".
+ * A continuation of the same run still honours them.
+ */
+export function mutationKeysForTurn(
+  rows: Array<{ mutation_key?: string | null; status?: string | null }>,
+  opts: { excludeUnknown?: boolean } = {},
+): string[] {
+  return rows
+    .filter((row) => !(opts.excludeUnknown && row.status === "unknown"))
+    .map((row) => String(row.mutation_key ?? ""))
+    .filter(Boolean);
+}
+
 export function mergeCompleted(fromClient: unknown, fromStore: string[]): Set<string> {
   const out = new Set<string>();
   if (Array.isArray(fromClient)) {
@@ -239,16 +256,19 @@ export function supabaseTraceStore(admin: any): TraceStore {
       if (error) console.warn(`[agent-trace] could not write step ${row.stepIndex}: ${error.message}`);
     },
 
-    async listMutations(threadId) {
+    async listMutations(threadId, opts) {
       const { data, error } = await admin
         .from("agent_run_mutations")
-        .select("mutation_key")
+        .select("mutation_key, status")
         .eq("thread_id", threadId);
       if (error) {
         console.warn(`[agent-trace] could not read completed mutations: ${error.message}`);
         return [];
       }
-      return ((data ?? []) as Array<{ mutation_key: string }>).map((r) => r.mutation_key);
+      return mutationKeysForTurn(
+        (data ?? []) as Array<{ mutation_key: string; status?: string | null }>,
+        { excludeUnknown: opts?.excludeUnknown === true },
+      );
     },
 
     async claimMutation(threadId, userId, key, toolName) {

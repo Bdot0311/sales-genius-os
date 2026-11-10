@@ -73,7 +73,7 @@ to the Lovable gateway.
 | `AWS_BEARER_TOKEN_BEDROCK` / `BEDROCK_API_KEY` | `_shared/bedrock.ts` | Falls back to the Lovable gateway |
 | `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_SESSION_TOKEN` | `_shared/bedrock.ts` | SigV4 path unavailable; bearer token used instead |
 | `AWS_REGION` / `BEDROCK_REGION` | `_shared/bedrock.ts` | Defaults apply |
-| `BEDROCK_MODEL_ID` / `BEDROCK_MODEL_ID_PRO` | `_shared/bedrock.ts` | Built-in ids used — Haiku 4.5 (`us.anthropic.claude-haiku-4-5-20251001-v1:0`) and US geo Opus 5.5 (`us.anthropic.claude-opus-5-5`). Each variable replaces only its own tier. The bare Opus id is valid in London only. `global.anthropic.claude-opus-5-5` is a different profile and is not selected unless `BEDROCK_MODEL_ID_PRO` is set to it. Setting the variable does not entitle the AWS account to the model |
+| `BEDROCK_MODEL_ID` / `BEDROCK_MODEL_ID_PRO` | `_shared/bedrock.ts` | Built-in ids used — Haiku 4.5 (`us.anthropic.claude-haiku-4-5-20251001-v1:0`) and US geo Sonnet 4.6 (`us.anthropic.claude-sonnet-4-6`). Each variable replaces only its own tier. Opus 5.5 (`us.anthropic.claude-opus-5-5`) is not the default; it is used only when `BEDROCK_MODEL_ID_PRO` is set to it. The bare Opus id is valid in London only. `global.anthropic.claude-opus-5-5` is a different profile and is not selected unless `BEDROCK_MODEL_ID_PRO` is set to it. Setting the variable does not entitle the AWS account to the model |
 | `LOVABLE_API_KEY` | ~29 functions | **With no Bedrock key either: every AI call returns "No AI provider key configured"** — drafting, scoring, research, the agent |
 | `CF_AI_GATEWAY_BEDROCK` | `_shared/ai-gateway.ts` | Bedrock traffic goes direct to AWS, as it always has. Set it to everything up to and including `/aws-bedrock` — `https://gateway.ai.cloudflare.com/v1/<account_id>/<gateway_id>/aws-bedrock` — and every Bedrock call routes through the gateway for spend analytics, caching and rate limiting. The rest of the path (`/bedrock-runtime/<region>/<aws path>`) is appended from the URL the signer saw, so the signature keeps covering the AWS host. Find the base under **AI → AI Gateway → your gateway → API**. Anything that is not an https URL is ignored with a warning rather than sending model traffic somewhere unreachable |
 | `CF_AI_GATEWAY_TOKEN` | `_shared/ai-gateway.ts` | Sent as `cf-aig-authorization` when `CF_AI_GATEWAY_BEDROCK` is in use, never on a direct-to-AWS call. Required whenever the gateway has **Authenticated Gateway** turned on, which rejects anything without it. Create one under **AI → AI Gateway → your gateway → Settings → Authenticated Gateway**. **A base set without a token does not route at all** — it logs a warning and goes direct to AWS, because losing the analytics is recoverable and 401ing every model call in the product is not |
@@ -108,8 +108,8 @@ uses the `default` alias when no alias header is sent.
 
 Bedrock serves none of the gateway model ids, so `routeFor` collapses a request
 onto two models: `BEDROCK_MODEL_ID` (Haiku 4.5) and `BEDROCK_MODEL_ID_PRO`
-(US geo Opus 5.5, unless that variable is set). Only the exact server
-ids `google/gemini-2.5-pro` and `openai/gpt-5.6-sol` select Pro. A string that
+(US geo Sonnet 4.6, unless that variable is set). Only the exact server
+ids `google/gemini-2.5-pro` (`AI_SMART`) and `openai/gpt-5.6-sol` select Pro. A string that
 merely contains "pro" or "opus" stays on Haiku.
 
 That made the choice invisible at the call site, and twenty-four of
@@ -121,35 +121,39 @@ Call sites now ask for a tier by name, from `_shared/ai-provider.ts`:
 
 | constant | tier | used by |
 |---|---|---|
-| `AI_SMART` | US geo Opus 5.5 when Bedrock is configured, unless `BEDROCK_MODEL_ID_PRO` overrides it | `generate-email`, `generate-sequence`, `generate-followup-suggestion`, `check-email-rubric`, `check-copy-risk`, `research-lead`, `research-account`, `ai-coach`, `agent-run` |
-| `AI_FAST` | Haiku | `score-lead-v2`, `map-account-committee`, `build-agent`, `refill-blog-topics`, `apply-rubric-suggestion` |
+| `AI_SMART` | US geo Sonnet 4.6 when Bedrock is configured, unless `BEDROCK_MODEL_ID_PRO` overrides it | `research-lead`, `research-account`, `check-email-rubric`, `check-copy-risk`, `ai-coach`, `agent-run`, `agent-chat`, and `generate-email` when the caller is the agent (chat `draft_outreach`, agent jobs). `AI_SMART` and `openai/gpt-5.6-sol` are the same Pro route |
+| `AI_FAST` | Haiku 4.5 | `generate-sequence`, `generate-followup-suggestion`, `generate-email` for Outreach Studio, bulk send, MCP and REST, `score-lead-v2`, `map-account-committee`, `build-agent`, `refill-blog-topics`, `apply-rubric-suggestion` |
 
-The split is "is the output the product". Drafting and the research that feeds
-personalisation are; rubric-driven scoring and structured extraction are not.
-The two graders are on the strong tier for a reason worth stating: a weak
-grader is the worse half of that pair, because it green-lights copy the writer
-should not have produced.
+The split is which surface is paying for the call. Agent chat, the autonomous
+agent and the draft worker are the heavy path and stay on Pro. Outreach Studio,
+bulk send, sequences, follow-up suggestions, MCP and REST are the light path
+and run on Standard. Research and the two graders stay on Pro: a weak grader
+green-lights copy the writer should not have produced. `generate-email` does
+not trust a tier in the request body. Only an internal caller that sets
+`x-outreign-draft-tier: pro` (the agent chat and the job worker) gets Pro.
 
 The constants are real gateway ids rather than labels, because when Bedrock is
 unconfigured the requested id is passed through to the fallback gateway
 verbatim.
 
 Each environment variable moves one tier and only that tier.
-`BEDROCK_MODEL_ID` is the fast tier, which is where the bulk paths live;
-`BEDROCK_MODEL_ID_PRO` is the strong tier. Moving one tier without touching
-code means setting that one variable. The built-in Pro id is
-`us.anthropic.claude-opus-5-5`. Its input and output rates are $4.40 and $22
-per million tokens, from the account owner's AWS pricing screenshot on 7 Nov
-2026: Geo and In-region Cross-region Inference, region US East (N. Virginia).
-That screenshot also lists cache write and cache read; this app does not meter
-cache tokens, so those figures are not charged. `global.anthropic.claude-opus-5-5`
-stays at $4 and $20 per million from the Global cross-region table (region
-selector US East Ohio) and is used only when `BEDROCK_MODEL_ID_PRO` is set to
-that id. EU, JP, AU, and the bare Opus id have no rate here and are refused
-before the request is sent, instead of metered at $0.30/$2.50. Sonnet 4.5
-remains $3/$15 if an override names it. Haiku 4.5 remains $1/$5. The AWS
-account must still be entitled to the profile. Unset, Pro is the US geo Opus
-id above, not Global.
+`BEDROCK_MODEL_ID` is the fast tier, which is where Studio, bulk, sequences
+and the other light paths live; `BEDROCK_MODEL_ID_PRO` is the strong tier.
+Moving one tier without touching code means setting that one variable. The
+built-in Pro id is `us.anthropic.claude-sonnet-4-6` (Sonnet 4.6, $3 and $15
+per million input and output tokens). Opus 5.5 is not selected unless
+`BEDROCK_MODEL_ID_PRO` names it. The US geo Opus id
+`us.anthropic.claude-opus-5-5` is $4.40 and $22 per million tokens, from the
+account owner's AWS pricing screenshot on 7 Nov 2026: Geo and In-region
+Cross-region Inference, region US East (N. Virginia). That screenshot also
+lists cache write and cache read; this app does not meter cache tokens, so
+those figures are not charged. `global.anthropic.claude-opus-5-5` stays at $4
+and $20 per million from the Global cross-region table (region selector US
+East Ohio) and is used only when `BEDROCK_MODEL_ID_PRO` is set to that id.
+EU, JP, AU, and the bare Opus id have no rate here and are refused before the
+request is sent, instead of metered at $0.30/$2.50. Sonnet 4.5 remains $3/$15
+if an override names it. Haiku 4.5 remains $1/$5. The AWS account must still
+be entitled to the profile. Unset, Pro is Sonnet 4.6, not Opus and not Global.
 `src/lib/ai-model-tier.test.ts` checks each constant still lands on the tier
 it claims, and that a caller-supplied Opus id does not.
 

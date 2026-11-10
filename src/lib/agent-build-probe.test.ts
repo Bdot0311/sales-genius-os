@@ -56,9 +56,9 @@ describe("the deploy probe answers honestly", () => {
       // #264
       "skips-leads-that-have-drafts": "every_lead_already_drafted",
       "sizes-inline-batch-to-budget": "const affordableWaves =",
-      "reports-real-draft-totals": "Your drafts folder holds",
+      "reports-real-draft-totals": "formatDraftTurnSummary",
       // #265
-      "finishes-the-whole-outstanding-set": "Queued the leads it skipped",
+      "finishes-the-whole-outstanding-set": "sweepCopy(",
       "one-batch-job-per-turn": "const queueWork = async (",
     };
     for (const marker of markers) {

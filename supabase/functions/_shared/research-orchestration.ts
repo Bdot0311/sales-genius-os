@@ -32,9 +32,23 @@ export interface RetrievalReceipt {
 export type ResearchStep = "use" | "fetch" | "hold";
 
 /**
- * Hold on a recent run even when the lead was never successfully researched.
- * Freshness is only the cache path. It does not cancel a failed-run cooldown.
+ * What begin_research_run's reply means.
+ *
+ * A missing function used to look like "a run already happened": the client
+ * ignored the RPC error, saw a null id, and returned the hold response. Every
+ * lead then counted as not researched. An error is not a hold. Null with no
+ * error is the real cooldown.
  */
+export function researchReservation(
+  data: unknown,
+  errorMessage: string | null | undefined,
+  force: boolean,
+): { runId: string | null; hold: boolean } {
+  if (errorMessage) return { runId: null, hold: false };
+  const runId = typeof data === "string" && data ? data : null;
+  return { runId, hold: !runId && !force };
+}
+
 export function researchAction(input: { step: ResearchStep; force: boolean; fresh: boolean }): "hold" | "cache" | "fetch" {
   if (!input.force && input.step === "hold") return "hold";
   if (!input.force && input.step !== "fetch" && input.fresh) return "cache";

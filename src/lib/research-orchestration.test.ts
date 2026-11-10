@@ -1,6 +1,7 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { researchBlockForLead } from "../../supabase/functions/_shared/lead-research-block";
-import { holdReason, researchAction, researchStep, RETRY_WINDOW_MS } from "../../supabase/functions/_shared/research-orchestration";
+import { holdReason, researchAction, researchReservation, researchStep, RETRY_WINDOW_MS } from "../../supabase/functions/_shared/research-orchestration";
 import { externalResearchSearch } from "../../supabase/functions/_shared/external-research";
 
 describe("research is fetched before a draft and not repeated inside the window", () => {
@@ -57,6 +58,31 @@ describe("a failed run stays on cooldown even when the lead is not fresh", () =>
     expect(researchAction({ step: "hold", force: false, fresh: false })).toBe("hold");
     expect(researchAction({ step: "fetch", force: false, fresh: false })).toBe("fetch");
     expect(researchAction({ step: "use", force: false, fresh: true })).toBe("cache");
+  });
+});
+
+describe("a missing research claim is not treated as a recent run", () => {
+  it("continues when the reservation function errors", () => {
+    expect(researchReservation(null, "function begin_research_run does not exist", false)).toEqual({
+      runId: null,
+      hold: false,
+    });
+  });
+
+  it("holds only when the function succeeds and returns no run", () => {
+    expect(researchReservation(null, null, false)).toEqual({ runId: null, hold: true });
+    expect(researchReservation("run-1", null, false)).toEqual({ runId: "run-1", hold: false });
+    expect(researchReservation(null, null, true)).toEqual({ runId: null, hold: false });
+  });
+
+  it("does not stop research-lead before outside search when the lead has a company and no website", () => {
+    const src = readFileSync("supabase/functions/research-lead/index.ts", "utf8");
+    const gate = src.indexOf("if (!host && !companyName)");
+    const gather = src.indexOf("gatherLeadResearch(");
+    expect(gate).toBeGreaterThan(-1);
+    expect(gather).toBeGreaterThan(gate);
+    expect(src).toContain("websiteUrls: host ? [origin, ...extraUrls] : []");
+    expect(src).toContain("researchReservation(");
   });
 });
 

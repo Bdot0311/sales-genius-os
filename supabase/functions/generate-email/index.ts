@@ -60,7 +60,8 @@ import {
   type LeadResearchBrief,
   type ResearchQuality,
 } from "../_shared/lead-research.ts";
-import { AI_SMART, aiFetch } from "../_shared/ai-provider.ts";
+import { AI_FAST, AI_SMART, aiFetch } from "../_shared/ai-provider.ts";
+import { DRAFT_TIER_HEADER, draftTierForCaller } from "../_shared/draft-tier.ts";
 import { decisionForDrafting, decisionPromptBlock } from "../_shared/lead-intelligence.ts";
 
 const corsHeaders = {
@@ -741,6 +742,10 @@ serve(async (req) => {
      * is never asked.
      */
     const internal = isInternalCaller(req);
+    // Studio, bulk, MCP and REST stay on Standard. Agent chat and the job
+    // worker send the service role plus DRAFT_TIER_HEADER. A body field cannot
+    // choose the model.
+    const draftModel = draftTierForCaller(internal, req.headers.get(DRAFT_TIER_HEADER)) === "pro" ? AI_SMART : AI_FAST;
     let userId = '';
     if (!internal) {
       const resolved = await resolveAppUser(req, adminClient);
@@ -965,7 +970,7 @@ STRICT RULES:
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: AI_SMART,
+            model: draftModel,
             messages: [
               { role: "system", content: "You are a B2B sales researcher. You return ONLY verifiable, source-grounded facts. You never speculate, never infer, never hallucinate. If a fact cannot be confirmed, you omit it." },
               { role: "user", content: researchPrompt },
@@ -1571,7 +1576,7 @@ conversation that is already going, not as someone chasing silence.`}`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: AI_SMART,
+        model: draftModel,
         messages: [
           { role: "system", content: systemPrompt + NO_PLATFORM_BRAND_RULE + strategyBlock },
           {
@@ -1620,7 +1625,7 @@ conversation that is already going, not as someone chasing silence.`}`;
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: AI_SMART,
+          model: draftModel,
           messages: [
             { role: "system", content: systemPrompt + "\n\nDo not refuse and do not output INSUFFICIENT_RESEARCH. Write from the role, company name, and industry only. Do not invent a launch, a hire, a round, a metric, or a pain you are treating as known." },
             { role: "user", content: userPrompt },
@@ -1656,7 +1661,7 @@ conversation that is already going, not as someone chasing silence.`}`;
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: AI_SMART,
+          model: draftModel,
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: `${userPrompt}\n${NO_PLACEHOLDER_RETRY}` },
@@ -1706,7 +1711,7 @@ conversation that is already going, not as someone chasing silence.`}`;
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: AI_SMART,
+          model: draftModel,
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: `${userPrompt}\n${noScaffoldingRetry(leaked)}` },
@@ -1750,7 +1755,7 @@ conversation that is already going, not as someone chasing silence.`}`;
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: AI_SMART,
+          model: draftModel,
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: `${userPrompt}\n${noFabricationRetry(claims)}` },
@@ -1793,7 +1798,7 @@ conversation that is already going, not as someone chasing silence.`}`;
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: AI_SMART,
+          model: draftModel,
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: `${userPrompt}\n${pitchRetry(pitch)}` },
@@ -1846,7 +1851,7 @@ conversation that is already going, not as someone chasing silence.`}`;
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: AI_SMART,
+          model: draftModel,
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: `${userPrompt}\n${note}` },
@@ -1928,7 +1933,7 @@ conversation that is already going, not as someone chasing silence.`}`;
           method: "POST",
           headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: AI_SMART,
+            model: draftModel,
             messages: [
               { role: "system", content: systemPrompt },
               { role: "user", content: `${userPrompt}\n${unsupportedRecencyRetry(recency)}` },
@@ -1987,7 +1992,7 @@ conversation that is already going, not as someone chasing silence.`}`;
           method: "POST",
           headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: AI_SMART,
+            model: draftModel,
             messages: [
               { role: "system", content: systemPrompt },
               { role: "user", content: `${userPrompt}\n${bannedPhraseRetry(bannedHits)}` },
@@ -2120,7 +2125,7 @@ conversation that is already going, not as someone chasing silence.`}`;
           method: "POST",
           headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: AI_SMART,
+            model: draftModel,
             messages: [
               { role: "system", content: systemPrompt },
               { role: "user", content: `${userPrompt}\n${notes}` },
@@ -2203,7 +2208,7 @@ conversation that is already going, not as someone chasing silence.`}`;
           method: "POST",
           headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: AI_SMART,
+            model: draftModel,
             messages: [
               { role: "system", content: systemPrompt },
               { role: "user", content: `${userPrompt}\n\nREWRITE REQUIRED. These sentences state something about the prospect that was not supplied:\n${claimNote}\nRemove them. Do not replace them with a different event, number, or pain stated as known. Write from the role and industry, and ask one question.` },
@@ -2257,7 +2262,7 @@ conversation that is already going, not as someone chasing silence.`}`;
               method: "POST",
               headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
               body: JSON.stringify({
-                model: AI_SMART,
+                model: draftModel,
                 messages: [
                   { role: "system", content: systemPrompt },
                   { role: "user", content: `${userPrompt}\n\n${note}` },

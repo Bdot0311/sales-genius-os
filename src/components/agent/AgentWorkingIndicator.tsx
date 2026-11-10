@@ -159,9 +159,9 @@ export const AgentWorkingIndicator = ({
                   return (
                     <li key={step.id} className="flex items-start gap-2 text-xs">
                       {failed ? (
-                        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-destructive" />
+                        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-amber-500" />
                       ) : (
-                        <Check className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-primary/60" />
+                        <Check className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-primary" />
                       )}
                       <span className="min-w-0">
                         <span className={failed ? "text-destructive" : "text-foreground"}>

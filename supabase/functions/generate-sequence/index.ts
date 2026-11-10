@@ -7,7 +7,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
 import { sequenceSystemPrompt, buildSequenceUserPayload } from "./prompt-v2.ts";
 import { lintTouch } from "../_shared/style-lint.ts";
-import { AI_SMART, aiFetch } from "../_shared/ai-provider.ts";
+import { AI_FAST, aiFetch } from "../_shared/ai-provider.ts";
 import { SENDER_PROOF } from "../_shared/evidence-contract.ts";
 import { scoreEmailReport } from "../_shared/email-quality.ts";
 
@@ -28,7 +28,7 @@ async function callGateway(system: string, userMsg: string, apiKey: string): Pro
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: AI_SMART,
+      model: AI_FAST,
       messages: [{ role: "system", content: system }, { role: "user", content: userMsg }],
     }),
   });
