@@ -75,6 +75,18 @@ describe("a resumed research pass takes the next leads", () => {
     expect(plan.queue).toEqual(pool.slice(15));
   });
 
+  it("takes the count on the research phrase, not a later draft count", () => {
+    expect(explicitResearchCount("research these 3, then draft 2 leads")).toBe(3);
+    expect(askedForWholeList("research these 3, then draft 2 leads", pool.length)).toBe(false);
+  });
+
+  it("lets a research count beat an incidental mention of how many leads exist", () => {
+    const message = "I have 63 leads, research 5 of them";
+    expect(explicitResearchCount(message)).toBe(5);
+    expect(askedForWholeList(message, pool.length)).toBe(false);
+    expect(askedForWholeList("There are 63 leads labeled New. Please research them.", pool.length)).toBe(true);
+  });
+
   it("does not tell a small request to research the full list again", () => {
     expect(askedForWholeList("research these 3, then draft them")).toBe(false);
     expect(askedForWholeList("There are 63 leads labeled New. Please research them.", pool.length)).toBe(true);

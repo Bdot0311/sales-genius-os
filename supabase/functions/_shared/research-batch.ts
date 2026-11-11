@@ -10,9 +10,24 @@
 const WHOLE_LIST_WORDING =
   /\b(?:all of them|every lead|the whole list|the entire list|research them all)\b/;
 
-/** The last explicit lead count in the ask. "these 12" and "20 leads" both count. */
+/**
+ * The count that belongs to the research ask.
+ *
+ * "research these 3, then draft 2 leads" is 3. A later number on a different
+ * verb is not the cap. When the research phrase names no number, an earlier
+ * "63 leads" still counts, which is how "research them" covers a loaded list.
+ */
 export function explicitResearchCount(message: string): number | null {
   const text = message.toLowerCase();
+  const at = text.search(/\bresearch(?:ing)?\b/);
+  if (at >= 0) {
+    const clause = text.slice(at).split(/\bthen\b|[.;]|\band\s+draft\b/)[0] ?? "";
+    const bound = clause.match(/\b(\d+)\b/);
+    if (bound) {
+      const n = Number(bound[1]);
+      if (Number.isInteger(n) && n > 0) return n;
+    }
+  }
   let count: number | null = null;
   for (const match of text.matchAll(/\b(?:these\s+(\d+)|(\d+)\s+leads)\b/g)) {
     const n = Number(match[1] ?? match[2]);
