@@ -220,6 +220,7 @@ be connected; nothing else is affected.
 | `SALESFORCE_CLIENT_ID` + `SALESFORCE_CLIENT_SECRET` | `salesforce-oauth-init`, `salesforce-oauth-callback` |
 | `CALENDLY_CLIENT_ID` + `CALENDLY_CLIENT_SECRET` | `calendly-oauth-init`, `calendly-oauth-callback` |
 | `CALENDLY_WEBHOOK_SIGNING_KEY` | `calendly-webhook`, `calendly-oauth-callback` |
+| `CALENDLY_REDIRECT_URI` | `calendly-oauth-init`, `calendly-oauth-callback` — **optional.** Calendly registers one redirect URI and matches it exactly, so both functions pin the value instead of taking the browser's origin. Unset, it is `https://outreign.io/integrations`, which is the string to register in the Calendly app. Set it only to move the flow to another trusted origin (e.g. `https://outreign.lovable.app/integrations` while testing); an untrusted value falls back to the default rather than redirecting off-domain |
 | `OPINLY_API_KEY` | `sync-opinly-posts` |
 | `OPINLY_WEBHOOK_SIGNING_SECRET` | `opinly-webhook` |
 

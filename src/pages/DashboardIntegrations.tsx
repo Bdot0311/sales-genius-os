@@ -39,6 +39,17 @@ interface Integration {
 
 const OAUTH_PROVIDERS = new Set(["google", "hubspot", "calendly"]);
 const PUBLISHED_OAUTH_ORIGIN = "https://outreign.lovable.app";
+/*
+ * Origins a returning OAuth popup may post its code back from. Calendly
+ * registers one redirect URI and so always returns to the primary domain,
+ * whichever host the flow started on; without it here, connecting Calendly
+ * from a preview host silently dropped the message.
+ */
+const OAUTH_MESSAGE_ORIGINS = new Set([
+  window.location.origin,
+  PUBLISHED_OAUTH_ORIGIN,
+  "https://outreign.io",
+]);
 const OAUTH_MESSAGE_TYPE = "outreign-oauth-message";
 
 /*
@@ -327,7 +338,7 @@ const DashboardIntegrations = () => {
     void handleOAuthCallback();
 
     const handleOAuthMessage = (event: MessageEvent) => {
-      if (!new Set([window.location.origin, PUBLISHED_OAUTH_ORIGIN]).has(event.origin)) {
+      if (!OAUTH_MESSAGE_ORIGINS.has(event.origin)) {
         return;
       }
 
