@@ -25,7 +25,7 @@ import {
   researchStepCopy,
   sweepCopy,
 } from "../_shared/agent-step-present.ts";
-import { nextResearchSlice } from "../_shared/research-batch.ts";
+import { askedForWholeList, continuesListedBatch, nextResearchSlice, researchContinueLine } from "../_shared/research-batch.ts";
 import {
   askedWork,
   listLeadGuidance,
@@ -2749,16 +2749,32 @@ serve(async (req) => {
 
         case "research_leads": {
           const rawRequested: string[] = (Array.isArray(args.lead_ids) ? args.lead_ids : []).map((x: any) => String(x));
-          if (rawRequested.length === 0) return { error: "lead_ids is required" };
+          if (rawRequested.length === 0) {
+            return { error: "lead_ids is required. Call list_leads and pass the ids it returns." };
+          }
           const allDone = rawRequested.every((id) => researchedLeadIds.has(id));
-          const requested = allDone ? listedLeadIds : rawRequested;
+          const wholeList = askedForWholeList(userMessage);
+          const batch = allDone && continuesListedBatch({
+            requested: rawRequested,
+            pool: listedLeadIds,
+            limit: 12,
+            wholeList,
+          });
+          if (allDone && !batch) {
+            return {
+              already_done: true,
+              note: "Those leads were already researched this run. Do not call research_leads again for them.",
+            };
+          }
+          const requested = batch ? listedLeadIds : rawRequested;
           const { owned: ownedSeed, unknown } = await ownedLeadIds(requested);
           const ownedSet = new Set(ownedSeed);
           const plan = nextResearchSlice({
-            requested: allDone ? [] : rawRequested.filter((id) => ownedSet.has(id)),
+            requested: rawRequested.filter((id) => ownedSet.has(id)),
             done: [...researchedLeadIds],
-            pool: allDone ? listedLeadIds.filter((id) => ownedSet.has(id)) : [],
+            pool: batch ? listedLeadIds.filter((id) => ownedSet.has(id)) : [],
             limit: 12,
+            wholeList,
           });
           if (plan.inline.length === 0 && plan.queue.length === 0) {
             return {
@@ -5191,9 +5207,7 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
         ? [{
             role: "user",
             content: `Continue only the unfinished parts of the newest request. Do not repeat completed work and do not return to older requests. ${
-              researchedLeadIds.size
-                ? `${researchedLeadIds.size} leads were already researched this run. Call research_leads with the full list; it skips those and takes the next unprocessed leads, not the same 12. `
-                : ""
+              researchContinueLine(researchedLeadIds.size, askedForWholeList(userMessage))
             }Completed mutation keys for this request: ${
               completedMutationKeys.size ? [...completedMutationKeys].join("; ") : "none"
             }. Recent completed actions: ${JSON.stringify(
