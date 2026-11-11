@@ -1,3 +1,4 @@
+import { pinnedRedirectUri } from "../_shared/safe-origin.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -12,7 +13,17 @@ serve(async (req) => {
   }
 
   try {
-    const { redirectUri } = await req.json();
+    /*
+     * Calendly registers ONE redirect URI and matches it exactly, so this must
+     * not come from the browser. It used to, which meant every host but the
+     * registered one (outreign.lovable.app, each Lovable preview, localhost)
+     * sent an unregistered value and Calendly answered "malformed redirect
+     * url" after the user had already signed in. The callback derives the same
+     * value the same way, so the authorize request and the token exchange
+     * cannot drift apart.
+     */
+    await req.json().catch(() => null);
+    const redirectUri = pinnedRedirectUri(Deno.env.get("CALENDLY_REDIRECT_URI"), "/integrations");
 
     const CLIENT_ID = Deno.env.get("CALENDLY_CLIENT_ID");
     if (!CLIENT_ID) throw new Error("CALENDLY_CLIENT_ID is not configured");
@@ -35,7 +46,7 @@ serve(async (req) => {
       timestamp: Date.now(),
     });
 
-    const authUrl = new URL("https://auth.calendly.com/oauth/authorize");
+    const authUrl = new URL("https://calendly.com/oauth/authorize");
     authUrl.searchParams.set("client_id", CLIENT_ID);
     authUrl.searchParams.set("redirect_uri", redirectUri);
     authUrl.searchParams.set("response_type", "code");

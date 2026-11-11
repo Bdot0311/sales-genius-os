@@ -24,6 +24,21 @@ export function safeOrigin(origin: string | null | undefined): string {
   return isTrustedOrigin(origin) ? new URL(origin!).origin : PRIMARY_ORIGIN;
 }
 
+/**
+ * A redirect URI for a provider that registers exactly ONE value and demands an
+ * exact match (Calendly). It must not vary with the host the browser happens to
+ * be on, or every origin but the registered one is rejected by the provider, and
+ * it must be identical in the authorize request and the token exchange or the
+ * exchange fails. `configured` is server-side config, not browser input; a value
+ * that is not a trusted origin falls back to the primary domain so a typo cannot
+ * silently point the OAuth code at somebody else's site.
+ */
+export function pinnedRedirectUri(configured: string | null | undefined, path: string): string {
+  const fromConfig = safeRedirectUri(configured);
+  if (fromConfig) return fromConfig;
+  return new URL(path, PRIMARY_ORIGIN).href;
+}
+
 /** Accepts a full redirect URI only when its origin is trusted. */
 export function safeRedirectUri(uri: unknown): string | null {
   if (typeof uri !== "string") return null;

@@ -1,3 +1,4 @@
+import { pinnedRedirectUri } from "../_shared/safe-origin.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { saveIntegration } from "../_shared/save-integration.ts";
@@ -13,7 +14,13 @@ serve(async (req) => {
   }
 
   try {
-    const { code, redirectUri, state } = await req.json();
+    const { code, state } = await req.json();
+    /*
+     * Derived exactly as calendly-oauth-init derives it, never taken from the
+     * browser: OAuth requires the token exchange to repeat the redirect_uri
+     * from the authorize request, and Calendly rejects the pair if they differ.
+     */
+    const redirectUri = pinnedRedirectUri(Deno.env.get("CALENDLY_REDIRECT_URI"), "/integrations");
 
     const CLIENT_ID = Deno.env.get("CALENDLY_CLIENT_ID");
     const CLIENT_SECRET = Deno.env.get("CALENDLY_CLIENT_SECRET");
@@ -37,7 +44,7 @@ serve(async (req) => {
     catch { throw new Error("Invalid state parameter"); }
     if (stateData.userId !== user.id) throw new Error("State mismatch - possible CSRF attack");
 
-    const tokenResponse = await fetch("https://auth.calendly.com/oauth/token", {
+    const tokenResponse = await fetch("https://calendly.com/oauth/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
