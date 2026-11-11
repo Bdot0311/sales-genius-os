@@ -143,10 +143,11 @@ describe("the secrets probe reports presence without leaking a value", () => {
     expect(PROBE).toMatch(/trim\(\)\.length !== value\.length/);
   });
 
-  it("is gated, but not behind the service role", () => {
-    // Same reasoning as the SMTP probe: a key nobody can get is why that one
-    // went unrun for twelve days. It contains no secret, so any signed-in
-    // user may ask.
-    expect(PROBE).toContain("requireInternalOrUser");
+  it("admits an admin or an internal caller", () => {
+    // Lengths and fingerprints of deployment secrets. System Health, the
+    // caller, is admin-only. requireInternalOrAdmin also admits the service
+    // role, which a cron or an operator with the key uses.
+    expect(PROBE).toContain("requireInternalOrAdmin");
+    expect(PROBE).not.toContain("requireInternalOrUser");
   });
 });
