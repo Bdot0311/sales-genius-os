@@ -116,6 +116,15 @@ export const ROADMAP: RoadmapItem[] = [
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-11-11-agent-lead-lookups",
+    date: "2026-11-11",
+    title: "Recheck the right leads in agent chat",
+    summary: "Switch between lead groups and recheck them without mixing up the results.",
+    items: [
+      { tag: "fixed", title: "Accurate repeat lookups", description: "When you ask an agent to recheck a lead group, it refreshes that group's leads and remaining draft count. If the lookup limit is reached, it tells you instead of returning another group's leads.", href: "/dashboard/agents" },
+    ],
+  },
+  {
     id: "2026-11-06-ai-assistant-connection",
     date: "2026-11-06",
     title: "Connect Grok, Cursor and other AI assistants",

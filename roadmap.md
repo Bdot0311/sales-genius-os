@@ -1,3 +1,7 @@
+# Agent chat lead lookup accuracy
+
+- [x] Reproduced mixed-filter repeats, seventh lookups and empty batches in the actual dispatcher; refreshed repeat results and cleared implicit batches, passed 18 regressions, and deployed agent-chat. No real research/drafting run was triggered.
+
 # Credit-ledger health alert
 
 - [x] Correct the missing-grant false alarm without giving customers access to the internal credit ledger; migration regression checks passed, signed-in health reports zero broken checks, and dashboard banner is absent. Resolve only the matching alert; the internal-ledger no-policy warning is informational and remains.

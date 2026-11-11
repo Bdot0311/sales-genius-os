@@ -29,7 +29,6 @@ import { askedForWholeList, continuesListedBatch, explicitResearchCount, nextRes
 import {
   askedWork,
   listLeadGuidance,
-  listLeadsKey,
   normalizeListArgs,
   pipelineContinuation,
 } from "../_shared/list-leads-steer.ts";
@@ -2332,7 +2331,6 @@ serve(async (req) => {
       };
     };
 
-    const listLeadKeys = new Map<string, number>();
     let listLeadCalls = 0;
     let listedLeadIds: string[] = [];
     let listedQueuedCount = 0;
@@ -2434,30 +2432,32 @@ serve(async (req) => {
       }
       switch (name) {
         case "list_leads": {
-          const listKey = listLeadsKey(args);
-          const priorSame = listLeadKeys.get(listKey) ?? 0;
           const priorTotal = listLeadCalls;
           listLeadCalls += 1;
-          listLeadKeys.set(listKey, priorSame + 1);
+          // Never let an empty, failed or capped lookup reuse another filter's
+          // implicit research/draft batch. Repeats query again for fresh counts.
+          listedLeadIds = [];
+          listedQueuedCount = 0;
+          outstandingPool = [];
           const early = listLeadGuidance({
             priorTotal,
-            priorSame,
-            knownCount: listedLeadIds.length,
-            queuedCount: listedQueuedCount,
-            returnedCount: listedLeadIds.length,
+            priorSame: 0,
+            knownCount: 0,
+            queuedCount: 0,
+            returnedCount: 0,
             asked,
           });
           if (early.stop) {
             toolEvents.push({
               name,
-              label: "Stopped repeating the lookup",
-              status: "ok",
+              label: "Lead lookup limit reached",
+              status: "error",
               detail: early.note,
             });
             return {
-              repeated: true,
-              count: listedLeadIds.length,
-              lead_ids: listedLeadIds.slice(0, 100),
+              error: "list_leads_limit",
+              queried: false,
+              lead_ids: [],
               note: early.note,
             };
           }
@@ -2583,10 +2583,8 @@ serve(async (req) => {
           );
           const pageIds = leads.map((lead) => String((lead as { id?: unknown }).id ?? ""));
           const draftQueued = await draftQueueAmong(pageIds.filter(Boolean));
-          if (pageIds.length > 0) {
-            listedLeadIds = pageIds;
-            listedQueuedCount = draftQueued;
-          }
+          listedLeadIds = pageIds;
+          listedQueuedCount = draftQueued;
           const guidance = listLeadGuidance({
             priorTotal: 0,
             priorSame: 0,
