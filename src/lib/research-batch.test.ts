@@ -75,6 +75,32 @@ describe("a resumed research pass takes the next leads", () => {
     expect(plan.queue).toEqual(pool.slice(15));
   });
 
+  it("takes the count on the research phrase, not a later draft count", () => {
+    expect(explicitResearchCount("research these 3, then draft 2 leads")).toBe(3);
+    expect(askedForWholeList("research these 3, then draft 2 leads", pool.length)).toBe(false);
+  });
+
+  it("ignores a year or a headcount that is not a research count", () => {
+    expect(explicitResearchCount("research leads founded after 2020")).toBeNull();
+    expect(explicitResearchCount("research leads with 50+ employees")).toBeNull();
+    expect(askedForWholeList("research leads founded after 2020", pool.length)).toBe(false);
+    expect(askedForWholeList("research leads with 50+ employees", pool.length)).toBe(false);
+    expect(explicitResearchCount("research 5")).toBe(5);
+    expect(explicitResearchCount("research 5 leads")).toBe(5);
+    expect(explicitResearchCount("research these 3")).toBe(3);
+    expect(explicitResearchCount("research the top 15 leads")).toBe(15);
+    expect(explicitResearchCount("top 15 leads")).toBe(15);
+    expect(explicitResearchCount("research 4 companies")).toBe(4);
+    expect(explicitResearchCount("top 8 prospects")).toBe(8);
+  });
+
+  it("lets a research count beat an incidental mention of how many leads exist", () => {
+    const message = "I have 63 leads, research 5 of them";
+    expect(explicitResearchCount(message)).toBe(5);
+    expect(askedForWholeList(message, pool.length)).toBe(false);
+    expect(askedForWholeList("There are 63 leads labeled New. Please research them.", pool.length)).toBe(true);
+  });
+
   it("does not tell a small request to research the full list again", () => {
     expect(askedForWholeList("research these 3, then draft them")).toBe(false);
     expect(askedForWholeList("There are 63 leads labeled New. Please research them.", pool.length)).toBe(true);
