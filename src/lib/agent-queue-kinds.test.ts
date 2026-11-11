@@ -62,10 +62,15 @@ describe("the kinds are independent work", () => {
   });
 
   it("writes a goal only on the kind that reads one", () => {
-    // The other kinds take the lead row as it stands; a goal on an enrich job
-    // is a value nothing reads, which later reads as intent.
+    // The column is NOT NULL. Setting null on a research job fails the insert,
+    // which the chat reported as "Could not queue the rest". Omit the field
+    // and keep the default instead.
     const helper = AGENT_CODE.slice(AGENT_CODE.indexOf("const queueWork = async ("));
-    expect(helper).toMatch(/goal: kind === "draft" \? goal : null/);
+    expect(helper).toContain("...(kind === \"draft\" ? { goal, feedback: feedback || null } : {})");
+    expect(helper).not.toContain("goal: kind === \"draft\" ? goal : null");
+    expect(readFileSync("supabase/migrations/20260922190000_agent_job_queue.sql", "utf8")).toContain(
+      "goal               text NOT NULL",
+    );
   });
 
   it("still counts only drafts on the drafting card", () => {

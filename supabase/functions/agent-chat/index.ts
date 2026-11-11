@@ -18,11 +18,14 @@ import { invalidArgsResult, validateToolArgs, type ToolSchema } from "../_shared
 import { mergeCompleted, resultOk, resumeFrom, supabaseTraceStore, trimResult } from "../_shared/agent-trace.ts";
 import {
   backgroundDraftCopy,
+  confirmedClose,
+  withConfirmedClose,
   formatDraftTurnSummary,
   listLeadsCopy,
   researchStepCopy,
   sweepCopy,
 } from "../_shared/agent-step-present.ts";
+import { askedForWholeList, continuesListedBatch, nextResearchSlice, researchContinueLine } from "../_shared/research-batch.ts";
 import {
   askedWork,
   listLeadGuidance,
@@ -1607,7 +1610,28 @@ serve(async (req) => {
      * tool result ever told it the total. These are the totals, and they are
      * put above the reply rather than left for it to summarise.
      */
-    const draftTally = { written: 0, queued: 0, skippedAlreadyDrafted: 0, failed: 0 };
+    const carriedDraft = payload.draftTally && typeof payload.draftTally === "object"
+      ? payload.draftTally as Record<string, unknown>
+      : {};
+    const draftTally = {
+      written: Number(carriedDraft.written) || 0,
+      queued: Number(carriedDraft.queued) || 0,
+      skippedAlreadyDrafted: Number(carriedDraft.skippedAlreadyDrafted) || 0,
+      failed: Number(carriedDraft.failed) || 0,
+    };
+    const carriedResearch = payload.researchTally && typeof payload.researchTally === "object"
+      ? payload.researchTally as Record<string, unknown>
+      : {};
+    const researchTally = {
+      ok: Number(carriedResearch.ok) || 0,
+      failed: Number(carriedResearch.failed) || 0,
+      queued: Number(carriedResearch.queued) || 0,
+    };
+    const researchedLeadIds = new Set<string>(
+      Array.isArray(payload.researchedLeadIds)
+        ? payload.researchedLeadIds.filter((value: unknown): value is string => typeof value === "string")
+        : [],
+    );
     /*
      * A drafting call that produced nothing stops the rest of the turn.
      *
@@ -1765,11 +1789,10 @@ serve(async (req) => {
             kind,
             request_text: userMessage.slice(0, 500),
             autonomy: (thread as any).autonomy ?? "approval",
-            // Only drafting reads these; the other kinds take the lead row as
-            // it stands. Writing a goal onto an enrich job would be a value
-            // nothing reads, which later reads as intent.
-            goal: kind === "draft" ? goal : null,
-            feedback: kind === "draft" ? (feedback || null) : null,
+            // Only drafting reads these. The column is NOT NULL, so a research
+            // or score job must omit goal and keep the default. Setting null
+            // fails the insert, which is "Could not queue the rest".
+            ...(kind === "draft" ? { goal, feedback: feedback || null } : {}),
             status: "queued",
             total: 0,
           })
@@ -1815,6 +1838,7 @@ serve(async (req) => {
       // The drafting card counts drafts. The other kinds have their own job
       // rows and are not drafts, so adding them here would overstate it.
       if (kind === "draft") draftTally.queued += toQueue.length;
+      if (kind === "research") researchTally.queued += toQueue.length;
       // The card counts this, so it has to be the batch and not the call.
       const { count: itemCount } = await admin
         .from("agent_job_items")
@@ -2724,9 +2748,50 @@ serve(async (req) => {
         }
 
         case "research_leads": {
-          const requested: string[] = (args.lead_ids ?? []).slice(0, 12).map((x: any) => String(x));
-          if (requested.length === 0) return { error: "lead_ids is required" };
-          const { owned: ids, unknown } = await ownedLeadIds(requested);
+          const rawRequested: string[] = (Array.isArray(args.lead_ids) ? args.lead_ids : []).map((x: any) => String(x));
+          if (rawRequested.length === 0) {
+            return { error: "lead_ids is required. Call list_leads and pass the ids it returns." };
+          }
+          const allDone = rawRequested.every((id) => researchedLeadIds.has(id));
+          const wholeList = askedForWholeList(userMessage);
+          const batch = allDone && continuesListedBatch({
+            requested: rawRequested,
+            pool: listedLeadIds,
+            limit: 12,
+            wholeList,
+          });
+          if (allDone && !batch) {
+            return {
+              already_done: true,
+              note: "Those leads were already researched this run. Do not call research_leads again for them.",
+            };
+          }
+          const requested = batch ? listedLeadIds : rawRequested;
+          const { owned: ownedSeed, unknown } = await ownedLeadIds(requested);
+          const ownedSet = new Set(ownedSeed);
+          const plan = nextResearchSlice({
+            requested: rawRequested.filter((id) => ownedSet.has(id)),
+            done: [...researchedLeadIds],
+            pool: batch ? listedLeadIds.filter((id) => ownedSet.has(id)) : [],
+            limit: 12,
+            wholeList,
+          });
+          if (plan.inline.length === 0 && plan.queue.length === 0) {
+            return {
+              already_done: true,
+              note: "Every lead from that list was already researched this run. Do not call research_leads again with the same ids.",
+            };
+          }
+          if (plan.queue.length > 0) {
+            await queueWork("research", plan.queue, "", null, args.force === true ? { force: true } : null);
+          }
+          const ids = plan.inline;
+          if (ids.length === 0) {
+            return {
+              queued_lead_ids: plan.queue,
+              note: "The remaining leads were queued for research. Do not research the same 12 again.",
+            };
+          }
           if (unknown.length) {
             toolEvents.push({
               name,
@@ -2759,6 +2824,9 @@ serve(async (req) => {
           const okCount = results.filter((r: any) => !r.error).length;
           const thinCount = results.filter((r: any) => !r.error && r.safe_to_personalize === false).length;
           const firstResearchError = results.find((r: any) => r.error)?.error;
+          for (const id of ids) researchedLeadIds.add(id);
+          researchTally.ok += okCount;
+          researchTally.failed += ids.length - okCount;
 
           /*
            * Say it out loud when only the prospect's own site was read.
@@ -5138,7 +5206,9 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
       ...(autoContinue
         ? [{
             role: "user",
-            content: `Continue only the unfinished parts of the newest request. Do not repeat completed work and do not return to older requests. Completed mutation keys for this request: ${
+            content: `Continue only the unfinished parts of the newest request. Do not repeat completed work and do not return to older requests. ${
+              researchContinueLine(researchedLeadIds.size, askedForWholeList(userMessage))
+            }Completed mutation keys for this request: ${
               completedMutationKeys.size ? [...completedMutationKeys].join("; ") : "none"
             }. Recent completed actions: ${JSON.stringify(
               history
@@ -5968,6 +6038,60 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
 
 
 
+    if (researchTally.ok + researchTally.failed + researchTally.queued + draftTally.queued + draftTally.written > 0) {
+      let folder = 0;
+      let draftFailed = 0;
+      let draftPending = 0;
+      let researchFailed = 0;
+      let scoreFailed = 0;
+      let jobError: string | null = null;
+      const { count: draftsNow } = await admin
+        .from("email_drafts")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId);
+      folder = draftsNow ?? 0;
+      const { data: runJobs } = await admin
+        .from("agent_jobs")
+        .select("id, kind")
+        .eq("thread_id", threadId)
+        .eq("user_id", userId)
+        .gte("created_at", runStartedAt);
+      const kindByJob = new Map((runJobs ?? []).map((job: { id: string; kind?: string }) => [job.id, String(job.kind ?? "")]));
+      const runJobIds = [...kindByJob.keys()];
+      if (runJobIds.length) {
+        const { data: runItems } = await admin
+          .from("agent_job_items")
+          .select("job_id, status, error")
+          .in("job_id", runJobIds);
+        for (const item of (runItems ?? []) as Array<{ job_id?: string; status?: string; error?: string | null }>) {
+          const kind = kindByJob.get(String(item.job_id ?? "")) ?? "";
+          const failed = item.status === "failed";
+          const waiting = item.status === "pending" || item.status === "claimed";
+          if (kind === "draft") {
+            if (failed) {
+              draftFailed += 1;
+              if (!jobError && item.error) jobError = String(item.error).slice(0, 180);
+            } else if (waiting) draftPending += 1;
+          } else if (failed && kind === "research") researchFailed += 1;
+          else if (failed && kind === "score") scoreFailed += 1;
+        }
+      }
+      finalText = withConfirmedClose(finalText, confirmedClose({
+        pool: Math.max(listedLeadIds.length, researchTally.ok + researchTally.failed),
+        researchedOk: researchTally.ok,
+        researchedFailed: researchTally.failed,
+        researchQueued: researchTally.queued,
+        researchFailed,
+        scoreFailed,
+        queued: draftTally.queued,
+        written: draftTally.written,
+        folder,
+        draftFailed,
+        draftPending,
+        jobError,
+      }));
+    }
+
     const { data: saved } = await admin
       .from("agent_chat_messages")
       .insert({
@@ -6055,6 +6179,9 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
           pass: runPass + 1,
           runStartedAt,
           completedMutationKeys: [...completedMutationKeys],
+          researchedLeadIds: [...researchedLeadIds].slice(0, 500),
+          researchTally,
+          draftTally,
           ...(requestedAgentId ? { agentId: requestedAgentId } : {}),
         }),
       })

@@ -225,6 +225,34 @@ async function generateBrief(
   };
 }
 
+/**
+ * A second pass inside the ten-minute window used to answer with no brief.
+ * The chat then counted the same 12 as "0 researched". If the first pass
+ * stored a brief, hand that back. A lead with no brief still says it was held.
+ */
+function heldResearch(lead: Record<string, unknown>, headers: Record<string, string>): Response {
+  const cachedBrief = lead.research_brief as LeadResearchBrief | null;
+  if (cachedBrief && typeof cachedBrief === "object") {
+    const cachedSources = (lead.research_sources as string[]) || [];
+    const quality = scoreResearchQuality(cachedBrief, cachedSources);
+    return new Response(JSON.stringify({
+      brief: { ...cachedBrief, quality },
+      sources: cachedSources,
+      confidence: lead.research_confidence,
+      quality,
+      researched_at: lead.researched_at,
+      cached: true,
+      research_status: "held",
+    }), { headers: { ...headers, "Content-Type": "application/json" } });
+  }
+  return new Response(JSON.stringify({
+    error: "Research for this company already ran recently and did not produce a new approved sentence.",
+    error_code: "research_required",
+    research_status: "held",
+    cached: true,
+  }), { headers: { ...headers, "Content-Type": "application/json" } });
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") {
@@ -330,12 +358,7 @@ serve(async (req) => {
       fresh: isResearchFresh(lead as Record<string, unknown>),
     });
     if (action === "hold") {
-      return new Response(JSON.stringify({
-        error: "Research for this company already ran recently and did not produce a new approved sentence.",
-        error_code: "research_required",
-        research_status: "held",
-        cached: true,
-      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return heldResearch(lead as Record<string, unknown>, corsHeaders);
     }
     let researchRunId: string | null = null;
     if (action === "fetch") {
@@ -350,12 +373,7 @@ serve(async (req) => {
       const reservation = researchReservation(reserved, reserveError?.message ?? null, force);
       researchRunId = reservation.runId;
       if (reservation.hold) {
-        return new Response(JSON.stringify({
-          error: "Research for this company already ran recently and did not produce a new approved sentence.",
-          error_code: "research_required",
-          research_status: "held",
-          cached: true,
-        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        return heldResearch(lead as Record<string, unknown>, corsHeaders);
       }
     }
     // Fresh brief already stored — hand it back without spending a scrape.
