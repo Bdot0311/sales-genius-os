@@ -39,7 +39,7 @@ describe("a research-then-draft request does not loop on list_leads", () => {
     expect(first.note.indexOf("score_leads")).toBeLessThan(first.note.indexOf("draft_outreach"));
   });
 
-  it("stops a repeated filter and still allows a different set", () => {
+  it("refreshes repeated filters and still allows a different set", () => {
     const same = listLeadGuidance({
       priorTotal: 1,
       priorSame: 1,
@@ -48,9 +48,8 @@ describe("a research-then-draft request does not loop on list_leads", () => {
       returnedCount: 63,
       asked,
     });
-    expect(same.stop).toBe(true);
-    expect(same.note).toContain("Do not call list_leads again");
-    expect(same.note).toContain("63 lead ids");
+    expect(same.stop).toBe(false);
+    expect(same.note).toContain("research_leads");
 
     const tierB = listLeadGuidance({
       priorTotal: 1,
@@ -151,7 +150,7 @@ describe("a research-then-draft request does not loop on list_leads", () => {
     expect(use).toBeLessThan(stall);
   });
 
-  it("is applied before the query, so a repeat does not hit the database", () => {
+  it("checks the cap before the query", () => {
     const src = readFileSync("supabase/functions/agent-chat/index.ts", "utf8");
     const branch = src.slice(src.indexOf('case "list_leads":'), src.indexOf('case "get_lead":'));
     const stop = branch.indexOf("if (early.stop)");
