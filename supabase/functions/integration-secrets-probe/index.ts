@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { corsHeaders, requireInternalOrUser } from "../_shared/internal-auth.ts";
+import { corsHeaders, requireInternalOrAdmin } from "../_shared/internal-auth.ts";
 import { verifyGoogleCredential } from "../_shared/google-credential-check.ts";
 
 /**
@@ -49,7 +49,7 @@ async function fingerprint(value: string): Promise<string> {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const unauth = await requireInternalOrUser(req);
+  const unauth = await requireInternalOrAdmin(req);
   if (unauth) return unauth;
 
   const secrets = [];

@@ -11,6 +11,24 @@ const logStep = (step: string, details?: any) => {
   console.log(`[TRIGGER-WEBHOOK] ${step}${detailsStr}`);
 };
 
+// Resolve the hostname and refuse private/internal addresses (DNS-based SSRF).
+const PRIVATE_V4 = /^(0\.|10\.|127\.|169\.254\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.)/;
+async function resolvesPublic(url: string): Promise<boolean> {
+  try {
+    const host = new URL(url).hostname.replace(/^\[|\]$/g, "").toLowerCase();
+    if (/^\d+\.\d+\.\d+\.\d+$/.test(host)) return !PRIVATE_V4.test(host);
+    if (host.includes(":")) return !/^(::|fc|fd|fe80)/.test(host);
+    const a = await Deno.resolveDns(host, "A").catch(() => [] as string[]);
+    const aaaa = await Deno.resolveDns(host, "AAAA").catch(() => [] as string[]);
+    if (a.length + aaaa.length === 0) return false;
+    if (a.some((ip) => PRIVATE_V4.test(ip))) return false;
+    if (aaaa.some((ip) => /^(::|fc|fd|fe80)/i.test(ip))) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // Validate webhook URL to prevent SSRF attacks
 const isValidWebhookUrl = (url: string): boolean => {
   try {
@@ -110,7 +128,7 @@ serve(async (req) => {
     const results = await Promise.allSettled(
       webhooks.map(async (webhook) => {
         // Server-side URL validation to prevent SSRF
-        if (!isValidWebhookUrl(webhook.url)) {
+        if (!isValidWebhookUrl(webhook.url) || !(await resolvesPublic(webhook.url))) {
           logStep("Blocked invalid webhook URL", { webhookId: webhook.id, url: webhook.url });
           return {
             webhookId: webhook.id,
@@ -182,6 +200,7 @@ serve(async (req) => {
                 "X-Webhook-Event": event,
               },
               body: JSON.stringify(payload),
+              redirect: "manual",
             });
 
             const responseBody = await response.text();
