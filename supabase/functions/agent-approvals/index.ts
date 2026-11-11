@@ -62,147 +62,175 @@ serve(async (req) => {
     if (action === "approve") {
       if (!id) return json({ error: "Missing id" }, 400);
 
-      const { data: approval, error: loadErr } = await admin
+      // One winner. Two clicks both used to read pending and both send.
+      const { data: approval, error: claimErr } = await admin
         .from("agent_approvals")
-        .select("*")
+        .update({ status: "sending" })
         .eq("id", id)
         .eq("user_id", user.id)
+        .eq("status", "pending")
+        .select("*")
         .maybeSingle();
-      if (loadErr) return json({ error: loadErr.message }, 400);
-      if (!approval) return json({ error: "Approval not found" }, 404);
-      if (approval.status !== "pending") {
-        return json({ error: `Already ${approval.status}` }, 400);
+      if (claimErr) {
+        console.error("agent-approvals claim:", claimErr.message);
+        return json({ error: "Could not claim the approval" }, 500);
       }
-
-      const subject = (body.subject ? String(body.subject) : approval.subject) ?? "";
-      const messageBody = (body.body ? String(body.body) : approval.body) ?? "";
-      // The approval row is caller-writable, so the recipient is never taken from it:
-      // it must be the email on a lead the caller owns.
-      if (!approval.lead_id) return json({ error: "Approval has no lead" }, 400);
-      const { data: ownedLead, error: leadErr } = await admin
-        .from("leads")
-        .select("id, contact_email")
-        .eq("id", approval.lead_id)
-        .eq("user_id", user.id)
-        .maybeSingle();
-      // An unknown column comes back as an error with data null. Mapping that
-      // to "Lead not found" made every approval send 404.
-      if (leadErr) {
-        console.error("agent-approvals lead lookup:", leadErr.message);
-        return json({ error: "Could not load the lead" }, 500);
-      }
-      if (!ownedLead) return json({ error: "Lead not found" }, 404);
-      const to = String(ownedLead.contact_email ?? "").trim();
-      if (!to || !subject || !messageBody) {
-        return json({ error: "Missing recipient, subject or body" }, 400);
-      }
-
-      let integrationRowId: string | null = approval.integration_row_id ?? null;
-      if (!integrationRowId) {
-        const { data: acct } = await admin
-          .from("sending_accounts")
-          .select("integration_id")
+      if (!approval) {
+        const { data: existing, error: loadErr } = await admin
+          .from("agent_approvals")
+          .select("id, status")
+          .eq("id", id)
           .eq("user_id", user.id)
-          .eq("status", "active")
-          .in("provider", ["google", "gmail"])
-          .order("updated_at", { ascending: false })
-          .limit(1)
           .maybeSingle();
-        integrationRowId = acct?.integration_id ?? null;
+        if (loadErr) return json({ error: loadErr.message }, 400);
+        if (!existing) return json({ error: "Approval not found" }, 404);
+        return json({ error: `Already ${existing.status}` }, 400);
       }
-      if (!integrationRowId) return json({ error: "No connected mailbox available" }, 400);
 
-      const sendRes = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
-        method: "POST",
-        headers: { Authorization: authHeader, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          to,
-          subject,
-          body: messageBody,
-          integrationRowId,
-          leadId: approval.lead_id ?? undefined,
-          // A reply continues an existing thread, where every message shares
-          // the same "Re: ..." subject, so the duplicate guard must not apply.
-          allowDuplicate: approval.kind === "reply",
-        }),
+      const release = async () => {
+        const { error } = await admin
+          .from("agent_approvals")
+          .update({ status: "pending" })
+          .eq("id", id)
+          .eq("user_id", user.id)
+          .eq("status", "sending");
+        if (error) console.error("agent-approvals release:", error.message);
+      };
 
-      });
-      const sendData = await sendRes.json().catch(() => ({} as any));
+      let sent = false;
+      try {
+        const subject = (body.subject ? String(body.subject) : approval.subject) ?? "";
+        const messageBody = (body.body ? String(body.body) : approval.body) ?? "";
+        // The approval row is caller-writable, so the recipient is never taken from it:
+        // it must be the email on a lead the caller owns.
+        if (!approval.lead_id) return json({ error: "Approval has no lead" }, 400);
+        const { data: ownedLead, error: leadErr } = await admin
+          .from("leads")
+          .select("id, contact_email")
+          .eq("id", approval.lead_id)
+          .eq("user_id", user.id)
+          .maybeSingle();
+        // An unknown column comes back as an error with data null. Mapping that
+        // to "Lead not found" made every approval send 404.
+        if (leadErr) {
+          console.error("agent-approvals lead lookup:", leadErr.message);
+          return json({ error: "Could not load the lead" }, 500);
+        }
+        if (!ownedLead) return json({ error: "Lead not found" }, 404);
+        const to = String(ownedLead.contact_email ?? "").trim();
+        if (!to || !subject || !messageBody) {
+          return json({ error: "Missing recipient, subject or body" }, 400);
+        }
 
-      if (!sendRes.ok || sendData?.error) {
-        const message = sendData?.error ?? `send-email returned ${sendRes.status}`;
+        let integrationRowId: string | null = approval.integration_row_id ?? null;
+        if (!integrationRowId) {
+          const { data: acct } = await admin
+            .from("sending_accounts")
+            .select("integration_id")
+            .eq("user_id", user.id)
+            .eq("status", "active")
+            .in("provider", ["google", "gmail"])
+            .order("updated_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          integrationRowId = acct?.integration_id ?? null;
+        }
+        if (!integrationRowId) return json({ error: "No connected mailbox available" }, 400);
+
+        const sendRes = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+          method: "POST",
+          headers: { Authorization: authHeader, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to,
+            subject,
+            body: messageBody,
+            integrationRowId,
+            leadId: approval.lead_id ?? undefined,
+          }),
+
+        });
+        const sendData = await sendRes.json().catch(() => ({} as any));
+
+        if (!sendRes.ok || sendData?.error) {
+          const message = sendData?.error ?? `send-email returned ${sendRes.status}`;
+          await admin.from("agent_actions").insert({
+            user_id: user.id,
+            action_type: "error",
+            status: "failed",
+            prospect_email: to,
+            subject,
+            error_message: message,
+            description: `Approved message to ${to} failed to send: ${message}`,
+            metadata: { approval_id: id },
+          });
+          return json({ error: message }, 200);
+        }
+
+        sent = true;
+        await admin
+          .from("agent_approvals")
+          .update({
+            status: "sent",
+            subject,
+            body: messageBody,
+            reviewed_at: new Date().toISOString(),
+          })
+          .eq("id", id)
+          .eq("user_id", user.id)
+          .eq("status", "sending");
+
+        let followUpsScheduled = false;
+        if (approval.kind === "outreach" && approval.lead_id) {
+          await admin
+            .from("leads")
+            .update({ last_contacted_at: new Date().toISOString(), lead_status: "active" })
+            .eq("id", approval.lead_id)
+            .eq("user_id", user.id);
+
+          const followUps = (approval.metadata?.follow_up_touches ?? []) as Touch[];
+          if (Array.isArray(followUps) && followUps.length > 0) {
+            followUpsScheduled = await scheduleFollowUps(
+              admin,
+              user.id,
+              approval.lead_id,
+              approval.company_name ?? approval.prospect_name ?? to,
+              [{ day: 0, purpose: "signal opener", subject, body: messageBody }, ...followUps],
+            );
+          }
+        }
+
+
+        if (approval.kind === "reply" && approval.sent_email_id) {
+          await admin
+            .from("sent_emails")
+            .update({
+              agent_thread_status:
+                approval.classification === "meeting_request" ? "meeting_booked" : "replied",
+            })
+            .eq("id", approval.sent_email_id)
+            .eq("user_id", user.id);
+        }
+
         await admin.from("agent_actions").insert({
           user_id: user.id,
-          action_type: "error",
-          status: "failed",
+          sent_email_id: approval.sent_email_id ?? null,
+          action_type: approval.kind === "outreach" ? "outreach_sent" : "reply_sent",
+          status: "completed",
           prospect_email: to,
           subject,
-          error_message: message,
-          description: `Approved message to ${to} failed to send: ${message}`,
-          metadata: { approval_id: id },
+          classification: approval.classification ?? null,
+          reply_content: messageBody,
+          description: `You approved and sent a ${
+            approval.kind === "outreach" ? "touch 1 of 4 email" : "reply"
+          } to ${to}${followUpsScheduled ? " — touches 2-4 scheduled for day 3, 7 and 14" : ""}`,
+          metadata: { approval_id: id, approved_by_human: true, follow_ups_scheduled: followUpsScheduled },
+
         });
-        return json({ error: message }, 200);
+
+        return json({ success: true, status: "sent" });
+      } finally {
+        if (!sent) await release();
       }
-
-      await admin
-        .from("agent_approvals")
-        .update({
-          status: "sent",
-          subject,
-          body: messageBody,
-          reviewed_at: new Date().toISOString(),
-        })
-        .eq("id", id);
-
-      let followUpsScheduled = false;
-      if (approval.kind === "outreach" && approval.lead_id) {
-        await admin
-          .from("leads")
-          .update({ last_contacted_at: new Date().toISOString(), lead_status: "active" })
-          .eq("id", approval.lead_id)
-          .eq("user_id", user.id);
-
-        const followUps = (approval.metadata?.follow_up_touches ?? []) as Touch[];
-        if (Array.isArray(followUps) && followUps.length > 0) {
-          followUpsScheduled = await scheduleFollowUps(
-            admin,
-            user.id,
-            approval.lead_id,
-            approval.company_name ?? approval.prospect_name ?? to,
-            [{ day: 0, purpose: "signal opener", subject, body: messageBody }, ...followUps],
-          );
-        }
-      }
-
-
-      if (approval.kind === "reply" && approval.sent_email_id) {
-        await admin
-          .from("sent_emails")
-          .update({
-            agent_thread_status:
-              approval.classification === "meeting_request" ? "meeting_booked" : "replied",
-          })
-          .eq("id", approval.sent_email_id)
-          .eq("user_id", user.id);
-      }
-
-      await admin.from("agent_actions").insert({
-        user_id: user.id,
-        sent_email_id: approval.sent_email_id ?? null,
-        action_type: approval.kind === "outreach" ? "outreach_sent" : "reply_sent",
-        status: "completed",
-        prospect_email: to,
-        subject,
-        classification: approval.classification ?? null,
-        reply_content: messageBody,
-        description: `You approved and sent a ${
-          approval.kind === "outreach" ? "touch 1 of 4 email" : "reply"
-        } to ${to}${followUpsScheduled ? " — touches 2-4 scheduled for day 3, 7 and 14" : ""}`,
-        metadata: { approval_id: id, approved_by_human: true, follow_ups_scheduled: followUpsScheduled },
-
-      });
-
-      return json({ success: true, status: "sent" });
     }
 
     return json({ error: "Unknown action" }, 400);

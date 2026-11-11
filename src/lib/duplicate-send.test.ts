@@ -113,9 +113,12 @@ describe("a reply in an existing thread is not a duplicate", () => {
     expect(RUN).toContain("threadId: input.gmailThreadId");
   });
 
-  it("an approved reply is allowed through as a continuation", () => {
+  it("an approved reply goes through the same guard", () => {
+    // Inbox and agent-run replies carry a thread id, which is the exemption.
+    // An approval has no thread id, and marking every reply allowDuplicate
+    // skipped the guard for a second copy of the same reply.
     const APPROVALS = readFileSync("supabase/functions/agent-approvals/index.ts", "utf8");
-    expect(APPROVALS).toContain('allowDuplicate: approval.kind === "reply"');
+    expect(APPROVALS).not.toContain("allowDuplicate");
   });
 });
 
