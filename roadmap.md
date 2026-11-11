@@ -1,3 +1,7 @@
+# Agent chat lead lookup accuracy
+
+- [ ] Reproduce mixed-filter repeats and seventh lookups, refresh repeat results, and return no substitute leads at the limit; test and deploy agent-chat.
+
 # Credit-ledger health alert
 
 - [x] Correct the missing-grant false alarm without giving customers access to the internal credit ledger; migration regression checks passed, signed-in health reports zero broken checks, and dashboard banner is absent. Resolve only the matching alert; the internal-ledger no-policy warning is informational and remains.
