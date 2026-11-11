@@ -4,6 +4,12 @@
  * any request. Redirects are checked one hop at a time by the caller.
  */
 
+/** fe80::/10, the whole link-local range, not only addresses that start with fe80. */
+function ipv6LinkLocal(host: string): boolean {
+  const first = host.split(":")[0] ?? "";
+  return /^fe[89ab][0-9a-f]$/i.test(first);
+}
+
 /** ::ffff:127.0.0.1 and ::ffff:7f00:1 are IPv4, not a different family. */
 export function unwrapIp(hostname: string): string {
   const host = hostname.toLowerCase().replace(/^\[|\]$/g, "");
@@ -23,7 +29,7 @@ export function sameSiteHost(a: string, b: string): boolean {
 
 export function blockedHost(hostname: string): string | null {
   const host = unwrapIp(hostname);
-  if (!host || host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host === "metadata.google.internal" || host === "0.0.0.0") {
+  if (!host || host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal") || host === "metadata.google.internal" || host === "0.0.0.0" || host === "::") {
     return "local";
   }
   const ipv4 = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
@@ -34,7 +40,7 @@ export function blockedHost(hostname: string): string | null {
       return "private";
     }
   }
-  if (host.includes(":") && (host === "::1" || host.startsWith("fc") || host.startsWith("fd") || host.startsWith("fe80"))) return "private";
+  if (host.includes(":") && (host === "::1" || host.startsWith("fc") || host.startsWith("fd") || ipv6LinkLocal(host))) return "private";
   return null;
 }
 

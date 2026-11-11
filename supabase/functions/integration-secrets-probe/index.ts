@@ -18,8 +18,9 @@ import { verifyGoogleCredential } from "../_shared/google-credential-check.ts";
  * but it is not what I just pasted" — which is the distinction that was
  * missing — without putting a credential on a screen or in a log.
  *
- * Same gate as the SMTP probe: any signed-in user, because the answer is
- * yes/no about configuration and contains no secret.
+ * Admin, or an internal caller. The answer includes lengths and fingerprints
+ * of deployment secrets, so a signed-in customer does not get it. System
+ * Health is the screen that asks, and that screen is admin-only.
  */
 
 const SECRETS = [

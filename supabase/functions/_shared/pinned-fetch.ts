@@ -11,7 +11,7 @@
 import http from "node:http";
 import https from "node:https";
 import { lookup as dnsLookup } from "node:dns/promises";
-import { publicHttpUrl, resolvePublicHost, sameSiteHost } from "./safe-url.ts";
+import { blockedHost, publicHttpUrl, resolvePublicHost, sameSiteHost } from "./safe-url.ts";
 
 export interface PageFetch {
   requestedUrl: string;
@@ -27,6 +27,8 @@ export interface DialTarget {
   address: string;
   signal: AbortSignal;
   headers: Record<string, string>;
+  method?: string;
+  body?: string;
 }
 
 export interface DialResult {
@@ -60,15 +62,18 @@ function nodeDial(target: DialTarget): Promise<DialResult> {
   const port = target.url.port
     ? Number(target.url.port)
     : target.url.protocol === "https:" ? 443 : 80;
+  // URL.hostname keeps the brackets on an IPv6 literal. Node then looks that
+  // string up in DNS instead of dialing it.
+  const hostname = target.url.hostname.replace(/^\[|\]$/g, "");
   return new Promise((resolve, reject) => {
     const req = mod.request({
       protocol: target.url.protocol,
-      hostname: target.url.hostname,
+      hostname,
       port,
-      method: "GET",
+      method: target.method ?? "GET",
       path: `${target.url.pathname}${target.url.search}`,
       headers: { ...target.headers, host: target.url.host },
-      servername: target.url.hostname,
+      servername: hostname,
       lookup: pinnedLookup(target.address) as never,
     }, (res) => {
       const chunks: Buffer[] = [];
@@ -90,13 +95,79 @@ function nodeDial(target: DialTarget): Promise<DialResult> {
     if (target.signal.aborted) abort();
     else target.signal.addEventListener("abort", abort, { once: true });
     req.on("error", reject);
-    req.end();
+    if (target.body != null) req.end(target.body);
+    else req.end();
   });
 }
 
 async function systemLookup(host: string): Promise<string[]> {
   const found = await dnsLookup(host, { all: true, verbatim: true });
   return found.map((entry) => entry.address);
+}
+
+export interface VettedPost {
+  blocked: boolean;
+  status: number;
+  body: string;
+}
+
+/** http(s) whose host is not a private literal. Userinfo is left on the URL. */
+function postableUrl(raw: string): URL | null {
+  let url: URL;
+  try { url = new URL(raw); } catch { return null; }
+  if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+  if (blockedHost(url.hostname)) return null;
+  return url;
+}
+
+export async function isVettedPublicUrl(
+  raw: string,
+  lookup: (host: string) => Promise<string[]> = systemLookup,
+): Promise<boolean> {
+  const url = postableUrl(raw);
+  if (!url) return false;
+  const resolved = await resolvePublicHost(url.hostname, lookup);
+  return resolved.ok;
+}
+
+/**
+ * POST a public URL and dial only the address just vetted.
+ *
+ * A DNS check followed by fetch() looks the name up again. The second answer
+ * can be a private address. This refuses a private name or a private answer,
+ * then connects to the address it accepted. A 3xx is returned as-is.
+ */
+export async function vettedPost(
+  raw: string,
+  init: {
+    headers?: Record<string, string>;
+    body?: string;
+    timeoutMs?: number;
+    lookup?: (host: string) => Promise<string[]>;
+    dial?: (target: DialTarget) => Promise<DialResult>;
+  } = {},
+): Promise<VettedPost> {
+  const lookup = init.lookup ?? systemLookup;
+  const dial = init.dial ?? nodeDial;
+  const url = postableUrl(raw);
+  if (!url) return { blocked: true, status: 0, body: "" };
+  const resolved = await resolvePublicHost(url.hostname, lookup);
+  if (!resolved.ok) return { blocked: true, status: 0, body: "" };
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), init.timeoutMs ?? 15_000);
+  try {
+    const res = await dial({
+      url,
+      address: resolved.address,
+      signal: controller.signal,
+      headers: init.headers ?? {},
+      method: "POST",
+      body: init.body,
+    });
+    return { blocked: false, status: res.status, body: res.body.slice(0, 1000) };
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export interface PageDeps {
