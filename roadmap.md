@@ -1,6 +1,6 @@
 # Agent chat lead lookup accuracy
 
-- [ ] Reproduce mixed-filter repeats and seventh lookups, refresh repeat results, and return no substitute leads at the limit; test and deploy agent-chat.
+- [x] Reproduced mixed-filter repeats, seventh lookups and empty batches in the actual dispatcher; refreshed repeat results and cleared implicit batches, passed 18 regressions, and deployed agent-chat. No real research/drafting run was triggered.
 
 # Credit-ledger health alert
 
