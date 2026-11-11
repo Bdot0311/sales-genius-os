@@ -79,10 +79,20 @@ serve(async (req) => {
       // The approval row is caller-writable, so the recipient is never taken from it:
       // it must be the email on a lead the caller owns.
       if (!approval.lead_id) return json({ error: "Approval has no lead" }, 400);
-      const { data: ownedLead } = await admin
-        .from("leads").select("id, email").eq("id", approval.lead_id).eq("user_id", user.id).maybeSingle();
+      const { data: ownedLead, error: leadErr } = await admin
+        .from("leads")
+        .select("id, contact_email")
+        .eq("id", approval.lead_id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      // An unknown column comes back as an error with data null. Mapping that
+      // to "Lead not found" made every approval send 404.
+      if (leadErr) {
+        console.error("agent-approvals lead lookup:", leadErr.message);
+        return json({ error: "Could not load the lead" }, 500);
+      }
       if (!ownedLead) return json({ error: "Lead not found" }, 404);
-      const to = String(ownedLead.email ?? "").trim();
+      const to = String(ownedLead.contact_email ?? "").trim();
       if (!to || !subject || !messageBody) {
         return json({ error: "Missing recipient, subject or body" }, 400);
       }
