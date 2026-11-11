@@ -25,7 +25,7 @@ import {
   researchStepCopy,
   sweepCopy,
 } from "../_shared/agent-step-present.ts";
-import { askedForWholeList, continuesListedBatch, nextResearchSlice, researchContinueLine } from "../_shared/research-batch.ts";
+import { askedForWholeList, continuesListedBatch, explicitResearchCount, nextResearchSlice, researchContinueLine } from "../_shared/research-batch.ts";
 import {
   askedWork,
   listLeadGuidance,
@@ -1633,6 +1633,16 @@ serve(async (req) => {
         : [],
     );
     /*
+     * Queued research is already paid for. A later pass only carried the
+     * inline ids, so the same leads were scraped again while their jobs
+     * waited. Counted toward the run cap, and skipped, not researched twice.
+     */
+    const queuedResearchLeadIds = new Set<string>(
+      Array.isArray(payload.queuedResearchLeadIds)
+        ? payload.queuedResearchLeadIds.filter((value: unknown): value is string => typeof value === "string").slice(0, 500)
+        : [],
+    );
+    /*
      * A drafting call that produced nothing stops the rest of the turn.
      *
      * The observed turn ran draft_outreach twice after the budget was gone;
@@ -2753,7 +2763,12 @@ serve(async (req) => {
             return { error: "lead_ids is required. Call list_leads and pass the ids it returns." };
           }
           const allDone = rawRequested.every((id) => researchedLeadIds.has(id));
-          const wholeList = askedForWholeList(userMessage);
+          /*
+           * "20 leads" is a ceiling. It is not the whole saved list, and a
+           * repeated 12-id slice is not permission to queue everyone else.
+           */
+          const wholeList = askedForWholeList(userMessage, listedLeadIds.length);
+          const researchCap = explicitResearchCount(userMessage);
           const batch = allDone && continuesListedBatch({
             requested: rawRequested,
             pool: listedLeadIds,
@@ -2771,10 +2786,11 @@ serve(async (req) => {
           const ownedSet = new Set(ownedSeed);
           const plan = nextResearchSlice({
             requested: rawRequested.filter((id) => ownedSet.has(id)),
-            done: [...researchedLeadIds],
+            done: [...researchedLeadIds, ...queuedResearchLeadIds],
             pool: batch ? listedLeadIds.filter((id) => ownedSet.has(id)) : [],
             limit: 12,
             wholeList,
+            cap: researchCap,
           });
           if (plan.inline.length === 0 && plan.queue.length === 0) {
             return {
@@ -2783,7 +2799,8 @@ serve(async (req) => {
             };
           }
           if (plan.queue.length > 0) {
-            await queueWork("research", plan.queue, "", null, args.force === true ? { force: true } : null);
+            const queued = await queueWork("research", plan.queue, "", null, args.force === true ? { force: true } : null);
+            for (const id of queued.queuedIds) queuedResearchLeadIds.add(id);
           }
           const ids = plan.inline;
           if (ids.length === 0) {
@@ -5207,7 +5224,7 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
         ? [{
             role: "user",
             content: `Continue only the unfinished parts of the newest request. Do not repeat completed work and do not return to older requests. ${
-              researchContinueLine(researchedLeadIds.size, askedForWholeList(userMessage))
+              researchContinueLine(researchedLeadIds.size, askedForWholeList(userMessage, listedLeadIds.length))
             }Completed mutation keys for this request: ${
               completedMutationKeys.size ? [...completedMutationKeys].join("; ") : "none"
             }. Recent completed actions: ${JSON.stringify(
@@ -6180,6 +6197,7 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
           runStartedAt,
           completedMutationKeys: [...completedMutationKeys],
           researchedLeadIds: [...researchedLeadIds].slice(0, 500),
+          queuedResearchLeadIds: [...queuedResearchLeadIds].slice(0, 500),
           researchTally,
           draftTally,
           ...(requestedAgentId ? { agentId: requestedAgentId } : {}),
