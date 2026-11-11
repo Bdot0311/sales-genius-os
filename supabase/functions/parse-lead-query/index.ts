@@ -7,6 +7,7 @@ import {
 } from "../_shared/icp-parse.ts";
 import { AI_CREDITS_USER_MESSAGE, isAiCreditError, reportAiCreditsExhausted } from "../_shared/ai-credits.ts";
 import { aiFetch } from "../_shared/ai-provider.ts";
+import { requireInternalOrUser } from "../_shared/internal-auth.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -90,6 +91,9 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const unauth = await requireInternalOrUser(req);
+  if (unauth) return unauth;
 
   const respond = (body: Record<string, unknown>, status = 200) =>
     new Response(JSON.stringify(body), {

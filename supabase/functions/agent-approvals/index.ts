@@ -76,16 +76,15 @@ serve(async (req) => {
 
       const subject = (body.subject ? String(body.subject) : approval.subject) ?? "";
       const messageBody = (body.body ? String(body.body) : approval.body) ?? "";
-      const to = (approval.prospect_email ?? "").trim();
+      // The approval row is caller-writable, so the recipient is never taken from it:
+      // it must be the email on a lead the caller owns.
+      if (!approval.lead_id) return json({ error: "Approval has no lead" }, 400);
+      const { data: ownedLead } = await admin
+        .from("leads").select("id, email").eq("id", approval.lead_id).eq("user_id", user.id).maybeSingle();
+      if (!ownedLead) return json({ error: "Lead not found" }, 404);
+      const to = String(ownedLead.email ?? "").trim();
       if (!to || !subject || !messageBody) {
         return json({ error: "Missing recipient, subject or body" }, 400);
-      }
-
-      // The approval row is caller-writable, so its lead_id must belong to the caller.
-      if (approval.lead_id) {
-        const { data: ownedLead } = await admin
-          .from("leads").select("id").eq("id", approval.lead_id).eq("user_id", user.id).maybeSingle();
-        if (!ownedLead) return json({ error: "Lead not found" }, 404);
       }
 
       let integrationRowId: string | null = approval.integration_row_id ?? null;
