@@ -8,6 +8,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+/** A claim left in sending after a crash can be taken again after this. */
+const SENDING_CLAIM_MS = 10 * 60 * 1000;
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -63,12 +66,14 @@ serve(async (req) => {
       if (!id) return json({ error: "Missing id" }, 400);
 
       // One winner. Two clicks both used to read pending and both send.
+      // A sending row older than the claim window was left by a killed request.
+      const staleBefore = new Date(Date.now() - SENDING_CLAIM_MS).toISOString();
       const { data: approval, error: claimErr } = await admin
         .from("agent_approvals")
         .update({ status: "sending" })
         .eq("id", id)
         .eq("user_id", user.id)
-        .eq("status", "pending")
+        .or(`status.eq.pending,and(status.eq.sending,updated_at.lt."${staleBefore}")`)
         .select("*")
         .maybeSingle();
       if (claimErr) {
@@ -137,6 +142,25 @@ serve(async (req) => {
         }
         if (!integrationRowId) return json({ error: "No connected mailbox available" }, 400);
 
+        // A second reply in the same conversation shares the subject. The
+        // thread id is read from the sent email this approval answers, so the
+        // duplicate guard still applies when there is no thread to continue.
+        let threadId: string | undefined;
+        if (approval.kind === "reply" && approval.sent_email_id) {
+          const { data: prior, error: threadErr } = await admin
+            .from("sent_emails")
+            .select("gmail_thread_id")
+            .eq("id", approval.sent_email_id)
+            .eq("user_id", user.id)
+            .maybeSingle();
+          if (threadErr) {
+            console.error("agent-approvals thread lookup:", threadErr.message);
+            return json({ error: "Could not load the thread" }, 500);
+          }
+          const found = String(prior?.gmail_thread_id ?? "").trim();
+          if (found) threadId = found;
+        }
+
         const sendRes = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
           method: "POST",
           headers: { Authorization: authHeader, "Content-Type": "application/json" },
@@ -146,6 +170,7 @@ serve(async (req) => {
             body: messageBody,
             integrationRowId,
             leadId: approval.lead_id ?? undefined,
+            ...(threadId ? { threadId } : {}),
           }),
 
         });

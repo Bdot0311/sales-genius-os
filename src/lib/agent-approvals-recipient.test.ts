@@ -46,12 +46,31 @@ describe("an approved send uses the owned lead's contact_email", () => {
   });
 
   it("claims the pending row before anyone sends", () => {
-    const claim = approve.indexOf('.eq("status", "pending")');
+    const claim = approve.indexOf("status.eq.pending");
     const send = approve.indexOf("/functions/v1/send-email");
     expect(claim).toBeGreaterThan(-1);
     expect(send).toBeGreaterThan(claim);
     expect(approve).toContain('status: "sending"');
     expect(approve).toContain('.select("*")');
+  });
+
+  it("reclaims a sending row left past the claim window", () => {
+    expect(SRC).toContain("const SENDING_CLAIM_MS = 10 * 60 * 1000");
+    expect(approve).toContain('updated_at.lt."');
+    expect(approve).toContain("status.eq.sending");
+    const claim = approve.indexOf("status.eq.pending");
+    const send = approve.indexOf("/functions/v1/send-email");
+    expect(claim).toBeLessThan(send);
+  });
+
+  it("passes the original sent email's thread on a reply", () => {
+    const lookup = approve.indexOf("gmail_thread_id");
+    const send = approve.indexOf("/functions/v1/send-email");
+    expect(approve).toContain('.from("sent_emails")');
+    expect(approve).toContain("approval.sent_email_id");
+    expect(approve).toContain("threadId");
+    expect(lookup).toBeGreaterThan(-1);
+    expect(lookup).toBeLessThan(send);
   });
 
   it("puts the row back to pending when the send does not happen", () => {

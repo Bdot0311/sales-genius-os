@@ -10,30 +10,44 @@
 const WHOLE_LIST_WORDING =
   /\b(?:all of them|every lead|the whole list|the entire list|research them all)\b/;
 
+const COUNT_NOUN = "leads|companies|prospects";
+
 /**
- * The count that belongs to the research ask.
+ * A count sitting on the research verb, or on leads, companies, or prospects.
  *
- * "research these 3, then draft 2 leads" is 3. A later number on a different
- * verb is not the cap. When the research phrase names no number, an earlier
- * "63 leads" still counts, which is how "research them" covers a loaded list.
+ * "research 5", "research these 3", and "top 15 leads" count. "founded after
+ * 2020" and "50+ employees" do not: a bare number in the same sentence is not
+ * a cap. A number after "then draft" is not this ask.
  */
+function boundCount(text: string): number | null {
+  const patterns = [
+    new RegExp(`\\bresearch(?:ing)?\\s+(?:the\\s+)?top\\s+(\\d+)\\b`),
+    new RegExp(`\\bresearch(?:ing)?\\s+(?:these|those)\\s+(\\d+)\\b`),
+    new RegExp(`\\bresearch(?:ing)?\\s+all\\s+(\\d+)\\b`),
+    new RegExp(`\\bresearch(?:ing)?\\s+(\\d+)\\b`),
+    new RegExp(`\\btop\\s+(\\d+)\\s+(?:${COUNT_NOUN})\\b`),
+    new RegExp(`\\bthese\\s+(\\d+)\\b`),
+    new RegExp(`\\b(\\d+)\\s+(?:${COUNT_NOUN})\\b`),
+  ];
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (!match) continue;
+    const n = Number(match[1]);
+    if (Number.isInteger(n) && n > 0) return n;
+  }
+  return null;
+}
+
 export function explicitResearchCount(message: string): number | null {
   const text = message.toLowerCase();
   const at = text.search(/\bresearch(?:ing)?\b/);
   if (at >= 0) {
     const clause = text.slice(at).split(/\bthen\b|[.;]|\band\s+draft\b/)[0] ?? "";
-    const bound = clause.match(/\b(\d+)\b/);
-    if (bound) {
-      const n = Number(bound[1]);
-      if (Number.isInteger(n) && n > 0) return n;
-    }
+    const bound = boundCount(clause);
+    if (bound != null) return bound;
+    return boundCount(text.slice(0, at));
   }
-  let count: number | null = null;
-  for (const match of text.matchAll(/\b(?:these\s+(\d+)|(\d+)\s+leads)\b/g)) {
-    const n = Number(match[1] ?? match[2]);
-    if (Number.isInteger(n) && n > 0) count = n;
-  }
-  return count;
+  return boundCount(text);
 }
 
 export function askedForWholeList(message: string, poolSize = 0): boolean {

@@ -80,6 +80,20 @@ describe("a resumed research pass takes the next leads", () => {
     expect(askedForWholeList("research these 3, then draft 2 leads", pool.length)).toBe(false);
   });
 
+  it("ignores a year or a headcount that is not a research count", () => {
+    expect(explicitResearchCount("research leads founded after 2020")).toBeNull();
+    expect(explicitResearchCount("research leads with 50+ employees")).toBeNull();
+    expect(askedForWholeList("research leads founded after 2020", pool.length)).toBe(false);
+    expect(askedForWholeList("research leads with 50+ employees", pool.length)).toBe(false);
+    expect(explicitResearchCount("research 5")).toBe(5);
+    expect(explicitResearchCount("research 5 leads")).toBe(5);
+    expect(explicitResearchCount("research these 3")).toBe(3);
+    expect(explicitResearchCount("research the top 15 leads")).toBe(15);
+    expect(explicitResearchCount("top 15 leads")).toBe(15);
+    expect(explicitResearchCount("research 4 companies")).toBe(4);
+    expect(explicitResearchCount("top 8 prospects")).toBe(8);
+  });
+
   it("lets a research count beat an incidental mention of how many leads exist", () => {
     const message = "I have 63 leads, research 5 of them";
     expect(explicitResearchCount(message)).toBe(5);
