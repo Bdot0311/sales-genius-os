@@ -121,7 +121,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     title: "Recheck the right leads in agent chat",
     summary: "Switch between lead groups and recheck them without mixing up the results.",
     items: [
-      { tag: "fixed", title: "Accurate repeat lookups", description: "When you ask an agent to recheck a lead group, it refreshes that group's leads and remaining draft count. If the lookup limit is reached, it tells you instead of returning another group's leads.", href: "/dashboard/agents" },
+      { tag: "fixed", title: "Accurate repeat lookups", description: "When you ask an agent to recheck a lead group, it refreshes that group's leads and remaining draft count. If the lookup limit is reached, it tells you instead of returning another group's leads.", href: "/dashboard/agent/chat" },
     ],
   },
   {
