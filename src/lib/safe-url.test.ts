@@ -13,6 +13,12 @@ describe("cited URLs are refused before a request", () => {
     expect(publicHttpUrl("https://tf.example/about").ok).toBe(true);
     expect(publicHttpUrl("http://[::ffff:127.0.0.1]/").ok).toBe(false);
     expect(publicHttpUrl("http://[::ffff:7f00:1]/").ok).toBe(false);
+    expect(publicHttpUrl("http://[::1]/").ok).toBe(false);
+    expect(publicHttpUrl("http://[::]/").ok).toBe(false);
+    expect(publicHttpUrl("http://[fe9b::1]/").ok).toBe(false);
+    expect(publicHttpUrl("http://[fe80::1]/").ok).toBe(false);
+    expect(publicHttpUrl("http://[::ffff:8.8.8.8]/").ok).toBe(true);
+    expect(publicHttpUrl("http://secret.internal/latest").ok).toBe(false);
   });
 
   it("rejects a public name whose lookup answers with a private address", async () => {
@@ -20,6 +26,8 @@ describe("cited URLs are refused before a request", () => {
     expect(result).toEqual({ ok: false, reason: "private_dns" });
     const allowed = await resolvePublicHost("tf.example", async () => ["93.184.216.34"]);
     expect(allowed.ok).toBe(true);
+    const linkLocal = await resolvePublicHost("webhook.test", async () => ["fe9b::1"]);
+    expect(linkLocal).toEqual({ ok: false, reason: "private_dns" });
   });
 });
 

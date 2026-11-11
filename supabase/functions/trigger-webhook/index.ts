@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { isVettedPublicUrl, vettedPost } from "../_shared/pinned-fetch.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,54 +12,6 @@ const logStep = (step: string, details?: any) => {
   console.log(`[TRIGGER-WEBHOOK] ${step}${detailsStr}`);
 };
 
-// Resolve the hostname and refuse private/internal addresses (DNS-based SSRF).
-const PRIVATE_V4 = /^(0\.|10\.|127\.|169\.254\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.)/;
-async function resolvesPublic(url: string): Promise<boolean> {
-  try {
-    const host = new URL(url).hostname.replace(/^\[|\]$/g, "").toLowerCase();
-    if (/^\d+\.\d+\.\d+\.\d+$/.test(host)) return !PRIVATE_V4.test(host);
-    if (host.includes(":")) return !/^(::|fc|fd|fe80)/.test(host);
-    const a = await Deno.resolveDns(host, "A").catch(() => [] as string[]);
-    const aaaa = await Deno.resolveDns(host, "AAAA").catch(() => [] as string[]);
-    if (a.length + aaaa.length === 0) return false;
-    if (a.some((ip) => PRIVATE_V4.test(ip))) return false;
-    if (aaaa.some((ip) => /^(::|fc|fd|fe80)/i.test(ip))) return false;
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-// Validate webhook URL to prevent SSRF attacks
-const isValidWebhookUrl = (url: string): boolean => {
-  try {
-    const parsed = new URL(url);
-    
-    // Only allow http/https protocols
-    if (!['https:', 'http:'].includes(parsed.protocol)) return false;
-    
-    const hostname = parsed.hostname.toLowerCase();
-    
-    // Block localhost and loopback
-    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') return false;
-    
-    // Block private IP ranges
-    if (/^127\./.test(hostname)) return false;
-    if (/^10\./.test(hostname)) return false;
-    if (/^172\.(1[6-9]|2[0-9]|3[01])\./.test(hostname)) return false;
-    if (/^192\.168\./.test(hostname)) return false;
-    if (/^169\.254\./.test(hostname)) return false;
-    if (/^0\./.test(hostname)) return false;
-    if (/^100\.(6[4-9]|[7-9][0-9]|1[0-2][0-9])\./.test(hostname)) return false;
-    
-    // Block internal hostnames
-    if (hostname.endsWith('.internal') || hostname.endsWith('.local')) return false;
-    
-    return true;
-  } catch {
-    return false;
-  }
-};
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -127,8 +80,8 @@ serve(async (req) => {
     // Trigger all webhooks with retry logic
     const results = await Promise.allSettled(
       webhooks.map(async (webhook) => {
-        // Server-side URL validation to prevent SSRF
-        if (!isValidWebhookUrl(webhook.url) || !(await resolvesPublic(webhook.url))) {
+        // Literal and DNS both have to be public before a delivery is recorded.
+        if (!(await isVettedPublicUrl(webhook.url))) {
           logStep("Blocked invalid webhook URL", { webhookId: webhook.id, url: webhook.url });
           return {
             webhookId: webhook.id,
@@ -185,6 +138,7 @@ serve(async (req) => {
         // Attempt delivery with exponential backoff
         let attemptCount = 0;
         let lastError = null;
+        let blocked = false;
         const maxAttempts = 5;
 
         while (attemptCount < maxAttempts) {
@@ -192,33 +146,46 @@ serve(async (req) => {
             attemptCount++;
             logStep("Attempting webhook delivery", { webhookId: webhook.id, attempt: attemptCount });
 
-            const response = await fetch(webhook.url, {
-              method: "POST",
+            const response = await vettedPost(webhook.url, {
               headers: {
                 "Content-Type": "application/json",
                 "X-Webhook-Signature": signature,
                 "X-Webhook-Event": event,
               },
               body: JSON.stringify(payload),
-              redirect: "manual",
             });
+            if (response.blocked) {
+              blocked = true;
+              lastError = "Invalid webhook URL blocked for security";
+              await supabaseClient
+                .from("webhook_deliveries")
+                .update({
+                  status: "failed",
+                  attempt_count: attemptCount,
+                  last_attempt_at: new Date().toISOString(),
+                  response_body: lastError,
+                })
+                .eq("id", delivery.id);
+              break;
+            }
 
-            const responseBody = await response.text();
+            const responseBody = response.body;
+            const ok = response.status >= 200 && response.status < 300;
 
             // Update delivery record
             await supabaseClient
               .from("webhook_deliveries")
               .update({
-                status: response.ok ? "success" : "failed",
+                status: ok ? "success" : "failed",
                 response_status: response.status,
-                response_body: responseBody.substring(0, 1000), // Limit response body size
+                response_body: responseBody,
                 attempt_count: attemptCount,
                 last_attempt_at: new Date().toISOString(),
-                completed_at: response.ok ? new Date().toISOString() : null,
+                completed_at: ok ? new Date().toISOString() : null,
               })
               .eq("id", delivery.id);
 
-            if (response.ok) {
+            if (ok) {
               // Update webhook stats
               await supabaseClient
                 .from("webhooks")
@@ -270,6 +237,17 @@ serve(async (req) => {
               await new Promise(resolve => setTimeout(resolve, backoffMs));
             }
           }
+        }
+
+        // A private answer is not a down endpoint. Scheduling a retry would
+        // hand the same URL to the dispatcher, which posts it again.
+        if (blocked) {
+          return {
+            webhookId: webhook.id,
+            success: false,
+            error: lastError || "Invalid webhook URL blocked for security",
+            attempts: attemptCount,
+          };
         }
 
         // All attempts failed, schedule retry

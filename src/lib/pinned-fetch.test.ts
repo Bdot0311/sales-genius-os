@@ -2,9 +2,10 @@ import { EventEmitter } from "node:events";
 import { readFileSync } from "node:fs";
 import https from "node:https";
 import { describe, expect, it } from "vitest";
-import { fetchPinnedPage, pinnedLookup, type DialResult, type DialTarget } from "../../supabase/functions/_shared/pinned-fetch";
+import { fetchPinnedPage, isVettedPublicUrl, pinnedLookup, vettedPost, type DialResult, type DialTarget } from "../../supabase/functions/_shared/pinned-fetch";
 
 const RESEARCH = readFileSync("supabase/functions/research-lead/index.ts", "utf8");
+const TRIGGER = readFileSync("supabase/functions/trigger-webhook/index.ts", "utf8");
 const PUBLIC = "93.184.216.34";
 const PRIVATE = "127.0.0.1";
 
@@ -152,5 +153,57 @@ describe("fetchPinnedPage dials the address it already vetted", () => {
   it("research-lead fetches pages through this path", () => {
     expect(RESEARCH).toContain("fetchPinnedPage");
     expect(RESEARCH).not.toContain('redirect: "manual"');
+  });
+});
+
+describe("a webhook post dials the address it already vetted", () => {
+  it("does not post when the name answers with a private address", async () => {
+    const dialed: string[] = [];
+    const result = await vettedPost("https://hooks.example/in", {
+      body: "{\"event\":\"lead\"}",
+      lookup: async () => [PRIVATE],
+      dial: async (target) => {
+        dialed.push(target.address);
+        return { status: 200, headers: new Headers(), body: "ok" };
+      },
+    });
+    expect(dialed).toEqual([]);
+    expect(result.blocked).toBe(true);
+  });
+
+  it("posts to the public address from the check, including when a later lookup is private", async () => {
+    let calls = 0;
+    const dialed: string[] = [];
+    const result = await vettedPost("https://hooks.example/in", {
+      body: "{\"event\":\"lead\"}",
+      lookup: async () => {
+        calls += 1;
+        return calls === 1 ? [PUBLIC] : [PRIVATE];
+      },
+      dial: async (target) => {
+        dialed.push(`${target.method} ${target.address} ${target.body}`);
+        return { status: 302, headers: new Headers({ location: "http://127.0.0.1/" }), body: "" };
+      },
+    });
+    expect(dialed).toEqual([`POST ${PUBLIC} {\"event\":\"lead\"}`]);
+    expect(result.blocked).toBe(false);
+    expect(result.status).toBe(302);
+  });
+
+  it("refuses a link-local literal before any lookup", async () => {
+    let lookups = 0;
+    const open = await isVettedPublicUrl("http://[fe9b::1]/hook", async () => {
+      lookups += 1;
+      return [PUBLIC];
+    });
+    expect(open).toBe(false);
+    expect(lookups).toBe(0);
+  });
+
+  it("trigger-webhook posts through this path", () => {
+    expect(TRIGGER).toContain("isVettedPublicUrl");
+    expect(TRIGGER).toContain("vettedPost");
+    expect(TRIGGER).not.toContain("Deno.resolveDns");
+    expect(TRIGGER).not.toContain('redirect: "manual"');
   });
 });
