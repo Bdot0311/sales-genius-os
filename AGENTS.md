@@ -1,5 +1,7 @@
 # Agent rules
 
+- Agent-chat list lookups refresh even for repeated filters within the six-call turn cap; clear implicit lead and draft pools before every lookup and return an explicit unqueried error at the cap. Why: stale ids and counts must never be substituted across filters or after drafting.
+
 - Health grant checks treat the Stripe credit-grant ledger as internal only while RLS denies customer roles and backend CRUD grants remain present. Why: deliberate privacy must not trigger an outage banner, and missing backend access must still fail monitoring.
 
 - Unified Inbox reads owner-scoped sent_emails and email_drafts without source-specific filtering; external generators save drafts through generate-email, while existing Studio/agent callers retain their own draft writes. Why: all creation channels appear once and unsent mail is never reported as sent.

@@ -7,7 +7,7 @@
  * "new", and a draft queue from the previous turn is not something the list
  * result explained, so the model kept changing filters.
  *
- * The same filter is not run twice. A different filter is still a real set.
+ * Every allowed lookup is fresh, including repeated filters after drafting.
  * After a handful of lookups the turn is told the next tool instead.
  */
 
@@ -75,8 +75,8 @@ export function listLeadsKey(args: Record<string, unknown>): string {
 }
 
 /**
- * Identical filters stop on the repeat. A different filter (tier A, then B,
- * then C) is a real second set and is allowed. The cap is only the runaway
+ * Repeated filters must refresh ids and outstanding counts after mutations.
+ * The cap is only the runaway
  * that listed thirteen times.
  */
 export const MAX_LIST_LEADS_CALLS = 6;
@@ -89,10 +89,16 @@ export function listLeadGuidance(input: {
   returnedCount: number;
   asked: AskedWork;
 }): { stop: boolean; note: string } {
-  const stop = input.priorSame >= 1 || input.priorTotal >= MAX_LIST_LEADS_CALLS;
+  const stop = input.priorTotal >= MAX_LIST_LEADS_CALLS;
   const pipeline = input.asked.research || input.asked.evaluate || input.asked.draft;
   const parts: string[] = [];
   if (stop) {
+    if (input.knownCount === 0) {
+      return {
+        stop,
+        note: "Lookup limit reached. This filter was not queried; its matching leads and remaining count are unknown. Do not substitute ids or counts from another lookup. Ask the user to continue in a new turn.",
+      };
+    }
     parts.push(
       input.knownCount > 0
         ? `Stop looking them up. You already have ${input.knownCount} lead ids from list_leads. Do not call list_leads again this turn.`
