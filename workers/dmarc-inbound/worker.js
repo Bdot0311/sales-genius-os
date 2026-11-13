@@ -28,7 +28,7 @@ export default {
     }
 
     if (message.rawSize > MAX_BYTES) {
-      console.error(`dmarc-inbound: message too large (${message.rawSize} bytes) for ${message.to}`);
+      console.error(`dmarc-inbound: message too large (${message.rawSize} bytes) `);
       message.setReject("Message too large");
       return;
     }
@@ -68,6 +68,6 @@ export default {
       return;
     }
 
-    console.log(`dmarc-inbound: accepted report for ${message.to}`);
+    console.log("dmarc-inbound: accepted report");
   },
 };

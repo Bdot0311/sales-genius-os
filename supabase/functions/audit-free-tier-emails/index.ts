@@ -119,7 +119,7 @@ serve(async (req) => {
           });
         }
       } catch (e: any) {
-        log("validation error (skipped)", { email, error: e?.message });
+        log("validation error (skipped)", { user_id: sub.user_id, error: e?.message });
       }
 
       // Mild rate-limit so we don't hammer DNS

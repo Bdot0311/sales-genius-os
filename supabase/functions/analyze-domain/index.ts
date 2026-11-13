@@ -1,3 +1,4 @@
+import { fetchPinnedPage } from "../_shared/pinned-fetch.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
 import { rateLimit, rateLimitResponse } from "../_shared/rate-limit.ts";
@@ -69,22 +70,12 @@ function extractText(html: string): { text: string; meta: string } {
 }
 
 async function fetchPage(url: string): Promise<string | null> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  // DNS-pinned fetch: rejects private/internal hosts and only follows same-site redirects.
   try {
-    const res = await fetch(url, {
-      headers: { "User-Agent": BROWSER_UA, "Accept": "text/html" },
-      signal: controller.signal,
-      redirect: "follow",
-    });
-    if (!res.ok) return null;
-    const ct = res.headers.get("content-type") || "";
-    if (!ct.includes("html")) return null;
-    return await res.text();
+    const page = await fetchPinnedPage(url, { timeoutMs: FETCH_TIMEOUT_MS, headers: { "User-Agent": BROWSER_UA, "Accept": "text/html" } });
+    return page.ok ? page.html : null;
   } catch {
     return null;
-  } finally {
-    clearTimeout(timer);
   }
 }
 

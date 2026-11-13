@@ -1,3 +1,4 @@
+import { vettedPost } from "../_shared/pinned-fetch.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { isValidWebhookUrl } from "../_shared/webhook-url.ts";
@@ -121,11 +122,9 @@ serve(async (req) => {
             headers["X-Webhook-Signature"] = signature;
           }
 
-          const response = await fetch(webhook.url, {
-            method: "POST",
-            headers,
-            body: JSON.stringify(test.test_payload),
-          });
+          const vetted = await vettedPost(webhook.url, { headers, body: JSON.stringify(test.test_payload) });
+          if (vetted.blocked) throw new Error("Invalid webhook URL blocked for security");
+          const response = { status: vetted.status, text: async () => vetted.body };
 
           const responseTime = Date.now() - startTime;
           const responseBody = await response.text();

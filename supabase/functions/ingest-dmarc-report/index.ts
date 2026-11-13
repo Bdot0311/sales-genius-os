@@ -131,7 +131,7 @@ Deno.serve(async (req) => {
     ?? "";
   const token = tokenFromRecipient(recipient);
   if (!token) {
-    console.warn(`[ingest-dmarc-report] no usable token in recipient: ${recipient.slice(0, 120)}`);
+    console.warn("[ingest-dmarc-report] no usable token in recipient");
     return json({ error: "Unrecognised recipient", accepted: false }, 202);
   }
 

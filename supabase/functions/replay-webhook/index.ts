@@ -1,3 +1,4 @@
+import { vettedPost } from "../_shared/pinned-fetch.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { createHmac } from "https://deno.land/std@0.168.0/node/crypto.ts";
@@ -91,8 +92,7 @@ serve(async (req) => {
           .digest('hex');
 
         // Send webhook
-        const response = await fetch(webhook.url, {
-          method: 'POST',
+        const response = await vettedPost(webhook.url, {
           headers: {
             'Content-Type': 'application/json',
             'X-Webhook-Signature': signature,
@@ -103,7 +103,11 @@ serve(async (req) => {
           body: JSON.stringify(delivery.payload),
         });
 
-        const responseBody = await response.text();
+        if (response.blocked) {
+          replayResults.push({ originalDeliveryId: delivery.id, success: false, error: 'Invalid webhook URL blocked for security' });
+          continue;
+        }
+        const responseBody = response.body;
         const status = response.status;
         const success = status >= 200 && status < 300;
 
