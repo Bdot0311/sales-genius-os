@@ -46,6 +46,7 @@ export const Navbar = () => {
   const navLinks = [
     { label: "Features", path: "#features" },
     { label: "AI SDR", path: "/ai-sdr-agent" },
+    { label: "MCP", path: "/connect" },
     { label: "Pricing", path: "/pricing" },
     
     { label: "Partners", path: "/partners" },

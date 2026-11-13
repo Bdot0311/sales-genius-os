@@ -110,6 +110,9 @@ The AI SDR agent is an autonomous email sales rep built into OutReign, included 
 
 ---
 
+### MCP Server for AI Assistants
+OutReign provides an MCP (Model Context Protocol) server. ChatGPT, Claude, Cursor and other MCP clients can connect with OAuth sign-in to search prospects and companies, verify emails, research and score leads, and draft outreach saved to the Unified Inbox. It uses the same identity, plan limits and credits as the app and is available on paid plans. Setup guide: https://outreign.io/connect. Reference: https://docs.outreign.io
+
 ## Pricing (Current as of 2026-08-01)
 
 All prices are in USD. Pricing scales by verified prospects contacted per month, not per seat, and seats are unlimited on all paid plans. Monthly and yearly billing are both available, and yearly saves approximately 20%.

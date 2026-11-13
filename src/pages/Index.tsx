@@ -11,6 +11,7 @@ const HOMEPAGE_FAQS = [
   { question: "Can I try it before paying?", answer: "Yes. You can start free and upgrade when you are ready." },
   { question: "Who is OutReign best for?", answer: "It is strongest for founder-led sales teams, outbound agencies, SDR teams, and B2B operators running outbound motions." },
   { question: "What integrations are available?", answer: "OutReign connects with Google Workspace (Gmail), HubSpot, Salesforce, Slack, Calendly, and Zapier on every plan, including the free one." },
+  { question: "Can I use OutReign from ChatGPT, Claude or Cursor?", answer: "Yes. OutReign has an MCP server that connects to ChatGPT, Claude, Cursor and other MCP clients so you can search prospects, verify emails, research accounts and draft outreach from your assistant. It is included on paid plans; setup steps are at outreign.io/connect." },
   { question: "Is OutReign a fit for every business?", answer: "No. It is generally not the right fit for e-commerce, B2C, or companies that do not run outbound." },
 ];
 
@@ -21,6 +22,7 @@ const HowItWorks = lazy(() => import("@/components/landing/HowItWorks").then(m =
 const ProblemSection = lazy(() => import("@/components/landing/ProblemSection").then(m => ({ default: m.ProblemSection })));
 const ModulesSection = lazy(() => import("@/components/landing/ModulesSection").then(m => ({ default: m.ModulesSection })));
 const AISdrSection = lazy(() => import("@/components/landing/AISdrSection").then(m => ({ default: m.AISdrSection })));
+const MCPSection = lazy(() => import("@/components/landing/MCPSection").then(m => ({ default: m.MCPSection })));
 const BigStatSection = lazy(() => import("@/components/landing/BigStatSection").then(m => ({ default: m.BigStatSection })));
 
 const DifferentiationSection = lazy(() => import("@/components/landing/DifferentiationSection").then(m => ({ default: m.DifferentiationSection })));
@@ -188,6 +190,7 @@ const Index = () => {
                 <DeferredSection><HowItWorks /></DeferredSection>
                 <DeferredSection><ModulesSection /></DeferredSection>
                 <DeferredSection><AISdrSection /></DeferredSection>
+                <DeferredSection><MCPSection /></DeferredSection>
 
                 
                 <DeferredSection><BigStatSection /></DeferredSection>
