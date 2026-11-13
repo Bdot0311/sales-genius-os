@@ -195,21 +195,32 @@ export function confirmedClose(input: {
   return parts.join(" ");
 }
 
-const COMPLETION_CLAIM = /\b(?:all \d+|every(?: one of(?: the)?)?)\b[^.!?\n]{0,100}\b(?:researched|queued)\b|\ball drafts are queued\b|\bdrafts are being written\b|\bbackground worker is writing\b/i;
+// Match a complete batch-status statement, not "Every company I researched
+// sells to agencies" or a finding about what queued leads have in common.
+const BATCH_STATUS = String.raw`(?:(?:all(?: \d+)?(?: (?:the )?(?:leads|companies|drafts))?|every (?:(?:one of (?:the )?(?:leads|companies|drafts))|lead|company|draft|one)) (?:have been|has been|are|is) (?:researched|queued)|(?:all )?drafts are being written|(?:the )?background worker is writing(?: (?:them|the drafts)(?: now)?)?)`;
+const COMPLETION_CLAIM = new RegExp(
+  `^${BATCH_STATUS}(?:(?: and |\\s*[—–;]\\s*)(?:the )?${BATCH_STATUS})*[.!?]*$`,
+  "i",
+);
 
 /**
  * Keep the model's findings. Only the sentence that claims the batch is done
  * is replaced by the counted status.
  */
 export function withConfirmedClose(reply: string, close: string): string {
-  const kept = reply.split(/\n\n/).map((part) => {
-    const sentences = part.split(/(?<=[.!?])\s+/).filter((sentence) => {
-      const text = sentence.trim();
-      return text.length > 0 && !COMPLETION_CLAIM.test(text);
+  // Work within each line and retain untouched text verbatim. Sentence
+  // separators must never consume a list's newlines or Markdown indentation.
+  const body = reply.split(/(\r?\n)/).map((line) => {
+    if (/^\r?\n$/.test(line)) return line;
+    let removed = false;
+    const kept = line.replace(/[^.!?\r\n]+(?:[.!?]+|$)/g, (sentence) => {
+      const text = sentence.trim().replace(/^(?:[-*+] |\d+[.)] )/, "");
+      if (!COMPLETION_CLAIM.test(text)) return sentence;
+      removed = true;
+      return "";
     });
-    return sentences.join(" ").trim();
-  }).filter(Boolean);
-  const body = kept.join("\n\n").trim();
+    return removed ? kept.trimEnd() : kept;
+  }).join("").trim();
   return body ? `${body}\n\n${close}` : close;
 }
 

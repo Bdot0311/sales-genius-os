@@ -116,6 +116,15 @@ export const ROADMAP: RoadmapItem[] = [
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-11-13-agent-research-replies",
+    date: "2026-11-13",
+    title: "Clearer agent research replies",
+    summary: "Read company findings without missing sentences or lists running together.",
+    items: [
+      { tag: "fixed", title: "Complete, readable findings", description: "Agent replies keep their company-by-company lists and research findings after researching or drafting leads, alongside verified progress counts.", href: "/dashboard/agent/chat" },
+    ],
+  },
+  {
     id: "2026-11-11-agent-lead-lookups",
     date: "2026-11-11",
     title: "Recheck the right leads in agent chat",

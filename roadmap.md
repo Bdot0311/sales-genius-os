@@ -1,3 +1,7 @@
+# Agent reply content preservation
+
+- [x] Preserve research findings and line boundaries while replacing only batch-status claims; 108 related regressions passed, the reported example retains both bullets and its finding, and agent-chat is deployed. No real research/drafting turn was triggered.
+
 # Agent chat lead lookup accuracy
 
 - [x] Reproduced mixed-filter repeats, seventh lookups and empty batches in the actual dispatcher; refreshed repeat results and cleared implicit batches, passed 18 regressions, and deployed agent-chat. No real research/drafting run was triggered.

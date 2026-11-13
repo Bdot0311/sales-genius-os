@@ -146,6 +146,42 @@ describe("agent steps read as a chat, and a miss stays visible", () => {
     expect(line).toContain("None are saved yet. The queue has not confirmed them.");
   });
 
+  it("retains separate company findings after a counted research close", () => {
+    const findings = "Findings:\n- Acme: does X.\n- Beta: does Y.";
+    expect(withConfirmedClose(findings, "Researched 2 of 10.")).toBe(
+      `${findings}\n\nResearched 2 of 10.`,
+    );
+  });
+
+  it.each([
+    "Every company I researched sells to agencies.",
+    "All 10 researched companies sell subscription software.",
+    "Every queued lead needs a different introduction.",
+    "All 10 leads have been researched by their buyers for years.",
+    "Not every lead has been researched.",
+  ])("preserves a finding rather than mistaking it for completion: %s", (finding) => {
+    expect(withConfirmedClose(finding, "Researched 2 of 10.")).toBe(
+      `${finding}\n\nResearched 2 of 10.`,
+    );
+  });
+
+  it.each([
+    "All 10 leads have been researched.",
+    "Every company has been researched.",
+    "All drafts are queued.",
+    "Drafts are being written.",
+    "The background worker is writing them now.",
+  ])("still replaces an unverified completion statement: %s", (claim) => {
+    expect(withConfirmedClose(claim, "Researched 2 of 10.")).toBe("Researched 2 of 10.");
+  });
+
+  it("removes a status sentence without consuming adjacent findings", () => {
+    const findings = "Acme sells to agencies.  Beta sells to SaaS teams.";
+    expect(withConfirmedClose(`${findings} All 10 leads have been researched.`, "Researched 2 of 10.")).toBe(
+      `${findings}\n\nResearched 2 of 10.`,
+    );
+  });
+
   it("keeps lookup and background-draft lines short", () => {
     expect(listLeadsCopy(63, 63)).toEqual({
       label: "Found 63 leads",

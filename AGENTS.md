@@ -1,5 +1,7 @@
 # Agent rules
 
+- Agent confirmed-close filtering operates within lines and removes only complete batch-status statements. Why: research findings and Markdown boundaries must survive counted progress summaries.
+
 - Agent-chat list lookups refresh even for repeated filters within the six-call turn cap; clear implicit lead and draft pools before every lookup and return an explicit unqueried error at the cap. Why: stale ids and counts must never be substituted across filters or after drafting.
 
 - Health grant checks treat the Stripe credit-grant ledger as internal only while RLS denies customer roles and backend CRUD grants remain present. Why: deliberate privacy must not trigger an outage banner, and missing backend access must still fail monitoring.
