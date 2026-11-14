@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { htmlToPlainText } from "../_shared/plain-text.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.76.0';
+import { createClient } from 'npm:@supabase/supabase-js@2.76.0';
 import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
 import {
   isOptedOut,

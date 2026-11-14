@@ -19,7 +19,7 @@
 // src/lib/followup-guardrails.test.ts asserts their absence, so pasting one
 // back in as an "example" fails the build.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
+import { createClient } from "npm:@supabase/supabase-js@2.76.0";
 import { composeSkillContext, skillNamesUsed } from "../_shared/email-skills.ts";
 import { bannedPhrasesBlock, findPlaceholders, hasPlaceholder } from "../_shared/email-rules.ts";
 import { isWeak, rubricFeedback, scoreEmailReport } from "../_shared/email-quality.ts";

@@ -15,7 +15,7 @@
 // model here is given the editorial rules that were missing, and a human still
 // decides what customers see.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2.76.0";
 import { aiFetch } from "../_shared/ai-provider.ts";
 import { corsHeaders, requireChangelogCaller } from "../_shared/changelog-auth.ts";
 import {

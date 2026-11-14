@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2.76.0";
 import { corsHeaders, resolveCaller } from "../_shared/internal-auth.ts";
 
 /**

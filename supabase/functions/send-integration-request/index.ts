@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { sendManagedEmail } from "../_shared/managed-email.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
+import { createClient } from "npm:@supabase/supabase-js@2.76.0";
 import { rateLimit, rateLimitResponse, clientIp } from "../_shared/rate-limit.ts";
 
 

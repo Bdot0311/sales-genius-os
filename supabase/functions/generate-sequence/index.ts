@@ -4,7 +4,7 @@
 // guards against statistics that are not in the bank, and resolves tokens at
 // generation time. Drafts only; no send path. See prompt-v2.ts for the prompt.
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0";
+import { createClient } from "npm:@supabase/supabase-js@2.76.0";
 import { sequenceSystemPrompt, buildSequenceUserPayload } from "./prompt-v2.ts";
 import { lintTouch } from "../_shared/style-lint.ts";
 import { AI_FAST, aiFetch } from "../_shared/ai-provider.ts";

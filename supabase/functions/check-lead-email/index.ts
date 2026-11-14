@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.0?target=deno";
+import { createClient } from "npm:@supabase/supabase-js@2.76.0";
 import { corsHeaders as sdkCorsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { resolveAppUser } from "../_shared/app-user.ts";
 import { verifyEmail, type CacheClient } from "../_shared/email-verify.ts";

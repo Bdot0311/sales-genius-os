@@ -1,7 +1,7 @@
 // Fetches the signed-in user's Gmail signature (sendAs settings) so the app can
 // show/preview it and cache it for scheduled + agent sends.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2.76.0";
 import { fetchGmailSignature } from "../_shared/signature.ts";
 
 const corsHeaders = {

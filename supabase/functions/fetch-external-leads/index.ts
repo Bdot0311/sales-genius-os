@@ -1,7 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { ownerOf, resolveCaller } from '../_shared/internal-auth.ts';
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2.76.0";
 import { getPlanSearchLimits } from "../_shared/plan-limits.ts";
 import { applySearchMeter, asMeterClient } from "../_shared/search-meter.ts";
 import { tregCall, tregConfigured, tregPeople } from "../_shared/treg.ts";

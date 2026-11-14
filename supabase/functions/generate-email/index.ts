@@ -49,7 +49,7 @@ import {
   findTouchOnePitch,
   pitchRetry,
 } from "../_shared/email-rules.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'npm:@supabase/supabase-js@2.76.0';
 import { isInternalCaller } from "../_shared/internal-auth.ts";
 import { UNTRUSTED_CONTENT_RULE, fence } from "../_shared/untrusted.ts";
 import {
