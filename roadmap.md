@@ -129,3 +129,8 @@
 
 - [x] Reproduce the Google connect failure (auth-code step) and capture the exact error.
 - [x] Surface real Google errors + block duplicate code exchange; full connect not verifiable without Google sign-in.
+
+# Treg integration
+
+- [ ] Fix Treg key verification (connection card rejected a valid key) and link the connection.
+- [ ] Route lead searches through one tagged Treg call path, charge existing plan credits, record call IDs and costs.
