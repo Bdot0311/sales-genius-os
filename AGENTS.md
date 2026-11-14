@@ -46,3 +46,5 @@
 - Redirect/return URLs (OAuth redirect_uri, Stripe return_url) go through `_shared/safe-origin.ts`, and tracked email links are HMAC-signed in `_shared/click-tracking.ts`; add new app domains to the allowlist there. Why: request-supplied origins and unsigned link targets made open redirects.
 
 - The MCP server pins its OAuth `resource` to the public `api.outreign.io/mcp` URL and advertises metadata from the `mcp-oauth-metadata` function on that host; `src/lib/mcp-public-resource.test.ts` guards it. Why: MCP clients reject a server whose advertised resource differs from the URL they connected to, which surfaced as Grok/Cursor `failed_to_load`.
+
+- `log_audit_trail()` reads the owner through `to_jsonb(NEW/OLD)` (`user_id`, then `team_owner_id`) and skips rows without one. Why: a direct `NEW.user_id` reference made every team-member insert fail.

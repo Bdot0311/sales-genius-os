@@ -139,7 +139,7 @@ export function SequenceStepCard({
       
       <Panel className={`relative ${!step.is_active ? 'opacity-50' : ''}`}>
         {/* Step number badge */}
-        <div className="absolute -left-3 top-4 w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-semibold flex items-center justify-center">
+        <div className="absolute left-1.5 top-4 w-5 h-5 rounded-full text-[0.6875rem] bg-primary text-primary-foreground text-xs font-semibold flex items-center justify-center">
           {stepNumber}
         </div>
         
@@ -218,11 +218,11 @@ export function SequenceStepCard({
         <div className="ml-6 mt-2 space-y-2">
           {/* Vertical connector */}
           <div className="flex items-stretch gap-3">
-            <div className="w-0.5 bg-green-500/40 rounded-full" />
-            <div className="flex-1 p-3 rounded-lg border border-green-500/30 bg-green-500/5">
+            <div className="sequence-branch-rail is-success w-0.5 rounded-full" />
+            <div className="sequence-branch-path is-success flex-1 p-3">
               <div className="flex items-center gap-2 mb-2">
-                <Eye className="w-3.5 h-3.5 text-green-500" />
-                <span className="text-xs font-medium text-green-500">Path A: Opened but no reply</span>
+                <Eye className="w-3.5 h-3.5 workspace-success" />
+                <span className="text-xs font-medium workspace-success">Path A: Opened but no reply</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1.5">
@@ -237,7 +237,7 @@ export function SequenceStepCard({
                   <span className="text-xs text-muted-foreground">days</span>
                 </div>
                 <Select value={localBranch.pathA.actionType} onValueChange={(v) => updatePathA({ actionType: v })}>
-                  <SelectTrigger className="h-7 w-32 text-xs">
+                  <SelectTrigger className="h-7 w-40 whitespace-nowrap text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -256,11 +256,11 @@ export function SequenceStepCard({
           </div>
 
           <div className="flex items-stretch gap-3">
-            <div className="w-0.5 bg-orange-500/40 rounded-full" />
-            <div className="flex-1 p-3 rounded-lg border border-orange-500/30 bg-orange-500/5">
+            <div className="sequence-branch-rail is-warning w-0.5 rounded-full" />
+            <div className="sequence-branch-path is-warning flex-1 p-3">
               <div className="flex items-center gap-2 mb-2">
-                <AlertCircle className="w-3.5 h-3.5 text-orange-500" />
-                <span className="text-xs font-medium text-orange-500">Path B: Never opened</span>
+                <AlertCircle className="w-3.5 h-3.5 workspace-warning" />
+                <span className="text-xs font-medium workspace-warning">Path B: Never opened</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1.5">
@@ -275,7 +275,7 @@ export function SequenceStepCard({
                   <span className="text-xs text-muted-foreground">days</span>
                 </div>
                 <Select value={localBranch.pathB.actionType} onValueChange={(v) => updatePathB({ actionType: v })}>
-                  <SelectTrigger className="h-7 w-32 text-xs">
+                  <SelectTrigger className="h-7 w-40 whitespace-nowrap text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

@@ -122,6 +122,8 @@ export const CHANGELOG: ChangelogEntry[] = [
     summary: "More room for your work, clearer numbers and softly illuminated panels in both themes.",
     items: [
       { tag: "improved", title: "Refreshed dashboard", description: "Your workspace keeps the same pages and actions with clearer headings, more spacious navigation and consistent panels. Overview gives your live metrics and attention items more room, on desktop and mobile.", href: "/dashboard" },
+      { tag: "fixed", title: "Team invites send again", description: "Inviting a team member from Agency Admin now saves the invitation instead of failing.", href: "/settings?tab=agency-admin" },
+      { tag: "improved", title: "Clearer sequence steps", description: "Step numbers, branch paths and on/off toggles in sequences are easier to read in both themes.", href: "/dashboard/sequences" },
       { tag: "improved", title: "Consistent workspace controls", description: "Settings, integration filters and pop-up controls share the refreshed workspace appearance in both themes. Branding previews retain your chosen colors, and dropdown options remain visible when using a keyboard.", href: "/settings" },
     ],
   },

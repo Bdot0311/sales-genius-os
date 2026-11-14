@@ -1929,3 +1929,13 @@ body.dashboard-active :is([role="option"], [role="menuitem"]):focus-visible {
   outline: 2px solid hsl(var(--ring)); outline-offset: -2px;
   background: rgb(var(--glow-iris) / 0.18); color: hsl(var(--foreground));
 }
+/* Off switches stay visible on near-black cards and light glass alike. */
+body.dashboard-active :is(.dashboard-shell main, [role="dialog"], [role="alertdialog"]) [role="switch"][data-state="unchecked"] {
+  background: hsl(var(--foreground) / 0.2); box-shadow: inset 0 0 0 1px hsl(var(--foreground) / 0.14);
+}
+body.dashboard-active :is(.dashboard-shell main, [role="dialog"], [role="alertdialog"]) [role="switch"] > span { background: hsl(var(--background)); box-shadow: 0 1px 3px hsl(var(--foreground) / 0.3); }
+/* Sequence branch paths: glass panels with a theme-aware status rim instead of fixed green/orange tints. */
+.sequence-branch-path { border-radius: 18px; background: var(--glow-glass); box-shadow: var(--glow-glass-ring), inset 3px 0 0 hsl(var(--branch-tone) / 0.7); }
+.sequence-branch-rail { background: hsl(var(--branch-tone) / 0.45); }
+:is(.sequence-branch-path, .sequence-branch-rail).is-success { --branch-tone: var(--workspace-success); }
+:is(.sequence-branch-path, .sequence-branch-rail).is-warning { --branch-tone: var(--workspace-warning); }

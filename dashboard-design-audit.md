@@ -10,6 +10,8 @@
 - Reopened Realtime, Activity and Webhooks after broad-sweep timeouts, in both themes.
 - 135 dashboard/ICP regression checks and 21 admin checks passed; preview build log reports build OK.
 
+- Temporary records (a two-step sequence with a branching step, two deals, a pending team invite to an `example.invalid` address, a campaign brief) were created, then every editor, dropdown, menu, tooltip and confirmation for them was opened in both themes. All temporary records were deleted afterwards and the counts confirmed back to zero.
+
 ## Corrections
 
 - Shared panel headers respect explicit horizontal layout.
@@ -17,12 +19,14 @@
 - Workspace toast surfaces/native controls share the active theme.
 - Branding preview buttons opt out of shared primary-action fill styling.
 - Keyboard-focused dropdown/menu items retain a visible focus indicator.
+- Sequence step numbers no longer clip outside the card; branch paths use glass panels with theme-aware status rims; the action dropdown no longer wraps "LinkedIn Task".
+- Off toggles are visible on dark and light cards.
+- Team invites failed for everyone because the activity log expected an owner column team members do not have; the log now reads the owner generically.
 - ICP validation warnings and success icons use theme-aware semantic colors, replacing low-contrast yellow on light surfaces.
 
 ## Explicitly not verified
 
 - Every individual captured pop-up has not received a full-size visual review. Do not describe this audit as “nothing unchecked.”
-- Populated sequence, deal, team-member and campaign-brief detail editors require safe records absent from this account's current empty lists. No customer records were created solely for visual testing.
 - Save/send/connect/delete/billing operations were not verified by this visual pass. Mutation requests were blocked by the inspection harness; success notices from blocked requests are not persistence evidence.
 - The broad harness returned an empty object for some blocked read RPCs, causing artificial Activity/Health errors and unreliable counts. Those responses are not evidence of production data faults.
 - Public publishing was not performed.
