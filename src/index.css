@@ -1725,14 +1725,22 @@ html.light:has(.landing-page) body {
 .dashboard-shell .dashboard-panel-header { border-color: transparent; padding: 20px 28px 8px; }
 .dashboard-shell .dashboard-panel-header h2 { font-size: 15px; font-weight: 500; color: hsl(var(--muted-foreground)); }
 
-/* Glass chips and the one white key. */
-.dashboard-shell .dashboard-page-header button:is(.bg-primary, [class*="bg-primary "]) {
-  background: var(--glow-key-fill); color: var(--glow-key-ink); box-shadow: var(--glow-key-shadow); border-radius: 999px;
-}
-.dashboard-shell .dashboard-page-header button:not(.bg-primary),
-.dashboard-shell .dashboard-panel-header button:not(.bg-primary) {
+/* Glass chips for secondary actions; pure white for the one key control (the page's last header action and
+   primary buttons inside cards). In light mode the key stays brand purple for contrast. */
+.dashboard-shell .dashboard-page-header .mobile-action-row > :is(button, a) {
   background: var(--glow-glass); box-shadow: var(--glow-glass-ring); border-color: transparent; border-radius: 999px;
+  color: hsl(var(--foreground));
 }
+.dashboard-shell .dashboard-page-header .mobile-action-row > :is(button, a):last-child,
+.dashboard-shell .dashboard-panel button.bg-primary,
+.dashboard-shell .dashboard-panel button.bg-gradient-primary {
+  background: var(--glow-key-fill); color: var(--glow-key-ink); box-shadow: var(--glow-key-shadow);
+  border-color: transparent; opacity: 1;
+}
+.dashboard-shell .dashboard-page-header .mobile-action-row > :is(button, a):last-child { border-radius: 999px; }
+.dashboard-shell .dashboard-panel button.bg-primary:disabled { opacity: 0.55; }
+.dashboard-shell .dashboard-panel :is(.border-b, .border-t) { border-color: hsl(var(--foreground) / 0.06); }
+.dashboard-shell .dashboard-page-header { border-color: transparent; background: transparent; backdrop-filter: none; }
 @media (max-width: 640px) {
   .dashboard-shell :is(.dashboard-panel, .dashboard-metrics) { border-radius: 24px; }
   .dashboard-shell .dashboard-panel-header { padding: 16px 20px 6px; }

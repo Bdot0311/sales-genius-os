@@ -265,7 +265,7 @@ const Leads = () => {
                 last label in half. Short labels need no scrolling at all, and
                 each mode explains itself in a line inside the panel. */}
             <Tabs value={inputTab} onValueChange={setInputTab} className="w-full">
-              <div className="overflow-hidden rounded-xl border border-border/50 bg-card shadow-[0_18px_44px_-30px_hsl(0_0%_0%/0.9)]">
+              <div className="dashboard-panel overflow-hidden rounded-xl border border-border/50 bg-card">
                 <TabsList className="flex h-auto w-full justify-start gap-0 overflow-visible overflow-x-visible rounded-none border-b border-border/50 bg-muted/20 p-0 sm:h-auto">
                   {SEARCH_MODES.map((mode) => (
                     <TabsTrigger
@@ -498,7 +498,7 @@ const Leads = () => {
                 loaded rather than one waiting for input. Three hairline-split
                 panes on one surface, not three floating cards. */}
             {!showExternalLeads && (
-              <div className="grid overflow-hidden rounded-xl border border-border/30 sm:grid-cols-3">
+              <div className="dashboard-panel grid overflow-hidden rounded-xl border border-border/30 sm:grid-cols-3">
                 {SEARCH_PRIMER.map((pane, i) => (
                   <div
                     key={pane.title}
