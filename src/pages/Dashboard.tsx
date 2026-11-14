@@ -9,6 +9,7 @@ import { DiscoveryPrompt } from "@/components/dashboard/DiscoveryPrompt";
 import { ProspectUsageMeter } from "@/components/dashboard/ProspectUsageMeter";
 import { Panel, PanelHeader, MetricStrip, type Metric } from "@/components/dashboard/Panel";
 import { ArrowRight } from "lucide-react";
+import { OverviewInsights } from "@/components/dashboard/OverviewInsights";
 import { supabase } from "@/integrations/supabase/client";
 import { countEmailGaps } from "@/lib/lead-email-gap";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
@@ -311,6 +312,8 @@ const Dashboard = () => {
             </div>
           </Panel>
         )}
+
+        <OverviewInsights />
       </div>
     </DashboardLayout>
   );
