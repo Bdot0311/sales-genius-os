@@ -17,7 +17,7 @@
 // refreshed fails later, quietly, which is the trap this corner specialises
 // in. It can go once nothing reads it; see the rename migration for the query.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "npm:@supabase/supabase-js@2.76.0";
+import { createClient } from "npm:@supabase/supabase-js@^2.76.1";
 import { requireInternalOrAdmin } from "../_shared/internal-auth.ts";
 
 const corsHeaders = {

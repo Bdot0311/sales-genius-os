@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'npm:@supabase/supabase-js@2.76.0';
+import { createClient } from 'npm:@supabase/supabase-js@^2.76.1';
 
 /**
  * The opt-out endpoint, for a person clicking and for a mail client posting.

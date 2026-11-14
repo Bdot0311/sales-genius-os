@@ -19,7 +19,7 @@ import { resolveAppUser } from "../_shared/app-user.ts";
 // separate from writing, and the caller is told what a write would change
 // before deciding to make it.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "npm:@supabase/supabase-js@2.76.0";
+import { createClient } from "npm:@supabase/supabase-js@^2.76.1";
 import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
 import { rateLimit, rateLimitResponse } from "../_shared/rate-limit.ts";
 import {

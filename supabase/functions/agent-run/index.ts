@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { UNTRUSTED_CONTENT_RULE, fence } from "../_shared/untrusted.ts";
-import { createClient } from "npm:@supabase/supabase-js@2.76.0";
+import { createClient } from "npm:@supabase/supabase-js@^2.76.1";
 import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
 import { captureServerEvent } from "../_shared/posthog.ts";
 import {

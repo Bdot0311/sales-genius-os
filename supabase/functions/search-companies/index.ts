@@ -1,6 +1,6 @@
 import { resolveAppUser } from "../_shared/app-user.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "npm:@supabase/supabase-js@2.76.0";
+import { createClient } from "npm:@supabase/supabase-js@^2.76.1";
 import { isDemoMode, demoResponse } from "../_shared/demo-mode.ts";
 import { rateLimit, rateLimitResponse } from "../_shared/rate-limit.ts";
 

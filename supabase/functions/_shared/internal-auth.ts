@@ -3,7 +3,7 @@
 //   Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>  (admin/user callers)
 //   Authorization: Bearer <INTERNAL_TRIGGER_SECRET>    (DB triggers/cron via vault)
 import { resolveAppUser } from "./app-user.ts";
-import { createClient } from "npm:@supabase/supabase-js@2.76.0";
+import { createClient } from "npm:@supabase/supabase-js@^2.76.1";
 
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

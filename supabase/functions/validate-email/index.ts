@@ -59,7 +59,7 @@ async function checkMx(domain: string): Promise<boolean> {
 }
 
 import { rateLimit, rateLimitResponse, clientIp } from "../_shared/rate-limit.ts";
-import { createClient } from "npm:@supabase/supabase-js@2.76.0";
+import { createClient } from "npm:@supabase/supabase-js@^2.76.1";
 
 // Blocklist lives in public.signup_blocklist so it can be curated from the
 // admin side. Cached for 5 minutes; fails open if the DB is unreachable.

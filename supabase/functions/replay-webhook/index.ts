@@ -1,6 +1,6 @@
 import { vettedPost } from "../_shared/pinned-fetch.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "npm:@supabase/supabase-js@2.76.0";
+import { createClient } from "npm:@supabase/supabase-js@^2.76.1";
 import { createHmac } from "https://deno.land/std@0.168.0/node/crypto.ts";
 import { isValidWebhookUrl } from "../_shared/webhook-url.ts";
 

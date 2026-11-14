@@ -7,7 +7,7 @@ import {
   indexHeld,
   orIlike,
 } from "../_shared/lead-dedupe.ts";
-import { createClient } from "npm:@supabase/supabase-js@2.76.0";
+import { createClient } from "npm:@supabase/supabase-js@^2.76.1";
 import { isInternalCaller } from '../_shared/internal-auth.ts';
 
 const corsHeaders = {

@@ -14,7 +14,7 @@
 // purpose: putting the service-role key in a third-party edge runtime would
 // hand out the whole database if the Worker leaked.
 
-import { createClient } from "npm:@supabase/supabase-js@2.76.0";
+import { createClient } from "npm:@supabase/supabase-js@^2.76.1";
 import { unzipSync } from "https://esm.sh/fflate@0.8.2";
 import { parseDmarcReport, tokenFromRecipient } from "../_shared/dmarc-parse.ts";
 

@@ -1,4 +1,4 @@
-import { createClient } from "npm:@supabase/supabase-js@2.76.0";
+import { createClient } from "npm:@supabase/supabase-js@^2.76.1";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { resolveCaller } from "../_shared/internal-auth.ts";
 import { ManualIntegrationSchema, MANUAL_INTEGRATION_NAMES } from "../_shared/manual-integration.ts";

@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "npm:@supabase/supabase-js@2.76.0";
+import { createClient } from "npm:@supabase/supabase-js@^2.76.1";
 import { hireRelevance } from "../_shared/hire-relevance.ts";
 import { ownerOf, resolveCaller } from "../_shared/internal-auth.ts";
 import {

@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { safeRedirectUri } from "../_shared/safe-origin.ts";
-import { createClient } from "npm:@supabase/supabase-js@2.76.0";
+import { createClient } from "npm:@supabase/supabase-js@^2.76.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
