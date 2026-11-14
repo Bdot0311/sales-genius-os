@@ -161,8 +161,23 @@ function canonical(s: Omit<StoredSnapshot, "id">) {
 function sentencesOf(text: string): string[] {
   return text
     .split(/(?<=[.!?])\s+|\n+/)
-    .map((part) => part.trim())
+    .map((part) => dropRepeatedLead(part.trim()))
     .filter((part) => part.length > 20);
+}
+
+/**
+ * Scraped pages often run a logo straight into a heading ("Acme Acme builds…").
+ * Keep the second copy only; the result is still a verbatim substring of the page.
+ */
+export function dropRepeatedLead(sentence: string): string {
+  const words = sentence.split(/\s+/);
+  for (let n = 4; n >= 1; n--) {
+    if (words.length <= n * 2) continue;
+    const a = words.slice(0, n).join(" ");
+    const b = words.slice(n, n * 2).join(" ");
+    if (a.toLowerCase() === b.toLowerCase()) return words.slice(n).join(" ");
+  }
+  return sentence;
 }
 
 /** A causal or intent sentence is never an approved prospect fact, even if the page said it. */
@@ -500,7 +515,8 @@ export function bodyViolations(
   let observations = 0;
   for (const line of lines) {
     if (/^Hi [^,\n]{1,60},$/i.test(line)) continue;
-    if (senderName && sameLine(line, senderName)) continue;
+    // The sign-off may be the sender's full name or just their first name.
+    if (senderName && (sameLine(line, senderName) || sameLine(line, senderName.trim().split(/\s+/)[0]))) continue;
     if (EXACT_CTA.has(line.toLowerCase().replace(/\s+/g, " "))) continue;
     if (/https?:\/\//i.test(line)) {
       violations.push(line);

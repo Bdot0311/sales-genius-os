@@ -11,6 +11,7 @@ import { ownedLeadCompany, releaseAllows } from "../_shared/draft-release.ts";
 import { AI_CREDITS_USER_MESSAGE, isAiCreditError, reportAiCreditsExhausted } from "../_shared/ai-credits.ts";
 import { stripInstructionLines, unsupportedClaims } from "../_shared/evidence.ts";
 import { POLICY_VERSION, evaluateStoredSnapshots, type ApprovedFact } from "../_shared/evidence-contract.ts";
+import { fallbackSubjectFrom, releasableFirstTouch, usableFallbackFact } from "../_shared/first-touch-fallback.ts";
 import { holdReason, researchStep, type RetrievalReceipt } from "../_shared/research-orchestration.ts";
 import { reviseUntilClear } from "../_shared/quality-gate.ts";
 // The writing rules live in one module so the three copies that used to exist
@@ -2211,7 +2212,9 @@ conversation that is already going, not as someone chasing silence.`}`;
             model: draftModel,
             messages: [
               { role: "system", content: systemPrompt },
-              { role: "user", content: `${userPrompt}\n\nREWRITE REQUIRED. These sentences state something about the prospect that was not supplied:\n${claimNote}\nRemove them. Do not replace them with a different event, number, or pain stated as known. Write from the role and industry, and ask one question.` },
+              { role: "user", content: approvedFacts.length
+                ? `${userPrompt}\n\nREWRITE REQUIRED. These sentences state something about the prospect that was not supplied:\n${claimNote}\nDelete them. Do not generalize about founders, teams or the industry. Write exactly: "Hi ${firstName}," then one of the approved research sentences above, then one ask, then the sender's name. Nothing else.`
+                : `${userPrompt}\n\nREWRITE REQUIRED. These sentences state something about the prospect that was not supplied:\n${claimNote}\nRemove them. Do not replace them with a different event, number, or pain stated as known. Write from the role and industry, and ask one question.` },
             ],
             temperature: 0.4,
           }),
@@ -2237,6 +2240,24 @@ conversation that is already going, not as someone chasing silence.`}`;
       } catch (e) {
         console.warn(`[generate-email] prospect-claim retry failed: ${e}`);
       }
+    }
+    // Last resort when research is approved: the releasable first-touch shape
+    // the evidence policy defines (greeting, one approved sentence verbatim,
+    // one ask, sender). Built from stored facts only, then re-checked.
+    if (prospectClaims.length && approvedFacts.length && resolvedSenderName) {
+      let rejected = 0;
+      for (const fact of approvedFacts) {
+        if (!usableFallbackFact(fact.span)) { rejected++; continue; }
+        const candidate = `Subject: ${fallbackSubjectFrom(fact.span)}\n\n${releasableFirstTouch({ firstName, fact: fact.span, senderName: resolvedSenderName })}`;
+        if (unsupportedClaims(candidate, prospectCorpus).length || hasPlaceholder(candidate)) { rejected++; continue; }
+        console.warn("[generate-email] using releasable first-touch fallback");
+        email = candidate;
+        prospectClaims = [];
+        break;
+      }
+      if (prospectClaims.length) console.warn(`[generate-email] first-touch fallback rejected all ${rejected} approved sentences`);
+    } else if (prospectClaims.length) {
+      console.warn(`[generate-email] first-touch fallback unavailable: facts=${approvedFacts.length} sender=${resolvedSenderName ? "yes" : "no"}`);
     }
     if (prospectClaims.length) {
       console.error("[generate-email] unsupported prospect claims survived retry");
