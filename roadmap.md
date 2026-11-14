@@ -150,7 +150,7 @@
 - [ ] Owner pastes fixed Worker, verifies a support forwarding inbox, resends test; confirm stored report.
 - [x] Real email send to the owner's own address: research, draft and send now succeed (test email delivered to brandon@bdotindustries.com and logged as sent).
 - [x] Sequence step sent to owner's own address; bulk drafting+send path reached the same-day duplicate guard (expected). Fixed bulk drafts missing sender name and bulk subjects refused at send.
-- [ ] Reply test: owner replies to the test email from brandon@ (temp lead kept for this).
+- [x] Reply test: reply detected; Inbox reply now sends from the thread's own mailbox (fixed send-email); temp records removed.
 - [ ] Integration connect flows reach each provider's consent screen (owner completes sign-in).
 - [ ] Small paid lead search and enrichment.
 - [x] Admin Run Heartbeat (monitoring timestamp only).

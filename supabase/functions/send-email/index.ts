@@ -108,11 +108,37 @@ serve(async (req) => {
     let integration;
     let integrationError;
 
-    if (integrationRowId) {
+    // A reply must leave from the mailbox that owns the Gmail thread: thread
+    // ids are per-mailbox, so the default mailbox rejects them as "not found".
+    let threadRowId: string | null = null;
+    if (!integrationRowId && typeof threadId === 'string' && threadId) {
+      const { data: origin } = await supabase
+        .from('sent_emails')
+        .select('sending_account_id')
+        .eq('user_id', user.id)
+        .eq('gmail_thread_id', threadId)
+        .not('sending_account_id', 'is', null)
+        .not('sent_at', 'is', null)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (origin?.sending_account_id) {
+        const { data: acct } = await supabase
+          .from('sending_accounts')
+          .select('integration_id')
+          .eq('id', origin.sending_account_id)
+          .eq('user_id', user.id)
+          .maybeSingle();
+        threadRowId = acct?.integration_id ?? null;
+      }
+    }
+    const effectiveRowId = integrationRowId || threadRowId;
+
+    if (effectiveRowId) {
       const result = await supabase
         .from('integrations')
         .select('id, config')
-        .eq('id', integrationRowId)
+        .eq('id', effectiveRowId)
         .eq('user_id', user.id)
         .eq('is_active', true)
         .single();
