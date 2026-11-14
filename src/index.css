@@ -1884,7 +1884,7 @@ body.dashboard-active :is(.dashboard-shell main, [role="dialog"], [role="alertdi
   background: var(--glow-glass); box-shadow: var(--glow-glass-ring); border-color: transparent; border-radius: 999px; color: hsl(var(--foreground));
 }
 body.dashboard-active :is(.dashboard-shell main, [role="dialog"], [role="alertdialog"]) :is(button, a).border-input:hover { background: hsl(var(--foreground) / 0.12); color: hsl(var(--foreground)); }
-body.dashboard-active :is(.dashboard-shell main, [role="dialog"], [role="alertdialog"]) :is(button, a):is(.bg-primary, .bg-gradient-primary):not([role="checkbox"]):not([role="switch"]) {
+body.dashboard-active :is(.dashboard-shell main, [role="dialog"], [role="alertdialog"]) :is(button, a):is(.bg-primary, .bg-gradient-primary):not([role="checkbox"]):not([role="switch"]):not(.branding-color-preview) {
   background: var(--glow-key-fill); color: var(--glow-key-ink); box-shadow: var(--glow-key-shadow); border-color: transparent; border-radius: 999px;
 }
 body.dashboard-active :is(.dashboard-shell main, [role="dialog"], [role="alertdialog"]) :is(button, a).bg-secondary {
@@ -1919,4 +1919,7 @@ body.dashboard-active :is([data-sonner-toast], li[data-swipe-direction]:not(.des
 body.dashboard-active li[data-swipe-direction].destructive { border-radius: 18px; box-shadow: inset 0 0 0 1px hsl(var(--destructive) / 0.6), 0 20px 50px -15px hsl(var(--destructive) / 0.45); }
 html.dark body.dashboard-active :is(input, select, textarea) { color-scheme: dark; }
 html:not(.dark) body.dashboard-active :is(input, select, textarea) { color-scheme: light; }
-body.dashboard-active :is([role="option"], [role="menuitem"]):focus-visible { outline: none; box-shadow: none; }
+body.dashboard-active :is([role="option"], [role="menuitem"]):focus-visible {
+  outline: 2px solid hsl(var(--ring)); outline-offset: -2px;
+  background: rgb(var(--glow-iris) / 0.18); color: hsl(var(--foreground));
+}

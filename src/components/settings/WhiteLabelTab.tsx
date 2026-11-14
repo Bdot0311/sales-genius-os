@@ -402,13 +402,13 @@ export const WhiteLabelTab = () => {
               background: `linear-gradient(135deg, ${formData.primary_color}15 0%, ${formData.secondary_color}15 100%)`
             }}>
               <div className="space-y-3">
-                <Button style={{ backgroundColor: formData.primary_color }}>
+                <Button className="branding-color-preview" style={{ backgroundColor: formData.primary_color }}>
                   Primary Button
                 </Button>
-                <Button style={{ backgroundColor: formData.secondary_color }}>
+                <Button className="branding-color-preview" style={{ backgroundColor: formData.secondary_color }}>
                   Secondary Button
                 </Button>
-                <Button style={{ backgroundColor: formData.accent_color }}>
+                <Button className="branding-color-preview" style={{ backgroundColor: formData.accent_color }}>
                   Accent Button
                 </Button>
               </div>

@@ -2,6 +2,9 @@
 
 # Dashboard design refresh
 
+- [ ] Exhaustive visual coverage: 69 route/tab targets opened in both themes, with more than 2,000 captures and separate nested admin/settings/ICP checks. Individual pop-up screenshot review and populated editors for empty sequences, deals, teams and campaign briefs remain unverified; these need safe test records rather than changes to customer data. See dashboard-design-audit.md.
+- [x] Verified branding preview colors and all four ICP editor tabs in both themes, including scrolling Targeting and expanding sections; 135 dashboard/ICP and 21 admin regressions passed. Shared menu keyboard focus restored; current preview build is clean.
+
 - [x] Extend the glow design to all 17 admin page/tab views; verified signed-in dark/light desktop views, mobile Users/Billing and navigation, with no page overflow or runtime errors. All 21 admin regressions pass and preview builds cleanly; admin-only changes excluded from customer What's New. Publishing remains required.
 - [x] Adapt the uploaded glow design to shared OutReign navigation, headings, panels and overview without changing data flows.
 - [x] Verified signed-in Overview, Saved Leads, Inbox, Pipeline and Settings; desktop/mobile themes, sidebar and metric navigation work, 106 regressions pass and preview builds cleanly. Public publishing remains unchanged.

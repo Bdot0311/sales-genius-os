@@ -4,6 +4,8 @@
 
 - Dashboard and admin visual refinements live under `.dashboard-shell` and shared panel/header classes with semantic CSS tokens; admin uses `.admin-shell` for its navigation and controls; portaled sheets/dialogs/menus are styled via `body.dashboard-active`, set by DashboardLayout. Never override global utilities. Why: every signed-in page shares the requested design without changing the public site or nested functional layouts.
 
+- Workspace action styling excludes `.branding-color-preview`, and keyboard menu options retain a focus indicator. Why: shared appearance must not overwrite user-selected color previews or hide keyboard position.
+
 - Agent confirmed-close filtering operates within lines and removes only complete batch-status statements. Why: research findings and Markdown boundaries must survive counted progress summaries.
 
 - Agent-chat list lookups refresh even for repeated filters within the six-call turn cap; clear implicit lead and draft pools before every lookup and return an explicit unqueried error at the cap. Why: stale ids and counts must never be substituted across filters or after drafting.
