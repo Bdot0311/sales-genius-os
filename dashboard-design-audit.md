@@ -1,36 +1,55 @@
 # Dashboard design audit
 
-## Confirmed checks
+Status as of 2026-11-14. Both themes (dark and light) unless stated.
 
-- Signed-in browser inspection covered the 69 route/tab targets in the dashboard/admin inventory in dark and light themes; aliases redirect into the grouped admin pages.
-- The automated sweep captured more than 2,000 page, menu, dialog and editor views. Captures alone are not a completed visual review of every state.
-- Additional targeted checks opened all six inner Admin Settings tabs, all five Analytics tabs, all three Traffic tabs, all five Agency Admin tabs and incoming/outgoing webhook tabs in both themes.
-- ICP New and existing editors: Basics, Targeting, Signals and Strategy opened in both themes. Targeting was scrolled through lower persona/exclusion fields and collapsed sections expanded in the new editor.
-- Branding preview retains the selected secondary color in both themes: computed background `rgb(16, 185, 129)` for the selected `#10b981` value. No branding was saved.
-- Reopened Realtime, Activity and Webhooks after broad-sweep timeouts, in both themes.
-- 135 dashboard/ICP regression checks and 21 admin checks passed; preview build log reports build OK.
+## Visual review — completed
 
-- Temporary records (a two-step sequence with a branching step, two deals, a pending team invite to an `example.invalid` address, a campaign brief) were created, then every editor, dropdown, menu, tooltip and confirmation for them was opened in both themes. All temporary records were deleted afterwards and the counts confirmed back to zero.
+- [x] 69 dashboard/admin route and tab targets opened in both themes; admin aliases redirect into grouped pages.
+- [x] Broad sweep contact sheets `s02`–`s28` reviewed at full size.
+- [x] Retry sweep: 329 captures deduplicated into 81 page views and 32 pop-up crops; all 21 page sheets and 6 pop-up sheets reviewed at full size.
+- [x] Admin Health > Activity Logs (User Actions, Logins, System Events), Realtime and Alerts, including every Activity/Alerts dropdown — reopened in dark mode after the earlier dark-mode browser crash; now covered in both themes.
+- [x] Admin Growth (DFY, Analytics with all five tabs, Traffic, Re-engagement), Users (All, Activation, Signup Logs, Campaign Setup), Add Team Member dialog and plan menu, signup-event and activity-timeline sheets, date/status menus.
+- [x] ICP New and existing editors: Basics, Targeting (scrolled, sections expanded), Signals, Strategy.
+- [x] Inbox: all folders, thread view and reply composer.
+- [x] Objection editor scrolled to its save bar.
+- [x] Temporary sequence (branching), deals, team invite and campaign brief: every editor, dropdown, menu, tooltip and confirmation.
 
-## Corrections
+## Actions tested with temporary records — passed, then cleaned up
 
-- Shared panel headers respect explicit horizontal layout.
-- Integration category filters use workspace glass pills.
-- Workspace toast surfaces/native controls share the active theme.
-- Branding preview buttons opt out of shared primary-action fill styling.
-- Keyboard-focused dropdown/menu items retain a visible focus indicator.
-- Sequence step numbers no longer clip outside the card; branch paths use glass panels with theme-aware status rims; the action dropdown no longer wraps "LinkedIn Task".
-- Off toggles are visible on dark and light cards.
-- Team invites failed for everyone because the activity log expected an owner column team members do not have; the log now reads the owner generically.
-- ICP validation warnings and success icons use theme-aware semantic colors, replacing low-contrast yellow on light surfaces.
+- [x] Deals: create, reload, move stage (no delete button in UI; removed via owner-scoped request).
+- [x] Leads: create/delete. Sequences: create/delete. Message blocks: create/edit/delete.
+- [x] ICP: create/delete. Campaign briefs: create/edit/delete. Payoff bank: add/delete.
+- [x] API keys: create/revoke. Outbound webhook endpoints: add/edit/delete (no delivery).
+- [x] Team invite to an `example.invalid` address: create/remove.
+- [x] Agent chat thread create/delete; Coach conversation delete; email draft delete.
+- [x] Calendar meeting create/edit/delete; email template save/delete.
+- [x] Objection add/edit/delete; custom agent create/delete.
+- [x] Profile edit, reload, revert; unchanged scoring save; What's New draft edit/delete.
+- [x] Database scan after cleanup: no audit test records left. Two `example.invalid` campaign setup requests from 2026-08-19 predate this audit and were left alone.
 
-## Explicitly not verified
+## Corrections made
 
-- Every individual captured pop-up has not received a full-size visual review. Do not describe this audit as “nothing unchecked.”
-- Save/send/connect/delete/billing operations were not verified by this visual pass. Mutation requests were blocked by the inspection harness; success notices from blocked requests are not persistence evidence.
-- The broad harness returned an empty object for some blocked read RPCs, causing artificial Activity/Health errors and unreliable counts. Those responses are not evidence of production data faults.
-- Public publishing was not performed.
+- Shared panel headers, integration filter pills, toasts and native controls follow the active theme.
+- Branding previews keep the chosen color; keyboard-focused menu items keep a visible indicator.
+- Sequence step numbers, branch panels, "LinkedIn Task" option and off toggles.
+- Team invites were failing for everyone (activity log owner column); fixed.
+- ICP validation colors; duplicate Buying signals / Preferred channels descriptions removed.
+- Objection editor sticky save bar no longer lets text show through.
+- Dialog/sheet close button shows its focus ring only for keyboard focus.
+- Delete/revoke confirmations in Billing, Agent switcher, Calendar and Support access are red like the rest.
+- Badges no longer wrap; Activity action filter widened; Re-engagement dates/headings no longer wrap; chart colors readable in both themes.
+- Inbox folder tabs wrap instead of being cut off.
 
-## Safety
+## Not safely testable (blockers)
 
-The browser inspected existing customer data without intentionally saving configuration, sending messages, changing plans or deleting records. Test scripts and customer-data screenshots remain outside the repository under temporary browser storage.
+- Sending real email, Inbox replies, sequence launches, bulk sends, campaign-setup access requests: would message real people.
+- Connecting Gmail, Calendly, Slack, Zapier, Salesforce, calendar sync and other integrations: needs real account consent.
+- Billing (checkout, plan changes, top-ups, removing accounts) and admin plan/role/suspend actions: would change real money or customer access.
+- Admin demo-data, Run Sweep Now, Run Heartbeat, Resolve alert: change shared production data.
+- Lead search/enrichment and research: spend credits and provider balance.
+- Browser push permission: needs a real browser prompt.
+- Public publishing: not performed.
+
+## Checks
+
+- 3,602 automated checks pass in the full run; the write-permissions check times out only under full-suite load and passes on its own (5/5). Two layout checks updated to accept the new design classes; Treg key documented. Preview build OK.

@@ -125,6 +125,8 @@ export const CHANGELOG: ChangelogEntry[] = [
       { tag: "fixed", title: "Team invites send again", description: "Inviting a team member from Agency Admin now saves the invitation instead of failing.", href: "/settings?tab=agency-admin" },
       { tag: "improved", title: "Clearer sequence steps", description: "Step numbers, branch paths and on/off toggles in sequences are easier to read in both themes.", href: "/dashboard/sequences" },
       { tag: "improved", title: "Consistent workspace controls", description: "Settings, integration filters and pop-up controls share the refreshed workspace appearance in both themes. Branding previews retain your chosen colors, and dropdown options remain visible when using a keyboard.", href: "/settings" },
+      { tag: "fixed", title: "Inbox folders all fit", description: "Inbox folder tabs now wrap onto a second line instead of cutting off Awaiting Reply, Sent, Drafts and Failed.", href: "/dashboard/inbox" },
+      { tag: "fixed", title: "Tidier editors and confirmations", description: "The objection editor's save bar no longer shows text behind it, ICP fields no longer repeat their descriptions, and delete or revoke confirmations are clearly marked in red.", href: "/dashboard/agent" },
     ],
   },
   {

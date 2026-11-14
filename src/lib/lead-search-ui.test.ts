@@ -51,7 +51,7 @@ describe("one panel, not four stacked cards", () => {
   }
 
   it("the panel is one bordered surface the tab strip sits inside", () => {
-    expect(PAGE).toContain('className="overflow-hidden rounded-xl border border-border/50 bg-card');
+    expect(PAGE).toMatch(/className="[^"]*\boverflow-hidden rounded-xl border border-border\/50 bg-card/);
   });
 });
 

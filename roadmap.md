@@ -3,7 +3,7 @@
 # Dashboard design refresh
 
 - [x] Populated sequence, deal, team and brief editors checked in both themes with temporary records (removed afterwards); team invite fault fixed.
-- [ ] Exhaustive visual coverage: 69 route/tab targets opened in both themes, with more than 2,000 captures and separate nested admin/settings/ICP checks. Individual pop-up screenshot review and populated editors for empty sequences, deals, teams and campaign briefs remain unverified; these need safe test records rather than changes to customer data. See dashboard-design-audit.md.
+- [x] Exhaustive visual coverage and safe action tests in both themes; remaining unsafe actions listed in dashboard-design-audit.md.
 - [x] Verified branding preview colors and all four ICP editor tabs in both themes, including scrolling Targeting and expanding sections; 135 dashboard/ICP and 21 admin regressions passed. Shared menu keyboard focus restored; current preview build is clean.
 
 - [x] Extend the glow design to all 17 admin page/tab views; verified signed-in dark/light desktop views, mobile Users/Billing and navigation, with no page overflow or runtime errors. All 21 admin regressions pass and preview builds cleanly; admin-only changes excluded from customer What's New. Publishing remains required.

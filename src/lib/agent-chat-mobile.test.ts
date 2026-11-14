@@ -123,7 +123,7 @@ describe("the chat is measured against the viewport that exists", () => {
   it("the layout stops claiming a viewport the browser is not showing", () => {
     // A JSX className, not the word inside a comment.
     expect(LAYOUT).not.toMatch(/className="[^"]*\bmin-h-screen\b/);
-    expect(LAYOUT).toContain('className="min-h-[100dvh] bg-background"');
+    expect(LAYOUT).toMatch(/className="[^"]*\bmin-h-\[100dvh\] bg-background"/);
   });
 
   it("uses the same unit in both places, which was the whole bug", () => {
