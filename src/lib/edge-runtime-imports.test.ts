@@ -19,4 +19,11 @@ describe("edge function imports", () => {
     );
     expect(offenders).toEqual([]);
   });
+
+  it("never pin npm supabase-js 2.76.0, which fails to boot (missing tslib)", () => {
+    const offenders = walk("supabase/functions").filter((file) =>
+      readFileSync(file, "utf8").includes("npm:@supabase/supabase-js@2.76.0"),
+    );
+    expect(offenders).toEqual([]);
+  });
 });

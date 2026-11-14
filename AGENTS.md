@@ -48,3 +48,5 @@
 - The MCP server pins its OAuth `resource` to the public `api.outreign.io/mcp` URL and advertises metadata from the `mcp-oauth-metadata` function on that host; `src/lib/mcp-public-resource.test.ts` guards it. Why: MCP clients reject a server whose advertised resource differs from the URL they connected to, which surfaced as Grok/Cursor `failed_to_load`.
 
 - `log_audit_trail()` reads the owner through `to_jsonb(NEW/OLD)` (`user_id`, then `team_owner_id`) and skips rows without one. Why: a direct `NEW.user_id` reference made every team-member insert fail.
+
+- Edge functions import supabase-js as `npm:@supabase/supabase-js@^2.76.1`, never esm.sh 2.76+/floating `@2` and never npm `2.76.0`; `src/lib/edge-runtime-imports.test.ts` guards it. Why: the esm.sh Deno build loads std@0.177.1/node whose shutdown hook crashes with runMicrotasks, and npm 2.76.0 fails to boot (missing tslib).

@@ -121,6 +121,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     title: "A clearer sales workspace",
     summary: "More room for your work, clearer numbers and softly illuminated panels in both themes.",
     items: [
+      { tag: "fixed", title: "Bulk send writes and signs every email", description: "Bulk send with AI-written emails now signs each one with your profile name and uses subject lines from the lead's research, so emails are no longer refused before sending.", href: "/dashboard/outreach" },
       { tag: "fixed", title: "Researched emails draft and send reliably", description: "When a lead's website has been researched, Outreach Studio now produces a short email built only from what the site says instead of refusing to draft. You can also sign off with just your first name.", href: "/dashboard/outreach" },
       { tag: "improved", title: "Refreshed dashboard", description: "Your workspace keeps the same pages and actions with clearer headings, more spacious navigation and consistent panels. Overview gives your live metrics and attention items more room, on desktop and mobile.", href: "/dashboard" },
       { tag: "fixed", title: "Team invites send again", description: "Inviting a team member from Agency Admin now saves the invitation instead of failing.", href: "/settings?tab=agency-admin" },

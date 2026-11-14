@@ -149,8 +149,10 @@
 - [x] Trace the synthetic DMARC email: Cloudflare received all 8 sends; the email Worker cancels before forwarding, and the same catch-all Worker also drops support@outreign.io mail. Prepared a fixed Worker (Cloudflare access is read-only).
 - [ ] Owner pastes fixed Worker, verifies a support forwarding inbox, resends test; confirm stored report.
 - [x] Real email send to the owner's own address: research, draft and send now succeed (test email delivered to brandon@bdotindustries.com and logged as sent).
-- [ ] Reply, sequence and bulk send to the owner's own address only.
+- [x] Sequence step sent to owner's own address; bulk drafting+send path reached the same-day duplicate guard (expected). Fixed bulk drafts missing sender name and bulk subjects refused at send.
+- [ ] Reply test: owner replies to the test email from brandon@ (temp lead kept for this).
 - [ ] Integration connect flows reach each provider's consent screen (owner completes sign-in).
 - [ ] Small paid lead search and enrichment.
-- [ ] Admin Run Sweep, Run Heartbeat and Resolve alert.
-- [ ] Background job "runMicrotasks" error in several scheduled functions.
+- [x] Admin Run Heartbeat (monitoring timestamp only).
+- [ ] Admin Run Sweep (emails real inactive customers, no preview mode) and Resolve alert (changes shared alert history) - need owner approval.
+- [x] Background job "runMicrotasks" error: caused by the esm.sh build of the database library; all functions moved to the npm build, guarded by a test.

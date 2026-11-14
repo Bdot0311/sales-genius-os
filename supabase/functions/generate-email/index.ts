@@ -826,7 +826,14 @@ serve(async (req) => {
     // which is precisely what produced the "[Sender Name]" placeholders that
     // the guard then rejected: a generation failure whose real cause was a
     // missing profile field, reported as an unexplained generator fault.
-    const resolvedSenderName = senderName || nameFromEmail(senderEmail);
+    // Bulk send, the API and MCP often omit senderName. The signed-in owner's
+    // profile name is the same name send-email checks the sign-off against.
+    let profileSenderName = '';
+    if (!senderName && userId) {
+      const { data: senderProfile } = await adminClient.from('profiles').select('full_name').eq('id', userId).maybeSingle();
+      profileSenderName = String(senderProfile?.full_name ?? '').trim().slice(0, 100);
+    }
+    const resolvedSenderName = senderName || profileSenderName || nameFromEmail(senderEmail);
 
     // Goals that return a fragment rather than an email.
     //
@@ -1303,6 +1310,16 @@ UNIQUENESS RULE — non-negotiable:
 
     // ─── Branch by goal ────────────────────────────────────────────────────────
     if (goal === 'subject_only') {
+      // Send only accepts a subject that is a piece of an approved research
+      // sentence, so a freely written subject would be refused at send time.
+      const subjectFact = approvedFacts.find((fact) => fact.role !== 'sender_proof' && usableFallbackFact(fact.span));
+      if (subjectFact) {
+        return new Response(JSON.stringify({
+          email: fallbackSubjectFrom(subjectFact.span),
+          fact_ids: [subjectFact.id],
+          policy_version: POLICY_VERSION,
+        }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
 
       systemPrompt = SUBJECT_SYSTEM_PROMPT;
 
