@@ -1910,3 +1910,13 @@ body.dashboard-active :is(.dashboard-shell main, [role="dialog"], [role="alertdi
 .dashboard-shell main :is([role="tablist"][aria-orientation="vertical"], .settings-tab-list) { border-radius: 0; background: transparent; box-shadow: none; }
 .dashboard-shell main .settings-tab-scroller { background: var(--glow-glass); box-shadow: var(--glow-glass-ring); border-color: transparent; border-radius: 20px; }
 @media (max-width: 1023px) { .dashboard-shell main .settings-tab-scroller { background: transparent; box-shadow: none; } }
+
+/* Toasts (both toasters) and native date/number pickers follow the dashboard look. */
+body.dashboard-active :is([data-sonner-toast], li[data-swipe-direction]:not(.destructive)) {
+  background: hsl(var(--glow-card)); color: hsl(var(--foreground)); border-color: transparent; border-radius: 18px;
+  box-shadow: inset 0 1px 0 var(--glow-rim-top), inset 0 0 0 1px var(--glow-rim-mid), 0 20px 50px -15px rgb(var(--glow-iris-deep) / 0.45);
+}
+body.dashboard-active li[data-swipe-direction].destructive { border-radius: 18px; box-shadow: inset 0 0 0 1px hsl(var(--destructive) / 0.6), 0 20px 50px -15px hsl(var(--destructive) / 0.45); }
+html.dark body.dashboard-active :is(input, select, textarea) { color-scheme: dark; }
+html:not(.dark) body.dashboard-active :is(input, select, textarea) { color-scheme: light; }
+body.dashboard-active :is([role="option"], [role="menuitem"]):focus-visible { outline: none; box-shadow: none; }

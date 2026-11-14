@@ -608,8 +608,8 @@ const DashboardIntegrations = () => {
               <button
                 key={category}
                 onClick={() => setSelectedCategory(category)}
-                className={`shrink-0 whitespace-nowrap rounded-md px-2.5 py-1.5 text-[0.75rem] transition-colors ${
-                  active ? "bg-muted/60 font-medium text-foreground" : "text-muted-foreground hover:text-foreground"
+                className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-[0.75rem] transition-colors ${
+                  active ? "bg-foreground/10 font-medium text-foreground ring-1 ring-inset ring-foreground/15" : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
                 }`}
               >
                 {category}
