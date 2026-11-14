@@ -82,7 +82,7 @@ const Deliverability = () => {
         description="Reputation, authentication, blacklists and content risk for every sending account, in one place."
         actions={!gated ? <LiveIndicator status={liveStatus} lastUpdate={lastUpdate} /> : undefined}
       />
-      <div className="mx-auto w-full max-w-[1400px] space-y-6 px-4 py-5 sm:px-6">
+      <div className="mx-auto w-full max-w-[1400px] space-y-6 py-5">
         {gated ? (
           <EmptyState
             title="The deliverability suite is a Growth feature"

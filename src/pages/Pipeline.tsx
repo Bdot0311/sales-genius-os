@@ -173,7 +173,7 @@ const Pipeline = () => {
           </>
         }
       />
-      <div className="mx-auto max-w-[1400px] space-y-4 px-4 py-5 sm:px-6">
+      <div className="mx-auto max-w-[1400px] space-y-4 py-5">
         <AddDealDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} onDealAdded={loadDeals} />
 
         {!loading && deals.length === 0 ? (

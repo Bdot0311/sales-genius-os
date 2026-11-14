@@ -232,7 +232,7 @@ const Leads = () => {
           </>
         }
       />
-      <div className="px-6 py-5 space-y-4 max-w-[1400px] mx-auto">
+      <div className="py-5 space-y-4 max-w-[1400px] mx-auto">
 
         {/* Free-leads exhausted upsell — shown only after the 100 free leads are used */}
         {isOutOfFreeLeads && (

@@ -237,6 +237,7 @@ export const EmailDraftsTable = ({ onLoadDraft }: EmailDraftsTableProps) => {
                         e.stopPropagation();
                         onLoadDraft(draft);
                       }}
+                      aria-label={`Edit draft ${draft.subject || 'with no subject'}`}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
@@ -244,6 +245,7 @@ export const EmailDraftsTable = ({ onLoadDraft }: EmailDraftsTableProps) => {
                       variant="ghost" 
                       size="sm"
                       onClick={(e) => confirmDelete(draft.id, e)}
+                      aria-label={`Delete draft ${draft.subject || 'with no subject'}`}
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>

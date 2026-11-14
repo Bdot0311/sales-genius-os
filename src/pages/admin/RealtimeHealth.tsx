@@ -183,7 +183,7 @@ export default function RealtimeHealth() {
   })();
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="py-6 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-[0.9375rem] font-semibold tracking-tight text-foreground">

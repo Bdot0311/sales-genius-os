@@ -686,7 +686,7 @@ const Calendar = () => {
                   <SelectContent>
                     {leads.map((lead) => (
                       <SelectItem key={lead.id} value={lead.id}>
-                        {lead.contact_name} — {lead.company_name}
+                        {[lead.contact_name, lead.company_name].filter(Boolean).join(" — ")}
                       </SelectItem>
                     ))}
                   </SelectContent>

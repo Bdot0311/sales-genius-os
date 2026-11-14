@@ -43,7 +43,7 @@ const Accounts = () => {
   return (
     <DashboardLayout>
       <PageHeader title="Accounts" description="See who you know across each account's buying committee and where the gaps are" />
-      <div className="mx-auto grid max-w-[1400px] gap-4 px-6 py-5 md:grid-cols-[260px_1fr]">
+      <div className="mx-auto grid max-w-[1400px] gap-4 py-5 md:grid-cols-[260px_1fr]">
         {/* The list is a panel with a header, like every other list in the
             product. It was a bare card whose only contents were rows, so it
             read as a floating menu rather than part of the page — and its

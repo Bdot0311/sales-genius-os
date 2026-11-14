@@ -371,7 +371,7 @@ const Analytics = () => {
         }
       />
 
-      <div className="px-4 md:px-6 py-6 space-y-6 max-w-[1400px] mx-auto">
+      <div className="py-6 space-y-6 max-w-[1400px] mx-auto">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-1 rounded-lg border border-border/60 bg-card/50 p-1">
             {RANGES.map((r) => (

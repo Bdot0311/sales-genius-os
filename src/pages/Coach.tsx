@@ -489,6 +489,7 @@ const Coach = () => {
                       onClick={() => deleteConversation(conv.id)}
                       className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                       title="Delete conversation"
+                      aria-label={`Delete conversation ${conv.title || "Untitled"}`}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>

@@ -194,7 +194,7 @@ export const ObjectionLibrary = () => {
                   {(editing.proof_points || []).map((p, i) => (
                     <div key={i} className="flex gap-2">
                       <Input value={p} onChange={(e) => { const next = [...editing.proof_points]; next[i] = e.target.value; patch({ proof_points: next }); }} className="text-sm" />
-                      <Button variant="ghost" size="icon" onClick={() => patch({ proof_points: editing.proof_points.filter((_, idx) => idx !== i) })}><X className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="icon" aria-label="Remove proof point" onClick={() => patch({ proof_points: editing.proof_points.filter((_, idx) => idx !== i) })}><X className="w-4 h-4" /></Button>
                     </div>
                   ))}
                   <Button variant="outline" size="sm" onClick={() => patch({ proof_points: [...(editing.proof_points || []), ""] })}><Plus className="w-3 h-3 mr-1" />add proof point</Button>
@@ -227,7 +227,7 @@ export const ObjectionLibrary = () => {
                     {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}save
                   </Button>
                   {editing.type === "custom" && (
-                    <Button variant="destructive" size="icon" onClick={() => remove(editing.id)}><Trash2 className="w-4 h-4" /></Button>
+                    <Button variant="destructive" size="icon" aria-label="Delete objection" onClick={() => remove(editing.id)}><Trash2 className="w-4 h-4" /></Button>
                   )}
                 </div>
               </div>
