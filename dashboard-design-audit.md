@@ -17,6 +17,7 @@
 - Workspace toast surfaces/native controls share the active theme.
 - Branding preview buttons opt out of shared primary-action fill styling.
 - Keyboard-focused dropdown/menu items retain a visible focus indicator.
+- ICP validation warnings and success icons use theme-aware semantic colors, replacing low-contrast yellow on light surfaces.
 
 ## Explicitly not verified
 

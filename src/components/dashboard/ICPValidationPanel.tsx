@@ -55,7 +55,7 @@ export const ICPValidationPanel = ({ profile }: { profile: ValidationProfile }) 
   return (
     <div className="rounded-lg border border-border/60 p-3 space-y-2 text-xs">
       <div className="flex items-center gap-2 font-medium">
-        {clean ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <AlertTriangle className="w-4 h-4 text-yellow-500" />}
+        {clean ? <CheckCircle2 className="w-4 h-4 workspace-success" /> : <AlertTriangle className="w-4 h-4 workspace-warning" />}
         <span>icp validation</span>
       </div>
 
@@ -65,7 +65,7 @@ export const ICPValidationPanel = ({ profile }: { profile: ValidationProfile }) 
       ) : (
         <>
           {result.tooBroad && (
-            <p className="text-yellow-500">this icp matches {Math.round((result.matchShare || 0) * 100)}% of your {result.sampleSize} leads, which is likely too broad.</p>
+            <p className="workspace-warning">this icp matches {Math.round((result.matchShare || 0) * 100)}% of your {result.sampleSize} leads, which is likely too broad.</p>
           )}
           {result.uselessCriteria.length > 0 && (
             <p className="text-muted-foreground">these criteria are doing no filtering: {result.uselessCriteria.join(", ")}.</p>
@@ -80,7 +80,7 @@ export const ICPValidationPanel = ({ profile }: { profile: ValidationProfile }) 
       {!result.hasEnoughReplyData ? (
         <p className="text-muted-foreground flex items-start gap-1.5"><Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />not enough replies yet to validate the icp against who actually replied ({result.replySize} so far, need 5).</p>
       ) : result.replyMismatches.length > 0 ? (
-        result.replyMismatches.map((m, i) => <p key={i} className="text-yellow-500">{m}.</p>)
+        result.replyMismatches.map((m, i) => <p key={i} className="workspace-warning">{m}.</p>)
       ) : (
         <p className="text-muted-foreground">your replies line up with the stated icp across {result.replySize} replies.</p>
       )}

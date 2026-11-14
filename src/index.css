@@ -1641,6 +1641,8 @@ html.light:has(.landing-page) body {
    a rim that catches the light, a bloom beneath, glass chips and film grain. Scoped to .dashboard-shell only. */
 :root {
   --glow-ground: 261 60% 97%;
+  --workspace-warning: 38 85% 28%;
+  --workspace-success: 152 75% 25%;
   --glow-card: 0 0% 100%;
   --glow-rim-top: hsl(261 40% 30% / 0.12);
   --glow-rim-mid: hsl(261 40% 30% / 0.05);
@@ -1661,6 +1663,8 @@ html.light:has(.landing-page) body {
 }
 .dark {
   --glow-ground: 0 0% 0%;
+  --workspace-warning: 45 100% 55%;
+  --workspace-success: 152 70% 58%;
   --glow-card: 0 0% 2%;
   --glow-rim-top: rgba(255, 255, 255, 0.2);
   --glow-rim-mid: rgba(255, 255, 255, 0.04);
@@ -1683,6 +1687,8 @@ html.light:has(.landing-page) body {
   position: relative; isolation: isolate;
   -webkit-font-smoothing: antialiased;
 }
+.workspace-warning { color: hsl(var(--workspace-warning)); }
+.workspace-success { color: hsl(var(--workspace-success)); }
 .dashboard-shell::after {
   content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 60;
   background-image: var(--glow-grain); opacity: var(--glow-grain-opacity); mix-blend-mode: overlay;
