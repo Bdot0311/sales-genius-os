@@ -1,5 +1,7 @@
 # Agent rules
 
+- All Treg calls go through `_shared/treg.ts`, which sets the customer tag server-side, caps cost per call and logs call id/cost to `treg_usage`; callers hold credits for the ceiling and return the unused part. Why: per-customer billing must reconcile with Treg's ledger and never exceed a customer's balance.
+
 - Dashboard visual refinements live under `.dashboard-shell` and shared panel/header classes with semantic CSS tokens; never override global utilities. Why: workspace design must not change the public site, admin screens, or nested functional layouts.
 
 - Agent confirmed-close filtering operates within lines and removes only complete batch-status statements. Why: research findings and Markdown boundaries must survive counted progress summaries.

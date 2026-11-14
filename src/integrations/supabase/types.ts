@@ -5719,6 +5719,39 @@ export type Database = {
         }
         Relationships: []
       }
+      treg_usage: {
+        Row: {
+          cost_micro: number
+          created_at: string
+          endpoint: string
+          feature: string
+          id: string
+          status: number | null
+          treg_call_id: string | null
+          user_id: string
+        }
+        Insert: {
+          cost_micro?: number
+          created_at?: string
+          endpoint: string
+          feature: string
+          id?: string
+          status?: number | null
+          treg_call_id?: string | null
+          user_id: string
+        }
+        Update: {
+          cost_micro?: number
+          created_at?: string
+          endpoint?: string
+          feature?: string
+          id?: string
+          status?: number | null
+          treg_call_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_activation: {
         Row: {
           cohort: string
