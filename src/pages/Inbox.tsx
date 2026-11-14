@@ -497,7 +497,7 @@ const Inbox = () => {
                 <div
                   role="tablist"
                   aria-label="Filter conversations"
-                  className="-mx-1 mt-2 flex gap-0.5 overflow-x-auto px-1 pb-0.5"
+                  className="-mx-1 mt-2 flex flex-wrap gap-0.5 px-1 pb-0.5"
                 >
                   {FOLDERS.map((f) => {
                     const active = folder === f.value;

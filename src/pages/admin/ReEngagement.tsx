@@ -190,8 +190,8 @@ const AdminReEngagement = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Recipient</TableHead>
-                  <TableHead>Last sign-in</TableHead>
-                  <TableHead>Days inactive</TableHead>
+                  <TableHead className="whitespace-nowrap">Last sign-in</TableHead>
+                  <TableHead className="whitespace-nowrap">Days inactive</TableHead>
                   <TableHead>Eligibility</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Attempted</TableHead>
@@ -212,7 +212,7 @@ const AdminReEngagement = () => {
                   return (
                     <TableRow key={row.id}>
                       <TableCell className="font-mono text-xs">{row.recipient_email}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
+                      <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                         {row.last_sign_in_at
                           ? formatDistanceToNow(new Date(row.last_sign_in_at), { addSuffix: true })
                           : "—"}
@@ -236,7 +236,7 @@ const AdminReEngagement = () => {
                           {meta.label}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
+                      <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                         {formatDistanceToNow(new Date(row.attempted_at), { addSuffix: true })}
                       </TableCell>
                       <TableCell className="text-xs">

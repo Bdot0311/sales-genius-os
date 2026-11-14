@@ -306,7 +306,7 @@ const AdminActivity = () => {
                     />
                   </div>
                   <Select value={filterAction} onValueChange={setFilterAction}>
-                    <SelectTrigger className="w-[130px]">
+                    <SelectTrigger className="w-[160px]">
                       <Filter className="h-4 w-4 mr-2" />
                       <SelectValue placeholder="Action" />
                     </SelectTrigger>

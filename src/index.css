@@ -1644,6 +1644,11 @@ html.light:has(.landing-page) body {
   --workspace-warning: 38 85% 28%;
   --workspace-success: 152 75% 25%;
   --glow-card: 0 0% 100%;
+  --chart-1: 261 70% 50%;
+  --chart-2: 189 85% 36%;
+  --chart-3: 152 65% 32%;
+  --chart-4: 38 90% 45%;
+  --chart-5: 330 70% 50%;
   --glow-rim-top: hsl(261 40% 30% / 0.12);
   --glow-rim-mid: hsl(261 40% 30% / 0.05);
   --glow-shade: 0 0% 100%;
@@ -1666,6 +1671,11 @@ html.light:has(.landing-page) body {
   --workspace-warning: 45 100% 55%;
   --workspace-success: 152 70% 58%;
   --glow-card: 0 0% 2%;
+  --chart-1: 261 85% 68%;
+  --chart-2: 189 85% 55%;
+  --chart-3: 152 65% 55%;
+  --chart-4: 38 95% 60%;
+  --chart-5: 330 80% 65%;
   --glow-rim-top: rgba(255, 255, 255, 0.2);
   --glow-rim-mid: rgba(255, 255, 255, 0.04);
   --glow-shade: 0 0% 2%;
