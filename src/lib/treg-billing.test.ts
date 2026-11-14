@@ -15,8 +15,12 @@ describe("Treg usage is charged to the right customer", () => {
     expect(TREG).toContain("treg_call_id: callId");
     expect(TREG).toContain("cost_micro: costMicro");
   });
-  it("holds credits before calling and returns the unused part", () => {
-    expect(SEARCH).toContain("creditDelta: -reserve");
-    expect(SEARCH).toContain("creditDelta: reserve - used");
+  it("bills Treg like Railway: no extra search charge, 1 credit per contact saved and enriched", () => {
+    const block = SEARCH.slice(SEARCH.indexOf("// Treg fallback"), SEARCH.indexOf("// If all retries exhausted"));
+    expect(block).not.toContain("applySearchMeter");
+    expect(block).not.toContain("creditDelta");
+  });
+  it("only runs Treg when Railway returned nothing", () => {
+    expect(SEARCH).toContain("if (rawLeads.length === 0 && tregConfigured()");
   });
 });

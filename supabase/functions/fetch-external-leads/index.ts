@@ -4,7 +4,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getPlanSearchLimits } from "../_shared/plan-limits.ts";
 import { applySearchMeter, asMeterClient } from "../_shared/search-meter.ts";
-import { tregCall, tregConfigured, tregCreditsForCost, tregPeople, tregReserveCredits } from "../_shared/treg.ts";
+import { tregCall, tregConfigured, tregPeople } from "../_shared/treg.ts";
 // One vocabulary for the whole pipeline — see _shared/icp-vocab.ts.
 import {
   normalizeCountry,
@@ -1692,9 +1692,11 @@ serve(async (req) => {
       }
     }
 
-    // Treg fallback: only when every existing source came back empty. Credits
-    // for the call's ceiling are held first, then the settled cost is kept and
-    // the rest returned, so a customer can never run Treg past their balance.
+    // Treg fallback: only when Railway (and every other source) came back empty.
+    // Treg results are billed exactly like Railway results: 1 credit per contact
+    // saved and enriched, charged by the normal save/enrich path. The search
+    // itself holds and charges nothing extra; Treg cost is still logged per
+    // customer in treg_usage for reconciliation.
     if (rawLeads.length === 0 && tregConfigured() && !sourcedFromColdIq) {
       const tq: Record<string, unknown> = { limit: Math.min(limit, 25) };
       const title = strList(filters.job_titles)[0] ?? (requestBody.job_title ? String(requestBody.job_title) : '');
@@ -1705,34 +1707,16 @@ serve(async (req) => {
       if (kw.length) tq.keywords = kw;
       if (!title && filters.industry) tq.q = `${filters.industry} decision makers`;
       if (Object.keys(tq).length > 1) {
-        const reserve = isAdmin ? 0 : tregReserveCredits();
-        const held = reserve === 0 ? { applied: true } : await applySearchMeter(asMeterClient(supabase), {
-          userId: user.id, creditDelta: -reserve, dailyDelta: 0,
-          description: 'Lead search: extended network (hold)', gate: true,
-        });
-        if (held.applied) {
-          let used = 0;
-          try {
-            const r = await tregCall(supabase, 'treg.people.search', tq, { userId: user.id, feature: 'lead-search' });
-            used = isAdmin ? 0 : Math.min(reserve, tregCreditsForCost(r.costMicro));
-            if (r.ok) {
-              const people = tregPeople(r.body);
-              if (people.length) { rawLeads = people; console.log(`[treg] fallback returned ${people.length} people`); }
-            } else if (r.tregError) {
-              providerUnavailable = true;
-            }
-          } catch (e) {
-            console.error('[treg] fallback failed:', e);
-          } finally {
-            if (reserve - used > 0) {
-              await applySearchMeter(asMeterClient(supabase), {
-                userId: user.id, creditDelta: reserve - used, dailyDelta: 0,
-                description: 'Lead search: extended network (unused hold returned)', gate: false,
-              });
-            }
+        try {
+          const r = await tregCall(supabase, 'treg.people.search', tq, { userId: user.id, feature: 'lead-search' });
+          if (r.ok) {
+            const people = tregPeople(r.body);
+            if (people.length) { rawLeads = people; console.log(`[treg] fallback returned ${people.length} people`); }
+          } else if (r.tregError) {
+            providerUnavailable = true;
           }
-        } else {
-          console.log('[treg] skipped — not enough credits to cover the call ceiling');
+        } catch (e) {
+          console.error('[treg] fallback failed:', e);
         }
       }
     }
