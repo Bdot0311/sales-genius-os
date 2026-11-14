@@ -114,6 +114,12 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   // New accounts answer the signup questionnaire before anything else. The flag
   // lives server-side, so clearing browser storage can't skip it.
+  // Dialogs, sheets and menus render outside the shell; this lets them share the design.
+  useEffect(() => {
+    document.body.classList.add("dashboard-active");
+    return () => document.body.classList.remove("dashboard-active");
+  }, []);
+
   useEffect(() => {
     if (!gateLoading && needsOnboarding) navigate("/onboarding", { replace: true });
   }, [gateLoading, needsOnboarding, navigate]);
