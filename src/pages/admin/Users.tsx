@@ -287,7 +287,7 @@ const AdminUsers = () => {
         await fn(user);
         ok++;
       } catch (e) {
-        console.error(`${label} failed for ${user.email}:`, e);
+        console.error(`${label} failed for user ${user.user_id}:`, e);
         failed++;
       }
     }

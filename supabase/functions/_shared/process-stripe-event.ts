@@ -717,7 +717,7 @@ export async function processStripeEvent(
       });
     }
 
-    log("invoice.payment_failed handled", { email: customer.email, attemptCount, stage });
+    log("invoice.payment_failed handled", { customerId: customer.id, attemptCount, stage });
     return;
   }
 

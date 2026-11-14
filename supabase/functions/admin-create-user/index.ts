@@ -48,7 +48,7 @@ serve(async (req) => {
       throw new Error("Email and password are required");
     }
 
-    logStep("Creating user", { email, plan, is_admin });
+    logStep("Creating user", { plan, is_admin });
 
     // Create the user in auth
     const { data: newUser, error: createError } = await supabaseClient.auth.admin.createUser({
