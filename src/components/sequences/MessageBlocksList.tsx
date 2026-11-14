@@ -234,12 +234,13 @@ export const MessageBlocksList = () => {
                               Used {block.use_count} times
                             </p>
                           </div>
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                             <Button
                               size="icon"
                               variant="ghost"
                               className="h-7 w-7"
                               onClick={() => handleCopy(block.content, block.id)}
+                              aria-label={`Copy block ${block.name}`}
                             >
                               <Copy className="w-3.5 h-3.5" />
                             </Button>
@@ -248,6 +249,7 @@ export const MessageBlocksList = () => {
                               variant="ghost"
                               className="h-7 w-7"
                               onClick={() => handleEdit(block)}
+                              aria-label={`Edit block ${block.name}`}
                             >
                               <Pencil className="w-3.5 h-3.5" />
                             </Button>
@@ -256,6 +258,7 @@ export const MessageBlocksList = () => {
                               variant="ghost"
                               className="h-7 w-7 text-destructive"
                               onClick={() => handleDelete(block.id)}
+                              aria-label={`Delete block ${block.name}`}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </Button>

@@ -188,6 +188,7 @@ export const APIKeysTab = () => {
                     variant="ghost"
                     size="icon"
                     onClick={() => setDeleteKeyId(key.id)}
+                    aria-label={`Delete API key ${key.name}`}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

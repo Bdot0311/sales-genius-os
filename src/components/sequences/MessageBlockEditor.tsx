@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -63,6 +63,18 @@ export const MessageBlockEditor = ({
       is_shared: false,
     }
   );
+
+  // The editor stays mounted between opens, so the initial state above only
+  // ever reflects the first block. Reload the form each time it opens so
+  // Edit shows the chosen block and New starts blank.
+  useEffect(() => {
+    if (!open) return;
+    setFormData(
+      block
+        ? { id: block.id, name: block.name, category: block.category, content: block.content, is_shared: block.is_shared }
+        : { name: '', category: 'opener', content: '', is_shared: false }
+    );
+  }, [open, block]);
 
   const isPro = currentPlan === 'pro';
 

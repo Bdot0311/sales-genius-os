@@ -324,7 +324,7 @@ export const InboundWebhooksPanel = () => {
                       <Button variant="outline" size="sm" onClick={() => toggle(hook)}>
                         {hook.is_active ? "Disable" : "Enable"}
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => setDeleteId(hook.id)}>
+                      <Button variant="ghost" size="icon" aria-label={`Delete endpoint ${hook.name}`} onClick={() => setDeleteId(hook.id)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>

@@ -119,7 +119,7 @@ export const PayoffBankTab = () => {
                   <p className="text-xs text-muted-foreground truncate">{e.source_of_truth}{e.source_url ? ` · ${e.source_url}` : ""}</p>
                 )}
               </div>
-              <Button variant="ghost" size="icon" onClick={() => remove(e.id)}><Trash2 className="w-4 h-4" /></Button>
+              <Button variant="ghost" size="icon" aria-label="Delete entry" onClick={() => remove(e.id)}><Trash2 className="w-4 h-4" /></Button>
             </div>
           ))}
         </PanelBody>

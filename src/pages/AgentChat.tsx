@@ -507,7 +507,7 @@ const AgentChat = () => {
                   <button
                     type="button"
                     aria-label="Delete conversation"
-                    className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-400"
+                    className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-muted-foreground hover:text-destructive"
                     onClick={() => handleDeleteThread(t.id)}
                   >
                     <Trash2 className="w-3.5 h-3.5" />

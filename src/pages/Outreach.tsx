@@ -3131,7 +3131,7 @@ For logos, use HTML:
                                     {variant.body.slice(0, 130)}...
                                   </p>
                                 </div>
-                                <Button variant="ghost" size="icon" className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" aria-label="Select this variant">
+                                <Button variant="ghost" size="icon" className="shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity" aria-label="Select this variant">
                                   <Check className="w-4 h-4" />
                                 </Button>
                               </div>

@@ -376,6 +376,7 @@ const OutboundWebhooksPanel = () => {
                       variant="ghost"
                       size="icon"
                       onClick={() => setDeleteWebhookId(webhook.id)}
+                      aria-label={`Delete webhook ${webhook.name}`}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
