@@ -252,7 +252,7 @@ export function SequencesList() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="dashboard-page-header flex items-center justify-between">
         <div>
           <h1 className="text-lg font-semibold">Email Sequences</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
@@ -260,7 +260,7 @@ export function SequencesList() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="mobile-action-row flex items-center gap-3">
           <Badge variant="outline" className="px-3 py-1">
             {activeSequences}/{formatLimit(maxSequences)} active
           </Badge>

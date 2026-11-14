@@ -325,7 +325,8 @@ export const Chip = ({
   className?: string;
 }) => {
   const shape = cn(
-    "inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[0.75rem] leading-none",
+    "ui-chip inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[0.75rem] leading-none",
+    selected && "is-selected",
     selected
       ? "border-primary/50 bg-primary/10 text-foreground"
       : "border-border/50 text-muted-foreground",

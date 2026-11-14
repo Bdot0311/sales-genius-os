@@ -81,7 +81,7 @@ export function FluidFieldBackground({ className, style }: { className?: string;
     };
   }, []);
 
-  return <canvas ref={ref} aria-hidden className={className} style={{ position: "fixed", inset: 0, width: "100%", height: "100%", zIndex: -1, pointerEvents: "none", ...style }} />;
+  return <canvas ref={ref} aria-hidden className={className} style={{ position: "fixed", inset: 0, width: "100%", height: "100%", zIndex: -1, pointerEvents: "none", opacity: 0.6, ...style }} />;
 }
 
 export default FluidFieldBackground;

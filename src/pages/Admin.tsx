@@ -6,6 +6,7 @@ import { useAdmin } from "@/hooks/use-admin";
 import { toast } from "sonner";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { FluidFieldBackground } from "@/components/ui/fluid-field";
 
 // Import admin sub-pages / grouped pages
 import AdminSecurity from "./admin/Security";
@@ -25,6 +26,12 @@ const Admin = () => {
       toast.error('Access denied. Admin privileges required.');
     }
   }, [isAdmin, adminLoading, navigate]);
+
+  // Dialogs, sheets and menus render outside the shell; this lets them share the design.
+  useEffect(() => {
+    document.body.classList.add("dashboard-active");
+    return () => document.body.classList.remove("dashboard-active");
+  }, []);
 
   if (adminLoading) {
     return (
@@ -51,6 +58,7 @@ const Admin = () => {
           strip on the page background, so the panel looked like two documents
           stacked, neither of them the colour the rest of the product uses. */}
       <div className="dashboard-shell admin-shell flex min-h-screen w-full bg-background">
+        <FluidFieldBackground />
         <AdminSidebar />
 
         <div className="flex min-w-0 flex-1 flex-col">

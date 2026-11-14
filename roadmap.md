@@ -136,3 +136,6 @@
 - [x] Fixed Treg key verification and linked the connection; gateway reaches the account.
 - [x] Lead search falls back to Treg when other sources are empty; customer-tagged, capped at $0.50/call, credits held then settled, call IDs and costs logged. 4 billing tests pass; deployed.
 - [ ] Run a real Treg-backed search and reconcile it with Treg's usage report (not run yet, to avoid spending your balance).
+
+- [x] ICP editor: buttons, dropdowns, chips match dashboard design
+- [x] Dashboard background a little more transparent
