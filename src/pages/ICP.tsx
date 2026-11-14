@@ -709,7 +709,6 @@ const ICP = () => {
                 {/* ─── SIGNALS ──────────────────────────── */}
                 <TabsContent value="signals" className="space-y-6">
                   <Field label="Buying signals" hint="Events that make a company worth reaching now.">
-                    <p className="text-xs text-muted-foreground">Trigger events that indicate it's the right time to reach out.</p>
                     <div className="grid grid-cols-1 gap-2 mt-2">
                       {SIGNAL_OPTIONS.map((signal) => (
                         <label key={signal} className="flex items-center gap-2 text-sm cursor-pointer">
@@ -767,7 +766,6 @@ const ICP = () => {
                 {/* ─── STRATEGY ──────────────────────────── */}
                 <TabsContent value="strategy" className="space-y-6">
                   <Field label="Preferred channels" hint="Where this ICP is most reachable.">
-                    <p className="text-xs text-muted-foreground">Where this ICP is most reachable.</p>
                     <MultiSelect options={CHANNELS} value={editing.preferred_channels || []} onChange={(v) => update({ preferred_channels: v })} />
                   </Field>
 

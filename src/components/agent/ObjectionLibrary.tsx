@@ -222,7 +222,7 @@ export const ObjectionLibrary = () => {
                   </div>
                 )}
 
-                <div className="flex gap-2 pt-2 border-t sticky bottom-0 bg-background pb-1">
+                <div className="sticky -bottom-6 -mx-6 flex gap-2 border-t bg-[hsl(var(--glow-card))] px-6 pb-6 pt-3">
                   <Button onClick={save} disabled={saving} className="flex-1">
                     {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}save
                   </Button>

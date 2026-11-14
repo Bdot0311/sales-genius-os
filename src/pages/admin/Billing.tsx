@@ -350,7 +350,7 @@ export default function AdminBilling() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={removeUser}>Remove account</AlertDialogAction>
+            <AlertDialogAction onClick={removeUser} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Remove account</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

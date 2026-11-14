@@ -183,7 +183,7 @@ export const SupportAccessCard = () => {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Keep access</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleRevoke}>Revoke</AlertDialogAction>
+                  <AlertDialogAction onClick={handleRevoke} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Revoke</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>

@@ -1912,6 +1912,28 @@ body.dashboard-active :is([role="menuitem"], [role="option"], [role="menuitemche
 body.dashboard-active :is([role="menuitem"], [role="option"], [role="menuitemcheckbox"], [role="menuitemradio"]):is([data-highlighted], :hover) { background: rgb(var(--glow-iris) / 0.18); color: hsl(var(--foreground)); }
 body.dashboard-active [role="dialog"] [class*="border-primary"]:not(button) { border-color: rgb(var(--glow-iris) / 0.35); border-radius: 18px; background: rgb(var(--glow-iris) / 0.06); }
 body.dashboard-active :is(.dashboard-shell main, [role="dialog"], [role="alertdialog"]) span[data-orientation="horizontal"].bg-secondary { background: hsl(var(--foreground) / 0.1); }
+/* Glass overrides replace the fill, so they must also own the ink: a hovered secondary button and a primary
+   badge otherwise keep white primary-foreground text on a pale glass fill in light mode. */
+body.dashboard-active :is(.dashboard-shell main, [role="dialog"], [role="alertdialog"]) :is(button, a).bg-secondary,
+body.dashboard-active :is(.dashboard-shell main, [role="dialog"], [role="alertdialog"]) :is(button, a).bg-secondary:hover { color: hsl(var(--foreground)); }
+body.dashboard-active :is(.dashboard-shell main, [role="dialog"], [role="alertdialog"]) :is(button, a).bg-secondary:hover { background: hsl(var(--foreground) / 0.12); }
+body.dashboard-active :is(.dashboard-shell main, [role="dialog"], [role="alertdialog"]) .rounded-full.border.text-xs.font-semibold.bg-primary { background: rgb(var(--glow-iris) / 0.22); color: hsl(var(--foreground)); }
+/* Status colours are written for the dark theme (300-500 shades). On light surfaces they fall below readable
+   contrast, so light mode maps them to the 700 shade of the same hue inside the workspace only. */
+html:not(.dark) body.dashboard-active :is(.dashboard-shell main, [role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"], [data-radix-popper-content-wrapper]) :is(.text-green-300, .text-green-400, .text-green-500) { color: rgb(21 128 61); }
+html:not(.dark) body.dashboard-active :is(.dashboard-shell main, [role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"], [data-radix-popper-content-wrapper]) :is(.text-emerald-300, .text-emerald-400, .text-emerald-500) { color: rgb(4 120 87); }
+html:not(.dark) body.dashboard-active :is(.dashboard-shell main, [role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"], [data-radix-popper-content-wrapper]) :is(.text-amber-300, .text-amber-400, .text-amber-500) { color: rgb(180 83 9); }
+html:not(.dark) body.dashboard-active :is(.dashboard-shell main, [role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"], [data-radix-popper-content-wrapper]) :is(.text-yellow-300, .text-yellow-400, .text-yellow-500) { color: rgb(161 98 7); }
+html:not(.dark) body.dashboard-active :is(.dashboard-shell main, [role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"], [data-radix-popper-content-wrapper]) :is(.text-orange-300, .text-orange-400, .text-orange-500) { color: rgb(194 65 12); }
+html:not(.dark) body.dashboard-active :is(.dashboard-shell main, [role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"], [data-radix-popper-content-wrapper]) :is(.text-red-300, .text-red-400) { color: rgb(185 28 28); }
+html:not(.dark) body.dashboard-active :is(.dashboard-shell main, [role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"], [data-radix-popper-content-wrapper]) :is(.text-rose-300, .text-rose-400) { color: rgb(190 18 60); }
+html:not(.dark) body.dashboard-active :is(.dashboard-shell main, [role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"], [data-radix-popper-content-wrapper]) :is(.text-blue-300, .text-blue-400) { color: rgb(29 78 216); }
+html:not(.dark) body.dashboard-active :is(.dashboard-shell main, [role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"], [data-radix-popper-content-wrapper]) :is(.text-sky-300, .text-sky-400) { color: rgb(3 105 161); }
+html:not(.dark) body.dashboard-active :is(.dashboard-shell main, [role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"], [data-radix-popper-content-wrapper]) :is(.text-cyan-300, .text-cyan-400) { color: rgb(14 116 144); }
+html:not(.dark) body.dashboard-active :is(.dashboard-shell main, [role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"], [data-radix-popper-content-wrapper]) :is(.text-teal-300, .text-teal-400) { color: rgb(15 118 110); }
+html:not(.dark) body.dashboard-active :is(.dashboard-shell main, [role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"], [data-radix-popper-content-wrapper]) :is(.text-indigo-300, .text-indigo-400) { color: rgb(67 56 202); }
+html:not(.dark) body.dashboard-active :is(.dashboard-shell main, [role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"], [data-radix-popper-content-wrapper]) :is(.text-violet-300, .text-violet-400, .text-purple-300, .text-purple-400) { color: rgb(109 40 217); }
+html:not(.dark) body.dashboard-active :is(.dashboard-shell main, [role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"], [data-radix-popper-content-wrapper]) :is(.text-pink-300, .text-pink-400) { color: rgb(190 24 93); }
 /* Vertical tab rails (Settings) are a list, not a pill: keep a soft rounded rail instead of a 999px blob. */
 .dashboard-shell main :is([role="tablist"][aria-orientation="vertical"], .settings-tab-list) { border-radius: 0; background: transparent; box-shadow: none; }
 .dashboard-shell main .settings-tab-scroller { background: var(--glow-glass); box-shadow: var(--glow-glass-ring); border-color: transparent; border-radius: 20px; }
