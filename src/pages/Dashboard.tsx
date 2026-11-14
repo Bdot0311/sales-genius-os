@@ -282,6 +282,7 @@ const Dashboard = () => {
           <MetricStrip metrics={metrics} />
         </div>
 
+        <div className="dashboard-attention-col space-y-4">
         {attention.length > 0 && (
           <Panel className="dashboard-attention">
             <PanelHeader
@@ -312,6 +313,8 @@ const Dashboard = () => {
             </div>
           </Panel>
         )}
+        <OverviewInsights section="side" />
+        </div>
 
         <OverviewInsights />
       </div>

@@ -18,7 +18,7 @@ const ago = (iso: string) => {
 };
 
 /** Real-data panels for the Overview: outreach results, lead quality, recent mail. */
-export const OverviewInsights = ({ refreshKey }: { refreshKey?: number }) => {
+export const OverviewInsights = ({ refreshKey, section = "main" }: { refreshKey?: number; section?: "main" | "side" }) => {
   const navigate = useNavigate();
   const [sent, setSent] = useState<Sent[]>([]);
   const [recent, setRecent] = useState<Sent[]>([]);
@@ -68,6 +68,21 @@ export const OverviewInsights = ({ refreshKey }: { refreshKey?: number }) => {
     }, {}),
   ).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
+  if (section === "side") return (
+        <Panel className="dashboard-side-panel">
+          <PanelHeader title="Lead quality" meta={`${leads.length} saved`} />
+          <div className="space-y-3 px-4 py-4 sm:px-5">
+            {rows.map((r) => (
+              <div key={r.label}>
+                <div className="mb-1 flex justify-between text-[0.6875rem]"><span className="text-muted-foreground">{r.label}</span><span className="tabular-nums text-foreground">{r.n}</span></div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${(r.n / max) * 100}%` }} /></div>
+              </div>
+            ))}
+          </div>
+        </Panel>
+
+  );
+
   return (
     <div className="space-y-4">
       <Panel>
@@ -85,19 +100,7 @@ export const OverviewInsights = ({ refreshKey }: { refreshKey?: number }) => {
         </div>
       </Panel>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_1fr_1.3fr]">
-        <Panel>
-          <PanelHeader title="Lead quality" meta={`${leads.length} saved`} />
-          <div className="space-y-3 px-4 py-4 sm:px-5">
-            {rows.map((r) => (
-              <div key={r.label}>
-                <div className="mb-1 flex justify-between text-[0.6875rem]"><span className="text-muted-foreground">{r.label}</span><span className="tabular-nums text-foreground">{r.n}</span></div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${(r.n / max) * 100}%` }} /></div>
-              </div>
-            ))}
-          </div>
-        </Panel>
-
+      <div className="grid gap-4 lg:grid-cols-[1fr_1.4fr]">
         <Panel>
           <PanelHeader title="Lead stages" meta="top 5" />
           <div className="px-4 py-2 sm:px-5">
