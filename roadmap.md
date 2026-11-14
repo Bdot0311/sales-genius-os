@@ -2,6 +2,7 @@
 
 # Dashboard design refresh
 
+- [x] Extend the glow design to all 17 admin page/tab views; verified signed-in dark/light desktop views, mobile Users/Billing and navigation, with no page overflow or runtime errors. All 21 admin regressions pass and preview builds cleanly; admin-only changes excluded from customer What's New. Publishing remains required.
 - [x] Adapt the uploaded glow design to shared OutReign navigation, headings, panels and overview without changing data flows.
 - [x] Verified signed-in Overview, Saved Leads, Inbox, Pipeline and Settings; desktop/mobile themes, sidebar and metric navigation work, 106 regressions pass and preview builds cleanly. Public publishing remains unchanged.
 

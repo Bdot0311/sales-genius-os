@@ -2,7 +2,7 @@
 
 - All Treg calls go through `_shared/treg.ts`, which sets the customer tag server-side, caps cost per call and logs call id/cost to `treg_usage`; Treg is a fallback only when Railway returns nothing and its results bill like Railway results through the normal save/enrich path. Why: customers pay the same per contact regardless of source, while Treg spend still reconciles per customer.
 
-- Dashboard visual refinements live under `.dashboard-shell` and shared panel/header classes with semantic CSS tokens; never override global utilities. Why: workspace design must not change the public site, admin screens, or nested functional layouts.
+- Dashboard and admin visual refinements live under `.dashboard-shell` and shared panel/header classes with semantic CSS tokens; admin uses `.admin-shell` for its navigation and controls. Never override global utilities. Why: every signed-in page shares the requested design without changing the public site or nested functional layouts.
 
 - Agent confirmed-close filtering operates within lines and removes only complete batch-status statements. Why: research findings and Markdown boundaries must survive counted progress summaries.
 

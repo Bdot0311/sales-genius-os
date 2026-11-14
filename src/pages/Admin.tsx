@@ -5,6 +5,7 @@ import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { useAdmin } from "@/hooks/use-admin";
 import { toast } from "sonner";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 // Import admin sub-pages / grouped pages
 import AdminSecurity from "./admin/Security";
@@ -28,7 +29,7 @@ const Admin = () => {
   if (adminLoading) {
     return (
       <SidebarProvider>
-        <div className="flex min-h-screen w-full">
+        <div className="dashboard-shell admin-shell flex min-h-screen w-full bg-background">
           <AdminSidebar />
           <div className="flex flex-1 items-center justify-center">
             {/* A 48px ring spinning over a sentence is a page-sized way to say
@@ -49,19 +50,20 @@ const Admin = () => {
       {/* One ground. The shell tinted the content area and left the header
           strip on the page background, so the panel looked like two documents
           stacked, neither of them the colour the rest of the product uses. */}
-      <div className="flex min-h-screen w-full bg-background">
+      <div className="dashboard-shell admin-shell flex min-h-screen w-full bg-background">
         <AdminSidebar />
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b border-border/50 bg-background/95 px-4 backdrop-blur-sm sm:px-6">
+          <header className="dashboard-topbar sticky top-0 z-10 flex h-16 items-center gap-3 px-4 sm:px-7">
             <SidebarTrigger />
             {/* No shield icon: the sidebar it sits beside is already labelled
                 Admin, and a 24px primary badge for a heading is the loudest
                 mark on a page whose content is numbers. */}
             <h1 className="text-[0.8125rem] font-medium text-foreground">Admin</h1>
+            <div className="ml-auto"><ThemeToggle /></div>
           </header>
 
-          <main className="min-w-0 flex-1 overflow-auto p-4 sm:p-6">
+          <main className="admin-page-content min-w-0 flex-1 p-4 sm:p-7">
             <Routes>
               <Route index element={<AdminDashboard />} />
               {/* Grouped pages */}
