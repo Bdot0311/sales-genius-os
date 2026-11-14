@@ -1517,6 +1517,105 @@ html.theme-transition *::after {
 }
 .landing-readable { color: hsl(var(--landing-copy)); }
 
+/* Workspace-only glow materials. Theme tokens preserve accessible lavender. */
+:root {
+  --workspace-surface: 261 58% 95%;
+  --workspace-line: 261 32% 72%;
+  --workspace-light: 261 70% 55%;
+  --workspace-secondary-light: 168 55% 36%;
+  --workspace-glass: 261 45% 86%;
+  --workspace-shadow: 0 12px 36px -22px hsl(261 40% 30% / 0.25);
+  --workspace-panel-fill: linear-gradient(180deg, hsl(var(--workspace-surface)) 45%, hsl(var(--workspace-light) / 0.08) 100%);
+  --workspace-panel-shadow: var(--workspace-shadow), inset 0 1px 0 hsl(var(--foreground) / 0.04), inset 0 -1px 0 hsl(var(--workspace-light) / 0.18);
+}
+.dark {
+  --workspace-surface: 261 40% 5%;
+  --workspace-line: 261 22% 24%;
+  --workspace-light: 261 75% 63%;
+  --workspace-secondary-light: 168 65% 52%;
+  --workspace-glass: 261 22% 12%;
+  --workspace-shadow: 0 16px 42px -24px hsl(261 75% 1% / 0.8);
+  --workspace-panel-fill: linear-gradient(180deg, hsl(var(--workspace-surface)) 45%, hsl(var(--workspace-light) / 0.10) 100%);
+  --workspace-panel-shadow: var(--workspace-shadow), inset 0 1px 0 hsl(var(--foreground) / 0.08), inset 0 -1px 0 hsl(var(--workspace-light) / 0.28);
+}
+.dashboard-shell { font-variant-numeric: tabular-nums; letter-spacing: 0; }
+.dashboard-shell .dashboard-sidebar {
+  background: hsl(var(--workspace-surface));
+  border-color: hsl(var(--workspace-line) / 0.6);
+}
+.dashboard-shell .dashboard-sidebar nav { padding-top: 16px; }
+.dashboard-shell .dashboard-sidebar nav > div { margin-bottom: 12px; }
+.dashboard-shell .dashboard-nav-item { height: 40px; border-radius: 8px; }
+.dashboard-shell .dashboard-nav-item[aria-current="page"] {
+  background: hsl(var(--workspace-glass));
+  box-shadow: inset 0 0 0 1px hsl(var(--workspace-light) / 0.25);
+}
+.dashboard-shell .dashboard-topbar {
+  background: hsl(var(--background) / 0.93);
+  border-color: hsl(var(--workspace-line) / 0.45);
+  gap: 12px;
+}
+.dashboard-shell .dashboard-page-gutters { padding-top: 20px; }
+.dashboard-shell .dashboard-page-header {
+  background: none;
+  border: 0;
+  backdrop-filter: none;
+  margin-bottom: 8px;
+}
+.dashboard-shell .dashboard-page-header h1 { font-size: 28px; line-height: 1.25; font-weight: 500; }
+.dashboard-shell .dashboard-page-header p { font-size: 13px; line-height: 1.6; margin-top: 8px; }
+.dashboard-shell .dashboard-panel {
+  border-radius: 8px;
+  border-color: hsl(var(--workspace-line) / 0.7);
+  background: var(--workspace-panel-fill);
+}
+.dashboard-shell .dashboard-panel-elevated { box-shadow: var(--workspace-panel-shadow); }
+.dashboard-shell .dashboard-panel-header {
+  padding-top: 16px;
+  padding-bottom: 16px;
+  border-color: hsl(var(--workspace-line) / 0.4);
+}
+.dashboard-shell .dashboard-panel-header h2 { font-size: 14px; }
+.dashboard-shell .dashboard-metrics {
+  border-radius: 8px;
+  background: var(--workspace-panel-fill);
+  border-color: hsl(var(--workspace-line) / 0.7);
+  box-shadow: var(--workspace-panel-shadow);
+}
+.dashboard-shell .dashboard-metrics > :is(button, div) { padding-top: 22px; padding-bottom: 22px; }
+.dashboard-shell .dashboard-metrics > :is(button, div) > p:first-child {
+  color: hsl(var(--muted-foreground));
+  font-size: 11px;
+  letter-spacing: 0;
+}
+.dashboard-shell .dashboard-metrics > :is(button, div) > p:nth-child(2) { font-size: 30px; font-weight: 500; line-height: 1.25; }
+.dashboard-shell .dashboard-metrics > :is(button, div) > p:nth-child(3) { font-size: 12px; margin-top: 8px; }
+.dashboard-shell .dashboard-overview { display: grid; gap: 28px; }
+.dashboard-shell .dashboard-overview > * { margin-top: 0; }
+.dashboard-shell .dashboard-attention {
+  background: linear-gradient(180deg, hsl(var(--workspace-surface)) 55%, hsl(var(--workspace-secondary-light) / 0.07) 100%);
+}
+.dashboard-shell .dashboard-attention [data-tour="quick-actions"] > button { padding-top: 22px; padding-bottom: 22px; }
+.dashboard-shell .dashboard-attention [data-tour="quick-actions"] p:first-child { font-size: 14px; }
+.dashboard-shell .dashboard-attention [data-tour="quick-actions"] p + p { font-size: 12px; max-width: 70ch; }
+@media (min-width: 1200px) {
+  .dashboard-shell .dashboard-overview { grid-template-columns: minmax(0, 1.55fr) minmax(280px, 1fr); align-items: start; }
+  .dashboard-shell .dashboard-overview > * { grid-column: 1 / -1; }
+  .dashboard-shell .dashboard-overview > [data-tour="stats"] { grid-column: 1; }
+  .dashboard-shell .dashboard-overview > .dashboard-attention { grid-column: 2; }
+  .dashboard-shell .dashboard-overview .dashboard-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dashboard-shell .dashboard-overview .dashboard-metrics > :nth-child(3) { border-left: 0; border-top: 1px solid hsl(var(--workspace-line) / 0.4); }
+  .dashboard-shell .dashboard-overview .dashboard-metrics > :nth-child(4) { border-top: 1px solid hsl(var(--workspace-line) / 0.4); }
+  .dashboard-shell .dashboard-overview .dashboard-metrics > :is(button, div) { padding: 32px 28px; }
+  .dashboard-shell .dashboard-overview .dashboard-metrics > :is(button, div) > p:nth-child(2) { font-size: 42px; }
+}
+@media (max-width: 640px) {
+  .dashboard-shell .dashboard-topbar { gap: 4px; }
+  .dashboard-shell .dashboard-page-header h1 { font-size: 24px; }
+  .dashboard-shell .dashboard-overview { gap: 20px; }
+  .dashboard-shell .dashboard-metrics > :is(button, div) > p:nth-child(2) { font-size: 26px; }
+}
+
 /* Legacy landing headings share the same shimmer in both palettes. */
 .landing-page .animate-shiny {
   background-image: var(--landing-heading-gradient) !important;

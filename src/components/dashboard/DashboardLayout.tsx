@@ -227,7 +227,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   // result was a phantom scroll and a band of dead space under the content,
   // most obvious on the chat, whose own height is in dvh.
   return (
-    <div className="min-h-[100dvh] bg-background">
+    <div className="dashboard-shell min-h-[100dvh] bg-background">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
@@ -238,7 +238,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed z-50 bg-card border-r border-border/60 transition-all duration-300 ${
+        className={`dashboard-sidebar fixed z-50 bg-card border-r border-border/60 transition-all duration-300 ${
           sidebarCollapsed ? "w-[4.5rem]" : "w-64"
         } ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -246,7 +246,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         style={{
           top: 'env(safe-area-inset-top, 0px)',
           left: 0,
-          height: 'calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
+          height: 'calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
         }}
       >
         <div className="flex flex-col h-full overflow-hidden">
@@ -295,11 +295,14 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                     <TooltipProvider key={item.name} delayDuration={0}>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <button
+                          <Button
+                            variant="ghost"
                             data-tour-nav={item.href}
+                            aria-current={isActive ? "page" : undefined}
+                            aria-label={sidebarCollapsed ? item.name : undefined}
                             onClick={() => { navigate(item.href); setSidebarOpen(false); }}
 
-                            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors mb-0.5 ${
+                            className={`dashboard-nav-item w-full justify-start flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors mb-0.5 ${
                               sidebarCollapsed ? "justify-center" : ""
                             } ${
                               isActive
@@ -310,7 +313,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                           >
                             <item.icon className="w-4 h-4 flex-shrink-0" />
                             {!sidebarCollapsed && <span>{item.name}</span>}
-                          </button>
+                          </Button>
                         </TooltipTrigger>
                         {sidebarCollapsed && (
                           <TooltipContent side="right"><p>{item.name}</p></TooltipContent>
@@ -396,7 +399,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       {/* Main content */}
       <div className={`min-w-0 overflow-x-hidden transition-all duration-300 ${sidebarCollapsed ? "lg:ml-[4.5rem]" : "lg:ml-64"}`}>
         {/* Top bar */}
-        <header className="dashboard-topbar h-12 sticky top-0 z-30 bg-background/80 backdrop-blur border-b border-border/60 flex items-center px-[var(--mobile-page-gutter)] sm:px-6 gap-1">
+        <header className="dashboard-topbar h-16 sticky top-0 z-30 bg-background/80 backdrop-blur border-b border-border/60 flex items-center px-[var(--mobile-page-gutter)] sm:px-6 gap-1">
           <Button
             variant="ghost"
             size="icon"
@@ -413,7 +416,9 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           >
             {sidebarCollapsed ? <PanelLeft className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
           </Button>
-          <div className="flex-1 min-w-0" />
+          <div className="flex-1 min-w-0">
+            <span className="hidden xl:inline text-sm font-medium text-muted-foreground">{navSections.flatMap(section => section.items).find(item => location.pathname === item.href || (item.href !== "/dashboard" && location.pathname.startsWith(item.href)))?.name || "Workspace"}</span>
+          </div>
           
           <div className="flex min-w-0 flex-shrink items-center gap-1 sm:gap-3">
             {/* Light/dark display toggle */}

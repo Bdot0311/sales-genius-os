@@ -1,5 +1,7 @@
 # Agent rules
 
+- Dashboard visual refinements live under `.dashboard-shell` and shared panel/header classes with semantic CSS tokens; never override global utilities. Why: workspace design must not change the public site, admin screens, or nested functional layouts.
+
 - Agent confirmed-close filtering operates within lines and removes only complete batch-status statements. Why: research findings and Markdown boundaries must survive counted progress summaries.
 
 - Agent-chat list lookups refresh even for repeated filters within the six-call turn cap; clear implicit lead and draft pools before every lookup and return an explicit unqueried error at the cap. Why: stale ids and counts must never be substituted across filters or after drafting.

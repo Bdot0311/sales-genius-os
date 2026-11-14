@@ -1,5 +1,10 @@
 # Agent reply content preservation
 
+# Dashboard design refresh
+
+- [x] Adapt the uploaded glow design to shared OutReign navigation, headings, panels and overview without changing data flows.
+- [x] Verified signed-in Overview, Saved Leads, Inbox, Pipeline and Settings; desktop/mobile themes, sidebar and metric navigation work, 106 regressions pass and preview builds cleanly. Public publishing remains unchanged.
+
 - [x] Preserve research findings and line boundaries while replacing only batch-status claims; 108 related regressions passed, the reported example retains both bullets and its finding, and agent-chat is deployed. No real research/drafting turn was triggered.
 
 # Agent chat lead lookup accuracy

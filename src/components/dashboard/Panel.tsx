@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
  */
 
 const SURFACE = "overflow-hidden rounded-xl border border-border/50 bg-card";
-const ELEVATION = "shadow-[0_18px_44px_-30px_hsl(0_0%_0%/0.9)]";
+const ELEVATION = "dashboard-panel-elevated";
 
 export const Panel = ({
   children,
@@ -42,7 +42,7 @@ export const Panel = ({
   // The rest of a div's attributes pass through, so a panel that reports a
   // changing state can carry role="status" and aria-live without that having to
   // become a prop here for every attribute a page turns out to need.
-  <div className={cn(SURFACE, !flat && ELEVATION, className)} {...rest}>
+  <div className={cn(SURFACE, "dashboard-panel", !flat && ELEVATION, className)} {...rest}>
     {children}
   </div>
 );
@@ -77,7 +77,7 @@ export const PanelHeader = ({
 }) => (
   <div
     className={cn(
-      "border-b border-border/40 px-4 py-2.5 sm:px-5",
+      "dashboard-panel-header border-b border-border/40 px-4 py-2.5 sm:px-5",
       children ? "space-y-1" : "flex flex-wrap items-center justify-between gap-x-3 gap-y-2",
       className,
     )}
@@ -210,7 +210,7 @@ export const MetricStrip = ({
 }) => (
   <div
     className={cn(
-      "grid grid-cols-2 overflow-hidden rounded-xl border border-border/30",
+      "dashboard-metrics grid grid-cols-2 overflow-hidden rounded-xl border border-border/30",
       // Written out, never interpolated: Tailwind ships only the classes it can
       // see in the source, so a class name built from the count compiles to no
       // CSS at all and the strip silently stays 2-up.

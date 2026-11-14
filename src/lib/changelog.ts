@@ -116,6 +116,15 @@ export const ROADMAP: RoadmapItem[] = [
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-11-14-dashboard-refresh",
+    date: "2026-11-14",
+    title: "A clearer sales workspace",
+    summary: "More room for your work, clearer numbers and softly illuminated panels in both themes.",
+    items: [
+      { tag: "improved", title: "Refreshed dashboard", description: "Your workspace keeps the same pages and actions with clearer headings, more spacious navigation and consistent panels. Overview gives your live metrics and attention items more room, on desktop and mobile.", href: "/dashboard" },
+    ],
+  },
+  {
     id: "2026-11-13-agent-research-replies",
     date: "2026-11-13",
     title: "Clearer agent research replies",

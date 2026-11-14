@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { countEmailGaps } from "@/lib/lead-email-gap";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { SEOHead } from "@/components/seo/SEOHead";
+import { Button } from "@/components/ui/button";
 
 interface Stats {
   totalLeads: number;
@@ -267,7 +268,7 @@ const Dashboard = () => {
         description={new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
         actions={<AddLeadDialog onLeadAdded={loadStats} triggerVariant="outline" />}
       />
-      <div className="mx-auto max-w-[1400px] space-y-4 px-6 py-5">
+      <div className="dashboard-overview mx-auto max-w-[1400px] space-y-4 py-5">
         <DashboardTour isOpen={showTour} onClose={() => setShowTour(false)} />
         <DiscoveryPrompt />
         {showChecklist && (
@@ -281,18 +282,19 @@ const Dashboard = () => {
         </div>
 
         {attention.length > 0 && (
-          <Panel>
+          <Panel className="dashboard-attention">
             <PanelHeader
               title="Needs attention"
               meta={`${attention.length} ${attention.length === 1 ? "item" : "items"}`}
             />
             <div data-tour="quick-actions">
               {attention.map((item, i) => (
-                <button
+                <Button
+                  variant="ghost"
                   key={item.key}
                   type="button"
                   onClick={() => navigate(item.href)}
-                  className={`group flex w-full items-start gap-4 px-4 py-3.5 text-left transition-colors hover:bg-primary/5 sm:px-5 ${
+                  className={`group flex h-auto w-full whitespace-normal justify-start rounded-none items-start gap-4 px-4 py-3.5 text-left transition-colors hover:bg-primary/5 sm:px-5 ${
                     i > 0 ? "border-t border-border/30" : ""
                   }`}
                 >
@@ -304,7 +306,7 @@ const Dashboard = () => {
                     <span className="hidden sm:inline">{item.action}</span>
                     <ArrowRight className="h-3.5 w-3.5" aria-hidden />
                   </span>
-                </button>
+                </Button>
               ))}
             </div>
           </Panel>
