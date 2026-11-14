@@ -143,3 +143,13 @@
 
 - [x] ICP editor: buttons, dropdowns, chips match dashboard design
 - [x] Dashboard background a little more transparent
+
+# Email worker and full action audit
+
+- [x] Trace the synthetic DMARC email: Cloudflare received all 8 sends; the email Worker cancels before forwarding, and the same catch-all Worker also drops support@outreign.io mail. Prepared a fixed Worker (Cloudflare access is read-only).
+- [ ] Owner pastes fixed Worker, verifies a support forwarding inbox, resends test; confirm stored report.
+- [ ] Real email send, reply, sequence and bulk send to the owner's own address only.
+- [ ] Integration connect flows reach each provider's consent screen (owner completes sign-in).
+- [ ] Small paid lead search and enrichment.
+- [ ] Admin Run Sweep, Run Heartbeat and Resolve alert.
+- [ ] Background job "runMicrotasks" error in several scheduled functions.

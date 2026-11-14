@@ -790,6 +790,36 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_tool_receipts: {
+        Row: {
+          created_at: string
+          detail: string | null
+          id: string
+          run_id: string | null
+          status: string
+          tool_name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          detail?: string | null
+          id?: string
+          run_id?: string | null
+          status: string
+          tool_name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          detail?: string | null
+          id?: string
+          run_id?: string | null
+          status?: string
+          tool_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_gateway_usage_tracking: {
         Row: {
           calls_count: number
@@ -3623,6 +3653,171 @@ export type Database = {
         }
         Relationships: []
       }
+      outbound_durable_runs: {
+        Row: {
+          enabled: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          enabled?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          enabled?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      outbound_gate_canary: {
+        Row: {
+          enabled: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          enabled?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          enabled?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      outbound_run_steps: {
+        Row: {
+          attempt_count: number
+          created_at: string
+          id: string
+          lead_id: string
+          lease_expires_at: string | null
+          lease_owner: string | null
+          payload: Json | null
+          phase: string
+          run_id: string
+          status: string
+          subject_key: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempt_count?: number
+          created_at?: string
+          id?: string
+          lead_id: string
+          lease_expires_at?: string | null
+          lease_owner?: string | null
+          payload?: Json | null
+          phase: string
+          run_id: string
+          status?: string
+          subject_key: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempt_count?: number
+          created_at?: string
+          id?: string
+          lead_id?: string
+          lease_expires_at?: string | null
+          lease_owner?: string | null
+          payload?: Json | null
+          phase?: string
+          run_id?: string
+          status?: string
+          subject_key?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      outbound_runs: {
+        Row: {
+          created_at: string
+          id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      outbound_verdicts: {
+        Row: {
+          body: string
+          content_hash: string
+          created_at: string
+          findings: Json
+          gate_status: string
+          id: string
+          lead_id: string | null
+          prompt_hash: string
+          rubric: Json | null
+          rubric_availability: string
+          rubric_prompt_hash: string
+          sent_email_id: string | null
+          shadow: boolean
+          shadow_mismatch: boolean
+          subject: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          content_hash: string
+          created_at?: string
+          findings?: Json
+          gate_status: string
+          id?: string
+          lead_id?: string | null
+          prompt_hash: string
+          rubric?: Json | null
+          rubric_availability: string
+          rubric_prompt_hash: string
+          sent_email_id?: string | null
+          shadow?: boolean
+          shadow_mismatch?: boolean
+          subject: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          content_hash?: string
+          created_at?: string
+          findings?: Json
+          gate_status?: string
+          id?: string
+          lead_id?: string | null
+          prompt_hash?: string
+          rubric?: Json | null
+          rubric_availability?: string
+          rubric_prompt_hash?: string
+          sent_email_id?: string | null
+          shadow?: boolean
+          shadow_mismatch?: boolean
+          subject?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       payoff_bank: {
         Row: {
           asserts_stat: boolean
@@ -4219,6 +4414,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      research_runs: {
+        Row: {
+          attempted_at: string
+          id: string
+          lead_id: string
+          receipt: Json
+          user_id: string
+        }
+        Insert: {
+          attempted_at?: string
+          id?: string
+          lead_id: string
+          receipt?: Json
+          user_id: string
+        }
+        Update: {
+          attempted_at?: string
+          id?: string
+          lead_id?: string
+          receipt?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
+      research_snapshots: {
+        Row: {
+          created_at: string
+          id: string
+          lead_id: string
+          payload: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lead_id: string
+          payload: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lead_id?: string
+          payload?: Json
+          user_id?: string
+        }
+        Relationships: []
       }
       research_usage: {
         Row: {
@@ -6669,6 +6912,10 @@ export type Database = {
           sequences_count: number
         }[]
       }
+      agent_step_owned: {
+        Args: { p_owner: string; p_step_id: string }
+        Returns: boolean
+      }
       api_tier_limits: {
         Args: { _plan: Database["public"]["Enums"]["subscription_plan"] }
         Returns: {
@@ -6707,6 +6954,18 @@ export type Database = {
           applied: boolean
           reason: string
         }[]
+      }
+      attach_verdict_to_send: {
+        Args: {
+          p_sent_email_id: string
+          p_user_id: string
+          p_verdict_id: string
+        }
+        Returns: boolean
+      }
+      begin_research_run: {
+        Args: { p_force?: boolean; p_lead_id: string; p_user_id: string }
+        Returns: string
       }
       begin_scheduled_email_send: {
         Args: { p_id: string }
@@ -6754,6 +7013,10 @@ export type Database = {
         }
         Returns: string
       }
+      cancel_agent_run: {
+        Args: { p_run_id: string; p_user_id: string }
+        Returns: number
+      }
       cancel_queued_sequence_mail: {
         Args: { p_enrollment_id: string; p_reason: string }
         Returns: number
@@ -6784,6 +7047,24 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      claim_agent_run_step: {
+        Args: {
+          p_lead_id: string
+          p_lease_seconds: number
+          p_max_attempts: number
+          p_owner: string
+          p_phase: string
+          p_run_id: string
+          p_subject_key?: string
+          p_user_id: string
+        }
+        Returns: {
+          attempt_count: number
+          payload: Json
+          step_id: string
+          step_status: string
+        }[]
       }
       claim_due_scheduled_emails: {
         Args: { p_limit?: number }
@@ -6866,6 +7147,14 @@ export type Database = {
       cleanup_expired_cache: { Args: never; Returns: undefined }
       cleanup_rl_buckets: { Args: never; Returns: undefined }
       cleanup_user_activity: { Args: never; Returns: undefined }
+      close_outbound_run: {
+        Args: { p_run_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      complete_agent_run_step: {
+        Args: { p_owner: string; p_payload?: Json; p_step_id: string }
+        Returns: boolean
+      }
       consume_rate_limit: {
         Args: { _key: string; _max: number; _window_seconds: number }
         Returns: boolean
@@ -7048,12 +7337,30 @@ export type Database = {
       }
       internal_job_key: { Args: never; Returns: string }
       is_demo_mode: { Args: { _user_id: string }; Returns: boolean }
+      latest_outbound_verdict: {
+        Args: { p_content_hash: string; p_user_id: string }
+        Returns: {
+          content_hash: string
+          gate_status: string
+          id: string
+          prompt_hash: string
+          rubric_prompt_hash: string
+        }[]
+      }
       lead_intelligence_enabled: { Args: never; Returns: boolean }
       leads_due_for_hiring_refresh: {
         Args: { p_limit?: number }
         Returns: {
           lead_id: string
           user_id: string
+        }[]
+      }
+      list_agent_tool_receipts: {
+        Args: { p_run_id: string; p_user_id: string }
+        Returns: {
+          detail: string
+          status: string
+          tool_name: string
         }[]
       }
       lock_expired_trials: { Args: never; Returns: undefined }
@@ -7082,6 +7389,12 @@ export type Database = {
       }
       mcp_consume_call: { Args: { _tool: string }; Returns: Json }
       next_month_start_utc: { Args: never; Returns: string }
+      open_outbound_run: { Args: { p_user_id: string }; Returns: string }
+      outbound_canary_enabled: { Args: { p_user_id: string }; Returns: boolean }
+      outbound_durable_enabled: {
+        Args: { p_user_id: string }
+        Returns: boolean
+      }
       pick_sending_account: { Args: { p_user_id: string }; Returns: string }
       plan_for_user: {
         Args: { _user_id: string }
@@ -7092,6 +7405,16 @@ export type Database = {
         Returns: number
       }
       recompute_activation: { Args: { _user_id: string }; Returns: undefined }
+      record_agent_tool_receipt: {
+        Args: {
+          p_detail: string
+          p_run_id: string
+          p_status: string
+          p_tool_name: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       record_ai_usage: {
         Args: {
           p_completion_tokens?: number
@@ -7103,6 +7426,24 @@ export type Database = {
           p_user_id?: string
         }
         Returns: number
+      }
+      record_outbound_verdict: {
+        Args: {
+          p_body: string
+          p_content_hash: string
+          p_findings: Json
+          p_gate_status: string
+          p_lead_id: string
+          p_prompt_hash: string
+          p_rubric: Json
+          p_rubric_availability: string
+          p_rubric_prompt_hash: string
+          p_shadow: boolean
+          p_shadow_mismatch: boolean
+          p_subject: string
+          p_user_id: string
+        }
+        Returns: string
       }
       record_user_login: {
         Args: {
@@ -7136,6 +7477,15 @@ export type Database = {
       release_stale_agent_job_items: { Args: never; Returns: number }
       release_stale_rescore_items: { Args: never; Returns: number }
       release_stale_scheduled_email_claims: { Args: never; Returns: number }
+      replace_research_snapshots: {
+        Args: {
+          p_lead_id: string
+          p_receipt: Json
+          p_rows: Json
+          p_user_id: string
+        }
+        Returns: undefined
+      }
       reset_daily_email_counters: { Args: never; Returns: undefined }
       resume_due_enrollments: { Args: never; Returns: number }
       saved_lead_facets: { Args: never; Returns: Json }
@@ -7194,6 +7544,16 @@ export type Database = {
         Returns: undefined
       }
       seed_personas: { Args: { p_user_id: string }; Returns: undefined }
+      store_research_snapshots: {
+        Args: {
+          p_lead_id: string
+          p_receipt: Json
+          p_rows: Json
+          p_run_id: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
       sweep_lead_no_response: { Args: never; Returns: number }
       system_health_alert: { Args: never; Returns: undefined }
       touch_last_active: { Args: never; Returns: undefined }
