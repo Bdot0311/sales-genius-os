@@ -1,3 +1,4 @@
+import { FluidFieldBackground } from "@/components/ui/fluid-field";
 import { ReactNode, useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -228,6 +229,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   // most obvious on the chat, whose own height is in dvh.
   return (
     <div className="dashboard-shell min-h-[100dvh] bg-background">
+      <FluidFieldBackground />
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div

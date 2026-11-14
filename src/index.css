@@ -1680,6 +1680,7 @@ html.light:has(.landing-page) body {
 .dashboard-shell {
   font-family: "Inter", system-ui, sans-serif;
   background: hsl(var(--glow-ground));
+  position: relative; isolation: isolate;
   -webkit-font-smoothing: antialiased;
 }
 .dashboard-shell::after {
@@ -1687,7 +1688,7 @@ html.light:has(.landing-page) body {
   background-image: var(--glow-grain); opacity: var(--glow-grain-opacity); mix-blend-mode: overlay;
 }
 .dashboard-shell .dashboard-sidebar,
-.dashboard-shell .dashboard-topbar { background: hsl(var(--glow-ground)); border-color: transparent; }
+.dashboard-shell .dashboard-topbar { background: hsl(var(--glow-ground) / 0.55); border-color: transparent; backdrop-filter: blur(18px); }
 .dashboard-shell .dashboard-nav-item { border-radius: 999px; }
 .dashboard-shell .dashboard-nav-item[aria-current="page"] {
   background: var(--glow-glass); box-shadow: var(--glow-glass-ring); color: hsl(var(--foreground));
