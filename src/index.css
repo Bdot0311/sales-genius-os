@@ -1906,3 +1906,7 @@ body.dashboard-active :is([role="menuitem"], [role="option"], [role="menuitemche
 body.dashboard-active :is([role="menuitem"], [role="option"], [role="menuitemcheckbox"], [role="menuitemradio"]):is([data-highlighted], :hover) { background: rgb(var(--glow-iris) / 0.18); color: hsl(var(--foreground)); }
 body.dashboard-active [role="dialog"] [class*="border-primary"]:not(button) { border-color: rgb(var(--glow-iris) / 0.35); border-radius: 18px; background: rgb(var(--glow-iris) / 0.06); }
 body.dashboard-active :is(.dashboard-shell main, [role="dialog"], [role="alertdialog"]) span[data-orientation="horizontal"].bg-secondary { background: hsl(var(--foreground) / 0.1); }
+/* Vertical tab rails (Settings) are a list, not a pill: keep a soft rounded rail instead of a 999px blob. */
+.dashboard-shell main :is([role="tablist"][aria-orientation="vertical"], .settings-tab-list) { border-radius: 0; background: transparent; box-shadow: none; }
+.dashboard-shell main .settings-tab-scroller { background: var(--glow-glass); box-shadow: var(--glow-glass-ring); border-color: transparent; border-radius: 20px; }
+@media (max-width: 1023px) { .dashboard-shell main .settings-tab-scroller { background: transparent; box-shadow: none; } }

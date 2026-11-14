@@ -155,10 +155,10 @@ export const MessageBlocksList = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="dashboard-page-header flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Message Blocks</h2>
-          <p className="text-muted-foreground">
+          <h1 className="text-lg font-semibold">Message Blocks</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
             Reusable content components for building emails
           </p>
         </div>
