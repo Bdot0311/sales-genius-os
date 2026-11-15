@@ -185,8 +185,8 @@ async function stopSequenceForReply(adminClient: any, userId: string, reply: Syn
 }
 
 /** So the next sweep recognises this Gmail message and does not record it again. */
-async function rememberUnclassifiedReply(adminClient: any, userId: string, reply: SyncedReply) {
-  const { error } = await adminClient.from("reply_analysis").insert({
+async function rememberUnclassifiedReply(adminClient: any, userId: string, reply: SyncedReply): Promise<string | null> {
+  const { data, error } = await adminClient.from("reply_analysis").insert({
     user_id: userId,
     lead_id: reply.leadId,
     sent_email_id: reply.sentEmailId,
@@ -201,8 +201,12 @@ async function rememberUnclassifiedReply(adminClient: any, userId: string, reply
     triage_category: reply.isAutoReply ? "ooo" : "reply",
     requires_human_action: !reply.isAutoReply,
     analyzed_at: new Date().toISOString(),
-  });
-  if (error) console.error("[inbox-sync] reply marker not stored:", error.message);
+  }).select("id").maybeSingle();
+  if (error) {
+    console.error("[inbox-sync] reply marker not stored:", error.message);
+    return null;
+  }
+  return data?.id ?? null;
 }
 
 serve(async (req) => {
@@ -621,6 +625,7 @@ serve(async (req) => {
     // and does not stop anything.
     for (const r of replies) {
       let classified = false;
+      let storedId: string | null = null;
       if (payload.analyzeReplies && r.bodyText?.trim()) {
         try {
           const res = await fetch(`${supabaseUrl}/functions/v1/analyze-reply`, {
@@ -641,6 +646,7 @@ serve(async (req) => {
             console.error(`analyze-reply ${res.status}: ${data?.error ?? ""}`);
           } else {
             classified = true;
+            storedId = data?.analysis?.id ?? null;
             const action = data?.sequence?.action;
             // 'ignored' from the model is not a reason to keep mailing a person.
             // An auto-reply is, and isAutoReply is how we know.
@@ -653,16 +659,30 @@ serve(async (req) => {
         }
       }
       if (!classified) {
-        await rememberUnclassifiedReply(adminClient, user.id, r);
+        storedId = await rememberUnclassifiedReply(adminClient, user.id, r);
         if (!r.isAutoReply) await stopSequenceForReply(adminClient, user.id, r);
+      }
+      // The agent found this before the sweep had stored it. Same claim as a
+      // row the sweep stored earlier: 72 hours from when they replied, after
+      // the ship cutoff, and only one run wins.
+      if (payload.forAgent) {
+        if (!storedId || !r.receivedAt) continue;
+        const { data: claimed, error: claimError } = await adminClient.rpc("claim_reply_for_agent", {
+          p_id: storedId,
+          p_user_id: user.id,
+          p_received_at: r.receivedAt,
+        });
+        if (claimError) console.error("[inbox-sync] fresh reply claim failed:", claimError.message);
+        else if (claimed === true) r.analysisId = storedId;
       }
     }
 
+    const fresh = payload.forAgent ? replies.filter((r) => r.analysisId) : replies;
 
     return new Response(
       JSON.stringify({
         success: true,
-        replies: replies.concat(agentReplies),
+        replies: fresh.concat(agentReplies),
         threadsChecked: threads.length,
         newReplies: replies.length,
         // A throttled sweep is partial, not empty.

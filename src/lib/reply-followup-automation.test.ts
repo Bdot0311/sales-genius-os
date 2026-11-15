@@ -92,7 +92,7 @@ describe("a reply the sweep stored still reaches the agent once", () => {
   it("inbox-sync claims those rows and does not record them again", () => {
     expect(INBOX).toContain("payload.forAgent && !prior.processed");
     expect(INBOX).toContain('rpc("claim_reply_for_agent"');
-    expect(INBOX).toContain("replies.concat(agentReplies)");
+    expect(INBOX).toContain("fresh.concat(agentReplies)");
     expect(MIGRATION).not.toContain("claim_reply_for_agent");
     const claim = readFileSync("supabase/migrations/20261115150000_claim_reply_by_received_time.sql", "utf8");
     expect(claim).toContain("coalesce(processed_by_agent, false) = false");
@@ -111,6 +111,14 @@ describe("a reply the sweep stored still reaches the agent once", () => {
     expect(live).toContain("p_received_at < now() - interval '72 hours'");
     expect(live).not.toContain("coalesce(analyzed_at, created_at) >= now() - interval '72 hours'");
     expect(INBOX).toContain("p_received_at: receivedAt");
+    expect(INBOX).toContain("p_received_at: r.receivedAt");
+    expect(INBOX).toContain("replies.filter((r) => r.analysisId)");
+    expect(AGENT).toContain("reply was not claimed; not answering");
+    expect(AGENT).toContain("claimed reply was not found; not answering");
+    expect(AGENT).not.toContain("analysisList[0]");
+    const once = readFileSync("supabase/migrations/20261115160000_one_claim_per_reply.sql", "utf8");
+    expect(once).toContain("other.detected_signals->>'gmail_message_id'");
+    expect(once).toContain("p_received_at < now() - interval '72 hours'");
   });
 
   it("treats a later message from us as already answered", () => {
