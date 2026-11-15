@@ -8,6 +8,7 @@
 
 import { toSignalFacts, type SignalEventRow } from "./signal-facts.ts";
 import { allowedActions, clampDailyCap } from "./visitor-automation.ts";
+import { featureEnabled, VISITOR_FLAG } from "./visitor-identity.ts";
 
 type Admin = { from: (t: string) => any };
 type ToolEvent = { name: string; label: string; status: "ok" | "error"; detail?: string };
@@ -108,6 +109,13 @@ const pick = (args: Record<string, unknown>, fields: string[]) => {
   for (const f of fields) if (args[f] !== undefined && args[f] !== null) out[f] = args[f];
   return out;
 };
+
+/** Service-role writes skip RLS, so the flag and the grant are checked here. */
+async function visitorWritesAllowed(admin: Admin, userId: string): Promise<boolean> {
+  const { data: flag } = await admin.from("feature_flags").select("is_enabled").eq("name", VISITOR_FLAG).maybeSingle();
+  const { data: grant } = await admin.from("visitor_workspace_grants").select("enabled").eq("user_id", userId).maybeSingle();
+  return featureEnabled(flag?.is_enabled === true, grant?.enabled === true);
+}
 
 /** Returns undefined when `name` is not one of these tools. */
 export async function runOutboundTool(
@@ -321,6 +329,7 @@ export async function runOutboundTool(
       return done("Read visitor companies", error, `${data?.length ?? 0}`, { companies: data ?? [] });
     }
     case "save_visitor_site": {
+      if (!(await visitorWritesAllowed(admin, userId))) return { error: "Visitor Intelligence is off for this workspace." };
       const row: Record<string, unknown> = {};
       if (typeof args.name === "string" && args.name.trim()) row.name = args.name.trim().slice(0, 120);
       if (Array.isArray(args.allowed_domains)) row.allowed_domains = args.allowed_domains.map(String).slice(0, 20);
@@ -334,6 +343,12 @@ export async function runOutboundTool(
       return save("visitor_sites", null, row, "visitor site", "name");
     }
     case "save_visitor_rule": {
+      if (!(await visitorWritesAllowed(admin, userId))) return { error: "Visitor Intelligence is off for this workspace." };
+      const siteId = String(args.site_id ?? "");
+      if (siteId) {
+        const { data: owned } = await admin.from("visitor_sites").select("id").eq("id", siteId).eq("user_id", userId).maybeSingle();
+        if (!owned) return { error: "Site was not found in this workspace." };
+      }
       const actions = allowedActions(Array.isArray(args.actions) ? args.actions.map(String) : ["find_contacts", "enrich", "draft"], args.sequence_id ? String(args.sequence_id) : null);
       const row: Record<string, unknown> = {};
       if (typeof args.name === "string") row.name = args.name.trim().slice(0, 120);

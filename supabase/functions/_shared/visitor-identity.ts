@@ -97,17 +97,24 @@ export function isIpv6(value: string): boolean {
 }
 
 /**
- * The platform-observed address is the last hop in x-forwarded-for.
- * Earlier hops are whatever the caller wrote. Nothing in the JSON body is an IP.
+ * The visitor address Supabase documents for an edge function.
+ *
+ * The edge-function examples take the first x-forwarded-for entry and send
+ * that to the IP lookup. Later entries are proxy hops (Cloudflare, the
+ * Supabase gateway), so using the rightmost address resolves the visit to
+ * the platform instead of the caller.
+ *
+ * https://supabase.com/docs/guides/functions/examples/cloudflare-turnstile
+ * (`const ip = clientIps[0]`)
+ * https://github.com/supabase/supabase/blob/master/examples/edge-functions/supabase/functions/location/index.ts
+ *
+ * A caller-supplied address in the JSON body is never read.
  */
 export function trustedClientIp(xff: string | null | undefined): string | null {
   if (!xff) return null;
-  const hops = xff.split(",").map((part) => part.trim()).filter(Boolean);
-  for (let i = hops.length - 1; i >= 0; i--) {
-    const hop = hops[i].replace(/^::ffff:/i, "");
-    if (isIp(hop)) return hop.toLowerCase();
-  }
-  return null;
+  const first = xff.split(",")[0]?.trim().replace(/^::ffff:/i, "");
+  if (!first || !isIp(first)) return null;
+  return first.toLowerCase();
 }
 
 export function isPrivateOrLocal(ip: string): boolean {

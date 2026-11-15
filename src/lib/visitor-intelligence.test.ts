@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { runOutboundTool } from "../../supabase/functions/_shared/agent-outbound-tools.ts";
 import { createContext, runInContext } from "node:vm";
 import { describe, expect, it } from "vitest";
 import { planRuleRun, RULE_DAILY_CAP_MAX, WORKSPACE_DAILY_CAP } from "../../supabase/functions/_shared/visitor-automation.ts";
@@ -59,13 +60,15 @@ function event(path = "/pricing") {
 }
 
 describe("visitor ingest", () => {
-  it("takes the platform hop from x-forwarded-for and ignores a body address", () => {
-    expect(trustedClientIp("1.2.3.4, 198.51.100.20")).toBe("198.51.100.20");
-    expect(trustedClientIp("not-an-ip, 203.0.113.9")).toBe("203.0.113.9");
+  it("uses the first x-forwarded-for entry Supabase documents, and ignores a body address", () => {
+    // Later hops are proxy addresses. A non-IP first entry is not replaced
+    // with one of those hops.
+    expect(trustedClientIp("198.51.100.20, 104.16.0.1")).toBe("198.51.100.20");
+    expect(trustedClientIp("not-an-ip, 203.0.113.9")).toBeNull();
     const plan = planIngest({
       ...base,
-      body: { site_id: SITE.id, consent: true, ip: "8.8.8.8", events: [event()] },
-      forwardedFor: "8.8.8.8, 198.51.100.8",
+      body: { site_id: SITE.id, consent: true, ip: "1.1.1.1", events: [event()] },
+      forwardedFor: "198.51.100.8, 104.16.0.1",
     });
     expect(plan.ok).toBe(true);
     if (plan.ok) expect(plan.ip).toBe("198.51.100.8");
@@ -302,6 +305,72 @@ describe("tracking script", () => {
     const fallback = boot({ consent: "not_required", beacon: false });
     fallback.context.OutReign.flush();
     expect(fallback.sent.at(-1)?.via).toBe("fetch");
+  });
+});
+
+describe("rules stay inside the workspace that owns the site", () => {
+  it("loads rules for the job's user, and skips work when the flag or grant is off", () => {
+    const src = readFileSync("supabase/functions/visitor-resolve/index.ts", "utf8");
+    const rules = src.slice(src.indexOf('from("visitor_rules")'), src.indexOf("const since"));
+    expect(rules).toContain('.eq("site_id", job.site_id)');
+    expect(rules).toContain('.eq("user_id", job.user_id)');
+    const start = src.indexOf("for (const job");
+    const gateAt = src.indexOf("workspaceEnabled", start);
+    const resolveAt = src.indexOf("resolveJob", start);
+    expect(gateAt).toBeGreaterThan(start);
+    expect(resolveAt).toBeGreaterThan(gateAt);
+  });
+});
+
+describe("agent writes honour the flag and the site owner", () => {
+  const toolEvents: Array<{ name: string; label: string; status: "ok" | "error"; detail?: string }> = [];
+
+  function adminFor(tables: Record<string, { data: unknown }>) {
+    const ops: string[] = [];
+    const from = (table: string) => {
+      const chain = {
+        select: () => chain,
+        eq: () => chain,
+        maybeSingle: () => Promise.resolve({ data: tables[table]?.data ?? null, error: null }),
+        insert: () => {
+          ops.push(`insert:${table}`);
+          return { select: () => ({ single: () => Promise.resolve({ data: { id: "rule-1" }, error: null }) }) };
+        },
+      };
+      return chain;
+    };
+    return { admin: { from }, ops };
+  }
+
+  it("refuses a site write when the flag or the grant is off", async () => {
+    const off = adminFor({ feature_flags: { data: { is_enabled: true } }, visitor_workspace_grants: { data: { enabled: false } } });
+    const result = await runOutboundTool("save_visitor_site", { name: "Other" }, {
+      admin: off.admin, userId: "user-a", toolEvents,
+    });
+    expect(result).toEqual({ error: "Visitor Intelligence is off for this workspace." });
+    expect(off.ops).not.toContain("insert:visitor_sites");
+  });
+
+  it("refuses a rule when the flag or the grant is off", async () => {
+    const off = adminFor({ feature_flags: { data: { is_enabled: false } }, visitor_workspace_grants: { data: { enabled: true } } });
+    const result = await runOutboundTool("save_visitor_rule", { site_id: "site-b", name: "Stolen" }, {
+      admin: off.admin, userId: "user-a", toolEvents,
+    });
+    expect(result).toEqual({ error: "Visitor Intelligence is off for this workspace." });
+    expect(off.ops).not.toContain("insert:visitor_rules");
+  });
+
+  it("refuses a rule whose site belongs to someone else", async () => {
+    const foreign = adminFor({
+      feature_flags: { data: { is_enabled: true } },
+      visitor_workspace_grants: { data: { enabled: true } },
+      visitor_sites: { data: null },
+    });
+    const result = await runOutboundTool("save_visitor_rule", { site_id: "site-b", name: "Stolen" }, {
+      admin: foreign.admin, userId: "user-a", toolEvents,
+    });
+    expect(result).toEqual({ error: "Site was not found in this workspace." });
+    expect(foreign.ops).not.toContain("insert:visitor_rules");
   });
 });
 

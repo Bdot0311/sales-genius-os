@@ -5,6 +5,7 @@ import { CONTACTS_PER_RUN, planRuleRun, type VisitorAction } from "../_shared/vi
 import {
   asnQueryName,
   decideIdentity,
+  featureEnabled,
   isPrivateOrLocal,
   networkPrefix,
   parseAsnTxt,
@@ -12,6 +13,7 @@ import {
   ptrName,
   registrableDomain,
   visitFacts,
+  VISITOR_FLAG,
   type IdentityDecision,
   type RegistrySignals,
 } from "../_shared/visitor-identity.ts";
@@ -42,8 +44,22 @@ serve(async (req) => {
 
   let resolved = 0;
   let automated = 0;
+  let skipped = 0;
   for (const job of jobs ?? []) {
     try {
+      // The queue outlives the switch. A job claimed after the flag or the
+      // workspace grant is turned off must not spend search, enrich, research
+      // or draft credits.
+      if (!(await workspaceEnabled(admin, job.user_id))) {
+        skipped += 1;
+        await admin.from("visitor_resolve_jobs").update({
+          status: "done",
+          ip_raw: null,
+          last_error: "Visitor Intelligence is off for this workspace.",
+          finished_at: new Date().toISOString(),
+        }).eq("id", job.id);
+        continue;
+      }
       const matchId = await resolveJob(admin, job);
       resolved += 1;
       if (matchId) automated += await runRules(admin, job, matchId);
@@ -58,8 +74,14 @@ serve(async (req) => {
       }).eq("id", job.id);
     }
   }
-  return json({ resolved, automated });
+  return json({ resolved, automated, skipped });
 });
+
+async function workspaceEnabled(admin: SupabaseClient, userId: string): Promise<boolean> {
+  const { data: flag } = await admin.from("feature_flags").select("is_enabled").eq("name", VISITOR_FLAG).maybeSingle();
+  const { data: grant } = await admin.from("visitor_workspace_grants").select("enabled").eq("user_id", userId).maybeSingle();
+  return featureEnabled(flag?.is_enabled === true, grant?.enabled === true);
+}
 
 async function resolveJob(admin: SupabaseClient, job: Job): Promise<string | null> {
   const prefix = job.network_prefix || (job.ip_raw ? networkPrefix(job.ip_raw) : null);
@@ -278,6 +300,7 @@ async function runRules(admin: SupabaseClient, job: Job, matchId: string): Promi
   const { data: rules } = await admin.from("visitor_rules")
     .select("id, enabled, min_confidence, page_types, event_names, actions, daily_cap, sequence_id")
     .eq("site_id", job.site_id)
+    .eq("user_id", job.user_id)
     .eq("enabled", true);
   const since = new Date(Date.now() - 86400000).toISOString();
   const { count: workspaceRuns } = await admin.from("visitor_rule_runs")

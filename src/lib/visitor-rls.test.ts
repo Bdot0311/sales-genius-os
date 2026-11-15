@@ -54,6 +54,7 @@ describe("visitor intelligence tenant isolation", () => {
           `${bootstrap}\nGRANT anon, authenticated, service_role TO "${member}";`], { stdio: "pipe" });
       }
       await sql.unsafe(readFileSync("supabase/migrations/20261115180000_visitor_intelligence.sql", "utf8"));
+      await sql.unsafe(readFileSync("supabase/migrations/20261115203000_visitor_rule_tenant_and_reclaim.sql", "utf8"));
 
       const owner = crypto.randomUUID();
       const other = crypto.randomUUID();
@@ -127,6 +128,36 @@ describe("visitor intelligence tenant isolation", () => {
 
       await expect(sql`INSERT INTO public.visitor_events (site_id, user_id, event_id, event_name, session_id, visitor_key)
         VALUES (${site}::uuid, ${owner}::uuid, '33333333-3333-4333-8333-333333333333', 'page_view', 'sess', 'visitor')`).rejects.toThrow(/duplicate/i);
+
+      await sql`INSERT INTO public.visitor_workspace_grants (user_id, enabled) VALUES (${other}::uuid, true)
+        ON CONFLICT (user_id) DO UPDATE SET enabled = true`;
+      await expect(sql.begin(async (tx) => {
+        await tx`SELECT set_config('request.jwt.claim.sub', ${other}, true)`;
+        await tx`SET LOCAL ROLE authenticated`;
+        await tx`INSERT INTO public.visitor_rules (site_id, user_id, name)
+          VALUES (${site}::uuid, ${other}::uuid, 'Stolen')`;
+      })).rejects.toThrow(/foreign key|visitor_rules_site_user_fkey/i);
+
+      const ownRule = await sql.begin(async (tx) => {
+        await tx`SELECT set_config('request.jwt.claim.sub', ${owner}, true)`;
+        await tx`SET LOCAL ROLE authenticated`;
+        return tx`INSERT INTO public.visitor_rules (site_id, user_id, name)
+          VALUES (${site}::uuid, ${owner}::uuid, 'Own') RETURNING id`;
+      });
+      expect(ownRule).toHaveLength(1);
+
+      await sql`INSERT INTO public.visitor_resolve_jobs
+        (site_id, user_id, visitor_key, ip_hash, status, attempts, claimed_at)
+        VALUES
+        (${site}::uuid, ${owner}::uuid, 'visitor', 'hash-stale', 'running', 1, now() - interval '11 minutes'),
+        (${site}::uuid, ${owner}::uuid, 'visitor', 'hash-exhausted', 'running', 3, now() - interval '11 minutes')`;
+      const reclaimed = await sql`SELECT ip_hash, status, attempts FROM public.claim_visitor_resolve_jobs(5)`;
+      expect(reclaimed.map((row) => row.ip_hash)).toContain("hash-stale");
+      expect(reclaimed.find((row) => row.ip_hash === "hash-stale")?.attempts).toBe(2);
+      expect(reclaimed.map((row) => row.ip_hash)).not.toContain("hash-exhausted");
+      const [exhausted] = await sql`SELECT status, ip_raw FROM public.visitor_resolve_jobs WHERE ip_hash = 'hash-exhausted'`;
+      expect(exhausted.status).toBe("failed");
+      expect(exhausted.ip_raw).toBeNull();
     } finally {
       await sql.end({ timeout: 1 });
     }
