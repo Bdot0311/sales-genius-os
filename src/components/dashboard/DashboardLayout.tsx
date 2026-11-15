@@ -33,6 +33,7 @@ import {
   Bot,
   Plug,
   MonitorPlay,
+  Radar,
 
 } from "lucide-react";
 import { User } from "@supabase/supabase-js";
@@ -54,6 +55,7 @@ import { WhatsNewButton } from "@/components/dashboard/WhatsNewButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAccountProfile } from "@/hooks/use-account-profile";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useVisitorIntelligence } from "@/hooks/use-visitor-intelligence";
 
 
 
@@ -69,6 +71,7 @@ const navSections = [
       { name: "Inbox", icon: Inbox, href: "/dashboard/inbox" },
       { name: "Leads", icon: Users, href: "/dashboard/leads" },
       { name: "Accounts", icon: Building2, href: "/dashboard/accounts" },
+      { name: "Visitors", icon: Radar, href: "/dashboard/visitors" },
       { name: "ICP Builder", icon: Target, href: "/dashboard/icp" },
       { name: "Pipeline", icon: TrendingUp, href: "/dashboard/pipeline" },
     ],
@@ -110,6 +113,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   useLiveCrmIndicators();
   useUsageHeartbeat();
   const { isDemoMode } = useDemoMode();
+  const { enabled: visitorIntelligence } = useVisitorIntelligence();
   const { loading: gateLoading, needsOnboarding } = useOnboardingGate();
 
   // New accounts answer the signup questionnaire before anything else. The flag
@@ -289,14 +293,16 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
           {/* Navigation */}
           <nav className={`flex-1 ${sidebarCollapsed ? "p-2" : "px-3 py-3"} overflow-y-auto`}>
-            {navSections.map((section) => (
+            {navSections.map((section) => {
+              const items = section.items.filter((item) => item.href !== "/dashboard/visitors" || visitorIntelligence);
+              return (
               <div key={section.label} className="mb-1">
                 {!sidebarCollapsed && (
                   <p className="px-3 pt-3 pb-1 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase select-none">
                     {section.label}
                   </p>
                 )}
-                {section.items.map((item) => {
+                {items.map((item) => {
                   const isActive = location.pathname === item.href ||
                     (item.href !== '/dashboard' && location.pathname.startsWith(item.href));
                   return (
@@ -331,7 +337,8 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                   );
                 })}
               </div>
-            ))}
+            );
+            })}
             {isAdmin && (
               <TooltipProvider delayDuration={0}>
                 <Tooltip>

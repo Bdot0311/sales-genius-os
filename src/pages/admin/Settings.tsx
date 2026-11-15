@@ -20,6 +20,7 @@ import { EmailLogsPanel } from "@/components/admin/EmailLogsPanel";
 import { DemoModeCard } from "@/components/admin/DemoModeCard";
 import { ChangelogTab } from "@/components/admin/ChangelogTab";
 import { LeadIntelligencePanel } from "@/components/admin/LeadIntelligencePanel";
+import { VisitorAccessCard } from "@/components/admin/VisitorAccessCard";
 import { AgentBuildCard } from "@/components/admin/AgentBuildCard";
 
 
@@ -498,6 +499,8 @@ const AdminSettings = () => {
             <AgentBuildCard />
 
             <LeadIntelligencePanel />
+
+            <VisitorAccessCard />
 
             <div className="flex justify-between items-center">
               <p className="text-sm text-muted-foreground">

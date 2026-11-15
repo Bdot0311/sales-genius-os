@@ -79,6 +79,7 @@ These live in [`docs/`](docs/) and were not linked from anywhere until now.
 | Page | What it covers |
 |---|---|
 | [ENVIRONMENT.md](docs/ENVIRONMENT.md) | Every secret the product reads, what reads it, and what silently degrades when it is missing |
+| [VISITOR_INTELLIGENCE.md](docs/VISITOR_INTELLIGENCE.md) | Company-level website visitor identification: install, retention, endpoints and coverage |
 | [DELIVERABILITY.md](docs/DELIVERABILITY.md) | Sender reputation, warmup, placement, and the thresholds behind the scores |
 | [BACKGROUND_WORK.md](docs/BACKGROUND_WORK.md) | How long-running jobs survive navigation |
 | [AGENT_BATCH_QUEUE.md](docs/AGENT_BATCH_QUEUE.md) | The job queue behind bulk drafting, enrichment and scoring |

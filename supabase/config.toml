@@ -198,3 +198,9 @@ project_id = "ghgfjnepvxvxrncmskys"
     verify_jwt = false
   [functions.mcp-oauth-metadata]
     verify_jwt = false
+  [functions.visitor-ingest]
+    verify_jwt = false
+  [functions.visitor-sdk]
+    verify_jwt = false
+  [functions.visitor-resolve]
+    verify_jwt = false

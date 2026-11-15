@@ -32,6 +32,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const Leads = lazy(() => import("./pages/Leads"));
 const Accounts = lazy(() => import("./pages/Accounts"));
+const Visitors = lazy(() => import("./pages/Visitors"));
 const SavedLeads = lazy(() => import("./pages/SavedLeads"));
 const Coach = lazy(() => import("./pages/Coach"));
 const LiveCoaching = lazy(() => import("./pages/LiveCoaching"));
@@ -539,6 +540,7 @@ const App = () => {
               <Route path="/dashboard/leads" element={<MaintenanceGuard><Leads /></MaintenanceGuard>} />
               <Route path="/dashboard/leads/saved" element={<MaintenanceGuard><SavedLeads /></MaintenanceGuard>} />
               <Route path="/dashboard/accounts" element={<MaintenanceGuard><Accounts /></MaintenanceGuard>} />
+              <Route path="/dashboard/visitors" element={<MaintenanceGuard><Visitors /></MaintenanceGuard>} />
               <Route path="/dashboard/coach" element={<MaintenanceGuard><Coach /></MaintenanceGuard>} />
               <Route path="/dashboard/coach/live" element={<MaintenanceGuard><LiveCoaching /></MaintenanceGuard>} />
               <Route path="/dashboard/coach/playbooks" element={<MaintenanceGuard><Playbooks /></MaintenanceGuard>} />
