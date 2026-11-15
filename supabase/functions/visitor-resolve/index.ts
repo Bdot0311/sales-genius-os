@@ -373,13 +373,35 @@ async function runRules(admin: SupabaseClient, job: Job, matchId: string): Promi
       }
       continue;
     }
-    const claimed = await admin.from("visitor_rule_runs").insert({
-      rule_id: rule.id,
-      match_id: matchId,
-      user_id: job.user_id,
-      status: "running",
-    }).select("id").single();
-    if (claimed.error || !claimed.data) continue;
+    // The counts above are a hint. Jobs in this batch, and the next rule in
+    // this same job, would otherwise all read the same number and each insert
+    // a running row. The claim locks, counts again, and inserts only when
+    // both caps still have room. Paid work waits on that.
+    const claimed = await admin.rpc("claim_visitor_rule_run", {
+      p_user_id: job.user_id,
+      p_rule_id: rule.id,
+      p_match_id: matchId,
+    });
+    if (claimed.error || claimed.data !== true) {
+      if (claimed.error) console.error("[visitor-resolve] rule claim failed", claimed.error.message);
+      const skipped = await admin.from("visitor_rule_runs").insert({
+        rule_id: rule.id,
+        match_id: matchId,
+        user_id: job.user_id,
+        status: "skipped",
+        skip_reason: "Daily cap is reached.",
+      });
+      if (skipped.error && skipped.error.code !== "23505") {
+        console.error("[visitor-resolve] cap skip failed", skipped.error.message);
+      }
+      continue;
+    }
+    const { data: running } = await admin.from("visitor_rule_runs").select("id")
+      .eq("rule_id", rule.id)
+      .eq("match_id", matchId)
+      .eq("status", "running")
+      .maybeSingle();
+    if (!running) continue;
     started += 1;
     const taken = await executeActions(admin, job.user_id, match, seen, plan.actions, rule.sequence_id);
     const failed = taken.some((item) => !item.ok);
@@ -388,7 +410,7 @@ async function runRules(admin: SupabaseClient, job: Job, matchId: string): Promi
       actions_taken: taken,
       finished_at: new Date().toISOString(),
       skip_reason: failed ? taken.find((item) => !item.ok)?.detail ?? "Action failed" : null,
-    }).eq("id", claimed.data.id);
+    }).eq("id", running.id);
   }
   return started;
 }

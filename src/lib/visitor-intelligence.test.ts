@@ -357,6 +357,16 @@ describe("rules stay inside the workspace that owns the site", () => {
     const resolveAt = src.indexOf("resolveJob", start);
     expect(gateAt).toBeGreaterThan(start);
     expect(resolveAt).toBeGreaterThan(gateAt);
+    const rulesFn = src.slice(src.indexOf("async function runRules"), src.indexOf("async function executeActions"));
+    const claimAt = rulesFn.indexOf('rpc("claim_visitor_rule_run"');
+    const paidAt = rulesFn.indexOf("executeActions(");
+    expect(claimAt).toBeGreaterThan(-1);
+    expect(paidAt).toBeGreaterThan(claimAt);
+    const migration = readFileSync("supabase/migrations/20261115220000_claim_visitor_rule_run.sql", "utf8");
+    expect(migration).toContain("pg_advisory_xact_lock(hashtextextended('visitor-workspace:'");
+    expect(migration).toContain("pg_advisory_xact_lock(hashtextextended('visitor-rule:'");
+    expect(migration).toContain("v_workspace_runs >= 25");
+    expect(migration).toContain("GRANT EXECUTE ON FUNCTION public.claim_visitor_rule_run(uuid, uuid, uuid) TO service_role");
   });
 });
 
