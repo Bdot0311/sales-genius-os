@@ -1,0 +1,1 @@
+GRANT ALL ON TABLE public.outbound_gate_canary TO service_role;

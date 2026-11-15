@@ -400,6 +400,13 @@
       "when": 1794749420996,
       "tag": "0056_agency_stats_active_clients_only",
       "breakpoints": true
+    },
+    {
+      "idx": 57,
+      "version": "7",
+      "when": 1794749654225,
+      "tag": "0057_restore_outbound_gate_canary_service_grant",
+      "breakpoints": true
     }
   ]
 }
