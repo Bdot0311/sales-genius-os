@@ -97,24 +97,112 @@ export function isIpv6(value: string): boolean {
 }
 
 /**
- * The visitor address Supabase documents for an edge function.
+ * Which address to store, rate-limit, and exclude.
  *
- * The edge-function examples take the first x-forwarded-for entry and send
- * that to the IP lookup. Later entries are proxy hops (Cloudflare, the
- * Supabase gateway), so using the rightmost address resolves the visit to
- * the platform instead of the caller.
+ * Hosted Supabase's edge gateway is not in this repo. `edge-runtime` does not
+ * rewrite these headers, and the only gateway source that sets `X-Real-IP`
+ * to the socket peer is the local CLI stack (`supabase/cli`
+ * `packages/stack/src/HttpProxy.ts`). That is not the platform in front of a
+ * hosted function, so a caller-supplied `X-Real-IP` cannot be treated as the
+ * peer. Official examples still read `clientIps[0]`, which is the left-hand
+ * side of `X-Forwarded-For` and is caller-controlled when a proxy appends.
  *
- * https://supabase.com/docs/guides/functions/examples/cloudflare-turnstile
- * (`const ip = clientIps[0]`)
- * https://github.com/supabase/supabase/blob/master/examples/edge-functions/supabase/functions/location/index.ts
+ * When `X-Real-IP` and the rightmost entry of `X-Forwarded-For` are the same
+ * address, that is the value a gateway would have copied into both. Use it.
+ * When a public rightmost hop disagrees with `X-Real-IP`, the stored address
+ * is that rightmost public hop. Rate limiting charges that hop and, when
+ * `X-Real-IP` is a different public address, charges that prefix too, so
+ * rotating the header the caller controls does not open a fresh bucket.
+ * `excluded_ips` matches if either public address is listed. Entries to the
+ * left of the rightmost hop are ignored. The JSON body is not an address.
  *
- * A caller-supplied address in the JSON body is never read.
+ * Remaining assumption: a caller who can set both headers to the same forged
+ * address is indistinguishable from a gateway that rewrote both.
  */
-export function trustedClientIp(xff: string | null | undefined): string | null {
-  if (!xff) return null;
-  const first = xff.split(",")[0]?.trim().replace(/^::ffff:/i, "");
-  if (!first || !isIp(first)) return null;
-  return first.toLowerCase();
+export interface ClientAddress {
+  ip: string | null;
+  /** Public addresses. The request is excluded if any of them is listed. */
+  exclusionCandidates: string[];
+  /** Buckets to charge. The request is limited if any of them is full. */
+  rateIdentities: string[];
+}
+
+export function clientAddress(headers: {
+  forwardedFor?: string | null;
+  realIp?: string | null;
+}): ClientAddress {
+  const real = normalizeIp(headers.realIp);
+  const forwarded = validForwardedIps(headers.forwardedFor);
+  const rightValid = forwarded.length ? forwarded[forwarded.length - 1] : null;
+  const rightPublic = rightmostPublicFrom(forwarded);
+  const realPublic = real && !isPrivateOrLocal(real) ? real : null;
+  const peerAgrees = !!real && !!rightValid && real === rightValid;
+  const disagrees = !!real && !!rightPublic && real !== rightPublic;
+
+  let ip: string | null;
+  if (peerAgrees) ip = real;
+  else if (disagrees) ip = rightPublic;
+  else ip = real ?? rightPublic;
+
+  const exclusionCandidates: string[] = [];
+  const addPublic = (value: string | null) => {
+    if (value && !isPrivateOrLocal(value) && !exclusionCandidates.includes(value)) exclusionCandidates.push(value);
+  };
+  if (peerAgrees) addPublic(realPublic);
+  else {
+    addPublic(realPublic);
+    addPublic(rightPublic);
+  }
+
+  const rateIdentities: string[] = [];
+  const addIdentity = (value: string | null) => {
+    if (!value) return;
+    const identity = isPrivateOrLocal(value) ? "private" : (networkPrefix(value) ?? "private");
+    if (!rateIdentities.includes(identity)) rateIdentities.push(identity);
+  };
+  if (disagrees && !peerAgrees) {
+    addIdentity(rightPublic);
+    if (realPublic && realPublic !== rightPublic) addIdentity(realPublic);
+  } else if (ip) {
+    addIdentity(ip);
+  }
+
+  return { ip, exclusionCandidates, rateIdentities };
+}
+
+export function trustedClientIp(headers: {
+  forwardedFor?: string | null;
+  realIp?: string | null;
+}): string | null {
+  return clientAddress(headers).ip;
+}
+
+function normalizeIp(value: string | null | undefined): string | null {
+  if (!value) return null;
+  let trimmed = value.trim();
+  if (trimmed.startsWith("[") && trimmed.includes("]")) {
+    trimmed = trimmed.slice(1, trimmed.indexOf("]"));
+  }
+  trimmed = trimmed.replace(/^::ffff:/i, "");
+  if (!trimmed || !isIp(trimmed)) return null;
+  return trimmed.toLowerCase();
+}
+
+function validForwardedIps(xff: string | null | undefined): string[] {
+  if (!xff) return [];
+  const out: string[] = [];
+  for (const part of xff.split(",")) {
+    const ip = normalizeIp(part);
+    if (ip) out.push(ip);
+  }
+  return out;
+}
+
+function rightmostPublicFrom(ips: string[]): string | null {
+  for (let i = ips.length - 1; i >= 0; i--) {
+    if (!isPrivateOrLocal(ips[i])) return ips[i];
+  }
+  return null;
 }
 
 export function isPrivateOrLocal(ip: string): boolean {

@@ -55,6 +55,7 @@ describe("visitor intelligence tenant isolation", () => {
       }
       await sql.unsafe(readFileSync("supabase/migrations/20261115180000_visitor_intelligence.sql", "utf8"));
       await sql.unsafe(readFileSync("supabase/migrations/20261115203000_visitor_rule_tenant_and_reclaim.sql", "utf8"));
+      await sql.unsafe(readFileSync("supabase/migrations/20261115220000_claim_visitor_rule_run.sql", "utf8"));
 
       const owner = crypto.randomUUID();
       const other = crypto.randomUUID();
@@ -158,6 +159,79 @@ describe("visitor intelligence tenant isolation", () => {
       const [exhausted] = await sql`SELECT status, ip_raw FROM public.visitor_resolve_jobs WHERE ip_hash = 'hash-exhausted'`;
       expect(exhausted.status).toBe("failed");
       expect(exhausted.ip_raw).toBeNull();
+
+      // uq_visitor_jobs_hash. Two ingest requests for one address must not
+      // create two jobs; the loser is a unique violation, not a second row.
+      await expect(sql`INSERT INTO public.visitor_resolve_jobs
+        (site_id, user_id, visitor_key, ip_hash)
+        VALUES (${site}::uuid, ${owner}::uuid, 'visitor', 'hash-stale')`).rejects.toThrow(/duplicate|unique/i);
+      const dupes = await sql`SELECT count(*)::int AS n FROM public.visitor_resolve_jobs
+        WHERE site_id = ${site}::uuid AND ip_hash = 'hash-stale'`;
+      expect(dupes[0].n).toBe(1);
+
+      await expect(sql.begin(async (tx) => {
+        await tx`SET LOCAL ROLE authenticated`;
+        await tx`SELECT public.claim_visitor_rule_run(${owner}::uuid, ${ownRule[0].id}::uuid, '55555555-5555-4555-8555-555555555555'::uuid)`;
+      })).rejects.toThrow(/permission denied/i);
+
+      const ruleCap = await sql`INSERT INTO public.visitor_rules (site_id, user_id, name, enabled, daily_cap)
+        VALUES (${site}::uuid, ${owner}::uuid, 'Cap', true, 1) RETURNING id`;
+      const matchA = await sql`INSERT INTO public.visitor_company_matches (site_id, user_id, visitor_key, status)
+        VALUES (${site}::uuid, ${owner}::uuid, 'cap-a', 'unknown') RETURNING id`;
+      const matchB = await sql`INSERT INTO public.visitor_company_matches (site_id, user_id, visitor_key, status)
+        VALUES (${site}::uuid, ${owner}::uuid, 'cap-b', 'unknown') RETURNING id`;
+      const left = postgres(PG_URL, { max: 1 });
+      const right = postgres(PG_URL, { max: 1 });
+      try {
+        const [first, second] = await Promise.all([
+          left`SELECT public.claim_visitor_rule_run(${owner}::uuid, ${ruleCap[0].id}::uuid, ${matchA[0].id}::uuid) AS ok`,
+          right`SELECT public.claim_visitor_rule_run(${owner}::uuid, ${ruleCap[0].id}::uuid, ${matchB[0].id}::uuid) AS ok`,
+        ]);
+        const allowed = [first[0].ok, second[0].ok].filter(Boolean);
+        expect(allowed).toHaveLength(1);
+      } finally {
+        await left.end({ timeout: 1 });
+        await right.end({ timeout: 1 });
+      }
+      const ruleRows = await sql`SELECT count(*)::int AS n FROM public.visitor_rule_runs
+        WHERE rule_id = ${ruleCap[0].id}::uuid AND status = 'running'`;
+      expect(ruleRows[0].n).toBe(1);
+
+      // One job, several rules. The workspace count used to be read once, so
+      // every rule in the job still saw a free slot after the first insert.
+      const filler = await sql`INSERT INTO public.visitor_rules (site_id, user_id, name, enabled, daily_cap)
+        VALUES (${site}::uuid, ${owner}::uuid, 'Filler', true, 25) RETURNING id`;
+      const [already] = await sql`SELECT count(*)::int AS n FROM public.visitor_rule_runs
+        WHERE user_id = ${owner}::uuid AND status IN ('running', 'completed', 'failed')`;
+      const need = 24 - already.n;
+      for (let i = 0; i < need; i++) {
+        const filled = await sql`INSERT INTO public.visitor_company_matches (site_id, user_id, visitor_key, status)
+          VALUES (${site}::uuid, ${owner}::uuid, ${`fill-${i}`}, 'unknown') RETURNING id`;
+        await sql`INSERT INTO public.visitor_rule_runs (rule_id, match_id, user_id, status)
+          VALUES (${filler[0].id}::uuid, ${filled[0].id}::uuid, ${owner}::uuid, 'completed')`;
+      }
+      const rules = [];
+      const matches = [];
+      for (const name of ["One", "Two", "Three"]) {
+        const rule = await sql`INSERT INTO public.visitor_rules (site_id, user_id, name, enabled, daily_cap)
+          VALUES (${site}::uuid, ${owner}::uuid, ${name}, true, 25) RETURNING id`;
+        const match = await sql`INSERT INTO public.visitor_company_matches (site_id, user_id, visitor_key, status)
+          VALUES (${site}::uuid, ${owner}::uuid, ${`multi-${name}`}, 'unknown') RETURNING id`;
+        rules.push(rule[0].id);
+        matches.push(match[0].id);
+      }
+      const decisions = [];
+      for (let i = 0; i < rules.length; i++) {
+        const [row] = await sql`SELECT public.claim_visitor_rule_run(${owner}::uuid, ${rules[i]}::uuid, ${matches[i]}::uuid) AS ok`;
+        decisions.push(row.ok);
+      }
+      expect(decisions.filter(Boolean)).toHaveLength(1);
+      expect(decisions[0]).toBe(true);
+      expect(decisions[1]).toBe(false);
+      expect(decisions[2]).toBe(false);
+      const workspaceRows = await sql`SELECT count(*)::int AS n FROM public.visitor_rule_runs
+        WHERE user_id = ${owner}::uuid AND status IN ('running', 'completed', 'failed')`;
+      expect(workspaceRows[0].n).toBe(25);
     } finally {
       await sql.end({ timeout: 1 });
     }

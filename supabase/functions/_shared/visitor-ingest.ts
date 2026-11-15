@@ -3,13 +3,13 @@
 import {
   hostAllowed,
   hostFromUrl,
+  clientAddress,
   ipInList,
   isBotUserAgent,
   isPrivateOrLocal,
   networkPrefix,
   pageTypeFromPath,
   sanitizeTrackingUrl,
-  trustedClientIp,
 } from "./visitor-identity.ts";
 
 export const INGEST_LIMITS = {
@@ -59,6 +59,17 @@ export function rateLimited(ipHits: number, siteHits: number): boolean {
   return ipHits >= INGEST_LIMITS.perIpPerMinute || siteHits >= INGEST_LIMITS.perSitePerMinute;
 }
 
+/**
+ * One key per identity that has to be charged. When the two headers disagree,
+ * both public prefixes are here, so a caller cannot drop the real hop out of
+ * the limit by writing a fresh value into the other header.
+ */
+export function ingestIpRateKeys(siteId: string, headers: { forwardedFor?: string | null; realIp?: string | null }): string[] {
+  const identities = clientAddress(headers).rateIdentities;
+  const keys = identities.length ? identities : ["none"];
+  return keys.map((identity) => `visitor-ingest:${siteId}:${identity}`);
+}
+
 export function planIngest(input: {
   body: unknown;
   bodyBytes: number;
@@ -68,6 +79,8 @@ export function planIngest(input: {
   dnt: string | null;
   gpc: string | null;
   forwardedFor: string | null;
+  /** Gateway `X-Real-IP`. Absent on a direct call; never taken from the body. */
+  realIp?: string | null;
   site: IngestSite | null;
   flagOn: boolean;
   grantOn: boolean;
@@ -83,7 +96,8 @@ export function planIngest(input: {
   if (isBotUserAgent(input.userAgent)) return { ok: false, status: 202, error: "Ignored automated client." };
   if (rateLimited(input.ipHits ?? 0, input.siteHits ?? 0)) return { ok: false, status: 429, error: "Rate limit exceeded." };
 
-  const ip = trustedClientIp(input.forwardedFor);
+  const address = clientAddress({ forwardedFor: input.forwardedFor, realIp: input.realIp });
+  const ip = address.ip;
   const body = isRecord(input.body) ? input.body : null;
   if (!body) return { ok: false, status: 400, error: "Expected a JSON object." };
   // The body is not a source of identity. A client-supplied address is ignored above.
@@ -99,7 +113,8 @@ export function planIngest(input: {
     return { ok: false, status: 403, error: "Origin is not an allowed domain." };
   }
 
-  if (ip && !isPrivateOrLocal(ip) && ipInList(ip, input.site.excludedIps)) {
+  const excludedIps = input.site.excludedIps;
+  if (address.exclusionCandidates.some((candidate) => ipInList(candidate, excludedIps))) {
     return { ok: false, status: 202, error: "Address is excluded." };
   }
 
