@@ -1523,7 +1523,7 @@ serve(async (req) => {
     console.log('from_cache:', data.from_cache);
     console.log('source:', data.source);
     console.log('count:', data.count);
-    console.log('Full response data:', JSON.stringify(data, null, 2).substring(0, 2000));
+    console.log('Provider response keys:', Object.keys(data || {}).join(', '));
 
     // Handle many response formats — Railway may use any of these keys
     let rawLeads: any[] = [];

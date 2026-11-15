@@ -101,7 +101,9 @@ serve(async (req) => {
           { id: existingAddonItem.id, deleted: true },
           { price: addonPriceId },
         ],
-        proration_behavior: 'create_prorations',
+        proration_behavior: 'always_invoice',
+        payment_behavior: 'error_if_incomplete',
+        expand: ['latest_invoice'],
       });
     } else {
       // Add new addon
@@ -111,11 +113,24 @@ serve(async (req) => {
           ...subscription.items.data.map((item: Stripe.SubscriptionItem) => ({ id: item.id })),
           { price: addonPriceId },
         ],
-        proration_behavior: 'create_prorations',
+        proration_behavior: 'always_invoice',
+        payment_behavior: 'error_if_incomplete',
+        expand: ['latest_invoice'],
       });
     }
 
     logStep('Subscription updated with addon', { subscriptionId: updatedSubscription.id });
+
+    // Only grant credits once Stripe confirms the prorated charge was paid.
+    const latestInvoice = updatedSubscription.latest_invoice as Stripe.Invoice | string | null;
+    const invoiceStatus = latestInvoice && typeof latestInvoice !== 'string' ? latestInvoice.status : null;
+    if (invoiceStatus !== 'paid') {
+      logStep('Addon payment not confirmed', { invoiceStatus });
+      return new Response(JSON.stringify({ error: 'Payment for this add-on could not be confirmed. No credits were added.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
 
     // Update database with new addon credits
     const { error: updateError } = await supabaseClient

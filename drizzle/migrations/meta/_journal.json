@@ -393,6 +393,13 @@
       "when": 1794666219577,
       "tag": "0055_restore_outbound_verdicts_and_research_snapshots",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1794749420996,
+      "tag": "0056_agency_stats_active_clients_only",
+      "breakpoints": true
     }
   ]
 }
