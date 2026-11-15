@@ -492,9 +492,15 @@ serve(async (req) => {
             // The sweep already stored this. Do not notify or insert again.
             // An agent run still needs the body, once, so it can draft.
             if (payload.forAgent && !prior.processed) {
+              // The claim decides whether this reply is recent enough to
+              // auto-answer. The clock is the Gmail time, passed in here.
+              const receivedAt = Number.isFinite(internalDate) && internalDate > 0
+                ? new Date(internalDate).toISOString()
+                : null;
               const { data: claimed, error: claimError } = await adminClient.rpc("claim_reply_for_agent", {
                 p_id: prior.id,
                 p_user_id: user.id,
+                p_received_at: receivedAt,
               });
               if (claimError) console.error("[inbox-sync] reply claim failed:", claimError.message);
               else if (claimed === true) {
@@ -504,7 +510,7 @@ serve(async (req) => {
                   fromEmail,
                   subject: subjectHeader,
                   bodyText,
-                  receivedAt: new Date(internalDate).toISOString(),
+                  receivedAt,
                   gmailThreadId: thread.gmail_thread_id,
                   integrationId: mailbox.id,
                   isAutoReply,

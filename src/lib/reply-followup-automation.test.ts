@@ -94,7 +94,7 @@ describe("a reply the sweep stored still reaches the agent once", () => {
     expect(INBOX).toContain('rpc("claim_reply_for_agent"');
     expect(INBOX).toContain("replies.concat(agentReplies)");
     expect(MIGRATION).not.toContain("claim_reply_for_agent");
-    const claim = readFileSync("supabase/migrations/20261115143000_agent_reply_cutoff.sql", "utf8");
+    const claim = readFileSync("supabase/migrations/20261115150000_claim_reply_by_received_time.sql", "utf8");
     expect(claim).toContain("coalesce(processed_by_agent, false) = false");
     expect(claim).toContain("interval '15 minutes'");
     expect(claim).toContain("auth.role() <> 'service_role'");
@@ -106,7 +106,11 @@ describe("a reply the sweep stored still reaches the agent once", () => {
     expect(cutoff).toContain("WHERE coalesce(processed_by_agent, false) = false");
     expect(cutoff).toContain("agent_reply_cutoff");
     expect(cutoff).toContain("coalesce(analyzed_at, created_at) >= v_shipped");
-    expect(cutoff).toContain("interval '72 hours'");
+    const live = readFileSync("supabase/migrations/20261115150000_claim_reply_by_received_time.sql", "utf8");
+    expect(live).toContain("p_received_at timestamptz");
+    expect(live).toContain("p_received_at < now() - interval '72 hours'");
+    expect(live).not.toContain("coalesce(analyzed_at, created_at) >= now() - interval '72 hours'");
+    expect(INBOX).toContain("p_received_at: receivedAt");
   });
 
   it("treats a later message from us as already answered", () => {
