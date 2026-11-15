@@ -97,38 +97,84 @@ export function isIpv6(value: string): boolean {
 }
 
 /**
- * The visitor address the stack gateway stamps, not the one the caller wrote.
+ * Which address to store, rate-limit, and exclude.
  *
- * `upstreamHeadersFor` in supabase/cli `packages/stack/src/HttpProxy.ts`
- * (commit c00bffbdc15646b91cba9e54b2afe41b2bfef95d) copies the request
- * headers and then replaces them:
+ * Hosted Supabase's edge gateway is not in this repo. `edge-runtime` does not
+ * rewrite these headers, and the only gateway source that sets `X-Real-IP`
+ * to the socket peer is the local CLI stack (`supabase/cli`
+ * `packages/stack/src/HttpProxy.ts`). That is not the platform in front of a
+ * hosted function, so a caller-supplied `X-Real-IP` cannot be treated as the
+ * peer. Official examples still read `clientIps[0]`, which is the left-hand
+ * side of `X-Forwarded-For` and is caller-controlled when a proxy appends.
  *
- * - `x-real-ip` is set to `request.socket.remoteAddress`
- * - that same peer is appended to any incoming `x-forwarded-for`
- * - when the peer is missing, a caller-sent `x-real-ip` is deleted
+ * When `X-Real-IP` and the rightmost entry of `X-Forwarded-For` are the same
+ * address, that is the value a gateway would have copied into both. Use it.
+ * When a public rightmost hop disagrees with `X-Real-IP`, the stored address
+ * is that rightmost public hop. Rate limiting charges that hop and, when
+ * `X-Real-IP` is a different public address, charges that prefix too, so
+ * rotating the header the caller controls does not open a fresh bucket.
+ * `excluded_ips` matches if either public address is listed. Entries to the
+ * left of the rightmost hop are ignored. The JSON body is not an address.
  *
- * The comment on that function is "Like Kong: append the client to any
- * incoming X-Forwarded-For chain; X-Real-IP is the client." The integration
- * test "tells upstreams the client address" sends `x-real-ip: 203.0.113.7`
- * and `x-forwarded-for: 203.0.113.7` and the upstream observes
- * `x-real-ip: 127.0.0.1` and `x-forwarded-for: 203.0.113.7, 127.0.0.1`.
- * https://github.com/supabase/cli/blob/c00bffbdc15646b91cba9e54b2afe41b2bfef95d/packages/stack/src/HttpProxy.ts
- *
- * edge-runtime does not rewrite either header. The gateway in front of the
- * function does, so a caller who can set `Origin` still cannot choose the
- * address this function returns. The Turnstile sample's `clientIps[0]` is
- * the left-hand side of that chain, which is the part the caller supplied.
- *
- * Prefer `X-Real-IP` when it is an IP. Otherwise use the rightmost public
- * `X-Forwarded-For` entry. Never the first, and never an address in the body.
+ * Remaining assumption: a caller who can set both headers to the same forged
+ * address is indistinguishable from a gateway that rewrote both.
  */
+export interface ClientAddress {
+  ip: string | null;
+  /** Public addresses. The request is excluded if any of them is listed. */
+  exclusionCandidates: string[];
+  /** Buckets to charge. The request is limited if any of them is full. */
+  rateIdentities: string[];
+}
+
+export function clientAddress(headers: {
+  forwardedFor?: string | null;
+  realIp?: string | null;
+}): ClientAddress {
+  const real = normalizeIp(headers.realIp);
+  const forwarded = validForwardedIps(headers.forwardedFor);
+  const rightValid = forwarded.length ? forwarded[forwarded.length - 1] : null;
+  const rightPublic = rightmostPublicFrom(forwarded);
+  const realPublic = real && !isPrivateOrLocal(real) ? real : null;
+  const peerAgrees = !!real && !!rightValid && real === rightValid;
+  const disagrees = !!real && !!rightPublic && real !== rightPublic;
+
+  let ip: string | null;
+  if (peerAgrees) ip = real;
+  else if (disagrees) ip = rightPublic;
+  else ip = real ?? rightPublic;
+
+  const exclusionCandidates: string[] = [];
+  const addPublic = (value: string | null) => {
+    if (value && !isPrivateOrLocal(value) && !exclusionCandidates.includes(value)) exclusionCandidates.push(value);
+  };
+  if (peerAgrees) addPublic(realPublic);
+  else {
+    addPublic(realPublic);
+    addPublic(rightPublic);
+  }
+
+  const rateIdentities: string[] = [];
+  const addIdentity = (value: string | null) => {
+    if (!value) return;
+    const identity = isPrivateOrLocal(value) ? "private" : (networkPrefix(value) ?? "private");
+    if (!rateIdentities.includes(identity)) rateIdentities.push(identity);
+  };
+  if (disagrees && !peerAgrees) {
+    addIdentity(rightPublic);
+    if (realPublic && realPublic !== rightPublic) addIdentity(realPublic);
+  } else if (ip) {
+    addIdentity(ip);
+  }
+
+  return { ip, exclusionCandidates, rateIdentities };
+}
+
 export function trustedClientIp(headers: {
   forwardedFor?: string | null;
   realIp?: string | null;
 }): string | null {
-  const real = normalizeIp(headers.realIp);
-  if (real) return real;
-  return rightmostPublicIp(headers.forwardedFor);
+  return clientAddress(headers).ip;
 }
 
 function normalizeIp(value: string | null | undefined): string | null {
@@ -142,12 +188,19 @@ function normalizeIp(value: string | null | undefined): string | null {
   return trimmed.toLowerCase();
 }
 
-function rightmostPublicIp(xff: string | null | undefined): string | null {
-  if (!xff) return null;
-  const parts = xff.split(",");
-  for (let i = parts.length - 1; i >= 0; i--) {
-    const ip = normalizeIp(parts[i]);
-    if (ip && !isPrivateOrLocal(ip)) return ip;
+function validForwardedIps(xff: string | null | undefined): string[] {
+  if (!xff) return [];
+  const out: string[] = [];
+  for (const part of xff.split(",")) {
+    const ip = normalizeIp(part);
+    if (ip) out.push(ip);
+  }
+  return out;
+}
+
+function rightmostPublicFrom(ips: string[]): string | null {
+  for (let i = ips.length - 1; i >= 0; i--) {
+    if (!isPrivateOrLocal(ips[i])) return ips[i];
   }
   return null;
 }

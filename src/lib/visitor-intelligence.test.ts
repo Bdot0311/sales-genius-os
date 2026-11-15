@@ -3,7 +3,7 @@ import { runOutboundTool } from "../../supabase/functions/_shared/agent-outbound
 import { createContext, runInContext } from "node:vm";
 import { describe, expect, it } from "vitest";
 import { planRuleRun, RULE_DAILY_CAP_MAX, WORKSPACE_DAILY_CAP } from "../../supabase/functions/_shared/visitor-automation.ts";
-import { INGEST_LIMITS, ingestIpRateKey, planIngest, rateLimited, type IngestPlan, type IngestSite } from "../../supabase/functions/_shared/visitor-ingest.ts";
+import { INGEST_LIMITS, ingestIpRateKeys, planIngest, rateLimited, type IngestPlan, type IngestSite } from "../../supabase/functions/_shared/visitor-ingest.ts";
 import {
   decideIdentity,
   featureEnabled,
@@ -14,6 +14,7 @@ import {
   parseAsnTxt,
   parseRdap,
   sanitizeTrackingUrl,
+  clientAddress,
   trustedClientIp,
   visitFacts,
 } from "../../supabase/functions/_shared/visitor-identity.ts";
@@ -67,38 +68,54 @@ function event(path = "/pricing") {
 }
 
 describe("visitor ingest", () => {
-  it("trusts the gateway X-Real-IP, ignores a spoofed first X-Forwarded-For entry, and ignores a body address", () => {
-    // The stack gateway appends its peer and overwrites X-Real-IP. The first
-    // X-Forwarded-For entry is the one a caller can set. 203.0.113.9 is in
-    // this site's excluded range; it must not win, and it must not be the
-    // rate-limit prefix.
+  it("ignores a spoofed first hop, and does not let either header hide the other", () => {
+    // 203.0.113.9 is in this site's excluded range. A caller can put it first,
+    // or put a clean address in X-Real-IP. Neither is the rightmost public hop.
     expect(trustedClientIp({ forwardedFor: "203.0.113.9, 198.51.100.44", realIp: null })).toBe("198.51.100.44");
     expect(trustedClientIp({ forwardedFor: "not-an-ip, 198.51.100.44" })).toBe("198.51.100.44");
     expect(trustedClientIp({ forwardedFor: "198.51.100.44, 10.0.0.8" })).toBe("198.51.100.44");
-    expect(trustedClientIp({
-      forwardedFor: "203.0.113.9, 198.51.100.44",
-      realIp: "192.0.2.10",
-    })).toBe("192.0.2.10");
     expect(trustedClientIp({ forwardedFor: "198.51.100.44", realIp: "not-an-ip" })).toBe("198.51.100.44");
     expect(trustedClientIp({ realIp: "::ffff:198.51.100.44" })).toBe("198.51.100.44");
-    // A private X-Real-IP is the peer the gateway wrote. Do not replace it
-    // with a public address the caller put in X-Forwarded-For.
-    expect(trustedClientIp({ forwardedFor: "198.51.100.44", realIp: "127.0.0.1" })).toBe("127.0.0.1");
+    // Same address in both headers: that is the hop a gateway would have copied.
+    expect(trustedClientIp({
+      forwardedFor: "203.0.113.9, 198.51.100.44",
+      realIp: "198.51.100.44",
+    })).toBe("198.51.100.44");
+    // The appended peer matches X-Real-IP, including a private peer. The
+    // public address to its left is the caller.
+    expect(trustedClientIp({
+      forwardedFor: "198.51.100.44, 127.0.0.1",
+      realIp: "127.0.0.1",
+    })).toBe("127.0.0.1");
+
+    const disagree = {
+      forwardedFor: "203.0.113.9, 198.51.100.44",
+      realIp: "192.0.2.10",
+    };
+    const split = clientAddress(disagree);
+    expect(split.ip).toBe("198.51.100.44");
+    expect(split.exclusionCandidates).toEqual(["192.0.2.10", "198.51.100.44"]);
+    expect(ingestIpRateKeys(SITE.id, disagree)).toEqual([
+      `visitor-ingest:${SITE.id}:198.51.100.0/24`,
+      `visitor-ingest:${SITE.id}:192.0.2.0/24`,
+    ]);
+    // Rotating only X-Real-IP keeps the rightmost prefix in the key.
+    expect(ingestIpRateKeys(SITE.id, { ...disagree, realIp: "203.0.113.50" })[0]).toBe(
+      `visitor-ingest:${SITE.id}:198.51.100.0/24`,
+    );
 
     const spoofedFirst = "203.0.113.9, 198.51.100.44";
-    const trusted = trustedClientIp({ forwardedFor: spoofedFirst, realIp: null });
-    expect(ingestIpRateKey(SITE.id, trusted)).toBe(`visitor-ingest:${SITE.id}:198.51.100.0/24`);
-    expect(ingestIpRateKey(SITE.id, "203.0.113.9")).toBe(`visitor-ingest:${SITE.id}:203.0.113.0/24`);
-
     const plan = planIngest({
       ...base,
       body: { site_id: SITE.id, consent: true, ip: "1.1.1.1", events: [event()] },
       forwardedFor: spoofedFirst,
-      realIp: null,
+      realIp: "192.0.2.10",
     });
     expect(plan.ok).toBe(true);
     if (plan.ok) expect(plan.ip).toBe("198.51.100.44");
 
+    // X-Real-IP is the excluded address and the rightmost hop is clean.
+    // Looking only at the clean hop would let the caller past excluded_ips.
     const realExcluded = planIngest({
       ...base,
       body: { site_id: SITE.id, consent: true, ip: "198.51.100.44", events: [event()] },
@@ -106,10 +123,22 @@ describe("visitor ingest", () => {
       realIp: "203.0.113.9",
     });
     expect(denied(realExcluded).status).toBe(202);
-    expect(ingestIpRateKey(SITE.id, trustedClientIp({
-      forwardedFor: "198.51.100.44",
-      realIp: "203.0.113.9",
-    }))).toBe(`visitor-ingest:${SITE.id}:203.0.113.0/24`);
+    // The excluded address is the rightmost hop and X-Real-IP is clean.
+    const hopExcluded = planIngest({
+      ...base,
+      body: { site_id: SITE.id, consent: true, events: [event()] },
+      forwardedFor: "198.51.100.44, 203.0.113.9",
+      realIp: "198.51.100.44",
+    });
+    expect(denied(hopExcluded).status).toBe(202);
+    // A planted excluded address to the left of an agreed peer does not exclude.
+    const planted = planIngest({
+      ...base,
+      body: { site_id: SITE.id, consent: true, events: [event()] },
+      forwardedFor: "203.0.113.9, 198.51.100.44",
+      realIp: "198.51.100.44",
+    });
+    expect(planted.ok).toBe(true);
   });
 
   it("rejects missing consent, a foreign origin, bots, DNT, excluded ranges and oversized bodies", () => {
@@ -494,8 +523,7 @@ describe("one address is one resolve job", () => {
       .replace(/\/\*[\s\S]*?\*\//g, "")
       .replace(/^\s*\/\/.*$/gm, "");
     expect(ingest).toContain('req.headers.get("x-real-ip")');
-    expect(ingest).toContain("trustedClientIp({ forwardedFor: forwarded, realIp })");
-    expect(ingest).toContain("ingestIpRateKey(siteId, observed)");
+    expect(ingest).toContain("ingestIpRateKeys(siteId, { forwardedFor: forwarded, realIp })");
     expect(ingest).toContain('enqueued.error?.code === "23505"');
     expect(ingest).toContain('.in("status", ["done", "failed"])');
     expect(ingest).not.toContain('.select("id, status")');
@@ -519,7 +547,7 @@ describe("the collector stays on the free signals", () => {
     expect(resolve).toContain("rdap.org");
     expect(resolve).toContain("cloudflare-dns.com");
     expect(resolve).toContain('status: "paused"');
-    expect(ingest).toContain("trustedClientIp");
+    expect(ingest).toContain("ingestIpRateKeys");
     expect(config).toMatch(/\[functions\.visitor-ingest\]\s*\n\s*verify_jwt = false/);
     expect(layout).toContain('item.href !== "/dashboard/visitors" || visitorIntelligence');
   });

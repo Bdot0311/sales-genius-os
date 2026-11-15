@@ -17,7 +17,9 @@ The snippet is served from the app at `/v.js` and from the `visitor-sdk` functio
 
 ## What a visit does
 
-The browser batches page views, path, referrer host, UTM parameters, session (30 minute timeout), returning visits, engagement and page type (pricing, product, integrations, demo/contact). Sensitive query parameters are dropped. The collector reads the gateway's `X-Real-IP` (the stack gateway sets that to the socket peer and drops a caller-supplied value). If that header is missing, it uses the rightmost public address in `X-Forwarded-For`, never the first. The JSON body is not an address.
+The browser batches page views, path, referrer host, UTM parameters, session (30 minute timeout), returning visits, engagement and page type (pricing, product, integrations, demo/contact). Sensitive query parameters are dropped. The JSON body is not an address.
+
+The hosted edge gateway is not the local CLI stack, and there is no hosted source in this repo that shows whether the platform overwrites `X-Real-IP` or only appends to `X-Forwarded-For`. `edge-runtime` does not rewrite either header. The collector therefore does not pick one header and ignore the other. When `X-Real-IP` and the rightmost `X-Forwarded-For` entry are the same address, that address is the visitor. When a public rightmost hop disagrees with `X-Real-IP`, the stored address is the rightmost public hop, the rate limit charges that hop and the other public prefix, and `excluded_ips` matches if either public address is listed. A value only in the left-hand side of `X-Forwarded-For` is ignored. The assumption that remains: a caller who can set both headers to the same forged address cannot be told apart from a gateway that rewrote both.
 
 An async worker resolves that address with reverse DNS, RDAP and ASN, cached per prefix for non-company networks and per hashed address for a company result. ISP, mobile, cloud, hosting, VPN and residential ranges stay Unknown. A company name is stored only when the registry org agrees with the domain, or when it matches an existing company record or a company-search hit with the same domain.
 

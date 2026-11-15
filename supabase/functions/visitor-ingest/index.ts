@@ -2,8 +2,8 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@^2.76.1";
 import { resolveAppUser } from "../_shared/app-user.ts";
 import { rateLimit, rateLimitResponse } from "../_shared/rate-limit.ts";
-import { RAW_IP_TTL_MS, VISITOR_FLAG, networkPrefix, trustedClientIp } from "../_shared/visitor-identity.ts";
-import { INGEST_LIMITS, ingestIpRateKey, planIngest, type IngestSite } from "../_shared/visitor-ingest.ts";
+import { RAW_IP_TTL_MS, VISITOR_FLAG, networkPrefix } from "../_shared/visitor-identity.ts";
+import { INGEST_LIMITS, ingestIpRateKeys, planIngest, type IngestSite } from "../_shared/visitor-ingest.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -63,8 +63,11 @@ serve(async (req) => {
 
   const forwarded = req.headers.get("x-forwarded-for");
   const realIp = req.headers.get("x-real-ip");
-  const observed = trustedClientIp({ forwardedFor: forwarded, realIp });
-  const ipRl = await rateLimit(ingestIpRateKey(siteId, observed), INGEST_LIMITS.perIpPerMinute, 60);
+  let ipExhausted = false;
+  for (const key of ingestIpRateKeys(siteId, { forwardedFor: forwarded, realIp })) {
+    const ipRl = await rateLimit(key, INGEST_LIMITS.perIpPerMinute, 60);
+    if (!ipRl.allowed) ipExhausted = true;
+  }
   const siteRl = await rateLimit(`visitor-ingest:${siteId}`, INGEST_LIMITS.perSitePerMinute, 60);
 
   const site: IngestSite | null = row
@@ -93,7 +96,7 @@ serve(async (req) => {
     flagOn: flag?.is_enabled === true,
     grantOn: grant?.enabled === true,
     ownerTest,
-    ipHits: ipRl.allowed ? 0 : INGEST_LIMITS.perIpPerMinute,
+    ipHits: ipExhausted ? INGEST_LIMITS.perIpPerMinute : 0,
     siteHits: siteRl.allowed ? 0 : INGEST_LIMITS.perSitePerMinute,
   });
 
