@@ -266,11 +266,11 @@ Priority rules:
         .eq('user_id', user.id)
         .eq('sent_email_id', sentEmailId);
       const prior = (priorRows ?? []) as { id: string; detected_signals?: { gmail_message_id?: string; unclassified?: boolean } }[];
-      existingId = (gmailMessageId
-        ? prior.find((row) => row.detected_signals?.gmail_message_id === gmailMessageId)?.id
-        : undefined)
-        ?? prior.find((row) => row.detected_signals?.unclassified === true)?.id
-        ?? null;
+      if (gmailMessageId) {
+        existingId = prior.find((row) => row.detected_signals?.gmail_message_id === gmailMessageId)?.id ?? null;
+      } else {
+        existingId = prior.find((row) => row.detected_signals?.unclassified === true)?.id ?? null;
+      }
     }
 
     const { data: replyAnalysis, error: insertError } = existingId

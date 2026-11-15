@@ -173,6 +173,16 @@ describe("a reply the sweep stored still reaches the agent once", () => {
     expect(ANALYZE).toContain(".update(analysisRow)");
     expect(ANALYZE).toContain("unclassified === true");
   });
+
+  it("does not overwrite a different message when this one has a Gmail id", () => {
+    const at = ANALYZE.indexOf("if (gmailMessageId) {");
+    expect(at).toBeGreaterThan(-1);
+    const gmailBranch = ANALYZE.slice(at, ANALYZE.indexOf("} else {", at));
+    const elseBranch = ANALYZE.slice(ANALYZE.indexOf("} else {", at), ANALYZE.indexOf("const { data: replyAnalysis", at));
+    expect(gmailBranch).toContain("gmail_message_id === gmailMessageId");
+    expect(gmailBranch).not.toContain("unclassified");
+    expect(elseBranch).toContain("unclassified === true");
+  });
 });
 
 describe("replies are swept without a person opening the inbox", () => {
