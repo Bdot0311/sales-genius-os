@@ -16,6 +16,7 @@ AS $$
 DECLARE
   v_id uuid;
   v_shipped timestamptz;
+  v_gmail_message_id text;
 BEGIN
   IF auth.role() <> 'service_role' THEN
     RAISE EXCEPTION 'claim_reply_for_agent is internal';
@@ -30,6 +31,19 @@ BEGIN
   SELECT shipped_at INTO v_shipped FROM public.agent_reply_cutoff WHERE id = 1;
   IF v_shipped IS NULL THEN
     RETURN false;
+  END IF;
+
+  -- Two claims of the same Gmail message can both pass NOT EXISTS under
+  -- READ COMMITTED if they run together. The lock makes the second wait
+  -- until the first has committed, so it then sees that claim.
+  SELECT detected_signals->>'gmail_message_id'
+    INTO v_gmail_message_id
+    FROM public.reply_analysis
+   WHERE id = p_id
+     AND user_id = p_user_id;
+
+  IF v_gmail_message_id IS NOT NULL THEN
+    PERFORM pg_advisory_xact_lock(hashtextextended(p_user_id::text || ':' || v_gmail_message_id, 0));
   END IF;
 
   UPDATE public.reply_analysis

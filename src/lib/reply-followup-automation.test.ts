@@ -121,6 +121,15 @@ describe("a reply the sweep stored still reaches the agent once", () => {
     expect(once).toContain("p_received_at < now() - interval '72 hours'");
   });
 
+  it("serializes two claims of the same Gmail message", () => {
+    const once = readFileSync("supabase/migrations/20261115160000_one_claim_per_reply.sql", "utf8");
+    const lockAt = once.indexOf("pg_advisory_xact_lock(hashtextextended(p_user_id::text || ':' || v_gmail_message_id, 0))");
+    const updateAt = once.indexOf("UPDATE public.reply_analysis");
+    expect(lockAt).toBeGreaterThan(-1);
+    expect(updateAt).toBeGreaterThan(lockAt);
+    expect(once.slice(0, lockAt)).toContain("IF v_gmail_message_id IS NOT NULL THEN");
+  });
+
   it("treats a later message from us as already answered", () => {
     expect(ownMessageAfterReply(1_000, [{ atMs: 1_500, fromUs: true }])).toBe(true);
     expect(ownMessageAfterReply(1_000, [{ atMs: 1_500, fromUs: false }])).toBe(false);
