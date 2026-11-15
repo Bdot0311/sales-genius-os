@@ -126,6 +126,14 @@ export const ICP_TOOLS = ["list_icp_profiles", "update_icp_profile", "apply_won_
  */
 export const SIGNAL_TOOLS = ["list_signals", "refresh_signals"];
 
+/** Website visitors. Read the identified companies, and edit the site and rules. */
+export const VISITOR_TOOLS = [
+  "list_visitor_sites",
+  "list_visitor_companies",
+  "save_visitor_site",
+  "save_visitor_rule",
+];
+
 /** Campaign assets and sequence control for email-facing agents. */
 export const CAMPAIGN_TOOLS = [
   "list_sequence_enrollments",
@@ -164,6 +172,7 @@ export const ALL_AGENT_TOOLS = [
     ...CRM_TOOLS,
     ...ICP_TOOLS,
     ...SIGNAL_TOOLS,
+    ...VISITOR_TOOLS,
     ...CAMPAIGN_TOOLS,
     ...INBOX_TOOLS,
     ...DELIVERABILITY_TOOLS,
@@ -176,7 +185,7 @@ export const ALL_AGENT_TOOLS = [
 // an agent that says "I can't do that" for work it is supposed to own.
 const ROLE_TOOLS: Record<Exclude<AgentRole, "custom">, string[]> = {
   full_cycle: ALL_AGENT_TOOLS,
-  lead_gen: [...CORE_TOOLS, ...LEAD_GEN_TOOLS, ...ICP_TOOLS, ...SIGNAL_TOOLS],
+  lead_gen: [...CORE_TOOLS, ...LEAD_GEN_TOOLS, ...ICP_TOOLS, ...SIGNAL_TOOLS, ...VISITOR_TOOLS],
   outreach: [
     ...CORE_TOOLS,
     ...OUTREACH_TOOLS,
@@ -323,6 +332,10 @@ export const TOOL_CATALOG: Record<string, string> = {
   list_campaign_briefs: "Read campaign briefs (offer, proof, forbidden claims).",
   save_campaign_brief: "Create or edit a campaign brief.",
   get_outbound_stats: "Sent, open, click and reply rates, overall and per mailbox.",
+  list_visitor_sites: "Read Visitor Intelligence sites, allowed domains and consent settings.",
+  list_visitor_companies: "Read companies identified from website visits, and Unknown visitors with the reason.",
+  save_visitor_site: "Create or edit a Visitor Intelligence site, domains, consent and exclusions.",
+  save_visitor_rule: "Create or edit a visitor automation rule. It can find contacts, enrich, research, score, draft, or enroll paused. It cannot send.",
   classify_reply: "Tag an inbound reply (interested, objection, unsubscribe...) or mark it read.",
   list_sending_accounts: "See sending mailboxes: status, limits, sent today, reputation, warm-up.",
   update_sending_account: "Pause/resume a mailbox or change its daily limit.",
@@ -364,6 +377,8 @@ const TOOL_PREREQUISITES: Record<string, string[]> = {
   save_email_template: ["list_email_templates"],
   save_objection: ["list_objections"],
   save_campaign_brief: ["list_campaign_briefs"],
+  save_visitor_site: ["list_visitor_sites"],
+  save_visitor_rule: ["list_visitor_sites", "list_visitor_companies"],
   classify_reply: ["list_recent_replies"],
   update_sending_account: ["list_sending_accounts"],
   resolve_deliverability_alert: ["list_deliverability_alerts"],

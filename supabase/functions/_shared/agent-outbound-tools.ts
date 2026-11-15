@@ -7,6 +7,8 @@
 // if a tool is defined in one place and not the others.
 
 import { toSignalFacts, type SignalEventRow } from "./signal-facts.ts";
+import { allowedActions, clampDailyCap } from "./visitor-automation.ts";
+import { featureEnabled, VISITOR_FLAG } from "./visitor-identity.ts";
 
 type Admin = { from: (t: string) => any };
 type ToolEvent = { name: string; label: string; status: "ok" | "error"; detail?: string };
@@ -86,6 +88,18 @@ export const OUTBOUND_TOOL_DEFS = [
     brief_id: str, name: str, offer: str, proof: str, pain_by_persona: str, forbidden_claims: str, replaces: str,
   }),
   fn("get_outbound_stats", "Outbound performance for the last N days: sent, failed, opened, clicked, replied and rates, overall and per sending mailbox.", { days: num }),
+  fn("list_visitor_sites", "List this workspace's Visitor Intelligence sites, domains, consent mode and whether the snippet has been seen. Empty when the feature is off."),
+  fn("list_visitor_companies", "List companies identified from website visits, plus Unknown visitors and the reason. Does not invent a company or a score.", {
+    limit: num,
+  }),
+  fn("save_visitor_site", "Create or update a Visitor Intelligence site: allowed domains, consent mode, excluded paths and IPs, retention. Does not turn the feature on; an admin grant does that.", {
+    site_id: str, name: str, allowed_domains: strList, consent_mode: { type: "string", enum: ["required", "not_required"] },
+    excluded_paths: strList, excluded_ips: strList, retention_days: num, enabled: { type: "boolean" },
+  }),
+  fn("save_visitor_rule", "Create or update a visitor automation rule. Actions are find_contacts, enrich, research, score, draft and enroll. Enroll is paused until a person resumes it. There is no send action.", {
+    rule_id: str, site_id: str, name: str, enabled: { type: "boolean" }, page_types: strList, event_names: strList,
+    min_confidence: num, actions: strList, sequence_id: str, daily_cap: num,
+  }),
 ];
 
 export const OUTBOUND_TOOL_NAMES = OUTBOUND_TOOL_DEFS.map((t) => t.function.name);
@@ -95,6 +109,13 @@ const pick = (args: Record<string, unknown>, fields: string[]) => {
   for (const f of fields) if (args[f] !== undefined && args[f] !== null) out[f] = args[f];
   return out;
 };
+
+/** Service-role writes skip RLS, so the flag and the grant are checked here. */
+async function visitorWritesAllowed(admin: Admin, userId: string): Promise<boolean> {
+  const { data: flag } = await admin.from("feature_flags").select("is_enabled").eq("name", VISITOR_FLAG).maybeSingle();
+  const { data: grant } = await admin.from("visitor_workspace_grants").select("enabled").eq("user_id", userId).maybeSingle();
+  return featureEnabled(flag?.is_enabled === true, grant?.enabled === true);
+}
 
 /** Returns undefined when `name` is not one of these tools. */
 export async function runOutboundTool(
@@ -296,6 +317,53 @@ export async function runOutboundTool(
       return list("campaign_briefs", ["id", ...BRIEF_FIELDS, "updated_at"].join(", "), "Read campaign briefs", "briefs");
     case "save_campaign_brief":
       return save("campaign_briefs", args.brief_id, pick(args, BRIEF_FIELDS), "campaign brief", "name");
+
+    case "list_visitor_sites":
+      return list("visitor_sites", "id, name, allowed_domains, verified_hosts, consent_mode, excluded_paths, excluded_ips, retention_days, enabled, updated_at", "Read visitor sites", "sites");
+    case "list_visitor_companies": {
+      const { data, error } = await admin.from("visitor_company_matches")
+        .select("id, status, classification, company_name, company_domain, confidence, unknown_reason, last_seen, evidence")
+        .eq("user_id", userId)
+        .order("last_seen", { ascending: false })
+        .limit(Math.min(Math.max(Number(args.limit) || 50, 1), 100));
+      return done("Read visitor companies", error, `${data?.length ?? 0}`, { companies: data ?? [] });
+    }
+    case "save_visitor_site": {
+      if (!(await visitorWritesAllowed(admin, userId))) return { error: "Visitor Intelligence is off for this workspace." };
+      const row: Record<string, unknown> = {};
+      if (typeof args.name === "string" && args.name.trim()) row.name = args.name.trim().slice(0, 120);
+      if (Array.isArray(args.allowed_domains)) row.allowed_domains = args.allowed_domains.map(String).slice(0, 20);
+      if (args.consent_mode === "required" || args.consent_mode === "not_required") row.consent_mode = args.consent_mode;
+      if (Array.isArray(args.excluded_paths)) row.excluded_paths = args.excluded_paths.map(String).slice(0, 50);
+      if (Array.isArray(args.excluded_ips)) row.excluded_ips = args.excluded_ips.map(String).slice(0, 50);
+      if (args.retention_days != null) row.retention_days = Math.max(7, Math.min(365, Math.round(Number(args.retention_days) || 90)));
+      if (typeof args.enabled === "boolean") row.enabled = args.enabled;
+      if (args.site_id) return updateOwned("visitor_sites", args.site_id, row, "Updated visitor site");
+      if (!row.name) row.name = "Website";
+      return save("visitor_sites", null, row, "visitor site", "name");
+    }
+    case "save_visitor_rule": {
+      if (!(await visitorWritesAllowed(admin, userId))) return { error: "Visitor Intelligence is off for this workspace." };
+      const siteId = String(args.site_id ?? "");
+      if (siteId) {
+        const { data: owned } = await admin.from("visitor_sites").select("id").eq("id", siteId).eq("user_id", userId).maybeSingle();
+        if (!owned) return { error: "Site was not found in this workspace." };
+      }
+      const actions = allowedActions(Array.isArray(args.actions) ? args.actions.map(String) : ["find_contacts", "enrich", "draft"], args.sequence_id ? String(args.sequence_id) : null);
+      const row: Record<string, unknown> = {};
+      if (typeof args.name === "string") row.name = args.name.trim().slice(0, 120);
+      if (typeof args.enabled === "boolean") row.enabled = args.enabled;
+      if (Array.isArray(args.page_types)) row.page_types = args.page_types.map(String).slice(0, 10);
+      if (Array.isArray(args.event_names)) row.event_names = args.event_names.map(String).slice(0, 10);
+      if (args.min_confidence != null) row.min_confidence = Math.max(0.5, Math.min(0.9, Number(args.min_confidence)));
+      if (Array.isArray(args.actions)) row.actions = actions;
+      if (typeof args.sequence_id === "string") row.sequence_id = args.sequence_id;
+      if (args.daily_cap != null) row.daily_cap = clampDailyCap(Number(args.daily_cap));
+      if (args.rule_id) return updateOwned("visitor_rules", args.rule_id, row, "Updated visitor rule");
+      if (!args.site_id) return { error: "site_id is required" };
+      if (!row.name) return { error: "name is required" };
+      return save("visitor_rules", null, { ...row, site_id: String(args.site_id) }, "visitor rule", "name");
+    }
 
     case "get_outbound_stats": {
       const days = Math.min(Math.max(Math.round(Number(args.days) || 30), 1), 365);

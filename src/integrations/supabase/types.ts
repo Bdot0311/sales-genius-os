@@ -6516,6 +6516,452 @@ export type Database = {
         }
         Relationships: []
       }
+      visitor_company_matches: {
+        Row: {
+          classification: string
+          company_domain: string | null
+          company_id: string | null
+          company_name: string | null
+          confidence: number | null
+          evidence: Json
+          first_seen: string
+          id: string
+          last_seen: string
+          lead_id: string | null
+          network_prefix: string | null
+          person_id: string | null
+          resolved_at: string | null
+          site_id: string
+          status: string
+          unknown_reason: string | null
+          user_id: string
+          visitor_key: string
+        }
+        Insert: {
+          classification?: string
+          company_domain?: string | null
+          company_id?: string | null
+          company_name?: string | null
+          confidence?: number | null
+          evidence?: Json
+          first_seen?: string
+          id?: string
+          last_seen?: string
+          lead_id?: string | null
+          network_prefix?: string | null
+          person_id?: string | null
+          resolved_at?: string | null
+          site_id: string
+          status: string
+          unknown_reason?: string | null
+          user_id: string
+          visitor_key: string
+        }
+        Update: {
+          classification?: string
+          company_domain?: string | null
+          company_id?: string | null
+          company_name?: string | null
+          confidence?: number | null
+          evidence?: Json
+          first_seen?: string
+          id?: string
+          last_seen?: string
+          lead_id?: string | null
+          network_prefix?: string | null
+          person_id?: string | null
+          resolved_at?: string | null
+          site_id?: string
+          status?: string
+          unknown_reason?: string | null
+          user_id?: string
+          visitor_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visitor_company_matches_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "visitor_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      visitor_events: {
+        Row: {
+          engagement: Json | null
+          event_id: string
+          event_name: string
+          id: string
+          is_returning: boolean
+          is_test: boolean
+          page_type: string
+          path: string
+          props: Json
+          received_at: string
+          referrer_host: string | null
+          session_id: string
+          site_id: string
+          user_id: string
+          utm: Json
+          visitor_key: string
+        }
+        Insert: {
+          engagement?: Json | null
+          event_id: string
+          event_name: string
+          id?: string
+          is_returning?: boolean
+          is_test?: boolean
+          page_type?: string
+          path?: string
+          props?: Json
+          received_at?: string
+          referrer_host?: string | null
+          session_id: string
+          site_id: string
+          user_id: string
+          utm?: Json
+          visitor_key: string
+        }
+        Update: {
+          engagement?: Json | null
+          event_id?: string
+          event_name?: string
+          id?: string
+          is_returning?: boolean
+          is_test?: boolean
+          page_type?: string
+          path?: string
+          props?: Json
+          received_at?: string
+          referrer_host?: string | null
+          session_id?: string
+          site_id?: string
+          user_id?: string
+          utm?: Json
+          visitor_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visitor_events_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "visitor_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      visitor_ip_cache: {
+        Row: {
+          classification: string
+          company_domain: string | null
+          company_name: string | null
+          confidence: number | null
+          evidence: Json
+          expires_at: string
+          fetched_at: string
+          ip_hash: string
+          network_prefix: string | null
+          status: string
+          unknown_reason: string | null
+        }
+        Insert: {
+          classification: string
+          company_domain?: string | null
+          company_name?: string | null
+          confidence?: number | null
+          evidence?: Json
+          expires_at: string
+          fetched_at?: string
+          ip_hash: string
+          network_prefix?: string | null
+          status: string
+          unknown_reason?: string | null
+        }
+        Update: {
+          classification?: string
+          company_domain?: string | null
+          company_name?: string | null
+          confidence?: number | null
+          evidence?: Json
+          expires_at?: string
+          fetched_at?: string
+          ip_hash?: string
+          network_prefix?: string | null
+          status?: string
+          unknown_reason?: string | null
+        }
+        Relationships: []
+      }
+      visitor_network_cache: {
+        Row: {
+          classification: string
+          evidence: Json
+          expires_at: string
+          fetched_at: string
+          network_prefix: string
+          unknown_reason: string | null
+        }
+        Insert: {
+          classification: string
+          evidence?: Json
+          expires_at: string
+          fetched_at?: string
+          network_prefix: string
+          unknown_reason?: string | null
+        }
+        Update: {
+          classification?: string
+          evidence?: Json
+          expires_at?: string
+          fetched_at?: string
+          network_prefix?: string
+          unknown_reason?: string | null
+        }
+        Relationships: []
+      }
+      visitor_resolve_jobs: {
+        Row: {
+          attempts: number
+          available_at: string
+          claimed_at: string | null
+          created_at: string
+          finished_at: string | null
+          id: string
+          ip_hash: string
+          ip_raw: string | null
+          ip_raw_until: string | null
+          last_error: string | null
+          network_prefix: string | null
+          site_id: string
+          status: string
+          user_id: string
+          visitor_key: string
+        }
+        Insert: {
+          attempts?: number
+          available_at?: string
+          claimed_at?: string | null
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          ip_hash: string
+          ip_raw?: string | null
+          ip_raw_until?: string | null
+          last_error?: string | null
+          network_prefix?: string | null
+          site_id: string
+          status?: string
+          user_id: string
+          visitor_key: string
+        }
+        Update: {
+          attempts?: number
+          available_at?: string
+          claimed_at?: string | null
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          ip_hash?: string
+          ip_raw?: string | null
+          ip_raw_until?: string | null
+          last_error?: string | null
+          network_prefix?: string | null
+          site_id?: string
+          status?: string
+          user_id?: string
+          visitor_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visitor_resolve_jobs_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "visitor_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      visitor_rule_runs: {
+        Row: {
+          actions_taken: Json
+          created_at: string
+          finished_at: string | null
+          id: string
+          match_id: string
+          rule_id: string
+          skip_reason: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          actions_taken?: Json
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          match_id: string
+          rule_id: string
+          skip_reason?: string | null
+          status: string
+          user_id: string
+        }
+        Update: {
+          actions_taken?: Json
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          match_id?: string
+          rule_id?: string
+          skip_reason?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visitor_rule_runs_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "visitor_company_matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitor_rule_runs_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "visitor_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      visitor_rules: {
+        Row: {
+          actions: string[]
+          created_at: string
+          daily_cap: number
+          enabled: boolean
+          event_names: string[]
+          id: string
+          min_confidence: number
+          name: string
+          page_types: string[]
+          sequence_id: string | null
+          site_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          actions?: string[]
+          created_at?: string
+          daily_cap?: number
+          enabled?: boolean
+          event_names?: string[]
+          id?: string
+          min_confidence?: number
+          name: string
+          page_types?: string[]
+          sequence_id?: string | null
+          site_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          actions?: string[]
+          created_at?: string
+          daily_cap?: number
+          enabled?: boolean
+          event_names?: string[]
+          id?: string
+          min_confidence?: number
+          name?: string
+          page_types?: string[]
+          sequence_id?: string | null
+          site_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visitor_rules_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "visitor_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      visitor_sites: {
+        Row: {
+          allowed_domains: string[]
+          consent_mode: string
+          created_at: string
+          enabled: boolean
+          excluded_ips: string[]
+          excluded_paths: string[]
+          id: string
+          name: string
+          retention_days: number
+          updated_at: string
+          user_id: string
+          verified_hosts: string[]
+        }
+        Insert: {
+          allowed_domains?: string[]
+          consent_mode?: string
+          created_at?: string
+          enabled?: boolean
+          excluded_ips?: string[]
+          excluded_paths?: string[]
+          id?: string
+          name?: string
+          retention_days?: number
+          updated_at?: string
+          user_id: string
+          verified_hosts?: string[]
+        }
+        Update: {
+          allowed_domains?: string[]
+          consent_mode?: string
+          created_at?: string
+          enabled?: boolean
+          excluded_ips?: string[]
+          excluded_paths?: string[]
+          id?: string
+          name?: string
+          retention_days?: number
+          updated_at?: string
+          user_id?: string
+          verified_hosts?: string[]
+        }
+        Relationships: []
+      }
+      visitor_workspace_grants: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          enabled_by: string | null
+          note: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          enabled_by?: string | null
+          note?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          enabled_by?: string | null
+          note?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       white_label_settings: {
         Row: {
           accent_color: string | null
@@ -7621,6 +8067,7 @@ export type Database = {
       trigger_agent_jobs: { Args: never; Returns: undefined }
       trigger_hiring_refresh: { Args: never; Returns: undefined }
       trigger_rescore_queue: { Args: never; Returns: undefined }
+      visitor_intelligence_enabled: { Args: never; Returns: boolean }
       webhook_has_secret: { Args: { _webhook_id: string }; Returns: boolean }
       webhook_secret_masked: { Args: { _webhook_id: string }; Returns: string }
     }

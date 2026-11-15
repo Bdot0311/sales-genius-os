@@ -313,6 +313,16 @@ actually answered:
 That third line is the one to watch for. It means no paid verifier answered, and
 every address in that batch is about to be sent to unproven.
 
+## Visitor Intelligence
+
+Optional. The feature works without it. Set it if you want IP hashes to stay stable across a service-role rotation.
+
+| Variable | Read by | Missing |
+|---|---|---|
+| `VISITOR_IP_PEPPER` | `visitor-ingest` | The service role key is used as the hash pepper instead. Hashes change if that key rotates. The raw address is still dropped within 24 hours |
+
+---
+
 ## Adding a variable
 
 Keep the two habits this page documents:
