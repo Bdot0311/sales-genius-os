@@ -4181,6 +4181,21 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_reply_cutoff: {
+        Row: {
+          id: number
+          shipped_at: string
+        }
+        Insert: {
+          id?: number
+          shipped_at: string
+        }
+        Update: {
+          id?: number
+          shipped_at?: string
+        }
+        Relationships: []
+      }
       inbox_sync_cursors: {
         Row: {
           consecutive_failures: number

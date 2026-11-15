@@ -36,7 +36,7 @@ import { capToolsToTier, resolveAgentTier } from "../_shared/agent-tier-scope.ts
 import { notifyAgentRunFinished, notifyMeetingBooked } from "../_shared/notify-events.ts";
 import { researchBlockForLead } from "../_shared/lead-research-block.ts";
 import { firstTouchBlockers, replySendBlockers } from "../_shared/factual-send.ts";
-import { intentFromAgentClassification, intentScoreFromConfidence, withoutUnclassifiedFlag } from "../_shared/reply-stop.ts";
+import { intentFromAgentClassification, intentScoreFromConfidence, isGmailId, isUuid, outboundFollowsReply, withoutUnclassifiedFlag } from "../_shared/reply-stop.ts";
 import {
   decisionForDrafting,
   decisionPromptBlock,
@@ -104,6 +104,8 @@ interface Reply {
   leadId: string | null;
   /** Set when this reply was already stored by the sweep and claimed for this run. */
   analysisId?: string;
+  /** A later message in the Gmail thread is from the user's own mailbox. */
+  userRepliedAfter?: boolean;
 }
 
 interface AgentConfig {
@@ -1645,6 +1647,75 @@ ${playbookSystemRules()}`;
 
       try {
         repliesProcessed++;
+
+        /*
+         * Do not answer a thread the user already answered. That includes a
+         * later message from their own mailbox, and a sent_emails row on the
+         * same thread or lead after this reply arrived. Mark it processed so
+         * the next run does not claim it again.
+         */
+        const threadId = isGmailId(reply.gmailThreadId) ? reply.gmailThreadId : null;
+        const replyLeadId = isUuid(reply.leadId) ? reply.leadId : null;
+        let laterOutbound = false;
+        if (!reply.userRepliedAfter && reply.receivedAt && (threadId || replyLeadId)) {
+          const onThread = threadId
+            ? await adminClient
+              .from("sent_emails")
+              .select("sent_at")
+              .eq("user_id", user.id)
+              .eq("status", "sent")
+              .eq("gmail_thread_id", threadId)
+              .gt("sent_at", reply.receivedAt)
+              .limit(1)
+            : { data: [] };
+          const onLead = replyLeadId
+            ? await adminClient
+              .from("sent_emails")
+              .select("sent_at")
+              .eq("user_id", user.id)
+              .eq("status", "sent")
+              .eq("lead_id", replyLeadId)
+              .gt("sent_at", reply.receivedAt)
+              .limit(1)
+            : { data: [] };
+          laterOutbound = outboundFollowsReply(reply.receivedAt, onThread.data?.[0]?.sent_at)
+            || outboundFollowsReply(reply.receivedAt, onLead.data?.[0]?.sent_at);
+        }
+        if (reply.userRepliedAfter || laterOutbound) {
+          if (reply.analysisId) {
+            await adminClient
+              .from("reply_analysis")
+              .update({ processed_by_agent: true })
+              .eq("id", reply.analysisId)
+              .eq("user_id", user.id);
+          } else if (reply.sentEmailId) {
+            const { data: rows } = await adminClient
+              .from("reply_analysis")
+              .select("id, detected_signals")
+              .eq("user_id", user.id)
+              .eq("sent_email_id", reply.sentEmailId);
+            const match = (rows ?? []).find((row: { detected_signals?: { gmail_message_id?: string } }) =>
+              row.detected_signals?.gmail_message_id === reply.gmailMessageId);
+            if (match) {
+              await adminClient
+                .from("reply_analysis")
+                .update({ processed_by_agent: true })
+                .eq("id", match.id)
+                .eq("user_id", user.id);
+            }
+          }
+          await logAction({
+            user_id: user.id,
+            sent_email_id: reply.sentEmailId,
+            action_type: "skipped",
+            status: "skipped",
+            prospect_email: reply.fromEmail,
+            subject: reply.subject,
+            metadata: { phase: "reply", reason: "already_answered" },
+          });
+          skipped++;
+          continue;
+        }
 
         const classifySystemPrompt =
           "You classify sales email replies. Respond ONLY with valid JSON.\n" +

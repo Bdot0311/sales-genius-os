@@ -56,6 +56,32 @@ export function intentScoreFromConfidence(confidence: number): number {
   return Math.max(0, Math.min(100, Math.round(score)));
 }
 
+/** A later message from the mailbox we sent from means the user already answered. */
+export function ownMessageAfterReply(
+  replyAtMs: number,
+  messages: { atMs: number; fromUs: boolean }[],
+): boolean {
+  if (!Number.isFinite(replyAtMs)) return false;
+  return messages.some((message) => message.fromUs && Number.isFinite(message.atMs) && message.atMs > replyAtMs);
+}
+
+/** A sent_emails row after the reply is the same fact, recorded on our side. */
+export function outboundFollowsReply(
+  replyAt: string | null | undefined,
+  sentAt: string | null | undefined,
+): boolean {
+  if (!replyAt || !sentAt) return false;
+  const replyMs = Date.parse(replyAt);
+  const sentMs = Date.parse(sentAt);
+  if (!Number.isFinite(replyMs) || !Number.isFinite(sentMs)) return false;
+  return sentMs > replyMs;
+}
+
+/** Gmail thread ids are not uuids. Only those characters may go into a filter. */
+export function isGmailId(value: unknown): value is string {
+  return typeof value === "string" && /^[A-Za-z0-9_-]{1,128}$/.test(value);
+}
+
 /** Drop the sweep's placeholder flag without losing the rest of the signals. */
 export function withoutUnclassifiedFlag(
   signals: Record<string, unknown> | null | undefined,

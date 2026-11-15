@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { notifyRepliesReceived } from "../_shared/notify-events.ts";
+import { ownMessageAfterReply } from "../_shared/reply-stop.ts";
 import { createClient } from "npm:@supabase/supabase-js@^2.76.1";
 
 const corsHeaders = {
@@ -477,6 +478,15 @@ serve(async (req) => {
 
           const gmailMessageId: string = message.id;
           const bodyText = extractBody(message.payload);
+          const userRepliedAfter = ownMessageAfterReply(internalDate, messages.map((other: any) => {
+            const otherHeaders: any[] = other.payload?.headers || [];
+            const otherFromHeader = otherHeaders.find((h: any) => h.name?.toLowerCase() === "from")?.value || "";
+            const otherFrom = (otherFromHeader.match(/<(.+?)>/)?.[1] ?? otherFromHeader).trim().toLowerCase();
+            return {
+              atMs: parseInt(other.internalDate || "0", 10),
+              fromUs: ownEmails.includes(otherFrom),
+            };
+          }));
           const prior = existingByMessage.get(gmailMessageId);
           if (prior) {
             // The sweep already stored this. Do not notify or insert again.
@@ -501,6 +511,7 @@ serve(async (req) => {
                   leadId: thread.lead_id ?? null,
                   enrollmentId: thread.enrollment_id ?? null,
                   analysisId: prior.id,
+                  userRepliedAfter,
                 });
               }
             }
@@ -519,6 +530,7 @@ serve(async (req) => {
             isAutoReply,
             leadId: thread.lead_id ?? null,
             enrollmentId: thread.enrollment_id ?? null,
+            userRepliedAfter,
           });
 
           existingByMessage.set(gmailMessageId, { id: "", processed: true });

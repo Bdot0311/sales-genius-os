@@ -4,6 +4,8 @@ import {
   intentFromAgentClassification,
   intentScoreFromConfidence,
   isUuid,
+  outboundFollowsReply,
+  ownMessageAfterReply,
   replySupersedesQueuedMail,
   withoutUnclassifiedFlag,
 } from "../../supabase/functions/_shared/reply-stop";
@@ -92,10 +94,34 @@ describe("a reply the sweep stored still reaches the agent once", () => {
     expect(INBOX).toContain('rpc("claim_reply_for_agent"');
     expect(INBOX).toContain("replies.concat(agentReplies)");
     expect(MIGRATION).not.toContain("claim_reply_for_agent");
-    const claim = readFileSync("supabase/migrations/20261115133000_claim_reply_for_agent.sql", "utf8");
+    const claim = readFileSync("supabase/migrations/20261115143000_agent_reply_cutoff.sql", "utf8");
     expect(claim).toContain("coalesce(processed_by_agent, false) = false");
     expect(claim).toContain("interval '15 minutes'");
     expect(claim).toContain("auth.role() <> 'service_role'");
+  });
+
+  it("does not claim history, or anything older than 72 hours", () => {
+    const cutoff = readFileSync("supabase/migrations/20261115143000_agent_reply_cutoff.sql", "utf8");
+    expect(cutoff).toContain("SET processed_by_agent = true");
+    expect(cutoff).toContain("WHERE coalesce(processed_by_agent, false) = false");
+    expect(cutoff).toContain("agent_reply_cutoff");
+    expect(cutoff).toContain("coalesce(analyzed_at, created_at) >= v_shipped");
+    expect(cutoff).toContain("interval '72 hours'");
+  });
+
+  it("treats a later message from us as already answered", () => {
+    expect(ownMessageAfterReply(1_000, [{ atMs: 1_500, fromUs: true }])).toBe(true);
+    expect(ownMessageAfterReply(1_000, [{ atMs: 1_500, fromUs: false }])).toBe(false);
+    expect(ownMessageAfterReply(1_000, [{ atMs: 500, fromUs: true }])).toBe(false);
+    expect(outboundFollowsReply("2026-11-01T00:00:00.000Z", "2026-11-02T00:00:00.000Z")).toBe(true);
+    expect(outboundFollowsReply("2026-11-02T00:00:00.000Z", "2026-11-01T00:00:00.000Z")).toBe(false);
+    expect(INBOX).toContain("ownMessageAfterReply(");
+    expect(INBOX).toContain("userRepliedAfter");
+    expect(AGENT).toContain("outboundFollowsReply(reply.receivedAt");
+    expect(AGENT).toContain('reason: "already_answered"');
+    expect(AGENT).toContain("processed_by_agent: true");
+    expect(AGENT).toContain('.eq("gmail_thread_id", threadId)');
+    expect(AGENT).toContain('.eq("lead_id", replyLeadId)');
   });
 
   it("maps the agent's words onto the three labels the column allows", () => {
