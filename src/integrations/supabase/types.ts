@@ -4181,8 +4181,63 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_reply_cutoff: {
+        Row: {
+          id: number
+          shipped_at: string
+        }
+        Insert: {
+          id?: number
+          shipped_at: string
+        }
+        Update: {
+          id?: number
+          shipped_at?: string
+        }
+        Relationships: []
+      }
+      inbox_sync_cursors: {
+        Row: {
+          consecutive_failures: number
+          last_attempt_at: string | null
+          last_error: string | null
+          last_success_at: string | null
+          user_id: string
+        }
+        Insert: {
+          consecutive_failures?: number
+          last_attempt_at?: string | null
+          last_error?: string | null
+          last_success_at?: string | null
+          user_id: string
+        }
+        Update: {
+          consecutive_failures?: number
+          last_attempt_at?: string | null
+          last_error?: string | null
+          last_success_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      inbox_sync_lock: {
+        Row: {
+          id: number
+          locked_until: string | null
+        }
+        Insert: {
+          id?: number
+          locked_until?: string | null
+        }
+        Update: {
+          id?: number
+          locked_until?: string | null
+        }
+        Relationships: []
+      }
       reply_analysis: {
         Row: {
+          agent_claimed_at: string | null
           agent_reply_sent_at: string | null
           analyzed_at: string
           check_back_at: string | null
@@ -4201,6 +4256,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          agent_claimed_at?: string | null
           agent_reply_sent_at?: string | null
           analyzed_at?: string
           check_back_at?: string | null
@@ -4219,6 +4275,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          agent_claimed_at?: string | null
           agent_reply_sent_at?: string | null
           analyzed_at?: string
           check_back_at?: string | null

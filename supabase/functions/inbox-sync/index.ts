@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { notifyRepliesReceived } from "../_shared/notify-events.ts";
+import { ownMessageAfterReply } from "../_shared/reply-stop.ts";
 import { createClient } from "npm:@supabase/supabase-js@^2.76.1";
 
 const corsHeaders = {
@@ -137,6 +138,73 @@ async function refreshAccessToken(
   return tokens.access_token;
 }
 
+type SyncedReply = {
+  sentEmailId: string;
+  gmailMessageId: string;
+  bodyText: string;
+  isAutoReply: boolean;
+  leadId: string | null;
+  enrollmentId: string | null;
+};
+
+/**
+ * Classification is what turns a reply into a hold or a stop, and it is also
+ * the only thing that used to stop the sequence. When it does not run, or it
+ * fails, the sequence has to stop anyway: a person wrote back.
+ */
+async function stopSequenceForReply(adminClient: any, userId: string, reply: SyncedReply) {
+  if (reply.leadId) {
+    const { error } = await adminClient.rpc("apply_reply_to_sequence", {
+      p_user_id: userId,
+      p_lead_id: reply.leadId,
+      p_triage: "reply",
+      p_check_back_at: null,
+    });
+    if (error) console.error("[inbox-sync] reply did not stop the sequence:", error.message);
+    return;
+  }
+  if (!reply.enrollmentId) return;
+  const { error } = await adminClient
+    .from("sequence_enrollments")
+    .update({
+      status: "completed",
+      engagement_state: "replied",
+      paused_until: null,
+      paused_reason: null,
+      last_activity_at: new Date().toISOString(),
+    })
+    .eq("id", reply.enrollmentId)
+    .eq("user_id", userId)
+    .in("status", ["active", "paused"]);
+  if (error) console.error("[inbox-sync] enrollment stop failed:", error.message);
+  const { error: cancelError } = await adminClient.rpc("cancel_queued_sequence_mail", {
+    p_enrollment_id: reply.enrollmentId,
+    p_reason: "They replied, so the rest of the sequence was cancelled",
+  });
+  if (cancelError) console.error("[inbox-sync] queued mail not cancelled:", cancelError.message);
+}
+
+/** So the next sweep recognises this Gmail message and does not record it again. */
+async function rememberUnclassifiedReply(adminClient: any, userId: string, reply: SyncedReply) {
+  const { error } = await adminClient.from("reply_analysis").insert({
+    user_id: userId,
+    lead_id: reply.leadId,
+    sent_email_id: reply.sentEmailId,
+    reply_content: (reply.bodyText || "").slice(0, 8000),
+    intent_score: reply.isAutoReply ? 5 : 50,
+    intent_classification: reply.isAutoReply ? "low_intent" : "neutral",
+    detected_signals: {
+      gmail_message_id: reply.gmailMessageId,
+      triage_category: reply.isAutoReply ? "ooo" : "reply",
+      unclassified: !reply.isAutoReply,
+    },
+    triage_category: reply.isAutoReply ? "ooo" : "reply",
+    requires_human_action: !reply.isAutoReply,
+    analyzed_at: new Date().toISOString(),
+  });
+  if (error) console.error("[inbox-sync] reply marker not stored:", error.message);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -160,6 +228,7 @@ serve(async (req) => {
       testEmail?: string;
       includeOwnReplies?: boolean;
       analyzeReplies?: boolean;
+      forAgent?: boolean;
       userId?: string;
     } = {};
     try {
@@ -268,7 +337,7 @@ serve(async (req) => {
 
     const { data: activeThreads, error: threadsError } = await adminClient
       .from("sent_emails")
-      .select("id, gmail_thread_id, sent_at, to_email, subject, sending_account_id, lead_id")
+      .select("id, gmail_thread_id, sent_at, to_email, subject, sending_account_id, lead_id, enrollment_id")
       .eq("user_id", user.id)
       .not("gmail_thread_id", "is", null)
       .eq("agent_thread_status", "active")
@@ -283,12 +352,15 @@ serve(async (req) => {
 
     const threads = activeThreads || [];
     const replies: any[] = [];
+    // Already stored by an earlier sweep. Returned only to an agent run, and
+    // only after that run claims the row, so two runs cannot both answer it.
+    const agentReplies: any[] = [];
 
-    const existingMessageIds = new Set<string>();
+    const existingByMessage = new Map<string, { id: string; processed: boolean }>();
     if (threads.length > 0) {
       const { data: existingReplies } = await adminClient
         .from("reply_analysis")
-        .select("id, sent_email_id, detected_signals")
+        .select("id, sent_email_id, detected_signals, processed_by_agent")
         .in(
           "sent_email_id",
           threads.map((t: any) => t.id)
@@ -297,7 +369,10 @@ serve(async (req) => {
       for (const r of existingReplies || []) {
         const signals = r.detected_signals as any;
         if (signals?.gmail_message_id) {
-          existingMessageIds.add(signals.gmail_message_id);
+          existingByMessage.set(signals.gmail_message_id, {
+            id: r.id,
+            processed: r.processed_by_agent === true,
+          });
         }
       }
     }
@@ -402,9 +477,52 @@ serve(async (req) => {
           if (internalDate <= sentAt) continue;
 
           const gmailMessageId: string = message.id;
-          if (existingMessageIds.has(gmailMessageId)) continue;
-
           const bodyText = extractBody(message.payload);
+          const userRepliedAfter = ownMessageAfterReply(internalDate, messages.map((other: any) => {
+            const otherHeaders: any[] = other.payload?.headers || [];
+            const otherFromHeader = otherHeaders.find((h: any) => h.name?.toLowerCase() === "from")?.value || "";
+            const otherFrom = (otherFromHeader.match(/<(.+?)>/)?.[1] ?? otherFromHeader).trim().toLowerCase();
+            return {
+              atMs: parseInt(other.internalDate || "0", 10),
+              fromUs: ownEmails.includes(otherFrom),
+            };
+          }));
+          const prior = existingByMessage.get(gmailMessageId);
+          if (prior) {
+            // The sweep already stored this. Do not notify or insert again.
+            // An agent run still needs the body, once, so it can draft.
+            if (payload.forAgent && !prior.processed) {
+              // The claim decides whether this reply is recent enough to
+              // auto-answer. The clock is the Gmail time, passed in here.
+              const receivedAt = Number.isFinite(internalDate) && internalDate > 0
+                ? new Date(internalDate).toISOString()
+                : null;
+              const { data: claimed, error: claimError } = await adminClient.rpc("claim_reply_for_agent", {
+                p_id: prior.id,
+                p_user_id: user.id,
+                p_received_at: receivedAt,
+              });
+              if (claimError) console.error("[inbox-sync] reply claim failed:", claimError.message);
+              else if (claimed === true) {
+                agentReplies.push({
+                  sentEmailId: thread.id,
+                  gmailMessageId,
+                  fromEmail,
+                  subject: subjectHeader,
+                  bodyText,
+                  receivedAt,
+                  gmailThreadId: thread.gmail_thread_id,
+                  integrationId: mailbox.id,
+                  isAutoReply,
+                  leadId: thread.lead_id ?? null,
+                  enrollmentId: thread.enrollment_id ?? null,
+                  analysisId: prior.id,
+                  userRepliedAfter,
+                });
+              }
+            }
+            continue;
+          }
 
           replies.push({
             sentEmailId: thread.id,
@@ -417,9 +535,11 @@ serve(async (req) => {
             integrationId: mailbox.id,
             isAutoReply,
             leadId: thread.lead_id ?? null,
+            enrollmentId: thread.enrollment_id ?? null,
+            userRepliedAfter,
           });
 
-          existingMessageIds.add(gmailMessageId);
+          existingByMessage.set(gmailMessageId, { id: "", processed: true });
         }
 
       } catch (threadErr: any) {
@@ -495,10 +615,13 @@ serve(async (req) => {
       if (replyErr) console.error(`Failed to mark reply on ${sentEmailId}:`, replyErr.message);
     }
 
-    // Classify new replies so positive-reply analytics are real (opt-in so the
-    // agent, which classifies replies itself, doesn't double-analyze).
-    if (payload.analyzeReplies) {
-      for (const r of replies) {
+    // Classify when asked. The sequence still stops when classification does
+    // not happen: the agent classifies for itself, the performance page syncs
+    // without asking, and the model call can fail. An auto-reply is recorded
+    // and does not stop anything.
+    for (const r of replies) {
+      let classified = false;
+      if (payload.analyzeReplies && r.bodyText?.trim()) {
         try {
           const res = await fetch(`${supabaseUrl}/functions/v1/analyze-reply`, {
             method: "POST",
@@ -513,10 +636,25 @@ serve(async (req) => {
               userId: isInternal ? user.id : undefined,
             }),
           });
-          if (!res.ok) console.error(`analyze-reply ${res.status}: ${await res.text()}`);
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            console.error(`analyze-reply ${res.status}: ${data?.error ?? ""}`);
+          } else {
+            classified = true;
+            const action = data?.sequence?.action;
+            // 'ignored' from the model is not a reason to keep mailing a person.
+            // An auto-reply is, and isAutoReply is how we know.
+            if (!r.isAutoReply && action !== "stopped" && action !== "held") {
+              await stopSequenceForReply(adminClient, user.id, r);
+            }
+          }
         } catch (e: any) {
           console.error("analyze-reply failed:", e.message);
         }
+      }
+      if (!classified) {
+        await rememberUnclassifiedReply(adminClient, user.id, r);
+        if (!r.isAutoReply) await stopSequenceForReply(adminClient, user.id, r);
       }
     }
 
@@ -524,7 +662,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        replies,
+        replies: replies.concat(agentReplies),
         threadsChecked: threads.length,
         newReplies: replies.length,
         // A throttled sweep is partial, not empty.

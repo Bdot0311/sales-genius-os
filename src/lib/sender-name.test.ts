@@ -51,7 +51,7 @@ describe("generate-email refuses to write what it cannot sign", () => {
   });
 
   it("falls back to the sending address before giving up", () => {
-    expect(GEN).toContain("senderName || nameFromEmail(senderEmail)");
+    expect(GEN).toContain("senderName || profileSenderName || nameFromEmail(senderEmail)");
   });
 
   it("fails with an actionable reason rather than a placeholder draft", () => {

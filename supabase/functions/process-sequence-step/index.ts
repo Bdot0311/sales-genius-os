@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { htmlToPlainText } from "../_shared/plain-text.ts";
 import { proofFromLead, queuedCopyBlockers } from "../_shared/template-send-gate.ts";
 import { bodyViolations, evaluateStoredSnapshots, releaseBinding } from "../_shared/evidence-contract.ts";
+import { isUuid, replySupersedesQueuedMail } from "../_shared/reply-stop.ts";
 import { createClient } from "npm:@supabase/supabase-js@^2.76.1";
 
 const corsHeaders = {
@@ -130,6 +131,89 @@ serve(async (req) => {
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    /*
+     * A reply can be on the sent row before anything has written
+     * engagement_state. Classification is what decides hold versus stop, and
+     * it can fail. Queueing the next step in that window is how a person who
+     * already answered gets another email. A reply older than the enrollment's
+     * last move is a resume, and is allowed through.
+     */
+    const leadId = isUuid(enrollment.lead_id) ? enrollment.lead_id : null;
+    const enrollmentKey = isUuid(enrollment.id) ? enrollment.id : null;
+    if (leadId || enrollmentKey) {
+      let replyQuery = supabase
+        .from('sent_emails')
+        .select('replied_at')
+        .eq('user_id', enrollment.user_id)
+        .not('replied_at', 'is', null)
+        .order('replied_at', { ascending: false })
+        .limit(1);
+      if (leadId && enrollmentKey) {
+        replyQuery = replyQuery.or(`lead_id.eq.${leadId},enrollment_id.eq.${enrollmentKey}`);
+      } else if (leadId) {
+        replyQuery = replyQuery.eq('lead_id', leadId);
+      } else {
+        replyQuery = replyQuery.eq('enrollment_id', enrollmentKey);
+      }
+      const { data: priorReplies, error: replyErr } = await replyQuery;
+      if (replyErr) {
+        const retryAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+        await supabase
+          .from('sequence_enrollments')
+          .update({ next_action_at: retryAt })
+          .eq('id', enrollment.id)
+          .eq('user_id', enrollment.user_id);
+        console.error(`[process-sequence-step] reply check failed for ${enrollment.id}:`, replyErr.message);
+        return new Response(JSON.stringify({
+          success: true,
+          action: 'skipped',
+          reason: 'reply_check_failed',
+          retryAt,
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (replySupersedesQueuedMail(enrollment.last_activity_at, priorReplies?.[0]?.replied_at)) {
+        let applied = false;
+        if (leadId) {
+          const { error: applyError } = await supabase.rpc('apply_reply_to_sequence', {
+            p_user_id: enrollment.user_id,
+            p_lead_id: leadId,
+            p_triage: 'reply',
+            p_check_back_at: null,
+          });
+          applied = !applyError;
+          if (applyError) console.error('[process-sequence-step] reply not applied:', applyError.message);
+        }
+        if (!applied) {
+          await supabase
+            .from('sequence_enrollments')
+            .update({
+              status: 'completed',
+              engagement_state: 'replied',
+              paused_until: null,
+              completed_at: new Date().toISOString(),
+              last_activity_at: new Date().toISOString(),
+            })
+            .eq('id', enrollment.id)
+            .eq('user_id', enrollment.user_id);
+          if (enrollmentKey) {
+            await supabase.rpc('cancel_queued_sequence_mail', {
+              p_enrollment_id: enrollmentKey,
+              p_reason: 'They replied, so the rest of the sequence was cancelled',
+            });
+          }
+        }
+        return new Response(JSON.stringify({
+          success: true,
+          action: 'completed',
+          reason: 'Lead replied - sequence completed',
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     // Get the next step to execute

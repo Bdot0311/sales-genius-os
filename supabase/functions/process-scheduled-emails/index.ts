@@ -11,6 +11,7 @@ import {
 import { injectClickTracking } from "../_shared/click-tracking.ts";
 import { proofFromLead, queuedCopyBlockers } from "../_shared/template-send-gate.ts";
 import { bodyViolations, evaluateStoredSnapshots, releaseBinding } from "../_shared/evidence-contract.ts";
+import { isUuid, replySupersedesQueuedMail } from "../_shared/reply-stop.ts";
 
 // RFC 2047 MIME encode subject for non-ASCII characters
 const mimeEncodeSubject = (subject: string) => {
@@ -388,6 +389,45 @@ serve(async (req) => {
                   : enr.engagement_state === "replied"
                     ? "They replied before this step was due, so it was not sent."
                     : "The sequence was stopped before this step was due, so it was not sent.",
+            );
+            failed++;
+            continue;
+          }
+        }
+
+        /*
+         * The enrollment can still say "active" when the reply has been
+         * recorded and the classification that stops it has not landed yet.
+         * The queued row was created before that reply. Do not send it.
+         * A row created after the reply — a resume, or a reply the user
+         * wrote back — is newer than replied_at and still sends.
+         */
+        const replyLeadId = isUuid(email.lead_id) ? email.lead_id : null;
+        const replyEnrollmentId = isUuid(email.enrollment_id) ? email.enrollment_id : null;
+        if (replyLeadId || replyEnrollmentId) {
+          let replyQuery = supabase
+            .from("sent_emails")
+            .select("replied_at")
+            .eq("user_id", email.user_id)
+            .not("replied_at", "is", null)
+            .order("replied_at", { ascending: false })
+            .limit(1);
+          if (replyLeadId && replyEnrollmentId) {
+            replyQuery = replyQuery.or(`lead_id.eq.${replyLeadId},enrollment_id.eq.${replyEnrollmentId}`);
+          } else if (replyLeadId) {
+            replyQuery = replyQuery.eq("lead_id", replyLeadId);
+          } else {
+            replyQuery = replyQuery.eq("enrollment_id", replyEnrollmentId);
+          }
+          const { data: priorReplies, error: replyErr } = await replyQuery;
+          if (replyErr) {
+            defer(email, "We couldn't confirm nobody has replied, so this was left queued. It retries on the next run.");
+            continue;
+          }
+          if (replySupersedesQueuedMail(email.created_at, priorReplies?.[0]?.replied_at)) {
+            await failEmail(
+              email.id,
+              "They replied before this step was due, so it was not sent.",
             );
             failed++;
             continue;

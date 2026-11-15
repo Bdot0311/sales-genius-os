@@ -138,6 +138,16 @@ project_id = "ghgfjnepvxvxrncmskys"
     verify_jwt = false
   [functions.process-sequence-step]
     verify_jwt = false
+  [functions.dispatch-sequence-steps]
+    # pg_cron signs with the vault internal secret, which is not a user JWT.
+    # Left at the platform default, the gateway rejects every run and no
+    # enrollment ever advances. The handler still requires that secret or the
+    # service role.
+    verify_jwt = false
+  [functions.process-agent-jobs]
+    # Same cron credential. A 401 at the gateway means queued follow-ups are
+    # never handed to the sender.
+    verify_jwt = false
   [functions.refresh-salesos-network]
     verify_jwt = false
   [functions.retry-stripe-webhooks]
