@@ -158,6 +158,15 @@ describe("visitor intelligence tenant isolation", () => {
       const [exhausted] = await sql`SELECT status, ip_raw FROM public.visitor_resolve_jobs WHERE ip_hash = 'hash-exhausted'`;
       expect(exhausted.status).toBe("failed");
       expect(exhausted.ip_raw).toBeNull();
+
+      // uq_visitor_jobs_hash. Two ingest requests for one address must not
+      // create two jobs; the loser is a unique violation, not a second row.
+      await expect(sql`INSERT INTO public.visitor_resolve_jobs
+        (site_id, user_id, visitor_key, ip_hash)
+        VALUES (${site}::uuid, ${owner}::uuid, 'visitor', 'hash-stale')`).rejects.toThrow(/duplicate|unique/i);
+      const dupes = await sql`SELECT count(*)::int AS n FROM public.visitor_resolve_jobs
+        WHERE site_id = ${site}::uuid AND ip_hash = 'hash-stale'`;
+      expect(dupes[0].n).toBe(1);
     } finally {
       await sql.end({ timeout: 1 });
     }

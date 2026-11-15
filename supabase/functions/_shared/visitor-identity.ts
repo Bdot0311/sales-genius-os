@@ -97,24 +97,59 @@ export function isIpv6(value: string): boolean {
 }
 
 /**
- * The visitor address Supabase documents for an edge function.
+ * The visitor address the stack gateway stamps, not the one the caller wrote.
  *
- * The edge-function examples take the first x-forwarded-for entry and send
- * that to the IP lookup. Later entries are proxy hops (Cloudflare, the
- * Supabase gateway), so using the rightmost address resolves the visit to
- * the platform instead of the caller.
+ * `upstreamHeadersFor` in supabase/cli `packages/stack/src/HttpProxy.ts`
+ * (commit c00bffbdc15646b91cba9e54b2afe41b2bfef95d) copies the request
+ * headers and then replaces them:
  *
- * https://supabase.com/docs/guides/functions/examples/cloudflare-turnstile
- * (`const ip = clientIps[0]`)
- * https://github.com/supabase/supabase/blob/master/examples/edge-functions/supabase/functions/location/index.ts
+ * - `x-real-ip` is set to `request.socket.remoteAddress`
+ * - that same peer is appended to any incoming `x-forwarded-for`
+ * - when the peer is missing, a caller-sent `x-real-ip` is deleted
  *
- * A caller-supplied address in the JSON body is never read.
+ * The comment on that function is "Like Kong: append the client to any
+ * incoming X-Forwarded-For chain; X-Real-IP is the client." The integration
+ * test "tells upstreams the client address" sends `x-real-ip: 203.0.113.7`
+ * and `x-forwarded-for: 203.0.113.7` and the upstream observes
+ * `x-real-ip: 127.0.0.1` and `x-forwarded-for: 203.0.113.7, 127.0.0.1`.
+ * https://github.com/supabase/cli/blob/c00bffbdc15646b91cba9e54b2afe41b2bfef95d/packages/stack/src/HttpProxy.ts
+ *
+ * edge-runtime does not rewrite either header. The gateway in front of the
+ * function does, so a caller who can set `Origin` still cannot choose the
+ * address this function returns. The Turnstile sample's `clientIps[0]` is
+ * the left-hand side of that chain, which is the part the caller supplied.
+ *
+ * Prefer `X-Real-IP` when it is an IP. Otherwise use the rightmost public
+ * `X-Forwarded-For` entry. Never the first, and never an address in the body.
  */
-export function trustedClientIp(xff: string | null | undefined): string | null {
+export function trustedClientIp(headers: {
+  forwardedFor?: string | null;
+  realIp?: string | null;
+}): string | null {
+  const real = normalizeIp(headers.realIp);
+  if (real) return real;
+  return rightmostPublicIp(headers.forwardedFor);
+}
+
+function normalizeIp(value: string | null | undefined): string | null {
+  if (!value) return null;
+  let trimmed = value.trim();
+  if (trimmed.startsWith("[") && trimmed.includes("]")) {
+    trimmed = trimmed.slice(1, trimmed.indexOf("]"));
+  }
+  trimmed = trimmed.replace(/^::ffff:/i, "");
+  if (!trimmed || !isIp(trimmed)) return null;
+  return trimmed.toLowerCase();
+}
+
+function rightmostPublicIp(xff: string | null | undefined): string | null {
   if (!xff) return null;
-  const first = xff.split(",")[0]?.trim().replace(/^::ffff:/i, "");
-  if (!first || !isIp(first)) return null;
-  return first.toLowerCase();
+  const parts = xff.split(",");
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const ip = normalizeIp(parts[i]);
+    if (ip && !isPrivateOrLocal(ip)) return ip;
+  }
+  return null;
 }
 
 export function isPrivateOrLocal(ip: string): boolean {

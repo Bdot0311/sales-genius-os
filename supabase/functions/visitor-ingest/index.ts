@@ -3,7 +3,7 @@ import { createClient } from "npm:@supabase/supabase-js@^2.76.1";
 import { resolveAppUser } from "../_shared/app-user.ts";
 import { rateLimit, rateLimitResponse } from "../_shared/rate-limit.ts";
 import { RAW_IP_TTL_MS, VISITOR_FLAG, networkPrefix, trustedClientIp } from "../_shared/visitor-identity.ts";
-import { INGEST_LIMITS, planIngest, type IngestSite } from "../_shared/visitor-ingest.ts";
+import { INGEST_LIMITS, ingestIpRateKey, planIngest, type IngestSite } from "../_shared/visitor-ingest.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -62,9 +62,9 @@ serve(async (req) => {
   }
 
   const forwarded = req.headers.get("x-forwarded-for");
-  const observed = trustedClientIp(forwarded);
-  const ratePrefix = observed ? (networkPrefix(observed) ?? "private") : "none";
-  const ipRl = await rateLimit(`visitor-ingest:${siteId}:${ratePrefix}`, INGEST_LIMITS.perIpPerMinute, 60);
+  const realIp = req.headers.get("x-real-ip");
+  const observed = trustedClientIp({ forwardedFor: forwarded, realIp });
+  const ipRl = await rateLimit(ingestIpRateKey(siteId, observed), INGEST_LIMITS.perIpPerMinute, 60);
   const siteRl = await rateLimit(`visitor-ingest:${siteId}`, INGEST_LIMITS.perSitePerMinute, 60);
 
   const site: IngestSite | null = row
@@ -88,6 +88,7 @@ serve(async (req) => {
     dnt: req.headers.get("dnt"),
     gpc: req.headers.get("sec-gpc"),
     forwardedFor: forwarded,
+    realIp,
     site,
     flagOn: flag?.is_enabled === true,
     grantOn: grant?.enabled === true,
@@ -141,34 +142,36 @@ serve(async (req) => {
     const ipHash = await hashIp(plan.ip);
     const until = new Date(Date.now() + RAW_IP_TTL_MS).toISOString();
     const visitorKey = plan.events[0].visitorKey;
-    const existing = await admin.from("visitor_resolve_jobs")
-      .select("id, status")
-      .eq("site_id", site!.id)
-      .eq("ip_hash", ipHash)
-      .maybeSingle();
-    if (!existing.data) {
-      await admin.from("visitor_resolve_jobs").insert({
-        site_id: site!.id,
-        user_id: site!.userId,
+    // uq_visitor_jobs_hash is UNIQUE (site_id, ip_hash). Two requests for the
+    // same address used to both observe "no row" and both insert; one then
+    // failed and the failure was ignored. Insert, and on that conflict only
+    // requeue a finished job. A queued or running row is left alone.
+    const network = plan.prefix ?? networkPrefix(plan.ip);
+    const enqueued = await admin.from("visitor_resolve_jobs").insert({
+      site_id: site!.id,
+      user_id: site!.userId,
+      visitor_key: visitorKey,
+      ip_hash: ipHash,
+      ip_raw: plan.ip,
+      ip_raw_until: until,
+      network_prefix: network,
+      status: "queued",
+    });
+    if (enqueued.error?.code === "23505") {
+      const requeued = await admin.from("visitor_resolve_jobs").update({
+        status: "queued",
         visitor_key: visitorKey,
-        ip_hash: ipHash,
         ip_raw: plan.ip,
         ip_raw_until: until,
-        network_prefix: plan.prefix ?? networkPrefix(plan.ip),
-        status: "queued",
-      });
-    } else if (existing.data.status === "done" || existing.data.status === "failed") {
-      await admin.from("visitor_resolve_jobs").update({
-        status: "queued",
-        visitor_key: visitorKey,
-        ip_raw: plan.ip,
-        ip_raw_until: until,
-        network_prefix: plan.prefix ?? networkPrefix(plan.ip),
+        network_prefix: network,
         attempts: 0,
         last_error: null,
         available_at: receivedAt,
         finished_at: null,
-      }).eq("id", existing.data.id);
+      }).eq("site_id", site!.id).eq("ip_hash", ipHash).in("status", ["done", "failed"]);
+      if (requeued.error) console.error("[visitor-ingest] resolve requeue failed", requeued.error.message);
+    } else if (enqueued.error) {
+      console.error("[visitor-ingest] resolve enqueue failed", enqueued.error.message);
     }
   }
 

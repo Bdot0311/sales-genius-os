@@ -59,6 +59,12 @@ export function rateLimited(ipHits: number, siteHits: number): boolean {
   return ipHits >= INGEST_LIMITS.perIpPerMinute || siteHits >= INGEST_LIMITS.perSitePerMinute;
 }
 
+/** Per-prefix bucket. A spoofed address must not mint a fresh key. */
+export function ingestIpRateKey(siteId: string, ip: string | null): string {
+  const prefix = ip ? (networkPrefix(ip) ?? "private") : "none";
+  return `visitor-ingest:${siteId}:${prefix}`;
+}
+
 export function planIngest(input: {
   body: unknown;
   bodyBytes: number;
@@ -68,6 +74,8 @@ export function planIngest(input: {
   dnt: string | null;
   gpc: string | null;
   forwardedFor: string | null;
+  /** Gateway `X-Real-IP`. Absent on a direct call; never taken from the body. */
+  realIp?: string | null;
   site: IngestSite | null;
   flagOn: boolean;
   grantOn: boolean;
@@ -83,7 +91,7 @@ export function planIngest(input: {
   if (isBotUserAgent(input.userAgent)) return { ok: false, status: 202, error: "Ignored automated client." };
   if (rateLimited(input.ipHits ?? 0, input.siteHits ?? 0)) return { ok: false, status: 429, error: "Rate limit exceeded." };
 
-  const ip = trustedClientIp(input.forwardedFor);
+  const ip = trustedClientIp({ forwardedFor: input.forwardedFor, realIp: input.realIp });
   const body = isRecord(input.body) ? input.body : null;
   if (!body) return { ok: false, status: 400, error: "Expected a JSON object." };
   // The body is not a source of identity. A client-supplied address is ignored above.

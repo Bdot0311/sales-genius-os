@@ -3,7 +3,7 @@ import { runOutboundTool } from "../../supabase/functions/_shared/agent-outbound
 import { createContext, runInContext } from "node:vm";
 import { describe, expect, it } from "vitest";
 import { planRuleRun, RULE_DAILY_CAP_MAX, WORKSPACE_DAILY_CAP } from "../../supabase/functions/_shared/visitor-automation.ts";
-import { INGEST_LIMITS, planIngest, rateLimited, type IngestPlan, type IngestSite } from "../../supabase/functions/_shared/visitor-ingest.ts";
+import { INGEST_LIMITS, ingestIpRateKey, planIngest, rateLimited, type IngestPlan, type IngestSite } from "../../supabase/functions/_shared/visitor-ingest.ts";
 import {
   decideIdentity,
   featureEnabled,
@@ -18,6 +18,13 @@ import {
   visitFacts,
 } from "../../supabase/functions/_shared/visitor-identity.ts";
 import { VISITOR_SDK_SOURCE } from "../../supabase/functions/_shared/visitor-sdk.ts";
+import {
+  RESOLVE_CLAIM_LIMIT,
+  RESOLVE_CONCURRENCY,
+  RESOLVE_WALL_BUDGET_MS,
+  releaseQueuedClaim,
+  runResolveBatch,
+} from "../../supabase/functions/_shared/visitor-resolve-batch.ts";
 
 const SITE: IngestSite = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -60,18 +67,49 @@ function event(path = "/pricing") {
 }
 
 describe("visitor ingest", () => {
-  it("uses the first x-forwarded-for entry Supabase documents, and ignores a body address", () => {
-    // Later hops are proxy addresses. A non-IP first entry is not replaced
-    // with one of those hops.
-    expect(trustedClientIp("198.51.100.20, 104.16.0.1")).toBe("198.51.100.20");
-    expect(trustedClientIp("not-an-ip, 203.0.113.9")).toBeNull();
+  it("trusts the gateway X-Real-IP, ignores a spoofed first X-Forwarded-For entry, and ignores a body address", () => {
+    // The stack gateway appends its peer and overwrites X-Real-IP. The first
+    // X-Forwarded-For entry is the one a caller can set. 203.0.113.9 is in
+    // this site's excluded range; it must not win, and it must not be the
+    // rate-limit prefix.
+    expect(trustedClientIp({ forwardedFor: "203.0.113.9, 198.51.100.44", realIp: null })).toBe("198.51.100.44");
+    expect(trustedClientIp({ forwardedFor: "not-an-ip, 198.51.100.44" })).toBe("198.51.100.44");
+    expect(trustedClientIp({ forwardedFor: "198.51.100.44, 10.0.0.8" })).toBe("198.51.100.44");
+    expect(trustedClientIp({
+      forwardedFor: "203.0.113.9, 198.51.100.44",
+      realIp: "192.0.2.10",
+    })).toBe("192.0.2.10");
+    expect(trustedClientIp({ forwardedFor: "198.51.100.44", realIp: "not-an-ip" })).toBe("198.51.100.44");
+    expect(trustedClientIp({ realIp: "::ffff:198.51.100.44" })).toBe("198.51.100.44");
+    // A private X-Real-IP is the peer the gateway wrote. Do not replace it
+    // with a public address the caller put in X-Forwarded-For.
+    expect(trustedClientIp({ forwardedFor: "198.51.100.44", realIp: "127.0.0.1" })).toBe("127.0.0.1");
+
+    const spoofedFirst = "203.0.113.9, 198.51.100.44";
+    const trusted = trustedClientIp({ forwardedFor: spoofedFirst, realIp: null });
+    expect(ingestIpRateKey(SITE.id, trusted)).toBe(`visitor-ingest:${SITE.id}:198.51.100.0/24`);
+    expect(ingestIpRateKey(SITE.id, "203.0.113.9")).toBe(`visitor-ingest:${SITE.id}:203.0.113.0/24`);
+
     const plan = planIngest({
       ...base,
       body: { site_id: SITE.id, consent: true, ip: "1.1.1.1", events: [event()] },
-      forwardedFor: "198.51.100.8, 104.16.0.1",
+      forwardedFor: spoofedFirst,
+      realIp: null,
     });
     expect(plan.ok).toBe(true);
-    if (plan.ok) expect(plan.ip).toBe("198.51.100.8");
+    if (plan.ok) expect(plan.ip).toBe("198.51.100.44");
+
+    const realExcluded = planIngest({
+      ...base,
+      body: { site_id: SITE.id, consent: true, ip: "198.51.100.44", events: [event()] },
+      forwardedFor: "198.51.100.44",
+      realIp: "203.0.113.9",
+    });
+    expect(denied(realExcluded).status).toBe(202);
+    expect(ingestIpRateKey(SITE.id, trustedClientIp({
+      forwardedFor: "198.51.100.44",
+      realIp: "203.0.113.9",
+    }))).toBe(`visitor-ingest:${SITE.id}:203.0.113.0/24`);
   });
 
   it("rejects missing consent, a foreign origin, bots, DNT, excluded ranges and oversized bodies", () => {
@@ -314,7 +352,7 @@ describe("rules stay inside the workspace that owns the site", () => {
     const rules = src.slice(src.indexOf('from("visitor_rules")'), src.indexOf("const since"));
     expect(rules).toContain('.eq("site_id", job.site_id)');
     expect(rules).toContain('.eq("user_id", job.user_id)');
-    const start = src.indexOf("for (const job");
+    const start = src.indexOf("runResolveBatch");
     const gateAt = src.indexOf("workspaceEnabled", start);
     const resolveAt = src.indexOf("resolveJob", start);
     expect(gateAt).toBeGreaterThan(start);
@@ -371,6 +409,90 @@ describe("agent writes honour the flag and the site owner", () => {
     });
     expect(result).toEqual({ error: "Site was not found in this workspace." });
     expect(foreign.ops).not.toContain("insert:visitor_rules");
+  });
+});
+
+describe("resolve throughput", () => {
+  const jobs = Array.from({ length: 20 }, (_, i) => ({ id: `job-${i}`, attempts: 1 }));
+
+  it("claims a bounded batch and leaves jobs past the time budget queued", async () => {
+    expect(RESOLVE_CLAIM_LIMIT).toBe(20);
+    expect(RESOLVE_CONCURRENCY).toBe(4);
+    expect(RESOLVE_WALL_BUDGET_MS).toBe(50_000);
+    expect(RESOLVE_WALL_BUDGET_MS).toBeLessThan(150_000);
+
+    let now = 0;
+    let inFlight = 0;
+    let maxInFlight = 0;
+    const { started, deferred } = await runResolveBatch(jobs, {
+      concurrency: RESOLVE_CONCURRENCY,
+      budgetMs: 30,
+      startedAt: 0,
+      now: () => now,
+      run: async () => {
+        inFlight += 1;
+        maxInFlight = Math.max(maxInFlight, inFlight);
+        await Promise.resolve();
+        inFlight -= 1;
+        now += 20;
+      },
+    });
+
+    expect(started.length).toBeGreaterThan(0);
+    expect(started.length).toBeLessThan(jobs.length);
+    expect(started.length + deferred.length).toBe(jobs.length);
+    expect(maxInFlight).toBeLessThanOrEqual(RESOLVE_CONCURRENCY);
+    expect(maxInFlight).toBeGreaterThan(1);
+    const startedIds = new Set(started.map((job) => job.id));
+    expect(deferred.some((job) => startedIds.has(job.id))).toBe(false);
+    // The claim already counted an attempt. Handing the job back must undo it
+    // and return the row to queued, or the 3-attempt reclaim burns a try the
+    // worker never made.
+    expect(releaseQueuedClaim(deferred[0].attempts)).toEqual({ status: "queued", attempts: 0, claimed_at: null });
+    expect(releaseQueuedClaim(3)).toEqual({ status: "queued", attempts: 2, claimed_at: null });
+  });
+
+  it("starts nothing when the budget is already spent", async () => {
+    const { started, deferred } = await runResolveBatch(jobs, {
+      concurrency: RESOLVE_CONCURRENCY,
+      budgetMs: RESOLVE_WALL_BUDGET_MS,
+      startedAt: 0,
+      now: () => RESOLVE_WALL_BUDGET_MS,
+      run: async () => { throw new Error("should not start"); },
+    });
+    expect(started).toEqual([]);
+    expect(deferred).toHaveLength(jobs.length);
+  });
+
+  it("asks the claim for the batch cap and releases only rows still running", () => {
+    const src = readFileSync("supabase/functions/visitor-resolve/index.ts", "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/^\s*\/\/.*$/gm, "");
+    expect(src).toContain("p_limit: RESOLVE_CLAIM_LIMIT");
+    expect(src).toContain("releaseQueuedClaim(job.attempts)");
+    expect(src).toMatch(/releaseQueuedClaim\(job\.attempts\)[\s\S]{0,120}\.eq\("status", "running"\)/);
+    const claim = readFileSync("supabase/migrations/20261115203000_visitor_rule_tenant_and_reclaim.sql", "utf8");
+    expect(claim).toContain("LEAST(COALESCE(p_limit, 5), 20)");
+    expect(claim).toContain("attempts >= 3");
+    expect(claim).toContain("attempts < 3");
+  });
+});
+
+describe("one address is one resolve job", () => {
+  it("inserts and treats a unique conflict as the existing row", () => {
+    const ingest = readFileSync("supabase/functions/visitor-ingest/index.ts", "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/^\s*\/\/.*$/gm, "");
+    expect(ingest).toContain('req.headers.get("x-real-ip")');
+    expect(ingest).toContain("trustedClientIp({ forwardedFor: forwarded, realIp })");
+    expect(ingest).toContain("ingestIpRateKey(siteId, observed)");
+    expect(ingest).toContain('enqueued.error?.code === "23505"');
+    expect(ingest).toContain('.in("status", ["done", "failed"])');
+    expect(ingest).not.toContain('.select("id, status")');
+    const migration = readFileSync("supabase/migrations/20261115180000_visitor_intelligence.sql", "utf8");
+    expect(migration).toMatch(
+      /CREATE UNIQUE INDEX IF NOT EXISTS uq_visitor_jobs_hash\s+ON public\.visitor_resolve_jobs \(site_id, ip_hash\)/,
+    );
   });
 });
 

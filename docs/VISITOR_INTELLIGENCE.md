@@ -17,7 +17,7 @@ The snippet is served from the app at `/v.js` and from the `visitor-sdk` functio
 
 ## What a visit does
 
-The browser batches page views, path, referrer host, UTM parameters, session (30 minute timeout), returning visits, engagement and page type (pricing, product, integrations, demo/contact). Sensitive query parameters are dropped. The collector reads the client address from the last hop of `x-forwarded-for`, never from the body.
+The browser batches page views, path, referrer host, UTM parameters, session (30 minute timeout), returning visits, engagement and page type (pricing, product, integrations, demo/contact). Sensitive query parameters are dropped. The collector reads the gateway's `X-Real-IP` (the stack gateway sets that to the socket peer and drops a caller-supplied value). If that header is missing, it uses the rightmost public address in `X-Forwarded-For`, never the first. The JSON body is not an address.
 
 An async worker resolves that address with reverse DNS, RDAP and ASN, cached per prefix for non-company networks and per hashed address for a company result. ISP, mobile, cloud, hosting, VPN and residential ranges stay Unknown. A company name is stored only when the registry org agrees with the domain, or when it matches an existing company record or a company-search hit with the same domain.
 
@@ -44,7 +44,7 @@ Form contents, passwords and sensitive inputs are not collected.
 | `visitor-ingest` | Public, `verify_jwt = false` | Validates, rate-limits, stores, enqueues |
 | `visitor-resolve` | Service role or the internal trigger secret | Resolves companies and runs rules |
 
-`visitor-resolve` is scheduled every two minutes when `pg_cron` and the existing internal job key are present. If they are not, the function still exists and can be called by hand.
+`visitor-resolve` is scheduled every two minutes when `pg_cron` and the existing internal job key are present. If they are not, the function still exists and can be called by hand. Each run claims up to 20 jobs (the claim function's own cap), works four at a time, and stops starting new ones after 50 seconds so the invocation finishes inside the edge wall clock. Jobs it did not start are put back to queued without spending one of the three reclaim attempts. A raw address older than 24 hours is still cleared and cannot be resolved.
 
 ## Coverage
 

@@ -18,6 +18,13 @@ import {
   type RegistrySignals,
 } from "../_shared/visitor-identity.ts";
 import { evaluateLeadWithJEV, leadIntelligenceEnabled, loadSellerContext } from "../_shared/lead-intelligence.ts";
+import {
+  RESOLVE_CLAIM_LIMIT,
+  RESOLVE_CONCURRENCY,
+  RESOLVE_WALL_BUDGET_MS,
+  releaseQueuedClaim,
+  runResolveBatch,
+} from "../_shared/visitor-resolve-batch.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -36,7 +43,7 @@ serve(async (req) => {
   );
 
   await admin.rpc("visitor_apply_retention");
-  const { data: jobs, error } = await admin.rpc("claim_visitor_resolve_jobs", { p_limit: 2 });
+  const { data: jobs, error } = await admin.rpc("claim_visitor_resolve_jobs", { p_limit: RESOLVE_CLAIM_LIMIT });
   if (error) {
     console.error("[visitor-resolve] claim failed", error.message);
     return json({ error: error.message }, 500);
@@ -45,36 +52,54 @@ serve(async (req) => {
   let resolved = 0;
   let automated = 0;
   let skipped = 0;
-  for (const job of jobs ?? []) {
-    try {
-      // The queue outlives the switch. A job claimed after the flag or the
-      // workspace grant is turned off must not spend search, enrich, research
-      // or draft credits.
-      if (!(await workspaceEnabled(admin, job.user_id))) {
-        skipped += 1;
+  const startedAt = Date.now();
+  const { deferred } = await runResolveBatch((jobs ?? []) as Job[], {
+    concurrency: RESOLVE_CONCURRENCY,
+    budgetMs: RESOLVE_WALL_BUDGET_MS,
+    startedAt,
+    now: () => Date.now(),
+    run: async (job) => {
+      try {
+        // The queue outlives the switch. A job claimed after the flag or the
+        // workspace grant is turned off must not spend search, enrich, research
+        // or draft credits.
+        if (!(await workspaceEnabled(admin, job.user_id))) {
+          skipped += 1;
+          await admin.from("visitor_resolve_jobs").update({
+            status: "done",
+            ip_raw: null,
+            last_error: "Visitor Intelligence is off for this workspace.",
+            finished_at: new Date().toISOString(),
+          }).eq("id", job.id);
+          return;
+        }
+        const matchId = await resolveJob(admin, job);
+        resolved += 1;
+        if (matchId) automated += await runRules(admin, job, matchId);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "resolve failed";
+        console.error("[visitor-resolve] job failed", message);
         await admin.from("visitor_resolve_jobs").update({
-          status: "done",
+          status: "failed",
           ip_raw: null,
-          last_error: "Visitor Intelligence is off for this workspace.",
+          last_error: message.slice(0, 300),
           finished_at: new Date().toISOString(),
         }).eq("id", job.id);
-        continue;
       }
-      const matchId = await resolveJob(admin, job);
-      resolved += 1;
-      if (matchId) automated += await runRules(admin, job, matchId);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "resolve failed";
-      console.error("[visitor-resolve] job failed", message);
-      await admin.from("visitor_resolve_jobs").update({
-        status: "failed",
-        ip_raw: null,
-        last_error: message.slice(0, 300),
-        finished_at: new Date().toISOString(),
-      }).eq("id", job.id);
-    }
+    },
+  });
+
+  // Claim already incremented attempts and set status to running. Put back
+  // only rows that are still running, and give the attempt back, so a job
+  // this run did not reach is queued for the next cron instead of waiting
+  // out the 10-minute reclaim.
+  for (const job of deferred) {
+    const { error: releaseError } = await admin.from("visitor_resolve_jobs").update(releaseQueuedClaim(job.attempts))
+      .eq("id", job.id)
+      .eq("status", "running");
+    if (releaseError) console.error("[visitor-resolve] release failed", releaseError.message);
   }
-  return json({ resolved, automated, skipped });
+  return json({ resolved, automated, skipped, deferred: deferred.length });
 });
 
 async function workspaceEnabled(admin: SupabaseClient, userId: string): Promise<boolean> {
@@ -564,4 +589,5 @@ interface Job {
   ip_hash: string;
   ip_raw: string | null;
   network_prefix: string | null;
+  attempts?: number;
 }
