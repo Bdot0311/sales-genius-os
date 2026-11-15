@@ -158,7 +158,7 @@ BEGIN
         AND s.sent_at >= now() - interval '30 days'
    )
    ORDER BY c.last_attempt_at NULLS FIRST, i.user_id
-   LIMIT greatest(1, least(coalesce(p_limit, 8), 20));
+   LIMIT greatest(1, least(coalesce(p_limit, 40), 40));
 END;
 $$;
 

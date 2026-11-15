@@ -4222,6 +4222,7 @@ export type Database = {
       }
       reply_analysis: {
         Row: {
+          agent_claimed_at: string | null
           agent_reply_sent_at: string | null
           analyzed_at: string
           check_back_at: string | null
@@ -4240,6 +4241,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          agent_claimed_at?: string | null
           agent_reply_sent_at?: string | null
           analyzed_at?: string
           check_back_at?: string | null
@@ -4258,6 +4260,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          agent_claimed_at?: string | null
           agent_reply_sent_at?: string | null
           analyzed_at?: string
           check_back_at?: string | null

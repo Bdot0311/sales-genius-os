@@ -227,6 +227,7 @@ serve(async (req) => {
       testEmail?: string;
       includeOwnReplies?: boolean;
       analyzeReplies?: boolean;
+      forAgent?: boolean;
       userId?: string;
     } = {};
     try {
@@ -350,12 +351,15 @@ serve(async (req) => {
 
     const threads = activeThreads || [];
     const replies: any[] = [];
+    // Already stored by an earlier sweep. Returned only to an agent run, and
+    // only after that run claims the row, so two runs cannot both answer it.
+    const agentReplies: any[] = [];
 
-    const existingMessageIds = new Set<string>();
+    const existingByMessage = new Map<string, { id: string; processed: boolean }>();
     if (threads.length > 0) {
       const { data: existingReplies } = await adminClient
         .from("reply_analysis")
-        .select("id, sent_email_id, detected_signals")
+        .select("id, sent_email_id, detected_signals, processed_by_agent")
         .in(
           "sent_email_id",
           threads.map((t: any) => t.id)
@@ -364,7 +368,10 @@ serve(async (req) => {
       for (const r of existingReplies || []) {
         const signals = r.detected_signals as any;
         if (signals?.gmail_message_id) {
-          existingMessageIds.add(signals.gmail_message_id);
+          existingByMessage.set(signals.gmail_message_id, {
+            id: r.id,
+            processed: r.processed_by_agent === true,
+          });
         }
       }
     }
@@ -469,9 +476,36 @@ serve(async (req) => {
           if (internalDate <= sentAt) continue;
 
           const gmailMessageId: string = message.id;
-          if (existingMessageIds.has(gmailMessageId)) continue;
-
           const bodyText = extractBody(message.payload);
+          const prior = existingByMessage.get(gmailMessageId);
+          if (prior) {
+            // The sweep already stored this. Do not notify or insert again.
+            // An agent run still needs the body, once, so it can draft.
+            if (payload.forAgent && !prior.processed) {
+              const { data: claimed, error: claimError } = await adminClient.rpc("claim_reply_for_agent", {
+                p_id: prior.id,
+                p_user_id: user.id,
+              });
+              if (claimError) console.error("[inbox-sync] reply claim failed:", claimError.message);
+              else if (claimed === true) {
+                agentReplies.push({
+                  sentEmailId: thread.id,
+                  gmailMessageId,
+                  fromEmail,
+                  subject: subjectHeader,
+                  bodyText,
+                  receivedAt: new Date(internalDate).toISOString(),
+                  gmailThreadId: thread.gmail_thread_id,
+                  integrationId: mailbox.id,
+                  isAutoReply,
+                  leadId: thread.lead_id ?? null,
+                  enrollmentId: thread.enrollment_id ?? null,
+                  analysisId: prior.id,
+                });
+              }
+            }
+            continue;
+          }
 
           replies.push({
             sentEmailId: thread.id,
@@ -487,7 +521,7 @@ serve(async (req) => {
             enrollmentId: thread.enrollment_id ?? null,
           });
 
-          existingMessageIds.add(gmailMessageId);
+          existingByMessage.set(gmailMessageId, { id: "", processed: true });
         }
 
       } catch (threadErr: any) {
@@ -590,7 +624,9 @@ serve(async (req) => {
           } else {
             classified = true;
             const action = data?.sequence?.action;
-            if (!r.isAutoReply && action !== "stopped" && action !== "held" && action !== "ignored") {
+            // 'ignored' from the model is not a reason to keep mailing a person.
+            // An auto-reply is, and isAutoReply is how we know.
+            if (!r.isAutoReply && action !== "stopped" && action !== "held") {
               await stopSequenceForReply(adminClient, user.id, r);
             }
           }
@@ -608,7 +644,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        replies,
+        replies: replies.concat(agentReplies),
         threadsChecked: threads.length,
         newReplies: replies.length,
         // A throttled sweep is partial, not empty.

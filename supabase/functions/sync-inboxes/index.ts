@@ -17,10 +17,14 @@ import { notifyInboxSyncStalled } from "../_shared/notify-events.ts";
  * back instead of blocking every later one.
  */
 
-/** Mailboxes considered per pass. The budget, not this number, is the stop. */
-const MAX_USERS = 8;
-/** Concurrent Gmail syncs. */
-const CONCURRENCY = 2;
+/**
+ * Mailboxes considered per pass. The budget below is what actually stops the
+ * pass: this is only the candidate pool, and it has to match the cap in
+ * next_inbox_sync_users.
+ */
+const MAX_USERS = 40;
+/** Concurrent Gmail syncs. Kept small so one slow mailbox cannot fan out. */
+const CONCURRENCY = 4;
 /** Stop starting new mailboxes after this. The cron interval is five minutes. */
 const BUDGET_MS = 100_000;
 /** How long a second pass waits if this one has not released the lease. */

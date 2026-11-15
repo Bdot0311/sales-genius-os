@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { isUuid, replySupersedesQueuedMail } from "../../supabase/functions/_shared/reply-stop";
+import {
+  intentFromAgentClassification,
+  intentScoreFromConfidence,
+  isUuid,
+  replySupersedesQueuedMail,
+  withoutUnclassifiedFlag,
+} from "../../supabase/functions/_shared/reply-stop";
 
 const code = (path: string) =>
   readFileSync(path, "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
@@ -11,6 +17,8 @@ const SWEEP = code("supabase/functions/sync-inboxes/index.ts");
 const INBOX = code("supabase/functions/inbox-sync/index.ts");
 const STEP = code("supabase/functions/process-sequence-step/index.ts");
 const SENDER = code("supabase/functions/process-scheduled-emails/index.ts");
+const AGENT = code("supabase/functions/agent-run/index.ts");
+const ANALYZE = code("supabase/functions/analyze-reply/index.ts");
 
 /**
  * Follow-ups were queued by a dispatcher the gateway could reject, and replies
@@ -64,6 +72,60 @@ describe("the sender and the step runner both honour that", () => {
     expect(settle).toContain("if (!classified)");
     expect(settle).toContain("if (!r.isAutoReply) await stopSequenceForReply");
   });
+
+  it("stops a human reply the model called ignored", () => {
+    const settle = INBOX.slice(INBOX.indexOf("for (const r of replies)"));
+    const gate = settle.slice(settle.indexOf("if (!r.isAutoReply"), settle.indexOf("await stopSequenceForReply", settle.indexOf("if (!r.isAutoReply")));
+    expect(gate).not.toContain('"ignored"');
+    expect(gate).toContain("action !== \"stopped\"");
+    expect(gate).toContain("action !== \"held\"");
+  });
+});
+
+describe("a reply the sweep stored still reaches the agent once", () => {
+  it("the agent asks for replies already on file", () => {
+    expect(AGENT).toContain("forAgent: true");
+  });
+
+  it("inbox-sync claims those rows and does not record them again", () => {
+    expect(INBOX).toContain("payload.forAgent && !prior.processed");
+    expect(INBOX).toContain('rpc("claim_reply_for_agent"');
+    expect(INBOX).toContain("replies.concat(agentReplies)");
+    expect(MIGRATION).not.toContain("claim_reply_for_agent");
+    const claim = readFileSync("supabase/migrations/20261115133000_claim_reply_for_agent.sql", "utf8");
+    expect(claim).toContain("coalesce(processed_by_agent, false) = false");
+    expect(claim).toContain("interval '15 minutes'");
+    expect(claim).toContain("auth.role() <> 'service_role'");
+  });
+
+  it("maps the agent's words onto the three labels the column allows", () => {
+    expect(intentFromAgentClassification("interested")).toBe("high_intent");
+    expect(intentFromAgentClassification("meeting_request")).toBe("high_intent");
+    expect(intentFromAgentClassification("unsubscribe")).toBe("low_intent");
+    expect(intentFromAgentClassification("out_of_office")).toBe("low_intent");
+    expect(intentFromAgentClassification("objection")).toBe("neutral");
+    expect(intentScoreFromConfidence(0.82)).toBe(82);
+    expect(intentScoreFromConfidence(90)).toBe(90);
+  });
+
+  it("clears the placeholder flag", () => {
+    expect(withoutUnclassifiedFlag({ unclassified: true, gmail_message_id: "m1" })).toEqual({
+      gmail_message_id: "m1",
+    });
+  });
+
+  it("the agent overwrites the placeholder row instead of leaving it", () => {
+    expect(AGENT).toContain("intentFromAgentClassification(classification)");
+    expect(AGENT).toContain("intentScoreFromConfidence(confidence)");
+    expect(AGENT).toContain("requires_human_action: false");
+    expect(AGENT).toContain("withoutUnclassifiedFlag(");
+  });
+
+  it("analyze-reply updates an existing row and drops the placeholder flag", () => {
+    expect(ANALYZE).toContain("delete detectedSignals.unclassified");
+    expect(ANALYZE).toContain(".update(analysisRow)");
+    expect(ANALYZE).toContain("unclassified === true");
+  });
 });
 
 describe("replies are swept without a person opening the inbox", () => {
@@ -84,7 +146,10 @@ describe("replies are swept without a person opening the inbox", () => {
     expect(SWEEP).not.toContain("sweepSlice");
   });
 
-  it("finishes inside the five-minute gap before the next pass", () => {
+  it("considers up to forty mailboxes and lets the budget stop the pass", () => {
+    expect(SWEEP).toContain("const MAX_USERS = 40");
+    expect(SWEEP).toContain("const CONCURRENCY = 4");
+    expect(MIGRATION).toContain("least(coalesce(p_limit, 40), 40)");
     const budget = SWEEP.match(/const BUDGET_MS = ([\d_]+);/);
     expect(budget).toBeTruthy();
     expect(Number(budget![1].replace(/_/g, ""))).toBeLessThan(5 * 60_000);

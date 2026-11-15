@@ -130,7 +130,7 @@ serve(async (req) => {
 
     const vetted = await vettedPost(url, { headers, body: JSON.stringify(payload) });
     if (vetted.blocked) throw new Error("Invalid webhook URL blocked for security");
-    const response = { status: vetted.status, ok: vetted.status >= 200 && vetted.status < 300, headers: new Headers(), text: async () => vetted.body };
+    const response = { status: vetted.status, statusText: "", ok: vetted.status >= 200 && vetted.status < 300, headers: new Headers(), text: async () => vetted.body };
 
     const responseTime = Date.now() - startTime;
     const responseBody = await response.text();

@@ -36,6 +36,7 @@ import { capToolsToTier, resolveAgentTier } from "../_shared/agent-tier-scope.ts
 import { notifyAgentRunFinished, notifyMeetingBooked } from "../_shared/notify-events.ts";
 import { researchBlockForLead } from "../_shared/lead-research-block.ts";
 import { firstTouchBlockers, replySendBlockers } from "../_shared/factual-send.ts";
+import { intentFromAgentClassification, intentScoreFromConfidence, withoutUnclassifiedFlag } from "../_shared/reply-stop.ts";
 import {
   decisionForDrafting,
   decisionPromptBlock,
@@ -101,6 +102,8 @@ interface Reply {
    * lets a reply the agent reads reach the sequence it belongs to.
    */
   leadId: string | null;
+  /** Set when this reply was already stored by the sweep and claimed for this run. */
+  analysisId?: string;
 }
 
 interface AgentConfig {
@@ -1579,6 +1582,9 @@ ${playbookSystemRules()}`;
           Authorization: authHeader,
           "Content-Type": "application/json",
         },
+        // The sweep stores replies before this run. forAgent asks for those
+        // too, each claimed so a second run cannot answer the same one.
+        body: JSON.stringify({ forAgent: true }),
       });
 
       if (!syncRes.ok) {
@@ -1699,6 +1705,13 @@ Return JSON: { "classification": one of ["interested","objection","meeting_reque
 
 
         if (!reply.bodyText.trim()) {
+          if (reply.analysisId) {
+            await adminClient
+              .from("reply_analysis")
+              .update({ processed_by_agent: true })
+              .eq("id", reply.analysisId)
+              .eq("user_id", user.id);
+          }
           await logAction({
             user_id: user.id,
             sent_email_id: reply.sentEmailId,
@@ -1728,27 +1741,46 @@ Return JSON: { "classification": one of ["interested","objection","meeting_reque
           .eq("id", reply.sentEmailId)
           .not("replied_at", "is", null);
 
-        const { data: existingAnalysis } = await adminClient
+        const { data: analysisRows } = await adminClient
           .from("reply_analysis")
-          .select("id")
-          .eq("sent_email_id", reply.sentEmailId)
-          .maybeSingle();
+          .select("id, detected_signals")
+          .eq("user_id", user.id)
+          .eq("sent_email_id", reply.sentEmailId);
+        const analysisList = analysisRows ?? [];
+        const existingAnalysis = reply.analysisId
+          ? analysisList.find((row: { id: string }) => row.id === reply.analysisId) ?? analysisList[0]
+          : analysisList.find((row: { detected_signals?: { gmail_message_id?: string; unclassified?: boolean } }) =>
+              row.detected_signals?.gmail_message_id === reply.gmailMessageId)
+            ?? analysisList.find((row: { detected_signals?: { unclassified?: boolean } }) =>
+              row.detected_signals?.unclassified === true)
+            ?? null;
 
         if (existingAnalysis) {
+          const signals = withoutUnclassifiedFlag(
+            (existingAnalysis as { detected_signals?: Record<string, unknown> }).detected_signals,
+          );
+          signals.gmail_message_id = reply.gmailMessageId;
+          signals.reasoning = reasoning;
           await adminClient
             .from("reply_analysis")
             .update({
               processed_by_agent: true,
               triage_category: classification,
+              intent_classification: intentFromAgentClassification(classification),
+              intent_score: intentScoreFromConfidence(confidence),
+              requires_human_action: false,
+              reply_content: reply.bodyText,
+              detected_signals: signals,
             })
-            .eq("id", existingAnalysis.id);
+            .eq("id", existingAnalysis.id)
+            .eq("user_id", user.id);
         } else {
           await adminClient.from("reply_analysis").insert({
             user_id: user.id,
             sent_email_id: reply.sentEmailId,
             reply_content: reply.bodyText,
-            intent_score: confidence,
-            intent_classification: classification,
+            intent_score: intentScoreFromConfidence(confidence),
+            intent_classification: intentFromAgentClassification(classification),
             detected_signals: {
               gmail_message_id: reply.gmailMessageId,
               reasoning,
@@ -1763,12 +1795,9 @@ Return JSON: { "classification": one of ["interested","objection","meeting_reque
         /*
          * Tell the sequence what the reply said.
          *
-         * This path never reaches analyze-reply: agent-run calls inbox-sync
-         * with no body, so `analyzeReplies` is undefined, and it classifies
-         * the reply itself and writes reply_analysis directly. A later
-         * scheduled sync then skips the message because a row already exists
-         * for it — so without this call, a reply the agent read would never
-         * stop its sequence, and the follow-ups kept going out.
+         * This path classifies the reply itself. inbox-sync is called with
+         * forAgent so a reply the sweep already stored is still handed here,
+         * once. The sequence decision is applied here either way.
          *
          * The agent's taxonomy is its own, so it is mapped rather than passed
          * through. Everything that is not an automated bounce-back stops the

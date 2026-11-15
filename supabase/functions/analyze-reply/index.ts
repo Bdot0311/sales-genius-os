@@ -234,29 +234,58 @@ Priority rules:
         ? analysis.suggested_reply.trim().slice(0, 4000)
         : null;
 
-    // Store the analysis in the database
-    const { data: replyAnalysis, error: insertError } = await supabase
-      .from('reply_analysis')
-      .insert({
-        user_id: user.id,
-        lead_id: ownedLeadId,
-        sent_email_id: sentEmailId || null,
-        reply_content: replyContent,
-        intent_score: analysis.intent_score,
-        intent_classification: analysis.intent_classification.toLowerCase(),
-        detected_signals: {
-          ...analysis.detected_signals,
-          triage_category: analysis.triage_category || 'soft_no',
-          priority: analysis.priority ?? 2,
-          ...(gmailMessageId ? { gmail_message_id: gmailMessageId } : {}),
-        },
-        requires_human_action: analysis.requires_human_action,
-        check_back_at: checkBackAt,
-        suggested_reply: suggestedReply,
-        analyzed_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
+    // Store the analysis. A sweep may already have written a placeholder row
+    // for this Gmail message. Update that row so the placeholder does not stay.
+    const detectedSignals: Record<string, unknown> = {
+      ...(analysis.detected_signals ?? {}),
+      triage_category: analysis.triage_category || 'soft_no',
+      priority: analysis.priority ?? 2,
+      ...(gmailMessageId ? { gmail_message_id: gmailMessageId } : {}),
+    };
+    delete detectedSignals.unclassified;
+
+    const analysisRow = {
+      user_id: user.id,
+      lead_id: ownedLeadId,
+      sent_email_id: sentEmailId || null,
+      reply_content: replyContent,
+      intent_score: analysis.intent_score,
+      intent_classification: analysis.intent_classification.toLowerCase(),
+      detected_signals: detectedSignals,
+      requires_human_action: analysis.requires_human_action,
+      check_back_at: checkBackAt,
+      suggested_reply: suggestedReply,
+      analyzed_at: new Date().toISOString(),
+    };
+
+    let existingId: string | null = null;
+    if (sentEmailId) {
+      const { data: priorRows } = await supabase
+        .from('reply_analysis')
+        .select('id, detected_signals')
+        .eq('user_id', user.id)
+        .eq('sent_email_id', sentEmailId);
+      const prior = (priorRows ?? []) as { id: string; detected_signals?: { gmail_message_id?: string; unclassified?: boolean } }[];
+      existingId = (gmailMessageId
+        ? prior.find((row) => row.detected_signals?.gmail_message_id === gmailMessageId)?.id
+        : undefined)
+        ?? prior.find((row) => row.detected_signals?.unclassified === true)?.id
+        ?? null;
+    }
+
+    const { data: replyAnalysis, error: insertError } = existingId
+      ? await supabase
+        .from('reply_analysis')
+        .update(analysisRow)
+        .eq('id', existingId)
+        .eq('user_id', user.id)
+        .select()
+        .single()
+      : await supabase
+        .from('reply_analysis')
+        .insert(analysisRow)
+        .select()
+        .single();
 
     if (insertError) {
       console.error('Error storing reply analysis:', insertError);
