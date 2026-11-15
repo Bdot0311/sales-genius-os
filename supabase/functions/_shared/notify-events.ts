@@ -118,3 +118,17 @@ export async function notifyAgentRunFinished(
     tag: "agent-run",
   });
 }
+
+/**
+ * The reply sweep has failed this mailbox enough times in a row that follow-ups
+ * may keep sending to people who already answered. Tagged so a mailbox that
+ * stays disconnected updates one notification instead of buzzing every pass.
+ */
+export async function notifyInboxSyncStalled(userId: string): Promise<number> {
+  return notifyUserPush(userId, {
+    title: "Replies aren't being checked",
+    body: "Outreign can't read this Gmail inbox, so a reply may not stop follow-ups. Reconnect Google.",
+    url: "/integrations",
+    tag: "inbox-sync-stalled",
+  });
+}

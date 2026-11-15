@@ -4181,6 +4181,45 @@ export type Database = {
         }
         Relationships: []
       }
+      inbox_sync_cursors: {
+        Row: {
+          consecutive_failures: number
+          last_attempt_at: string | null
+          last_error: string | null
+          last_success_at: string | null
+          user_id: string
+        }
+        Insert: {
+          consecutive_failures?: number
+          last_attempt_at?: string | null
+          last_error?: string | null
+          last_success_at?: string | null
+          user_id: string
+        }
+        Update: {
+          consecutive_failures?: number
+          last_attempt_at?: string | null
+          last_error?: string | null
+          last_success_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      inbox_sync_lock: {
+        Row: {
+          id: number
+          locked_until: string | null
+        }
+        Insert: {
+          id?: number
+          locked_until?: string | null
+        }
+        Update: {
+          id?: number
+          locked_until?: string | null
+        }
+        Relationships: []
+      }
       reply_analysis: {
         Row: {
           agent_reply_sent_at: string | null
