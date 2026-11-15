@@ -92,7 +92,7 @@ describe("a reply the sweep stored still reaches the agent once", () => {
   it("inbox-sync claims those rows and does not record them again", () => {
     expect(INBOX).toContain("payload.forAgent && !prior.processed");
     expect(INBOX).toContain('rpc("claim_reply_for_agent"');
-    expect(INBOX).toContain("replies.concat(agentReplies)");
+    expect(INBOX).toContain("fresh.concat(agentReplies)");
     expect(MIGRATION).not.toContain("claim_reply_for_agent");
     const claim = readFileSync("supabase/migrations/20261115150000_claim_reply_by_received_time.sql", "utf8");
     expect(claim).toContain("coalesce(processed_by_agent, false) = false");
@@ -111,6 +111,23 @@ describe("a reply the sweep stored still reaches the agent once", () => {
     expect(live).toContain("p_received_at < now() - interval '72 hours'");
     expect(live).not.toContain("coalesce(analyzed_at, created_at) >= now() - interval '72 hours'");
     expect(INBOX).toContain("p_received_at: receivedAt");
+    expect(INBOX).toContain("p_received_at: r.receivedAt");
+    expect(INBOX).toContain("replies.filter((r) => r.analysisId)");
+    expect(AGENT).toContain("reply was not claimed; not answering");
+    expect(AGENT).toContain("claimed reply was not found; not answering");
+    expect(AGENT).not.toContain("analysisList[0]");
+    const once = readFileSync("supabase/migrations/20261115160000_one_claim_per_reply.sql", "utf8");
+    expect(once).toContain("other.detected_signals->>'gmail_message_id'");
+    expect(once).toContain("p_received_at < now() - interval '72 hours'");
+  });
+
+  it("serializes two claims of the same Gmail message", () => {
+    const once = readFileSync("supabase/migrations/20261115160000_one_claim_per_reply.sql", "utf8");
+    const lockAt = once.indexOf("pg_advisory_xact_lock(hashtextextended(p_user_id::text || ':' || v_gmail_message_id, 0))");
+    const updateAt = once.indexOf("UPDATE public.reply_analysis");
+    expect(lockAt).toBeGreaterThan(-1);
+    expect(updateAt).toBeGreaterThan(lockAt);
+    expect(once.slice(0, lockAt)).toContain("IF v_gmail_message_id IS NOT NULL THEN");
   });
 
   it("treats a later message from us as already answered", () => {
@@ -155,6 +172,16 @@ describe("a reply the sweep stored still reaches the agent once", () => {
     expect(ANALYZE).toContain("delete detectedSignals.unclassified");
     expect(ANALYZE).toContain(".update(analysisRow)");
     expect(ANALYZE).toContain("unclassified === true");
+  });
+
+  it("does not overwrite a different message when this one has a Gmail id", () => {
+    const at = ANALYZE.indexOf("if (gmailMessageId) {");
+    expect(at).toBeGreaterThan(-1);
+    const gmailBranch = ANALYZE.slice(at, ANALYZE.indexOf("} else {", at));
+    const elseBranch = ANALYZE.slice(ANALYZE.indexOf("} else {", at), ANALYZE.indexOf("const { data: replyAnalysis", at));
+    expect(gmailBranch).toContain("gmail_message_id === gmailMessageId");
+    expect(gmailBranch).not.toContain("unclassified");
+    expect(elseBranch).toContain("unclassified === true");
   });
 });
 

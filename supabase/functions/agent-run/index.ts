@@ -1648,6 +1648,12 @@ ${playbookSystemRules()}`;
       try {
         repliesProcessed++;
 
+        if (!reply.analysisId) {
+          console.error("[agent-run] reply was not claimed; not answering", reply.gmailMessageId);
+          skipped++;
+          continue;
+        }
+
         /*
          * Do not answer a thread the user already answered. That includes a
          * later message from their own mailbox, and a sent_emails row on the
@@ -1818,13 +1824,12 @@ Return JSON: { "classification": one of ["interested","objection","meeting_reque
           .eq("user_id", user.id)
           .eq("sent_email_id", reply.sentEmailId);
         const analysisList = analysisRows ?? [];
-        const existingAnalysis = reply.analysisId
-          ? analysisList.find((row: { id: string }) => row.id === reply.analysisId) ?? analysisList[0]
-          : analysisList.find((row: { detected_signals?: { gmail_message_id?: string; unclassified?: boolean } }) =>
-              row.detected_signals?.gmail_message_id === reply.gmailMessageId)
-            ?? analysisList.find((row: { detected_signals?: { unclassified?: boolean } }) =>
-              row.detected_signals?.unclassified === true)
-            ?? null;
+        const existingAnalysis = analysisList.find((row: { id: string }) => row.id === reply.analysisId) ?? null;
+        if (!existingAnalysis) {
+          console.error("[agent-run] claimed reply was not found; not answering", reply.analysisId);
+          skipped++;
+          continue;
+        }
 
         if (existingAnalysis) {
           const signals = withoutUnclassifiedFlag(
