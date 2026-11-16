@@ -66,10 +66,10 @@ serve(async (req) => {
       );
     }
 
-    const { url, payload, secret } = await req.json();
+    const { url, secret } = await req.json();
 
-    if (!url || !payload) {
-      throw new Error("Missing required fields: url and payload");
+    if (!url) {
+      throw new Error("Missing required field: url");
     }
 
     if (!isValidWebhookUrl(url)) {
@@ -95,6 +95,14 @@ serve(async (req) => {
     }
 
     logStep("Testing webhook", { webhookId: owned.id, userId: user.id });
+
+    // Fixed, server-built test payload: callers cannot relay arbitrary content.
+    const payload = {
+      event: "webhook.test",
+      webhook_id: owned.id,
+      timestamp: new Date().toISOString(),
+      data: { message: "This is a test event from OutReign." },
+    };
 
     // Create HMAC signature if secret is provided
     let signature = null;

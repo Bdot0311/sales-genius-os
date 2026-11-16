@@ -92,16 +92,36 @@ serve(async (req) => {
         .eq('role', 'user')
         .gte('created_at', periodStart.toISOString());
 
-      if ((usedThisMonth ?? 0) >= coachLimit) {
+      // Server-side usage ledger: recorded per request so direct calls can't skip counting.
+      const { count: ledgerCount } = await supabase
+        .from('ai_usage_events')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('fn', 'ai-coach-request')
+        .gte('created_at', periodStart.toISOString());
+      const used = Math.max(usedThisMonth ?? 0, ledgerCount ?? 0);
+
+      if (used >= coachLimit) {
         return new Response(
           JSON.stringify({
             error: `You have used all ${coachLimit} AI Sales Coach messages included in your ${activePlan} plan this month. Upgrade your plan for a higher coaching limit.`,
             code: 'coach_limit_reached',
             limit: coachLimit,
-            used: usedThisMonth ?? 0,
+            used,
           }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
+      }
+    }
+
+    {
+      const { error: ledgerErr } = await supabase.from('ai_usage_events').insert({
+        user_id: user.id, fn: 'ai-coach-request', provider: 'quota', model: 'coach',
+      });
+      if (ledgerErr) {
+        console.error('[ai-coach] usage ledger insert failed');
+        return new Response(JSON.stringify({ error: 'Coach is temporarily unavailable.' }),
+          { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
     }
 
