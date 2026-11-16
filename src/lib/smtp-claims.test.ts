@@ -100,7 +100,13 @@ describe("public copy never offers an SMTP connection", () => {
      */
     const offenders: string[] = [];
     for (const file of publicCopyFiles()) {
-      const lines = readFileSync(file, "utf8").split("\n");
+      /*
+       * Published articles are stored as one JSON string. The breaks a reader
+       * sees are the escaped newlines inside it. Judging that whole string
+       * treats "SMTP verification" and a later, unrelated "integration" as a
+       * single offer to connect a mail server.
+       */
+      const lines = readFileSync(file, "utf8").split("\n").flatMap((line) => line.split(/\\n/));
       for (let i = 0; i < lines.length; i++) {
         if (!/smtp/i.test(lines[i])) continue;
         /*

@@ -13,6 +13,32 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Claimed before the provider call and released unless that call succeeds.
+  // Declared out here so a thrown error can put the reservation back. The
+  // client below is the service role; the quota functions reject every other role.
+  let quotaId: string | null = null;
+  let quotaSettled = false;
+  let quotaUserId: string | null = null;
+  let supabase: any = null;
+
+  const settleQuota = async (outcome: "consume" | "release") => {
+    if (!quotaId || quotaSettled || !supabase || !quotaUserId) return;
+    try {
+      const fn = outcome === "consume" ? "consume_ai_coach_message" : "release_ai_coach_message";
+      const { error: settleErr } = await supabase.rpc(fn, {
+        p_id: quotaId,
+        p_user_id: quotaUserId,
+      });
+      if (settleErr) {
+        console.error(`[ai-coach] quota ${outcome} failed`);
+        return;
+      }
+      quotaSettled = true;
+    } catch {
+      console.error(`[ai-coach] quota ${outcome} failed`);
+    }
+  };
+
   try {
     const { question, userData, conversationId, conversationHistory } = await req.json();
     
@@ -32,7 +58,7 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    supabase = createClient(supabaseUrl, supabaseKey);
 
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
@@ -44,6 +70,7 @@ serve(async (req) => {
     }
 
     const userId: string = user.id;
+    quotaUserId = userId;
     let userProfile: any = null;
     let recentDeals: any[] = [];
     let recentLeads: any[] = [];
@@ -80,50 +107,36 @@ serve(async (req) => {
         : 'free';
     const coachLimit = COACH_MESSAGE_LIMITS[activePlan] ?? COACH_MESSAGE_LIMITS.free;
 
-    if (coachLimit !== -1) {
-      const periodStart = new Date();
-      periodStart.setUTCDate(1);
-      periodStart.setUTCHours(0, 0, 0, 0);
-
-      const { count: usedThisMonth } = await supabase
-        .from('coaching_messages')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('role', 'user')
-        .gte('created_at', periodStart.toISOString());
-
-      // Server-side usage ledger: recorded per request so direct calls can't skip counting.
-      const { count: ledgerCount } = await supabase
-        .from('ai_usage_events')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('fn', 'ai-coach-request')
-        .gte('created_at', periodStart.toISOString());
-      const used = Math.max(usedThisMonth ?? 0, ledgerCount ?? 0);
-
-      if (used >= coachLimit) {
-        return new Response(
-          JSON.stringify({
-            error: `You have used all ${coachLimit} AI Sales Coach messages included in your ${activePlan} plan this month. Upgrade your plan for a higher coaching limit.`,
-            code: 'coach_limit_reached',
-            limit: coachLimit,
-            used,
-          }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
+    // One locked reservation per request, including the unlimited plan, so a
+    // direct caller cannot skip the count and a second request waits until
+    // this one is visible. The row is not a model call. It is released below
+    // unless the provider actually returns advice.
+    const periodStart = new Date();
+    periodStart.setUTCDate(1);
+    periodStart.setUTCHours(0, 0, 0, 0);
+    const { data: claimed, error: claimErr } = await supabase.rpc("claim_ai_coach_message", {
+      p_user_id: user.id,
+      p_period_start: periodStart.toISOString(),
+      p_limit: coachLimit,
+    });
+    const claim = claimed as { id?: string | null; allowed?: boolean; used?: number } | null;
+    if (claimErr || !claim || typeof claim.allowed !== "boolean") {
+      console.error("[ai-coach] quota claim failed");
+      return new Response(JSON.stringify({ error: "Coach is temporarily unavailable." }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-
-    {
-      const { error: ledgerErr } = await supabase.from('ai_usage_events').insert({
-        user_id: user.id, fn: 'ai-coach-request', provider: 'quota', model: 'coach',
-      });
-      if (ledgerErr) {
-        console.error('[ai-coach] usage ledger insert failed');
-        return new Response(JSON.stringify({ error: 'Coach is temporarily unavailable.' }),
-          { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-      }
+    if (!claim.allowed || !claim.id) {
+      return new Response(
+        JSON.stringify({
+          error: `You have used all ${coachLimit} AI Sales Coach messages included in your ${activePlan} plan this month. Upgrade your plan for a higher coaching limit.`,
+          code: "coach_limit_reached",
+          limit: coachLimit,
+          used: typeof claim.used === "number" ? claim.used : coachLimit,
+        }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
+    quotaId = claim.id;
 
     // Fetch recent deals with stages
     const { data: deals } = await supabase
@@ -299,6 +312,7 @@ Keep responses concise (2-3 focused paragraphs) unless they ask for detailed ana
     });
 
     if (!response.ok) {
+      await settleQuota("release");
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }),
@@ -331,6 +345,7 @@ Keep responses concise (2-3 focused paragraphs) unless they ask for detailed ana
     const chunk = JSON.stringify({ choices: [{ delta: { content: advice } }] });
     const sse = `data: ${chunk}\n\ndata: [DONE]\n\n`;
 
+    await settleQuota("consume");
     return new Response(sse, {
       headers: {
         ...corsHeaders,
@@ -339,6 +354,7 @@ Keep responses concise (2-3 focused paragraphs) unless they ask for detailed ana
       },
     });
   } catch (error: any) {
+    await settleQuota("release");
     console.error("Error in ai-coach function:", error.message);
     
     return new Response(
