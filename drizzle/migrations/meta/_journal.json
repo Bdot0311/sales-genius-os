@@ -407,6 +407,13 @@
       "when": 1794749654225,
       "tag": "0057_restore_outbound_gate_canary_service_grant",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1794790413905,
+      "tag": "0058_health_check_private_outbound_canary",
+      "breakpoints": true
     }
   ]
 }

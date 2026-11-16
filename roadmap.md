@@ -1,5 +1,9 @@
 # Agent reply content preservation
 
+# Dashboard service alert
+
+- [x] Corrected the private outbound safety-switch predicate without customer grants; live SQL regressions prove lost backend access still fails. Signed-in health reports zero broken checks, matching alert resolved, service-status returns no incidents and dashboard banner is absent. Existing runtime guards: 12 passed. Unrelated pre-existing Visitors schema/type errors remain outside this incident.
+
 # Dashboard design refresh
 
 - [x] Populated sequence, deal, team and brief editors checked in both themes with temporary records (removed afterwards); team invite fault fixed.
