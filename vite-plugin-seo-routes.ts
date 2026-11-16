@@ -1,9 +1,10 @@
 import type { Plugin } from "vite";
-import { readFileSync } from "node:fs";
-import { blogPosts } from "./src/data/blog-posts";
+import { readFileSync, writeFileSync } from "node:fs";
 import { helpArticles, helpCategories } from "./src/components/help/helpArticles";
 import { COMPETITORS } from "./src/data/competitors";
-import { blogDbSnapshot, type BlogDbPost } from "./src/data/blog-db-snapshot";
+import { publicBlogPosts, mergePublicPosts } from "./src/data/public-blog-posts";
+import type { BlogPost } from "./src/data/blog-posts";
+import { searchGuides, APOLLO_GUIDE_PATH } from "./src/data/search-guides";
 
 /**
  * Build-time per-route head injection.
@@ -130,9 +131,9 @@ const ROUTES: RouteMeta[] = [
   },
   {
     path: "/apollo-alternative",
-    title: "Why Switch from Apollo | OutReign",
+    title: "Apollo Alternatives Guide | OutReign",
     description:
-      "Switching from Apollo? Here's why lean teams leave, how to migrate in under an hour, and what OutReign does differently. From $0.",
+      "Compare seven Apollo alternatives for small B2B teams, with dated pricing, workflow differences and limitations.",
   },
   {
     path: "/vs-apollo",
@@ -234,20 +235,7 @@ const clampDescription = (text: string, max = 158): string => {
  * time (see refreshBlogPosts) and falls back to the committed snapshot, so a
  * build without network access still covers every article.
  */
-let BLOG_POSTS: BlogDbPost[] = (() => {
-  const seen = new Set(blogDbSnapshot.map((p) => p.slug));
-  return [
-    ...blogDbSnapshot,
-    ...blogPosts
-      .filter((p) => !seen.has(p.slug))
-      .map((p) => ({
-        slug: p.slug,
-        title: p.title,
-        description: p.description,
-        publishedAt: p.publishedAt,
-      })),
-  ];
-})();
+let BLOG_POSTS = publicBlogPosts;
 
 /** Read a build-time env value from the process or, failing that, from .env. */
 function buildEnv(name: string): string | undefined {
@@ -269,7 +257,7 @@ async function refreshBlogPosts(log: (message: string) => void): Promise<void> {
   if (!url || !key) return;
   try {
     const response = await fetch(
-      `${url}/rest/v1/blog_posts?select=slug,title,description,published_at&order=published_at.desc`,
+      `${url}/rest/v1/blog_posts?select=slug,title,description,content,category,keywords,reading_time,published_at&order=published_at.desc`,
       { headers: { apikey: key, Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(10_000) },
     );
     if (!response.ok) {
@@ -281,19 +269,26 @@ async function refreshBlogPosts(log: (message: string) => void): Promise<void> {
       title: string;
       description: string;
       published_at: string;
+      content: string;
+      category: string;
+      keywords: string[];
+      reading_time: string;
     }>;
     if (!Array.isArray(rows) || rows.length === 0) return;
-    const live: BlogDbPost[] = rows.map((p) => ({
+    const live: BlogPost[] = rows.map((p) => ({
       slug: p.slug,
       title: p.title,
       description: p.description,
       publishedAt: String(p.published_at).slice(0, 10),
+      content: p.content,
+      category: p.category,
+      keywords: p.keywords ?? [],
+      readingTime: p.reading_time,
     }));
-    const seen = new Set(live.map((p) => p.slug));
-    BLOG_POSTS = [
-      ...live,
-      ...BLOG_POSTS.filter((p) => !seen.has(p.slug)),
-    ];
+    BLOG_POSTS = mergePublicPosts(searchGuides, live, publicBlogPosts);
+    // Refresh before the separate SSR bundle is loaded, including article bodies.
+    // Only the public blog table is serialized; never session/account records.
+    writeFileSync("src/data/blog-db-snapshot.ts", `// AUTO-GENERATED public article snapshot.\nimport type { BlogPost } from "./blog-posts";\nexport type BlogDbPost = BlogPost;\nexport const blogDbSnapshot: BlogDbPost[] = ${JSON.stringify(live, null, 2)};\n`);
     CONTENT_ROUTES = contentRoutes();
     ALL_ROUTES = [...ROUTES, ...CONTENT_ROUTES];
     log(`seo-routes: ${live.length} articles read from the database`);
@@ -407,7 +402,7 @@ function renderRouteHtml(baseHtml: string, meta: RouteMeta): string {
   const description = escapeHtml(meta.description);
   const socialTitle = escapeHtml(meta.socialTitle ?? meta.title);
   const socialDescription = escapeHtml(meta.socialDescription ?? meta.description);
-  const canonical = escapeHtml(canonicalFor(meta.path));
+  const canonical = escapeHtml(canonicalFor(meta.path === "/apollo-alternative" ? APOLLO_GUIDE_PATH : meta.path));
 
   const replacements: Array<[RegExp, string]> = [
     [/<title>[\s\S]*?<\/title>/, `<title>${title}</title>`],
@@ -424,6 +419,21 @@ function renderRouteHtml(baseHtml: string, meta: RouteMeta): string {
   let html = baseHtml;
   for (const [pattern, value] of replacements) {
     html = html.replace(pattern, value);
+  }
+  if (meta.path === "/apollo-alternative") {
+    html = html.replace("</head>", `<meta http-equiv="refresh" content="0;url=${APOLLO_GUIDE_PATH}"></head>`);
+  }
+  if (meta.path.startsWith("/blog/")) {
+    const post = publicBlogPosts.find((p) => `/blog/${p.slug}` === meta.path);
+    if (post) {
+      const schema = JSON.stringify({ "@context": "https://schema.org", "@type": "Article", headline: post.title,
+        description: post.description, datePublished: post.publishedAt, dateModified: post.publishedAt,
+        author: { "@type": "Person", name: "Brandon Yakubov" },
+        publisher: { "@type": "Organization", name: "OutReign" }, mainEntityOfPage: canonicalFor(meta.path),
+      }).replace(/</g, "\\u003c");
+      html = html.replace("</head>", `<meta property="og:type" content="article"><script type="application/ld+json">${schema}</script></head>`)
+        .replace(/<meta property="og:type" content="website"\s*\/?>/, "");
+    }
   }
 
   // Seed #root with the link index. React clears the container on mount, so
@@ -472,7 +482,7 @@ function renderSitemap(buildDate: string): string {
     return "monthly";
   };
 
-  const urls = ALL_ROUTES.map((route) => {
+  const urls = ALL_ROUTES.filter((route) => route.path !== "/apollo-alternative").map((route) => {
     const lastmod = blogDates.get(route.path) ?? buildDate;
     const image =
       route.path === "/"

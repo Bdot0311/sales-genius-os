@@ -1,12 +1,24 @@
 # OutReign — Complete Product Documentation for AI Agents
 # https://outreign.io/llms-full.txt
-# Last Updated: 2026-11-06
+# Last Updated: 2026-11-16
 # This file is the authoritative reference for AI agents, LLMs, and automated
 # crawlers that need complete, accurate information about OutReign.
 
 ---
 
 ## What Is OutReign?
+
+### Search guides and evaluation boundaries
+
+Explore's lead experience uses sample data; live prospect search and enrichment are gated. Free drafting is approval-based. API and MCP require a paid plan. A displayed free allowance does not unlock paid provider data. Only verified=true confirms a mailbox; catch-all, role and unknown remain unproven. No verification guarantees inbox placement.
+
+- Apollo alternatives (primary broad comparison): https://outreign.io/blog/7-best-apollo-io-alternatives-for-2026-outbound-tools-ranked
+- Small B2B team AI SDR buying guide: https://outreign.io/blog/ai-sdr-for-small-b2b-teams
+- Free AI SDR scope: https://outreign.io/blog/free-ai-sdr-for-founders
+- Lead generation MCP server: https://outreign.io/blog/lead-generation-mcp-server
+- AI SDR vs human SDR cost: https://outreign.io/blog/ai-sdr-vs-human-sdr-cost
+
+These guides disclose the publisher, dated pricing, uncertainties and product limitations. OutReign is email-only; no calling, phone data, SMS or LinkedIn automation. /apollo-alternative redirects to the broad comparison, while /vs-apollo retains two-product comparison intent.
 
 OutReign is a B2B lead discovery and outbound email platform built for founder-led sales teams, SDRs, and outbound agencies. It replaces the fragmented workflow of Apollo + Clay + Gmail + spreadsheet with a single tool that goes from ICP description to first email sent in under 2 minutes.
 

@@ -1,3 +1,13 @@
+# Search traffic implementation — November 16, 2026
+
+- [x] Refresh Apollo alternatives with official vendor sources, dated prices, seven distinct tools, limitations and FAQ; old brand/links removed from this guide.
+- [x] Prerender 69 public article bodies from published snapshots; Apollo legacy path redirects to primary guide, excluded from sitemap. Two-product comparison retained with distinct intent.
+- [x] Add small-team AI SDR, free AI SDR, lead-generation MCP and human/software cost guides; blog links, static heads, Article metadata and AI discovery updated.
+- [x] Verify five guides at desktop/phone widths, blog navigation and redirect without runtime errors; 15 tests pass; server HTML contains H1/article bodies for all 69 articles. Registry manifest passes official JSON schema.
+- [ ] Publish and verify live first-response article HTML and submit updated sitemap in Search Console (requires app publishing; no live publishing performed).
+- [ ] External listings: SaaSHub/Product Hunt blocked by access challenges and owner sign-in; FutureTools requires CAPTCHA; mcp.so requires sign-in and $39 payment approval; official Registry requires publisher authentication/domain ownership proof. Prepared exact copy and valid server.json in docs/search-distribution.md; nothing submitted or charged.
+- [ ] Send honest G2 review invitations (owner must confirm actual customer recipients and sending account; draft prepared, no customer messages sent).
+
 # Agent reply content preservation
 
 # Dashboard service alert

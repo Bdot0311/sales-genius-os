@@ -1,6 +1,6 @@
 # Find Who To Sell To, Then Close Them.
 # https://outreign.io
-# Last Updated: 2026-11-06
+# Last Updated: 2026-11-16
 # For complete product documentation: https://outreign.io/llms-full.txt
 
 > OutReign is sales operations software for B2B outbound teams, a unified alternative to stitching together Apollo, Instantly, Outreach, and Salesloft. Describe your ideal customer in plain English, get ranked prospects with SMTP-verified business emails, and send an AI-drafted first-touch message from one workflow in under 2 minutes.
@@ -79,6 +79,12 @@ One-time credit packs are available with no subscription required: 200 prospects
 Sign up for free at https://outreign.io. The Explore plan needs no credit card.
 
 ## Pages
+
+- [Apollo alternatives guide](/blog/7-best-apollo-io-alternatives-for-2026-outbound-tools-ranked): Primary seven-tool comparison with dated vendor pricing and limitations. /apollo-alternative redirects here; /vs-apollo is the distinct two-product comparison.
+- [AI SDR for small B2B teams](/blog/ai-sdr-for-small-b2b-teams): Evaluation criteria, research safeguards and bounded pilots for SaaS/tech/agencies.
+- [Free AI SDR for founders](/blog/free-ai-sdr-for-founders): Explore uses sample leads and approval-based drafting; live discovery/enrichment are gated, API/MCP require paid plans.
+- [Lead generation MCP server](/blog/lead-generation-mcp-server): Fresh discovery versus saved-CRM search, verification verdicts, OAuth and controlled drafting.
+- [AI SDR vs human SDR cost](/blog/ai-sdr-vs-human-sdr-cost): Budget with actual compensation, software, usage and supervision; no guaranteed outcomes.
 
 - [Home](/): B2B lead discovery and outbound email platform overview.
 - [Pricing](/pricing): Subscription plans, one-time credit packs, and annual billing options.

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.outreign/lead-intelligence",
+  "title": "OutReign",
+  "description": "B2B prospect discovery, email verification, research and drafts with account controls.",
+  "version": "1.0.0",
+  "websiteUrl": "https://outreign.io/connect",
+  "remotes": [
+    { "type": "streamable-http", "url": "https://api.outreign.io/mcp" }
+  ]
+}

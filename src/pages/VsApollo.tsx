@@ -155,9 +155,9 @@ export default function VsApollo() {
             <ArrowRight className="h-4 w-4" />
           </button>
           <p className="mt-6 text-sm" style={{ color: "hsl(0 0% 100% / 0.55)" }}>
-            Already thinking about switching?{" "}
-            <Link to="/apollo-alternative" className="font-semibold underline" style={{ color: "hsl(261 75% 72%)" }}>
-              Read the Apollo migration guide →
+            Comparing more tools?{" "}
+            <Link to="/blog/7-best-apollo-io-alternatives-for-2026-outbound-tools-ranked" className="font-semibold underline" style={{ color: "hsl(261 75% 72%)" }}>
+              Read the seven-tool Apollo alternatives guide →
             </Link>
           </p>
         </div>

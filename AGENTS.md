@@ -1,5 +1,7 @@
 # Agent rules
 
+- Public blog bodies use a committed published-content snapshot for identical first HTML and client hydration; curated search-guide revisions override older generated rows, and metadata/sitemaps use the same priority. Why: crawlers must see real article text without JavaScript and stale database copy must not undo editorial corrections.
+
 - All Treg calls go through `_shared/treg.ts`, which sets the customer tag server-side, caps cost per call and logs call id/cost to `treg_usage`; Treg is a fallback only when Railway returns nothing and its results bill like Railway results through the normal save/enrich path. Why: customers pay the same per contact regardless of source, while Treg spend still reconciles per customer.
 
 - Dashboard and admin visual refinements live under `.dashboard-shell` and shared panel/header classes with semantic CSS tokens; admin uses `.admin-shell` for its navigation and controls; portaled sheets/dialogs/menus are styled via `body.dashboard-active`, set by DashboardLayout. Never override global utilities. Why: every signed-in page shares the requested design without changing the public site or nested functional layouts.

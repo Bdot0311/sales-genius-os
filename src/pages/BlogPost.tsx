@@ -5,10 +5,14 @@ import { useBlogPost } from "@/hooks/useBlogPosts";
 import { relatedPosts } from "@/lib/related-posts";
 import { lazy, Suspense } from "react";
 import { ArrowLeft } from "lucide-react";
+import { publicBlogPosts } from "@/data/public-blog-posts";
+import { Button } from "@/components/ui/button";
 
 const FooterSection = lazy(() =>
   import("@/components/landing/FooterSection").then((m) => ({ default: m.FooterSection }))
 );
+
+const headingId = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 // Minimal markdown renderer: headers, bold, links, lists, paragraphs
 function renderMarkdown(content: string): JSX.Element[] {
@@ -51,7 +55,7 @@ function renderMarkdown(content: string): JSX.Element[] {
     // H2
     if (line.startsWith("## ")) {
       elements.push(
-        <h2 key={key++} className="font-display mt-12 mb-4 text-2xl font-semibold leading-snug" style={{ color: "hsl(0 0% 90%)", letterSpacing: "-0.01em" }}>
+        <h2 key={key++} id={headingId(line.slice(3))} className="font-display mt-12 mb-4 text-2xl font-semibold leading-snug scroll-mt-24 text-foreground">
           {line.slice(3)}
         </h2>
       );
@@ -193,7 +197,8 @@ function renderInline(text: string): React.ReactNode {
 
 const BlogPost = () => {
   const { slug } = useParams<{ slug: string }>();
-  const post = useBlogPost(slug);
+  const initialPost = publicBlogPosts.find((post) => post.slug === slug);
+  const post = useBlogPost(slug, initialPost);
   // Computed from the static index, so it is in the markup a crawler reads
   // rather than appearing after a fetch.
   const related = relatedPosts(slug ?? "");
@@ -255,14 +260,7 @@ const BlogPost = () => {
               {post.category} · {post.readingTime}
             </p>
             <h1
-              className="font-display text-center text-5xl mb-6"
-              style={{
-                fontSize: "clamp(1.75rem, 4vw, 3rem)",
-                fontWeight: 800,
-                lineHeight: 1.1,
-                letterSpacing: "-0.02em",
-                color: "hsl(0 0% 95%)",
-              }}
+              className="font-display text-3xl sm:text-5xl mb-6 font-extrabold leading-tight text-foreground break-words"
             >
               {post.title}
             </h1>
@@ -272,6 +270,17 @@ const BlogPost = () => {
             <div className="h-px" style={{ background: "hsl(261 75% 50% / 0.2)" }} />
           </header>
 
+          <p className="text-sm text-muted-foreground mb-8">
+            By Brandon Yakubov · Updated <time dateTime={post.publishedAt}>{post.publishedAt}</time>
+          </p>
+          <nav aria-label="In this article" className="mb-10 border-y border-border py-5">
+            <p className="text-sm font-semibold mb-3">In this article</p>
+            <ul className="space-y-2 text-sm">
+              {post.content.split("\n").filter((line) => line.startsWith("## ")).map((line) => (
+                <li key={line}><a className="text-primary underline" href={`#${headingId(line.slice(3))}`}>{line.slice(3)}</a></li>
+              ))}
+            </ul>
+          </nav>
           {/* Article body */}
           <article className="prose-custom">
             {renderMarkdown(post.content)}
@@ -284,15 +293,9 @@ const BlogPost = () => {
           >
             <p className="text-sm font-medium mb-1" style={{ color: "hsl(261 75% 70%)" }}>Try OutReign free</p>
             <p className="text-base font-light mb-5" style={{ color: "hsl(0 0% 100% / 0.5)" }}>
-              Describe your ICP in plain English and get ranked, verified prospects in under 2 minutes.
+              Explore the sample lead workflow, then choose a paid plan for live prospecting and enrichment.
             </p>
-            <a
-              href="/auth"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold text-white transition-opacity duration-150 hover:opacity-90"
-              style={{ background: "linear-gradient(135deg, hsl(261 75% 60%) 0%, hsl(261 75% 50%) 100%)" }}
-            >
-              Get started free →
-            </a>
+            <Button asChild><Link to="/auth">Get started free →</Link></Button>
           </div>
 
           {/* Where to go next.

@@ -2,10 +2,15 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { blogPostsMeta as staticPosts, type BlogPostMeta } from "@/data/blog-index";
 import type { BlogPost } from "@/data/blog-posts";
+import { searchGuides } from "@/data/search-guides";
+
+const editorialSlugs = new Set(searchGuides.map((post) => post.slug));
+const initialPosts = [...searchGuides, ...staticPosts.filter((post) => !editorialSlugs.has(post.slug))]
+  .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
 
 /** Fetches DB posts, merges with static seeds, sorted newest-first, deduped by slug. */
 export function useAllBlogPosts() {
-  const [posts, setPosts] = useState<BlogPostMeta[]>(staticPosts);
+  const [posts, setPosts] = useState<BlogPostMeta[]>(initialPosts);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -18,7 +23,7 @@ export function useAllBlogPosts() {
 
       if (cancelled) return;
       if (error || !data) {
-        setPosts([...staticPosts].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt)));
+        setPosts(initialPosts);
         setLoading(false);
         return;
       }
@@ -33,8 +38,9 @@ export function useAllBlogPosts() {
         publishedAt: (p.published_at as string).slice(0, 10),
       }));
 
-      const seen = new Set(dbPosts.map((p) => p.slug));
-      const merged = [...dbPosts, ...staticPosts.filter((p) => !seen.has(p.slug))];
+      const eligible = dbPosts.filter((post) => !editorialSlugs.has(post.slug));
+      const seen = new Set(eligible.map((p) => p.slug));
+      const merged = [...eligible, ...initialPosts.filter((p) => !seen.has(p.slug))];
       merged.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
       setPosts(merged);
       setLoading(false);
@@ -48,8 +54,8 @@ export function useAllBlogPosts() {
 }
 
 /** Looks up a post by slug from DB, falling back to static. */
-export function useBlogPost(slug: string | undefined) {
-  const [post, setPost] = useState<BlogPost | null | undefined>(undefined);
+export function useBlogPost(slug: string | undefined, initialPost?: BlogPost) {
+  const [post, setPost] = useState<BlogPost | null | undefined>(initialPost);
 
   useEffect(() => {
     if (!slug) {
@@ -57,6 +63,12 @@ export function useBlogPost(slug: string | undefined) {
       return;
     }
     let cancelled = false;
+    const editorial = searchGuides.find((post) => post.slug === slug);
+    if (editorial) {
+      setPost(editorial);
+      return;
+    }
+    setPost(initialPost);
     (async () => {
       const { data } = await supabase
         .from("blog_posts")
@@ -92,7 +104,7 @@ export function useBlogPost(slug: string | undefined) {
     return () => {
       cancelled = true;
     };
-  }, [slug]);
+  }, [slug, initialPost]);
 
   return post;
 }

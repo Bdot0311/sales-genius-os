@@ -55,7 +55,6 @@ describe("the pages a crawler can read without running JavaScript", () => {
       "/cold-email-software",
       "/ai-sdr-agent",
       "/sales-operations-software",
-      "/apollo-alternative",
       "/vs-apollo",
       "/vs-instantly",
       "/vs-lusha",

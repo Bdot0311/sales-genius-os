@@ -7,7 +7,6 @@ import Index from "./pages/Index";
 import ColdEmailSoftware from "./pages/ColdEmailSoftware";
 import AiSdrAgent from "./pages/AiSdrAgent";
 import SalesOperationsSoftware from "./pages/SalesOperationsSoftware";
-import ApolloAlternative from "./pages/ApolloAlternative";
 import VsApollo from "./pages/VsApollo";
 import VsInstantly from "./pages/VsInstantly";
 import VsLusha from "./pages/VsLusha";
@@ -22,6 +21,9 @@ import HelpCenter from "./pages/HelpCenter";
 import RequestIntegration from "./pages/RequestIntegration";
 import { helpArticles, helpCategories } from "./components/help/helpArticles";
 import { COMPETITORS } from "./data/competitors";
+import BlogPost from "./pages/BlogPost";
+import Blog from "./pages/Blog";
+import { publicBlogPosts } from "./data/public-blog-posts";
 
 // Mirrors src/App.tsx's PageLoader so the Suspense boundary the client mounts
 // around the routed page has an identical fallback here.
@@ -65,7 +67,6 @@ const PAGES: Record<string, Prerenderable> = {
   "/cold-email-software": { Component: ColdEmailSoftware },
   "/ai-sdr-agent": { Component: AiSdrAgent },
   "/sales-operations-software": { Component: SalesOperationsSoftware },
-  "/apollo-alternative": { Component: ApolloAlternative },
   "/vs-apollo": { Component: VsApollo },
   "/vs-instantly": { Component: VsInstantly },
   "/vs-lusha": { Component: VsLusha },
@@ -82,7 +83,12 @@ const PAGES: Record<string, Prerenderable> = {
   // submit, so both render fully here.
   "/help": { Component: HelpCenter },
   "/request-integration": { Component: RequestIntegration },
+  "/blog": { Component: Blog },
 };
+
+for (const post of publicBlogPosts) {
+  PAGES[`/blog/${post.slug}`] = { Component: BlogPost, pattern: "/blog/:slug" };
+}
 
 for (const category of helpCategories) {
   PAGES[`/help/category/${category.id}`] = {
