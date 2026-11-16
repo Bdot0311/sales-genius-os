@@ -2,7 +2,9 @@
 
 # Dashboard service alert
 
-- [x] Corrected the private outbound safety-switch predicate without customer grants; live SQL regressions prove lost backend access still fails. Signed-in health reports zero broken checks, matching alert resolved, service-status returns no incidents and dashboard banner is absent. Existing runtime guards: 12 passed. Unrelated pre-existing Visitors schema/type errors remain outside this incident.
+- [x] Restored missing visitor-page tables and gated access definitions; refreshed generated types and registered 106 fields in schema_contract. Preview build OK; 21 visitor tests passed (local PostgreSQL isolation test skipped without its database). Signed-in Visitors stays disabled, health reports zero failures and service-status is empty. No tracking, automation or provider jobs enabled.
+
+- [x] Corrected the private outbound safety-switch predicate without customer grants; live SQL regressions prove lost backend access still fails. Signed-in health reports zero broken checks, matching alert resolved, service-status returns no incidents and dashboard banner is absent. Existing runtime guards: 12 passed. Pre-existing Visitors schema/type errors also cleared.
 
 # Dashboard design refresh
 
