@@ -428,6 +428,13 @@
       "when": 1794890655984,
       "tag": "0060_revoke_internal_job_key_client_access",
       "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1794936114897,
+      "tag": "0061_restore_inbox_sync_sweep_helpers",
+      "breakpoints": true
     }
   ]
 }

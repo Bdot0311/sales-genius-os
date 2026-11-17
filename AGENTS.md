@@ -1,5 +1,7 @@
 # Agent rules
 
+- Scheduled reply sweeps require the cursor/lease tables and five service-only RPCs in the managed Drizzle migration stream; preserve the existing managed cron rather than creating a second HTTP callback. Why: legacy migration files alone did not install the helpers and every scheduled pass failed before polling Gmail.
+
 - Public blog bodies use a committed published-content snapshot for identical first HTML and client hydration; curated search-guide revisions override older generated rows, and metadata/sitemaps use the same priority. Why: crawlers must see real article text without JavaScript and stale database copy must not undo editorial corrections.
 
 - All Treg calls go through `_shared/treg.ts`, which sets the customer tag server-side, caps cost per call and logs call id/cost to `treg_usage`; Treg is a fallback only when Railway returns nothing and its results bill like Railway results through the normal save/enrich path. Why: customers pay the same per contact regardless of source, while Treg spend still reconciles per customer.

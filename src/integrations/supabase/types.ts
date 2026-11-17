@@ -2805,6 +2805,53 @@ export type Database = {
         }
         Relationships: []
       }
+      inbox_sync_cursors: {
+        Row: {
+          consecutive_failures: number
+          last_attempt_at: string | null
+          last_error: string | null
+          last_success_at: string | null
+          user_id: string
+        }
+        Insert: {
+          consecutive_failures?: number
+          last_attempt_at?: string | null
+          last_error?: string | null
+          last_success_at?: string | null
+          user_id: string
+        }
+        Update: {
+          consecutive_failures?: number
+          last_attempt_at?: string | null
+          last_error?: string | null
+          last_success_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inbox_sync_cursors_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inbox_sync_lock: {
+        Row: {
+          id: number
+          locked_until: string | null
+        }
+        Insert: {
+          id?: number
+          locked_until?: string | null
+        }
+        Update: {
+          id?: number
+          locked_until?: string | null
+        }
+        Relationships: []
+      }
       integrations: {
         Row: {
           config: Json
@@ -7561,6 +7608,10 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      claim_inbox_sync_sweep: {
+        Args: { p_ttl_seconds: number }
+        Returns: boolean
+      }
       claim_rescore_items: {
         Args: { p_limit?: number }
         Returns: {
@@ -7841,7 +7892,17 @@ export type Database = {
         Returns: undefined
       }
       mcp_consume_call: { Args: { _tool: string }; Returns: Json }
+      next_inbox_sync_users: {
+        Args: { p_limit: number }
+        Returns: {
+          user_id: string
+        }[]
+      }
       next_month_start_utc: { Args: never; Returns: string }
+      note_inbox_sync_started: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
       open_outbound_run: { Args: { p_user_id: string }; Returns: string }
       outbound_canary_enabled: { Args: { p_user_id: string }; Returns: boolean }
       outbound_durable_enabled: {
@@ -7878,6 +7939,10 @@ export type Database = {
           p_provider: string
           p_user_id?: string
         }
+        Returns: number
+      }
+      record_inbox_sync_result: {
+        Args: { p_error: string; p_user_id: string }
         Returns: number
       }
       record_outbound_verdict: {
@@ -7922,6 +7987,7 @@ export type Database = {
         }[]
       }
       release_agent_job_items: { Args: { p_ids: string[] }; Returns: number }
+      release_inbox_sync_sweep: { Args: never; Returns: undefined }
       release_rescore_items: { Args: { p_ids: string[] }; Returns: number }
       release_scheduled_email_claims: {
         Args: { p_ids: string[] }

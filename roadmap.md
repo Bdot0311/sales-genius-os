@@ -1,3 +1,7 @@
+# Scheduled reply detection
+
+- [x] Restored both sweep tables and all five service-only helpers in managed migration 0061; registered seven fields with schema monitoring and preserved the single existing ten-minute job. Rollback-only live database checks passed for lease locking, rotation, failure recovery and customer denial; 44 related tests passed (restricted local database test skipped, equivalent checks executed through privileged database tools). Invoked the existing cron command: HTTP 200, users=0, newReplies=0, errors=0, deferred=0. No eligible active outreach threads existed, so actual Gmail reply capture was not exercised; no emails sent or test data retained.
+
 # Search traffic implementation — November 16, 2026
 
 - [x] Refresh Apollo alternatives with official vendor sources, dated prices, seven distinct tools, limitations and FAQ; old brand/links removed from this guide.
