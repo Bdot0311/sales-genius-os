@@ -21,7 +21,7 @@ export interface GatheredSitePage {
 const SCRAPE_CONCURRENCY = 2;
 const RETRY_DELAYS_MS = [1_500, 4_000];
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 export async function scrapeWithRetry(
   url: string,
