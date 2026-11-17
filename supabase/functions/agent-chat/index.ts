@@ -498,9 +498,12 @@ const TOOLS = [
         type: "object",
         properties: {
           lead_ids: { type: "array", items: { type: "string" } },
+          all_matching: {
+            type: "boolean",
+            description: "Act on EVERY lead matching the last list_leads filter (its total_matching), not just the ids shown. Use this for any group ask — 'all 63 new leads', 'every B lead' — instead of paging or copying ids. Overflow is queued in the background, so size does not matter.",
+          },
           force: { type: "boolean", description: "Re-scrape even if a recent brief exists" },
         },
-        required: ["lead_ids"],
       },
     },
   },
@@ -514,6 +517,11 @@ const TOOLS = [
         type: "object",
         properties: {
           lead_id: { type: "string", description: "Single lead id (use lead_ids for batches)" },
+          all_matching: {
+            type: "boolean",
+            description: "Act on EVERY lead matching the last list_leads filter (its total_matching), not just the ids shown. Use this for any group ask — 'all 63 new leads', 'every B lead' — instead of paging or copying ids. Overflow is queued in the background, so size does not matter.",
+          },
+
           lead_ids: {
             type: "array",
             items: { type: "string" },
@@ -2333,6 +2341,10 @@ serve(async (req) => {
 
     let listLeadCalls = 0;
     let listedLeadIds: string[] = [];
+    // Every lead matching the last list_leads filter, not just the page shown.
+    // research_leads/draft_outreach take all_matching: true to act on this set
+    // server-side, so a 63- or 6,000-lead ask never depends on the model paging.
+    let listedMatchIds: string[] = [];
     let listedQueuedCount = 0;
     const asked = askedWork(userMessage);
     const draftQueueAmong = async (ids: string[]): Promise<number> => {
@@ -2437,6 +2449,7 @@ serve(async (req) => {
           // Never let an empty, failed or capped lookup reuse another filter's
           // implicit research/draft batch. Repeats query again for fresh counts.
           listedLeadIds = [];
+          listedMatchIds = [];
           listedQueuedCount = 0;
           outstandingPool = [];
           const early = listLeadGuidance({
@@ -2554,6 +2567,7 @@ serve(async (req) => {
             ? allIds.filter((id) => !draftedAll.has(id))
             : undraftedIds;
           const outstanding = Math.max(undraftedIds.length, allUndrafted.length);
+          listedMatchIds = wantsUndrafted ? allUndrafted : (allIds.length > 0 ? allIds : rowIds);
           if (wantsUndrafted) {
             /*
              * The set this turn commits to finishing — bounded by what was
@@ -2608,6 +2622,14 @@ serve(async (req) => {
             remaining_without_draft: outstanding,
             draft_queued: draftQueued,
             truncated: pool.length > leads.length,
+            total_matching: listedMatchIds.length,
+            ...(listedMatchIds.length > leads.length
+              ? {
+                all_matching_note:
+                  `${listedMatchIds.length} leads match this filter; ${leads.length} are shown. Do not page or call list_leads again to collect the rest. ` +
+                  "Call research_leads and/or draft_outreach with all_matching: true and they act on every matching lead server-side, queueing the overflow in the background.",
+              }
+              : {}),
             leads,
             ...(guidance.note ? { note: guidance.note } : {}),
           };
@@ -2756,9 +2778,11 @@ serve(async (req) => {
         }
 
         case "research_leads": {
-          const rawRequested: string[] = (Array.isArray(args.lead_ids) ? args.lead_ids : []).map((x: any) => String(x));
+          const rawRequested: string[] = args.all_matching === true && listedMatchIds.length > 0
+            ? [...listedMatchIds]
+            : (Array.isArray(args.lead_ids) ? args.lead_ids : []).map((x: any) => String(x));
           if (rawRequested.length === 0) {
-            return { error: "lead_ids is required. Call list_leads and pass the ids it returns." };
+            return { error: "lead_ids is required (or all_matching: true after list_leads). Call list_leads first." };
           }
           const allDone = rawRequested.every((id) => researchedLeadIds.has(id));
           /*
@@ -2907,7 +2931,9 @@ serve(async (req) => {
 
           const requested: string[] = [
             ...new Set(
-              (Array.isArray(args.lead_ids) && args.lead_ids.length
+              (args.all_matching === true && listedMatchIds.length > 0
+                ? listedMatchIds
+                : Array.isArray(args.lead_ids) && args.lead_ids.length
                 ? args.lead_ids
                 : [args.lead_id]
               )

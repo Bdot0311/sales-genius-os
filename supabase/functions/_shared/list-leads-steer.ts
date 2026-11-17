@@ -96,7 +96,7 @@ export function listLeadGuidance(input: {
     if (input.knownCount === 0) {
       return {
         stop,
-        note: "Lookup limit reached. This filter was not queried; its matching leads and remaining count are unknown. Do not substitute ids or counts from another lookup. Ask the user to continue in a new turn.",
+        note: "Lookup limit reached. This filter was not queried; its matching leads and remaining count are unknown. Do not substitute ids or counts from another lookup. Use all_matching: true on research_leads/draft_outreach with the last successful lookup instead of listing again.",
       };
     }
     parts.push(
@@ -112,13 +112,13 @@ export function listLeadGuidance(input: {
   }
   if (pipeline && (stop || input.returnedCount > 0 || input.queuedCount > 0)) {
     const steps: string[] = [];
-    if (input.asked.research) steps.push("research_leads with every id from that list");
+    if (input.asked.research) steps.push("research_leads with all_matching: true (every matching lead, not just the page)");
     if (input.asked.evaluate) steps.push("score_leads with those same ids");
     if (input.asked.draft) {
       steps.push(
         input.queuedCount > 0
           ? "then tell the user those emails are already being written and ask if they want them replaced with versions based on the new research"
-          : "then draft_outreach once with all of those ids",
+          : "then draft_outreach once with all_matching: true",
       );
     }
     if (steps.length) parts.push(`Next, in order: ${steps.join(", then ")}.`);
