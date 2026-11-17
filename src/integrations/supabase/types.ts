@@ -820,30 +820,6 @@ export type Database = {
         }
         Relationships: []
       }
-      ai_coach_quota: {
-        Row: {
-          created_at: string
-          id: string
-          message_id: string | null
-          status: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          message_id?: string | null
-          status?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          message_id?: string | null
-          status?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       ai_gateway_usage_tracking: {
         Row: {
           calls_count: number
@@ -7543,10 +7519,6 @@ export type Database = {
           step_status: string
         }[]
       }
-      claim_ai_coach_message: {
-        Args: { p_limit: number; p_period_start: string; p_user_id: string }
-        Returns: Json
-      }
       claim_due_scheduled_emails: {
         Args: { p_limit?: number }
         Returns: {
@@ -7634,10 +7606,6 @@ export type Database = {
       }
       complete_agent_run_step: {
         Args: { p_owner: string; p_payload?: Json; p_step_id: string }
-        Returns: boolean
-      }
-      consume_ai_coach_message: {
-        Args: { p_id: string; p_user_id: string }
         Returns: boolean
       }
       consume_rate_limit: {
@@ -7954,10 +7922,6 @@ export type Database = {
         }[]
       }
       release_agent_job_items: { Args: { p_ids: string[] }; Returns: number }
-      release_ai_coach_message: {
-        Args: { p_id: string; p_user_id: string }
-        Returns: boolean
-      }
       release_rescore_items: { Args: { p_ids: string[] }; Returns: number }
       release_scheduled_email_claims: {
         Args: { p_ids: string[] }
