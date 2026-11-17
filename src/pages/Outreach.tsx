@@ -70,6 +70,22 @@ const EMAIL_TEMPLATES = [
     category: "standard",
   },
   {
+    value: "three_ideas",
+    label: "Three Ideas",
+    description: "Three specific applications grounded in this prospect's research and your offer",
+    goal: "introduction",
+    suggestedSubject: "ideas for {company}",
+    category: "standard",
+  },
+  {
+    value: "one_sentence",
+    label: "One Sentence",
+    description: "One researched application and a simple question in a single sentence",
+    goal: "introduction",
+    suggestedSubject: "{company} idea",
+    category: "standard",
+  },
+  {
     value: "follow_up",
     label: "Follow-up",
     description: "Follow up on previous outreach",

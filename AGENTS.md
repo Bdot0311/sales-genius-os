@@ -60,3 +60,5 @@
 - Large research/draft asks run as owner-approved bulk runs (`bulk-runs` owner API, `process-bulk-runs` worker, `_shared/bulk-run-logic.ts` rules): keyset-paged feed capped at the approved lead count, per-run lease, per-item backoff, run cool-off on rate limits and pause on credit errors, woken from the existing agent-queue tick. Agents may create/inspect/pause runs but never approve them. Why: model-orchestrated batching lost leads and invented progress at scale; a deterministic queue with database counts cannot.
 
 - Background research/draft approvals and progress are embedded in the AI Agent tabs; the legacy bulk-runs route redirects there. Why: durable jobs support the agent rather than a separate workspace feature.
+
+- Research-led use-case campaign shapes live in `_shared/use-case-campaign.ts`, composed into shared drafting guidance and explicit template/agent-feedback selection. Why: Studio and agent background drafts must use the same shapes without relaxing evidence or quality gates.

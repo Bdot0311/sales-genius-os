@@ -121,6 +121,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     title: "Research and draft for your whole list",
     summary: "Your AI agent works through matching leads in the background, after you approve the estimate.",
     items: [
+      { tag: "new", title: "Three ideas or one clear sentence", description: "Choose Three Ideas or One Sentence in Outreach, or ask your AI agent for either approach. Drafts connect your offer to the prospect's researched business, without invented results or generic feature lists.", href: "/dashboard/outreach" },
       { tag: "improved", title: "Background work belongs to your AI agent", description: "Review estimates, approve research and drafting, and follow progress inside AI Agent → Background work, without a separate page in the sidebar.", href: "/dashboard/agent?tab=background" },
       { tag: "new", title: "Background research and drafting", description: "Pick a pipeline stage or tier, see how many leads match and what the run will take, set a limit and approve. Research and drafting then continue in the background with live progress, and you can pause, resume or cancel at any time. Drafts land in Drafts for review; nothing is sent.", href: "/dashboard/agent?tab=background" },
       { tag: "improved", title: "The AI agent handles big lists in the background", description: "Ask the agent to research and draft for hundreds or thousands of leads and it sets up background work for you to approve, then reports its real progress.", href: "/dashboard/agent" },

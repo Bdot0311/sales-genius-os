@@ -4,6 +4,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 // Frameworks come from the GTM skills at request time rather than being retyped
 // here — see _shared/email-skills.ts.
 import { composeSkillContext, skillNamesUsed } from "../_shared/email-skills.ts";
+import { useCaseCampaignFor, useCaseCampaignPrompt } from "../_shared/use-case-campaign.ts";
 // One quality verdict for every caller — Outreach Studio, agent-chat and the
 // autonomous agent all reach the rubric through this rather than each other.
 import { isWeak, rubricFeedback, scoreEmailReport, type RubricAvailability } from "../_shared/email-quality.ts";
@@ -684,7 +685,8 @@ const getSystemPrompt = (
   const usesTemplate = Boolean(templateValue || templateDescription);
   const opts = { goal, usesTemplate, variantNum };
   console.log('[generate-email] skills:', skillNamesUsed(opts).join(', '));
-  return `${prompt}${composeSkillContext(opts)}`;
+  const campaign = useCaseCampaignFor(templateValue);
+  return `${prompt}${composeSkillContext(opts)}${campaign ? `\n${useCaseCampaignPrompt(campaign)}` : ''}`;
 };
 
 // ─── Subject line system prompt ───────────────────────────────────────────────
@@ -1468,6 +1470,10 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
 
     // Inject web-grounded research + no-hallucination rule into every non-precision-edit prompt.
     const isPrecisionEdit = goal === 'custom' && !!customInstruction;
+    const selectedCampaign = !isPrecisionEdit && goal === 'introduction'
+      ? useCaseCampaignFor(templateValue, customInstruction)
+      : null;
+    if (selectedCampaign) systemPrompt += `\n${useCaseCampaignPrompt(selectedCampaign)}`;
     // Applied here rather than trusted to the caller: the client used to build
     // this block itself and post it back, which is how a third copy of the
     // rules ended up living in the browser.

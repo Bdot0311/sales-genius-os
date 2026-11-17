@@ -17,6 +17,7 @@
  */
 
 import { EMAIL_SKILLS, type EmailSkillName } from "./skills.generated.ts";
+import { USE_CASE_PRINCIPLES } from "./use-case-campaign.ts";
 
 /** Read by every request: principles, CTA shape, banned language, QA checklist. */
 const CORE: EmailSkillName = "b2b-cold-email-copywriting";
@@ -242,6 +243,7 @@ export function composeSkillContext(options: SkillContextOptions = {}): string {
     "sentence yourself, from this lead's own facts.",
     "",
     sections.join("\n\n"),
+    ...(["introduction", "4ts", "elusive", "proximity"].includes(String(options.goal ?? "").toLowerCase()) ? [USE_CASE_PRINCIPLES] : []),
     floorBlock,
   ].join("\n");
 }
