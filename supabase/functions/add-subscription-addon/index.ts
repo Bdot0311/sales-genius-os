@@ -50,7 +50,7 @@ serve(async (req) => {
     if (userError || !userData?.user) throw new Error('Authentication required');
     
     const user = userData.user;
-    logStep('User authenticated', { userId: user.id, email: user.email });
+    logStep('User authenticated', { userId: user.id });
 
     // Get addon price ID from request
     const { addonPriceId } = await req.json();
