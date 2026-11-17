@@ -1,3 +1,4 @@
+const esc = (v: unknown): string => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { sweepSlice } from "../_shared/sweep-window.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
@@ -211,9 +212,9 @@ serve(async (req) => {
           <div class="container">
             <div class="header"><h1>🚨 Security Alert</h1><p>Suspicious activity detected on your account</p></div>
             <div class="content">
-              <p>Hello ${(user.profiles as any)?.full_name || 'there'},</p>
+              <p>Hello ${esc((user.profiles as any)?.full_name || 'there')},</p>
               <p>Our security system detected ${suspiciousPatterns.length} suspicious pattern(s):</p>
-              ${suspiciousPatterns.map(p => `<div class="alert-box"><strong>${p.severity.toUpperCase()}</strong><h3>${p.type.replace(/_/g, ' ').toUpperCase()}</h3><p>${p.description}</p></div>`).join('')}
+              ${suspiciousPatterns.map(p => `<div class="alert-box"><strong>${esc(String(p.severity).toUpperCase())}</strong><h3>${esc(String(p.type).replace(/_/g, ' ').toUpperCase())}</h3><p>${esc(p.description)}</p></div>`).join('')}
               <h3>Recommended Actions:</h3>
               <ul><li>Review your recent audit logs</li><li>Check team member permissions</li><li>Rotate API keys if needed</li><li>Contact support if needed</li></ul>
               <p style="text-align: center; font-size: 12px; color: #6b7280; margin-top: 30px;">Automated security alert from OutReign</p>
@@ -259,7 +260,7 @@ serve(async (req) => {
             <div class="header"><h1>🚨 CRITICAL Security Alert</h1><p>Platform-wide security threats detected</p></div>
             <div class="content">
               <p>The following critical security events require immediate attention:</p>
-              ${criticalAlerts.map(alert => `<div class="alert-box"><h3>${alert.type.replace(/_/g, ' ').toUpperCase()}</h3><p>Target: ${alert.target}</p><pre style="background: #f3f4f6; padding: 10px; border-radius: 4px; overflow-x: auto;">${JSON.stringify(alert.details, null, 2)}</pre></div>`).join('')}
+              ${criticalAlerts.map(alert => `<div class="alert-box"><h3>${esc(String(alert.type).replace(/_/g, ' ').toUpperCase())}</h3><p>Target: ${esc(alert.target)}</p><pre style="background: #f3f4f6; padding: 10px; border-radius: 4px; overflow-x: auto;">${esc(JSON.stringify(alert.details, null, 2))}</pre></div>`).join('')}
               <h3>Immediate Actions Required:</h3>
               <ul><li>Review security logs immediately</li><li>Consider blocking suspicious IPs</li><li>Check for unauthorized access</li></ul>
               <p style="color: #6b7280; margin-top: 20px;">Alert generated at: ${new Date().toISOString()}</p>
