@@ -1391,6 +1391,167 @@ export type Database = {
           },
         ]
       }
+      bulk_run_items: {
+        Row: {
+          attempts: number
+          claimed_at: string | null
+          created_at: string
+          draft_id: string | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          lead_id: string
+          next_attempt_at: string
+          research_done: boolean
+          run_id: string
+          stage: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          claimed_at?: string | null
+          created_at?: string
+          draft_id?: string | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          lead_id: string
+          next_attempt_at?: string
+          research_done?: boolean
+          run_id: string
+          stage?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          claimed_at?: string | null
+          created_at?: string
+          draft_id?: string | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          lead_id?: string
+          next_attempt_at?: string
+          research_done?: boolean
+          run_id?: string
+          stage?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bulk_run_items_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "bulk_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bulk_runs: {
+        Row: {
+          agent_config_id: string | null
+          approved_at: string | null
+          consecutive_rate_limits: number
+          created_at: string
+          cursor_created_at: string | null
+          cursor_id: string | null
+          do_draft: boolean
+          do_research: boolean
+          drafted: number
+          enqueued: number
+          estimate: Json
+          failed: number
+          feed_exhausted: boolean
+          feedback: string | null
+          filters: Json
+          finished_at: string | null
+          goal: string
+          id: string
+          last_error: string | null
+          lease_token: string | null
+          lease_until: string | null
+          matched_count: number
+          max_leads: number | null
+          name: string
+          pause_reason: string | null
+          rate_limited_until: string | null
+          researched: number
+          skipped: number
+          started_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agent_config_id?: string | null
+          approved_at?: string | null
+          consecutive_rate_limits?: number
+          created_at?: string
+          cursor_created_at?: string | null
+          cursor_id?: string | null
+          do_draft?: boolean
+          do_research?: boolean
+          drafted?: number
+          enqueued?: number
+          estimate?: Json
+          failed?: number
+          feed_exhausted?: boolean
+          feedback?: string | null
+          filters?: Json
+          finished_at?: string | null
+          goal?: string
+          id?: string
+          last_error?: string | null
+          lease_token?: string | null
+          lease_until?: string | null
+          matched_count?: number
+          max_leads?: number | null
+          name?: string
+          pause_reason?: string | null
+          rate_limited_until?: string | null
+          researched?: number
+          skipped?: number
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agent_config_id?: string | null
+          approved_at?: string | null
+          consecutive_rate_limits?: number
+          created_at?: string
+          cursor_created_at?: string | null
+          cursor_id?: string | null
+          do_draft?: boolean
+          do_research?: boolean
+          drafted?: number
+          enqueued?: number
+          estimate?: Json
+          failed?: number
+          feed_exhausted?: boolean
+          feedback?: string | null
+          filters?: Json
+          finished_at?: string | null
+          goal?: string
+          id?: string
+          last_error?: string | null
+          lease_token?: string | null
+          lease_until?: string | null
+          matched_count?: number
+          max_leads?: number | null
+          name?: string
+          pause_reason?: string | null
+          rate_limited_until?: string | null
+          researched?: number
+          skipped?: number
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       calendar_sync_logs: {
         Row: {
           action: string
@@ -7116,6 +7277,10 @@ export type Database = {
     }
     Functions: {
       _system_health_checks: { Args: never; Returns: Json }
+      acquire_bulk_run_lease: {
+        Args: { p_run: string; p_seconds: number }
+        Returns: string
+      }
       activation_stage_rank: { Args: { _stage: string }; Returns: number }
       admin_delete_signup_response: {
         Args: { _id: string }
@@ -7513,6 +7678,16 @@ export type Database = {
         }
         Returns: string
       }
+      bump_bulk_run: {
+        Args: {
+          p_drafted: number
+          p_failed: number
+          p_researched: number
+          p_run: string
+          p_skipped: number
+        }
+        Returns: undefined
+      }
       cancel_agent_run: {
         Args: { p_run_id: string; p_user_id: string }
         Returns: number
@@ -7565,6 +7740,30 @@ export type Database = {
           step_id: string
           step_status: string
         }[]
+      }
+      claim_bulk_run_items: {
+        Args: { p_limit: number; p_run: string }
+        Returns: {
+          attempts: number
+          claimed_at: string | null
+          created_at: string
+          draft_id: string | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          lead_id: string
+          next_attempt_at: string
+          research_done: boolean
+          run_id: string
+          stage: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "bulk_run_items"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       claim_due_scheduled_emails: {
         Args: { p_limit?: number }
@@ -7987,6 +8186,10 @@ export type Database = {
         }[]
       }
       release_agent_job_items: { Args: { p_ids: string[] }; Returns: number }
+      release_bulk_run_lease: {
+        Args: { p_run: string; p_token: string }
+        Returns: undefined
+      }
       release_inbox_sync_sweep: { Args: never; Returns: undefined }
       release_rescore_items: { Args: { p_ids: string[] }; Returns: number }
       release_scheduled_email_claims: {
@@ -8081,6 +8284,7 @@ export type Database = {
         Returns: undefined
       }
       trigger_agent_jobs: { Args: never; Returns: undefined }
+      trigger_bulk_runs: { Args: never; Returns: undefined }
       trigger_hiring_refresh: { Args: never; Returns: undefined }
       trigger_rescore_queue: { Args: never; Returns: undefined }
       visitor_intelligence_enabled: { Args: never; Returns: boolean }

@@ -176,3 +176,8 @@
 - [x] Admin Run Heartbeat (monitoring timestamp only).
 - [ ] Admin Run Sweep (emails real inactive customers, no preview mode) and Resolve alert (changes shared alert history) - need owner approval.
 - [x] Background job "runMicrotasks" error: caused by the esm.sh build of the database library; all functions moved to the npm build, guarded by a test.
+
+# Bulk research and drafting runs
+
+- [x] Owner-approved bulk runs: estimate, lead cap, background keyset feed, lease, retries/backoff, rate-limit cool-off, credit pause, pause/resume/cancel, live counts, Bulk Runs page, agent tools. Live 2-lead test ran end to end (feed, research, settle, complete).
+- [ ] Draft yield depends on lead data quality: the test lead "TF Business Solutions" points at 2btechinc.com, so the evidence check correctly refused it.

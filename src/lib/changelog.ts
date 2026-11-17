@@ -116,6 +116,17 @@ export const ROADMAP: RoadmapItem[] = [
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-11-17-bulk-runs",
+    date: "2026-11-17",
+    title: "Research and draft for your whole list",
+    summary: "Bulk Runs work through every matching lead in the background, after you approve the estimate.",
+    items: [
+      { tag: "new", title: "Bulk Runs", description: "Pick a pipeline stage or tier, see how many leads match and what the run will take, set a limit and approve. Research and drafting then continue in the background with live progress, and you can pause, resume or cancel at any time. Drafts land in Drafts for review; nothing is sent.", href: "/dashboard/bulk-runs" },
+      { tag: "improved", title: "The AI agent hands big lists to Bulk Runs", description: "Ask the agent to research and draft for hundreds or thousands of leads and it sets up a Bulk Run for you to approve, then reports its real progress.", href: "/dashboard/agent" },
+      { tag: "fixed", title: "Research keeps going when a website reader is busy", description: "Research now waits and retries when a provider is busy, and reads the company's own site directly if needed, instead of giving up on the lead.", href: "/dashboard/leads/saved" },
+    ],
+  },
+  {
     id: "2026-11-14-dashboard-refresh",
     date: "2026-11-14",
     title: "A clearer sales workspace",

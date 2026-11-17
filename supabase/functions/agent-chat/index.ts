@@ -366,6 +366,8 @@ const MUTATING_TOOLS = new Set([
   "research_leads",
   "draft_outreach",
   "draft_sequence",
+  "start_bulk_run",
+  "control_bulk_run",
   "send_outreach",
   "send_drafts",
   "schedule_drafts",
@@ -396,6 +398,47 @@ const PARALLEL_SAFE_TOOLS = new Set([
 ]);
 
 const TOOLS = [
+  {
+    type: "function",
+    function: {
+      name: "start_bulk_run",
+      description:
+        "For any group ask bigger than a normal batch (hundreds to millions of leads): set up a background run that researches and/or drafts for EVERY lead matching a filter. It pages the whole list itself, retries, slows down on rate limits and tracks progress. It does NOT start until the user approves the estimate on the Bulk Runs page — tell them that and quote the returned counts exactly. Never claim drafts exist from this call.",
+      parameters: {
+        type: "object",
+        properties: {
+          pipeline_stage: { type: "string", enum: [...PIPELINE_STAGES] },
+          tier: { type: "string", enum: ["A", "B", "C", "unscored"] },
+          min_icp_score: { type: "number" },
+          query: { type: "string" },
+          research: { type: "boolean", description: "Default true" },
+          draft: { type: "boolean", description: "Default true" },
+          goal: { type: "string", enum: ["introduction", "follow-up", "meeting", "demo", "proposal"] },
+          feedback: { type: "string", description: "Extra instruction applied to every draft" },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_bulk_runs",
+      description: "List bulk runs with their real progress counts from the database. Quote these numbers; never estimate progress yourself.",
+      parameters: { type: "object", properties: {} },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "control_bulk_run",
+      description: "Pause, resume or cancel a bulk run. Cannot approve one — only the user can, on the Bulk Runs page.",
+      parameters: {
+        type: "object",
+        properties: { run_id: { type: "string" }, action: { type: "string", enum: ["pause", "resume", "cancel"] } },
+        required: ["run_id", "action"],
+      },
+    },
+  },
   ...OUTBOUND_TOOL_DEFS,
   {
     type: "function",
@@ -2632,6 +2675,51 @@ serve(async (req) => {
               : {}),
             leads,
             ...(guidance.note ? { note: guidance.note } : {}),
+          };
+        }
+
+        case "start_bulk_run":
+        case "list_bulk_runs":
+        case "control_bulk_run": {
+          const invokeBulk = async (body: Record<string, unknown>) => {
+            const res = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/bulk-runs`, {
+              method: "POST",
+              headers: { Authorization: req.headers.get("Authorization") ?? "", "Content-Type": "application/json" },
+              body: JSON.stringify(body),
+            });
+            return await res.json().catch(() => ({ error: `bulk-runs returned ${res.status}` }));
+          };
+          if (name === "list_bulk_runs") {
+            const r = await invokeBulk({ action: "list" });
+            if (r.error) return { error: r.error };
+            toolEvents.push({ name, label: "Checked bulk runs", status: "ok", detail: `${(r.runs ?? []).length} runs` });
+            return { runs: (r.runs ?? []).map((x: any) => ({
+              id: x.id, name: x.name, status: x.status, pause_reason: x.pause_reason, target: x.max_leads ?? x.matched_count,
+              researched: x.researched, drafted: x.drafted, skipped: x.skipped, failed: x.failed,
+            })) };
+          }
+          if (name === "control_bulk_run") {
+            const action = String(args.action ?? "");
+            if (!["pause", "resume", "cancel"].includes(action)) return { error: "action must be pause, resume or cancel" };
+            const r = await invokeBulk({ action, run_id: String(args.run_id ?? "") });
+            if (r.error) return { error: r.error };
+            toolEvents.push({ name, label: `Bulk run ${action}d`, status: "ok", detail: r.run?.name ?? "" });
+            return { status: r.run?.status };
+          }
+          const filters: Record<string, unknown> = {};
+          for (const k of ["pipeline_stage", "tier", "min_icp_score", "query"]) if (args[k] !== undefined) filters[k] = args[k];
+          const r = await invokeBulk({
+            action: "create", filters, do_research: args.research !== false, do_draft: args.draft !== false,
+            goal: typeof args.goal === "string" ? args.goal : undefined,
+            feedback: typeof args.feedback === "string" ? args.feedback.slice(0, 1000) : undefined,
+            agent_config_id: requestedAgentId ?? undefined,
+            name: `Agent: ${Object.entries(filters).map(([k, v]) => `${k}=${v}`).join(", ") || "all leads"}`,
+          });
+          if (r.error) return { error: r.error, matched: r.matched };
+          toolEvents.push({ name, label: "Bulk run ready for your approval", status: "ok", detail: `${r.matched} leads` });
+          return {
+            run_id: r.run?.id, status: "awaiting_approval", matched: r.matched, estimate: r.estimate,
+            note: "Nothing has started. The user must approve this estimate on the Bulk Runs page (/dashboard/bulk-runs). Quote matched and the estimate exactly; do not say any research or drafts exist yet.",
           };
         }
 

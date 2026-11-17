@@ -167,7 +167,8 @@ describe("the playbooks behind a draft are visible", () => {
 describe("depth does not come out of the time budget", () => {
   it("reads the discovered pages together, not one after another", () => {
     const gather = readFileSync("supabase/functions/_shared/research-gather.ts", "utf8");
-    expect(gather).toContain("Promise.all(input.websiteUrls.map");
+    expect(gather).toContain("SCRAPE_CONCURRENCY");
+    expect(gather).toContain("await Promise.all(");
     expect(RESEARCH).toContain("gatherLeadResearch");
   });
 

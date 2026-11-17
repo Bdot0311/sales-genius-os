@@ -95,3 +95,4 @@ These live in [`docs/`](docs/) and were not linked from anywhere until now.
 | [AGENT_QUALITY_AND_INFRA.md](docs/AGENT_QUALITY_AND_INFRA.md) | Why the quality card stays red, what this branch enforces, and the agent infrastructure that is proposed and not built |
 | [RESEARCH_PROVIDERS.md](docs/RESEARCH_PROVIDERS.md) | Which research providers exist in the app, what calls them, and what this repo cannot verify about live use |
 | [search-distribution.md](docs/search-distribution.md) | Directory and MCP listing copy, and the submissions that still need the owner |
+| [seo-foundations-audit.md](docs/seo-foundations-audit.md) | Review of the site's search foundations against the SEO guide, and the manual Bing setup |

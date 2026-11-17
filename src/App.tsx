@@ -38,6 +38,7 @@ const Coach = lazy(() => import("./pages/Coach"));
 const LiveCoaching = lazy(() => import("./pages/LiveCoaching"));
 const Playbooks = lazy(() => import("./pages/Playbooks"));
 const WhatsNew = lazy(() => import("./pages/WhatsNew"));
+const BulkRuns = lazy(() => import("./pages/BulkRuns"));
 const Pipeline = lazy(() => import("./pages/Pipeline"));
 const Outreach = lazy(() => import("./pages/Outreach"));
 const Calendar = lazy(() => import("./pages/Calendar"));
@@ -537,6 +538,7 @@ const App = () => {
                <Route path="/onboarding" element={<Onboarding />} />
                <Route path="/dashboard" element={<MaintenanceGuard><Dashboard /></MaintenanceGuard>} />
               <Route path="/dashboard/whats-new" element={<MaintenanceGuard><WhatsNew /></MaintenanceGuard>} />
+              <Route path="/dashboard/bulk-runs" element={<MaintenanceGuard><BulkRuns /></MaintenanceGuard>} />
               <Route path="/dashboard/leads" element={<MaintenanceGuard><Leads /></MaintenanceGuard>} />
               <Route path="/dashboard/leads/saved" element={<MaintenanceGuard><SavedLeads /></MaintenanceGuard>} />
               <Route path="/dashboard/accounts" element={<MaintenanceGuard><Accounts /></MaintenanceGuard>} />

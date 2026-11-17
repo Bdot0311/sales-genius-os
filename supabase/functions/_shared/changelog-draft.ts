@@ -168,6 +168,7 @@ const PRODUCT_PAGES = new Set([
   "SequenceDetail",
   "Sequences",
   "Settings",
+  "BulkRuns",
   "Visitors",
   "WhatsNew",
 ]);

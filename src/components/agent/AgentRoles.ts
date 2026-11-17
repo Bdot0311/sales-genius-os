@@ -66,6 +66,9 @@ export const AGENT_TOOL_GROUPS: {
     tools: [
       { name: "draft_outreach", label: "Draft emails" },
       { name: "draft_sequence", label: "Draft sequences" },
+      { name: "start_bulk_run", label: "Set up bulk runs (you approve)" },
+      { name: "list_bulk_runs", label: "See bulk runs" },
+      { name: "control_bulk_run", label: "Pause, resume or cancel bulk runs" },
       { name: "list_drafts", label: "Review drafts" },
       { name: "list_mailboxes", label: "See connected inboxes" },
       { name: "send_drafts", label: "Send drafts" },

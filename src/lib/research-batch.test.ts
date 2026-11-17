@@ -227,7 +227,7 @@ describe("a resumed research pass takes the next leads", () => {
     expect(branch).toContain("cap: researchCap");
     expect(branch).toContain("explicitResearchCount(userMessage)");
     expect(branch).toContain("queuedResearchLeadIds");
-    expect(branch).toContain("Call list_leads and pass the ids it returns.");
+    expect(branch).toContain("lead_ids is required (or all_matching: true after list_leads). Call list_leads first.");
     expect(agent).toContain("researchContinueLine(");
     expect(agent).toContain("askedForWholeList(userMessage, listedLeadIds.length)");
     expect(branch).toContain("researchedLeadIds");

@@ -64,6 +64,11 @@ export const OUTREACH_TOOLS = [
   // produced the copy complaints in the first place.
   "audit_email",
   "audit_sequence",
+  // Large asks (thousands to millions of leads) go to a background run the
+  // owner approves in Bulk Runs; the agent creates and inspects, never approves.
+  "start_bulk_run",
+  "list_bulk_runs",
+  "control_bulk_run",
 ];
 
 export const REPLY_TOOLS = [
@@ -299,6 +304,9 @@ export const TOOL_CATALOG: Record<string, string> = {
   draft_outreach:
     "Write email drafts for leads — first touch AND follow-ups. Required for any agent that writes email.",
   draft_sequence: "Build a multi-step email sequence.",
+  start_bulk_run: "Set up a background research + drafting run for every lead matching a filter, any size; the owner approves the estimate before it starts.",
+  list_bulk_runs: "See bulk runs and their real progress counts.",
+  control_bulk_run: "Pause, resume or cancel a bulk run.",
   list_drafts: "List existing unsent drafts.",
   list_mailboxes: "List the user's connected sending mailboxes.",
   send_drafts: "Send drafts that already exist.",
@@ -350,6 +358,8 @@ const TOOL_PREREQUISITES: Record<string, string[]> = {
   cancel_scheduled_email: ["list_scheduled_emails"],
   delete_drafts: ["list_drafts"],
   draft_outreach: ["list_drafts", "list_sent_emails", "get_email_thread"],
+  start_bulk_run: ["list_bulk_runs"],
+  control_bulk_run: ["list_bulk_runs"],
   enroll_lead_in_sequence: ["list_sequences"],
   delete_inbox_threads: ["list_recent_replies"],
   // Writing email without being able to read what already went out produces
