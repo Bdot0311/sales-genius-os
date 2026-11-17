@@ -105,6 +105,16 @@ export async function notifyDeliverabilityAlert(
   });
 }
 
+/** A standing mission finished. One note per run, replaced if the run is retried. */
+export async function notifyMissionDigest(userId: string, summary: string): Promise<number> {
+  return notifyUserPush(userId, {
+    title: "Your agent finished a mission",
+    body: short(summary, 140) || "Open Missions for the overnight report.",
+    url: "/dashboard/missions",
+    tag: "agent-mission",
+  });
+}
+
 /** The agent finished a run. Readable later, so it collapses onto itself. */
 export async function notifyAgentRunFinished(
   userId: string,

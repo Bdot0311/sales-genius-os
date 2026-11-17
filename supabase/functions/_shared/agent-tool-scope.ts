@@ -126,6 +126,13 @@ export const ICP_TOOLS = ["list_icp_profiles", "update_icp_profile", "apply_won_
  */
 export const SIGNAL_TOOLS = ["list_signals", "refresh_signals"];
 
+/** Standing missions. Read the schedule, and edit or pause it. */
+export const MISSION_TOOLS = [
+  "list_agent_missions",
+  "save_agent_mission",
+  "set_agent_mission_status",
+];
+
 /** Website visitors. Read the identified companies, and edit the site and rules. */
 export const VISITOR_TOOLS = [
   "list_visitor_sites",
@@ -173,6 +180,7 @@ export const ALL_AGENT_TOOLS = [
     ...ICP_TOOLS,
     ...SIGNAL_TOOLS,
     ...VISITOR_TOOLS,
+    ...MISSION_TOOLS,
     ...CAMPAIGN_TOOLS,
     ...INBOX_TOOLS,
     ...DELIVERABILITY_TOOLS,
@@ -199,6 +207,7 @@ const ROLE_TOOLS: Record<Exclude<AgentRole, "custom">, string[]> = {
     "list_icp_profiles",
     "list_sending_accounts",
     "list_deliverability_alerts",
+    ...MISSION_TOOLS,
   ],
   replies: [...CORE_TOOLS, ...REPLY_TOOLS, ...INBOX_TOOLS, "list_objections", "list_sequence_enrollments", "update_enrollment"],
 };
@@ -336,6 +345,9 @@ export const TOOL_CATALOG: Record<string, string> = {
   list_visitor_companies: "Read companies identified from website visits, and Unknown visitors with the reason.",
   save_visitor_site: "Create or edit a Visitor Intelligence site, domains, consent and exclusions.",
   save_visitor_rule: "Create or edit a visitor automation rule. It can find contacts, enrich, research, score, draft, or enroll paused. It cannot send.",
+  list_agent_missions: "Read standing agent missions, their schedule and the latest run.",
+  save_agent_mission: "Create or edit a standing mission: goal, schedule, send window, caps, approval or autopilot.",
+  set_agent_mission_status: "Pause, resume or stop a standing mission.",
   classify_reply: "Tag an inbound reply (interested, objection, unsubscribe...) or mark it read.",
   list_sending_accounts: "See sending mailboxes: status, limits, sent today, reputation, warm-up.",
   update_sending_account: "Pause/resume a mailbox or change its daily limit.",
@@ -379,6 +391,8 @@ const TOOL_PREREQUISITES: Record<string, string[]> = {
   save_campaign_brief: ["list_campaign_briefs"],
   save_visitor_site: ["list_visitor_sites"],
   save_visitor_rule: ["list_visitor_sites", "list_visitor_companies"],
+  save_agent_mission: ["list_agent_missions"],
+  set_agent_mission_status: ["list_agent_missions"],
   classify_reply: ["list_recent_replies"],
   update_sending_account: ["list_sending_accounts"],
   resolve_deliverability_alert: ["list_deliverability_alerts"],

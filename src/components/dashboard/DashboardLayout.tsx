@@ -34,6 +34,7 @@ import {
   Plug,
   MonitorPlay,
   Radar,
+  Moon,
 
 } from "lucide-react";
 import { User } from "@supabase/supabase-js";
@@ -56,6 +57,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAccountProfile } from "@/hooks/use-account-profile";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useVisitorIntelligence } from "@/hooks/use-visitor-intelligence";
+import { useAgentMissions } from "@/hooks/use-agent-missions";
 
 
 
@@ -80,6 +82,7 @@ const navSections = [
     label: "TOOLS",
     items: [
       { name: "AI Agent", icon: Bot, href: "/dashboard/agent" },
+      { name: "Missions", icon: Moon, href: "/dashboard/missions" },
       { name: "Outreach", icon: Mail, href: "/dashboard/outreach" },
       { name: "Calendar", icon: Calendar, href: "/dashboard/calendar" },
       { name: "Analytics", icon: BarChart3, href: "/dashboard/analytics" },
@@ -114,6 +117,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   useUsageHeartbeat();
   const { isDemoMode } = useDemoMode();
   const { enabled: visitorIntelligence } = useVisitorIntelligence();
+  const { enabled: agentMissions } = useAgentMissions();
   const { loading: gateLoading, needsOnboarding } = useOnboardingGate();
 
   // New accounts answer the signup questionnaire before anything else. The flag
@@ -294,7 +298,10 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           {/* Navigation */}
           <nav className={`flex-1 ${sidebarCollapsed ? "p-2" : "px-3 py-3"} overflow-y-auto`}>
             {navSections.map((section) => {
-              const items = section.items.filter((item) => item.href !== "/dashboard/visitors" || visitorIntelligence);
+              const items = section.items.filter((item) =>
+                (item.href !== "/dashboard/visitors" || visitorIntelligence) &&
+                (item.href !== "/dashboard/missions" || agentMissions),
+              );
               return (
               <div key={section.label} className="mb-1">
                 {!sidebarCollapsed && (

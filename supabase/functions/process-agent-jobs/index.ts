@@ -33,6 +33,9 @@ import {
   leadsWithDrafts,
   sentSubjectsFor,
 } from "../_shared/draft-one.ts";
+import { runMissionItem } from "../_shared/agent-mission-runner.ts";
+import { notifyMissionDigest } from "../_shared/notify-events.ts";
+import { sendAppEmail } from "../_shared/transactional-email-templates/send-app-email.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -145,6 +148,8 @@ async function scheduleDraft(
   lead: Record<string, unknown>,
   draft: { subject: string | null; body: string | null },
   slots: { taken: number },
+  // Missions pass a window-aware time. Batches keep the stagger below.
+  scheduledAtOverride?: string,
 ): Promise<{ id: string; scheduledAt: string } | null> {
   const to = String((lead as any).contact_email ?? "").trim();
   if (!to || !draft.subject || !draft.body) return null;
@@ -203,8 +208,10 @@ async function scheduleDraft(
   if (already) return null;
 
   // Staggered rather than all at once, so a batch does not arrive as a burst
-  // from one domain. Two minutes apart, from a minute out.
-  const scheduledAt = new Date(Date.now() + 60_000 + alreadyScheduled * 120_000).toISOString();
+  // from one domain. Two minutes apart, from a minute out. A mission override
+  // is already inside the user's send window; it does not skip the row shape.
+  const scheduledAt = scheduledAtOverride
+    ?? new Date(Date.now() + 60_000 + alreadyScheduled * 120_000).toISOString();
 
   const { data: row, error } = await admin
     .from("sent_emails")
@@ -394,6 +401,45 @@ serve(async (req) => {
          * finding them is the work — so it is handled on its own and returns
          * before the lead lookup rather than threading a null through it.
          */
+        if (job.kind === "mission") {
+          const outcome = await runMissionItem({
+            admin,
+            job,
+            item,
+            invokeFn,
+            now: new Date(),
+            outOfTime,
+            scheduleDraft: async (lead, draft, scheduledAt) =>
+              scheduleDraft(admin, job, lead, draft, outboxSlots, scheduledAt),
+            notify: async (summary) => {
+              await notifyMissionDigest(String(job.user_id), summary);
+            },
+            sendDigest: async (summary, waiting) => {
+              const { data: profile } = await admin.from("profiles").select("email").eq("id", job.user_id).maybeSingle();
+              if (!profile?.email) return;
+              await sendAppEmail(admin, "agent-mission-digest", String(profile.email), {
+                templateData: { summary, waiting, mission: String(job.request_text ?? "Your mission") },
+                idempotencyKey: `agent-mission:${String(item.payload?.run_id ?? item.id)}:email`,
+              });
+            },
+          });
+          if (outcome.action === "continue") {
+            const { error: releaseError } = await admin.rpc("release_agent_job_items", { p_ids: [item.id] });
+            if (releaseError) {
+              await admin.from("agent_job_items").update({ status: "pending", claimed_at: null }).eq("id", item.id);
+            }
+            return;
+          }
+          await admin.from("agent_job_items").update({
+            status: outcome.action === "done" ? "done" : "failed",
+            error: outcome.error ?? null,
+            finished_at: new Date().toISOString(),
+          }).eq("id", item.id);
+          if (outcome.action === "done") processed++;
+          else failed++;
+          return;
+        }
+
         if (job.kind === "search") {
           const outcome = await runSearchItem(admin, invokeFn, job, item);
           await admin.from("agent_job_items").update({
