@@ -23,6 +23,7 @@ export function ownedDraftViolations(input: {
   facts: ApprovedFact[];
   senderName?: string;
   shape?: DraftShape;
+  senderCorpus?: string;
 }): { company: string; violations: string[] } {
   const company = ownedLeadCompany(input.lead);
   const decision = {
@@ -34,7 +35,7 @@ export function ownedDraftViolations(input: {
   };
   return {
     company,
-    violations: bodyViolations(input.body, decision, input.senderName ?? "", input.subject, company, input.shape ?? "first_touch"),
+    violations: bodyViolations(input.body, decision, input.senderName ?? "", input.subject, company, input.shape ?? "first_touch", input.senderCorpus ?? ""),
   };
 }
 
@@ -47,6 +48,8 @@ export function releaseAllows(input: {
   mode: "studio" | "autonomous";
   senderName?: string;
   company?: string;
+  /** The sender's own description and proof. Offer lines may use only this. */
+  senderCorpus?: string;
 }): { allow: boolean; code: string; reason: string } {
   const decision = {
     status: input.facts.length ? "ready" as const : "absent" as const,
@@ -55,7 +58,7 @@ export function releaseAllows(input: {
     facts: input.facts,
     conflicts: [] as string[],
   };
-  const claims = bodyViolations(input.body, decision, input.senderName ?? "", input.subject, input.company ?? "");
+  const claims = bodyViolations(input.body, decision, input.senderName ?? "", input.subject, input.company ?? "", "first_touch", input.senderCorpus ?? "");
   if (claims.length) {
     return { allow: false, code: input.facts.length ? "unsupported_prospect_claim" : "research_required", reason: claims[0] };
   }

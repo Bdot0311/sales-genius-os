@@ -359,6 +359,10 @@ export function readableSentence(span: string): boolean {
   // Directory boilerplate and a possessive whose apostrophe was stripped.
   if (/\bofficial (?:website|site)\b|\bsocial (?:media )?profiles?\b|\bcookies?\b|\bprivacy policy\b|\ball rights reserved\b|\bcontact (?:information|details)\b/i.test(text)) return false;
   if (/[A-Za-z] s\b/.test(text)) return false;
+  if (/[→←»›•]|\bfollow [\w.]+ on (?:linkedin|x|twitter)\b|[a-z][A-Z][a-z]+[A-Z]/i.test(text) && /[→←»›•]|follow/i.test(text)) return false;
+  // Bylines and legal terms are not observations about the business.
+  if (/^(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.? \d/i.test(text)) return false;
+  if (/\b(?:terms of|licen[cs]e|liabilit|warrant|separately scoped|bulk delivery|subscribe|sign up|log in)\b/i.test(text)) return false;
   if (/[a-z0-9)][.!?][A-Z]/.test(text)) return false;
   const lower = text.toLowerCase();
   for (let i = 0; i + 20 <= lower.length; i += 5) {
@@ -370,10 +374,11 @@ export function readableSentence(span: string): boolean {
 function factRank(fact: ApprovedFact, company: string): number {
   let score = 0;
   if (company.length > 2 && fact.span.toLowerCase().includes(company)) score += 3;
-  if (fact.role === "external") score += 1;
-  if (fact.publishedAt) score += 1;
   const words = fact.span.split(/\s+/).length;
   if (words >= 10 && words <= 35) score += 1;
+  // The site talking to its visitors ("We talk with you...") reads oddly
+  // when quoted back to the company.
+  if (/^(?:we|our|you|your)\b/i.test(fact.span.trim()) || /\b(?:you|your)\b/i.test(fact.span)) score -= 1;
   return score;
 }
 
@@ -534,6 +539,68 @@ export type DraftShape = "first_touch" | "continuation";
  * Continuation keeps that claim allow-list and may omit the ask. It is not
  * rewritten into a first-touch snippet. A second ask is refused in both.
  */
+const STOP = new Set(("that this with from your they their have will what when about into just more than them then were been also only very much some such like here there which would could should these those our we you are and for the its it's".split(" ")));
+
+function contentWords(text: string): string[] {
+  return (text.toLowerCase().match(/[a-z0-9][a-z0-9'&-]*/g) ?? [])
+    .map((w) => w.replace(/'s$/, ""))
+    .filter((w) => w.length > 3 && !STOP.has(w));
+}
+
+const RESULT_CLAIM = /\b(?:helped|increased|grew|saved|boosted|doubled|tripled|reduced|cut|generated|percent|clients like|customers like|case study)\b|%/i;
+const PROPOSAL = /\b(?:could|might|one idea|an idea|imagine|what if|would it|curious|happy to|can help|we can|i can|worth)\b/i;
+
+export type LineGrounding = "offer" | "idea" | null;
+
+/**
+ * A line that is not the researched observation. It may describe the
+ * sender's offer (only words from the sender's own description) or suggest
+ * an idea (could / might / one idea) that connects that offer to the
+ * researched topic. It may not state anything as known about the prospect:
+ * no new number, no name, no result, no "saw/noticed". The researched fact
+ * itself is only ever quoted or shifted to "you" by the closed rule.
+ */
+export function lineGrounding(line: string, facts: string[], senderCorpus = "", company = ""): LineGrounding {
+  const factText = facts.join(" \n ").toLowerCase();
+  const senderText = senderCorpus.toLowerCase();
+  const known = `${factText} ${senderText} ${company.toLowerCase()}`;
+  // Numbers only from the sender's own description; a researched number is
+  // used only inside the quoted fact, where its relation is intact.
+  for (const digits of line.match(/\d[\d,.]*/g) ?? []) {
+    if (!senderText.includes(digits.toLowerCase())) return null;
+  }
+  const words = line.split(/\s+/);
+  for (let i = 1; i < words.length; i++) {
+    const w = words[i].replace(/[^\p{L}0-9.&-]/gu, "").replace(/'s$/, "");
+    if (!w || w === "I" || !/^\p{Lu}/u.test(w)) continue;
+    if (/[.!?:]$/.test(words[i - 1])) continue;
+    if (!senderText.includes(w.toLowerCase()) && !(company && company.toLowerCase().includes(w.toLowerCase()))) return null;
+  }
+  const result = line.match(RESULT_CLAIM);
+  if (result && !senderText.includes(result[0].toLowerCase())) return null;
+  if (/\b(?:saw|noticed|congrats|congratulations|read that|heard|i see|looks like you|you(?:'re| are) (?:struggling|losing|missing))\b/i.test(line)) return null;
+  if (/\b(?:not|never|no longer|don't|doesn't|didn't|isn't|aren't)\b/i.test(line)) return null;
+  const mine = contentWords(line);
+  const share = (corpus: string) => mine.filter((w) => corpus.includes(w)).length;
+  if (senderText && /\b(?:we|our|i)\b/i.test(line) && !PROPOSAL.test(line)) {
+    if (mine.length && share(senderText) / mine.length >= 0.5) return "offer";
+    return null;
+  }
+  if (PROPOSAL.test(line)) {
+    if (!mine.length || share(known) / mine.length >= 0.5) return "idea";
+  }
+  // A question asks; it states nothing as known. Its topic must still come
+  // from the research or the sender's description.
+  if (/\?\s*$/.test(line) && mine.length && share(known) / mine.length >= 0.5) return "idea";
+  return null;
+}
+
+function subjectGrounded(subject: string, facts: string[], senderCorpus: string, company: string): boolean {
+  const known = `${facts.join(" ")} ${senderCorpus} ${company}`.toLowerCase();
+  if (/\d/.test(subject) && !(subject.match(/\d[\d,.]*/g) ?? []).every((d) => known.includes(d))) return false;
+  return contentWords(subject).every((w) => known.includes(w));
+}
+
 export function bodyViolations(
   body: string,
   decision: EvidenceDecision,
@@ -541,31 +608,44 @@ export function bodyViolations(
   subject = "",
   company = "",
   shape: DraftShape = "first_touch",
+  senderCorpus = "",
 ): string[] {
   const facts = decision.facts.filter((fact) => fact.role !== "sender_proof");
   if (!facts.length) return ["No approved research is stored for this company."];
+  const spans = facts.map((fact) => fact.span);
   const violations: string[] = [];
-  if (subject.trim() && !subjectAllowed(subject, facts.map((fact) => fact.span))) violations.push(subject.trim());
+  if (subject.trim() && !subjectAllowed(subject, spans) && !subjectGrounded(subject, spans, senderCorpus, company)) {
+    violations.push(subject.trim());
+  }
   const lines = body.split("\n").map((part) => part.trim()).filter(Boolean);
   let observations = 0;
+  let words = 0;
   for (const line of lines) {
     if (/^Hi [^,\n]{1,60},$/i.test(line)) continue;
     // The sign-off may be the sender's full name or just their first name.
     if (senderName && (sameLine(line, senderName) || sameLine(line, senderName.trim().split(/\s+/)[0]))) continue;
+    words += line.split(/\s+/).length;
     if (EXACT_CTA.has(line.toLowerCase().replace(/\s+/g, " "))) continue;
     if (/https?:\/\//i.test(line)) {
       violations.push(line);
       continue;
     }
-    const allowed = facts.some((fact) => {
+    const exact = facts.some((fact) => {
       if (norm(line) === norm(fact.span)) return true;
       const claim = bindClaim(fact.span);
       return !!claim && fact.role === "prospect_page" && matchesClaim(line, claim, company);
     });
-    if (!allowed) violations.push(line);
-    else observations += 1;
+    if (exact) { observations += 1; continue; }
+    // Not the observation: each sentence must be a grounded offer or idea.
+    const parts = line.split(/(?<=[.!?])\s+/).filter(Boolean);
+    const lineOk = parts.every((part) =>
+      lineGrounding(part, spans, senderCorpus, company) !== null
+      // A short question carries no claim ("Worth a quick chat?").
+      || (isAsk(part) && !/\d/.test(part) && contentWords(part).length <= 3 && !/\b(?:saw|noticed|struggl|losing|missing)\w*/i.test(part)));
+    if (!lineOk) violations.push(line);
   }
   const asks = lines.filter(isAsk);
+  if (words > 130) violations.push("The draft is longer than 130 words.");
   if (shape === "first_touch" && observations !== 1) violations.push("The draft needs exactly one sourced observation.");
   if (shape === "first_touch" && asks.length !== 1) violations.push("The draft needs exactly one ask.");
   if (shape === "continuation" && asks.length > 1) violations.push("The draft needs exactly one ask.");

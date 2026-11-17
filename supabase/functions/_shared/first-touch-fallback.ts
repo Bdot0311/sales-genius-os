@@ -8,7 +8,7 @@ export const FALLBACK_ASK = "Worth a look?";
 export function releasableFirstTouch(input: { firstName: string; fact: string; senderName: string }): string {
   const first = input.firstName.trim() || "there";
   const fact = input.fact.trim().replace(/\s+/g, " ");
-  const sentence = /[.!?]$/.test(fact) ? fact : `${fact}.`;
+  const sentence = /[.!?]["”']?$/.test(fact) ? fact : `${fact}.`;
   return `Hi ${first},\n\n${sentence}\n\n${FALLBACK_ASK}\n\n${input.senderName.trim()}`;
 }
 

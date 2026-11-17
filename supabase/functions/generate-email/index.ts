@@ -1215,11 +1215,11 @@ STRICT RULES:
           // The model brief is not a source. The prompt may use only these sentences.
           websiteResearchBlock = [
             decision.facts.map((fact) => fact.span).join("\n"),
-            "A releasable first touch is Hi {first name}, one of these sentences, one ask, and the sender's name.",
-            "The sentence may stay unchanged. The company, We, or Our team may become you only for a listed verb (has/have, is/are, does/do, goes/go, hires/hire, builds/build) with every following word copied.",
-            "Do not shift a different capitalized actor, do not shift has been, and do not leave we, our, or us in the rest.",
-            "Use exactly one ask: Worth a look?, Open to a look?, or Do you still plus that verb and the full remainder. Do not use both.",
-            "A pain bridge or a case study is not in these sentences. Do not add one.",
+            "These are the only verified facts about this prospect. Write a real, personalized email using the copywriting skills and campaign shape above.",
+            "Use exactly one of these facts as the personalized observation, copied word for word (you may change the company's name, We or Our team to You for has/is/does/goes/hires/builds/runs/ships with the rest copied). Do not paraphrase it and add no other statement about the prospect.",
+            "Describe the sender's offer only with what the sender's own description says. Never invent customers, metrics or case studies.",
+            "Then connect the offer to that fact as a suggestion using could, might or one idea, never as something you know about them. No numbers, names, pains or results that the sender's description does not state.",
+            "Hi {first name}, at most 90 words, exactly one low-friction question as the ask, then the sender's name. No links.",
           ].join("\n");
         } else {
           websiteResearchBlock = briefToPromptBlock(researchBrief, researchSources);
@@ -2223,6 +2223,7 @@ conversation that is already going, not as someone chasing silence.`}`;
       sanitizedTechnologies,
     ].filter(Boolean).join("\n");
     let prospectClaims = unsupportedClaims(email, prospectCorpus);
+    let fallbackClaims: string[] = [];
     if (prospectClaims.length) {
       console.warn(`[generate-email] unsupported prospect claims: ${prospectClaims.map((hit) => hit.evidence).join(" | ")}`);
       try {
@@ -2235,7 +2236,7 @@ conversation that is already going, not as someone chasing silence.`}`;
             messages: [
               { role: "system", content: systemPrompt },
               { role: "user", content: approvedFacts.length
-                ? `${userPrompt}\n\nREWRITE REQUIRED. These sentences state something about the prospect that was not supplied:\n${claimNote}\nDelete them. Do not generalize about founders, teams or the industry. Write exactly: "Hi ${firstName}," then one of the approved research sentences above, then one ask, then the sender's name. Nothing else.`
+                ? `${userPrompt}\n\nREWRITE REQUIRED. These sentences state something about the prospect that was not supplied:\n${claimNote}\nDelete them. Do not generalize about founders, teams or the industry. Rewrite the email so every statement about the prospect comes from the approved research facts above, the offer comes only from the sender's description, and it ends with one question and the sender's name.`
                 : `${userPrompt}\n\nREWRITE REQUIRED. These sentences state something about the prospect that was not supplied:\n${claimNote}\nRemove them. Do not replace them with a different event, number, or pain stated as known. Write from the role and industry, and ask one question.` },
             ],
             temperature: 0.4,
@@ -2273,6 +2274,7 @@ conversation that is already going, not as someone chasing silence.`}`;
         const candidate = `Subject: ${fallbackSubjectFrom(fact.span)}\n\n${releasableFirstTouch({ firstName, fact: fact.span, senderName: resolvedSenderName })}`;
         if (unsupportedClaims(candidate, prospectCorpus).length || hasPlaceholder(candidate)) { rejected++; continue; }
         console.warn("[generate-email] using releasable first-touch fallback");
+        fallbackClaims = prospectClaims.map((hit) => hit.evidence);
         email = candidate;
         prospectClaims = [];
         break;
@@ -2352,6 +2354,7 @@ conversation that is already going, not as someone chasing silence.`}`;
         const retry = releaseAllows({
           subject: candidate.subject, body: candidate.body, facts: approvedFacts, availability: rubricAvailability,
           rubric, mode: "studio", senderName: resolvedSenderName, company,
+          senderCorpus: [socialProof, businessDescription].filter(Boolean).join("\n"),
         });
         if (retry.allow) {
           console.warn("[generate-email] release repaired from approved research");
@@ -2362,7 +2365,60 @@ conversation that is already going, not as someone chasing silence.`}`;
       }
       return false;
     };
-    if (checkerBlockers.length && repairFromFacts()) {
+    // One guided rewrite before falling back: tell the writer exactly which
+    // lines the research policy refused and the only shape it accepts.
+    const policyRewrite = async (problems: string[]): Promise<boolean> => {
+      if (!scoresAsEmail || !approvedFacts.length || !resolvedSenderName) return false;
+      const company = ownedLeadCompany(leadData);
+      const senderCorpus = [socialProof, businessDescription].filter(Boolean).join("\n");
+      // The fact is never re-typed by the model: it picks a fact by number and
+      // writes only the idea and the question. The email is assembled here.
+      const usable = approvedFacts.filter((fact) => usableFallbackFact(fact.span)).slice(0, 8);
+      if (!usable.length) return false;
+      const note = [
+        "Apply the copywriting skills above. Do not write the email. Return JSON only:",
+        '{"fact": <number of the fact to open with>, "idea": "<one sentence starting \'One idea:\' saying how the sender\'s offer could help with that fact>", "question": "<one short, low-friction question>"}',
+        "Facts:",
+        ...usable.map((fact, i) => `${i + 1}. ${fact.span}`),
+        `Sender's description (the only source for the offer): ${senderCorpus || "none"}`,
+        "The idea may use only words from the sender's description and the chosen fact. Use could or might.",
+        "Do not say what their team does, feels, spends or struggles with. No customers, results, numbers or names.",
+        "Earlier attempts were refused for: " + problems.slice(0, 3).join(" | "),
+      ].join("\n");
+      try {
+        const res = await aiFetch("generate-email", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ model: draftModel, messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: note },
+          ], temperature: 0.3 }),
+        });
+        if (!res.ok) return false;
+        const d = await res.json();
+        const raw = String(d.choices?.[0]?.message?.content || "");
+        const parsed = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1)) as { fact?: number; idea?: string; question?: string };
+        const fact = usable[Math.max(0, Math.min(usable.length - 1, Number(parsed.fact ?? 1) - 1))];
+        const idea = String(parsed.idea ?? "").replace(/\s+/g, " ").trim();
+        let question = String(parsed.question ?? "").replace(/\s+/g, " ").trim();
+        if (!idea || !question) return false;
+        if (!question.endsWith("?")) question = `${question}?`;
+        const factLine = /[.!?]["”']?$/.test(fact.span.trim()) ? fact.span.trim() : `${fact.span.trim()}.`;
+        const body = `Hi ${firstName || "there"},\n\n${factLine}\n\n${idea}\n\n${question}\n\n${resolvedSenderName}`;
+        const subj = fallbackSubjectFrom(fact.span);
+        if (hasPlaceholder(body) || unsupportedClaims(body, prospectCorpus).length) return false;
+        const retry = releaseAllows({ subject: subj, body, facts: approvedFacts, availability: rubricAvailability, rubric,
+          mode: "studio", senderName: resolvedSenderName, company, senderCorpus });
+        if (!retry.allow) { console.warn(`[generate-email] policy rewrite refused: ${retry.reason}`); return false; }
+        console.warn("[generate-email] policy rewrite released");
+        email = `Subject: ${subj}\n\n${body}`;
+        repairedRelease = true;
+        return true;
+      } catch { return false; }
+    };
+    // The plain quoted fallback is the floor; try once for a written email.
+    if (fallbackClaims.length && !checkerBlockers.length) (await policyRewrite(fallbackClaims)) || (await policyRewrite(fallbackClaims));
+    if (checkerBlockers.length && (await policyRewrite(checkerBlockers.map((f) => f.evidence || f.rule)) || await policyRewrite(checkerBlockers.map((f) => f.rule)) || repairFromFacts())) {
       checkerFailures = [];
       checkerBlockers = [];
     }
@@ -2383,9 +2439,11 @@ conversation that is already going, not as someone chasing silence.`}`;
         mode: "studio",
         senderName: resolvedSenderName,
         company: ownedLeadCompany(leadData),
+        senderCorpus: [socialProof, businessDescription].filter(Boolean).join("\n"),
       });
       let releaseResult = release;
-      if (!releaseResult.allow && releaseResult.code === "unsupported_prospect_claim" && repairFromFacts(revised.body || checkedBody)) {
+      if (!releaseResult.allow && (releaseResult.code === "unsupported_prospect_claim" || releaseResult.code === "quality_checker")
+        && (await policyRewrite([releaseResult.reason]) || await policyRewrite([releaseResult.reason]) || repairFromFacts(revised.body || checkedBody))) {
         releaseResult = { allow: true, code: "released", reason: "" };
       }
       if (!releaseResult.allow) {
