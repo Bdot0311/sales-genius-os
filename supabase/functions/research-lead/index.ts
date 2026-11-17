@@ -423,7 +423,7 @@ serve(async (req) => {
       );
     }
 
-    const pages: PageFetch[] = [];
+    const pages: (PageFetch & { via?: "firecrawl" | "site" })[] = [];
 
     // ─── Which other pages to read ───────────────────────────────────────────
     //
@@ -493,6 +493,10 @@ serve(async (req) => {
     // A missing Firecrawl key does not become a direct fetch labeled as Firecrawl.
     const gathered = await gatherLeadResearch({
       websiteUrls: host ? [origin, ...extraUrls] : [],
+      directFetch: async (url: string) => {
+        const f = await fetchPage(url);
+        return { ok: Boolean(f.ok && f.html), status: f.status, finalUrl: f.finalUrl, html: f.html ?? "" };
+      },
       search: {
         objective:
           `Recent, dated developments at the company ${companyName || host}${host ? ` (website ${host})` : ""}: funding, ` +
@@ -512,6 +516,7 @@ serve(async (req) => {
         html: site.text,
         ok: true,
         cacheState: "unknown",
+        via: site.via,
       });
       const dated = discovered.find((page) => page.url === site.requestedUrl);
       if (dated) readWithDates.push(dated);
@@ -819,7 +824,7 @@ serve(async (req) => {
       snapshots.push(sealSnapshot({
         userId,
         leadId,
-        provider: "firecrawl",
+        provider: page.via === "site" ? "site" : "firecrawl",
         role: "prospect_page",
         requestedUrl: page.requestedUrl,
         finalUrl: page.finalUrl,

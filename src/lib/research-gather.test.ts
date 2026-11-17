@@ -80,6 +80,7 @@ describe("one run keeps Firecrawl, Parallel, and Context", () => {
     const gathered = await gatherLeadResearch({
       websiteUrls: ["https://tf.example/"],
       search,
+      wait: async () => {},
       scrape: async () => ({ ok: false, markdown: "", sourceUrl: "https://tf.example/", status: 500, error: "http_500" }),
       searchOutside: async () => ({
         results: [],
@@ -192,5 +193,38 @@ describe("the Firecrawl adapter does not pretend", () => {
     expect(failed.ok).toBe(false);
     expect(failed.error).toBe("http_401");
     expect(failed.markdown).toBe("");
+  });
+});
+
+describe("Firecrawl rate limits", () => {
+  const search = { objective: "x", queries: ["x"], maxResults: 1 } as never;
+  const noOutside = async () => ({ results: [], providers: { parallel: { error: null, sources: 0 }, context_dev: { error: null, sources: 0 } } }) as never;
+
+  it("retries a 429 and keeps the page", async () => {
+    let calls = 0;
+    const out = await gatherLeadResearch({
+      websiteUrls: ["https://a.com"],
+      search,
+      wait: async () => {},
+      searchOutside: noOutside,
+      scrape: async (url) => (++calls < 2
+        ? { ok: false, markdown: "", sourceUrl: url, status: 429, error: "http_429" }
+        : { ok: true, markdown: "We sell payroll.", sourceUrl: url, status: 200, error: null }),
+    });
+    expect(calls).toBe(2);
+    expect(out.sitePages[0].via).toBe("firecrawl");
+  });
+
+  it("reads the site directly when Firecrawl stays rate limited", async () => {
+    const out = await gatherLeadResearch({
+      websiteUrls: ["https://a.com"],
+      search,
+      wait: async () => {},
+      searchOutside: noOutside,
+      scrape: async (url) => ({ ok: false, markdown: "", sourceUrl: url, status: 429, error: "http_429" }),
+      directFetch: async (url) => ({ ok: true, status: 200, finalUrl: url, html: "<p>We sell payroll.</p>" }),
+    });
+    expect(out.sitePages).toHaveLength(1);
+    expect(out.sitePages[0].via).toBe("site");
   });
 });
