@@ -126,16 +126,27 @@ export function parseHttpResponse(raw: Uint8Array): DialResult {
  * which silently turned every direct page read and outside-source fetch into
  * a failure.
  */
+interface SocketConn {
+  read(buf: Uint8Array): Promise<number | null>;
+  write(bytes: Uint8Array): Promise<number>;
+  close(): void;
+}
+interface SocketApi {
+  connect(opts: { hostname: string; port: number }): Promise<SocketConn>;
+  startTls(conn: SocketConn, opts: { hostname: string }): Promise<SocketConn>;
+}
+
 async function denoDial(target: DialTarget): Promise<DialResult> {
+  const sockets = (globalThis as unknown as { Deno: SocketApi }).Deno;
   const https = target.url.protocol === "https:";
   const port = target.url.port ? Number(target.url.port) : https ? 443 : 80;
   const hostname = target.url.hostname.replace(/^\[|\]$/g, "");
   if (target.signal.aborted) throw new Error("aborted");
-  let conn: Deno.Conn = await Deno.connect({ hostname: target.address, port });
+  let conn: SocketConn = await sockets.connect({ hostname: target.address, port });
   const close = () => { try { conn.close(); } catch { /* already closed */ } };
   target.signal.addEventListener("abort", close, { once: true });
   try {
-    if (https) conn = await Deno.startTls(conn as Deno.TcpConn, { hostname });
+    if (https) conn = await sockets.startTls(conn, { hostname });
     const method = target.method ?? "GET";
     const headerLines: string[] = [];
     const sent = new Set<string>();
