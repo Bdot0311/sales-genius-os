@@ -457,7 +457,7 @@ function renderRouteHtml(baseHtml: string, meta: RouteMeta): string {
  * pages were stuck in. Generating it here keeps coverage and freshness tied to
  * the content itself.
  */
-function renderSitemap(buildDate: string): string {
+function renderSitemap(_buildDate: string): string {
   const blogDates = new Map(BLOG_POSTS.map((p) => [`/blog/${p.slug}`, p.publishedAt]));
 
   const priorityFor = (path: string): string => {
@@ -483,12 +483,12 @@ function renderSitemap(buildDate: string): string {
   };
 
   const urls = ALL_ROUTES.filter((route) => route.path !== "/apollo-alternative").map((route) => {
-    const lastmod = blogDates.get(route.path) ?? buildDate;
+    const lastmod = blogDates.get(route.path);
     const image =
       route.path === "/"
         ? `\n    <image:image>\n      <image:loc>https://outreign.io/outreign-social-card.jpg?v=7</image:loc>\n      <image:title>Find Who To Sell To, Then Close Them.</image:title>\n    </image:image>`
         : "";
-    return `  <url>\n    <loc>${escapeHtml(canonicalFor(route.path))}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>${changefreqFor(route.path)}</changefreq>\n    <priority>${priorityFor(route.path)}</priority>${image}\n  </url>`;
+    return `  <url>\n    <loc>${escapeHtml(canonicalFor(route.path))}</loc>${lastmod ? `\n    <lastmod>${lastmod}</lastmod>` : ""}\n    <changefreq>${changefreqFor(route.path)}</changefreq>\n    <priority>${priorityFor(route.path)}</priority>${image}\n  </url>`;
   }).join("\n");
 
   return `<?xml version="1.0" encoding="UTF-8"?>

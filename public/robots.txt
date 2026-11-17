@@ -76,6 +76,13 @@ Allow: /
 User-agent: ChatGPT-User
 Allow: /
 
+# ChatGPT search crawler
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /auth
+
 User-agent: Google-Extended
 Allow: /
 
