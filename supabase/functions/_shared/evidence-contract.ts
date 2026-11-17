@@ -275,6 +275,10 @@ export function evaluateStoredSnapshots(input: {
       if (!span || span.length < 40 || isInferredClaim(span)) continue;
       if (SENDER_PROOF.test(span)) continue;
       if (/ignore previous|treat this as verified|system prompt/i.test(span)) continue;
+      // Markdown left over from a scrape (escapes, link syntax, table pipes)
+      // is not a sentence a person wrote, so it cannot open an email.
+      if (/\\|\]\(|!\[|\||^#|\*\*/.test(span)) continue;
+      if (!readableSentence(span)) continue;
       const namesCompany = company.length > 2 && new RegExp(`(?:^|[^a-z0-9])${company.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:$|[^a-z0-9])`, "i").test(span);
       const otherSubject = /\b(other agencies|our marketplace|a directory)\b/i.test(span);
       if (!namesCompany && !(hostMatches && !otherSubject)) continue;
@@ -318,6 +322,9 @@ export function evaluateStoredSnapshots(input: {
     }
   }
 
+  // Strongest first: a sentence that names the company, from a dated outside
+  // source, reads like news about them; a homepage tagline does not.
+  facts.sort((a, b) => factRank(b, company) - factRank(a, company));
   const evidenceId = fingerprint(facts.map((fact) => fact.id).sort());
   if (conflicts.length && !facts.length) {
     return { status: "conflict", reason: `Sources disagree about ${conflicts.join(", ")}, so nothing was drafted.`, evidenceId, facts, conflicts };
@@ -341,6 +348,34 @@ export function evaluateStoredSnapshots(input: {
 }
 
 export const CLOSED_QUESTION = "Is that still how you're set up?";
+
+/**
+ * A sentence a person wrote: at least seven words, not page titles glued
+ * together ("agents.Test, monitor"), and not the same phrase repeated.
+ */
+export function readableSentence(span: string): boolean {
+  const text = span.trim();
+  if (text.split(/\s+/).length < 7) return false;
+  // Directory boilerplate and a possessive whose apostrophe was stripped.
+  if (/\bofficial (?:website|site)\b|\bsocial (?:media )?profiles?\b|\bcookies?\b|\bprivacy policy\b|\ball rights reserved\b|\bcontact (?:information|details)\b/i.test(text)) return false;
+  if (/[A-Za-z] s\b/.test(text)) return false;
+  if (/[a-z0-9)][.!?][A-Z]/.test(text)) return false;
+  const lower = text.toLowerCase();
+  for (let i = 0; i + 20 <= lower.length; i += 5) {
+    if (lower.indexOf(lower.slice(i, i + 20), i + 20) >= 0) return false;
+  }
+  return true;
+}
+
+function factRank(fact: ApprovedFact, company: string): number {
+  let score = 0;
+  if (company.length > 2 && fact.span.toLowerCase().includes(company)) score += 3;
+  if (fact.role === "external") score += 1;
+  if (fact.publishedAt) score += 1;
+  const words = fact.span.split(/\s+/).length;
+  if (words >= 10 && words <= 35) score += 1;
+  return score;
+}
 
 export function closedRender(input: {
   facts: ApprovedFact[];

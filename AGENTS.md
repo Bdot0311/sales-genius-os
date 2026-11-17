@@ -62,3 +62,6 @@
 - Background research/draft approvals and progress are embedded in the AI Agent tabs; the legacy bulk-runs route redirects there. Why: durable jobs support the agent rather than a separate workspace feature.
 
 - Research-led use-case campaign shapes live in `_shared/use-case-campaign.ts`, composed into shared drafting guidance and explicit template/agent-feedback selection. Why: Studio and agent background drafts must use the same shapes without relaxing evidence or quality gates.
+
+- Pinned page and webhook fetches (`_shared/pinned-fetch.ts`) dial the vetted IP with `Deno.connect` + `Deno.startTls({ hostname })` and parse HTTP/1.1 themselves. Why: the `node:http(s)` custom-lookup path silently failed on hosted edge, so every direct site read and outside-source page fetch returned nothing and research approved no facts.
+- Lead research ignores profile/social hosts saved as a website (`isProfileHost`) and uses the work-email domain; drafting resolves the owned site the same way. Why: LinkedIn URLs in `company_website` made research read the wrong site and refuse every fact.

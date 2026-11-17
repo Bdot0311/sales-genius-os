@@ -85,6 +85,24 @@ function extractText(html: string): { text: string; meta: string } {
   return { text: body, meta: metaBits.join("\n") };
 }
 
+/** Firecrawl returns Markdown. Keep the words, drop the link, image and escape syntax. */
+function markdownToText(md: string): string {
+  return md
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/\\([\\`*_{}\[\]()#+\-.!|~>])/g, "$1")
+    .replace(/\\/g, " ")
+    // A heading has no full stop; without one it fuses into the next sentence.
+    .replace(/^\s{0,3}#{1,6}\s+(.*?)\s*$/gm, (_m, h: string) => (/[.!?:]$/.test(h) ? h : `${h}.`))
+    .replace(/(\*\*|__)(.*?)\1/g, "$2")
+    .replace(/^\s*[-*+]\s+/gm, "")
+    .replace(/\|/g, " ")
+    .replace(/[ \t]+\n/g, "\n")
+    // Button labels and nav items end without punctuation too; end each line
+    // so short fragments stay separate (and are later dropped as too short).
+    .replace(/([^.!?:\s])[ \t]*$/gm, "$1.");
+}
+
 /** How many sitemap documents one research run will pull. */
 const MAX_SITEMAPS = 3;
 /** Timeout for robots.txt and sitemaps, which are small static files. */
@@ -819,7 +837,8 @@ serve(async (req) => {
     const retrievedAt = new Date().toISOString();
     const snapshots: StoredSnapshot[] = [];
     for (const page of pages) {
-      const excerpt = extractText(page.html ?? "").text.replace(/\s+/g, " ").trim().slice(0, 4000);
+      const source = page.via === "site" ? (page.html ?? "") : markdownToText(page.html ?? "");
+      const excerpt = extractText(source).text.replace(/\s+/g, " ").trim().slice(0, 4000);
       if (!excerpt) continue;
       snapshots.push(sealSnapshot({
         userId,
@@ -837,12 +856,26 @@ serve(async (req) => {
         fromCache: page.cacheState === "hit",
       }));
     }
-    // A search snippet is not a page. Fetch at most two cited URLs and store
-    // that response. If the fetch fails, the snippet is not approved.
-    for (const result of web.results.filter((item) => /^https?:\/\//i.test(item.url)).slice(0, 2)) {
-      const fetched = await fetchPage(result.url);
-      if (!fetched.html) continue;
-      const excerpt = extractText(fetched.html).text.replace(/\s+/g, " ").trim().slice(0, 4000);
+    // A search snippet is not a page. Fetch up to four cited URLs from
+    // Parallel and Context.dev and store what the page itself says. If a fetch
+    // fails, that snippet is not approved. A news page opens with navigation,
+    // so the stored excerpt is taken around the first mention of the company.
+    const companyNeedle = companyName.toLowerCase();
+    const outsideFetches = await Promise.all(
+      web.results.filter((item) => /^https?:\/\//i.test(item.url)).slice(0, 4).map(async (result) => {
+        try {
+          return { result, fetched: await fetchPage(result.url) };
+        } catch {
+          return null;
+        }
+      }),
+    );
+    for (const item of outsideFetches) {
+      if (!item?.fetched.html) continue;
+      const { result, fetched } = item;
+      const full = extractText(fetched.html).text.replace(/\s+/g, " ").trim();
+      const mention = companyNeedle.length > 2 ? full.toLowerCase().indexOf(companyNeedle) : -1;
+      const excerpt = (mention > 1500 ? full.slice(mention - 1500) : full).slice(0, 4000);
       if (!excerpt) continue;
       snapshots.push(sealSnapshot({
         userId,

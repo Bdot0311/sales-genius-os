@@ -139,7 +139,10 @@ export function holdReason(receipt: RetrievalReceipt | null): string {
     receipt.firecrawl.configured
       ? `Firecrawl ${receipt.firecrawl.error ? `failed (${receipt.firecrawl.error})` : `returned ${receipt.firecrawl.count}`}`
       : "Firecrawl is not configured (FIRECRAWL_API_KEY)",
-    receipt.site.error ? "no approved site sentence was stored" : `stored ${receipt.site.count} site page(s)`,
+    receipt.site.error ? "the company site could not be read" : `read ${receipt.site.count} company site page(s)`,
+    receipt.snapshotWrite === "written"
+      ? "no stored page had a sentence that names this company and can be quoted as-is"
+      : "no page could be stored as evidence",
   ];
   return `Research ran and did not produce an approved sentence, so nothing was drafted. ${parts.join("; ")}.`;
 }

@@ -224,7 +224,9 @@ export function resolveLeadDomain(lead: {
   const raw = (lead.company_website || lead.website || "").trim();
   if (raw) {
     const host = normalizeHost(raw);
-    if (host) return host;
+    // A LinkedIn profile or social page saved as the website is not the
+    // company's site. Researching it read the profile host, not the company.
+    if (host && !isProfileHost(host)) return host;
   }
   const email = (lead.contact_email || "").trim().toLowerCase();
   const at = email.lastIndexOf("@");
@@ -233,6 +235,18 @@ export function resolveLeadDomain(lead: {
     if (/^[a-z0-9.-]+\.[a-z]{2,}$/.test(host) && !FREE_MAIL_DOMAINS.has(host)) return host;
   }
   return null;
+}
+
+/** Profile, social and directory hosts that are never a lead's own company site. */
+const PROFILE_HOSTS = [
+  "linkedin.com", "facebook.com", "instagram.com", "twitter.com", "x.com", "youtube.com",
+  "tiktok.com", "crunchbase.com", "linktr.ee", "medium.com", "angel.co", "wellfound.com",
+  "github.com", "calendly.com", "google.com", "bit.ly",
+];
+
+export function isProfileHost(host: string): boolean {
+  const h = host.toLowerCase().replace(/^www\./, "");
+  return PROFILE_HOSTS.some((p) => h === p || h.endsWith(`.${p}`));
 }
 
 export function normalizeHost(input: string): string | null {

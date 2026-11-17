@@ -59,6 +59,7 @@ import {
   isResearchFresh,
   scoreResearchQuality,
   RESEARCH_BLOCK_THRESHOLD,
+  resolveLeadDomain,
   type LeadResearchBrief,
   type ResearchQuality,
 } from "../_shared/lead-research.ts";
@@ -1132,11 +1133,9 @@ STRICT RULES:
           researchSources = (leadRow.research_sources as string[]) || [];
           researchedAt = (leadRow.researched_at as string) ?? null;
         }
-        const ownedWebsite = String(leadRow?.company_website ?? "");
-        const ownedHost = (() => {
-          try { return new URL(ownedWebsite.includes("://") ? ownedWebsite : `https://${ownedWebsite}`).hostname.replace(/^www\./, ""); }
-          catch { return null; }
-        })();
+        // Same site research read: a LinkedIn profile saved as the website
+        // falls back to the contact's company email domain.
+        const ownedHost = leadRow ? resolveLeadDomain(leadRow as { company_website?: string | null; contact_email?: string | null }) : null;
         const loadPayloads = async () => {
           const { data } = await serviceClient
             .from("research_snapshots")
@@ -2328,8 +2327,45 @@ conversation that is already going, not as someone chasing silence.`}`;
     if (revised.body && revised.body !== checkedBody) {
       email = subjectMatch ? `Subject: ${checkedSubject}\n\n${revised.body}` : revised.body;
     }
-    const checkerFailures = revised.findings;
-    const checkerBlockers = checkerFailures.filter((f) => f.severity === "blocker");
+    let checkerFailures = revised.findings;
+    let checkerBlockers = checkerFailures.filter((f) => f.severity === "blocker");
+    // When the writer's version fails, try the releasable first-touch built
+    // from approved research only. It must pass the identical release check
+    // (claims, checker, rubric availability); nothing is loosened.
+    let repairedRelease = false;
+    const repairFromFacts = (preferBody?: string): boolean => {
+      if (!scoresAsEmail || !approvedFacts.length || !resolvedSenderName) return false;
+      const company = ownedLeadCompany(leadData);
+      const candidates: Array<{ subject: string; body: string }> = [];
+      if (preferBody) {
+        const used = approvedFacts.find((fact) => preferBody.replace(/\s+/g, " ").includes(fact.span.replace(/\s+/g, " ").trim()));
+        if (used) candidates.push({ subject: fallbackSubjectFrom(used.span), body: preferBody });
+      }
+      for (const fact of approvedFacts) {
+        if (!usableFallbackFact(fact.span)) continue;
+        candidates.push({
+          subject: fallbackSubjectFrom(fact.span),
+          body: releasableFirstTouch({ firstName, fact: fact.span, senderName: resolvedSenderName }),
+        });
+      }
+      for (const candidate of candidates) {
+        const retry = releaseAllows({
+          subject: candidate.subject, body: candidate.body, facts: approvedFacts, availability: rubricAvailability,
+          rubric, mode: "studio", senderName: resolvedSenderName, company,
+        });
+        if (retry.allow) {
+          console.warn("[generate-email] release repaired from approved research");
+          email = `Subject: ${candidate.subject}\n\n${candidate.body}`;
+          repairedRelease = true;
+          return true;
+        }
+      }
+      return false;
+    };
+    if (checkerBlockers.length && repairFromFacts()) {
+      checkerFailures = [];
+      checkerBlockers = [];
+    }
     if (checkerBlockers.length) {
       return new Response(JSON.stringify({
         error: `The draft still fails the quality checker (${checkerBlockers.map((f) => f.rule).join(", ")}), so it was not saved.`,
@@ -2337,7 +2373,7 @@ conversation that is already going, not as someone chasing silence.`}`;
         quality_findings: checkerBlockers.map((f) => ({ rule: f.rule, evidence: f.evidence, fix: f.fix })),
       }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-    if (scoresAsEmail) {
+    if (scoresAsEmail && !repairedRelease) {
       const release = releaseAllows({
         subject: checkedSubject,
         body: revised.body || checkedBody,
@@ -2348,7 +2384,12 @@ conversation that is already going, not as someone chasing silence.`}`;
         senderName: resolvedSenderName,
         company: ownedLeadCompany(leadData),
       });
-      if (!release.allow) {
+      let releaseResult = release;
+      if (!releaseResult.allow && releaseResult.code === "unsupported_prospect_claim" && repairFromFacts(revised.body || checkedBody)) {
+        releaseResult = { allow: true, code: "released", reason: "" };
+      }
+      if (!releaseResult.allow) {
+        const release = releaseResult;
         return new Response(JSON.stringify({
           error: release.reason,
           error_code: release.code,
@@ -2357,6 +2398,12 @@ conversation that is already going, not as someone chasing silence.`}`;
           fact_ids: approvedFacts.map((fact) => fact.id),
         }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
+    }
+
+    // The score shown with a repaired draft must describe that draft.
+    if (repairedRelease) {
+      const rescored = await scoreNow(email);
+      if (rescored) rubric = rescored;
     }
 
     let draftId: string | null = null;

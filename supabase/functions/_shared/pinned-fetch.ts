@@ -8,8 +8,6 @@
  * not what makes this safe.
  */
 
-import http from "node:http";
-import https from "node:https";
 import { lookup as dnsLookup } from "node:dns/promises";
 import { blockedHost, publicHttpUrl, resolvePublicHost, sameSiteHost } from "./safe-url.ts";
 
@@ -57,47 +55,129 @@ export function pinnedLookup(address: string): LookupFn {
   };
 }
 
-function nodeDial(target: DialTarget): Promise<DialResult> {
-  const mod = target.url.protocol === "https:" ? https : http;
-  const port = target.url.port
-    ? Number(target.url.port)
-    : target.url.protocol === "https:" ? 443 : 80;
-  // URL.hostname keeps the brackets on an IPv6 literal. Node then looks that
-  // string up in DNS instead of dialing it.
+const MAX_RESPONSE_BYTES = 4_000_000;
+
+function concatBytes(parts: Uint8Array[], total: number): Uint8Array {
+  const out = new Uint8Array(total);
+  let at = 0;
+  for (const part of parts) {
+    out.set(part, at);
+    at += part.length;
+  }
+  return out;
+}
+
+function indexOfCrlfCrlf(bytes: Uint8Array): number {
+  for (let i = 0; i + 3 < bytes.length; i++) {
+    if (bytes[i] === 13 && bytes[i + 1] === 10 && bytes[i + 2] === 13 && bytes[i + 3] === 10) return i;
+  }
+  return -1;
+}
+
+/** Decode an HTTP/1.1 chunked body. A truncated final chunk keeps what arrived. */
+export function decodeChunked(bytes: Uint8Array): Uint8Array {
+  const parts: Uint8Array[] = [];
+  let total = 0;
+  let at = 0;
+  const latin = new TextDecoder("latin1");
+  while (at < bytes.length) {
+    let lineEnd = at;
+    while (lineEnd + 1 < bytes.length && !(bytes[lineEnd] === 13 && bytes[lineEnd + 1] === 10)) lineEnd++;
+    if (lineEnd + 1 >= bytes.length) break;
+    const size = parseInt(latin.decode(bytes.subarray(at, lineEnd)).split(";")[0].trim(), 16);
+    if (!Number.isFinite(size) || size <= 0) break;
+    const from = lineEnd + 2;
+    const chunk = bytes.subarray(from, Math.min(from + size, bytes.length));
+    parts.push(chunk);
+    total += chunk.length;
+    at = from + size + 2;
+  }
+  return concatBytes(parts, total);
+}
+
+/** Parse a raw HTTP/1.1 response read to EOF. */
+export function parseHttpResponse(raw: Uint8Array): DialResult {
+  const split = indexOfCrlfCrlf(raw);
+  if (split < 0) throw new Error("malformed_response");
+  const head = new TextDecoder("latin1").decode(raw.subarray(0, split));
+  const [statusLine, ...lines] = head.split("\r\n");
+  const status = Number(statusLine.match(/^HTTP\/\d(?:\.\d)?\s+(\d{3})/)?.[1] ?? 0);
+  const headers = new Headers();
+  for (const line of lines) {
+    const colon = line.indexOf(":");
+    if (colon <= 0) continue;
+    try { headers.append(line.slice(0, colon).trim(), line.slice(colon + 1).trim()); } catch { /* skip invalid header */ }
+  }
+  let body = raw.subarray(split + 4);
+  if (/chunked/i.test(headers.get("transfer-encoding") ?? "")) body = decodeChunked(body);
+  else {
+    const length = Number(headers.get("content-length"));
+    if (Number.isFinite(length) && length >= 0 && headers.has("content-length")) body = body.subarray(0, length);
+  }
+  return { status, headers, body: new TextDecoder("utf-8").decode(body).slice(0, MAX_RESPONSE_BYTES) };
+}
+
+/**
+ * Dial the vetted address with Deno sockets.
+ *
+ * The TCP socket goes to the address that was checked. TLS then runs with the
+ * hostname, so SNI and certificate verification still name the site. The
+ * node:http custom-lookup path crashed the hosted edge runtime on every call,
+ * which silently turned every direct page read and outside-source fetch into
+ * a failure.
+ */
+async function denoDial(target: DialTarget): Promise<DialResult> {
+  const https = target.url.protocol === "https:";
+  const port = target.url.port ? Number(target.url.port) : https ? 443 : 80;
   const hostname = target.url.hostname.replace(/^\[|\]$/g, "");
-  return new Promise((resolve, reject) => {
-    const req = mod.request({
-      protocol: target.url.protocol,
-      hostname,
-      port,
-      method: target.method ?? "GET",
-      path: `${target.url.pathname}${target.url.search}`,
-      headers: { ...target.headers, host: target.url.host },
-      servername: hostname,
-      lookup: pinnedLookup(target.address) as never,
-    }, (res) => {
-      const chunks: Buffer[] = [];
-      res.on("data", (chunk: Buffer | string) => chunks.push(Buffer.from(chunk)));
-      res.on("end", () => {
-        const headers = new Headers();
-        for (const [key, value] of Object.entries(res.headers)) {
-          if (typeof value === "string") headers.set(key, value);
-          else if (Array.isArray(value)) headers.set(key, value.join(", "));
-        }
-        resolve({
-          status: res.statusCode ?? 0,
-          headers,
-          body: Buffer.concat(chunks).toString("utf8").slice(0, 4_000_000),
-        });
-      });
-    });
-    const abort = () => req.destroy(new Error("aborted"));
-    if (target.signal.aborted) abort();
-    else target.signal.addEventListener("abort", abort, { once: true });
-    req.on("error", reject);
-    if (target.body != null) req.end(target.body);
-    else req.end();
-  });
+  if (target.signal.aborted) throw new Error("aborted");
+  let conn: Deno.Conn = await Deno.connect({ hostname: target.address, port });
+  const close = () => { try { conn.close(); } catch { /* already closed */ } };
+  target.signal.addEventListener("abort", close, { once: true });
+  try {
+    if (https) conn = await Deno.startTls(conn as Deno.TcpConn, { hostname });
+    const method = target.method ?? "GET";
+    const headerLines: string[] = [];
+    const sent = new Set<string>();
+    for (const [key, value] of Object.entries(target.headers)) {
+      if (/[\r\n]/.test(key) || /[\r\n]/.test(String(value))) continue;
+      const lower = key.toLowerCase();
+      if (["host", "connection", "content-length", "accept-encoding", "transfer-encoding"].includes(lower)) continue;
+      sent.add(lower);
+      headerLines.push(`${key}: ${value}`);
+    }
+    const bodyBytes = target.body != null ? new TextEncoder().encode(target.body) : null;
+    const request = [
+      `${method} ${target.url.pathname || "/"}${target.url.search} HTTP/1.1`,
+      `Host: ${target.url.host}`,
+      "Connection: close",
+      "Accept-Encoding: identity",
+      ...headerLines,
+      ...(bodyBytes ? [`Content-Length: ${bodyBytes.length}`] : []),
+      "",
+      "",
+    ].join("\r\n");
+    const writeAll = async (bytes: Uint8Array) => {
+      let off = 0;
+      while (off < bytes.length) off += await conn.write(bytes.subarray(off));
+    };
+    await writeAll(new TextEncoder().encode(request));
+    if (bodyBytes) await writeAll(bodyBytes);
+    const parts: Uint8Array[] = [];
+    let total = 0;
+    const buf = new Uint8Array(64 * 1024);
+    while (total < MAX_RESPONSE_BYTES) {
+      const n = await conn.read(buf);
+      if (n === null) break;
+      parts.push(buf.slice(0, n));
+      total += n;
+    }
+    if (target.signal.aborted && !total) throw new Error("aborted");
+    return parseHttpResponse(concatBytes(parts, total));
+  } finally {
+    target.signal.removeEventListener("abort", close);
+    close();
+  }
 }
 
 async function systemLookup(host: string): Promise<string[]> {
@@ -148,7 +228,7 @@ export async function vettedPost(
   } = {},
 ): Promise<VettedPost> {
   const lookup = init.lookup ?? systemLookup;
-  const dial = init.dial ?? nodeDial;
+  const dial = init.dial ?? denoDial;
   const url = postableUrl(raw);
   if (!url) return { blocked: true, status: 0, body: "" };
   const resolved = await resolvePublicHost(url.hostname, lookup);
@@ -194,11 +274,11 @@ function cacheStateOf(headers: Headers): PageFetch["cacheState"] {
 /**
  * The page fetch research-lead uses.
  * `deps.dial` is the socket. Tests pass one that records the address.
- * Production dials with `pinnedLookup` and leaves certificate verification on.
+ * Production dials the vetted address with Deno sockets and verifies the certificate against the hostname.
  */
 export async function fetchPinnedPage(raw: string, deps: Partial<PageDeps> = {}): Promise<PageFetch> {
   const lookup = deps.lookup ?? systemLookup;
-  const dial = deps.dial ?? nodeDial;
+  const dial = deps.dial ?? denoDial;
   const timeoutMs = deps.timeoutMs ?? 9_000;
   const headers = deps.headers ?? DEFAULT_HEADERS;
   const accept = deps.accept ?? "html";

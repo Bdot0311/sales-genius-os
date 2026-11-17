@@ -98,31 +98,31 @@ describe("fetchPinnedPage dials the address it already vetted", () => {
     expect(page.finalUrl).toBe("https://www.tf.example/about");
   });
 
-  it("the production dial asks the socket for the vetted address", async () => {
-    const original = https.request;
-    let socket: unknown;
-    let hostname = "";
-    let servername = "";
-    let rejectUnauthorized: boolean | undefined;
-    https.request = ((options: https.RequestOptions, callback: (res: EventEmitter) => void) => {
-      hostname = String(options.hostname ?? "");
-      servername = String(options.servername ?? "");
-      rejectUnauthorized = options.rejectUnauthorized;
-      const lookup = options.lookup as (host: string, opts: { all?: boolean }, cb: (err: Error | null, address: unknown) => void) => void;
-      lookup(hostname, { all: true }, (_err, address) => {
-        socket = address;
-      });
-      const res = new EventEmitter();
-      const req = new EventEmitter() as EventEmitter & { end: () => void; destroy: () => void };
-      req.end = () => {
-        callback(res);
-        res.emit("data", Buffer.from("<html><p>pinned</p></html>"));
-        res.emit("end");
-      };
-      req.destroy = () => {};
-      Object.assign(res, { statusCode: 200, headers: { "content-type": "text/html" } });
-      return req;
-    }) as typeof https.request;
+  it("the production dial connects to the vetted address and verifies TLS for the hostname", async () => {
+    const g = globalThis as unknown as { Deno?: unknown };
+    const original = g.Deno;
+    let dialed = "";
+    let tlsName = "";
+    let request = "";
+    const reply = new TextEncoder().encode(
+      "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nTransfer-Encoding: chunked\r\n\r\n" +
+      "8\r\n<html><p\r\nf\r\n>pinned</p></ht\r\n3\r\nml>\r\n0\r\n\r\n",
+    );
+    let sent = false;
+    const conn = {
+      write: async (bytes: Uint8Array) => { request += new TextDecoder().decode(bytes); return bytes.length; },
+      read: async (buf: Uint8Array) => {
+        if (sent) return null;
+        sent = true;
+        buf.set(reply);
+        return reply.length;
+      },
+      close: () => {},
+    };
+    g.Deno = {
+      connect: async (opts: { hostname: string }) => { dialed = opts.hostname; return conn; },
+      startTls: async (_c: unknown, opts: { hostname: string }) => { tlsName = opts.hostname; return conn; },
+    };
     try {
       let calls = 0;
       const page = await fetchPinnedPage("https://tf.example/about", {
@@ -132,13 +132,13 @@ describe("fetchPinnedPage dials the address it already vetted", () => {
         },
       });
       expect(page.ok).toBe(true);
-      expect(page.html).toContain("pinned");
-      expect(hostname).toBe("tf.example");
-      expect(servername).toBe("tf.example");
-      expect(rejectUnauthorized).not.toBe(false);
-      expect(socket).toEqual([{ address: PUBLIC, family: 4 }]);
+      expect(page.html).toBe("<html><p>pinned</p></html>");
+      expect(dialed).toBe(PUBLIC);
+      expect(tlsName).toBe("tf.example");
+      expect(request).toContain("Host: tf.example\r\n");
+      expect(request.startsWith("GET /about HTTP/1.1\r\n")).toBe(true);
     } finally {
-      https.request = original;
+      g.Deno = original;
     }
   });
 
