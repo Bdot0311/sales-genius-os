@@ -181,3 +181,7 @@
 
 - [x] Owner-approved bulk runs: estimate, lead cap, background keyset feed, lease, retries/backoff, rate-limit cool-off, credit pause, pause/resume/cancel, live counts, Bulk Runs page, agent tools. Live 2-lead test ran end to end (feed, research, settle, complete).
 - [ ] Draft yield depends on lead data quality: the test lead "TF Business Solutions" points at 2btechinc.com, so the evidence check correctly refused it.
+
+# AI Agent background-work integration
+
+- [x] Embedded existing approvals/progress in AI Agent → Background work; removed standalone navigation and redirected old links. Updated and deployed agent directions. Signed-in estimate returned 63 matching leads, tab selection survived reload, both themes checked, no runtime errors; 10 regressions passed and preview build OK. No run approved or paid work started.

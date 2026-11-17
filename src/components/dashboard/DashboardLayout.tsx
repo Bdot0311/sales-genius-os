@@ -31,7 +31,6 @@ import {
   Building2,
   ShieldCheck,
   Bot,
-  Layers,
   Plug,
   MonitorPlay,
   Radar,
@@ -81,7 +80,6 @@ const navSections = [
     label: "TOOLS",
     items: [
       { name: "AI Agent", icon: Bot, href: "/dashboard/agent" },
-      { name: "Bulk Runs", icon: Layers, href: "/dashboard/bulk-runs" },
       { name: "Outreach", icon: Mail, href: "/dashboard/outreach" },
       { name: "Calendar", icon: Calendar, href: "/dashboard/calendar" },
       { name: "Analytics", icon: BarChart3, href: "/dashboard/analytics" },

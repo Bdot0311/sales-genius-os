@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
-import { PageHeader } from "@/components/dashboard/PageHeader";
 import { Panel, PanelHeader, PanelBody, EmptyState } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,7 +32,7 @@ const call = async (body: Record<string, unknown>) => {
 const duration = (minutes: number) =>
   minutes < 90 ? `${minutes} min` : minutes < 60 * 48 ? `${Math.round(minutes / 60)} hours` : `${Math.round(minutes / 1440)} days`;
 
-export default function BulkRuns() {
+export function BackgroundWorkTab() {
   const { toast } = useToast();
   const [runs, setRuns] = useState<Run[]>([]);
   const [stage, setStage] = useState("new");
@@ -60,15 +58,7 @@ export default function BulkRuns() {
   };
 
   return (
-    <DashboardLayout>
-      <title>Bulk Runs | OutReign</title>
-      <meta name="description" content="Research and draft personalized emails for thousands of leads in the background." />
-      <PageHeader
-        breadcrumbs={[{ label: "Dashboard", href: "/dashboard" }, { label: "Bulk runs" }]}
-        title="Bulk runs"
-        description="Research and draft for every matching lead in the background. Nothing starts until you approve the estimate. Drafts land in Drafts for review; nothing is sent."
-      />
-      <div className="mx-auto w-full max-w-4xl space-y-4 pt-4">
+      <div className="space-y-4">
         <Panel>
           <PanelHeader title="New run" />
           <PanelBody className="space-y-4">
@@ -119,7 +109,7 @@ export default function BulkRuns() {
         </Panel>
 
         {runs.length === 0 ? (
-          <EmptyState title="No bulk runs yet" body="Estimate a run above to see how many leads it covers before anything starts." />
+          <EmptyState title="No background work yet" body="Estimate a run above to see how many leads it covers before anything starts." />
         ) : runs.map((r) => {
           const target = r.max_leads ?? r.matched_count;
           const finished = r.drafted + r.skipped + r.failed + (r.do_draft ? 0 : r.researched);
@@ -169,6 +159,5 @@ export default function BulkRuns() {
           );
         })}
       </div>
-    </DashboardLayout>
   );
 }

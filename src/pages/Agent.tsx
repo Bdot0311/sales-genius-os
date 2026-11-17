@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import {
@@ -28,6 +28,7 @@ import { ConfigTab } from "@/components/agent/ConfigTab";
 import { SettingsTab } from "@/components/agent/SettingsTab";
 import { AgentTestDialog } from "@/components/agent/AgentTestDialog";
 import { AgentSwitcher } from "@/components/agent/AgentSwitcher";
+import { BackgroundWorkTab } from "@/components/agent/BackgroundWorkTab";
 import { roleLabel } from "@/components/agent/AgentRoles";
 
 
@@ -86,6 +87,7 @@ interface AgentStats {
 
 const Agent = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { subscription, loading: subLoading } = useSubscription();
   const [agents, setAgents] = useState<AgentConfig[]>([]);
   const [activeAgentId, setActiveAgentId] = useState<string | null>(null);
@@ -105,7 +107,15 @@ const Agent = () => {
   const [userId, setUserId] = useState<string | null>(null);
   // Controlled, so the "not configured yet" panel can send the reader to the
   // tab that fixes it instead of telling them to go and find it.
-  const [tab, setTab] = useState("overview");
+  const tab = searchParams.get("tab") ?? "overview";
+  const setTab = (value: string) => {
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous);
+      if (value === "overview") next.delete("tab");
+      else next.set("tab", value);
+      return next;
+    }, { replace: true });
+  };
 
 
   const loadData = useCallback(async () => {
@@ -454,6 +464,7 @@ const Agent = () => {
             <TabsList className="inline-flex w-auto border border-border/50 bg-muted/30">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="inbox">Inbox</TabsTrigger>
+              <TabsTrigger value="background">Background work</TabsTrigger>
               <TabsTrigger value="configuration">Configuration</TabsTrigger>
               <TabsTrigger value="history">History</TabsTrigger>
               <TabsTrigger value="performance">Performance</TabsTrigger>
@@ -472,6 +483,10 @@ const Agent = () => {
 
           <TabsContent value="inbox">
             <InboxTab />
+          </TabsContent>
+
+          <TabsContent value="background">
+            <BackgroundWorkTab />
           </TabsContent>
 
           <TabsContent value="configuration">

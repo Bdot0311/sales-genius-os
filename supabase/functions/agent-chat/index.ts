@@ -403,7 +403,7 @@ const TOOLS = [
     function: {
       name: "start_bulk_run",
       description:
-        "For any group ask bigger than a normal batch (hundreds to millions of leads): set up a background run that researches and/or drafts for EVERY lead matching a filter. It pages the whole list itself, retries, slows down on rate limits and tracks progress. It does NOT start until the user approves the estimate on the Bulk Runs page — tell them that and quote the returned counts exactly. Never claim drafts exist from this call.",
+        "For any group ask bigger than a normal batch (hundreds to millions of leads): set up a background run that researches and/or drafts for EVERY lead matching a filter. It pages the whole list itself, retries, slows down on rate limits and tracks progress. It does NOT start until the user approves the estimate in AI Agent → Background work — tell them that and quote the returned counts exactly. Never claim drafts exist from this call.",
       parameters: {
         type: "object",
         properties: {
@@ -431,7 +431,7 @@ const TOOLS = [
     type: "function",
     function: {
       name: "control_bulk_run",
-      description: "Pause, resume or cancel a bulk run. Cannot approve one — only the user can, on the Bulk Runs page.",
+      description: "Pause, resume or cancel a bulk run. Cannot approve one — only the user can, in AI Agent → Background work.",
       parameters: {
         type: "object",
         properties: { run_id: { type: "string" }, action: { type: "string", enum: ["pause", "resume", "cancel"] } },
@@ -2719,7 +2719,7 @@ serve(async (req) => {
           toolEvents.push({ name, label: "Bulk run ready for your approval", status: "ok", detail: `${r.matched} leads` });
           return {
             run_id: r.run?.id, status: "awaiting_approval", matched: r.matched, estimate: r.estimate,
-            note: "Nothing has started. The user must approve this estimate on the Bulk Runs page (/dashboard/bulk-runs). Quote matched and the estimate exactly; do not say any research or drafts exist yet.",
+            note: "Nothing has started. The user must approve this estimate in AI Agent → Background work (/dashboard/agent?tab=background). Quote matched and the estimate exactly; do not say any research or drafts exist yet.",
           };
         }
 
