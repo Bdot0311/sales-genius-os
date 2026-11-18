@@ -65,3 +65,17 @@ describe("attributed observation", () => {
     expect(unattributed(line, "Kodexo Labs")).toBe("AI agents, MVPs, and custom platforms, shipped on the timeline we actually quoted you.");
   });
 });
+
+import { lineGrounding } from "../../supabase/functions/_shared/evidence-contract";
+describe("skill-shaped lines", () => {
+  const facts = ["Kodexo builds AI agents and MVPs for startups."];
+  it("allows a role-based question", () => {
+    expect(lineGrounding("How are you keeping delivery dates realistic as new projects come in?", facts, "We help agencies find buyers.", "Kodexo")).not.toBeNull();
+  });
+  it("allows a segment-level pattern", () => {
+    expect(lineGrounding("Dev shops at this stage usually rely on referrals for new work.", facts, "We help agencies find buyers.", "Kodexo")).not.toBeNull();
+  });
+  it("still blocks an invented result", () => {
+    expect(lineGrounding("We helped a client book 40 meetings in 30 days.", facts, "We help agencies find buyers.", "Kodexo")).toBeNull();
+  });
+});

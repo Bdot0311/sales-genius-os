@@ -428,7 +428,7 @@ export function unattributed(line: string, company: string): string {
   const c = company.trim();
   if (!c) return line;
   const esc = c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const m = line.match(new RegExp(`^(?:on|from) (?:the )?${esc}(?:'s)? (?:site|website|homepage)[:,]\\s*["“](.+)["”]$`, "i"));
+  const m = line.match(new RegExp(`^(?:saw (?:this )?on|on|from) (?:the )?${esc}(?:'s)? (?:site|website|homepage)[:,]\\s*["“](.+)["”]$`, "i"));
   return m ? m[1].trim() : line;
 }
 
@@ -604,6 +604,13 @@ export function lineGrounding(line: string, facts: string[], senderCorpus = "", 
   // A question asks; it states nothing as known. Its topic must still come
   // from the research or the sender's description.
   if (/\?\s*$/.test(line) && mine.length && share(known) / mine.length >= 0.5) return "idea";
+  // A role-based question states nothing as known ("Is hiring keeping up?").
+  // Numbers, names and results were already refused above.
+  if (/\?\s*$/.test(line) && !/\b(?:you(?:'re| are)|your team (?:is|has|feels))\b/i.test(line)) return "idea";
+  // A segment-level pattern framed as typical, never as known about them.
+  if (/\b(?:usually|often|typically|tend to|most)\b/i.test(line)
+    && /\b(?:teams|companies|agencies|founders|firms|startups|leaders|shops)\b/i.test(line)
+    && !/\b(?:you|your)\b/i.test(line)) return "idea";
   return null;
 }
 

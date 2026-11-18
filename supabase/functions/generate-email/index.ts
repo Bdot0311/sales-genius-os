@@ -2396,6 +2396,8 @@ conversation that is already going, not as someone chasing silence.`}`;
         ...usable.map((fact, i) => `${i + 1}. ${fact.span}`),
         `Sender's description (the only source for the offer): ${senderCorpus || "none"}`,
         "The idea may use only words from the sender's description and the chosen fact. Use could or might.",
+        "The question may be a role-based question about a likely priority for someone in their role (it asks, it does not assert). Follow the copywriting skills: specific, conversational, one low-friction ask.",
+        "Cite metrics, customers or results ONLY if they appear in the sender's description; if none appear, use none.",
         "Do not say what their team does, feels, spends or struggles with. No customers, results, numbers or names.",
         "Earlier attempts were refused for: " + problems.slice(0, 3).join(" | "),
       ].join("\n");
