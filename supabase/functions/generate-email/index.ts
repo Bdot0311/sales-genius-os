@@ -370,7 +370,7 @@ EMAIL FRAMEWORK: The 4-Sentence Framework (observation → pain → solution →
 Purpose of this email: ${templateDescription || goal}
 
 STRUCTURE — exactly 4 sentences in the body (not counting greeting and sign-off):
-1. OBSERVATION: One specific, relevant observation about their company or role. Shows you understand their world. NOT a compliment.
+1. OBSERVATION: One specific, relevant observation about their company or role. Shows you understand their world. NOT a compliment. Quote the approved research sentence exactly; never restate it as "You..." or "Your team...".
 2. PAIN: One sentence naming the specific pressure or friction that observation creates for someone in their role.
 3. SOLUTION: One sentence explaining what you do and how it directly addresses that pain.
 4. CTA: One soft question, in your own words, answerable with yes or no.
@@ -525,7 +525,7 @@ ${BODY_ONLY_RULES}`;
 
 FRAMEWORK: 3 moves, strict order.
 
-1. TRIGGER OBSERVATION — One sentence. A specific, observable signal about their company or role. State it flat, like a peer who already knew. No "I noticed" or "I saw."
+1. TRIGGER OBSERVATION — One sentence. Use one approved research sentence exactly as written, introduced as "On <Company>'s site:" when it is their own copy. Never paraphrase it into a "You..." or "Your team..." statement; paraphrases are refused and the draft is lost.
 Good: "Looks like you brought on a new VP of Sales last month."
 Bad: "I noticed you recently hired a VP of Sales."
 
@@ -2422,12 +2422,21 @@ conversation that is already going, not as someone chasing silence.`}`;
         const factLine = observationLine(fact, company);
         const body = `Hi ${firstName || "there"},\n\n${factLine}\n\n${idea}\n\n${question}\n\n${resolvedSenderName}`;
         const subj = fallbackSubjectFrom(fact.span);
-        if (hasPlaceholder(body) || unsupportedClaims(body, prospectCorpus).length) return false;
-        const retry = releaseAllows({ subject: subj, body, facts: approvedFacts, availability: rubricAvailability, rubric,
-          mode: "studio", senderName: resolvedSenderName, company, senderCorpus });
-        if (!retry.allow) { console.warn(`[generate-email] policy rewrite refused: ${retry.reason}`); return false; }
+        // The idea line is the only part that can carry an ungrounded offer.
+        // If it is refused, the sourced quote plus a role question is still a
+        // real first touch (observation + ask) and states nothing invented.
+        const variants = [body, `Hi ${firstName || "there"},\n\n${factLine}\n\n${question}\n\n${resolvedSenderName}`];
+        let released = "";
+        for (const candidate of variants) {
+          if (hasPlaceholder(candidate) || unsupportedClaims(candidate, prospectCorpus).length) continue;
+          const retry = releaseAllows({ subject: subj, body: candidate, facts: approvedFacts, availability: rubricAvailability, rubric,
+            mode: "studio", senderName: resolvedSenderName, company, senderCorpus });
+          if (retry.allow) { released = candidate; break; }
+          console.warn(`[generate-email] policy rewrite refused: ${retry.reason}`);
+        }
+        if (!released) return false;
         console.warn("[generate-email] policy rewrite released");
-        email = `Subject: ${subj}\n\n${body}`;
+        email = `Subject: ${subj}\n\n${released}`;
         repairedRelease = true;
         return true;
       } catch { return false; }
@@ -2464,14 +2473,37 @@ conversation that is already going, not as someone chasing silence.`}`;
         senderCorpus: [socialProof, businessDescription].filter(Boolean).join("\n"),
       });
       let releaseResult = release;
+      // A refused subject alone does not sink a grounded body: swap in a
+      // subject cut from the approved sentence the body quotes, then re-check.
+      if (!releaseResult.allow && releaseResult.reason === checkedSubject.trim()) {
+        const bodyText = (revised.body || checkedBody).replace(/\s+/g, " ");
+        const used = approvedFacts.find((fact) => bodyText.includes(fact.span.replace(/\s+/g, " ").trim())) ?? approvedFacts[0];
+        const safeSubject = used ? fallbackSubjectFrom(used.span) : "";
+        if (safeSubject) {
+          const swapped = releaseAllows({
+            subject: safeSubject, body: revised.body || checkedBody, facts: approvedFacts, availability: rubricAvailability,
+            rubric, mode: "studio", senderName: resolvedSenderName, company: ownedLeadCompany(leadData),
+            senderCorpus: [socialProof, businessDescription].filter(Boolean).join("\n"),
+          });
+          if (swapped.allow) {
+            email = `Subject: ${safeSubject}\n\n${revised.body || checkedBody}`;
+            releaseResult = swapped;
+          } else releaseResult = swapped;
+        }
+      }
       if (!releaseResult.allow && (releaseResult.code === "unsupported_prospect_claim" || releaseResult.code === "quality_checker")
         && (await policyRewrite([releaseResult.reason]) || await policyRewrite([releaseResult.reason]) || repairFromFacts(revised.body || checkedBody))) {
         releaseResult = { allow: true, code: "released", reason: "" };
       }
       if (!releaseResult.allow) {
         const release = releaseResult;
+        const readable = release.code === "unsupported_prospect_claim"
+          ? `The draft said something about this company the research does not support ("${release.reason.slice(0, 70)}"), so it was not saved.`
+          : release.code === "quality_checker"
+            ? `The draft still fails the quality checker (${release.reason}), so it was not saved.`
+            : release.reason;
         return new Response(JSON.stringify({
-          error: release.reason,
+          error: readable,
           error_code: release.code,
           policy_version: POLICY_VERSION,
           evidence_id: evidenceId,
