@@ -768,7 +768,9 @@ serve(async (req) => {
     const tone               = typeof requestData.tone               === 'string' ? requestData.tone.trim().toLowerCase()               : '';
     const goal               = typeof requestData.goal               === 'string' ? requestData.goal.trim().toLowerCase()               : '';
     const templateGoal       = typeof requestData.templateGoal       === 'string' ? requestData.templateGoal.trim().toLowerCase()       : goal;
-    const templateDescription = typeof requestData.templateDescription === 'string' ? requestData.templateDescription.trim()            : '';
+    // Model instructions are server-owned: a caller-supplied template description is
+    // never interpolated into the system prompt. The validated goal drives purpose.
+    const templateDescription = '';
     const subjectLine        = typeof requestData.subjectLine        === 'string' ? requestData.subjectLine.trim()                      : '';
     const triggerContext     = typeof requestData.triggerContext      === 'string' ? requestData.triggerContext.trim()                  : '';
     const openerWord         = typeof requestData.openerWord         === 'string' ? requestData.openerWord.trim().toLowerCase()         : '';

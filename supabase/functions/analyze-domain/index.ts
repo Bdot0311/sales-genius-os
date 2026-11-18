@@ -1,4 +1,4 @@
-import { fetchPinnedPage } from "../_shared/pinned-fetch.ts";
+import { fetchPinnedPage, isVettedPublicUrl } from "../_shared/pinned-fetch.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@^2.76.1";
 import { rateLimit, rateLimitResponse } from "../_shared/rate-limit.ts";
@@ -208,7 +208,7 @@ serve(async (req) => {
 
     const body = await req.json().catch(() => ({} as Record<string, unknown>));
     const normalized = normalizeDomain(body.domain);
-    if (!normalized) {
+    if (!normalized || !(await isVettedPublicUrl(normalized.origin))) {
       return new Response(
         JSON.stringify({ error: "Enter a valid website, e.g. acme.com", error_code: "invalid_domain" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
