@@ -526,7 +526,7 @@ ${BODY_ONLY_RULES}`;
 
 FRAMEWORK: 3 moves, strict order.
 
-1. TRIGGER OBSERVATION — One sentence. Use one approved research sentence exactly as written, introduced as "On <Company>'s site:" when it is their own copy. Never paraphrase it into a "You..." or "Your team..." statement; paraphrases are refused and the draft is lost.
+1. TRIGGER OBSERVATION — One sentence. Use one approved research sentence exactly as written, introduced as "Saw this on <Company>'s site:" when it is their own copy. Never paraphrase it into a "You..." or "Your team..." statement; paraphrases are refused and the draft is lost.
 Good: "Looks like you brought on a new VP of Sales last month."
 Bad: "I noticed you recently hired a VP of Sales."
 
@@ -2392,7 +2392,7 @@ conversation that is already going, not as someone chasing silence.`}`;
       if (!usable.length) return false;
       const note = [
         "Apply the copywriting skills above. Do not write the email. Return JSON only:",
-        '{"fact": <number of the fact to open with>, "idea": "<one sentence starting \'One idea:\' saying how the sender\'s offer could help with that fact>", "question": "<one short, low-friction question>"}',
+        '{"fact": <number of the fact to open with>, "idea": "<one natural, conversational sentence (never starting with \'One idea\') naming a problem people in their role often have and how the sender\'s offer could help, using could or might>", "question": "<one short, low-friction question>"}',
         "Facts:",
         ...usable.map((fact, i) => `${i + 1}. ${fact.span}`),
         `Sender's description (the only source for the offer): ${senderCorpus || "none"}`,
@@ -2417,7 +2417,8 @@ conversation that is already going, not as someone chasing silence.`}`;
         const raw = String(d.choices?.[0]?.message?.content || "");
         const parsed = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1)) as { fact?: number; idea?: string; question?: string };
         const fact = usable[Math.max(0, Math.min(usable.length - 1, Number(parsed.fact ?? 1) - 1))];
-        const idea = String(parsed.idea ?? "").replace(/\s+/g, " ").trim();
+        let idea = String(parsed.idea ?? "").replace(/\s+/g, " ").trim().replace(/^(?:one|an|quick) idea[:,\-\s]+/i, "");
+        if (idea) idea = idea.charAt(0).toUpperCase() + idea.slice(1);
         let question = String(parsed.question ?? "").replace(/\s+/g, " ").trim();
         if (!idea || !question) return false;
         if (!question.endsWith("?")) question = `${question}?`;

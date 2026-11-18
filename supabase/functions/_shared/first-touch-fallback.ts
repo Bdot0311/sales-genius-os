@@ -33,7 +33,7 @@ export function fallbackSubjectFrom(span: string): string {
 export function observationLine(fact: { span: string; role?: string }, company: string): string {
   const text = fact.span.trim().replace(/\s+/g, " ");
   if (fact.role === "prospect_page" && company.trim()) {
-    return `On ${company.trim()}'s site: "${text.replace(/^["“]|["”]$/g, "")}"`;
+    return `Saw this on ${company.trim()}'s site: "${text.replace(/^["“]|["”]$/g, "")}"`;
   }
   return /[.!?]["”']?$/.test(text) ? text : `${text}.`;
 }
