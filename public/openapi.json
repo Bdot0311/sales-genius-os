@@ -1986,9 +1986,6 @@
                   "customInstruction": {
                     "type": "string"
                   },
-                  "templateDescription": {
-                    "type": "string"
-                  },
                   "templateValue": {
                     "type": "string"
                   },
