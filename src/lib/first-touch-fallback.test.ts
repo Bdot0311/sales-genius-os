@@ -55,3 +55,13 @@ describe("sign-off line", () => {
     expect(bodyViolations(body("Maria"), decision, "Brandon Yakubov")).toContain("Maria");
   });
 });
+
+import { observationLine } from "../../supabase/functions/_shared/first-touch-fallback";
+import { unattributed } from "../../supabase/functions/_shared/evidence-contract";
+describe("attributed observation", () => {
+  it("quotes a prospect's own site copy instead of presenting it as the sender's line", () => {
+    const line = observationLine({ span: "AI agents, MVPs, and custom platforms, shipped on the timeline we actually quoted you.", role: "prospect_page" }, "Kodexo Labs");
+    expect(line).toBe('On Kodexo Labs\'s site: "AI agents, MVPs, and custom platforms, shipped on the timeline we actually quoted you."');
+    expect(unattributed(line, "Kodexo Labs")).toBe("AI agents, MVPs, and custom platforms, shipped on the timeline we actually quoted you.");
+  });
+});

@@ -24,3 +24,16 @@ export function usableFallbackFact(span: string): boolean {
 export function fallbackSubjectFrom(span: string): string {
   return span.trim().split(/\s+/).slice(0, 6).join(" ").replace(/[.!?,;:]+$/g, "");
 }
+
+/**
+ * The observation line as a reader should see it: a prospect's own site copy
+ * is quoted and attributed, so their marketing line never reads as the
+ * sender's pitch ("shipped on the timeline we quoted you").
+ */
+export function observationLine(fact: { span: string; role?: string }, company: string): string {
+  const text = fact.span.trim().replace(/\s+/g, " ");
+  if (fact.role === "prospect_page" && company.trim()) {
+    return `On ${company.trim()}'s site: "${text.replace(/^["“]|["”]$/g, "")}"`;
+  }
+  return /[.!?]["”']?$/.test(text) ? text : `${text}.`;
+}

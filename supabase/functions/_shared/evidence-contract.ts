@@ -420,6 +420,18 @@ function sameLine(a: string, b: string): boolean {
 
 const EXACT_CTA = new Set(["worth a look?", "open to a look?"]);
 
+/**
+ * Strip the source attribution the drafter puts in front of a verbatim quote
+ * ("On Acme's site: \"...\""), so the quote still counts as the observation.
+ */
+export function unattributed(line: string, company: string): string {
+  const c = company.trim();
+  if (!c) return line;
+  const esc = c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const m = line.match(new RegExp(`^(?:on|from) (?:the )?${esc}(?:'s)? (?:site|website|homepage)[:,]\\s*["“](.+)["”]$`, "i"));
+  return m ? m[1].trim() : line;
+}
+
 function norm(value: string): string {
   return value.replace(/\s+/g, " ").trim().replace(/[.?!]+$/g, "").toLowerCase();
 }
@@ -630,8 +642,10 @@ export function bodyViolations(
       violations.push(line);
       continue;
     }
+    const bare = unattributed(line, company);
     const exact = facts.some((fact) => {
       if (norm(line) === norm(fact.span)) return true;
+      if (bare !== line && fact.role === "prospect_page" && norm(bare) === norm(fact.span)) return true;
       const claim = bindClaim(fact.span);
       return !!claim && fact.role === "prospect_page" && matchesClaim(line, claim, company);
     });

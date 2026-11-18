@@ -12,7 +12,7 @@ import { ownedLeadCompany, releaseAllows } from "../_shared/draft-release.ts";
 import { AI_CREDITS_USER_MESSAGE, isAiCreditError, reportAiCreditsExhausted } from "../_shared/ai-credits.ts";
 import { stripInstructionLines, unsupportedClaims } from "../_shared/evidence.ts";
 import { POLICY_VERSION, evaluateStoredSnapshots, type ApprovedFact } from "../_shared/evidence-contract.ts";
-import { fallbackSubjectFrom, releasableFirstTouch, usableFallbackFact } from "../_shared/first-touch-fallback.ts";
+import { fallbackSubjectFrom, observationLine, releasableFirstTouch, usableFallbackFact } from "../_shared/first-touch-fallback.ts";
 import { holdReason, researchStep, type RetrievalReceipt } from "../_shared/research-orchestration.ts";
 import { reviseUntilClear } from "../_shared/quality-gate.ts";
 // The writing rules live in one module so the three copies that used to exist
@@ -2362,13 +2362,8 @@ conversation that is already going, not as someone chasing silence.`}`;
         const used = approvedFacts.find((fact) => preferBody.replace(/\s+/g, " ").includes(fact.span.replace(/\s+/g, " ").trim()));
         if (used) candidates.push({ subject: fallbackSubjectFrom(used.span), body: preferBody });
       }
-      for (const fact of approvedFacts) {
-        if (!usableFallbackFact(fact.span)) continue;
-        candidates.push({
-          subject: fallbackSubjectFrom(fact.span),
-          body: releasableFirstTouch({ firstName, fact: fact.span, senderName: resolvedSenderName }),
-        });
-      }
+      // The bare quote + "Worth a look?" shape is never released on its own:
+      // it reads as a copied tagline with no reason to reply.
       for (const candidate of candidates) {
         const retry = releaseAllows({
           subject: candidate.subject, body: candidate.body, facts: approvedFacts, availability: rubricAvailability,
@@ -2422,7 +2417,7 @@ conversation that is already going, not as someone chasing silence.`}`;
         let question = String(parsed.question ?? "").replace(/\s+/g, " ").trim();
         if (!idea || !question) return false;
         if (!question.endsWith("?")) question = `${question}?`;
-        const factLine = /[.!?]["”']?$/.test(fact.span.trim()) ? fact.span.trim() : `${fact.span.trim()}.`;
+        const factLine = observationLine(fact, company);
         const body = `Hi ${firstName || "there"},\n\n${factLine}\n\n${idea}\n\n${question}\n\n${resolvedSenderName}`;
         const subj = fallbackSubjectFrom(fact.span);
         if (hasPlaceholder(body) || unsupportedClaims(body, prospectCorpus).length) return false;
@@ -2437,6 +2432,12 @@ conversation that is already going, not as someone chasing silence.`}`;
     };
     // The plain quoted fallback is the floor; try once for a written email.
     if (fallbackClaims.length && !checkerBlockers.length) (await policyRewrite(fallbackClaims)) || (await policyRewrite(fallbackClaims));
+    if (fallbackClaims.length && !repairedRelease) {
+      return new Response(JSON.stringify({
+        error: "The research supported only a copied line from their site, with no grounded reason to reach out, so no draft was saved. Add more detail to Your Business or the lead and try again.",
+        error_code: "thin_research_draft",
+      }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
     if (checkerBlockers.length && (await policyRewrite(checkerBlockers.map((f) => f.evidence || f.rule)) || await policyRewrite(checkerBlockers.map((f) => f.rule)) || repairFromFacts())) {
       checkerFailures = [];
       checkerBlockers = [];
