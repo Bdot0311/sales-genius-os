@@ -257,6 +257,7 @@ HARD CONSTRAINTS
 - Never claim integrations, customers, metrics, or social proof that aren't in the verified_proof field.
 ${NO_FABRICATED_METRICS_RULE}
 - One idea per email. If you find yourself writing "also," "plus," or "additionally," delete everything after it.
+- The idea names a concrete problem the sender solves for someone in the prospect's role (e.g. finding leads worth reaching out to). Never glue the sender's product onto the prospect's product ("pair with", "combine with", "plug into", "before X is deployed").
 - No sentences over 20 words. If a sentence runs long, break it.
 - Sentence variety: at least one sentence under 6 words per email.
 
@@ -2396,6 +2397,7 @@ conversation that is already going, not as someone chasing silence.`}`;
         ...usable.map((fact, i) => `${i + 1}. ${fact.span}`),
         `Sender's description (the only source for the offer): ${senderCorpus || "none"}`,
         "The idea may use only words from the sender's description and the chosen fact. Use could or might.",
+        "The idea must name a concrete problem the sender's offer solves for someone in the prospect's role or company stage (e.g. finding leads worth reaching out to). Never glue the two products together: no 'pair with', 'combine with', 'plug into', 'alongside' or 'before X is deployed' framing.",
         "The question may be a role-based question about a likely priority for someone in their role (it asks, it does not assert). Follow the copywriting skills: specific, conversational, one low-friction ask.",
         "Cite metrics, customers or results ONLY if they appear in the sender's description; if none appear, use none.",
         "Do not say what their team does, feels, spends or struggles with. No customers, results, numbers or names.",
