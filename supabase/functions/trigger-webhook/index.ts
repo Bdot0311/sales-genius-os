@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { requireServiceRole } from "../_shared/internal-auth.ts";
 import { isVettedPublicUrl, vettedPost } from "../_shared/pinned-fetch.ts";
 
 const corsHeaders = {
@@ -27,33 +28,15 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    // Authenticate the request
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      logStep("ERROR", { message: "No authorization header" });
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 }
-      );
-    }
+    // Internal-only: deliveries are raised by backend events, never by a
+    // browser choosing an arbitrary event and payload.
+    const denied = requireServiceRole(req);
+    if (denied) return denied;
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    
-    if (userError || !userData.user) {
-      logStep("ERROR", { message: "Invalid user token" });
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 }
-      );
-    }
-
-    // Derive userId from authenticated session - do not trust request body
-    const userId = userData.user.id;
-    
-    const { event, data } = await req.json();
-    if (!event || !data) {
-      throw new Error("Missing required fields: event, data");
+    const { event, data, user_id } = await req.json();
+    const userId = typeof user_id === "string" && /^[0-9a-f-]{36}$/i.test(user_id) ? user_id : "";
+    if (!event || !data || !userId) {
+      throw new Error("Missing required fields: event, data, user_id");
     }
 
     logStep("Payload received", { event, userId });
