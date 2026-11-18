@@ -1,7 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Brain, Loader2, RefreshCw, ShieldAlert, ShieldCheck } from "lucide-react";
+import { Brain, Loader2, RefreshCw, ShieldAlert, ShieldCheck, FilePenLine, ArrowUpRight } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { canDraftFromStrategy, strategyDraftRequest } from "@/lib/lead-strategy-draft";
 import {
   DECISION_LABELS,
   EMAIL_STRATEGY_KEYS,
@@ -13,6 +19,7 @@ import {
 } from "@/lib/lead-intelligence";
 
 interface Props {
+  lead: { id: string; company_name: string; contact_name: string; contact_email: string | null };
   decision?: LeadDecision;
   evaluating: boolean;
   onEvaluate: () => void;
@@ -45,8 +52,49 @@ const Chip = ({ decisionKey, decision }: { decisionKey: DecisionKey; decision: L
  * email. Low-confidence answers are shown as "Not sure" rather than dressed up
  * as findings — an honest unknown is more useful than a confident guess.
  */
-export const LeadIntelligenceSection = ({ decision, evaluating, onEvaluate }: Props) => {
+export const LeadIntelligenceSection = ({ lead, decision, evaluating, onEvaluate }: Props) => {
   const evaluated = decision && decision.status === "ok";
+  const [drafting, setDrafting] = useState(false);
+  const [savedDraft, setSavedDraft] = useState<{ leadId: string; subject: string; body: string } | null>(null);
+  const [draftError, setDraftError] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const draftUsingStrategy = async () => {
+    if (drafting || !canDraftFromStrategy(decision)) return;
+    setDrafting(true);
+    setDraftError(null);
+    try {
+      const { data: auth } = await supabase.auth.getUser();
+      if (!auth.user) throw new Error("Sign in again to create a draft.");
+      const { data: profile, error: profileError } = await supabase.from("profiles")
+        .select("business_description").eq("id", auth.user.id).maybeSingle();
+      if (profileError) throw new Error("Your business description could not be loaded. Try again.");
+      const business = profile?.business_description?.trim();
+      if (!business) throw new Error("Add an accurate Your Business description in Outreach before creating a draft.");
+      const { data, error } = await supabase.functions.invoke("generate-email", {
+        body: strategyDraftRequest(lead, business),
+      });
+      if (error) {
+        let message = "The draft could not be created. Try again.";
+        try { const details = await error.context?.json(); if (details?.error) message = details.error; } catch { /* retain safe fallback */ }
+        throw new Error(message);
+      }
+      if (data?.error) throw new Error(data.error);
+      if (!data?.draft_id) throw new Error("The draft was not saved. Try again.");
+      const { data: draft, error: readError } = await supabase.from("email_drafts")
+        .select("subject, body").eq("id", data.draft_id).eq("user_id", auth.user.id).single();
+      if (readError || !draft) throw new Error("The draft was saved, but could not be opened here. Check Drafts in your Inbox.");
+      setSavedDraft({ leadId: lead.id, subject: draft.subject, body: draft.body });
+      await queryClient.invalidateQueries({ queryKey: ["inbox-email-drafts"] });
+      toast({ title: "Strategy draft saved", description: "Ready to review in your Inbox. Nothing was sent." });
+    } catch (error) {
+      setDraftError(error instanceof Error ? error.message : "The draft could not be created. Try again.");
+    } finally {
+      setDrafting(false);
+    }
+  };
 
   return (
     <>
@@ -88,7 +136,7 @@ export const LeadIntelligenceSection = ({ decision, evaluating, onEvaluate }: Pr
               <div className="flex flex-wrap gap-1.5">
                 {EMAIL_STRATEGY_KEYS.map((key) => {
                   const field = decision.fields[key];
-                  if (!field || !field.actionable) return null;
+                  if (!field || field.confidence < 0.55) return null;
                   return (
                     <span
                       key={key}
@@ -99,12 +147,29 @@ export const LeadIntelligenceSection = ({ decision, evaluating, onEvaluate }: Pr
                     </span>
                   );
                 })}
-                {EMAIL_STRATEGY_KEYS.every((key) => !decision.fields[key]?.actionable) && (
+                {EMAIL_STRATEGY_KEYS.every((key) => (decision.fields[key]?.confidence ?? 0) < 0.55) && (
                   <span className="text-sm text-muted-foreground">
                     Not enough to recommend an angle yet — more research would help.
                   </span>
                 )}
               </div>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <Button size="sm" onClick={draftUsingStrategy} disabled={drafting || evaluating || !canDraftFromStrategy(decision)}>
+                  {drafting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FilePenLine className="mr-2 h-4 w-4" />}
+                  {drafting ? "Researching and drafting…" : "Draft using strategy"}
+                </Button>
+                <span className="text-xs text-muted-foreground">Draft only · review before sending</span>
+              </div>
+              {draftError && <p role="alert" className="mt-3 text-sm text-destructive">{draftError}</p>}
+              {savedDraft?.leadId === lead.id && (
+                <div className="mt-4 border-t border-border pt-4">
+                  <p className="text-sm font-medium break-words">{savedDraft.subject}</p>
+                  <p className="mt-2 whitespace-pre-wrap break-words text-sm text-muted-foreground">{savedDraft.body}</p>
+                  <Button variant="outline" size="sm" className="mt-3" onClick={() => navigate("/dashboard/inbox")}>
+                    Review in Inbox <ArrowUpRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </div>
 
             <div className="flex items-start gap-2 rounded-lg border border-border/50 bg-muted/30 p-3">

@@ -1,3 +1,7 @@
+# Lead intelligence strategy action
+
+- [x] Add Draft using strategy to evaluated lead profiles, preserving research/quality gates and existing agent draft support. Signed-in Bluejay draft saved/read back with strategy_applied=true and quality_status=clear; dark/light preview checked. No mail sent; temporary draft removed. Backend deployed; public UI requires publishing.
+
 # Research-led use-case campaigns
 
 - [x] Added Three Ideas and One Sentence to shared drafting guidance, explicit Outreach selection and agent-feedback routing. Signed-in selectors both verified; 72 campaign/skill/quality tests passed, preview build OK. Deployed generate-email and agent-run. No email generated or sent; actual model output and draft yield remain unverified.

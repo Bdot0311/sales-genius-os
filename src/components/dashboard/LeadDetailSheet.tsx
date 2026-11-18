@@ -447,6 +447,7 @@ export const LeadDetailSheet = ({
 
           {showIntelligence && onEvaluate && (
             <LeadIntelligenceSection
+              lead={lead}
               decision={decision}
               evaluating={isEvaluating}
               onEvaluate={onEvaluate}

@@ -116,6 +116,13 @@ export const ROADMAP: RoadmapItem[] = [
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-11-18-lead-strategy",
+    date: "2026-11-18",
+    title: "Turn lead intelligence into a draft",
+    summary: "Create a research-led email from a lead's recommended strategy, right from their saved profile.",
+    items: [{ tag: "new", title: "Draft using strategy", description: "Open an evaluated saved lead and turn its email strategy into a saved draft. Your business description and verified research guide the message, with a preview for review. Nothing is automatically sent or scheduled.", href: "/dashboard/leads/saved" }],
+  },
+  {
     id: "2026-11-17-bulk-runs",
     date: "2026-11-17",
     title: "Research and draft for your whole list",

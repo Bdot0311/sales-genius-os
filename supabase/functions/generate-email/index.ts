@@ -65,7 +65,7 @@ import {
 } from "../_shared/lead-research.ts";
 import { AI_FAST, AI_SMART, aiFetch } from "../_shared/ai-provider.ts";
 import { DRAFT_TIER_HEADER, draftTierForCaller } from "../_shared/draft-tier.ts";
-import { decisionForDrafting, decisionPromptBlock } from "../_shared/lead-intelligence.ts";
+import { decisionForDrafting, decisionPromptBlock, getSavedDecision, leadIntelligenceMode } from "../_shared/lead-intelligence.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -1580,11 +1580,28 @@ conversation that is already going, not as someone chasing silence.`}`;
     let strategyBlock = "";
     if (lead.id && !isPrecisionEdit) {
       try {
-        const decision = await decisionForDrafting(serviceClient, lead.id, userId);
+        // Explicit implementation uses the evaluation the customer reviewed,
+        // not a silent re-evaluation or a caller-provided strategy.
+        // Use the same authenticated feature switch as the detail sheet;
+        // feature_flags itself is admin-only and may be unreadable here.
+        const explicitEnabled = requestData.useLeadStrategy === true && !internal
+          ? (await supabaseClient.rpc("lead_intelligence_enabled")).data === true && Deno.env.get("JEV_MODE")?.trim().toLowerCase() !== "shadow"
+          : (await leadIntelligenceMode(serviceClient)) === "assist";
+        const decision = requestData.useLeadStrategy === true
+          ? explicitEnabled
+            ? await getSavedDecision(serviceClient, lead.id)
+            : null
+          : await decisionForDrafting(serviceClient, lead.id, userId);
         strategyBlock = decisionPromptBlock(decision);
       } catch (err) {
         console.error("[generate-email] lead intelligence lookup failed", err);
       }
+    }
+    if (requestData.useLeadStrategy === true && !strategyBlock) {
+      return new Response(JSON.stringify({
+        error: "No usable email strategy is available. Re-evaluate this lead before drafting from its strategy.",
+        error_code: "strategy_unavailable",
+      }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const isFrameworkGoal = FRAMEWORK_GOALS.has(goal);
@@ -2482,6 +2499,7 @@ conversation that is already going, not as someone chasing silence.`}`;
     return new Response(JSON.stringify({
       email,
       draft_id: draftId,
+      strategy_applied: Boolean(strategyBlock),
       rubric,
       rubric_availability: rubricAvailability,
       fact_ids: approvedFacts.map((fact) => fact.id),
