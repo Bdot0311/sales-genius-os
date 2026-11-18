@@ -19,7 +19,7 @@ export const AgentJobCard = ({ job, onCancel }: { job: AgentJob; onCancel: () =>
         <div className="flex items-center gap-2 text-sm">
           <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
           <span>
-            Drafting the rest of the batch — {settled} of {job.total}
+            Researching and drafting in the background — {settled} of {job.total} steps
             {job.failed > 0 ? `, ${job.failed} failed` : ""}
           </span>
         </div>
@@ -30,7 +30,7 @@ export const AgentJobCard = ({ job, onCancel }: { job: AgentJob; onCancel: () =>
       </div>
       <Progress value={pct} className="h-1.5" />
       <p className="text-xs text-muted-foreground">
-        These keep going if you close the app. Drafts appear in Outreach as they finish.
+        Each lead can need a research step and a drafting step, so steps can exceed the lead count. These keep going if you close the app; drafts appear in Outreach as they finish.
       </p>
     </div>
   );

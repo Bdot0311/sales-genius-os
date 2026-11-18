@@ -193,3 +193,4 @@
 # AI Agent background-work integration
 
 - [x] Embedded existing approvals/progress in AI Agent → Background work; removed standalone navigation and redirected old links. Updated and deployed agent directions. Signed-in estimate returned 63 matching leads, tab selection survived reload, both themes checked, no runtime errors; 10 regressions passed and preview build OK. No run approved or paid work started.
+- [x] Background drafts: rubric accepts worker calls; research crash on old receipts; progress label counts steps

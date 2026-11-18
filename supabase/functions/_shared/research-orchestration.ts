@@ -130,16 +130,16 @@ export function receiptFromProviders(input: {
 export function holdReason(receipt: RetrievalReceipt | null): string {
   if (!receipt) return "No retrieved page is stored for this lead, so nothing was drafted.";
   const parts = [
-    receipt.parallel.configured
-      ? `Parallel ${receipt.parallel.error ? `failed (${receipt.parallel.error})` : `returned ${receipt.parallel.count}`}`
+    receipt.parallel?.configured
+      ? `Parallel ${receipt.parallel?.error ? `failed (${receipt.parallel?.error})` : `returned ${receipt.parallel?.count ?? 0}`}`
       : "Parallel is not configured",
-    receipt.context_dev.configured
-      ? `Context.dev ${receipt.context_dev.error ? `failed (${receipt.context_dev.error})` : `returned ${receipt.context_dev.count}`}`
+    receipt.context_dev?.configured
+      ? `Context.dev ${receipt.context_dev?.error ? `failed (${receipt.context_dev?.error})` : `returned ${receipt.context_dev?.count ?? 0}`}`
       : "Context.dev is not configured",
-    receipt.firecrawl.configured
-      ? `Firecrawl ${receipt.firecrawl.error ? `failed (${receipt.firecrawl.error})` : `returned ${receipt.firecrawl.count}`}`
+    receipt.firecrawl?.configured
+      ? `Firecrawl ${receipt.firecrawl?.error ? `failed (${receipt.firecrawl?.error})` : `returned ${receipt.firecrawl?.count ?? 0}`}`
       : "Firecrawl is not configured (FIRECRAWL_API_KEY)",
-    receipt.site.error ? "the company site could not be read" : `read ${receipt.site.count} company site page(s)`,
+    receipt.site?.error ? "the company site could not be read" : `read ${receipt.site?.count ?? 0} company site page(s)`,
     receipt.snapshotWrite === "written"
       ? "no stored page had a sentence that names this company and can be quoted as-is"
       : "no page could be stored as evidence",

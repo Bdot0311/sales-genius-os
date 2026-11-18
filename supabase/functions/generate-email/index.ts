@@ -2112,7 +2112,7 @@ conversation that is already going, not as someone chasing silence.`}`;
         Deno.env.get('SUPABASE_URL') ?? '',
         authHeader ?? '',
         Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-        { subject: subjectLineForRubric, body },
+        { subject: subjectLineForRubric, body, ...(internal ? { ownerUserId: userId } : {}) },
       );
       rubricAvailability = report.availability;
       return report.rubric;

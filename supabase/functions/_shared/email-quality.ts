@@ -76,14 +76,14 @@ export async function scoreEmailReport(
   supabaseUrl: string,
   authHeader: string,
   apikey: string,
-  input: { subject?: string; body: string },
+  input: { subject?: string; body: string; ownerUserId?: string },
 ): Promise<RubricReport> {
   if (!input.body?.trim()) return { rubric: null, availability: "unavailable" };
   try {
     const res = await fetch(`${supabaseUrl}/functions/v1/check-email-rubric`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: authHeader, apikey },
-      body: JSON.stringify({ subject: input.subject ?? "", body: input.body }),
+      body: JSON.stringify({ subject: input.subject ?? "", body: input.body, ...(input.ownerUserId ? { owner_user_id: input.ownerUserId } : {}) }),
     });
     const data = await res.json().catch(() => null);
     if (res.status === 403 || data?.error_code === "upgrade_required") {

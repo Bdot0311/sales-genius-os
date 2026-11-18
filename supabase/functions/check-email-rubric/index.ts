@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@^2.76.1";
 import { RUBRIC_SYSTEM_PROMPT, parseDimensionScore, rubricUserPayload } from "./prompt.ts";
 import { AI_SMART, aiFetch } from "../_shared/ai-provider.ts";
+import { isInternalCaller } from "../_shared/internal-auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -38,9 +39,20 @@ serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) return json({ error: "Authorization required" }, 401);
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    if (userError || !user) return json({ error: "Invalid user token" }, 401);
+    const body = await req.json().catch(() => ({} as Record<string, unknown>));
+    // Background workers call with the service role and name the lead owner;
+    // the owner's plan is still what gates the rubric.
+    let user: { id: string } | null = null;
+    if (isInternalCaller(req)) {
+      const owner = typeof body.owner_user_id === "string" ? body.owner_user_id : "";
+      if (!owner) return json({ error: "owner_user_id required for internal calls" }, 400);
+      user = { id: owner };
+    } else {
+      const token = authHeader.replace("Bearer ", "");
+      const { data: { user: u }, error: userError } = await supabase.auth.getUser(token);
+      if (userError || !u) return json({ error: "Invalid user token" }, 401);
+      user = u;
+    }
 
     // Tier gating (server-side): full rubric is Growth and above. Admins bypass.
     const { data: adminRole } = await supabase
@@ -52,7 +64,6 @@ serve(async (req) => {
       }
     }
 
-    const body = await req.json().catch(() => ({} as Record<string, unknown>));
     const subject = typeof body.subject === "string" ? body.subject : "";
     const emailBody = typeof body.body === "string" ? body.body : "";
     if (!emailBody.trim()) return json({ error: "email body is required", error_code: "invalid_input" }, 400);
