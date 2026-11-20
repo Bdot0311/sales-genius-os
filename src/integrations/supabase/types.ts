@@ -657,6 +657,210 @@ export type Database = {
           },
         ]
       }
+      agent_mission_digests: {
+        Row: {
+          channel: string
+          created_at: string
+          id: string
+          mission_id: string
+          payload: Json
+          run_id: string
+          user_id: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          id?: string
+          mission_id: string
+          payload?: Json
+          run_id: string
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          id?: string
+          mission_id?: string
+          payload?: Json
+          run_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      agent_mission_grants: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          enabled_by: string | null
+          note: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          enabled_by?: string | null
+          note?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          enabled_by?: string | null
+          note?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      agent_mission_runs: {
+        Row: {
+          claimed_at: string | null
+          created_at: string
+          cursor: Json
+          drafts_written: number
+          finished_at: string | null
+          id: string
+          job_id: string | null
+          leads_found: number
+          mission_id: string
+          phase: string
+          report: Json
+          sends_queued: number
+          skip_reason: string | null
+          status: string
+          user_id: string
+          window_key: string
+        }
+        Insert: {
+          claimed_at?: string | null
+          created_at?: string
+          cursor?: Json
+          drafts_written?: number
+          finished_at?: string | null
+          id?: string
+          job_id?: string | null
+          leads_found?: number
+          mission_id: string
+          phase?: string
+          report?: Json
+          sends_queued?: number
+          skip_reason?: string | null
+          status?: string
+          user_id: string
+          window_key: string
+        }
+        Update: {
+          claimed_at?: string | null
+          created_at?: string
+          cursor?: Json
+          drafts_written?: number
+          finished_at?: string | null
+          id?: string
+          job_id?: string | null
+          leads_found?: number
+          mission_id?: string
+          phase?: string
+          report?: Json
+          sends_queued?: number
+          skip_reason?: string | null
+          status?: string
+          user_id?: string
+          window_key?: string
+        }
+        Relationships: []
+      }
+      agent_missions: {
+        Row: {
+          agent_config_id: string
+          bounce_pause_rate: number
+          created_at: string
+          daily_lead_cap: number
+          daily_send_cap: number
+          daily_spend_cap_usd: number
+          days_of_week: number[]
+          goal: string
+          icp_profile_id: string | null
+          id: string
+          last_run_at: string | null
+          max_runs: number | null
+          mode: string
+          name: string
+          negative_reply_pause_rate: number
+          next_run_at: string | null
+          pause_reason: string | null
+          run_hour: number
+          run_minute: number
+          send_window_end: string
+          send_window_start: string
+          sequence_id: string | null
+          status: string
+          stop_on: string | null
+          timezone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agent_config_id: string
+          bounce_pause_rate?: number
+          created_at?: string
+          daily_lead_cap?: number
+          daily_send_cap?: number
+          daily_spend_cap_usd?: number
+          days_of_week?: number[]
+          goal: string
+          icp_profile_id?: string | null
+          id?: string
+          last_run_at?: string | null
+          max_runs?: number | null
+          mode?: string
+          name: string
+          negative_reply_pause_rate?: number
+          next_run_at?: string | null
+          pause_reason?: string | null
+          run_hour?: number
+          run_minute?: number
+          send_window_end?: string
+          send_window_start?: string
+          sequence_id?: string | null
+          status?: string
+          stop_on?: string | null
+          timezone?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agent_config_id?: string
+          bounce_pause_rate?: number
+          created_at?: string
+          daily_lead_cap?: number
+          daily_send_cap?: number
+          daily_spend_cap_usd?: number
+          days_of_week?: number[]
+          goal?: string
+          icp_profile_id?: string | null
+          id?: string
+          last_run_at?: string | null
+          max_runs?: number | null
+          mode?: string
+          name?: string
+          negative_reply_pause_rate?: number
+          next_run_at?: string | null
+          pause_reason?: string | null
+          run_hour?: number
+          run_minute?: number
+          send_window_end?: string
+          send_window_start?: string
+          sequence_id?: string | null
+          status?: string
+          stop_on?: string | null
+          timezone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       agent_run_mutations: {
         Row: {
           created_at: string
@@ -8287,6 +8491,9 @@ export type Database = {
       trigger_bulk_runs: { Args: never; Returns: undefined }
       trigger_hiring_refresh: { Args: never; Returns: undefined }
       trigger_rescore_queue: { Args: never; Returns: undefined }
+      agent_missions_enabled: { Args: never; Returns: boolean }
+      claim_agent_mission_run: { Args: { p_mission_id: string }; Returns: string }
+      enqueue_due_agent_missions: { Args: never; Returns: number }
       visitor_intelligence_enabled: { Args: never; Returns: boolean }
       visitor_workspace_owner: { Args: never; Returns: string }
       webhook_has_secret: { Args: { _webhook_id: string }; Returns: boolean }

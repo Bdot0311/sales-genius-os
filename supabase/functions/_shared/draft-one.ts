@@ -60,6 +60,10 @@ export interface DraftResult {
   style_warnings: unknown[];
   name_warnings: unknown[];
   name_repairs: unknown[];
+  /** generate-email's live gate. Absent means the worker must not treat it as clear. */
+  quality_status?: string | null;
+  quality_weak?: boolean;
+  rubric_availability?: string | null;
   error?: string;
   /**
    * Settled without writing anything, and not a failure.
@@ -526,12 +530,15 @@ export async function draftForLead(
       subject: null,
       body: null,
       email: null,
-      skills_used: [],
-      style_warnings: [],
-      name_warnings: [],
-      name_repairs: [],
-      skipped: tooSoonReason(tooSoon),
-    };
+    skills_used: [],
+    style_warnings: [],
+    name_warnings: [],
+    name_repairs: [],
+    quality_status: null,
+    quality_weak: false,
+    rubric_availability: null,
+    skipped: tooSoonReason(tooSoon),
+  };
   }
 
   const payload = {
@@ -585,6 +592,9 @@ export async function draftForLead(
       style_warnings: [],
       name_warnings: [],
       name_repairs: [],
+      quality_status: r?.quality_status ?? null,
+      quality_weak: r?.quality_weak === true,
+      rubric_availability: r?.rubric_availability ?? null,
       skipped: typeof r.error === "string" && r.error
         ? r.error
         : "Research on this lead is too thin to personalize safely.",
@@ -631,6 +641,9 @@ export async function draftForLead(
     style_warnings: Array.isArray(r?.style_warnings) ? r.style_warnings : [],
     name_warnings: Array.isArray(r?.name_warnings) ? r.name_warnings : [],
     name_repairs: Array.isArray(r?.name_repairs) ? r.name_repairs : [],
+    quality_status: r?.quality_status ?? null,
+    quality_weak: r?.quality_weak === true,
+    rubric_availability: r?.rubric_availability ?? null,
     error: r?.email ? undefined : (r?.error ?? "Draft failed"),
   };
 }

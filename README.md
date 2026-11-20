@@ -83,6 +83,7 @@ These live in [`docs/`](docs/) and were not linked from anywhere until now.
 | [DELIVERABILITY.md](docs/DELIVERABILITY.md) | Sender reputation, warmup, placement, and the thresholds behind the scores |
 | [BACKGROUND_WORK.md](docs/BACKGROUND_WORK.md) | How long-running jobs survive navigation |
 | [AGENT_BATCH_QUEUE.md](docs/AGENT_BATCH_QUEUE.md) | The job queue behind bulk drafting, enrichment and scoring |
+| [AGENT_MISSIONS.md](docs/AGENT_MISSIONS.md) | Standing agent missions: schedule, caps, approval versus autopilot, and what is not verified live |
 | [AGENT_DISCOVERY_EDGE.md](docs/AGENT_DISCOVERY_EDGE.md) | How the agent finds leads |
 | [PLAYBOOK_SELECTION.md](docs/PLAYBOOK_SELECTION.md) | Which outreach playbook the agent picks, and why |
 | [INBOX_SYNC_SCHEDULE.md](docs/INBOX_SYNC_SCHEDULE.md) | Reply detection and when it runs |

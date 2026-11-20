@@ -82,6 +82,7 @@ const BlogPost = lazy(() => import("./pages/BlogPost"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const OnboardingStatus = lazy(() => import("./pages/OnboardingStatus"));
 const Agent = lazy(() => import("./pages/Agent"));
+const Missions = lazy(() => import("./pages/Missions"));
 const AgentChat = lazy(() => import("./pages/AgentChat"));
 const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 const Connect = lazy(() => import("./pages/Connect"));
@@ -563,6 +564,7 @@ const App = () => {
               <Route path="/onboarding-status" element={<MaintenanceGuard><OnboardingStatus /></MaintenanceGuard>} />
               <Route path="/dashboard/onboarding-status" element={<MaintenanceGuard><OnboardingStatus /></MaintenanceGuard>} />
               <Route path="/dashboard/agent" element={<MaintenanceGuard><Agent /></MaintenanceGuard>} />
+              <Route path="/dashboard/missions" element={<MaintenanceGuard><Missions /></MaintenanceGuard>} />
               <Route path="/dashboard/agent/chat" element={<MaintenanceGuard><AgentChat /></MaintenanceGuard>} />
               <Route path="/dashboard/agent/chat/:threadId" element={<MaintenanceGuard><AgentChat /></MaintenanceGuard>} />
               <Route path="/admin/*" element={<MaintenanceGuard><Admin /></MaintenanceGuard>} />

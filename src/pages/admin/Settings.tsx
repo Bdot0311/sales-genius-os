@@ -21,6 +21,7 @@ import { DemoModeCard } from "@/components/admin/DemoModeCard";
 import { ChangelogTab } from "@/components/admin/ChangelogTab";
 import { LeadIntelligencePanel } from "@/components/admin/LeadIntelligencePanel";
 import { VisitorAccessCard } from "@/components/admin/VisitorAccessCard";
+import { AgentMissionAccessCard } from "@/components/admin/AgentMissionAccessCard";
 import { AgentBuildCard } from "@/components/admin/AgentBuildCard";
 
 
@@ -501,6 +502,8 @@ const AdminSettings = () => {
             <LeadIntelligencePanel />
 
             <VisitorAccessCard />
+
+            <AgentMissionAccessCard />
 
             <div className="flex justify-between items-center">
               <p className="text-sm text-muted-foreground">

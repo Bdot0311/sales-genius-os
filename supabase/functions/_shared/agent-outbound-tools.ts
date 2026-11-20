@@ -9,6 +9,17 @@
 import { toSignalFacts, type SignalEventRow } from "./signal-facts.ts";
 import { allowedActions, clampDailyCap } from "./visitor-automation.ts";
 import { featureEnabled, VISITOR_FLAG } from "./visitor-identity.ts";
+import {
+  AGENT_MISSIONS_FLAG,
+  clampLeadCap,
+  clampSendCap,
+  clampSpendCap,
+  effectiveMode,
+  nextRunAt,
+  normalizeDays,
+  parseClock,
+  safeTimeZone,
+} from "./agent-mission-logic.ts";
 
 type Admin = { from: (t: string) => any };
 type ToolEvent = { name: string; label: string; status: "ok" | "error"; detail?: string };
@@ -100,6 +111,16 @@ export const OUTBOUND_TOOL_DEFS = [
     rule_id: str, site_id: str, name: str, enabled: { type: "boolean" }, page_types: strList, event_names: strList,
     min_confidence: num, actions: strList, sequence_id: str, daily_cap: num,
   }),
+  fn("list_agent_missions", "List standing agent missions, their status, caps and the latest run summary. Empty when agent missions are off for this workspace."),
+  fn("save_agent_mission", "Create or update one standing mission for an agent: goal, schedule, send window, approval or autopilot, and daily caps. Does not turn the feature on.", {
+    mission_id: str, agent_config_id: str, icp_profile_id: str, sequence_id: str, name: str, goal: str,
+    mode: { type: "string", enum: ["autopilot", "approval"] }, timezone: str, days_of_week: { type: "array", items: { type: "number" } },
+    run_hour: num, run_minute: num, send_window_start: str, send_window_end: str,
+    daily_lead_cap: num, daily_send_cap: num, daily_spend_cap_usd: num,
+  }),
+  fn("set_agent_mission_status", "Pause, resume or stop a standing mission.", {
+    mission_id: str, status: { type: "string", enum: ["active", "paused", "stopped"] }, reason: str,
+  }),
 ];
 
 export const OUTBOUND_TOOL_NAMES = OUTBOUND_TOOL_DEFS.map((t) => t.function.name);
@@ -109,6 +130,12 @@ const pick = (args: Record<string, unknown>, fields: string[]) => {
   for (const f of fields) if (args[f] !== undefined && args[f] !== null) out[f] = args[f];
   return out;
 };
+
+async function missionWritesAllowed(admin: Admin, userId: string): Promise<boolean> {
+  const { data: flag } = await admin.from("feature_flags").select("is_enabled").eq("name", AGENT_MISSIONS_FLAG).maybeSingle();
+  const { data: grant } = await admin.from("agent_mission_grants").select("enabled").eq("user_id", userId).maybeSingle();
+  return featureEnabled(flag?.is_enabled === true, grant?.enabled === true);
+}
 
 /** Service-role writes skip RLS, so the flag and the grant are checked here. */
 async function visitorWritesAllowed(admin: Admin, userId: string): Promise<boolean> {
@@ -363,6 +390,88 @@ export async function runOutboundTool(
       if (!args.site_id) return { error: "site_id is required" };
       if (!row.name) return { error: "name is required" };
       return save("visitor_rules", null, { ...row, site_id: String(args.site_id) }, "visitor rule", "name");
+    }
+
+    case "list_agent_missions": {
+      if (!(await missionWritesAllowed(admin, userId))) return { missions: [], note: "Agent missions are off for this workspace." };
+      const { data, error } = await admin.from("agent_missions").select("id, name, goal, mode, status, pause_reason, timezone, days_of_week, run_hour, run_minute, send_window_start, send_window_end, daily_lead_cap, daily_send_cap, daily_spend_cap_usd, next_run_at, agent_config_id").eq("user_id", userId).order("updated_at", { ascending: false }).limit(50);
+      return done("Read missions", error, `${data?.length ?? 0}`, { missions: data ?? [] });
+    }
+    case "save_agent_mission": {
+      if (!(await missionWritesAllowed(admin, userId))) return { error: "Agent missions are off for this workspace." };
+      const { data: subscription } = await admin.from("subscriptions").select("plan").eq("user_id", userId).maybeSingle();
+      const plan = String(subscription?.plan ?? "free");
+      const mode = args.mode === "autopilot" ? "autopilot" : "approval";
+      const leadCap = clampLeadCap(plan, Number(args.daily_lead_cap ?? 10));
+      const row: Record<string, unknown> = {
+        name: String(args.name ?? "").trim().slice(0, 120),
+        goal: String(args.goal ?? "").trim().slice(0, 2000),
+        mode,
+        timezone: safeTimeZone(typeof args.timezone === "string" ? args.timezone : "UTC"),
+        days_of_week: normalizeDays(Array.isArray(args.days_of_week) ? args.days_of_week.map(Number) : [1, 2, 3, 4, 5]),
+        run_hour: Math.max(0, Math.min(23, Math.round(Number(args.run_hour ?? 7)))),
+        run_minute: Math.max(0, Math.min(59, Math.round(Number(args.run_minute ?? 0)))),
+        send_window_start: parseClock(typeof args.send_window_start === "string" ? args.send_window_start : null, "08:00"),
+        send_window_end: parseClock(typeof args.send_window_end === "string" ? args.send_window_end : null, "17:00"),
+        daily_lead_cap: leadCap,
+        daily_send_cap: clampSendCap(plan, Number(args.daily_send_cap ?? leadCap), leadCap),
+        daily_spend_cap_usd: clampSpendCap(Number(args.daily_spend_cap_usd ?? 5)),
+      };
+      row.next_run_at = nextRunAt({
+        from: new Date(),
+        timeZone: String(row.timezone),
+        daysOfWeek: row.days_of_week as number[],
+        hour: Number(row.run_hour),
+        minute: Number(row.run_minute),
+      }).toISOString();
+      if (args.agent_config_id) {
+        const { data: owned } = await admin.from("agent_configs").select("id").eq("id", String(args.agent_config_id)).eq("user_id", userId).maybeSingle();
+        if (!owned) return { error: "That agent is not in this workspace." };
+        row.agent_config_id = String(args.agent_config_id);
+      }
+      if (args.icp_profile_id) {
+        const { data: owned } = await admin.from("icp_profiles").select("id").eq("id", String(args.icp_profile_id)).eq("user_id", userId).maybeSingle();
+        if (!owned) return { error: "That ICP is not in this workspace." };
+        row.icp_profile_id = String(args.icp_profile_id);
+      }
+      if (args.sequence_id) {
+        const { data: owned } = await admin.from("email_sequences").select("id").eq("id", String(args.sequence_id)).eq("user_id", userId).maybeSingle();
+        if (!owned) return { error: "That sequence is not in this workspace." };
+        row.sequence_id = String(args.sequence_id);
+      }
+      const note = effectiveMode(mode, plan) === "approval" && mode === "autopilot"
+        ? "Saved. This plan queues drafts for approval. Auto-send stays off."
+        : "";
+      if (args.mission_id) {
+        const saved = await updateOwned("agent_missions", args.mission_id, row, "Updated mission");
+        return note ? { ...saved, note } : saved;
+      }
+      if (!row.agent_config_id) return { error: "agent_config_id is required" };
+      if (!row.name || !row.goal) return { error: "name and goal are required" };
+      const saved = await save("agent_missions", null, row, "mission", "name");
+      return note ? { ...saved, note } : saved;
+    }
+    case "set_agent_mission_status": {
+      if (!(await missionWritesAllowed(admin, userId))) return { error: "Agent missions are off for this workspace." };
+      const status = String(args.status ?? "");
+      if (!["active", "paused", "stopped"].includes(status)) return { error: "status must be active, paused or stopped" };
+      const row: Record<string, unknown> = {
+        status,
+        pause_reason: status === "active" ? null : String(args.reason ?? (status === "paused" ? "Paused by you." : "Stopped.")),
+      };
+      if (status === "active") {
+        const { data: current } = await admin.from("agent_missions").select("timezone, days_of_week, run_hour, run_minute").eq("id", String(args.mission_id ?? "")).eq("user_id", userId).maybeSingle();
+        if (current) {
+          row.next_run_at = nextRunAt({
+            from: new Date(),
+            timeZone: String(current.timezone ?? "UTC"),
+            daysOfWeek: Array.isArray(current.days_of_week) ? current.days_of_week.map(Number) : [1, 2, 3, 4, 5],
+            hour: Number(current.run_hour ?? 7),
+            minute: Number(current.run_minute ?? 0),
+          }).toISOString();
+        }
+      }
+      return updateOwned("agent_missions", args.mission_id, row, `Mission ${status}`);
     }
 
     case "get_outbound_stats": {
