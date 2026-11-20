@@ -6,6 +6,7 @@
 // (src/components/agent/AgentRoles.ts). src/lib/agent-tool-coverage.test.ts fails
 // if a tool is defined in one place and not the others.
 
+import { LOW_CONFIDENCE, OUTCOME_LABELS, isOutcomeLabel } from "./reply-labels.ts";
 import { toSignalFacts, type SignalEventRow } from "./signal-facts.ts";
 import { allowedActions, clampDailyCap } from "./visitor-automation.ts";
 import { featureEnabled, VISITOR_FLAG } from "./visitor-identity.ts";
@@ -79,6 +80,13 @@ export const OUTBOUND_TOOL_DEFS = [
   fn("classify_reply", "Set an inbound reply's classification and/or mark it read.", {
     reply_id: str, classification: { type: "string", enum: REPLY_CLASSES }, read: { type: "boolean" },
   }, ["reply_id"]),
+  fn("list_reply_labels", "List outcome labels on replies: what each reply was classified as, who labelled it (the classifier or a person), and which ones are too uncertain to trust. Use low_confidence_only to find the ones worth a human eye.", {
+    sent_email_id: str, label: { type: "string", enum: [...OUTCOME_LABELS] }, low_confidence_only: { type: "boolean" }, limit: num,
+  }),
+  fn("set_reply_label", "Correct the outcome label on a reply. A correction always beats the classifier and is never overwritten by a re-analysis, so only set it when the reply really says so.", {
+    reply_analysis_id: str, label: { type: "string", enum: [...OUTCOME_LABELS] },
+    objection_type: str, note: str,
+  }, ["reply_analysis_id", "label"]),
   fn("list_sending_accounts", "List connected sending mailboxes with status, daily limit, sent today, reputation score and warm-up."),
   fn("update_sending_account", "Pause or resume a sending mailbox, or change its daily send limit.", {
     account_id: str, status: { type: "string", enum: ["active", "paused"] }, daily_limit: num, reason: str,
@@ -303,6 +311,59 @@ export async function runOutboundTool(
       }
       if (typeof args.read === "boolean") row.read = args.read;
       return updateOwned("reply_threads", args.reply_id, row, "Updated reply");
+    }
+
+    case "list_reply_labels": {
+      /*
+       * Read through reply_labels_resolved, not reply_analysis, so the agent
+       * sees the same label the inbox shows: a person's correction wins there,
+       * and reading the raw classifier column would contradict the screen.
+       */
+      let q = admin.from("reply_labels_resolved")
+        .select("reply_analysis_id, sent_email_id, lead_id, label, objection_type, labeled_by, confidence, labeled_at")
+        .eq("user_id", userId)
+        .order("labeled_at", { ascending: false })
+        .limit(Math.min(Math.max(Math.round(Number(args.limit ?? 50)) || 50, 1), 200));
+      if (args.sent_email_id) q = q.eq("sent_email_id", String(args.sent_email_id));
+      if (args.label) {
+        if (!isOutcomeLabel(args.label)) return { error: `Use one of: ${OUTCOME_LABELS.join(", ")}` };
+        q = q.eq("label", String(args.label));
+      }
+      if (args.low_confidence_only) {
+        // A person's label carries confidence 1, so this never returns one.
+        q = q.lt("confidence", LOW_CONFIDENCE);
+      }
+      const { data, error } = await q;
+      return done("Read reply labels", error, `${data?.length ?? 0}`, { labels: data ?? [] });
+    }
+
+    case "set_reply_label": {
+      if (!isOutcomeLabel(args.label)) return { error: `Use one of: ${OUTCOME_LABELS.join(", ")}` };
+      // The analysis row must be one this account owns, or an id from anywhere
+      // could relabel somebody else's reply.
+      const { data: owned, error: ownErr } = await admin
+        .from("reply_analysis")
+        .select("id, sent_email_id")
+        .eq("id", String(args.reply_analysis_id))
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (ownErr) return done("Correct reply label", ownErr, "0");
+      if (!owned) return { error: "No reply analysis with that id in this account" };
+
+      const { error } = await admin.from("reply_label_overrides").insert({
+        user_id: userId,
+        reply_analysis_id: owned.id,
+        sent_email_id: owned.sent_email_id ?? null,
+        outcome_label: String(args.label),
+        objection_type: args.label === "objection" && args.objection_type
+          ? String(args.objection_type).slice(0, 60)
+          : null,
+        note: args.note ? String(args.note).slice(0, 500) : null,
+        // An agent acting for the user, not the user: a training export can
+        // weight the two differently.
+        source: "agent",
+      });
+      return done("Corrected reply label", error, "1", { label: String(args.label) });
     }
 
     case "list_sending_accounts":

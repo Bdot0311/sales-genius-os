@@ -161,7 +161,7 @@ export const CAMPAIGN_TOOLS = [
 ];
 
 /** Inbox triage. */
-export const INBOX_TOOLS = ["classify_reply"];
+export const INBOX_TOOLS = ["classify_reply", "list_reply_labels", "set_reply_label"];
 
 /** Mailbox health and deliverability. */
 export const DELIVERABILITY_TOOLS = [
@@ -290,6 +290,8 @@ export function scopeNoteFor(config: {
 // ---------------------------------------------------------------------------
 
 export const TOOL_CATALOG: Record<string, string> = {
+  list_reply_labels: "Read the outcome label on replies, who set it, and which ones the classifier was unsure about.",
+  set_reply_label: "Correct the outcome label on a reply. Beats the classifier and survives re-analysis.",
   list_leads: "List leads already in the account, with filters.",
   get_lead: "Read one lead's full record.",
   get_agent_status: "Report this agent's own configuration and recent activity.",

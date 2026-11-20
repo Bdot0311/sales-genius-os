@@ -1,3 +1,8 @@
+import { LABEL_INSTRUCTIONS, classifierVersion, isOutcomeLabel, labelFromEvidence } from "../_shared/reply-labels.ts";
+
+// Named once: a classifier_version that disagreed with the model actually
+// used would mislabel every row it stamped.
+const CLASSIFIER_MODEL = 'google/gemini-2.5-flash';
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@^2.76.1";
@@ -112,7 +117,16 @@ Analyze and respond with ONLY a JSON object (no markdown, no explanation):
   "requires_human_action": <boolean>,
   "summary": "<one sentence summary of the reply intent>",
   "check_back_at": "<ISO date (YYYY-MM-DD) the prospect asked to be contacted, or null>",
-  "suggested_reply": "<a short draft answer, or null — see the rules below>"
+  "suggested_reply": "<a short draft answer, or null — see the rules below>",
+  "outcome_label": "<positive|interested_later|referral|meeting_booked|objection|not_interested|wrong_person|out_of_office|auto_reply|unsubscribe_request|other>",
+  "objection_type": "<timing|budget|has_tool|no_need|no_authority|bad_timing_hiring|other, or null>",
+  "label_confidence": <number 0-1, your certainty in outcome_label>
+}
+
+${LABEL_INSTRUCTIONS}
+
+Continuing the response format:
+{
 }
 
 check_back_at rules:
@@ -152,7 +166,7 @@ Priority rules:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: CLASSIFIER_MODEL,
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.3,
       }),
@@ -244,6 +258,28 @@ Priority rules:
     };
     delete detectedSignals.unclassified;
 
+    /*
+     * Hard evidence first: inbox-sync read Auto-Submitted / X-Autoreply /
+     * Precedence off the headers, which a model reading the body cannot
+     * improve on. Then the model's own label, and 'other' when it returned
+     * something not in the enum -- storing that raw would trip the column's
+     * CHECK and lose the entire analysis, including the parts that were right.
+     */
+    const evidenceLabel = labelFromEvidence({ isAutoReply, modelLabel: analysis.outcome_label });
+    const outcomeLabel = evidenceLabel
+      ?? (isOutcomeLabel(analysis.outcome_label) ? analysis.outcome_label : "other");
+    /*
+     * An unparseable confidence is treated as no confidence, not as certainty,
+     * so the reply goes to a person to confirm rather than silently entering
+     * the training set as gospel.
+     */
+    const rawConfidence = Number(analysis.label_confidence);
+    const labelConfidence = evidenceLabel
+      ? 1
+      : Number.isFinite(rawConfidence) && rawConfidence >= 0 && rawConfidence <= 1
+        ? rawConfidence
+        : null;
+
     const analysisRow = {
       user_id: user.id,
       lead_id: ownedLeadId,
@@ -256,6 +292,18 @@ Priority rules:
       check_back_at: checkBackAt,
       suggested_reply: suggestedReply,
       analyzed_at: new Date().toISOString(),
+      /*
+       * The training label, beside triage_category rather than replacing it.
+       * Hard header evidence wins over the model; an unrecognised value becomes
+       * 'other' rather than being stored raw, because the column's CHECK would
+       * reject it and lose the whole analysis with it.
+       */
+      outcome_label: outcomeLabel,
+      objection_type: outcomeLabel === "objection" && typeof analysis.objection_type === "string"
+        ? analysis.objection_type.trim().slice(0, 60) || null
+        : null,
+      label_confidence: labelConfidence,
+      classifier_version: classifierVersion(CLASSIFIER_MODEL),
     };
 
     let existingId: string | null = null;

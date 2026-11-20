@@ -1,3 +1,5 @@
+import { ReplyLabelChip } from "@/components/inbox/ReplyLabelChip";
+import { type OutcomeLabel, isOutcomeLabel } from "@/lib/reply-label-display";
 import { useMemo, useState } from "react";
 import { splitQuotedReply, toReadableText } from "@/lib/message-body";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -84,6 +86,11 @@ interface Message {
   classification?: string | null;
   opened?: boolean;
   state?: string;
+  /* The analysis row a correction is written against. Absent on outbound. */
+  replyAnalysisId?: string | null;
+  outcomeLabel?: OutcomeLabel | null;
+  labelConfidence?: number | null;
+  labeledBy?: "claude" | "user" | "agent" | null;
 }
 
 interface Conversation {
@@ -197,6 +204,27 @@ const Inbox = () => {
     },
   });
 
+  /*
+   * Read the resolved view rather than reply_analysis, so the chip shows the
+   * label that actually applies: a person's correction wins there, and reading
+   * the classifier's own column would contradict what they just set.
+   */
+  const { data: replyLabels } = useQuery({
+    queryKey: ["inbox-reply-labels"],
+    enabled: !inboxGated,
+    refetchInterval: 15000,
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      const { data, error } = await supabase
+        .from("reply_labels_resolved")
+        .select("reply_analysis_id, label, confidence, labeled_by")
+        .eq("user_id", user.id);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const { data: replyThreads, isLoading: loadingReplies } = useQuery({
     queryKey: ["inbox-reply-threads"],
     enabled: !inboxGated,
@@ -219,7 +247,54 @@ const Inbox = () => {
 
   const isLoading = loadingSent || loadingReplies || loadingDrafts;
 
+  /*
+   * A correction is a new row, never an edit: analyze-reply updates its own
+   * reply_analysis row when it re-reads the same Gmail message, so a label
+   * written there would be overwritten the next time it ran. The override
+   * table is append-only and wins in the resolved view.
+   */
+  const correctLabel = useMutation({
+    mutationFn: async ({ replyAnalysisId, label }: { replyAnalysisId: string; label: OutcomeLabel }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      const { error } = await supabase.from("reply_label_overrides").insert({
+        user_id: user.id,
+        reply_analysis_id: replyAnalysisId,
+        outcome_label: label,
+        source: "user",
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["inbox-reply-labels"] });
+    },
+    onError: (e: unknown) => {
+      toast({
+        title: "Could not save that label",
+        description: e instanceof Error ? e.message : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const conversations = useMemo<Conversation[]>(() => {
+    const byAnalysis = new Map<string, { label: OutcomeLabel | null; confidence: number | null; labeledBy: "claude" | "user" | "agent" | null }>();
+    for (const row of replyLabels ?? []) {
+      byAnalysis.set(String(row.reply_analysis_id), {
+        label: isOutcomeLabel(row.label) ? row.label : null,
+        confidence: typeof row.confidence === "number" ? row.confidence : null,
+        labeledBy: row.labeled_by === "user" || row.labeled_by === "agent" ? row.labeled_by : "claude",
+      });
+    }
+    const labelFor = (analysisId: string) => {
+      const found = byAnalysis.get(analysisId);
+      return {
+        outcomeLabel: found?.label ?? null,
+        labelConfidence: found?.confidence ?? null,
+        labeledBy: found?.labeledBy ?? null,
+      };
+    };
+
     const map = new Map<string, Conversation>();
 
     const draftRows: SentRow[] = (drafts || []).map(d => ({
@@ -243,12 +318,14 @@ const Inbox = () => {
         state: mailState(row.status, row.sent_at),
       };
       const inMessages: Message[] = (row.reply_analysis || []).map((ra) => ({
+        ...labelFor(ra.id),
         id: `in:${ra.id}`,
         direction: "in" as const,
         from: row.to_email,
         body: toReadableText(ra.reply_content),
         at: ra.analyzed_at || ra.created_at,
         classification: ra.intent_classification,
+        replyAnalysisId: ra.id,
       }));
 
       if (existing) {
@@ -325,7 +402,7 @@ const Inbox = () => {
     }
 
     return all.sort((a, b) => (a.lastAt < b.lastAt ? 1 : -1));
-  }, [sent, drafts, replyThreads]);
+  }, [sent, drafts, replyThreads, replyLabels]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -656,6 +733,17 @@ const Inbox = () => {
                               {m.opened ? <Eye className="h-3 w-3" /> : <MailOpen className="h-3 w-3" />}
                               {m.state === "sent" ? (m.opened ? "Opened" : "Sent") : <span className="capitalize">{m.state}</span>}
                             </span>
+                          ) : null}
+                          {m.direction === "in" && m.replyAnalysisId ? (
+                            <ReplyLabelChip
+                              label={m.outcomeLabel ?? null}
+                              confidence={m.labelConfidence ?? null}
+                              labeledBy={m.labeledBy ?? null}
+                              pending={correctLabel.isPending}
+                              onCorrect={(next) =>
+                                correctLabel.mutate({ replyAnalysisId: m.replyAnalysisId!, label: next })
+                              }
+                            />
                           ) : null}
                           {m.classification && CLASSIFICATION_CONFIG[m.classification as Classification] ? (
                             <span className={`text-[0.625rem] ${CLASSIFICATION_CONFIG[m.classification as Classification].color}`}>

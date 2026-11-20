@@ -91,6 +91,8 @@ export const AGENT_TOOL_GROUPS: {
       { name: "list_sent_emails", label: "Read sent inbox history" },
       { name: "get_email_thread", label: "Read a full email thread" },
       { name: "classify_reply", label: "Tag replies and mark read" },
+      { name: "list_reply_labels", label: "Read reply outcome labels" },
+      { name: "set_reply_label", label: "Correct a reply's outcome label" },
       { name: "delete_inbox_threads", label: "Delete inbox threads" },
     ],
   },
