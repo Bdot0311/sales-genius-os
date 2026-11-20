@@ -25,7 +25,7 @@ interface ReadinessResponse {
   totals: {
     finalized: number; positives: number; positive_rate: number | null;
     negative_reply: number; no_reply: number; bounced: number; unsubscribed: number;
-    claude_labels: number; human_labels: number; pending: number;
+    claude_labels: number; human_labels: number; pending: number; backfilled: number;
   };
   per_user: { user_id: string; finalized: number; positives: number; positive_rate: number | null }[];
   breakdowns: Record<string, BreakdownRow[]>;
@@ -163,6 +163,21 @@ export default function DatasetReadiness() {
               </>
             )}
           </p>
+          {totals.backfilled > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {/*
+                Named rather than silently dropped. These rows describe sends
+                that happened before capture existed, so their feature values
+                were read after the outcome was already known. Counting them
+                would overstate how much trainable data there is, and training
+                on them would be learning from the future.
+              */}
+              {totals.backfilled.toLocaleString()} historical{" "}
+              {totals.backfilled === 1 ? "row is" : "rows are"} recorded but excluded: their
+              features were captured after the send, so they describe the past without being
+              trainable.
+            </p>
+          )}
           {!readiness.ready && (
             <p className="text-xs text-muted-foreground">
               {/* Naming the binding constraint, because "60% there" does not say what to do. */}

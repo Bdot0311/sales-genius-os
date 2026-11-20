@@ -21,6 +21,8 @@ type Pg = ReturnType<typeof postgres>;
 const CAPTURE = readFileSync("supabase/migrations/20261120090000_outcome_data_layer_capture.sql", "utf8");
 const LABELS = readFileSync("supabase/migrations/20261120100000_outcome_data_layer_labels.sql", "utf8");
 const EXAMPLES = readFileSync("supabase/migrations/20261120110000_outcome_data_layer_training_examples.sql", "utf8");
+const READINESS = readFileSync("supabase/migrations/20261120120000_outcome_data_layer_readiness.sql", "utf8");
+const BACKFILL = readFileSync("supabase/migrations/20261120130000_outcome_data_layer_backfill.sql", "utf8");
 
 const USER = "99999999-9999-9999-9999-999999999999";
 const OTHER = "88888888-8888-8888-8888-888888888888";
@@ -115,6 +117,8 @@ async function withPg(run: (sql: Pg) => Promise<void>) {
     await sql.unsafe(CAPTURE);
     await sql.unsafe(LABELS);
     await sql.unsafe(EXAMPLES);
+    await sql.unsafe(READINESS);
+    await sql.unsafe(BACKFILL);
     await run(sql);
   } finally {
     if (sql) await sql.end({ timeout: 2 });
@@ -610,6 +614,215 @@ describe("who can read what", () => {
           SELECT has_table_privilege('authenticated', ${rel}, 'SELECT') AS granted`;
         expect(row.granted, `${rel} is founder-only`).toBe(false);
       }
+    });
+  });
+});
+
+/*
+ * Phase 6: the backfill, and the line it must not cross.
+ *
+ * A backfilled snapshot records feature values read after its send, because
+ * lead_decisions had already been overwritten by the time anyone asked. That
+ * is the exact leakage phase 1 exists to prevent, so these rows are kept for
+ * describing the past and excluded from everything that trains.
+ */
+describe("backfill on postgres", () => {
+  async function historicalSend(sql: Pg, daysAgo: number, withDecision = true) {
+    const lead = crypto.randomUUID();
+    const send = crypto.randomUUID();
+    await sql`INSERT INTO leads (id, user_id, seniority, employee_count) VALUES (${lead}, ${USER}, 'VP Sales', 120)`;
+    if (withDecision) {
+      await sql`INSERT INTO lead_decisions (user_id, lead_id, send_recommendation, provider, provider_model)
+        VALUES (${USER}, ${lead}, 'email_now', 'claude', 'v1')`;
+    }
+    await sql`INSERT INTO sent_emails (id, user_id, lead_id, to_email, subject, sent_at, sequence_step)
+      VALUES (${send}, ${USER}, ${lead}, ${`h${daysAgo}@x.co`}, 'old',
+              now() - make_interval(days => ${daysAgo}), 1)`;
+    return { lead, send };
+  }
+
+  it("creates a snapshot for a send that predates capture", async () => {
+    await withPg(async (sql) => {
+      await historicalSend(sql, 60);
+      expect(await sql`SELECT * FROM training_examples`).toHaveLength(0);
+      const [{ created }] = await sql`SELECT backfill_outcome_snapshots(100) AS created`;
+      expect(Number(created)).toBe(1);
+      const [snap] = await sql`SELECT scorer_version, seniority, company_size_band FROM lead_feature_snapshots`;
+      expect(snap).toMatchObject({ scorer_version: "backfill", seniority: "vp", company_size_band: "51-200" });
+    });
+  });
+
+  it("dates the snapshot to the send, not to the backfill run", async () => {
+    await withPg(async (sql) => {
+      await historicalSend(sql, 60);
+      await sql`SELECT backfill_outcome_snapshots(100)`;
+      /*
+       * So signal recency and the send-hour features are computed against the
+       * moment of the send. The alternative is a captured_at that disagrees
+       * with the send it describes.
+       */
+      const [row] = await sql`
+        SELECT captured_at::date = (now() - interval '60 days')::date AS dated_to_the_send
+          FROM lead_feature_snapshots`;
+      expect(row.dated_to_the_send).toBe(true);
+    });
+  });
+
+  it("can be run again without writing a second snapshot for anything", async () => {
+    await withPg(async (sql) => {
+      await historicalSend(sql, 60);
+      await historicalSend(sql, 50);
+      expect(Number((await sql`SELECT backfill_outcome_snapshots(100) AS c`)[0].c)).toBe(2);
+      expect(Number((await sql`SELECT backfill_outcome_snapshots(100) AS c`)[0].c)).toBe(0);
+      const [{ count }] = await sql`SELECT count(*)::int AS count FROM lead_feature_snapshots`;
+      expect(count).toBe(2);
+    });
+  });
+
+  it("marks rows at insert, leaving the snapshot table append-only", async () => {
+    await withPg(async (sql) => {
+      await historicalSend(sql, 60);
+      await sql`SELECT backfill_outcome_snapshots(100)`;
+      /*
+       * The marker is written by capture_send_snapshot's own parameter. An
+       * UPDATE afterwards would need the append-only trigger disabled, which
+       * takes an ACCESS EXCLUSIVE lock on the table per row and would block
+       * every live capture for the length of the backfill.
+       */
+      await expect(sql`UPDATE lead_feature_snapshots SET scorer_version='x'`).rejects.toThrow(/append-only/);
+      expect(BACKFILL).not.toMatch(/DISABLE TRIGGER/);
+    });
+  });
+
+  it("still snapshots a send whose decision is already gone", async () => {
+    await withPg(async (sql) => {
+      // The common case: lead_decisions was overwritten long ago.
+      await historicalSend(sql, 60, false);
+      expect(Number((await sql`SELECT backfill_outcome_snapshots(100) AS c`)[0].c)).toBe(1);
+      const [snap] = await sql`SELECT scorer, scorer_version, send_recommendation FROM lead_feature_snapshots`;
+      expect(snap.scorer_version).toBe("backfill");
+      // No decision to copy, so no recommendation -- recorded as absent, not invented.
+      expect(snap.send_recommendation).toBeNull();
+    });
+  });
+
+  it("keeps backfilled rows out of readiness while still naming them", async () => {
+    await withPg(async (sql) => {
+      await historicalSend(sql, 60);
+      await sql`SELECT backfill_outcome_snapshots(100)`;
+      const [{ r }] = await sql`SELECT dataset_readiness() AS r`;
+      const totals = (r as Record<string, Record<string, number>>).totals;
+      // Counting them would overstate how much trainable data exists.
+      expect(Number(totals.finalized)).toBe(0);
+      expect(Number(totals.backfilled)).toBe(1);
+      expect(totals.positive_rate).toBeNull();
+    });
+  });
+
+  it("keeps them out of the breakdowns, which answer whether scoring predicts", async () => {
+    await withPg(async (sql) => {
+      await historicalSend(sql, 60);
+      await sql`SELECT backfill_outcome_snapshots(100)`;
+      expect(await sql`SELECT * FROM dataset_breakdown('send_recommendation')`).toHaveLength(0);
+    });
+  });
+
+  it("counts a real capture alongside them, so the two do not contaminate", async () => {
+    await withPg(async (sql) => {
+      await historicalSend(sql, 60);
+      await sql`SELECT backfill_outcome_snapshots(100)`;
+      const live = await historicalSend(sql, 30);
+      await sql`SELECT capture_send_snapshot(${live.send}, ${USER}, ${sql.json({})})`;
+      const [{ r }] = await sql`SELECT dataset_readiness() AS r`;
+      const totals = (r as Record<string, Record<string, number>>).totals;
+      expect(Number(totals.finalized)).toBe(1);
+      expect(Number(totals.backfilled)).toBe(1);
+      const rows = await sql`SELECT * FROM dataset_breakdown('send_recommendation')`;
+      expect(rows).toHaveLength(1);
+      expect(Number(rows[0].finalized)).toBe(1);
+    });
+  });
+
+  it("flags each example so an export can tell them apart", async () => {
+    await withPg(async (sql) => {
+      await historicalSend(sql, 60);
+      await sql`SELECT backfill_outcome_snapshots(100)`;
+      const live = await historicalSend(sql, 30);
+      await sql`SELECT capture_send_snapshot(${live.send}, ${USER}, ${sql.json({})})`;
+      const rows = await sql`SELECT is_backfilled, scorer_version FROM training_examples ORDER BY is_backfilled`;
+      expect(rows.map((r) => r.is_backfilled)).toEqual([false, true]);
+    });
+  });
+});
+
+describe("backfilling the labels of older replies", () => {
+  async function legacyReply(sql: Pg, triage: string | null) {
+    const lead = crypto.randomUUID();
+    const send = crypto.randomUUID();
+    const analysis = crypto.randomUUID();
+    await sql`INSERT INTO leads (id, user_id) VALUES (${lead}, ${USER})`;
+    await sql`INSERT INTO sent_emails (id, user_id, lead_id, to_email, subject, sent_at)
+      VALUES (${send}, ${USER}, ${lead}, 'l@x.co', 'l', now() - interval '40 days')`;
+    await sql`INSERT INTO reply_analysis (id, user_id, sent_email_id, analyzed_at, detected_signals)
+      VALUES (${analysis}, ${USER}, ${send}, now() - interval '39 days',
+              ${sql.json(triage === null ? {} : { triage_category: triage })})`;
+    return analysis;
+  }
+
+  it("reads triage_category from where analyze-reply actually stores it", async () => {
+    await withPg(async (sql) => {
+      // detected_signals, not the dedicated column, which was never written.
+      await legacyReply(sql, "positive");
+      expect(Number((await sql`SELECT backfill_reply_labels(100) AS c`)[0].c)).toBe(1);
+      const [row] = await sql`SELECT outcome_label, classifier_version FROM reply_analysis`;
+      expect(row).toMatchObject({ outcome_label: "positive", classifier_version: "backfill" });
+    });
+  });
+
+  it("records no confidence, because nothing measured one", async () => {
+    await withPg(async (sql) => {
+      await legacyReply(sql, "positive");
+      await sql`SELECT backfill_reply_labels(100)`;
+      /*
+       * A null sends the reply to a person to confirm, which is the right
+       * outcome for a label guessed from a coarser one.
+       */
+      expect((await sql`SELECT label_confidence FROM reply_analysis`)[0].label_confidence).toBeNull();
+    });
+  });
+
+  it("refuses to guess on soft_no, which covered two different outcomes", async () => {
+    await withPg(async (sql) => {
+      await legacyReply(sql, "soft_no");
+      await sql`SELECT backfill_reply_labels(100)`;
+      expect((await sql`SELECT outcome_label FROM reply_analysis`)[0].outcome_label).toBe("other");
+    });
+  });
+
+  it("never overwrites a label that is already set", async () => {
+    await withPg(async (sql) => {
+      const analysis = await legacyReply(sql, "hard_no");
+      await sql`UPDATE reply_analysis SET outcome_label='meeting_booked', label_confidence=0.95,
+        classifier_version='m:real' WHERE id = ${analysis}`;
+      expect(Number((await sql`SELECT backfill_reply_labels(100) AS c`)[0].c)).toBe(0);
+      const [row] = await sql`SELECT outcome_label, classifier_version FROM reply_analysis`;
+      expect(row).toMatchObject({ outcome_label: "meeting_booked", classifier_version: "m:real" });
+    });
+  });
+
+  it("agrees with the classifier's own mapping for every legacy value", async () => {
+    /*
+     * The SQL used by the backfill and the TypeScript used by the classifier
+     * must not disagree about what an old reply meant.
+     */
+    await withPg(async (sql) => {
+      const { labelFromTriage } = await import("../../supabase/functions/_shared/reply-labels");
+      for (const triage of ["positive", "soft_no", "hard_no", "ooo", "wrong_person", "info_request", "", "nonsense"]) {
+        const [row] = await sql`SELECT outcome_label_from_triage(${triage}) AS label`;
+        expect(row.label, `triage "${triage}"`).toBe(labelFromTriage(triage));
+      }
+      const [nullRow] = await sql`SELECT outcome_label_from_triage(NULL) AS label`;
+      expect(nullRow.label).toBe(labelFromTriage(null));
     });
   });
 });

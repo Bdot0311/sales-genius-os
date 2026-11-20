@@ -82,11 +82,30 @@ try {
 const stripAnsi = (s) => s.replace(/\u001b\[[0-9;]*m/g, "");
 const byCode = new Map();
 const byFile = new Map();
+/*
+ * The errors themselves, not just a tally of them.
+ *
+ * This reported "1 TS2345" and a filename and nothing else, which is not
+ * enough to act on: a failure that reproduces in CI and not locally cannot be
+ * diagnosed from a count, and the only way to see the message was to reproduce
+ * the run. Keeping the message and the location makes the job's output
+ * sufficient on its own.
+ */
+const errors = [];
 let currentCode = null;
+let currentLines = [];
+const flush = () => {
+  if (currentCode && currentLines.length) errors.push(currentLines.join("\n"));
+  currentCode = null;
+  currentLines = [];
+};
 for (const line of stripAnsi(out).split("\n")) {
   const code = line.match(/\bTS(\d+)\b/)?.[0];
   if (code && /error/i.test(line)) {
+    // A new error starts, so whatever was being collected is complete.
+    flush();
     currentCode = code;
+    currentLines = [line.trimEnd()];
     byCode.set(code, (byCode.get(code) ?? 0) + 1);
     continue;
   }
@@ -94,9 +113,14 @@ for (const line of stripAnsi(out).split("\n")) {
   if (file && currentCode) {
     const rel = file.replace(`${process.cwd()}/`, "");
     byFile.set(rel, (byFile.get(rel) ?? 0) + 1);
-    currentCode = null;
+    currentLines.push(line.trimEnd().replace(`${process.cwd()}/`, ""));
+    flush();
+    continue;
   }
+  // The explanation and the offending source line sit between the two.
+  if (currentCode && line.trim()) currentLines.push(line.trimEnd());
 }
+flush();
 
 const total = [...byCode.values()].reduce((a, b) => a + b, 0);
 
@@ -140,6 +164,17 @@ for (const [code, count] of [...byCode].sort((a, b) => b[1] - a[1])) {
 console.log(`\nAcross ${byFile.size} file(s). The ten carrying most:\n`);
 for (const [file, count] of [...byFile].sort((a, b) => b[1] - a[1]).slice(0, 10)) {
   console.log(`  ${String(count).padStart(5)}  ${file}`);
+}
+
+/*
+ * Capped: a run that breaks a shared type can produce hundreds of these, and
+ * the first twenty are enough to find the cause. The counts above still say
+ * how many there were in total.
+ */
+if (errors.length) {
+  console.log(`\n${errors.length === 1 ? "The error" : `First ${Math.min(errors.length, 20)} of ${errors.length}`}:\n`);
+  console.log(errors.slice(0, 20).join("\n\n"));
+  console.log("");
 }
 
 console.error(
