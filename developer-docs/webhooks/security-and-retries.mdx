@@ -38,4 +38,19 @@ The signature authenticates the body, but it does not itself prevent replay. Ack
 
 ## Test deliveries
 
-Test requests can include `X-Webhook-Test: true`. Treat tests separately from live workflows, but still validate their signatures. Test payloads do not guarantee every real event's full `data` shape.
+Test requests include `X-Webhook-Test: true`. Treat tests separately from live workflows, but still validate their signatures.
+
+OutReign builds the test body itself, so every test sends the same fixed payload with the `webhook.test` event:
+
+```json
+{
+  "event": "webhook.test",
+  "webhook_id": "<your webhook ID>",
+  "timestamp": "2026-11-16T01:10:37.000Z",
+  "data": {
+    "message": "This is a test event from OutReign."
+  }
+}
+```
+
+Use a test to check that your receiver is reachable and can verify the signature. A test does not exercise any real event's `data` shape.
