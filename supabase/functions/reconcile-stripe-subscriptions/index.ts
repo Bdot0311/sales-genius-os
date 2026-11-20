@@ -17,7 +17,7 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
  * Nothing about the runtime behaviour changes; it is the same library at the
  * same version. What changes is that the type checker can see that.
  */
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { createClient } from "npm:@supabase/supabase-js@^2.76.1";
 import { corsHeaders, isInternalCaller } from "../_shared/internal-auth.ts";
 import { logSystemAlert } from "../_shared/alerts.ts";
 import { PRICE_TO_PLAN, PRODUCT_TO_PLAN, finalizeFailedPayment } from "../_shared/process-stripe-event.ts";
@@ -195,16 +195,25 @@ Deno.serve(async (req) => {
 
         const stripeStatus = sub?.status ?? "missing";
         const alreadyFree = row.plan === "free";
+        const targetStatus = sub && stripeStatus === "past_due" ? "past_due" : "cancelled";
+        const targetSubscriptionId = sub ? row.stripe_subscription_id : null;
+        // Preserve the Stripe link for future recovery, but a settled Free
+        // account needs no repeated write or downgrade audit entry.
+        if (alreadyFree && row.status === targetStatus &&
+            row.account_status === targetStatus &&
+            row.stripe_subscription_id === targetSubscriptionId) continue;
 
-        await supabase.from("subscriptions").update({
-          status: sub ? (stripeStatus === "past_due" ? "past_due" : "cancelled") : "cancelled",
-          account_status: sub && stripeStatus === "past_due" ? "past_due" : "cancelled",
-          stripe_subscription_id: sub ? row.stripe_subscription_id : null,
+        const { error: statusError } = await supabase.from("subscriptions").update({
+          status: targetStatus,
+          account_status: targetStatus,
+          stripe_subscription_id: targetSubscriptionId,
           cancel_at_period_end: false,
           updated_at: new Date().toISOString(),
         }).eq("user_id", row.user_id);
+        if (statusError) throw new Error(statusError.message);
+        if (alreadyFree) continue;
 
-        const { error: downErr } = await supabase.rpc("billing_downgrade_to_free", {
+        const { data: downgraded, error: downErr } = await supabase.rpc("billing_downgrade_to_free", {
           _user_id: row.user_id,
           _reason: `Reconciliation: Stripe subscription is ${stripeStatus} — entitlements returned to the free plan`,
           _details: {
@@ -214,7 +223,7 @@ Deno.serve(async (req) => {
         });
         if (downErr) throw new Error(downErr.message);
 
-        if (!alreadyFree) {
+        if (downgraded === true) {
           stats.corrected++; stats.downgraded++;
           await logSystemAlert({
             category: "billing_reconciled", severity: "error",

@@ -463,6 +463,13 @@
       "when": 1795212991897,
       "tag": "0065_admin_billing_and_private_policy_health",
       "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1795213194964,
+      "tag": "0066_billing_downgrade_idempotency",
+      "breakpoints": true
     }
   ]
 }

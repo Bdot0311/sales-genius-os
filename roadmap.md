@@ -2,6 +2,10 @@
 
 # Admin health warnings
 
+# Repeated billing audit events
+
+- [x] Scheduled downgrades lock the subscription and record only paid-to-Free transitions; settled Free accounts skip repeated writes. Three executable SQL regressions and two import checks passed; signed-in audit returned 82 records with zero no-op reconciliation downgrades. All 2,041 historical no-op rows retained in storage; deployed reconciliation function. No shared customer reconciliation was manually triggered.
+
 - [x] Exempt existing and future protected admin roles from billing; preserve regular customer billing. Existing admins updated; promotion, insert/update, demotion and regular customer rules verified in isolated database tests.
 - [x] Correct intentional-private-table policy warnings without widening access. Six executable database regressions passed; signed-in Health refreshed to 10 healthy, zero warnings and zero failures; private-table protections unchanged.
 
