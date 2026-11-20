@@ -3,7 +3,16 @@
 // Throws on failure so callers can persist retry/dead-letter state.
 
 import Stripe from "https://esm.sh/stripe@18.5.0";
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+/*
+ * The same specifier the callers use, which is the one AGENTS.md mandates for
+ * edge functions. A type from one module instance and a client from another are
+ * nominally incompatible -- SupabaseClient has a protected member, so one is not
+ * "a class derived from" the other -- and that is not a theoretical problem:
+ * reconcile-stripe-subscriptions already imports its client from npm, and the
+ * day `^2.76.1` resolved to 2.119.2 the edge-functions-deno job started failing
+ * on every pull request with a TS2345 nobody could place.
+ */
+import type { SupabaseClient } from "npm:@supabase/supabase-js@^2.76.1";
 import { sendManagedEmail } from "./managed-email.ts";
 import { getSubscriptionPeriod, toIsoUnix } from "./stripe-period.ts";
 import { logSystemAlert } from "./alerts.ts";
