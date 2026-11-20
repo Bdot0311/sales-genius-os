@@ -477,6 +477,13 @@
       "when": 1795214021634,
       "tag": "0067_explicit_outcomes_and_status_authorization",
       "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1795218565053,
+      "tag": "0068_appsumo_licensing",
+      "breakpoints": true
     }
   ]
 }

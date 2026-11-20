@@ -206,6 +206,6 @@
 
 # AppSumo submission 236273 licensing
 
-- [ ] Resolve AppSumo connection failure: the Connect card repeatedly shows “try again,” not an intentional rejection. Public resource discovery and OAuth metadata respond with HTTP 200; the MCP endpoint correctly requires sign-in (401). No AppSumo tools are available. Try workspace Connectors with the documented https://appsumo.com/mcp/ OAuth server; exact card failure remains unverified because its internal error is not exposed here.
+- [x] AppSumo connected; authenticated access to draft submission 236273 and its five licensing plans verified.
 - [ ] Read submission fulfillment and configure licensing webhook, OAuth redemption and server-only credentials; deploy public HTTPS endpoints and save both URLs through AppSumo.
 - [ ] Run test_licensing and run_licensing_conformance, correct failures, verify stored lifecycle states, then direct the owner back to AppSumo’s Redemption page.

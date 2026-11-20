@@ -1148,6 +1148,157 @@ export type Database = {
         }
         Relationships: []
       }
+      appsumo_license_events: {
+        Row: {
+          event: string
+          event_timestamp: number
+          is_test: boolean
+          license_key: string
+          payload: Json
+          received_at: string
+        }
+        Insert: {
+          event: string
+          event_timestamp: number
+          is_test: boolean
+          license_key: string
+          payload: Json
+          received_at?: string
+        }
+        Update: {
+          event?: string
+          event_timestamp?: number
+          is_test?: boolean
+          license_key?: string
+          payload?: Json
+          received_at?: string
+        }
+        Relationships: []
+      }
+      appsumo_licenses: {
+        Row: {
+          created_at: string
+          credits_granted: boolean
+          event_timestamp: number
+          is_test: boolean
+          license_key: string
+          license_status: string
+          parent_license_key: string | null
+          partner_plan_name: string | null
+          prev_license_key: string | null
+          raw_payload: Json
+          revoked_balance: number
+          tier: number
+          unit_quantity: number | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          credits_granted?: boolean
+          event_timestamp?: number
+          is_test?: boolean
+          license_key: string
+          license_status?: string
+          parent_license_key?: string | null
+          partner_plan_name?: string | null
+          prev_license_key?: string | null
+          raw_payload?: Json
+          revoked_balance?: number
+          tier?: number
+          unit_quantity?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          credits_granted?: boolean
+          event_timestamp?: number
+          is_test?: boolean
+          license_key?: string
+          license_status?: string
+          parent_license_key?: string | null
+          partner_plan_name?: string | null
+          prev_license_key?: string | null
+          raw_payload?: Json
+          revoked_balance?: number
+          tier?: number
+          unit_quantity?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appsumo_licenses_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      appsumo_plan_config: {
+        Row: {
+          credits: number
+          daily_email_limit: number
+          plan: Database["public"]["Enums"]["subscription_plan"]
+          renewal: string
+          tier: number
+          updated_at: string
+        }
+        Insert: {
+          credits: number
+          daily_email_limit: number
+          plan: Database["public"]["Enums"]["subscription_plan"]
+          renewal: string
+          tier: number
+          updated_at?: string
+        }
+        Update: {
+          credits?: number
+          daily_email_limit?: number
+          plan?: Database["public"]["Enums"]["subscription_plan"]
+          renewal?: string
+          tier?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      appsumo_redemption_claims: {
+        Row: {
+          consumed_at: string | null
+          consumed_by: string | null
+          created_at: string
+          expires_at: string
+          license_key: string
+          token_hash: string
+        }
+        Insert: {
+          consumed_at?: string | null
+          consumed_by?: string | null
+          created_at?: string
+          expires_at: string
+          license_key: string
+          token_hash: string
+        }
+        Update: {
+          consumed_at?: string | null
+          consumed_by?: string | null
+          created_at?: string
+          expires_at?: string
+          license_key?: string
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appsumo_redemption_claims_license_key_fkey"
+            columns: ["license_key"]
+            isOneToOne: false
+            referencedRelation: "appsumo_licenses"
+            referencedColumns: ["license_key"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -5792,6 +5943,7 @@ export type Database = {
         Row: {
           account_status: string | null
           addon_price_id: string | null
+          appsumo_license_key: string | null
           auto_pause_reason: string | null
           auto_paused_at: string | null
           auto_resume_reason: string | null
@@ -5835,6 +5987,7 @@ export type Database = {
         Insert: {
           account_status?: string | null
           addon_price_id?: string | null
+          appsumo_license_key?: string | null
           auto_pause_reason?: string | null
           auto_paused_at?: string | null
           auto_resume_reason?: string | null
@@ -5880,6 +6033,7 @@ export type Database = {
         Update: {
           account_status?: string | null
           addon_price_id?: string | null
+          appsumo_license_key?: string | null
           auto_pause_reason?: string | null
           auto_paused_at?: string | null
           auto_resume_reason?: string | null
@@ -7719,6 +7873,16 @@ export type Database = {
           applied: boolean
           reason: string
         }[]
+      }
+      appsumo_apply_event: { Args: { payload: Json }; Returns: Json }
+      appsumo_claim_license: {
+        Args: { claim_hash: string; owner_id: string }
+        Returns: Json
+      }
+      appsumo_refresh_credits: { Args: never; Returns: number }
+      appsumo_sync_subscription: {
+        Args: { owner_id: string }
+        Returns: undefined
       }
       attach_verdict_to_send: {
         Args: {
