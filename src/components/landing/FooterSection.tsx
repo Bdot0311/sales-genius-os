@@ -1,5 +1,8 @@
+import { useState } from "react";
 import outReignLogo from "@/assets/outreign-logo.webp";
 import { Link } from "react-router-dom";
+import { DemoVideoModal } from "@/components/landing/DemoVideoModal";
+import { Analytics } from "@/lib/analytics-events";
 import { helpCategories, helpArticles } from "@/components/help/helpArticles";
 import { blogPostsMeta } from "@/data/blog-index";
 import { ALL_BADGES } from "@/lib/directory-badges";
@@ -21,7 +24,6 @@ const footerLinks = {
     { label: "Sales Ops Software", href: "/sales-operations-software" },
     { label: "AI SDR Agent", href: "/ai-sdr-agent" },
     { label: "Cold Email Software", href: "/cold-email-software" },
-    { label: "Product Demo", href: "/demo" },
     { label: "Connect to AI Agents", href: "/connect" },
   ],
   compare: [
@@ -60,6 +62,7 @@ const footerLinks = {
 
 
 export const FooterSection = () => {
+  const [demoOpen, setDemoOpen] = useState(false);
   return (
     <footer className="py-16 md:py-20 border-t" style={{ background: "transparent", borderColor: "hsl(261 75% 50% / 0.18)" }}>
       <div className="container mx-auto px-6">
@@ -108,6 +111,15 @@ export const FooterSection = () => {
                     )}
                   </li>
                 ))}
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => { Analytics.demoCtaClicked("footer_product_demo"); setDemoOpen(true); }}
+                    className="text-sm transition-colors duration-150 inline-flex items-center py-2 min-h-[40px] min-w-[40px] px-1" style={{ color: "hsl(var(--foreground) / 0.7)" }} onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(261 75% 65%)")} onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "hsl(var(--foreground) / 0.7)")}
+                  >
+                    Product Demo
+                  </button>
+                </li>
               </ul>
             </div>
 
@@ -275,6 +287,7 @@ export const FooterSection = () => {
           </div>
         </div>
       </div>
+      <DemoVideoModal open={demoOpen} onOpenChange={setDemoOpen} />
     </footer>
   );
 };

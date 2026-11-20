@@ -1,13 +1,16 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { CAMPAIGN_SETUP_BOOKING_URL, openCampaignSetupBooking } from "@/lib/campaign-setup";
 import { useIsSignedIn } from "@/hooks/use-signed-in";
 import { Analytics } from "@/lib/analytics-events";
 import { FeaturedBadges } from "@/components/landing/FeaturedBadges";
+import { DemoVideoModal } from "@/components/landing/DemoVideoModal";
 
 export const HeroSection = () => {
   const signedIn = useIsSignedIn();
   const navigate = useNavigate();
+  const [demoOpen, setDemoOpen] = useState(false);
 
   return (
     <section
@@ -88,14 +91,15 @@ export const HeroSection = () => {
             with the two actions that actually start something, and the product
             tour is the next section down anyway. */}
         <a
-          href="/demo"
-          onClick={(e) => { e.preventDefault(); Analytics.demoCtaClicked("hero_see_how_it_works"); navigate("/demo"); }}
+          href="/?demo=1"
+          onClick={(e) => { e.preventDefault(); Analytics.demoCtaClicked("hero_see_how_it_works"); setDemoOpen(true); }}
           className="mb-5 inline-flex items-center gap-1 text-sm text-foreground/70 underline-offset-4 transition-colors hover:text-foreground hover:underline"
           aria-label="See how OutReign works"
         >
           See how it works
           <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
         </a>
+        <DemoVideoModal open={demoOpen} onOpenChange={setDemoOpen} />
 
         <p
           className="mb-3 flex max-w-[21rem] flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-xs leading-tight text-foreground/90 sm:flex-nowrap"

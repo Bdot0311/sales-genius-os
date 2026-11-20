@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { X, ArrowRight } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { Analytics } from "@/lib/analytics-events";
+import { DemoVideoModal } from "@/components/landing/DemoVideoModal";
 
 
 const STORAGE_KEY = "outreign-exit-intent-shown";
 
 export const ExitIntentModal = () => {
   const [open, setOpen] = useState(false);
-  const navigate = useNavigate();
+  const [demoOpen, setDemoOpen] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -58,6 +58,7 @@ export const ExitIntentModal = () => {
   const close = () => setOpen(false);
 
   return (
+    <>
     <AnimatePresence>
       {open && (
         <motion.div
@@ -117,7 +118,7 @@ export const ExitIntentModal = () => {
                 onClick={() => {
                   Analytics.demoCtaClicked("exit_intent_modal");
                   close();
-                  navigate("/demo");
+                  setDemoOpen(true);
                 }}
                 className="group inline-flex h-[50px] w-full items-center justify-center gap-2 rounded-full px-6 text-sm font-semibold text-white transition-transform hover:scale-[1.01]"
                 style={{
@@ -139,5 +140,7 @@ export const ExitIntentModal = () => {
         </motion.div>
       )}
     </AnimatePresence>
+    <DemoVideoModal open={demoOpen} onOpenChange={setDemoOpen} />
+    </>
   );
 };

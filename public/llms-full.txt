@@ -336,7 +336,7 @@ A pre-seed founder uses OutReign to test whether a specific ICP responds to thei
 - Homepage: https://outreign.io/
 - Sign up free: https://outreign.io/auth
 - Pricing: https://outreign.io/pricing
-- Demo: https://outreign.io/demo
+- Demo video: https://outreign.io/?demo=1 (opens as a popup on the homepage)
 - Help Center: https://outreign.io/help
 - Developer Documentation: https://docs.outreign.io
 - Developer Documentation Index: https://docs.outreign.io/llms.txt

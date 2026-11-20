@@ -88,7 +88,7 @@ Sign up for free at https://outreign.io. The Explore plan needs no credit card.
 
 - [Home](/): B2B lead discovery and outbound email platform overview.
 - [Pricing](/pricing): Subscription plans, one-time credit packs, and annual billing options.
-- [Demo](/demo): Interactive walkthrough of the lead-to-email workflow.
+- [Demo](/?demo=1): Video walkthrough of the lead-to-email workflow (opens as a popup on the homepage).
 - [Help Center](/help): Documentation, guides, and support articles.
 - [Developer Documentation](https://docs.outreign.io): Getting started, authentication, REST API reference, MCP tools, inbound/outbound webhooks, signatures, retries and automation guides. Starter and up include API & MCP access with higher limits by tier.
 - [Developer Documentation Index](https://docs.outreign.io/llms.txt): Mintlify's index of developer documentation pages for AI readers.

@@ -13,7 +13,7 @@ import Index from "./pages/Index";
 
 // Public marketing routes that should NOT trigger Supabase/auth/white-label loads
 const PUBLIC_LANDING_PREFIXES = [
-  "/", "/pricing", "/demo", "/api-docs", "/api-status", "/request-integration",
+  "/", "/pricing", "/api-docs", "/api-status", "/request-integration",
   "/privacy", "/terms", "/security", "/help", "/install", "/unsubscribe", "/blog",
   "/sales-operations-software", "/apollo-alternative", "/alternatives", "/guides",
   "/cold-email-software",
@@ -45,7 +45,6 @@ const Analytics = lazy(() => import("./pages/Analytics"));
 const SequenceDetail = lazy(() => import("./pages/SequenceDetail"));
 const DashboardIntegrations = lazy(() => import("./pages/DashboardIntegrations"));
 const PricingPage = lazy(() => import("./pages/PricingPage"));
-const DemoPage = lazy(() => import("./pages/DemoPage"));
 const SalesOperationsSoftware = lazy(() => import("./pages/SalesOperationsSoftware"));
 const AiSdrAgent = lazy(() => import("./pages/AiSdrAgent"));
 const ColdEmailSoftware = lazy(() => import("./pages/ColdEmailSoftware"));
@@ -521,7 +520,9 @@ const App = () => {
               <Route path="/guides/email-warmup" element={<Navigate to="/blog/email-warmup" replace />} />
               <Route path="/guides/b2b-icp-criteria-template" element={<Navigate to="/blog/b2b-icp-criteria-template" replace />} />
               
-              <Route path="/demo" element={<DemoPage />} />
+              {/* The old /demo page is gone; the demo is a video popup on the
+                  homepage now. Old links land on /?demo=1, which auto-opens it. */}
+              <Route path="/demo" element={<Navigate to="/?demo=1" replace />} />
               <Route path="/api-docs" element={<ApiDocs />} />
               <Route path="/api-status" element={<ApiStatus />} />
               <Route path="/request-integration" element={<RequestIntegration />} />

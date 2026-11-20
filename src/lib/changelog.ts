@@ -116,6 +116,13 @@ export const ROADMAP: RoadmapItem[] = [
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-11-20-demo-video",
+    date: "2026-11-20",
+    title: "Watch the product demo right on the homepage",
+    summary: "See how it works now opens a short video walkthrough in place, instead of sending you to a separate page.",
+    items: [{ tag: "improved", title: "Demo video popup", description: "Click See how it works in the hero, Product Demo in the footer, or the exit popup and a video walkthrough plays right where you are. The old demo page is gone; old links to it open the video automatically.", href: "/?demo=1" }],
+  },
+  {
     id: "2026-11-18-lead-strategy",
     date: "2026-11-18",
     title: "Turn lead intelligence into a draft",

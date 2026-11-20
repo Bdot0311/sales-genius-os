@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { SEOHead, SoftwareApplicationSchema, FAQSchema } from "@/components/seo";
+import { DemoVideoModal } from "@/components/landing/DemoVideoModal";
 
 const HOMEPAGE_FAQS = [
   { question: "What is OutReign?", answer: "OutReign is a B2B prospecting and outreach platform that helps teams go from ICP definition to live outreach faster." },
@@ -52,6 +53,19 @@ const Index = () => {
   // non-prerendered mounts (createRoot) this just defers the sections by a tick.
   const [showBelowFold, setShowBelowFold] = useState(false);
   useEffect(() => setShowBelowFold(true), []);
+
+  // Old /demo links redirect here as /?demo=1 — open the video popup for them,
+  // then strip the param so a refresh doesn't reopen it. Done in an effect
+  // (not render) so the prerendered HTML and first client paint still match.
+  const [demoOpen, setDemoOpen] = useState(false);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("demo") !== "1") return;
+    setDemoOpen(true);
+    params.delete("demo");
+    const qs = params.toString();
+    window.history.replaceState(null, "", window.location.pathname + (qs ? `?${qs}` : ""));
+  }, []);
 
   // The cinematic background video is a ~16MB download. It is a decoration, not
   // content, so it only loads for visitors who can clearly afford it.
@@ -208,6 +222,7 @@ const Index = () => {
           <>
             <DeferredSection><FooterSection /></DeferredSection>
             <DeferredSection><ExitIntentModal /></DeferredSection>
+            <DemoVideoModal open={demoOpen} onOpenChange={setDemoOpen} />
           </>
         )}
       </div>
