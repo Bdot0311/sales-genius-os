@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+// Mission tables are not in generated types until their migration is applied.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const missionsDb = supabase as any;
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -23,7 +26,7 @@ export function AgentMissionAccessCard() {
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
-    const { data, error } = await supabase
+    const { data, error } = await missionsDb
       .from("agent_mission_grants")
       .select("user_id, enabled, note")
       .order("updated_at", { ascending: false });
@@ -53,7 +56,7 @@ export function AgentMissionAccessCard() {
       return;
     }
     const { data: session } = await supabase.auth.getUser();
-    const { error: writeError } = await supabase.from("agent_mission_grants").upsert({
+    const { error: writeError } = await missionsDb.from("agent_mission_grants").upsert({
       user_id: profile.id,
       enabled: true,
       enabled_by: session.user?.id ?? null,
@@ -66,7 +69,7 @@ export function AgentMissionAccessCard() {
   };
 
   const toggle = async (row: GrantRow, enabled: boolean) => {
-    const { error } = await supabase.from("agent_mission_grants").update({ enabled }).eq("user_id", row.user_id);
+    const { error } = await missionsDb.from("agent_mission_grants").update({ enabled }).eq("user_id", row.user_id);
     if (error) setMessage(error.message);
     await load();
   };
