@@ -1,5 +1,7 @@
 # Agent rules
 
+- Admin billing exemption is enforced by protected role/subscription triggers; policy health excludes only vetted internal tables with backend CRUD and no customer grants. Why: future admins and intentionally private tables must not produce false billing/security warnings.
+
 - Lead intelligence's draft action uses generate-email with server-read strategy and normal research/quality gates, then reads back the saved owner-scoped draft. Existing draft_outreach provides agent parity. Why: recommendations become reviewable drafts without a separate generator or auto-send path.
 
 - Scheduled reply sweeps require the cursor/lease tables and five service-only RPCs in the managed Drizzle migration stream; preserve the existing managed cron rather than creating a second HTTP callback. Why: legacy migration files alone did not install the helpers and every scheduled pass failed before polling Gmail.

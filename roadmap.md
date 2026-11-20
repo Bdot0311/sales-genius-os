@@ -1,5 +1,10 @@
 # Lead intelligence strategy action
 
+# Admin health warnings
+
+- [x] Exempt existing and future protected admin roles from billing; preserve regular customer billing. Existing admins updated; promotion, insert/update, demotion and regular customer rules verified in isolated database tests.
+- [x] Correct intentional-private-table policy warnings without widening access. Six executable database regressions passed; signed-in Health refreshed to 10 healthy, zero warnings and zero failures; private-table protections unchanged.
+
 - [x] Add Draft using strategy to evaluated lead profiles, preserving research/quality gates and existing agent draft support. Signed-in Bluejay draft saved/read back with strategy_applied=true and quality_status=clear; dark/light preview checked. No mail sent; temporary draft removed. Backend deployed; public UI requires publishing.
 
 # Research-led use-case campaigns
