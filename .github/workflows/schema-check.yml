@@ -206,6 +206,19 @@ jobs:
           AUDIT_PG_URL: postgresql://audit:audit@localhost:5432/audit_test
           AUDIT_PG_REQUIRED: "1"
         run: npx vitest run src/lib/runtime-guards.test.ts src/lib/outbound-infra.test.ts src/lib/visitor-rls.test.ts src/lib/ai-coach-quota.test.ts src/lib/agent-missions-rls.test.ts
+      # Its own step, not appended to the list above.
+      #
+      # Those five share the audit_test database and race each other when
+      # vitest runs them in parallel: run locally on their own they fail 1-2
+      # tests, and the count moves between runs. This file creates a throwaway
+      # database per test so it cannot collide with anything, but running it
+      # beside them still shifts their timing. A separate step keeps it out of
+      # that and keeps a failure here attributable.
+      - name: Outcome data layer against postgres
+        env:
+          AUDIT_PG_URL: postgresql://audit:audit@localhost:5432/audit_test
+          AUDIT_PG_REQUIRED: "1"
+        run: npx vitest run src/lib/outcome-data-layer-db.test.ts
 
   # generate-email injects the GTM skills into its prompt by importing
   # _shared/skills.generated.ts, which is compiled from .claude/skills. Editing
