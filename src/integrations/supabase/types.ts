@@ -1979,6 +1979,57 @@ export type Database = {
         }
         Relationships: []
       }
+      dataset_stats: {
+        Row: {
+          as_of: string
+          bounced: number
+          claude_labels: number
+          created_at: string
+          finalized: number
+          human_labels: number
+          id: string
+          negative_reply: number
+          no_reply: number
+          pending: number
+          positive_rate: number | null
+          positives: number
+          unsubscribed: number
+          user_id: string | null
+        }
+        Insert: {
+          as_of?: string
+          bounced?: number
+          claude_labels?: number
+          created_at?: string
+          finalized?: number
+          human_labels?: number
+          id?: string
+          negative_reply?: number
+          no_reply?: number
+          pending?: number
+          positive_rate?: number | null
+          positives?: number
+          unsubscribed?: number
+          user_id?: string | null
+        }
+        Update: {
+          as_of?: string
+          bounced?: number
+          claude_labels?: number
+          created_at?: string
+          finalized?: number
+          human_labels?: number
+          id?: string
+          negative_reply?: number
+          no_reply?: number
+          pending?: number
+          positive_rate?: number | null
+          positives?: number
+          unsubscribed?: number
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       deals: {
         Row: {
           company_name: string
@@ -7265,6 +7316,63 @@ export type Database = {
           total_replied: number | null
           total_sent: number | null
           user_id: string | null
+        }
+        Relationships: []
+      }
+      training_examples: {
+        Row: {
+          agent_tier: string | null
+          ai_generated: boolean | null
+          body_word_count: number | null
+          buying_intent: string | null
+          buying_intent_confidence: number | null
+          company_size_band: string | null
+          country: string | null
+          department: string | null
+          edit_ratio: number | null
+          email_priority: string | null
+          email_verification_status: string | null
+          enrollment_id: string | null
+          fit_score: number | null
+          has_link: boolean | null
+          has_question_cta: boolean | null
+          human_labelled: number | null
+          human_replies: number | null
+          icp_fit: string | null
+          icp_fit_confidence: number | null
+          industry: string | null
+          intent_score: number | null
+          is_final: boolean | null
+          labelled: number | null
+          last_sent_at: string | null
+          lead_id: string | null
+          outcome: string | null
+          personalization_type: string | null
+          positives: number | null
+          quality_checker_score: number | null
+          scorer: string | null
+          scorer_version: string | null
+          send_hour_local: number | null
+          send_id: string | null
+          send_recommendation: string | null
+          send_recommendation_confidence: number | null
+          send_weekday: number | null
+          seniority: string | null
+          sent_at: string | null
+          sent_by: string | null
+          sequence_id: string | null
+          signal_count: number | null
+          signal_recency_days: number | null
+          signal_types: string[] | null
+          snapshot_id: string | null
+          source: string | null
+          strongest_signal_type: string | null
+          subject_word_count: number | null
+          tier: string | null
+          touches: number | null
+          unlabelled_replies: number | null
+          user_id: string | null
+          variant_id: string | null
         }
         Relationships: []
       }
