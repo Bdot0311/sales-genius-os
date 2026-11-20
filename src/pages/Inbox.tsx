@@ -269,10 +269,8 @@ const Inbox = () => {
       void queryClient.invalidateQueries({ queryKey: ["inbox-reply-labels"] });
     },
     onError: (e: unknown) => {
-      toast({
-        title: "Could not save that label",
+      toast.error("Could not save that label", {
         description: e instanceof Error ? e.message : "Please try again.",
-        variant: "destructive",
       });
     },
   });
