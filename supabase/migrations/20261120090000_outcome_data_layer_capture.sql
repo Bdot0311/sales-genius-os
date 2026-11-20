@@ -67,6 +67,7 @@ CREATE INDEX IF NOT EXISTS idx_lfs_captured ON public.lead_feature_snapshots(cap
 
 ALTER TABLE public.lead_feature_snapshots ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own feature snapshots" ON public.lead_feature_snapshots;
 CREATE POLICY "Users can view own feature snapshots"
   ON public.lead_feature_snapshots FOR SELECT USING (auth.uid() = user_id);
 
@@ -263,6 +264,15 @@ BEGIN
   RETURN v_snapshot_id;
 END;
 $$;
+
+/*
+ * Privileges are granted explicitly here, as everywhere else in this schema:
+ * this project does not rely on ALTER DEFAULT PRIVILEGES, so a new table or
+ * view is unreadable until it is granted. No app surface reads snapshots --
+ * they exist to be exported by the founder -- so only service_role gets them.
+ */
+REVOKE ALL ON TABLE public.lead_feature_snapshots FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.lead_feature_snapshots TO service_role;
 
 REVOKE ALL ON FUNCTION public.capture_send_snapshot(uuid, uuid, jsonb) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.capture_send_snapshot(uuid, uuid, jsonb) TO service_role;

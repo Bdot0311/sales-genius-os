@@ -73,6 +73,7 @@ CREATE INDEX IF NOT EXISTS idx_rlo_user ON public.reply_label_overrides(user_id)
 
 ALTER TABLE public.reply_label_overrides ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own label overrides" ON public.reply_label_overrides;
 CREATE POLICY "Users can view own label overrides"
   ON public.reply_label_overrides FOR SELECT USING (auth.uid() = user_id);
 
@@ -80,6 +81,7 @@ CREATE POLICY "Users can view own label overrides"
 -- the snapshot rows: the whole point is that they can do it in one tap. The
 -- analysis row must be one they own, so a forged id cannot relabel someone
 -- else's reply.
+DROP POLICY IF EXISTS "Users can correct labels on their own replies" ON public.reply_label_overrides;
 CREATE POLICY "Users can correct labels on their own replies"
   ON public.reply_label_overrides FOR INSERT
   WITH CHECK (
@@ -138,3 +140,19 @@ WHERE ra.outcome_label IS NOT NULL OR ovr.id IS NOT NULL;
 
 COMMENT ON VIEW public.reply_labels_resolved IS
   'One label per classified reply: newest human correction wins over the classifier.';
+
+/*
+ * Granted explicitly, because this project does not use ALTER DEFAULT
+ * PRIVILEGES: without these the Unified Inbox's chip fails with "permission
+ * denied for view reply_labels_resolved" for every signed-in user, and a
+ * correction cannot be saved at all.
+ *
+ * SELECT on the view is safe to hand to authenticated because it is
+ * security_invoker: it runs with the caller's own rights, so the underlying
+ * reply_analysis policy still limits each user to their own replies. The
+ * overrides table needs INSERT as well, since correcting a label in one tap is
+ * the whole point, and its own policy checks the analysis row is theirs.
+ */
+GRANT SELECT ON public.reply_labels_resolved TO authenticated, service_role;
+GRANT SELECT, INSERT ON TABLE public.reply_label_overrides TO authenticated;
+GRANT ALL ON TABLE public.reply_label_overrides TO service_role;
