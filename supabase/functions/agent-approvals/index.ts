@@ -170,6 +170,10 @@ serve(async (req) => {
             body: messageBody,
             integrationRowId,
             leadId: approval.lead_id ?? undefined,
+            // A person approved this draft, so it is agent_approved rather than
+            // agent_auto: the distinction is a feature the model will train on.
+            sentBy: "agent_approved",
+            aiGenerated: true,
             ...(threadId ? { threadId } : {}),
           }),
 

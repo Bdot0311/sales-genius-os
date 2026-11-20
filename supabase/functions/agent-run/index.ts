@@ -844,6 +844,8 @@ const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
                 integrationRowId: googleIntegrationId,
                 threadId: input.gmailThreadId,
                 appendSignature: true,
+                sentBy: "agent_auto",
+                aiGenerated: true,
               }),
             });
             const sendData = await sendRes.json().catch(() => ({}));
@@ -1452,6 +1454,10 @@ ${playbookSystemRules()}`;
                   integrationRowId: leadIntegrationId,
                     appendSignature: true,
                   leadId: lead.id,
+                  // send-email cannot tell an agent's request from a person's,
+                  // so provenance is declared here for the outcome snapshot.
+                  sentBy: "agent_auto",
+                  aiGenerated: true,
                 }),
               });
               const sendData = await sendRes.json().catch(() => ({}));

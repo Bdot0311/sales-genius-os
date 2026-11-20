@@ -1,3 +1,4 @@
+import { buildCopyFeatures, captureSendSnapshot } from "../_shared/outcome-capture.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@^2.76.1";
 import { corsHeaders, requireServiceRole } from "../_shared/internal-auth.ts";
@@ -736,6 +737,29 @@ serve(async (req) => {
               sending_account_id: sendingAccountId,
             } as any)
             .eq("id", email.id);
+          /*
+           * Outcome data layer: snapshot what we knew about this lead at the
+           * moment of the send. Scheduled sends are the sequence path, so these
+           * are the follow-up touches; first touches arrive via send-email.
+           * Runs after Gmail accepted and swallows its own errors, so it can
+           * neither fail this send nor cause a resend. These rows are queued by
+           * process-agent-jobs and agent-chat and sent on a schedule with no
+           * person present, so provenance is agent_auto.
+           */
+          await captureSendSnapshot(
+            supabase,
+            email.id,
+            email.user_id,
+            buildCopyFeatures({
+              subject: email.subject,
+              body: email.body_html ?? email.body_text,
+              sentBy: "agent_auto",
+              aiGenerated: true,
+              signalTypes: [],
+              companyName: null,
+              jobTitle: null,
+            }),
+          );
           if (persistError) {
             // send_attempted_at is already set, so a later pass will not send
             // this row again. Do not mark it failed: that would invite a resend
