@@ -26,9 +26,9 @@ const THEIRS = "88888888-8888-8888-8888-888888888888";
 
 const STANDINS = `
 ${PG_BOOTSTRAP_SQL}
-CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $f$
-  SELECT NULLIF(current_setting('app.uid', true), '')::uuid
-$f$;
+-- No auth.uid() of its own: the shared shim already falls back to app.uid,
+-- which is what the as() helper below sets. Defining another one here is
+-- drift pg-test-bootstrap.test.ts forbids, and it caught this.
 DROP TABLE IF EXISTS visitor_resolve_jobs CASCADE;
 CREATE TABLE visitor_resolve_jobs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid, status text,
