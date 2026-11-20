@@ -449,6 +449,13 @@
       "when": 1795211726114,
       "tag": "0063_outcome_data_layer_labels",
       "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1795212179144,
+      "tag": "0064_restrict_definer_functions",
+      "breakpoints": true
     }
   ]
 }
