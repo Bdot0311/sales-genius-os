@@ -203,3 +203,9 @@
 
 - [x] Embedded existing approvals/progress in AI Agent → Background work; removed standalone navigation and redirected old links. Updated and deployed agent directions. Signed-in estimate returned 63 matching leads, tab selection survived reload, both themes checked, no runtime errors; 10 regressions passed and preview build OK. No run approved or paid work started.
 - [x] Background drafts: rubric accepts worker calls; research crash on old receipts; progress label counts steps
+
+# AppSumo submission 236273 licensing
+
+- [ ] Resolve AppSumo connection failure; endpoint responds with expected unauthenticated HTTP 401, but connection approval did not complete. Waiting for the user's sign-in error details and successful AppSumo authorization.
+- [ ] Read submission fulfillment and configure licensing webhook, OAuth redemption and server-only credentials; deploy public HTTPS endpoints and save both URLs through AppSumo.
+- [ ] Run test_licensing and run_licensing_conformance, correct failures, verify stored lifecycle states, then direct the owner back to AppSumo’s Redemption page.
