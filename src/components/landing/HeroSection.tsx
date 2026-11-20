@@ -25,7 +25,7 @@ export const HeroSection = () => {
             </span>
             <span className="font-medium text-foreground/95">New</span>
             <span className="text-foreground/85">·</span>
-            <span>every plan ships an AI SDR, the free one included</span>
+            <span>connect OutReign to Claude, ChatGPT and Cursor over MCP</span>
           </span>
         </div>
 
