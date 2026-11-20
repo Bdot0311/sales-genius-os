@@ -871,9 +871,18 @@ serve(async (req) => {
       }),
     );
     for (const item of outsideFetches) {
-      if (!item?.fetched.html) continue;
+      if (!item) continue;
       const { result, fetched } = item;
-      const full = extractText(fetched.html).text.replace(/\s+/g, " ").trim();
+      /*
+       * Narrow the binding that is read, not item.fetched.html. Checking it
+       * through `item` and then destructuring into a fresh `fetched` loses the
+       * narrowing, so `fetched.html` was string | null at the call below and
+       * deno check failed on it. The runtime behaviour is unchanged: an empty
+       * or missing page is still skipped before anything reads it.
+       */
+      const html = fetched.html;
+      if (!html) continue;
+      const full = extractText(html).text.replace(/\s+/g, " ").trim();
       const mention = companyNeedle.length > 2 ? full.toLowerCase().indexOf(companyNeedle) : -1;
       const excerpt = (mention > 1500 ? full.slice(mention - 1500) : full).slice(0, 4000);
       if (!excerpt) continue;
