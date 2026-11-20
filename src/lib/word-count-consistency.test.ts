@@ -67,13 +67,40 @@ describe("the enforced band is the only ceiling", () => {
     expect(files.length).toBeGreaterThan(20);
   });
 
+  /*
+   * One exemption, and the reason it is not a hole.
+   *
+   * use-case-campaign.ts offers two selectable shapes: three supported use
+   * cases "under 75 words", and a one-sentence variant of "at most 35 words".
+   * Both are tighter than the enforced 50-90 band on purpose -- that is the
+   * shape of the campaign, not a stale global ceiling -- and per this file's
+   * own distinction, aiming tighter is good advice and stays. Nothing audits
+   * against 75, so neither line can produce "a finding no rule backs", which
+   * is what this rule exists to prevent. The regex cannot tell a drafting
+   * instruction from an asserted rule, so the exemption is named here rather
+   * than the guard being loosened for every file.
+   */
+  const SHAPE_PROMPTS = ["supabase/functions/_shared/use-case-campaign.ts"];
+
   it("nothing states an email-body ceiling below what the audit enforces", () => {
-    const offenders = files.flatMap((f) =>
-      ruleLines(f)
-        .filter(({ text }) => offendingCeilings(text).length > 0)
-        .map(({ n, text }) => `${f}:${n} → ${text.trim().slice(0, 90)}`),
-    );
+    const offenders = files
+      .filter((f) => !SHAPE_PROMPTS.includes(f))
+      .flatMap((f) =>
+        ruleLines(f)
+          .filter(({ text }) => offendingCeilings(text).length > 0)
+          .map(({ n, text }) => `${f}:${n} → ${text.trim().slice(0, 90)}`),
+      );
     expect(offenders).toEqual([]);
+  });
+
+  it("the exempt file is the only one that needs exempting", () => {
+    // If a shape prompt stops stating a tighter body, drop it from the list
+    // rather than leaving a name here that exempts nothing.
+    for (const f of SHAPE_PROMPTS) {
+      expect(files, `${f} is no longer walked; remove it`).toContain(f);
+      const stated = ruleLines(f).some(({ text }) => offendingCeilings(text).length > 0);
+      expect(stated, `${f} no longer states a tighter body; remove the exemption`).toBe(true);
+    }
   });
 
   it("catches the exact lines that slipped through the first time", () => {

@@ -1,3 +1,4 @@
+import { buildCopyFeatures, captureSendSnapshot, type SentBy } from "../_shared/outcome-capture.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { htmlToPlainText } from "../_shared/plain-text.ts";
 import { createClient } from 'npm:@supabase/supabase-js@^2.76.1';
@@ -73,7 +74,16 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const payload = await req.json();
-    const { to, subject, body: rawBody, integrationId, integrationRowId, leadId, templateId, threadId, appendSignature } = payload;
+    const { to, subject, body: rawBody, integrationId, integrationRowId, leadId, templateId, threadId, appendSignature,
+            sentBy: rawSentBy, aiGenerated: rawAiGenerated, originalBody, agentTier, variantId, qualityCheckerScore } = payload;
+    /*
+     * Who sent this, for the outcome data layer. A direct call from the app
+     * is a manual send; agent-run and agent-approvals invoke this function
+     * over HTTP and declare themselves, because this function cannot tell
+     * an agent's request from a person's.
+     */
+    const sentBy: SentBy = rawSentBy === "agent_auto" || rawSentBy === "agent_approved" ? rawSentBy : "manual";
+    const aiGenerated = rawAiGenerated === true || sentBy !== "manual";
     
     console.log('Send email request received:', { hasRecipient: !!to, integrationId, leadId, templateId });
 
@@ -489,11 +499,13 @@ serve(async (req) => {
     let leadProof = "";
     let storedSnapshots: unknown = null;
     let leadCompany = "";
+    let leadJobTitle: string | null = null;
+    let leadSignalTypes: string[] = [];
     let leadWebsite: string | null = null;
     if (leadId) {
       const { data: leadRow } = await supabase
         .from('leads')
-        .select('id, email_verification_status, research_brief, job_title, industry, company_name, contact_name, company_website')
+        .select('id, email_verification_status, research_brief, job_title, industry, company_name, contact_name, company_website, signal_type')
         .eq('id', leadId)
         .eq('user_id', user.id)
         .maybeSingle();
@@ -512,6 +524,10 @@ serve(async (req) => {
       // Evidence is the lead row this account owns, not a score the caller sent.
       leadProof = proofFromLead(leadRow);
       leadCompany = ownedLeadCompany(leadRow);
+      leadJobTitle = typeof leadRow.job_title === "string" ? leadRow.job_title : null;
+      leadSignalTypes = typeof (leadRow as { signal_type?: unknown }).signal_type === "string"
+        ? [(leadRow as { signal_type: string }).signal_type]
+        : [];
       leadWebsite = typeof leadRow.company_website === "string" ? leadRow.company_website : null;
       const { data: snapRows } = await supabase
         .from("research_snapshots")
@@ -963,6 +979,33 @@ ${unsubscribeFooterHtml}
               p_sent_email_id: id,
               p_user_id: user.id,
             }).then(() => {}, () => {});
+          }
+          /*
+           * Outcome data layer: copy what we knew about this lead at the moment
+           * of the send, before a re-score overwrites lead_decisions. Runs after
+           * Gmail accepted, like the verdict attach above, so a capture failure
+           * can neither fail this send nor cause a second one. The send is
+           * reported as successful either way; the failure is logged instead.
+           */
+          if (stored) {
+            await captureSendSnapshot(
+              supabase,
+              id,
+              user.id,
+              buildCopyFeatures({
+                subject,
+                body: htmlBody,
+                originalBody: typeof originalBody === "string" ? originalBody : null,
+                sentBy,
+                aiGenerated,
+                signalTypes: leadSignalTypes,
+                companyName: leadCompany || null,
+                jobTitle: leadJobTitle,
+                agentTier: typeof agentTier === "string" ? agentTier : null,
+                variantId: typeof variantId === "string" ? variantId : null,
+                qualityCheckerScore: typeof qualityCheckerScore === "number" ? qualityCheckerScore : null,
+              }),
+            );
           }
           return stored;
         },
