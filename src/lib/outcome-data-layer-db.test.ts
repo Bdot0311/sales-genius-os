@@ -1,3 +1,4 @@
+import { PG_BOOTSTRAP_SQL } from "./test-support/pg-bootstrap";
 import { readFileSync } from "node:fs";
 import postgres from "postgres";
 import { describe, expect, it } from "vitest";
@@ -33,11 +34,7 @@ const ANALYSIS = "33333333-3333-3333-3333-333333333333";
  * matters here is the behaviour of the two migrations under test.
  */
 const STANDINS = `
-CREATE SCHEMA IF NOT EXISTS auth;
-CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $f$ SELECT NULL::uuid $f$;
-DO $d$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='service_role') THEN CREATE ROLE service_role; END IF;
-END $d$;
+${PG_BOOTSTRAP_SQL}
 CREATE TABLE leads (
   id uuid PRIMARY KEY, user_id uuid,
   fit_score numeric, intent_score numeric, signal_score numeric,

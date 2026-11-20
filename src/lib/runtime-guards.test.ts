@@ -1,3 +1,5 @@
+import { AUTH_SHIM_SQL } from "./test-support/auth-shim";
+import { PG_BOOTSTRAP_SQL } from "./test-support/pg-bootstrap";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import postgres from "postgres";
@@ -244,14 +246,21 @@ describe("local postgres serializes the credit debit", () => {
     const migration = readFileSync("supabase/migrations/20261106053000_meter_and_send_guards.sql", "utf8");
     const fn = migration.slice(migration.indexOf("CREATE OR REPLACE FUNCTION public.apply_search_meter"), migration.indexOf("REVOKE ALL ON FUNCTION"));
     await sql.unsafe(`
-      CREATE SCHEMA IF NOT EXISTS auth;
-      CREATE OR REPLACE FUNCTION auth.role() RETURNS text LANGUAGE sql AS $$ SELECT 'service_role' $$;
-      CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT NULL::uuid $$;
-      DROP TABLE IF EXISTS search_transactions;
-      DROP TABLE IF EXISTS subscriptions;
-      DROP TABLE IF EXISTS sent_emails;
-      DROP TABLE IF EXISTS topup_payments;
-      DROP TABLE IF EXISTS ai_usage_events;
+      ${PG_BOOTSTRAP_SQL}
+      /*
+       * CASCADE, because these stand-ins are rebuilt in a database other test
+       * files also build in. A plain DROP of sent_emails fails outright --
+       * "cannot drop table sent_emails because other objects depend on it" --
+       * as soon as anything in that database references it, which the outcome
+       * data layer's reply_analysis and reply_label_overrides both do. The
+       * dependents are other files' stand-ins, never this file's own fixtures,
+       * so taking them with it is what rebuilding from scratch means.
+       */
+      DROP TABLE IF EXISTS search_transactions CASCADE;
+      DROP TABLE IF EXISTS subscriptions CASCADE;
+      DROP TABLE IF EXISTS sent_emails CASCADE;
+      DROP TABLE IF EXISTS topup_payments CASCADE;
+      DROP TABLE IF EXISTS ai_usage_events CASCADE;
       CREATE TABLE subscriptions (
         user_id uuid PRIMARY KEY,
         search_credits_remaining integer,
@@ -321,16 +330,7 @@ describe("local postgres serializes the credit debit", () => {
     const [still] = await sql`SELECT search_credits_remaining FROM subscriptions WHERE user_id = ${floorUser}::uuid`;
     expect(still.search_credits_remaining).toBe(0);
 
-    await sql.unsafe(`
-      CREATE OR REPLACE FUNCTION auth.role() RETURNS text LANGUAGE plpgsql AS $fn$
-      BEGIN
-        RETURN COALESCE(NULLIF(current_setting('app.role', true), ''), 'service_role');
-      END $fn$;
-      CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE plpgsql AS $fn$
-      BEGIN
-        RETURN NULLIF(current_setting('app.uid', true), '')::uuid;
-      END $fn$;
-    `);
+    await sql.unsafe(AUTH_SHIM_SQL);
     const victim = "55555555-5555-5555-5555-555555555555";
     await sql`INSERT INTO subscriptions (user_id, search_credits_remaining, daily_searches_used) VALUES (${victim}::uuid, 4, 0)`;
     await expect(sql.begin(async (tx) => {
@@ -485,7 +485,7 @@ describe("local postgres serializes the credit debit", () => {
         ADD COLUMN IF NOT EXISTS last_stripe_event_id text,
         ADD COLUMN IF NOT EXISTS last_stripe_event_at timestamptz,
         ADD COLUMN IF NOT EXISTS updated_at timestamptz;
-      DROP TABLE IF EXISTS stripe_credit_grants;
+      DROP TABLE IF EXISTS stripe_credit_grants CASCADE;
     `);
     const stripeSql = readFileSync("supabase/migrations/20261106070000_stripe_credit_delta_lock.sql", "utf8");
     await sql.unsafe(stripeSql);
@@ -577,5 +577,39 @@ describe("local postgres serializes the credit debit", () => {
     expect(afterSet.search_credits_remaining).toBe(9);
 
     await sql.end({ timeout: 2 });
+  });
+});
+
+describe("the stand-ins this file rebuilds can always be dropped", () => {
+  /*
+   * Every db-backed test file builds its stand-in tables in the one database
+   * the audit job provides, so a table another file creates can hold a foreign
+   * key into one this file drops. A plain DROP then fails outright -- "cannot
+   * drop table sent_emails because other objects depend on it" -- and takes
+   * this whole file's postgres tests down with it. That is not hypothetical:
+   * the outcome data layer's reply_analysis and reply_label_overrides both
+   * reference sent_emails, and adding them broke this file until the drops
+   * cascaded. Phases of that work still to come add more.
+   *
+   * CASCADE is safe here precisely because the dependents are never this
+   * file's own fixtures: it rebuilds all of them immediately below each drop.
+   */
+  it("drops every stand-in with CASCADE", () => {
+    /*
+     * Only the part of the file above this block: the test below holds a
+     * deliberately uncascaded sample, and scanning the whole file matched that
+     * instead of real code.
+     */
+    const whole = readFileSync("src/lib/runtime-guards.test.ts", "utf8");
+    const src = whole.slice(0, whole.indexOf("describe(\"the stand-ins this file rebuilds"));
+    const plain = [...src.matchAll(/DROP TABLE IF EXISTS (\w+)(?! CASCADE)[^\w]/g)].map((m) => m[1]);
+    expect(plain, `these would fail once anything references them: ${plain.join(", ")}`).toEqual([]);
+  });
+
+  it("would notice a drop that lost its CASCADE", () => {
+    // The rule above passes vacuously if the pattern stops matching anything.
+    const sample = "DROP TABLE IF EXISTS sent_emails;\nDROP TABLE IF EXISTS leads CASCADE;";
+    expect([...sample.matchAll(/DROP TABLE IF EXISTS (\w+)(?! CASCADE)[^\w]/g)].map((m) => m[1]))
+      .toEqual(["sent_emails"]);
   });
 });

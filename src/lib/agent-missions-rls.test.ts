@@ -1,3 +1,4 @@
+import { PG_BOOTSTRAP_SQL } from "./test-support/pg-bootstrap";
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import postgres from "postgres";
@@ -23,15 +24,7 @@ describe("agent mission claims and tenant isolation", () => {
 
     try {
       const bootstrap = `
-        DO $$ BEGIN
-          IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN CREATE ROLE anon NOLOGIN; END IF;
-          IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN CREATE ROLE authenticated NOLOGIN; END IF;
-          IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN CREATE ROLE service_role NOLOGIN BYPASSRLS; END IF;
-        END $$;
-        CREATE SCHEMA IF NOT EXISTS auth;
-        CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$
-          SELECT NULLIF(current_setting('request.jwt.claim.sub', true), '')::uuid
-        $$;
+        ${PG_BOOTSTRAP_SQL}
         DO $$ BEGIN
           CREATE TYPE public.app_role AS ENUM ('admin', 'user');
         EXCEPTION WHEN duplicate_object THEN NULL;

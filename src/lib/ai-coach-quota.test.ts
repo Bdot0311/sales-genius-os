@@ -1,3 +1,4 @@
+import { PG_ROLE_BOOTSTRAP_SQL } from "./test-support/pg-bootstrap";
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import postgres from "postgres";
@@ -107,12 +108,7 @@ describe("coach quota claims are atomic", () => {
     }
 
     const roles = `
-      DO $$ BEGIN
-        IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN CREATE ROLE anon NOLOGIN; END IF;
-        IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN CREATE ROLE authenticated NOLOGIN; END IF;
-        IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN CREATE ROLE service_role NOLOGIN BYPASSRLS; END IF;
-      EXCEPTION WHEN duplicate_object THEN NULL;
-      END $$;
+      ${PG_ROLE_BOOTSTRAP_SQL}
       CREATE TABLE IF NOT EXISTS public.coaching_messages (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id uuid NOT NULL,
