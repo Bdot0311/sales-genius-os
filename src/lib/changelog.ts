@@ -116,6 +116,13 @@ export const ROADMAP: RoadmapItem[] = [
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-11-20-appsumo-redemption",
+    date: "2026-11-20",
+    title: "Connect your AppSumo subscription",
+    summary: "Link a verified AppSumo license to your OutReign account.",
+    items: [{ tag: "billing", title: "AppSumo subscription redemption", description: "Start from AppSumo’s activation link, sign in or create an account, and connect your subscription. Plan changes and cancellation follow your AppSumo license status.", href: "/appsumo" }],
+  },
+  {
     id: "2026-11-20-demo-video",
     date: "2026-11-20",
     title: "Watch the product demo right on the homepage",

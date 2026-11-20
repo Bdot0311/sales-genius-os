@@ -207,5 +207,6 @@
 # AppSumo submission 236273 licensing
 
 - [x] AppSumo connected; authenticated access to draft submission 236273 and its five licensing plans verified.
+- [ ] Correct the listing's stored lifetime deal type to the owner's monthly subscription model; Done-for-you maps to Agency with 15,000 monthly credits. Do not promise lifetime access.
 - [ ] Read submission fulfillment and configure licensing webhook, OAuth redemption and server-only credentials; deploy public HTTPS endpoints and save both URLs through AppSumo.
 - [ ] Run test_licensing and run_licensing_conformance, correct failures, verify stored lifecycle states, then direct the owner back to AppSumo’s Redemption page.

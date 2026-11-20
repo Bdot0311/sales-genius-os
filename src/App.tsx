@@ -28,6 +28,7 @@ const isPublicLandingPath = (pathname: string) => {
 
 // Lazy load non-critical pages
 const Auth = lazy(() => import("./pages/Auth"));
+const AppSumoRedemption = lazy(() => import("./pages/AppSumoRedemption"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const Leads = lazy(() => import("./pages/Leads"));
@@ -502,6 +503,7 @@ const App = () => {
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/appsumo" element={<AppSumoRedemption />} />
               <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
               <Route path="/connect" element={<Connect />} />
               <Route path="/pricing" element={<PricingPage />} />

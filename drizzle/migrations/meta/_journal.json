@@ -484,6 +484,13 @@
       "when": 1795218565053,
       "tag": "0068_appsumo_licensing",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1795218924333,
+      "tag": "0069_appsumo_monthly_terms_and_states",
+      "breakpoints": true
     }
   ]
 }

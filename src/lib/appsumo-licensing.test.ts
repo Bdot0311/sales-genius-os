@@ -35,5 +35,5 @@ describe('AppSumo lifecycle', () => {
     expect(appSumoStatus('upgrade', 'inactive')).toBe('active');
     expect(appSumoStatus('downgrade', 'inactive')).toBe('active');
   });
-  it('deactivation revokes access', () => expect(appSumoStatus('deactivate', 'active')).toBe('deactivated'));
+  it('deactivation revokes access', () => expect(appSumoStatus('deactivate', 'active')).toBe('inactive'));
 });

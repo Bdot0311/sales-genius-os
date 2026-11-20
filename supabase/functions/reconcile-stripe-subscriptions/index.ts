@@ -94,9 +94,12 @@ Deno.serve(async (req) => {
   try {
     // Only rows that could possibly be wrong: anything linked to Stripe, or on
     // a paid plan without a live subscription.
+    const { error: renewalError } = await supabase.rpc("appsumo_refresh_credits");
+    if (renewalError) throw new Error("AppSumo credit renewal failed");
     const { data: rows, error } = await supabase
       .from("subscriptions")
       .select("user_id, plan, status, account_status, stripe_subscription_id, trial_end_date, previous_plan, grace_started_at")
+      .is("appsumo_license_key", null)
       .or("stripe_subscription_id.not.is.null,plan.neq.free");
     if (error) throw new Error(error.message);
 

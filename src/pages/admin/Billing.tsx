@@ -19,6 +19,7 @@ import {
 import { RefreshCw, AlertTriangle, Lock, Unlock, Trash2, CheckCircle2, ExternalLink } from "lucide-react";
 import { BillingNotificationSettings } from "@/components/admin/BillingNotificationSettings";
 import { BillingAuditTrail } from "@/components/admin/BillingAuditTrail";
+import { AppSumoLicenseLookup } from "@/components/admin/AppSumoLicenseLookup";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
@@ -230,6 +231,7 @@ export default function AdminBilling() {
       <BillingNotificationSettings />
 
       <BillingAuditTrail />
+      <AppSumoLicenseLookup />
 
 
 

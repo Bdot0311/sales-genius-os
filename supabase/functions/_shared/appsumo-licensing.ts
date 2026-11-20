@@ -13,9 +13,9 @@ export async function validAppSumoSignature(body: string, timestamp: string | nu
 export const APP_SUMO_EVENTS = ['purchase', 'activate', 'upgrade', 'downgrade', 'deactivate', 'migrate'] as const;
 export type AppSumoEvent = typeof APP_SUMO_EVENTS[number];
 export function appSumoStatus(event: AppSumoEvent, reported?: string): string {
-  if (event === 'deactivate') return 'deactivated';
+  if (event === 'deactivate') return 'inactive';
   if (event === 'purchase') return 'inactive';
-  if (event === 'migrate') return reported === 'deactivated' ? 'deactivated' : 'active';
+  if (event === 'migrate') return reported === 'deactivated' || reported === 'inactive' ? 'inactive' : 'active';
   return 'active';
 }
 export async function claimDigest(value: string): Promise<string> {

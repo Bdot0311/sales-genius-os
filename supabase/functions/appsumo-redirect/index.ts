@@ -31,12 +31,13 @@ Deno.serve(async req => {
     const licenseResponse = await fetch(licenseUrl, { redirect: 'error', signal: AbortSignal.timeout(8000) });
     if (!licenseResponse.ok) return fail('AppSumo license could not be verified', 400);
     const verified = await licenseResponse.json();
-    if (typeof verified.license_key !== 'string' || verified.status !== 'active') return fail('This AppSumo license is not active', 403);
+    if (typeof verified.license_key !== 'string') return fail('AppSumo did not return a license', 403);
     const db = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '', { auth: { persistSession: false } });
     const { data: license, error } = await db.from('appsumo_licenses').select('license_key,user_id,license_status,is_test').eq('license_key', verified.license_key).maybeSingle();
-    if (error || !license || license.license_status !== 'active') return fail('License activation has not arrived yet. Retry redemption shortly.', 409);
+    if (error || !license) return fail('License activation has not arrived yet. Retry redemption shortly.', 409);
     // Conformance licenses are recorded but must never grant a real account access.
     if (license.is_test) return new Response('AppSumo test authorization and license lookup completed.', { status: 200, headers: { ...headers, 'Content-Type': 'text/plain' } });
+    if (verified.status !== 'active' || license.license_status !== 'active') return fail('This license is no longer active', 403);
     if (license.user_id) {
       const { data: userData, error: userError } = await db.auth.admin.getUserById(license.user_id);
       const email = userData.user?.email;
