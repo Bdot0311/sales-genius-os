@@ -216,10 +216,13 @@ serve(async (req) => {
     const tokens = new Map<string, string>();
     for (const a of eligible) {
       if (!a.integration_id) continue;
+      // Only refresh mailboxes this caller may act for; signed-in users must
+      // never trigger token refreshes on other users' integrations.
+      if (!actsFor(a)) continue;
       const t = await refreshedToken(supabase, a.integration_id);
       if (t) tokens.set(a.account_id, t);
     }
-    const sendable = eligible.filter((a) => tokens.has(a.account_id));
+    const sendable = eligible.filter((a) => (actsFor(a) ? tokens.has(a.account_id) : true));
     if (sendable.length < 2) {
       return json({
         ok: true, idle: true,
