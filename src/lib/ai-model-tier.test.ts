@@ -60,6 +60,26 @@ describe("the named tiers map to the models they claim", () => {
 describe("the calls whose output is the product ask for the strong tier", () => {
   const FUNCS = "supabase/functions";
   const body = (fn: string) => readFileSync(`${FUNCS}/${fn}/index.ts`, "utf8");
+  /*
+   * Line comments removed, for the assertions that COUNT requests.
+   *
+   * Prose mentioning a model is not a request. generate-email carries the line
+   * "never re-typed by the model: it picks a fact by number", and counting that
+   * as a fifteenth call site made this test report an untiered request that
+   * does not exist.
+   *
+   * Block comments are deliberately left in place. research-lead sends an
+   * Accept header containing the string "*\/*", whose "/*" opens a block
+   * comment as far as a regex is concerned; stripping block comments swallowed
+   * 6,519 characters of real code there, including both of its AI_SMART call
+   * sites, and the count then read zero. A false negative that quiet is worse
+   * than counting a line of prose.
+   *
+   * Only the counts use this. The toContain and not.toContain assertions read
+   * the whole file, because a negative assertion over stripped source would
+   * pass on a string that is merely commented out.
+   */
+  const requests = (fn: string) => body(fn).replace(/^\s*\/\/.*$/gm, "");
 
   /*
    * Drafting, the two graders, the research that feeds personalisation, and
@@ -83,7 +103,7 @@ describe("the calls whose output is the product ask for the strong tier", () => 
      * contains AI_SMART somewhere is satisfied while that retry quietly goes
      * back to Haiku — and a retry writing the email is writing the email.
      */
-    const src = body(fn);
+    const src = requests(fn);
     const total = [...src.matchAll(/\bmodel: /g)].length;
     const smart = [...src.matchAll(/\bmodel: AI_SMART\b/g)].length;
     expect(total, `${fn} should make at least one AI request`).toBeGreaterThan(0);
@@ -102,7 +122,7 @@ describe("the calls whose output is the product ask for the strong tier", () => 
       "map-account-committee",
       "build-agent",
     ]) {
-      const src = body(fn);
+      const src = requests(fn);
       const total = [...src.matchAll(/\bmodel: /g)].length;
       const fast = [...src.matchAll(/\bmodel: AI_FAST\b/g)].length;
       expect(total, `${fn} should make at least one AI request`).toBeGreaterThan(0);
@@ -118,12 +138,13 @@ describe("the calls whose output is the product ask for the strong tier", () => 
   });
 
   it("generate-email asks for a caller tier on every request", () => {
-    const src = body("generate-email");
+    const src = requests("generate-email");
     const total = [...src.matchAll(/\bmodel: /g)].length;
     const tiered = [...src.matchAll(/\bmodel: draftModel\b/g)].length;
     expect(total).toBeGreaterThan(0);
     expect(tiered).toBe(total);
-    expect(src).not.toMatch(/\bmodel: AI_SMART\b/);
+    // Read raw: a commented-out AI_SMART would still be a problem worth seeing.
+    expect(body("generate-email")).not.toMatch(/\bmodel: AI_SMART\b/);
   });
 });
 
