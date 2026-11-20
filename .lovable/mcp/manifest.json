@@ -393,6 +393,8 @@
                 "update_enrollment",
                 "update_sequence_status",
                 "classify_reply",
+                "list_reply_labels",
+                "set_reply_label",
                 "list_sending_accounts",
                 "update_sending_account",
                 "list_deliverability_alerts",
