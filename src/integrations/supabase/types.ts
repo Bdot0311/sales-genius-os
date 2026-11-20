@@ -4461,42 +4461,6 @@ export type Database = {
           },
         ]
       }
-      reply_label_overrides: {
-        Row: {
-          created_at: string
-          id: string
-          note: string | null
-          objection_type: string | null
-          outcome_label: string
-          reply_analysis_id: string
-          sent_email_id: string | null
-          source: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          note?: string | null
-          objection_type?: string | null
-          outcome_label: string
-          reply_analysis_id: string
-          sent_email_id?: string | null
-          source?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          note?: string | null
-          objection_type?: string | null
-          outcome_label?: string
-          reply_analysis_id?: string
-          sent_email_id?: string | null
-          source?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       reply_threads: {
         Row: {
           classification: string | null
@@ -7238,21 +7202,6 @@ export type Database = {
       }
     }
     Views: {
-      reply_labels_resolved: {
-        Row: {
-          confidence: number | null
-          classifier_version: string | null
-          label: string | null
-          labeled_at: string | null
-          labeled_by: string | null
-          lead_id: string | null
-          objection_type: string | null
-          reply_analysis_id: string | null
-          sent_email_id: string | null
-          user_id: string | null
-        }
-        Relationships: []
-      }
       template_performance: {
         Row: {
           click_rate: number | null
