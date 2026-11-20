@@ -4394,12 +4394,16 @@ export type Database = {
           agent_reply_sent_at: string | null
           analyzed_at: string
           check_back_at: string | null
+          classifier_version: string | null
           created_at: string
           detected_signals: Json | null
           id: string
           intent_classification: string | null
           intent_score: number | null
+          label_confidence: number | null
           lead_id: string | null
+          objection_type: string | null
+          outcome_label: string | null
           processed_by_agent: boolean | null
           reply_content: string | null
           requires_human_action: boolean
@@ -4412,12 +4416,16 @@ export type Database = {
           agent_reply_sent_at?: string | null
           analyzed_at?: string
           check_back_at?: string | null
+          classifier_version?: string | null
           created_at?: string
           detected_signals?: Json | null
           id?: string
           intent_classification?: string | null
           intent_score?: number | null
+          label_confidence?: number | null
           lead_id?: string | null
+          objection_type?: string | null
+          outcome_label?: string | null
           processed_by_agent?: boolean | null
           reply_content?: string | null
           requires_human_action?: boolean
@@ -4430,12 +4438,16 @@ export type Database = {
           agent_reply_sent_at?: string | null
           analyzed_at?: string
           check_back_at?: string | null
+          classifier_version?: string | null
           created_at?: string
           detected_signals?: Json | null
           id?: string
           intent_classification?: string | null
           intent_score?: number | null
+          label_confidence?: number | null
           lead_id?: string | null
+          objection_type?: string | null
+          outcome_label?: string | null
           processed_by_agent?: boolean | null
           reply_content?: string | null
           requires_human_action?: boolean
@@ -4454,6 +4466,64 @@ export type Database = {
           },
           {
             foreignKeyName: "reply_analysis_sent_email_id_fkey"
+            columns: ["sent_email_id"]
+            isOneToOne: false
+            referencedRelation: "sent_emails"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reply_label_overrides: {
+        Row: {
+          created_at: string
+          id: string
+          note: string | null
+          objection_type: string | null
+          outcome_label: string
+          reply_analysis_id: string
+          sent_email_id: string | null
+          source: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          objection_type?: string | null
+          outcome_label: string
+          reply_analysis_id: string
+          sent_email_id?: string | null
+          source?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          objection_type?: string | null
+          outcome_label?: string
+          reply_analysis_id?: string
+          sent_email_id?: string | null
+          source?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reply_label_overrides_reply_analysis_id_fkey"
+            columns: ["reply_analysis_id"]
+            isOneToOne: false
+            referencedRelation: "reply_analysis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reply_label_overrides_reply_analysis_id_fkey"
+            columns: ["reply_analysis_id"]
+            isOneToOne: false
+            referencedRelation: "reply_labels_resolved"
+            referencedColumns: ["reply_analysis_id"]
+          },
+          {
+            foreignKeyName: "reply_label_overrides_sent_email_id_fkey"
             columns: ["sent_email_id"]
             isOneToOne: false
             referencedRelation: "sent_emails"
@@ -7202,6 +7272,36 @@ export type Database = {
       }
     }
     Views: {
+      reply_labels_resolved: {
+        Row: {
+          classifier_version: string | null
+          confidence: number | null
+          label: string | null
+          labeled_at: string | null
+          labeled_by: string | null
+          lead_id: string | null
+          objection_type: string | null
+          reply_analysis_id: string | null
+          sent_email_id: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reply_analysis_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reply_analysis_sent_email_id_fkey"
+            columns: ["sent_email_id"]
+            isOneToOne: false
+            referencedRelation: "sent_emails"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       template_performance: {
         Row: {
           click_rate: number | null
