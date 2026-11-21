@@ -13,6 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
+import { marketingConsentRecord } from "@/lib/marketing-consent";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { toast } from "sonner";
 import { ArrowLeft, Check, Loader2, Rocket } from "lucide-react";
@@ -83,6 +85,7 @@ const Onboarding = () => {
   const [answers, setAnswers] = useState<OnboardingAnswers>(EMPTY_ANSWERS);
   const [saving, setSaving] = useState(false);
   const [checking, setChecking] = useState(true);
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
 
   const set = <K extends keyof OnboardingAnswers>(key: K, value: OnboardingAnswers[K]) =>
     setAnswers((prev) => ({ ...prev, [key]: value }));
@@ -149,6 +152,12 @@ const Onboarding = () => {
       }
 
       const size = COMPANY_SIZE_OPTIONS.find((o) => o.label === answers.company_size);
+
+      // Save the explicit choice before completion; never enroll anyone here.
+      const { error: consentError } = await supabase.auth.updateUser({
+        data: { marketing_email_consent: marketingConsentRecord(marketingOptIn, new Date().toISOString()) },
+      });
+      if (consentError) throw consentError;
 
       const { error: respErr } = await supabase.from("onboarding_responses").upsert(
         {
@@ -419,6 +428,13 @@ const Onboarding = () => {
                       <span className="text-right font-medium">{value}</span>
                     </div>
                   ))}
+                </div>
+                <div className="flex items-start gap-3">
+                  <Checkbox id="marketing-opt-in" checked={marketingOptIn} onCheckedChange={(value) => setMarketingOptIn(value === true)} disabled={saving} className="mt-1" aria-describedby="marketing-opt-in-detail" />
+                  <div className="space-y-1">
+                    <Label htmlFor="marketing-opt-in" className="text-sm leading-6 cursor-pointer">Email me OutReign offers, product updates and blog newsletters.</Label>
+                    <p id="marketing-opt-in-detail" className="text-xs text-muted-foreground">Optional. You can unsubscribe at any time. Account and security emails are separate.</p>
+                  </div>
                 </div>
                 <Button size="lg" className="w-full" onClick={handleFinish} disabled={saving}>
                   {saving ? (

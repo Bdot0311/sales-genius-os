@@ -1,7 +1,11 @@
 # Black Friday re-engagement
 
-- [ ] Add optional, unchecked marketing consent on the final onboarding screen; preserve existing users as not opted in.
-- [ ] Send a Mailchimp test to the owner's confirmed address before any audience send; no import or campaign send to the 67 non-consenting users.
+- [x] Explain that existing inactivity messages are also reengagement, not an exception to the managed account-email restriction; no send attempted or existing automation changed.
+
+- [ ] Blog newsletters use Mailchimp only for opted-in subscribers; awaiting a selected blog and owner approval, no blog published or sent in this request.
+- [x] Declined using Lovable account emails for the promotional 67-user campaign; no workaround or send attempted.
+- [x] Add optional, unchecked marketing consent on the final onboarding screen; existing users remain not opted in. Explicit choices save in account metadata, separate from authorization and Mailchimp enrollment; 3 consent tests passed.
+- [ ] Owner test remains unsent: user clarified Mailchimp is for blogs only. A Mailchimp review-only Black Friday draft was saved before that clarification; no test, audience send or import performed.
 - [x] Audit confirms 67 non-admin accounts, all currently Free: 64 verified, 32 onboarded, 18 searched, 14 saved leads, 7 connected mailboxes, 1 sent. Reasons remain hypotheses; draft and safe personalization saved in docs/black-friday-reengagement-2026.md.
 - [x] Confirm offer: free personal campaign setup + first month free on any plan, claimed by Black Friday November 27, 2026; payment card required, then regular monthly renewal unless canceled. Draft clearly states terms.
 - [ ] Provision and verify the offer's redemption/payment path before delivery; no trial, coupon or customer billing changes made.
