@@ -216,11 +216,11 @@ export async function aiFetch(
         // back to a buffered completion re-emitted as SSE so the feature still works.
         console.error(`[ai-provider] ${fnName} bedrock stream unavailable -> buffered fallback`);
       }
-      // 429, 5xx and a timeout are asked again inside the same deadline.
-      // Early attempts use the short bound so a stall is cancelled. The last
-      // attempt gets the time still left, so a long buffered generation can
-      // finish. The in-flight request is cancelled before the retry. The
-      // gateway fallback below is not the path production uses.
+      // A stall is cancelled at the short bound. The next attempt is the last
+      // and receives the time still left, so a generation of about 70s finishes
+      // inside the deadline after one cutoff. A 429 still retries on its own.
+      // The in-flight request is cancelled before the retry. The gateway
+      // fallback below is not the path production uses.
       const res = await runWithAiRetries(
         (budget) => withAttemptTimeout(
           (attemptSignal) => bedrockChat(route.model, body, attemptSignal),

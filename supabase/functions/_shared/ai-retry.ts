@@ -57,23 +57,28 @@ export function attemptTimeoutLeavesRoom(
 /**
  * How long this attempt may run.
  *
- * Early attempts use the short bound, so a stall is cancelled and asked again.
- * The last attempt gets whatever is left before the deadline, and never less
- * than the short bound: a generation that needs 70s and used to finish inside
- * 120s must be able to finish on that last try. A 429 comes back in
- * milliseconds either way, so the bound does not change that path.
+ * A short early attempt is how a stall gets cancelled. Once an attempt has
+ * actually timed out, the next one is the last: it receives every millisecond
+ * still left before the deadline, so a generation of about 70s can finish
+ * inside 120s after a single 45s cutoff. Spending that remainder on another
+ * 45s cutoff is what left the last try ~29s and billed the call three times.
+ * A 429 comes back at once, so this bound does not change that retry.
  */
 export function attemptBudgetMs(
   attempt: number,
   elapsedMs: number,
-  opts?: { maxAttempts?: number; deadlineMs?: number; shortMs?: number },
+  opts?: { maxAttempts?: number; deadlineMs?: number; shortMs?: number; final?: boolean },
 ): number {
   const maxAttempts = opts?.maxAttempts ?? AI_MAX_ATTEMPTS;
   const deadlineMs = opts?.deadlineMs ?? AI_CALL_DEADLINE_MS;
   const shortMs = opts?.shortMs ?? AI_ATTEMPT_TIMEOUT_MS;
   const remaining = deadlineMs - Math.max(0, elapsedMs);
-  if (attempt >= maxAttempts) return Math.max(shortMs, remaining);
+  if (opts?.final || attempt >= maxAttempts) return Math.max(0, remaining);
   return shortMs;
+}
+
+function isAttemptTimeout(error: unknown): boolean {
+  return error instanceof Error && error.message === "Timeout";
 }
 
 /**
@@ -204,20 +209,31 @@ export async function runWithAiRetries(
   const budgetOpts = { deadlineMs: hooks.deadlineMs, shortMs: hooks.shortMs };
   let last: Response | null = null;
   let lastError: unknown = null;
+  // A timeout spends the short bound. The following attempt is the last one
+  // and receives whatever the deadline still allows, so a slow generation is
+  // billed twice, not three times.
+  let afterTimeout = false;
   for (let attempt = 1; attempt <= AI_MAX_ATTEMPTS; attempt++) {
-    const budget = attemptBudgetMs(attempt, now() - started, budgetOpts);
+    const budget = attemptBudgetMs(attempt, now() - started, { ...budgetOpts, final: afterTimeout });
     try {
       const res = await send(budget);
       last = res;
       lastError = null;
-      if (!shouldRetryStatus(res.status) || attempt === AI_MAX_ATTEMPTS) return res;
+      if (!shouldRetryStatus(res.status) || afterTimeout || attempt === AI_MAX_ATTEMPTS) return res;
       const wait = jitteredRetryDelayMs(attempt, res.headers.get("retry-after"), random);
       await res.body?.cancel().catch(() => {});
       await sleep(wait);
       if (hooks.signal?.aborted) return res;
     } catch (error) {
       lastError = error;
-      if (!isTransientTransportError(error) || attempt === AI_MAX_ATTEMPTS || hooks.signal?.aborted) throw error;
+      if (hooks.signal?.aborted || !isTransientTransportError(error)) throw error;
+      if (isAttemptTimeout(error)) {
+        if (afterTimeout) throw error;
+        afterTimeout = true;
+        await sleep(jitteredRetryDelayMs(attempt, null, random));
+        continue;
+      }
+      if (attempt === AI_MAX_ATTEMPTS) throw error;
       await sleep(jitteredRetryDelayMs(attempt, null, random));
     }
   }

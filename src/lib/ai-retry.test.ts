@@ -81,60 +81,93 @@ describe("how long to wait", () => {
 });
 
 describe("the last attempt may run as long as the deadline allows", () => {
-  it("a 70s response succeeds on the final attempt", async () => {
+  /** One clock for the attempt timer and for runWithAiRetries' now(). */
+  function fakeClock() {
     let now = 0;
-    const budgets: number[] = [];
-    const res = await runWithAiRetries(
-      async (budget) => {
-        budgets.push(budget);
-        // Early attempts are the short bound. A body that takes 70s cannot
-        // finish, so those attempts time out and the clock moves on by that bound.
-        // Early attempts failed fast (a blip, not a 45s burn). A body that
-        // needs 70s only fits the last attempt, which is given the time left.
-        if (budget < 70_000) throw new Error("Timeout");
-        return new Response("ok", { status: 200 });
-      },
-      { now: () => now, sleep: async (ms) => { now += ms; }, random: () => 0.5 },
-    );
-    expect(res.status).toBe(200);
-    expect(budgets.slice(0, -1)).toEqual([AI_ATTEMPT_TIMEOUT_MS, AI_ATTEMPT_TIMEOUT_MS]);
-    expect(budgets.at(-1)).toBeGreaterThanOrEqual(70_000);
-  });
-
-  it("cancels a stalled first attempt and retries", async () => {
-    let now = 0;
-    const pending: { at: number; fn: () => void; cleared: boolean }[] = [];
-    const clock = {
+    const timers: { at: number; fn: () => void; cleared: boolean }[] = [];
+    return {
+      now: () => now,
       set(fn: () => void, ms: number) {
         const item = { at: now + ms, fn, cleared: false };
-        pending.push(item);
+        timers.push(item);
         return () => { item.cleared = true; };
       },
+      next(): number | null {
+        const due = timers.filter((t) => !t.cleared).sort((a, b) => a.at - b.at)[0];
+        return due ? due.at - now : null;
+      },
+      /** Move forward by `ms`, firing each timer as its time arrives. */
+      async advance(ms: number) {
+        const target = now + ms;
+        for (;;) {
+          const due = timers.filter((t) => !t.cleared && t.at <= target).sort((a, b) => a.at - b.at)[0];
+          if (!due) break;
+          now = due.at;
+          due.cleared = true;
+          due.fn();
+          await Promise.resolve();
+        }
+        now = Math.max(now, target);
+      },
     };
-    const flush = (until: number) => {
-      now = until;
-      for (const item of pending) {
-        if (!item.cleared && item.at <= now) item.fn();
-      }
-    };
+  }
+
+  async function drive<T>(clock: ReturnType<typeof fakeClock>, work: Promise<T>): Promise<T> {
+    let settled = false;
+    let value: T | undefined;
+    let failure: unknown;
+    work.then(
+      (v) => { settled = true; value = v; },
+      (e) => { settled = true; failure = e; },
+    );
+    for (let step = 0; step < 20 && !settled; step++) {
+      await Promise.resolve();
+      const wait = clock.next();
+      if (wait == null) continue;
+      await clock.advance(wait);
+    }
+    if (!settled) throw new Error("the call did not settle");
+    if (failure !== undefined) throw failure;
+    return value as T;
+  }
+
+  it("a 70s body succeeds within 120s after one short timeout, billed twice", async () => {
+    const clock = fakeClock();
     let calls = 0;
-    const done = runWithAiRetries(
+    const res = await drive(clock, runWithAiRetries(
       (budget) => withAttemptTimeout((signal) => new Promise((resolve, reject) => {
         calls += 1;
-        if (calls === 1) {
-          expect(budget).toBe(AI_ATTEMPT_TIMEOUT_MS);
-          signal.addEventListener("abort", () => reject(new Error("aborted")));
-          return;
-        }
-        resolve(new Response("ok", { status: 200 }));
+        const finish = clock.set(() => resolve(new Response("ok", { status: 200 })), 70_000);
+        signal.addEventListener("abort", () => {
+          finish();
+          reject(new Error("aborted"));
+        });
       }), budget, undefined, clock),
-      { now: () => now, sleep: async () => {}, random: () => 0 },
-    );
-    await Promise.resolve();
-    flush(AI_ATTEMPT_TIMEOUT_MS);
-    const res = await done;
+      { now: clock.now, sleep: (ms) => clock.advance(ms), random: () => 0.5 },
+    ));
     expect(res.status).toBe(200);
     expect(calls).toBe(2);
+    expect(clock.now()).toBeGreaterThanOrEqual(70_000);
+    expect(clock.now()).toBeLessThanOrEqual(AI_CALL_DEADLINE_MS);
+  });
+
+  it("a stall is cancelled at the short bound and then fails at the deadline", async () => {
+    const clock = fakeClock();
+    const parent = new AbortController();
+    clock.set(() => parent.abort(), AI_CALL_DEADLINE_MS);
+    let calls = 0;
+    const result = drive(clock, runWithAiRetries(
+      (budget) => {
+        calls += 1;
+        return withAttemptTimeout((signal) => new Promise((_resolve, reject) => {
+          signal.addEventListener("abort", () => reject(new Error("aborted")));
+        }), budget, parent.signal, clock);
+      },
+      { now: clock.now, sleep: (ms) => clock.advance(ms), random: () => 0.5, signal: parent.signal },
+    ));
+    await expect(result).rejects.toThrow("Timeout");
+    expect(calls).toBe(2);
+    expect(clock.now()).toBe(AI_CALL_DEADLINE_MS);
   });
 
   it("the deadline still ends the call", async () => {
