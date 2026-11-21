@@ -15,6 +15,7 @@
 // Call sites keep the exact `fetch` shape they had before — the response body is
 // the OpenAI chat-completions shape on all three routes, including streaming.
 
+import { AI_MAX_ATTEMPTS, retryDelayMs, shouldRetryStatus } from "./ai-retry.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import {
   bedrockChat,
@@ -249,7 +250,12 @@ export async function aiFetch(
       "X-Lovable-AIG-SDK": "fetch",
     };
 
-    const res = await Promise.race([
+    /*
+     * Retried on 429 and 5xx, inside the same overall timeout budget. A
+     * streamed request is sent once: nothing has consumed it yet, but the
+     * callers that stream are interactive and would rather fail fast than wait.
+     */
+    const sendOnce = () => Promise.race([
       fetch(route.url, {
         ...init,
         method: "POST",
@@ -257,10 +263,27 @@ export async function aiFetch(
         body: JSON.stringify(body),
         signal,
       }),
-      new Promise<Response>((_, reject) => 
+      new Promise<Response>((_, reject) =>
         setTimeout(() => reject(new Error("Timeout")), timeoutMs)
       ),
     ]);
+
+    let res = await sendOnce();
+    if (body.stream !== true) {
+      for (let attempt = 1; attempt < AI_MAX_ATTEMPTS && shouldRetryStatus(res.status); attempt++) {
+        const wait = retryDelayMs(attempt, res.headers.get("retry-after"));
+        console.error(
+          `[ai-provider] ${fnName} ${route.provider}/${route.model} -> ${res.status}, retrying in ${wait}ms (attempt ${attempt + 1} of ${AI_MAX_ATTEMPTS})`,
+        );
+        // The body is never read on a retryable response, so it is released
+        // rather than left for the runtime to collect.
+        await res.body?.cancel().catch(() => {});
+        await new Promise((r) => setTimeout(r, wait));
+        // The caller gave up, or the overall budget expired: stop asking.
+        if (signal.aborted) break;
+        res = await sendOnce();
+      }
+    }
 
     clearTimeout(timeoutId);
 

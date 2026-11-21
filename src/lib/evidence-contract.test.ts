@@ -3,7 +3,9 @@ import {
   bodyViolations,
   closedRender,
   evaluateStoredSnapshots,
+  lineGrounding,
   sealSnapshot,
+  stemWord,
 } from "../../supabase/functions/_shared/evidence-contract";
 import { repairShouting, shoutingTokens } from "../../supabase/functions/_shared/email-deliverability";
 import { repairToolSequence, MISSING_TOOL_RESULT } from "../../supabase/functions/_shared/tool-sequence";
@@ -168,5 +170,77 @@ describe("tool results stay paired with tool calls", () => {
     const next = turns[turns.indexOf(assistant!) + 1];
     expect(next.role).toBe("user");
     expect(next.content.some((block) => (block.toolResult as { toolUseId?: string })?.toolUseId === "tooluse_UKq6UZzkZgrzj23fEA1OKv")).toBe(true);
+  });
+});
+
+/**
+ * The gate that cost every draft.
+ *
+ * A line that is not the quoted research fact has to be grounded in the
+ * sender's own description, measured as the share of its significant words
+ * the description supplies. That share was counted on raw text, so a word the
+ * description used in another form counted for nothing: a sender who
+ * "verifies their email" and "researches each company" had "a verified email
+ * and a researched fact" scored 6/13 against the 1/2 bar and refused as an
+ * invented claim. Every lead got the same prompt and the same description, so
+ * it did not fail for some leads -- it failed for nearly all of them, and the
+ * agent reported 52 of 63 drafts refused.
+ */
+describe("the sender's own vocabulary, conjugated", () => {
+  const FACT = "Vendr helps companies buy and manage SaaS with negotiated pricing and a single renewal calendar.";
+  const SENDER = "OutReign finds decision makers, verifies their email, researches each company and writes cold outreach that cites a real fact from their site.";
+  const ground = (line: string) => lineGrounding(line, [FACT], SENDER, "Vendr");
+
+  it("accepts an idea written from the description in a different tense", () => {
+    // The exact line the agent was refused on, word for word.
+    expect(ground("Finding decision makers worth reaching out to could get easier if each company came with a verified email and a researched fact."))
+      .toBe("idea");
+  });
+
+  it("counts a conjugated form at the same weight as the literal one", () => {
+    // Same sentence, inflected to match the description exactly. Before the
+    // stem match this was the only one of the pair that passed, which is the
+    // whole bug: worse English scored higher.
+    expect(ground("Finds decision makers worth reaching out to could get easier if each company came with a verifies email and a researches fact."))
+      .toBe("idea");
+  });
+
+  it("collapses the forms of one word and keeps different words apart", () => {
+    for (const forms of [
+      ["verify", "verifies", "verified", "verifying"],
+      ["research", "researches", "researched", "researching"],
+      ["find", "finds", "finding"],
+      ["company", "companies"],
+      ["business", "businesses"],
+      ["manage", "manages", "managed", "managing"],
+      ["write", "writes", "writing"],
+      ["team", "teams"],
+      ["process", "processes"],
+    ]) {
+      expect(new Set(forms.map(stemWord)).size, forms.join("/")).toBe(1);
+    }
+    // A stemmer that collapsed these would start accepting invented claims.
+    const distinct = ["email", "outreach", "renewal", "pricing", "calendar", "decision", "founder", "vendor", "reply", "status"];
+    expect(new Set(distinct.map(stemWord)).size).toBe(distinct.length);
+  });
+
+  it("still refuses everything the matcher was there to refuse", () => {
+    // Loosening the word match must not loosen the claim rules: these are
+    // refused by the number, proper-noun, result, negation and "saw/noticed"
+    // checks, none of which the share of matched words can reach.
+    for (const line of [
+      "You are losing deals to slow renewals.",
+      "We helped three SaaS companies cut renewal spend by 30%.",
+      "I noticed your team is struggling with vendor sprawl.",
+      "Our platform integrates with Zendesk and Looker.",
+      "Your procurement team spends 12 hours a week on renewals.",
+      "Renewal spend never goes down without a single calendar.",
+    ]) {
+      expect(ground(line), line).toBeNull();
+    }
+  });
+
+  it("refuses an idea whose words come from neither source", () => {
+    expect(ground("Procurement cycles could shrink once stakeholder alignment improves across business units.")).toBeNull();
   });
 });

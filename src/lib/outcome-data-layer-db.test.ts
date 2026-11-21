@@ -23,6 +23,7 @@ const LABELS = readFileSync("supabase/migrations/20261120100000_outcome_data_lay
 const EXAMPLES = readFileSync("supabase/migrations/20261120110000_outcome_data_layer_training_examples.sql", "utf8");
 const READINESS = readFileSync("supabase/migrations/20261120120000_outcome_data_layer_readiness.sql", "utf8");
 const BACKFILL = readFileSync("supabase/migrations/20261120130000_outcome_data_layer_backfill.sql", "utf8");
+const CONSENT = readFileSync("supabase/migrations/20261121100000_outcome_consent.sql", "utf8");
 
 const USER = "99999999-9999-9999-9999-999999999999";
 const OTHER = "88888888-8888-8888-8888-888888888888";
@@ -77,6 +78,39 @@ CREATE TABLE reply_analysis (
   sent_email_id uuid REFERENCES sent_emails(id) ON DELETE CASCADE,
   lead_id uuid, reply_content text, analyzed_at timestamptz DEFAULT now(),
   triage_category text, detected_signals jsonb);
+CREATE TABLE IF NOT EXISTS auth.users (id uuid PRIMARY KEY, email text);
+CREATE TABLE profiles (
+  id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email text NOT NULL DEFAULT '', full_name text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now());
+
+/*
+ * Harness only, and the one piece of the stand-ins that is not a copy of a
+ * real object.
+ *
+ * Phase 5 joins training_examples to profiles, so every sender now needs a
+ * profile that has answered yes, and a test that forgot one would read as a
+ * broken view rather than a missing row. This gives any sender a consenting
+ * profile the moment it sends, so the 45 tests written before consent existed
+ * still describe what they were written to describe. It never overwrites an
+ * answer, so a consent test sets the flag after seeding and keeps it.
+ */
+CREATE FUNCTION harness_consenting_sender() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+  INSERT INTO auth.users (id, email) VALUES (NEW.user_id, 'harness@example.test')
+    ON CONFLICT (id) DO NOTHING;
+  INSERT INTO profiles (id, email, outcome_consent, outcome_consent_decided_at)
+    VALUES (NEW.user_id, 'harness@example.test', true, now())
+    ON CONFLICT (id) DO NOTHING;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trg_harness_consenting_sender
+  BEFORE INSERT ON sent_emails FOR EACH ROW
+  WHEN (NEW.user_id IS NOT NULL)
+  EXECUTE FUNCTION harness_consenting_sender();
 `;
 
 /*
@@ -119,6 +153,7 @@ async function withPg(run: (sql: Pg) => Promise<void>) {
     await sql.unsafe(EXAMPLES);
     await sql.unsafe(READINESS);
     await sql.unsafe(BACKFILL);
+    await sql.unsafe(CONSENT);
     await run(sql);
   } finally {
     if (sql) await sql.end({ timeout: 2 });
@@ -823,6 +858,201 @@ describe("backfilling the labels of older replies", () => {
       }
       const [nullRow] = await sql`SELECT outcome_label_from_triage(NULL) AS label`;
       expect(nullRow.label).toBe(labelFromTriage(null));
+    });
+  });
+});
+
+/**
+ * Phase 5: consent, and the gate that enforces it.
+ *
+ * The drafted wording promises the training use happens only where the
+ * customer agreed and stops when they withdraw. That promise is kept in one
+ * place -- the join in training_examples -- because every export and every
+ * readiness count reads that view, so a consumer written later inherits the
+ * gate instead of having to remember it.
+ *
+ * The flag is tri-state and NULL is not a yes. An account that predates the
+ * prompt contributes nothing at all until its owner answers, which is what was
+ * asked for: every existing customer gets asked as well as every new one.
+ */
+describe("outcome consent on postgres", () => {
+  /** One send with a snapshot, old enough to be final. The owner is returned. */
+  async function sendFor(sql: Pg, userId: string): Promise<string> {
+    const lead = crypto.randomUUID();
+    const send = crypto.randomUUID();
+    await sql`INSERT INTO leads (id, user_id, seniority, employee_count) VALUES (${lead}, ${userId}, 'VP Sales', 120)`;
+    await sql`INSERT INTO lead_decisions (user_id, lead_id, send_recommendation, provider, provider_model)
+      VALUES (${userId}, ${lead}, 'email_now', 'claude', 'v1')`;
+    await sql`INSERT INTO sent_emails (id, user_id, lead_id, to_email, subject, sent_at)
+      VALUES (${send}, ${userId}, ${lead}, 'a@b.co', 'hi', now() - interval '30 days')`;
+    await sql`SELECT capture_send_snapshot(${send}, ${userId}, ${sql.json({ sent_by: "manual" })})`;
+    return send;
+  }
+
+  const setFlag = (sql: Pg, userId: string, value: boolean | null) =>
+    sql`UPDATE profiles SET outcome_consent = ${value}, outcome_consent_decided_at = ${value === null ? null : sql`now()`} WHERE id = ${userId}`;
+
+  it("starts at not-asked, and not-asked trains on nothing", async () => {
+    await withPg(async (sql) => {
+      const send = await sendFor(sql, USER);
+      await setFlag(sql, USER, null);
+      const [profile] = await sql`SELECT outcome_consent, outcome_consent_decided_at FROM profiles WHERE id = ${USER}`;
+      expect(profile.outcome_consent).toBeNull();
+      expect(profile.outcome_consent_decided_at).toBeNull();
+      // The send and its snapshot are there; only the training use is withheld.
+      expect((await sql`SELECT 1 FROM lead_feature_snapshots s JOIN sent_emails e ON e.snapshot_id = s.id WHERE e.id = ${send}`).length).toBe(1);
+      expect((await sql`SELECT 1 FROM training_examples`).length).toBe(0);
+    });
+  });
+
+  it("declining trains on nothing either", async () => {
+    await withPg(async (sql) => {
+      await sendFor(sql, USER);
+      await setFlag(sql, USER, false);
+      expect((await sql`SELECT 1 FROM training_examples`).length).toBe(0);
+    });
+  });
+
+  it("agreeing is the only state that trains", async () => {
+    await withPg(async (sql) => {
+      await sendFor(sql, USER);
+      await setFlag(sql, USER, true);
+      const rows = await sql`SELECT user_id, is_final FROM training_examples`;
+      expect(rows.length).toBe(1);
+      expect(rows[0]).toMatchObject({ user_id: USER, is_final: true });
+    });
+  });
+
+  it("withdrawing stops the use of data already captured", async () => {
+    await withPg(async (sql) => {
+      await sendFor(sql, USER);
+      await setFlag(sql, USER, true);
+      expect((await sql`SELECT 1 FROM training_examples`).length).toBe(1);
+      // "We will stop using your data for this purpose from that point" has to
+      // cover what was already recorded, not just what comes next.
+      await sql`SELECT set_outcome_consent(${USER}, false, 'settings')`;
+      expect((await sql`SELECT 1 FROM training_examples`).length).toBe(0);
+    });
+  });
+
+  it("gates one owner without gating another", async () => {
+    await withPg(async (sql) => {
+      await sendFor(sql, USER);
+      await sendFor(sql, OTHER);
+      await setFlag(sql, USER, true);
+      await setFlag(sql, OTHER, false);
+      const rows = await sql`SELECT user_id FROM training_examples`;
+      expect(rows.map((row) => row.user_id)).toEqual([USER]);
+    });
+  });
+
+  it("readiness and the stats row count only what consent allows", async () => {
+    await withPg(async (sql) => {
+      await sendFor(sql, USER);
+      await setFlag(sql, USER, true);
+      const [agreed] = await sql`SELECT dataset_readiness() AS r`;
+      expect(agreed.r.totals.finalized).toBe(1);
+      await sql`SELECT set_outcome_consent(${USER}, false, 'settings')`;
+      const [declined] = await sql`SELECT dataset_readiness() AS r`;
+      expect(declined.r.totals.finalized).toBe(0);
+      await sql`SELECT record_dataset_stats()`;
+      const [stats] = await sql`SELECT finalized FROM dataset_stats ORDER BY created_at DESC LIMIT 1`;
+      expect(Number(stats.finalized)).toBe(0);
+    });
+  });
+
+  it("says how much the gate is withholding, so a zero meter is not a mystery", async () => {
+    await withPg(async (sql) => {
+      await sendFor(sql, USER);
+      await sendFor(sql, OTHER);
+      await setFlag(sql, USER, true);
+      await setFlag(sql, OTHER, null);
+      const [row] = await sql`SELECT outcome_consent_summary() AS s`;
+      expect(row.s).toMatchObject({ agreed: 1, declined: 0, not_asked: 1, withheld_sends: 1 });
+    });
+  });
+
+  it("keeps every answer, and refuses to rewrite or erase one", async () => {
+    await withPg(async (sql) => {
+      await sendFor(sql, USER);
+      await sql`SELECT set_outcome_consent(${USER}, true, 'prompt')`;
+      await sql`SELECT set_outcome_consent(${USER}, false, 'settings')`;
+      const log = await sql`SELECT consent, source FROM outcome_consent_log WHERE user_id = ${USER} ORDER BY decided_at`;
+      expect(log.map((row) => [row.consent, row.source])).toEqual([[true, "prompt"], [false, "settings"]]);
+      // Withdrawal has to be evidenced later, so the history is append-only.
+      await expect(sql`UPDATE outcome_consent_log SET consent = true WHERE user_id = ${USER}`)
+        .rejects.toThrow(/append-only/);
+      await expect(sql`DELETE FROM outcome_consent_log WHERE user_id = ${USER}`)
+        .rejects.toThrow(/append-only/);
+    });
+  });
+
+  it("reads the three states back without flattening not-asked into no", async () => {
+    await withPg(async (sql) => {
+      await sendFor(sql, USER);
+      await setFlag(sql, USER, null);
+      const notAsked = (await sql`SELECT outcome_consent_state(${USER}) AS s`)[0].s;
+      expect(notAsked.consent).toBeNull();
+      expect(notAsked.decided_at).toBeNull();
+      await sql`SELECT set_outcome_consent(${USER}, false, 'prompt')`;
+      const declined = (await sql`SELECT outcome_consent_state(${USER}) AS s`)[0].s;
+      expect(declined.consent).toBe(false);
+      expect(typeof declined.decided_at).toBe("string");
+      await sql`SELECT set_outcome_consent(${USER}, true, 'settings')`;
+      expect((await sql`SELECT outcome_consent_state(${USER}) AS s`)[0].s.consent).toBe(true);
+    });
+  });
+
+  it("refuses to record a non-answer, so NULL can only mean not asked", async () => {
+    await withPg(async (sql) => {
+      await sendFor(sql, USER);
+      await expect(sql`SELECT set_outcome_consent(${USER}, ${null}, 'prompt')`).rejects.toThrow(/explicit answer/);
+      await expect(sql`SELECT set_outcome_consent(${USER}, true, 'guess')`).rejects.toThrow(/prompt or settings/);
+      expect((await sql`SELECT 1 FROM outcome_consent_log WHERE user_id = ${USER}`).length).toBe(0);
+    });
+  });
+
+  it("does not let a customer write the flag or another customer's history", async () => {
+    await withPg(async (sql) => {
+      await sendFor(sql, USER);
+      await sql`SELECT set_outcome_consent(${USER}, true, 'prompt')`;
+      await sql`ALTER TABLE outcome_consent_log FORCE ROW LEVEL SECURITY`;
+      // Each check gets its own transaction: a refused statement aborts the one
+      // it is in, and a shared transaction would make the next check fail for
+      // that reason instead of the one it is testing.
+      const asOther = async (run: (tx: Pg) => Promise<void>) => {
+        let assertion: unknown = null;
+        await sql.begin(async (tx) => {
+          await tx`SELECT set_config('request.jwt.claim.sub', ${OTHER}, true)`;
+          await tx`SET LOCAL ROLE authenticated`;
+          try { await run(tx as unknown as Pg); } catch (err) { assertion = err; }
+          // Always leave by rolling back. A refused statement rejects the
+          // transaction as well as the query, and the transaction's copy would
+          // otherwise fail the test the query's copy was there to prove.
+          throw new Error("deliberate rollback");
+        }).catch(() => {});
+        if (assertion) throw assertion;
+      };
+      // The owner's own answers are readable; another customer's are not there.
+      await asOther(async (tx) => {
+        expect((await tx`SELECT 1 FROM outcome_consent_log`).length).toBe(0);
+      });
+      // Wrapped in a thunk: postgres.js raises a refused statement as the tag
+      // is evaluated, so `expect(tag).rejects` never sees a promise to reject.
+      const refused = (run: () => unknown) => expect((async () => { await run(); })()).rejects.toThrow(/permission denied/);
+      await asOther(async (tx) => {
+        await refused(() => tx`INSERT INTO outcome_consent_log (user_id, consent) VALUES (${OTHER}, true)`);
+      });
+      // The flag itself is never written from the browser: the function that
+      // writes it and its history together is service-only.
+      await asOther(async (tx) => {
+        await refused(() => tx`SELECT set_outcome_consent(${OTHER}, true, 'prompt')`);
+      });
+      // Reading it is service-only as well, so one customer cannot ask the
+      // database what another one answered.
+      await asOther(async (tx) => {
+        await refused(() => tx`SELECT outcome_consent_state(${USER})`);
+      });
     });
   });
 });

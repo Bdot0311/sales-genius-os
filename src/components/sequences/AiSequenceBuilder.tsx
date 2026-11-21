@@ -271,8 +271,14 @@ export const AiSequenceBuilder = () => {
             />
             {leadIds.length > 1 && (
               <p className="text-[0.6875rem] leading-relaxed text-muted-foreground">
-                {leadIds.length} prospects selected. Each scheduled touch is written separately
-                from that prospect’s research.
+                {/*
+                  Both halves matter and the second one arrived without the
+                  first: people read a multi-prospect selection as one sequence
+                  per prospect, so the count of sequences has to be said out
+                  loud, not only how each touch is written.
+                */}
+                Just one sequence covers all {leadIds.length} prospects, and each scheduled touch
+                is written separately from that prospect’s research.
               </p>
             )}
             {selectedLead?.signals && selectedLead.signals.length > 0 && (

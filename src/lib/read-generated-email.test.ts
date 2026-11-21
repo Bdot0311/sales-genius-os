@@ -92,18 +92,30 @@ describe("no call site reads .email off a payload that may not have one", () => 
   });
 
   it("the bulk sender does too, where one reason applies to every lead", () => {
+    /*
+     * The bulk sender used to call the generator itself and read the payload
+     * with these helpers. It now generates once per recipient through
+     * personalizedOutreach, which reads the refusal before it touches the
+     * email, so the property is unchanged and the call site moved.
+     *
+     * What this asserts is the property, not the old call shape: nothing in
+     * this file may reach into a generator payload directly. Pinning the old
+     * calls would have failed the moment the generator path improved, which is
+     * exactly what happened.
+     */
     expect(BULK).not.toMatch(/subData\.email\./);
     expect(BULK).not.toMatch(/bodyData\.email\b(?!\s*\))/);
-    expect(BULK).toContain("readGeneratedSubject(subData, subErr)");
-    expect(BULK).toContain("readGeneratedEmail(bodyData, bodyErr)");
+    expect(BULK).not.toMatch(/\bdata[?]?\.email\b/);
+    expect(BULK).toContain("personalizedOutreach(");
   });
 
   it("imports it where it uses it", () => {
     // A missing import here compiled and would have thrown at runtime, because
     // the typecheck everyone ran was checking nothing.
-    for (const [name, src] of [["Outreach", STUDIO], ["BulkSendDialog", BULK]] as const) {
-      expect(src, `${name} is missing the import`).toContain('from "@/lib/read-generated-email"');
-    }
+    expect(STUDIO, "Outreach is missing the import").toContain('from "@/lib/read-generated-email"');
+    // The bulk sender reaches the generator through the shared helper instead,
+    // which does the same reading and is guarded by its own tests.
+    expect(BULK, "BulkSendDialog is missing the helper").toContain('personalized-outreach');
   });
 });
 

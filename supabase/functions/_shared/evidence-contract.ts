@@ -559,6 +559,52 @@ function contentWords(text: string): string[] {
     .filter((w) => w.length > 3 && !STOP.has(w));
 }
 
+/**
+ * Collapse an English inflection, so a word the sender's own description
+ * supplies counts however the writer conjugated it.
+ *
+ * Both sides of every overlap check go through this, so the only property
+ * that matters is that it maps the forms of one word together. It is not a
+ * linguist's stemmer and does not need to be: "makers" and "maker" both
+ * becoming "mak" is correct for this purpose.
+ *
+ * Why: a sender described as one who "verifies their email" and "researches
+ * each company" had every draft refused for writing "a verified email and a
+ * researched fact" -- its own vocabulary, conjugated. Raw matching scored
+ * that 6/13 against a 1/2 bar, so the line was read as an invented claim and
+ * the draft was lost. With the forms collapsed it scores 8/13 and releases.
+ */
+export function stemWord(word: string): string {
+  const w = word.toLowerCase();
+  const trimmed = (() => {
+    if (w.length > 4 && (w.endsWith("ies") || w.endsWith("ied"))) return `${w.slice(0, -3)}y`;
+    if (w.length > 5 && w.endsWith("ing")) return w.slice(0, -3);
+    if (w.length > 5 && w.endsWith("ed")) return w.slice(0, -2);
+    // Only a sibilant takes the whole "es": "researches" loses it, "writes"
+    // keeps the e. "business" and "status" are not plurals at all.
+    if (w.length > 5 && w.endsWith("es")) return /(?:s|x|z|ch|sh)es$/.test(w) ? w.slice(0, -2) : w.slice(0, -1);
+    if (w.length > 4 && w.endsWith("s") && !/(?:ss|us)$/.test(w)) return w.slice(0, -1);
+    return w;
+  })();
+  // Dropping the silent e last collapses the verbs that lose it when they
+  // conjugate: write / writes / writing all reach "writ".
+  return trimmed.length > 4 && trimmed.endsWith("e") ? trimmed.slice(0, -1) : trimmed;
+}
+
+/** The stems a corpus supplies, for matching a word written in another form. */
+function corpusStems(corpus: string): Set<string> {
+  return new Set((corpus.toLowerCase().match(/[a-z0-9][a-z0-9'&-]*/g) ?? [])
+    .map((w) => stemWord(w.replace(/'s$/, ""))));
+}
+
+/**
+ * Does the corpus supply this word? The literal substring still counts, so
+ * nothing that passed before stops passing; the stem is the addition.
+ */
+function suppliedBy(corpus: string, stems: Set<string>, word: string): boolean {
+  return corpus.includes(word) || stems.has(stemWord(word));
+}
+
 const RESULT_CLAIM = /\b(?:helped|increased|grew|saved|boosted|doubled|tripled|reduced|cut|generated|percent|clients like|customers like|case study)\b|%/i;
 const PROPOSAL = /\b(?:could|might|one idea|an idea|imagine|what if|would it|curious|happy to|can help|we can|i can|worth)\b/i;
 
@@ -593,7 +639,10 @@ export function lineGrounding(line: string, facts: string[], senderCorpus = "", 
   if (/\b(?:saw|noticed|congrats|congratulations|read that|heard|i see|looks like you|you(?:'re| are) (?:struggling|losing|missing))\b/i.test(line)) return null;
   if (/\b(?:not|never|no longer|don't|doesn't|didn't|isn't|aren't)\b/i.test(line)) return null;
   const mine = contentWords(line);
-  const share = (corpus: string) => mine.filter((w) => corpus.includes(w)).length;
+  const share = (corpus: string) => {
+    const stems = corpusStems(corpus);
+    return mine.filter((w) => suppliedBy(corpus, stems, w)).length;
+  };
   if (senderText && /\b(?:we|our|i)\b/i.test(line) && !PROPOSAL.test(line)) {
     if (mine.length && share(senderText) / mine.length >= 0.5) return "offer";
     return null;
@@ -617,7 +666,8 @@ export function lineGrounding(line: string, facts: string[], senderCorpus = "", 
 function subjectGrounded(subject: string, facts: string[], senderCorpus: string, company: string): boolean {
   const known = `${facts.join(" ")} ${senderCorpus} ${company}`.toLowerCase();
   if (/\d/.test(subject) && !(subject.match(/\d[\d,.]*/g) ?? []).every((d) => known.includes(d))) return false;
-  return contentWords(subject).every((w) => known.includes(w));
+  const stems = corpusStems(known);
+  return contentWords(subject).every((w) => suppliedBy(known, stems, w));
 }
 
 export function bodyViolations(

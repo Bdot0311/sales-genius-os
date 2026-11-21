@@ -218,7 +218,7 @@ jobs:
         env:
           AUDIT_PG_URL: postgresql://audit:audit@localhost:5432/audit_test
           AUDIT_PG_REQUIRED: "1"
-        run: npx vitest run src/lib/outcome-data-layer-db.test.ts
+        run: npx vitest run src/lib/outcome-data-layer-db.test.ts src/lib/visitor-resolution-status.test.ts
 
   # generate-email injects the GTM skills into its prompt by importing
   # _shared/skills.generated.ts, which is compiled from .claude/skills. Editing

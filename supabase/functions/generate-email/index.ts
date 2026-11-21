@@ -2397,6 +2397,7 @@ conversation that is already going, not as someone chasing silence.`}`;
         ...usable.map((fact, i) => `${i + 1}. ${fact.span}`),
         `Sender's description (the only source for the offer): ${senderCorpus || "none"}`,
         "The idea may use only words from the sender's description and the chosen fact. Use could or might.",
+        "Over half the significant words in the idea must be words the sender's description above actually uses. Reuse its wording rather than finding synonyms for it: a synonym reads as a claim with no source and the idea is refused.",
         "The idea must name a concrete problem the sender's offer solves for someone in the prospect's role or company stage (e.g. finding leads worth reaching out to). Never glue the two products together: no 'pair with', 'combine with', 'plug into', 'alongside' or 'before X is deployed' framing.",
         "The question may be a role-based question about a likely priority for someone in their role (it asks, it does not assert). Follow the copywriting skills: specific, conversational, one low-friction ask.",
         "Cite metrics, customers or results ONLY if they appear in the sender's description; if none appear, use none.",
@@ -2431,7 +2432,13 @@ conversation that is already going, not as someone chasing silence.`}`;
         const variants = [body, `Hi ${firstName || "there"},\n\n${factLine}\n\n${question}\n\n${resolvedSenderName}`];
         let released = "";
         for (const candidate of variants) {
-          if (hasPlaceholder(candidate) || unsupportedClaims(candidate, prospectCorpus).length) continue;
+          const ungrounded = unsupportedClaims(candidate, prospectCorpus);
+          if (hasPlaceholder(candidate) || ungrounded.length) {
+            // Logged, because a refusal here used to be the one silent step in
+            // the rescue path: the draft was lost with nothing saying why.
+            console.warn(`[generate-email] policy rewrite candidate refused: ${hasPlaceholder(candidate) ? "placeholder" : ungrounded.map((hit) => hit.evidence).join(" | ")}`);
+            continue;
+          }
           const retry = releaseAllows({ subject: subj, body: candidate, facts: approvedFacts, availability: rubricAvailability, rubric,
             mode: "studio", senderName: resolvedSenderName, company, senderCorpus });
           if (retry.allow) { released = candidate; break; }

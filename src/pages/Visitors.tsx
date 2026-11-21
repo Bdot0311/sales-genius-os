@@ -1,3 +1,4 @@
+import { formatDistanceToNow } from "date-fns";
 import { useCallback, useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { PageHeader } from "@/components/dashboard/PageHeader";
@@ -59,6 +60,15 @@ interface RuleRow {
   sequence_id: string | null;
 }
 
+/*
+ * Whether resolution has actually run, from a counts-only function.
+ * visitor_resolve_jobs itself is service_role-only because it holds ip_raw.
+ */
+interface ResolutionStatus {
+  queued: number; running: number; failed: number; done: number;
+  last_finished_at: string | null; oldest_queued_at: string | null; last_error: string | null;
+}
+
 const lines = (value: string) => value.split("\n").map((line) => line.trim()).filter(Boolean);
 
 const Visitors = () => {
@@ -72,9 +82,18 @@ const Visitors = () => {
   const [pageViews, setPageViews] = useState<number | null>(null);
   const [identified, setIdentified] = useState<number | null>(null);
   const [unknown, setUnknown] = useState<number | null>(null);
+  /*
+   * Whether resolution has actually run. Without this the overview shows a
+   * page view with Identified 0 and Unknown 0 and no way to tell the two
+   * causes apart: visitor-resolve calls saveMatch for every job it processes,
+   * whatever it decides, so zero matches means nothing ran -- not that it ran
+   * and found nothing. visitor_resolve_jobs is service_role-only because it
+   * holds ip_raw, so this comes from a counts-only function.
+   */
+  const [resolution, setResolution] = useState<ResolutionStatus | null>(null);
 
   const load = useCallback(async () => {
-    const [siteRes, matchRes, eventRes, ruleRes, viewRes, identifiedRes, unknownRes] = await Promise.all([
+    const [siteRes, matchRes, eventRes, ruleRes, viewRes, identifiedRes, unknownRes, resolutionRes] = await Promise.all([
       supabase.from("visitor_sites").select("id, name, allowed_domains, verified_hosts, consent_mode, excluded_paths, excluded_ips, retention_days, enabled").order("created_at", { ascending: false }),
       supabase.from("visitor_company_matches").select("id, status, classification, company_name, company_domain, confidence, unknown_reason, last_seen, evidence").order("last_seen", { ascending: false }).limit(100),
       supabase.from("visitor_events").select("id, event_name, path, page_type, referrer_host, is_returning, is_test, received_at, visitor_key, session_id").order("received_at", { ascending: false }).limit(100),
@@ -82,6 +101,14 @@ const Visitors = () => {
       supabase.from("visitor_events").select("id", { count: "exact", head: true }).eq("event_name", "page_view"),
       supabase.from("visitor_company_matches").select("id", { count: "exact", head: true }).eq("status", "matched"),
       supabase.from("visitor_company_matches").select("id", { count: "exact", head: true }).eq("status", "unknown"),
+      /*
+       * Cast because the generated client types only carry what the live
+       * database has, and this function ships in the same unpublished
+       * migration. AGENTS.md: do not hand-add it to types.ts, it is stripped
+       * on the next regeneration. The types return by themselves once this is
+       * published.
+       */
+      (supabase.rpc as unknown as (fn: string) => Promise<{ data: unknown; error: unknown }>)("visitor_resolution_status"),
     ]);
     const firstError = siteRes.error || matchRes.error || eventRes.error || ruleRes.error || viewRes.error || identifiedRes.error || unknownRes.error;
     setError(firstError ? firstError.message : null);
@@ -92,6 +119,9 @@ const Visitors = () => {
     setPageViews(viewRes.count ?? 0);
     setIdentified(identifiedRes.count ?? 0);
     setUnknown(unknownRes.count ?? 0);
+    // Not folded into firstError: this is diagnostic, and an older database
+    // without the function should not blank the whole page.
+    setResolution(resolutionRes.error ? null : (resolutionRes.data as unknown as ResolutionStatus));
   }, []);
 
   useEffect(() => {
@@ -122,7 +152,7 @@ const Visitors = () => {
               <TabsTrigger value="install">Installation & settings</TabsTrigger>
             </TabsList>
             {error ? <p className="mb-4 text-sm text-destructive">{error}</p> : null}
-            <TabsContent value="overview"><Overview pageViews={pageViews} identified={identified} unknown={unknown} events={events} onInstall={() => setTab("install")} /></TabsContent>
+            <TabsContent value="overview"><Overview resolution={resolution} pageViews={pageViews} identified={identified} unknown={unknown} events={events} onInstall={() => setTab("install")} /></TabsContent>
             <TabsContent value="companies"><Companies matches={matches} onChanged={load} /></TabsContent>
             <TabsContent value="activity"><Activity events={events} matches={matches} /></TabsContent>
             <TabsContent value="rules"><Rules sites={sites} rules={rules} onChanged={load} /></TabsContent>
@@ -134,7 +164,7 @@ const Visitors = () => {
   );
 };
 
-function Overview({ pageViews, identified, unknown, events, onInstall }: { pageViews: number | null; identified: number | null; unknown: number | null; events: EventRow[] | null; onInstall: () => void }) {
+function Overview({ pageViews, identified, unknown, events, resolution, onInstall }: { pageViews: number | null; identified: number | null; unknown: number | null; events: EventRow[] | null; resolution: ResolutionStatus | null; onInstall: () => void }) {
   if (!events || pageViews == null || identified == null || unknown == null) return <p className="text-sm text-muted-foreground">Loading visits…</p>;
   if (pageViews === 0 && identified === 0 && unknown === 0) {
     return <EmptyState title="No visits yet" body="Install the snippet on a site you own. Counts appear after a real page view is stored." action={<Button onClick={onInstall}>Installation</Button>} />;
@@ -146,6 +176,36 @@ function Overview({ pageViews, identified, unknown, events, onInstall }: { pageV
       <Metric label="Identified companies" value={String(identified)} note="Matches with a named company" />
       <Metric label="Unknown" value={String(unknown)} note="No confident company" />
       <Metric label="Sessions shown" value={String(sessions)} note={events.length === 100 ? "Distinct sessions in the latest 100 events" : "Distinct sessions in the loaded events"} />
+      {resolution && (resolution.queued > 0 || resolution.running > 0 || resolution.failed > 0) ? (
+        <div className="col-span-full rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs">
+          {resolution.failed > 0 ? (
+            <p>
+              <span className="font-medium text-amber-300">
+                {resolution.failed} visit{resolution.failed === 1 ? "" : "s"} failed to resolve.
+              </span>{" "}
+              {resolution.last_error ? <span className="text-muted-foreground">Last error: {resolution.last_error}</span> : null}
+            </p>
+          ) : (
+            <p>
+              <span className="font-medium text-amber-300">
+                {resolution.queued + resolution.running} visit
+                {resolution.queued + resolution.running === 1 ? " is" : "s are"} waiting to be resolved.
+              </span>{" "}
+              <span className="text-muted-foreground">
+                {resolution.last_finished_at
+                  ? `Resolution last completed ${formatDistanceToNow(new Date(resolution.last_finished_at), { addSuffix: true })}.`
+                  : /*
+                     * Nothing has ever completed. That is a different problem
+                     * from a slow queue: it means the scheduled resolver is not
+                     * reaching the database at all, so saying "waiting" alone
+                     * would be misleading.
+                     */
+                    "Resolution has never completed, so the scheduled resolver is not running. Until it does, every visit stays uncounted rather than becoming Unknown."}
+              </span>
+            </p>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }
