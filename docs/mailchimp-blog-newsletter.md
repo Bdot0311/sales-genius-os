@@ -1,5 +1,13 @@
 # OutReign full-article newsletter
 
+## Edited BDØT template — November 21, 2026, 07:49 UTC
+
+- Used the newly uploaded `BDØT_template-2.html`; Mailchimp confirms BDØT template 10125960 was edited at 07:44:49 UTC. Preserved the updated centered crown logo, black/purple title band, image frame, typography, social links and footer. Replaced placeholder feed text with the complete previously reviewed article and existing GPT graphics. The footer browser button opens the email archive, not the landing-site blog; postal-address merge tag retained.
+- Created **OutReign blog — edited BDØT November 21 owner review** (`66a4b6154a`) as standalone exported HTML (`template_id: 0`) because the prior saved-template connection emptied content. No audience attached. Existing campaigns were absent from the account's campaign list; none were deleted by this request.
+- Separate Mailchimp content read/checklist confirms custom HTML and generated plain text. Actual returned HTML checked at 1280px and 390px: all eight article/reply headings present, all five images (logo, two graphics, two social icons) loaded, no horizontal overflow. Full article text exceeds 7,000 characters. Export scripts and placeholder claims/images removed.
+- Mailchimp accepted an owner-only HTML test to **info@bdotindustries.org** (HTTP 204). Separate post-test read retains the full article and design. Inbox receipt/IONOS rendering still requires owner confirmation. No subscriber import, send, scheduling or published-blog change.
+- Updated HTML: `docs/mailchimp-blog-newsletter.html`; hosted preview pointer: `docs/mailchimp-blog-newsletter.asset.json`.
+
 ## Blank BDØT test repair — November 21, 2026
 
 - Owner confirmed the previous test was blank. Post-test GET of `0d178ef7dd/content` contains only API links; checklist reports missing email content. The prior pre-test HTML read did not establish successful delivery. That draft still has the multichannel saved-template binding; the exact provider-side erasure mechanism is not exposed.

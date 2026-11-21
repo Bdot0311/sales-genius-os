@@ -1,3 +1,7 @@
+# Edited BDØT template — November 21, 2026
+
+- [x] Use the newly edited November 21 BDØT export: updated crown logo, title band, frame, social footer and full reviewed article/GPT graphics. Actual Mailchimp HTML checked at desktop/phone: eight headings, five loaded images, no overflow. Owner-only test accepted (HTTP 204); separate post-test read retains content. Inbox rendering unconfirmed; no subscribers emailed.
+
 # BDØT saved-template selection — November 21, 2026
 
 - [x] Repair blank BDØT test: old post-test content read is empty and checklist reports missing content. Created standalone exported HTML draft without template binding; repeated pre/post-test checklist confirms custom HTML success and post-test content retains the full article. Desktop/phone checks passed; replacement owner-only test accepted (HTTP 204). Inbox rendering awaits owner confirmation; no subscriber send.
