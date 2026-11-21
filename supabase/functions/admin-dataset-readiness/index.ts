@@ -126,7 +126,16 @@ serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify(data), {
+    /*
+     * How much the consent gate is withholding, sent alongside the counts.
+     * Without it a meter reading zero because nobody has answered yet looks
+     * identical to one reading zero because capture is broken. Counts only:
+     * no row belonging to a non-consenting owner is returned here.
+     */
+    const { data: consent, error: consentError } = await admin.rpc("outcome_consent_summary");
+    if (consentError) console.error(`[admin-dataset-readiness] consent_summary_failed: ${consentError.message}`);
+
+    return new Response(JSON.stringify({ ...(data as Record<string, unknown>), consent: consent ?? null }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

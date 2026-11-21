@@ -111,16 +111,33 @@ silent:
 | No names or addresses | The same allowlist; and `user_id`, `lead_id`, `send_id` and `snapshot_id` are excluded too, so an export cannot be joined back to a person |
 | Bands, not exact values | `outcome_seniority_band` and `outcome_company_size_band` write a band at capture time; the exact title and headcount are never copied into the snapshot |
 | Reply categories, not reply text | `reply_analysis.outcome_label` is one of eleven values, constrained in the database |
-| Opt-out stops further use | Phase 5, not yet built. Until it is, the wording above must not be published, because the sentence about changing your mind would not yet be true |
-| Withdrawal is free | No pricing or plan logic reads the consent flag |
+| Opt-out stops further use | `profiles.outcome_consent` is tri-state and the `training_examples` view joins on `outcome_consent IS TRUE`, so a withdrawal stops the use of records already captured, not just of new ones. Every export and every readiness count reads that view, so a consumer added later inherits the gate. `outcome_consent_log` keeps each answer, append-only, because withdrawal has to be evidenced later |
+| Withdrawal is free | No pricing or plan logic reads the consent flag, asserted in `src/lib/outcome-consent.test.ts` |
 
-## Two things to decide before this ships
+## What is built
+
+Phase 5 ships the consent itself: the tri-state flag and its append-only
+history, the one-time prompt, the Settings row, and the gate in
+`training_examples`. The answer is recorded by the `outcome-consent` function,
+which takes the identity from the caller's own token and refuses an API key,
+because a key is a program acting for somebody and consent has to come from
+the person. Capture is not gated: the snapshots hold bands and counts with no
+message text and no contact details, they feed the customer's own reporting
+too, and what consent controls is the cross-customer training use. That is
+what the wording above says.
+
+So the clauses are now accurate about the product, which was the condition for
+publishing them. They still need a lawyer to check the lawful basis before
+they go live.
+
+## One thing to decide
 
 **Consent is tri-state, not a default.** You asked for every existing customer
 to be asked as well as every new one, so the stored value is "not yet asked",
 "yes" or "no" — never an assumed yes. Exports count only an explicit yes. That
 is more conservative than the original plan and it is the reason the prompt
-above has no pre-selected button.
+above has no pre-selected button. An account that closes the prompt without
+answering stays unanswered, contributes nothing, and is asked again next visit.
 
 **Whether a customer's own stats should still work when they opt out.** Right
 now their own numbers would keep working and only the cross-customer export

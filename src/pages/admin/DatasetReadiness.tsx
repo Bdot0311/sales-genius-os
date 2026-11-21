@@ -30,6 +30,11 @@ interface ReadinessResponse {
   per_user: { user_id: string; finalized: number; positives: number; positive_rate: number | null }[];
   breakdowns: Record<string, BreakdownRow[]>;
   history: { as_of: string; finalized: number; positives: number; positive_rate: number | null; pending: number }[];
+  /*
+   * How much the consent gate is withholding. Null when the summary could not
+   * be read, which is shown as unknown rather than as nothing withheld.
+   */
+  consent: { agreed: number; declined: number; not_asked: number; withheld_sends: number } | null;
 }
 
 /** The order the questions are worth asking in, not alphabetical. */
@@ -123,6 +128,35 @@ export default function DatasetReadiness() {
           },
         ]}
       />
+
+      {/*
+        Said before the counts are read, because every number above is already
+        filtered by consent: a meter at zero because nobody has answered yet
+        looks exactly like one at zero because capture is broken.
+      */}
+      <Panel>
+        <PanelHeader>
+          <PanelTitle>What consent allows</PanelTitle>
+        </PanelHeader>
+        <PanelBody className="space-y-1 text-sm text-muted-foreground">
+          {data.consent ? (
+            <>
+              <p>
+                <span className="font-medium text-foreground">{data.consent.agreed.toLocaleString()}</span> agreed,{" "}
+                <span className="font-medium text-foreground">{data.consent.declined.toLocaleString()}</span> declined,{" "}
+                <span className="font-medium text-foreground">{data.consent.not_asked.toLocaleString()}</span> not asked yet.
+              </p>
+              <p>
+                {data.consent.withheld_sends.toLocaleString()} first touches are held back from every count and
+                export above, because their owner has not agreed. Capture keeps running for them, so an account
+                that agrees later brings its history with it.
+              </p>
+            </>
+          ) : (
+            <p>The consent summary could not be read, so what is withheld above is unknown.</p>
+          )}
+        </PanelBody>
+      </Panel>
 
       <Panel>
         <PanelHeader>

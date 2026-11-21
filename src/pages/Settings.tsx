@@ -37,6 +37,7 @@ import { CampaignBriefsTab } from "@/components/settings/CampaignBriefsTab";
 import { useAdmin } from "@/hooks/use-admin";
 import { SupportAccessCard } from "@/components/settings/SupportAccessCard";
 import { ProfileIdentityEditor } from "@/components/settings/ProfileIdentityEditor";
+import { OutcomeConsentCard } from "@/components/settings/OutcomeConsentCard";
 
 const Settings = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -485,6 +486,7 @@ const Settings = () => {
                 </Button>
               </PanelBody>
             </Panel>
+            <OutcomeConsentCard />
           </TabsContent>
 
           <TabsContent value="billing" className="space-y-6">
