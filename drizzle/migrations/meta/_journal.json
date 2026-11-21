@@ -533,6 +533,20 @@
       "when": 1795238114508,
       "tag": "0075_guard_mailbox_events_during_account_deletion",
       "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "7",
+      "when": 1795299503266,
+      "tag": "0076_healthcheck_allowlist_appsumo_plan_config",
+      "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "7",
+      "when": 1795299523967,
+      "tag": "0077_appsumo_plan_config_drop_redundant_policy",
+      "breakpoints": true
     }
   ]
 }
