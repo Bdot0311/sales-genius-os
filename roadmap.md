@@ -1,8 +1,9 @@
 # Black Friday re-engagement
 
-- [ ] Audit signup/activation drop-off and confirm the requested 67-user audience without assuming why users stopped.
-- [ ] Prepare feedback-led free campaign setup + first-month-free offer; plan, deadline and renewal terms await owner answers.
-- [ ] Send only through an authorized marketing sender, excluding opt-outs and undeliverable recipients; sender connection required. No campaign sent yet.
+- [x] Audit confirms 67 non-admin accounts, all currently Free: 64 verified, 32 onboarded, 18 searched, 14 saved leads, 7 connected mailboxes, 1 sent. Reasons remain hypotheses; draft and safe personalization saved in docs/black-friday-reengagement-2026.md.
+- [x] Confirm offer: free personal campaign setup + first month free on any plan, claimed by Black Friday November 27, 2026; payment card required, then regular monthly renewal unless canceled. Draft clearly states terms.
+- [ ] Provision and verify the offer's redemption/payment path before delivery; no trial, coupon or customer billing changes made.
+- [ ] Campaign sending blocked: owner requested Lovable app-email delivery, which cannot be used for promotional re-engagement. Mailchimp declined; a supported marketing sender or connected mailbox is required. Nothing sent or granted.
 
 # Admin Settings stability and Agent Missions
 
