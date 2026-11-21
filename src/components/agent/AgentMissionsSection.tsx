@@ -148,11 +148,14 @@ export function AgentMissionsSection({ agentId }: { agentId: string }) {
   };
 
   const setStatus = async (mission: MissionRow, status: "active" | "paused" | "stopped") => {
-    const { error: writeError } = await supabase.rpc("set_agent_mission_status", {
-      p_id: mission.id,
-      p_status: status,
-      p_reason: status === "paused" ? "Paused by you." : status === "stopped" ? "Stopped." : undefined,
-    });
+    const { error: writeError } = await supabase
+      .from("agent_missions")
+      .update({
+        status,
+        pause_reason: status === "paused" ? "Paused by you." : status === "stopped" ? "Stopped." : null,
+      })
+      .eq("id", mission.id)
+      .eq("agent_config_id", agentId);
     if (writeError) setError(writeError.message);
     await load();
   };
