@@ -24,4 +24,8 @@ Admin → Billing & Churn → AppSumo licenses looks up an exact license key, ti
 
 Run the local signature/lifecycle and database regression tests, then AppSumo `test_licensing` and `run_licensing_conformance`. Open the issued OAuth callback privately and check `get_oauth_test`. Compare each test license's stored state and tier with the final expected state; a successful HTTP response alone does not prove fulfillment.
 
+`src/lib/appsumo-licensing-db.test.ts` requires `APPSUMO_DB_TEST_URL` pointing to a disposable local database named `appsumo_licensing_tests`; never run its schema fixture against customer data. It loads both committed migrations and verifies Agency 15,000-credit fulfillment, idempotent claims/events, superseded-key protection, cancellation/reactivation, monthly reset/rollover, test isolation, existing billing protection and service-only RPC privileges.
+
+Validation on 2026-11-21: `test_licensing` returned valid, all ten synchronous conformance checks passed, and the separately completed OAuth exchange/lookup passed. Final expected states were compared against saved test licenses, which have no account owner. Seventeen local tests, three handler Deno checks, app typecheck, signed-in admin support lookups in both themes and mobile layout checks passed. Real customer OAuth redemption and recurring payment collection are not proven by these tests.
+
 The self-listing brief defaults to lifetime deals. Saving `dealType: subscription` records the requested monthly model in the draft, but does not establish that AppSumo has approved recurring billing or will collect monthly payments. Confirm those sale terms on the Redemption page before submitting the listing for review. No listing submission or real payment is part of these tests.

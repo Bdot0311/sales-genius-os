@@ -207,6 +207,8 @@
 # AppSumo submission 236273 licensing
 
 - [x] AppSumo connected; authenticated access to draft submission 236273 and its five licensing plans verified.
-- [ ] Correct the listing's stored lifetime deal type to the owner's monthly subscription model; Done-for-you maps to Agency with 15,000 monthly credits. Do not promise lifetime access.
-- [ ] Read submission fulfillment and configure licensing webhook, OAuth redemption and server-only credentials; deploy public HTTPS endpoints and save both URLs through AppSumo.
-- [ ] Run test_licensing and run_licensing_conformance, correct failures, verify stored lifecycle states, then direct the owner back to AppSumo’s Redemption page.
+- [x] Saved subscription deal type in AppSumo and monthly tier configuration; Done-for-you maps to Agency with 15,000 credits. Existing Starter reset and higher-tier rollover preserved; customers never get administrator billing exemption.
+- [x] Deployed three licensing functions and billing integration; registered both public HTTPS endpoints through AppSumo and stored returned private key and OAuth credentials only in encrypted server config. Added admin license lookup and account redemption page.
+- [x] test_licensing is valid with no warnings; conformance's ten synchronous checks pass, OAuth callback answers 200 and get_oauth_test passes with current credentials. Every final expected test license status/tier matches storage; test licenses remain unlinked. 17 local security/database regressions, Deno checks and app typecheck passed. Signed-in admin lookup and unknown-key state verified in both themes; phone redemption fits without errors.
+- [ ] Confirm publishing reaches https://outreign.io/appsumo: publishing requested, first live check still served old 404. Public webhook/OAuth endpoints are already live. Full ordinary-customer browser redemption remains unverified because temporary auth-user creation failed; entitlement/claim flows passed isolated database tests.
+- [ ] Owner confirms monthly sale/payment collection on AppSumo’s Redemption page before submission: storing subscription deal type and passing licensing tests do not prove AppSumo will collect recurring payments. Listing not submitted; no real account plans, charges or customer licenses changed.
