@@ -12,8 +12,9 @@
     "npm:@supabase/supabase-js@^2.76.1": "2.119.2",
     "npm:@types/react@18.3.1": "18.3.1",
     "npm:react@18.3.1": "18.3.1",
-    "npm:zod@3": "3.23.8",
-    "npm:zod@3.23.8": "3.23.8"
+    "npm:zod@3": "3.25.76",
+    "npm:zod@3.23.8": "3.23.8",
+    "npm:zod@3.25.76": "3.25.76"
   },
   "jsr": {
     "@std/assert@1.0.19": {
@@ -824,6 +825,9 @@
     },
     "zod@3.23.8": {
       "integrity": "sha512-XBx9AXhXktjUqnepgTiE5flcKIYWi/rme0Eaj+5Y0lftuGBq+jyRu/md4WnuxqgP1ubdpNCsYEYPxrzVHD8d6g=="
+    },
+    "zod@3.25.76": {
+      "integrity": "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="
     }
   },
   "redirects": {

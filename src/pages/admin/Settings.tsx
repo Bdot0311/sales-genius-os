@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -54,6 +55,11 @@ const PLAN_OPTIONS = ["starter", "growth", "pro"];
 
 const AdminSettings = () => {
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedTab = searchParams.get("section");
+  const activeTab = ["general", "billing", "api", "email", "features", "changelog"].includes(requestedTab ?? "")
+    ? requestedTab ?? "general"
+    : "general";
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState<AdminSetting[]>([]);
@@ -68,22 +74,9 @@ const AdminSettings = () => {
     target_plans: ["starter", "growth", "pro"] as string[]
   });
 
-  useEffect(() => {
-    loadData();
-
-    const channel = supabase
-      .channel('admin-settings-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'admin_settings' }, loadData)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'feature_flags' }, loadData)
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, []);
-
-  useAutoRefresh(() => { loadData(); }, 60_000);
-
-  const loadData = async () => {
-    setLoading(true);
+  const loadData = useCallback(async () => {
+    // Background refreshes must not unmount tabs, dialogs or in-progress edits.
+    // The initial loading state is cleared once; later reads update data in place.
     try {
       const [settingsRes, flagsRes] = await Promise.all([
         supabase.from("admin_settings").select("*").order("category, setting_key"),
@@ -105,7 +98,21 @@ const AdminSettings = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    void loadData();
+
+    const channel = supabase
+      .channel('admin-settings-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'admin_settings' }, loadData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'feature_flags' }, loadData)
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [loadData]);
+
+  useAutoRefresh(loadData, 60_000);
 
   const getSettingValue = (key: string): Json => {
     const setting = settings.find(s => s.setting_key === key);
@@ -285,7 +292,13 @@ const AdminSettings = () => {
         <PanelDescription>Configure system-wide settings and feature flags</PanelDescription>
       </PanelHeader>
       <PanelBody>
-        <Tabs defaultValue="general" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={(tab) => {
+          setSearchParams((previous) => {
+            const next = new URLSearchParams(previous);
+            next.set("section", tab);
+            return next;
+          }, { replace: true });
+        }} className="space-y-4">
           <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="general" className="flex items-center gap-1.5">
               <Settings className="h-3.5 w-3.5" />

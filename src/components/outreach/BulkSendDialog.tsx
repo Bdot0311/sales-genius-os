@@ -11,13 +11,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Send, Sparkles, Users, Search, Settings2, Mail, ChevronLeft, ChevronRight, AlertTriangle, Shield, CheckCircle2, XCircle, HelpCircle } from "lucide-react";
-import { EmailQualityChecker, blockerSummary, redQualityRows, scoreEmailQuality } from "./EmailQualityChecker";
-import { readGeneratedEmail, readGeneratedSubject } from "@/lib/read-generated-email";
+import { blockerSummary, redQualityRows, scoreEmailQuality } from "./EmailQualityChecker";
 import { generateComplianceFooter, parseSpintax, validateSenderDomain } from "@/lib/compliance";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
+import { personalizedOutreach } from "../../../supabase/functions/_shared/personalized-outreach";
 
 interface Lead {
   id: string;
@@ -109,32 +107,22 @@ export const BulkSendDialog = ({
     onOpenChange?.(next);
   };
   const [selectedLeadIds, setSelectedLeadIds] = useState<Set<string>>(new Set());
-  const [sendMode, setSendMode] = useState<"generate" | "same">("generate");
-  const [sameSubject, setSameSubject] = useState("");
-  const [sameBody, setSameBody] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [progress, setProgress] = useState({ sent: 0, failed: 0, total: 0 });
+  const [failures, setFailures] = useState<Array<{ lead: string; reason: string }>>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [bulkSenderId, setBulkSenderId] = useState<string>("all");
   const [bulkEnabled, setBulkEnabled] = useState(false);
   const [editingLimit, setEditingLimit] = useState(dailyEmailLimit);
   const [isSavingLimit, setIsSavingLimit] = useState(false);
   const [delayBetweenSends, setDelayBetweenSends] = useState(60);
-  const [previewLeadIdx, setPreviewLeadIdx] = useState(0);
   const [verifiedOnly, setVerifiedOnly] = useState(true);
 
-  // Opening from the composer sends what was reviewed there, to the leads
-  // picked there — never a fresh, unreviewed generation by default.
   useEffect(() => {
     if (!open) return;
     if (initialSelectedIds?.length) setSelectedLeadIds(new Set(initialSelectedIds));
-    if (initialBody?.trim()) {
-      setSendMode("same");
-      setSameSubject(initialSubject || "");
-      setSameBody(initialBody);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+    setBulkEnabled(true);
+  }, [open, initialSelectedIds]);
 
   const remaining = dailyEmailLimit - dailyEmailsSent;
   const emailableLeads = leads.filter((l) => l.contact_email);
@@ -196,18 +184,6 @@ export const BulkSendDialog = ({
       </Badge>
     );
   };
-
-  const resolveVariables = (text: string, lead: Lead) => {
-    return text
-      .replace(/\{name\}/gi, lead.contact_name?.split(" ")[0] || "there")
-      .replace(/\{company\}/gi, lead.company_name || "your company")
-      .replace(/\{full_name\}/gi, lead.contact_name || "there")
-      .replace(/\{job_title\}/gi, lead.job_title || "");
-  };
-
-  const previewLead = selectedLeadsArray[previewLeadIdx] || null;
-  const previewSubject = previewLead ? resolveVariables(sameSubject, previewLead) : sameSubject;
-  const previewBody = previewLead ? resolveVariables(sameBody, previewLead) : sameBody;
 
   const toggleLead = (id: string) => {
     setSelectedLeadIds((prev) => {
@@ -343,6 +319,7 @@ export const BulkSendDialog = ({
     }
 
     setIsSending(true);
+    setFailures([]);
     const selectedLeads = leads.filter((l) => selectedLeadIds.has(l.id));
     setProgress({ sent: 0, failed: 0, total: selectedLeads.length });
 
@@ -360,53 +337,19 @@ export const BulkSendDialog = ({
       }
 
       try {
-        let subject = sameSubject;
-        let body = sameBody;
-
-        if (sendMode === "generate") {
-          // Generate unique subject
-          const { data: subData, error: subErr } = await supabase.functions.invoke("generate-email", {
-            body: {
-              lead,
-              tone: emailTone,
-              goal: "subject_only",
-              templateGoal: emailGoal,
-              templateDescription,
-              templateValue,
-              openerWord: openerWord === "auto" ? "" : openerWord,
-              businessDescription,
-            },
-          });
-          // A 200 carrying { error } is a refusal with a reason. Reading .email
-          // off it threw a type error, and in a bulk run that error is what the
-          // whole batch reported — hiding a reason that applied to every lead.
-          subject = readGeneratedSubject(subData, subErr);
-
-          // Generate unique body
-          const { data: bodyData, error: bodyErr } = await supabase.functions.invoke("generate-email", {
-            body: {
-              lead,
-              tone: emailTone,
-              goal: emailGoal,
-              templateDescription,
-              templateValue,
-              subjectLine: subject,
-              openerWord: openerWord === "auto" ? "" : openerWord,
-              businessDescription,
-            },
-          });
-          body = sanitizeGeneratedEmailBody(readGeneratedEmail(bodyData, bodyErr));
-        } else {
-          // Personalize same template with lead name/company
-          subject = subject
-            .replace(/\{name\}/gi, lead.contact_name?.split(" ")[0] || "there")
-            .replace(/\{company\}/gi, lead.company_name || "your company");
-          body = body
-            .replace(/\{name\}/gi, lead.contact_name?.split(" ")[0] || "there")
-            .replace(/\{company\}/gi, lead.company_name || "your company")
-            .replace(/\{full_name\}/gi, lead.contact_name || "there")
-            .replace(/\{job_title\}/gi, lead.job_title || "");
-        }
+        const personalized = await personalizedOutreach(
+          async (body) => supabase.functions.invoke("generate-email", { body }),
+          {
+            lead, tone: emailTone, goal: emailGoal,
+            templateValue, openerWord: openerWord === "auto" ? "" : openerWord,
+            businessDescription, senderName,
+          },
+        ).catch((error: Error) => {
+          Object.assign(error, { qualityBlock: true });
+          throw error;
+        });
+        const subject = personalized.subject;
+        const body = sanitizeGeneratedEmailBody(personalized.body);
 
         const fullBody = buildBodyWithSignature(body, lead.id);
         const quality = scoreEmailQuality(subject, fullBody, true, {
@@ -436,7 +379,7 @@ export const BulkSendDialog = ({
           senderAccountId = bulkSenderId !== "all" ? bulkSenderId : (selectedSenderId || connectedAccounts[0]?.id);
         }
 
-        const { error } = await supabase.functions.invoke("send-email", {
+        const { data: sendResult, error } = await supabase.functions.invoke("send-email", {
           body: {
             to: lead.contact_email,
             subject,
@@ -454,10 +397,12 @@ export const BulkSendDialog = ({
           const { payload } = await readFunctionError(error);
           throw new Error(payload.error ?? "Failed to send");
         }
+        if (sendResult?.error || sendResult?.success === false) throw new Error(String(sendResult?.error || "Send was refused"));
         sent++;
         consecutiveFailures = 0;
       } catch (err: any) {
         console.error(`Failed to send to ${lead.contact_name}:`, err);
+        setFailures(previous => [...previous, { lead: lead.contact_name || lead.company_name, reason: err?.message || "Send failed" }]);
         failed++;
         if (!err?.qualityBlock) consecutiveFailures++;
       }
@@ -639,93 +584,6 @@ export const BulkSendDialog = ({
             </div>
           )}
 
-          {/* Send mode */}
-          <div>
-            <Label className="text-sm font-medium mb-2 block">Send Mode</Label>
-            <RadioGroup value={sendMode} onValueChange={(v) => setSendMode(v as "generate" | "same")} className="flex gap-4">
-              <div className="flex items-center gap-2 p-3 border rounded-lg flex-1 cursor-pointer hover:bg-muted/30">
-                <RadioGroupItem value="generate" id="mode-generate" />
-                <label htmlFor="mode-generate" className="cursor-pointer">
-                  <div className="flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-sm font-medium">AI-Generated</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">Unique personalized email per lead</p>
-                </label>
-              </div>
-              <div className="flex items-center gap-2 p-3 border rounded-lg flex-1 cursor-pointer hover:bg-muted/30">
-                <RadioGroupItem value="same" id="mode-same" />
-                <label htmlFor="mode-same" className="cursor-pointer">
-                  <div className="flex items-center gap-1.5">
-                    <Send className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-sm font-medium">Same Template</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">{"Use {name}, {company}, {job_title}"}</p>
-                </label>
-              </div>
-            </RadioGroup>
-          </div>
-
-          {/* Same template inputs */}
-          {sendMode === "same" && (
-            <div className="space-y-2">
-              <div>
-                <Label className="text-xs">Subject</Label>
-                <Input
-                  value={sameSubject}
-                  onChange={(e) => setSameSubject(e.target.value)}
-                  placeholder="e.g., Quick question for {name} at {company}"
-                />
-              </div>
-              <div>
-                <Label className="text-xs">Body</Label>
-                <Textarea
-                  value={sameBody}
-                  onChange={(e) => setSameBody(e.target.value)}
-                  placeholder={"Hi {name},\n\nI noticed {company} is growing fast...\n\nWorth a quick look?\n\nBest,"}
-                  className="min-h-[120px]"
-                />
-              </div>
-
-              {/* Variable preview section */}
-              {selectedLeadsArray.length > 0 && sameSubject && sameBody && (
-                <div className="mt-2 border rounded-lg p-3 space-y-2 bg-muted/20">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-muted-foreground">
-                      Preview for: <span className="text-foreground">{previewLead?.contact_name || "—"}</span>
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={() => setPreviewLeadIdx(i => Math.max(0, i - 1))}
-                        disabled={previewLeadIdx === 0}
-                      >
-                        <ChevronLeft className="w-3 h-3" />
-                      </Button>
-                      <span className="text-xs text-muted-foreground">{previewLeadIdx + 1}/{selectedLeadsArray.length}</span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={() => setPreviewLeadIdx(i => Math.min(selectedLeadsArray.length - 1, i + 1))}
-                        disabled={previewLeadIdx >= selectedLeadsArray.length - 1}
-                      >
-                        <ChevronRight className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="rounded border bg-background p-2 font-mono text-xs space-y-1">
-                    <p className="text-muted-foreground">Subject: <span className="text-foreground">{previewSubject}</span></p>
-                    <hr className="border-border/50" />
-                    <pre className="whitespace-pre-wrap text-foreground text-xs font-mono leading-relaxed">{previewBody}</pre>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
           {/* Lead selector */}
           <div className="flex-1 overflow-hidden flex flex-col">
             <div className="flex items-center justify-between mb-2">
@@ -814,14 +672,13 @@ export const BulkSendDialog = ({
             </div>
           )}
 
-          {/* Email Quality Check */}
-          {sendMode === "same" && sameSubject && sameBody && (
-            <EmailQualityChecker subject={sameSubject} body={sameBody} />
+          {failures.length > 0 && (
+            <ScrollArea className="max-h-28 rounded-md border border-border p-2">
+              {failures.map((failure, index) => (
+                <p key={index} className="mb-1 text-xs text-destructive">{failure.lead}: {failure.reason}</p>
+              ))}
+            </ScrollArea>
           )}
-          {sendMode === "generate" && selectedLeadIds.size > 0 && (
-            <p className="text-xs text-muted-foreground text-center">Quality is checked per-email by AI during generation.</p>
-          )}
-
           {/* Send button */}
           <Button
             className="w-full"
@@ -830,7 +687,7 @@ export const BulkSendDialog = ({
               isSending ||
               selectedLeadIds.size === 0 ||
               remaining <= 0 ||
-              (sendMode === "same" && (!sameSubject || !sameBody))
+              !businessDescription.trim()
             }
           >
             {isSending ? (
@@ -842,7 +699,7 @@ export const BulkSendDialog = ({
               <>
                 <Send className="w-4 h-4 mr-2" />
                 Send to {selectedLeadIds.size} {selectedLeadIds.size === 1 ? "Lead" : "Leads"}
-                {sendMode === "generate" && <Sparkles className="w-3.5 h-3.5 ml-1.5" />}
+                <Sparkles className="w-3.5 h-3.5 ml-1.5" />
               </>
             )}
           </Button>

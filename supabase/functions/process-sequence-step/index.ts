@@ -1,4 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { personalizedOutreach } from "../_shared/personalized-outreach.ts";
+import { leadThreads } from "../_shared/draft-one.ts";
 import { htmlToPlainText } from "../_shared/plain-text.ts";
 import { proofFromLead, queuedCopyBlockers } from "../_shared/template-send-gate.ts";
 import { bodyViolations, evaluateStoredSnapshots, releaseBinding } from "../_shared/evidence-contract.ts";
@@ -16,8 +18,8 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Require authentication. Accept either an authenticated end-user JWT or
@@ -295,24 +297,42 @@ serve(async (req) => {
       });
     }
 
-    // Personalize the email template
+    // Cadence is shared; recipient copy never is. Use the same research and
+    // generation gates as Studio/agents before scheduling each individual touch.
     const lead = enrollment.lead;
-    let subject = nextStep.subject_template;
-    let body = nextStep.body_template;
-
-    // Simple template variable replacement
-    const replacements: Record<string, string> = {
-      '{{first_name}}': lead?.contact_name?.split(' ')[0] || 'there',
-      '{{full_name}}': lead?.contact_name || '',
-      '{{company}}': lead?.company_name || '',
-      '{{job_title}}': lead?.job_title || '',
-      '{{industry}}': lead?.industry || '',
-    };
-
-    Object.entries(replacements).forEach(([key, value]) => {
-      subject = subject.replace(new RegExp(key, 'g'), value);
-      body = body.replace(new RegExp(key, 'g'), value);
-    });
+    const { data: profile } = await supabase.from("profiles")
+      .select("full_name, company_name, business_description").eq("id", enrollment.user_id).maybeSingle();
+    const threads = await leadThreads(supabase, enrollment.user_id, [lead.id]);
+    let subject: string;
+    let body: string;
+    try {
+      const personalized = await personalizedOutreach(async (input) => {
+        const response = await fetch(`${supabaseUrl}/functions/v1/generate-email`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${supabaseKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify(input),
+          signal: AbortSignal.timeout(150_000),
+        });
+        return { data: await response.json(), error: response.ok ? undefined : "Generation failed" };
+      }, {
+        lead: { id: lead.id }, tone: "professional",
+        goal: nextStepNumber > 1 ? "4ps_followup" : "introduction",
+        senderName: profile?.full_name ?? "",
+        senderCompany: profile?.company_name ?? "",
+        businessDescription: profile?.business_description || enrollment.sequence.description || "",
+        thread: threads.get(lead.id),
+        variantNum: nextStepNumber,
+      });
+      subject = personalized.subject;
+      body = personalized.body;
+    } catch (error) {
+      const retryAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+      await supabase.from("sequence_enrollments").update({ next_action_at: retryAt })
+        .eq("id", enrollment.id).eq("user_id", enrollment.user_id);
+      return new Response(JSON.stringify({ success: false, action: "skipped", reason: "personalization_failed",
+        blockers: [error instanceof Error ? error.message : "Research-led generation failed"], retryAt }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     const { data: snapRows } = lead?.id
       ? await supabase.from("research_snapshots").select("payload").eq("user_id", enrollment.user_id).eq("lead_id", lead.id)

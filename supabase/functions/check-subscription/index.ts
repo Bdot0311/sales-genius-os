@@ -108,6 +108,15 @@ serve(async (req) => {
       });
     }
 
+    const { data: licensedSub, error: licensedError } = await supabaseClient
+      .from('subscriptions').select('*').eq('user_id', userId).maybeSingle();
+    if (licensedError) throw new Error('Subscription lookup failed');
+    if (licensedSub?.appsumo_license_key) {
+      const { data: license, error: licenseError } = await supabaseClient.from('appsumo_licenses')
+        .select('license_status,is_test,user_id').eq('license_key', licensedSub.appsumo_license_key).maybeSingle();
+      if (licenseError || !license || license.is_test || license.user_id !== userId || license.license_status !== 'active') throw new Error('License verification failed');
+      return new Response(JSON.stringify({ subscribed: true, plan: licensedSub.plan, status: licensedSub.status, billing_source: 'appsumo', search_credits_base: licensedSub.search_credits_base, search_credits_addon: licensedSub.search_credits_addon, search_credits_remaining: licensedSub.search_credits_remaining }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+    }
     const stripe = new Stripe(stripeKey, { apiVersion: '2025-08-27.basil' });
     
     // Find Stripe customer by email

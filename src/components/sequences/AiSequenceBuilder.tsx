@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { LeadMultiSelect } from "@/components/outreach/LeadMultiSelect";
+import { outreachLeadPages } from "@/lib/outreach-lead-pages";
 import { useNavigate } from "react-router-dom";
 import { Panel, PanelBody, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -70,14 +71,14 @@ export const AiSequenceBuilder = () => {
       if (!mounted) return;
       const user = userRes?.user;
       if (!user) return;
-      const [{ data: profile }, { data: leadRows }] = await Promise.all([
+      const [{ data: profile }, leadRows] = await Promise.all([
         supabase.from("profiles").select("full_name, company_name").eq("id", user.id).maybeSingle(),
-        supabase
+        outreachLeadPages((from, to) => supabase
           .from("leads")
-          .select("id, contact_name, company_name, job_title, industry, employee_count, company_size, signals")
+          .select("id, contact_name, company_name, job_title, industry, employee_count, company_size, signals, contact_email, email_verification_status, pipeline_stage, intent_label, enrichment_status, enriched_at")
           .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(50),
+          .order("id")
+          .range(from, to)),
       ]);
       if (!mounted) return;
       if (profile?.full_name) setSenderName(profile.full_name);
@@ -270,8 +271,8 @@ export const AiSequenceBuilder = () => {
             />
             {leadIds.length > 1 && (
               <p className="text-[0.6875rem] leading-relaxed text-muted-foreground">
-                Written from {selectedLead?.contact_name || "the first prospect"}. The steps are the
-                campaign, so one sequence covers all {leadIds.length}.
+                {leadIds.length} prospects selected. Each scheduled touch is written separately
+                from that prospect’s research.
               </p>
             )}
             {selectedLead?.signals && selectedLead.signals.length > 0 && (
@@ -377,7 +378,7 @@ export const AiSequenceBuilder = () => {
                   : `Save and enrol ${leadIds.length} prospects`}
               </Button>
               <p className="w-full text-[0.6875rem] leading-relaxed text-muted-foreground">
-                One sequence, every selected prospect walking through it. The first touch goes out
+                Shared cadence, individually researched emails. The first touch goes out
                 {touches[0]?.day ? ` in ${touches[0].day} days` : " shortly"}, and the rest follow on
                 their own — you do not need to stay on this page.
               </p>

@@ -20,7 +20,8 @@ interface AdminTabGroupProps {
 export function AdminTabGroup({ tabs }: AdminTabGroupProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const requested = searchParams.get("tab");
-  const active = tabs.some((t) => t.value === requested) ? requested! : tabs[0].value;
+  const active = tabs.find((tab) => tab.value === requested)?.value ?? tabs[0]?.value;
+  if (!active) return null;
 
   const handleChange = (value: string) => {
     const next = new URLSearchParams(searchParams);

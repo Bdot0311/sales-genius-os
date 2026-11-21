@@ -1,3 +1,22 @@
+# Black Friday re-engagement
+
+- [x] Audit confirms 67 non-admin accounts, all currently Free: 64 verified, 32 onboarded, 18 searched, 14 saved leads, 7 connected mailboxes, 1 sent. Reasons remain hypotheses; draft and safe personalization saved in docs/black-friday-reengagement-2026.md.
+- [x] Confirm offer: free personal campaign setup + first month free on any plan, claimed by Black Friday November 27, 2026; payment card required, then regular monthly renewal unless canceled. Draft clearly states terms.
+- [ ] Provision and verify the offer's redemption/payment path before delivery; no trial, coupon or customer billing changes made.
+- [ ] Campaign sending blocked: owner requested Lovable app-email delivery, which cannot be used for promotional re-engagement. Mailchimp declined; a supported marketing sender or connected mailbox is required. Nothing sent or granted.
+
+# Admin Settings stability and Agent Missions
+
+- [x] Preserve Settings tabs/editors across timed, focus and realtime refreshes; nested sections use a separate URL key from grouped admin tabs. Signed-in unsaved popup survived 65 seconds and focus; API section restored on reload. 30 related tests passed and preview build OK.
+- [x] Explain the November 17 Missions addition and restore its missing setup: four protected tables, six scheduling helpers, 56 monitored fields and the existing five-minute schedule (288 checks/day). Enabled access only for the requesting owner's workspace.
+- [x] Signed-in mission create/read-back, pause/reload and edit/read-back passed; temporary mission removed, zero retained missions/runs/sends. Existing worker and tool coverage tests passed. Real scheduled prospecting/drafting/sending was not triggered; customer access unchanged. Public UI changes require publishing.
+
+# Personalized Studio and sequence bulk outreach
+
+- [x] Add 5/10/15/all filtered lead selection and remove Studio preview reuse for bulk sends.
+- [x] Generate each sequence touch from its own lead research through the shared generator; retain send gates and retry failures without advancing.
+- [x] 71 related tests passed; signed-in Studio and Sequences verified 5/10/15/all selection (172 reachable leads). Two real generation attempts were safely refused by research/quality gates; no mail sent or test drafts saved. Sequence handler deployed and preview build OK. Successful live bulk delivery remains unverified and UI changes require publishing.
+
 # Lead intelligence strategy action
 
 # Admin health warnings
@@ -203,3 +222,12 @@
 
 - [x] Embedded existing approvals/progress in AI Agent → Background work; removed standalone navigation and redirected old links. Updated and deployed agent directions. Signed-in estimate returned 63 matching leads, tab selection survived reload, both themes checked, no runtime errors; 10 regressions passed and preview build OK. No run approved or paid work started.
 - [x] Background drafts: rubric accepts worker calls; research crash on old receipts; progress label counts steps
+
+# AppSumo submission 236273 licensing
+
+- [x] AppSumo connected; authenticated access to draft submission 236273 and its five licensing plans verified.
+- [x] Saved subscription deal type in AppSumo and monthly tier configuration; Done-for-you maps to Agency with 15,000 credits. Existing Starter reset and higher-tier rollover preserved; customers never get administrator billing exemption.
+- [x] Deployed three licensing functions and billing integration; registered both public HTTPS endpoints through AppSumo and stored returned private key and OAuth credentials only in encrypted server config. Added admin license lookup and account redemption page.
+- [x] test_licensing is valid with no warnings; conformance's ten synchronous checks pass, OAuth callback answers 200 and get_oauth_test passes with current credentials. Every final expected test license status/tier matches storage; test licenses remain unlinked. 17 local security/database regressions, Deno checks and app typecheck passed. Signed-in admin lookup and unknown-key state verified in both themes; phone redemption fits without errors.
+- [ ] Confirm publishing reaches https://outreign.io/appsumo: publishing requested, first live check still served old 404. Public webhook/OAuth endpoints are already live. Full ordinary-customer browser redemption remains unverified because temporary auth-user creation failed; entitlement/claim flows passed isolated database tests.
+- [ ] Owner confirms monthly sale/payment collection on AppSumo’s Redemption page before submission: storing subscription deal type and passing licensing tests do not prove AppSumo will collect recurring payments. Listing not submitted; no real account plans, charges or customer licenses changed.
