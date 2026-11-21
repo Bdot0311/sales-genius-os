@@ -422,7 +422,24 @@ serve(async (req) => {
       const reservation = researchReservation(reserved, reserveError?.message ?? null, force);
       researchRunId = reservation.runId;
       if (reservation.hold) {
-        return heldResearch(lead as Record<string, unknown>, corsHeaders, priorInFlight);
+        /*
+         * latestRun was read before begin_research_run reserved the lead.
+         * The worker runs a research job and a draft job for the same lead
+         * concurrently, so both passes can take that read before either
+         * reserve lands. The pass refused here still holds that stale row.
+         * The reserve writes the winning row with {"status":"started"};
+         * read the newest research_runs row now and decide in-flight from it.
+         */
+        const { data: heldRun } = await supabase
+          .from("research_runs")
+          .select("attempted_at, receipt")
+          .eq("user_id", userId)
+          .eq("lead_id", leadId)
+          .order("attempted_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        const heldInFlight = (heldRun?.receipt as { status?: unknown } | null)?.status === "started";
+        return heldResearch(lead as Record<string, unknown>, corsHeaders, heldInFlight);
       }
     }
     // Fresh brief already stored — hand it back without spending a scrape.
