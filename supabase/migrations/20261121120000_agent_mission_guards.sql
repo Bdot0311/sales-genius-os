@@ -287,11 +287,19 @@ BEGIN
     RETURN 'done';
   END IF;
 
-  IF to_regclass('public.sent_emails') IS NOT NULL THEN
-    EXECUTE
-      'SELECT id FROM public.sent_emails WHERE user_id = $1 AND lead_id = $2 AND status = ''scheduled'' ORDER BY created_at DESC LIMIT 1'
-      INTO v_sent
-      USING p_user_id, p_lead_id;
+  IF to_regclass('public.sent_emails') IS NOT NULL
+     AND EXISTS (
+       SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'sent_emails' AND column_name = 'lead_id'
+     ) THEN
+    BEGIN
+      EXECUTE
+        'SELECT id FROM public.sent_emails WHERE user_id = $1 AND lead_id = $2 AND status = ''scheduled'' ORDER BY created_at DESC LIMIT 1'
+        INTO v_sent
+        USING p_user_id, p_lead_id;
+    EXCEPTION WHEN undefined_column OR undefined_table THEN
+      v_sent := NULL;
+    END;
     IF v_sent IS NOT NULL THEN
       UPDATE public.agent_mission_sends
          SET sent_email_id = v_sent
