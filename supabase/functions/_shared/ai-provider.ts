@@ -15,7 +15,7 @@
 // Call sites keep the exact `fetch` shape they had before — the response body is
 // the OpenAI chat-completions shape on all three routes, including streaming.
 
-import { AI_MAX_ATTEMPTS, retryDelayMs, shouldRetryStatus } from "./ai-retry.ts";
+import { runWithAiRetries } from "./ai-retry.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import {
   bedrockChat,
@@ -216,12 +216,17 @@ export async function aiFetch(
         // back to a buffered completion re-emitted as SSE so the feature still works.
         console.error(`[ai-provider] ${fnName} bedrock stream unavailable -> buffered fallback`);
       }
-      const res = await Promise.race([
-        bedrockChat(route.model, body),
-        new Promise<Response>((_, reject) => 
-          setTimeout(() => reject(new Error("Timeout")), timeoutMs)
-        ),
-      ]);
+      // 429, 5xx and a timeout are asked again inside the same deadline.
+      // The gateway fallback below is not the path production uses.
+      const res = await runWithAiRetries(
+        () => Promise.race([
+          bedrockChat(route.model, body),
+          new Promise<Response>((_, reject) =>
+            setTimeout(() => reject(new Error("Timeout")), timeoutMs)
+          ),
+        ]),
+        { signal },
+      );
       if (!res.ok) return res;
       const completion = await res.json() as {
         usage?: { prompt_tokens?: number; completion_tokens?: number };
@@ -251,9 +256,9 @@ export async function aiFetch(
     };
 
     /*
-     * Retried on 429 and 5xx, inside the same overall timeout budget. A
-     * streamed request is sent once: nothing has consumed it yet, but the
-     * callers that stream are interactive and would rather fail fast than wait.
+     * Retried on 429, 5xx and a timeout, inside the same overall timeout
+     * budget. A streamed request is sent once: the callers that stream are
+     * interactive and would rather fail fast than wait.
      */
     const sendOnce = () => Promise.race([
       fetch(route.url, {
@@ -268,22 +273,9 @@ export async function aiFetch(
       ),
     ]);
 
-    let res = await sendOnce();
-    if (body.stream !== true) {
-      for (let attempt = 1; attempt < AI_MAX_ATTEMPTS && shouldRetryStatus(res.status); attempt++) {
-        const wait = retryDelayMs(attempt, res.headers.get("retry-after"));
-        console.error(
-          `[ai-provider] ${fnName} ${route.provider}/${route.model} -> ${res.status}, retrying in ${wait}ms (attempt ${attempt + 1} of ${AI_MAX_ATTEMPTS})`,
-        );
-        // The body is never read on a retryable response, so it is released
-        // rather than left for the runtime to collect.
-        await res.body?.cancel().catch(() => {});
-        await new Promise((r) => setTimeout(r, wait));
-        // The caller gave up, or the overall budget expired: stop asking.
-        if (signal.aborted) break;
-        res = await sendOnce();
-      }
-    }
+    const res = body.stream === true
+      ? await sendOnce()
+      : await runWithAiRetries(sendOnce, { signal });
 
     clearTimeout(timeoutId);
 

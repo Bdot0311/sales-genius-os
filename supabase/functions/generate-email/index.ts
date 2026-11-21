@@ -9,6 +9,7 @@ import { useCaseCampaignFor, useCaseCampaignPrompt } from "../_shared/use-case-c
 // autonomous agent all reach the rubric through this rather than each other.
 import { isWeak, rubricFeedback, scoreEmailReport, type RubricAvailability } from "../_shared/email-quality.ts";
 import { ownedLeadCompany, releaseAllows } from "../_shared/draft-release.ts";
+import { retryGroundedDraft, rewriteStatusFromProvider, settleGrounding, type GroundingAttempt } from "../_shared/grounding-retry.ts";
 import { AI_CREDITS_USER_MESSAGE, isAiCreditError, reportAiCreditsExhausted } from "../_shared/ai-credits.ts";
 import { stripInstructionLines, unsupportedClaims } from "../_shared/evidence.ts";
 import { POLICY_VERSION, evaluateStoredSnapshots, type ApprovedFact } from "../_shared/evidence-contract.ts";
@@ -1188,6 +1189,14 @@ STRICT RULES:
             researchSources = Array.isArray(rj.sources) ? rj.sources : [];
             researchedAt = typeof rj.researched_at === 'string' ? rj.researched_at : null;
             retrieval = (researchBrief as { retrieval?: RetrievalReceipt }).retrieval ?? retrieval;
+          } else if (rj?.error && (rj.error_code === "research_in_flight" || /already running in another pass/i.test(String(rj.error)))) {
+            // The research job for this lead still holds the claim. Drafting
+            // now would score an empty brief and fail the grounding gate for
+            // good. The worker parks the draft and runs it once the brief exists.
+            return new Response(JSON.stringify({
+              error: String(rj.error),
+              error_code: "research_in_flight",
+            }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
           } else if (rj?.error) {
             console.warn('[generate-email] research skipped:', rj.error_code || rj.error);
           }
@@ -2382,14 +2391,16 @@ conversation that is already going, not as someone chasing silence.`}`;
     };
     // One guided rewrite before falling back: tell the writer exactly which
     // lines the research policy refused and the only shape it accepts.
-    const policyRewrite = async (problems: string[]): Promise<boolean> => {
-      if (!scoresAsEmail || !approvedFacts.length || !resolvedSenderName) return false;
+    const policyRewrite = async (problems: string[]): Promise<GroundingAttempt> => {
+      if (!scoresAsEmail || !approvedFacts.length || !resolvedSenderName) {
+        return { status: "refused", reason: problems[0] ?? "no approved fact" };
+      }
       const company = ownedLeadCompany(leadData);
       const senderCorpus = [socialProof, businessDescription].filter(Boolean).join("\n");
       // The fact is never re-typed by the model: it picks a fact by number and
       // writes only the idea and the question. The email is assembled here.
       const usable = approvedFacts.filter((fact) => usableFallbackFact(fact.span)).slice(0, 8);
-      if (!usable.length) return false;
+      if (!usable.length) return { status: "refused", reason: problems[0] ?? "no usable fact" };
       const note = [
         "Apply the copywriting skills above. Do not write the email. Return JSON only:",
         '{"fact": <number of the fact to open with>, "idea": "<one natural, conversational sentence (never starting with \'One idea\') naming a problem people in their role often have and how the sender\'s offer could help, using could or might>", "question": "<one short, low-friction question>"}',
@@ -2413,7 +2424,7 @@ conversation that is already going, not as someone chasing silence.`}`;
             { role: "user", content: note },
           ], temperature: 0.3 }),
         });
-        if (!res.ok) return false;
+        if (!res.ok) return { status: rewriteStatusFromProvider(res.status), reason: `provider ${res.status}` };
         const d = await res.json();
         const raw = String(d.choices?.[0]?.message?.content || "");
         const parsed = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1)) as { fact?: number; idea?: string; question?: string };
@@ -2421,7 +2432,7 @@ conversation that is already going, not as someone chasing silence.`}`;
         let idea = String(parsed.idea ?? "").replace(/\s+/g, " ").trim().replace(/^(?:one|an|quick) idea[:,\-\s]+/i, "");
         if (idea) idea = idea.charAt(0).toUpperCase() + idea.slice(1);
         let question = String(parsed.question ?? "").replace(/\s+/g, " ").trim();
-        if (!idea || !question) return false;
+        if (!idea || !question) return { status: "refused", reason: problems[0] ?? "rewrite was empty" };
         if (!question.endsWith("?")) question = `${question}?`;
         const factLine = observationLine(fact, company);
         const body = `Hi ${firstName || "there"},\n\n${factLine}\n\n${idea}\n\n${question}\n\n${resolvedSenderName}`;
@@ -2431,37 +2442,65 @@ conversation that is already going, not as someone chasing silence.`}`;
         // real first touch (observation + ask) and states nothing invented.
         const variants = [body, `Hi ${firstName || "there"},\n\n${factLine}\n\n${question}\n\n${resolvedSenderName}`];
         let released = "";
+        let refusedBecause = problems[problems.length - 1] ?? "ungrounded";
         for (const candidate of variants) {
           const ungrounded = unsupportedClaims(candidate, prospectCorpus);
           if (hasPlaceholder(candidate) || ungrounded.length) {
             // Logged, because a refusal here used to be the one silent step in
             // the rescue path: the draft was lost with nothing saying why.
-            console.warn(`[generate-email] policy rewrite candidate refused: ${hasPlaceholder(candidate) ? "placeholder" : ungrounded.map((hit) => hit.evidence).join(" | ")}`);
+            refusedBecause = hasPlaceholder(candidate) ? "placeholder" : ungrounded.map((hit) => hit.evidence).join(" | ");
+            console.warn(`[generate-email] policy rewrite candidate refused: ${refusedBecause}`);
             continue;
           }
           const retry = releaseAllows({ subject: subj, body: candidate, facts: approvedFacts, availability: rubricAvailability, rubric,
             mode: "studio", senderName: resolvedSenderName, company, senderCorpus });
           if (retry.allow) { released = candidate; break; }
+          refusedBecause = retry.reason;
           console.warn(`[generate-email] policy rewrite refused: ${retry.reason}`);
         }
-        if (!released) return false;
+        if (!released) return { status: "refused", reason: refusedBecause };
         console.warn("[generate-email] policy rewrite released");
         email = `Subject: ${subj}\n\n${released}`;
         repairedRelease = true;
-        return true;
-      } catch { return false; }
+        return { status: "released", reason: "" };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "rewrite failed";
+        const unavailable = /timeout|timed out|network|econn|fetch failed/i.test(message);
+        return { status: unavailable ? "unavailable" : "refused", reason: message };
+      }
     };
-    // The plain quoted fallback is the floor; try once for a written email.
-    if (fallbackClaims.length && !checkerBlockers.length) (await policyRewrite(fallbackClaims)) || (await policyRewrite(fallbackClaims));
-    if (fallbackClaims.length && !repairedRelease) {
-      return new Response(JSON.stringify({
-        error: "The research supported only a copied line from their site, with no grounded reason to reach out, so no draft was saved. Add more detail to Your Business or the lead and try again.",
-        error_code: "thin_research_draft",
-      }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const groundingResponse = (status: GroundingAttempt["status"], viaFallback: boolean, reason: string) => {
+      const settled = settleGrounding({ status, viaFallback, reason });
+      if (settled.ok) return null;
+      return new Response(JSON.stringify({ error: settled.error, error_code: settled.error_code }), {
+        status: settled.error_code === "rate_limit" ? 429 : 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    };
+    // The plain quoted fallback is the floor. Two rewrites, the second told
+    // which sentence was refused. A provider that did not answer is a rate
+    // limit, not a copied line — that sentence is permanent and would end the lead.
+    if (fallbackClaims.length && !checkerBlockers.length && !repairedRelease) {
+      const grounded = await retryGroundedDraft(fallbackClaims, policyRewrite);
+      if (grounded.status !== "released") {
+        const held = groundingResponse(grounded.status, true, grounded.reason);
+        if (held) return held;
+      }
     }
-    if (checkerBlockers.length && (await policyRewrite(checkerBlockers.map((f) => f.evidence || f.rule)) || await policyRewrite(checkerBlockers.map((f) => f.rule)) || repairFromFacts())) {
-      checkerFailures = [];
-      checkerBlockers = [];
+    if (fallbackClaims.length && !repairedRelease) {
+      const held = groundingResponse("refused", true, "");
+      if (held) return held;
+    }
+    if (checkerBlockers.length && !repairedRelease) {
+      const grounded = await retryGroundedDraft(checkerBlockers.map((f) => f.evidence || f.rule), policyRewrite);
+      if (grounded.status === "unavailable") {
+        const held = groundingResponse("unavailable", false, grounded.reason);
+        if (held) return held;
+      }
+      if (grounded.status === "released" || repairFromFacts()) {
+        checkerFailures = [];
+        checkerBlockers = [];
+      }
     }
     if (checkerBlockers.length) {
       return new Response(JSON.stringify({
@@ -2501,9 +2540,17 @@ conversation that is already going, not as someone chasing silence.`}`;
           } else releaseResult = swapped;
         }
       }
-      if (!releaseResult.allow && (releaseResult.code === "unsupported_prospect_claim" || releaseResult.code === "quality_checker")
-        && (await policyRewrite([releaseResult.reason]) || await policyRewrite([releaseResult.reason]) || repairFromFacts(revised.body || checkedBody))) {
-        releaseResult = { allow: true, code: "released", reason: "" };
+      if (!releaseResult.allow && (releaseResult.code === "unsupported_prospect_claim" || releaseResult.code === "quality_checker") && !repairedRelease) {
+        const grounded = await retryGroundedDraft([releaseResult.reason], policyRewrite);
+        if (grounded.status === "unavailable") {
+          const held = groundingResponse("unavailable", false, grounded.reason);
+          if (held) return held;
+        }
+        if (grounded.status === "released" || repairFromFacts(revised.body || checkedBody)) {
+          releaseResult = { allow: true, code: "released", reason: "" };
+        } else if (grounded.reason) {
+          releaseResult = { ...releaseResult, reason: grounded.reason };
+        }
       }
       if (!releaseResult.allow) {
         const release = releaseResult;

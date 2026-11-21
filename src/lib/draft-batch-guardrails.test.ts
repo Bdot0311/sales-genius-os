@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { classifyFailure } from "./draft-failures";
-import { classifyFailure as bulkClassify } from "../../supabase/functions/_shared/bulk-run-logic";
+import { agentJobRetry, classifyFailure as bulkClassify } from "../../supabase/functions/_shared/bulk-run-logic";
 import { fallbackSubject } from "../../supabase/functions/_shared/draft-one";
 import {
   BANNED_PHRASES,
@@ -319,7 +319,7 @@ describe("a second pass over the same lead is not a research failure", () => {
      * what "4 scorer didn't respond" was. A second copy of this rule is how
      * that happened, so there must not be one.
      */
-    expect(worker).toContain('classifyFailure as classifyWorkerFailure');
+    expect(worker).toContain("agentJobRetry");
     expect(worker).not.toMatch(/const TRANSIENT_FAILURE\s*=/);
     for (const message of [
       "The reply rubric did not return a score, so this draft was not released.",
@@ -328,11 +328,13 @@ describe("a second pass over the same lead is not a research failure", () => {
       IN_FLIGHT,
     ]) {
       expect(bulkClassify(message), message).toBe("transient");
+      expect(agentJobRetry(message, 1, () => 0.5).retry, message).toBe(true);
     }
     // And the agent worker retries a rate limit, which the shared classifier
-    // files separately from the rest.
+    // files separately from the rest. The wait is what keeps the retry out of
+    // the same throttle window.
     expect(bulkClassify("Rate limit reached")).toBe("rate_limit");
-    expect(worker).toMatch(/kind === "transient" \|\| kind === "rate_limit"/);
+    expect(agentJobRetry("Rate limit reached", 1, () => 0.5).delaySeconds).toBeGreaterThan(0);
   });
 
   it("reads as waiting rather than as a failure", () => {

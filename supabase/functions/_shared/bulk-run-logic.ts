@@ -77,7 +77,7 @@ export type FailureKind = "rate_limit" | "credits" | "transient" | "permanent";
 export function classifyFailure(message: string): FailureKind {
   const m = message.toLowerCase();
   if (/ai_credits|payment required|402|credits? (are )?exhausted|insufficient/.test(m)) return "credits";
-  if (/rate.?limit|429|too many requests/.test(m)) return "rate_limit";
+  if (/rate.?limit|429|too many requests|throttl/.test(m)) return "rate_limit";
   // "already running in another pass": two passes reached the same lead and
   // the second was refused the research claim. The next attempt finds the
   // brief the first one stored.
@@ -90,6 +90,39 @@ export const MAX_ATTEMPTS = 4;
 /** Seconds to wait before an item's next attempt: 30s, 2m, 8m, … capped at 30m. */
 export function itemBackoffSeconds(attempts: number): number {
   return Math.min(30 * 4 ** Math.max(0, attempts - 1), 1800);
+}
+
+/** Same curve, a quarter either side, so a batch of throttled items does not wake together. */
+export function jitteredBackoffSeconds(attempts: number, random: () => number = Math.random): number {
+  const base = itemBackoffSeconds(attempts);
+  const spread = base * 0.25;
+  const unit = Math.min(1, Math.max(0, random()));
+  return Math.max(1, Math.round(base - spread + unit * spread * 2));
+}
+
+/**
+ * The agent worker's attempt cap. The stale-claim reaper gives up at the same
+ * number, so a lead cannot bounce between pending and claimed past it.
+ */
+export const AGENT_JOB_ATTEMPT_CAP = 3;
+
+/**
+ * Whether the worker should run this item again, and how long to leave it.
+ *
+ * A rate limit and a scorer timeout are the provider saying not now. Parking
+ * the row with no delay meant the next pass — often the next of the three
+ * passes fired in the same minute — spent the remaining attempts inside the
+ * same throttle window and then stored a permanent failure.
+ */
+export function agentJobRetry(
+  message: string,
+  attempts: number,
+  random: () => number = Math.random,
+): { retry: boolean; delaySeconds: number } {
+  const kind = classifyFailure(message);
+  const retry = (kind === "rate_limit" || kind === "transient") && attempts < AGENT_JOB_ATTEMPT_CAP;
+  if (!retry) return { retry: false, delaySeconds: 0 };
+  return { retry: true, delaySeconds: jitteredBackoffSeconds(attempts, random) };
 }
 
 /** Run-wide cool-off after consecutive rate limits: 1m, 2m, 4m … capped at 30m. */

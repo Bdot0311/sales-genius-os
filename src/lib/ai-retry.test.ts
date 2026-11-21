@@ -9,6 +9,7 @@ import {
 
 const code = (s: string) => s.replace(/^\s*\/\/.*$/gm, "");
 const PROVIDER = code(readFileSync("supabase/functions/_shared/ai-provider.ts", "utf8"));
+const RETRY = code(readFileSync("supabase/functions/_shared/ai-retry.ts", "utf8"));
 const RUBRIC = code(readFileSync("supabase/functions/check-email-rubric/index.ts", "utf8"));
 
 describe("which AI failures are worth asking again for", () => {
@@ -57,21 +58,28 @@ describe("how long to wait", () => {
 
 describe("the retry is wired into the one helper every AI call uses", () => {
   it("loops on a retryable status", () => {
-    expect(PROVIDER).toContain("shouldRetryStatus(res.status)");
-    expect(PROVIDER).toContain("attempt < AI_MAX_ATTEMPTS");
+    expect(RETRY).toContain("shouldRetryStatus(res.status)");
+    expect(RETRY).toContain("attempt === AI_MAX_ATTEMPTS");
   });
 
   it("stops when the caller has given up or the budget expired", () => {
     // Without this a retry outlives the request it belongs to.
-    expect(PROVIDER).toContain("if (signal.aborted) break;");
+    expect(RETRY).toContain("hooks.signal?.aborted");
   });
 
   it("releases the body of a response it is discarding", () => {
-    expect(PROVIDER).toContain("await res.body?.cancel()");
+    expect(RETRY).toContain("await res.body?.cancel()");
   });
 
-  it("sends a streamed request once", () => {
-    expect(PROVIDER).toContain("if (body.stream !== true) {");
+  it("sends a streamed request once, and retries Bedrock as well as the gateway", () => {
+    expect(PROVIDER).toContain("body.stream === true");
+    expect(PROVIDER).toContain("? await sendOnce()");
+    const bedrock = PROVIDER.slice(
+      PROVIDER.indexOf('route.provider === "bedrock"'),
+      PROVIDER.indexOf("const headers"),
+    );
+    expect(bedrock).toContain("runWithAiRetries");
+    expect(PROVIDER).toContain("runWithAiRetries(sendOnce");
   });
 });
 

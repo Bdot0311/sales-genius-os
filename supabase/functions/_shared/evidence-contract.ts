@@ -683,8 +683,19 @@ export function lineGrounding(line: string, facts: string[], senderCorpus = "", 
     if (/[.!?:]$/.test(words[i - 1])) continue;
     if (!suppliedBy(capitalSources, capitalStems, w.toLowerCase())) return null;
   }
-  const result = line.match(RESULT_CLAIM);
-  if (result && !senderText.includes(result[0].toLowerCase())) return null;
+  /*
+   * "cut" / "saved" / "generated" are result words when they are stated as
+   * done. A hedged idea ("could cut the time spent researching") is the
+   * sentence the prompt asks for, and the word-share test below is what
+   * keeps it inside the sender's description. Applying the result list
+   * first refused that sentence whenever the description said "research"
+   * and not "cut", which is how a grounded idea became "the research
+   * doesn't support this".
+   */
+  if (!PROPOSAL.test(line)) {
+    const result = line.match(RESULT_CLAIM);
+    if (result && !senderText.includes(result[0].toLowerCase())) return null;
+  }
   if (/\b(?:saw|noticed|congrats|congratulations|read that|heard|i see|looks like you|you(?:'re| are) (?:struggling|losing|missing))\b/i.test(line)) return null;
   if (/\b(?:not|never|no longer|don't|doesn't|didn't|isn't|aren't)\b/i.test(line)) return null;
   const mine = contentWords(line);
