@@ -1,7 +1,7 @@
 # Mailchimp welcome email — November 21, 2026
 
 - [x] Create separate welcome draft using the BDØT design; saved HTML checked at desktop/phone, five images loaded, no overflow. Mailchimp accepted owner-only test to info@bdotindustries.org (HTTP 204); post-test copy retained. Inbox rendering awaits confirmation.
-- [ ] Audience send waits for the owner's design approval; owner confirmed the 65 BDØT Industries subscribers opted in.
+- [x] Owner approved design; improved welcome body and reliable paragraph spacing, verified outgoing content at desktop/phone and ready checklist for 65 opted-in BDØT Industries subscribers. Send accepted (HTTP 204); follow-up reports sending with emails_sent=65 at 08:16:45 UTC. Individual delivery unverified; no repeat send.
 
 # BDØT footer correction — November 21, 2026
 
