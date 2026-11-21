@@ -1,3 +1,8 @@
+# Mailchimp sell-services blog design — November 21, 2026
+
+- [x] Inspect Mailchimp templates: Sell Services is not exposed; adapt actual Sell Products email template 146, preserving the full article, crown logo and highlighted paragraphs.
+- [x] Generate two matching OpenAI GPT Image 2 graphics; actual saved Mailchimp email verified at 1280px/390px, all three images load, seven sections and no overflow. Owner-only test to info@bdotindustries.org accepted (HTTP 204); receipt unconfirmed, no audience send.
+
 # Account deletion event repair — November 21, 2026
 
 - [x] Trace the failed deletion to mailbox-removal history attempting to reference a deleted auth owner; add a targeted guard preserving ordinary mailbox events and permissions.
