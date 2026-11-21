@@ -1,5 +1,6 @@
 # BDØT footer correction — November 21, 2026
 
+- [x] Replace sample Tip of the week quote with practical featured-blog research/review advice. Mailchimp read-back and desktop/phone rendering verified; no emails sent.
 - [x] Restore the original tip bubble, promotional banner, View Blog In Browser button and social/preferences/unsubscribe footer. Separate Mailchimp read-back and desktop/phone checks passed: banner loaded, no overflow, article unchanged. No new test or subscriber send; inbox rendering unverified.
 
 # Edited BDØT template — November 21, 2026

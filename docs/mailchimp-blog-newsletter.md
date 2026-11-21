@@ -1,5 +1,10 @@
 # OutReign full-article newsletter
 
+## Relevant Tip of the week — November 21, 2026
+
+- Replaced the sample librarian quote and attribution with practical advice from the featured article: check the draft's opening against its research source, retain one verified detail and ask a short relevant question. Added a side-by-side research/draft review action. Existing tip bubble and remaining footer/article design unchanged.
+- Saved to the existing Mailchimp review draft and independently read back the new tip. Desktop/phone rendering checked without overflow. No test or subscriber email sent.
+
 ## Complete BDØT footer correction — November 21, 2026
 
 - Earlier adaptation omitted the template's Tip of the week bubble and promotional banner, and renamed its browser button. Restored the original tip copy/attribution, banner image, View Blog In Browser button and original X/LinkedIn/preferences/unsubscribe section from `BDØT_template-2.html`. Retained the postal-address merge tag required for marketing emails. Full article and GPT graphics unchanged.
