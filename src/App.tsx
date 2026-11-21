@@ -1,5 +1,6 @@
 import { Component, Suspense, lazy, useState, useEffect, useRef, type ComponentType, type ErrorInfo, type ReactNode } from "react";
 import { CampaignSetupHost } from "@/components/CampaignSetupHost";
+import { CookieConsentBanner } from "@/components/landing/CookieConsentBanner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
@@ -495,6 +496,7 @@ const App = () => {
           <ScrollToTop />
           <RouteAnalytics />
           <AuthSideEffects />
+          <CookieConsentBanner />
           <CampaignSetupHost />
         <ChunkErrorBoundary>
 
