@@ -1,3 +1,8 @@
+# Account deletion event repair — November 21, 2026
+
+- [x] Trace the failed deletion to mailbox-removal history attempting to reference a deleted auth owner; add a targeted guard preserving ordinary mailbox events and permissions.
+- [x] Five isolated database regressions passed: original foreign-key failure reproduced, full owner/mailbox/event cascade succeeds, normal removal history retained without a profile, pause events and demo exclusion preserved. Hosted guard/security-definer/search-path verified; signed-in Admin Users renders and self-deletion remains refused. No real account deleted during verification; owner may retry the previously failed deletion. No account data restoration attempted.
+
 # Full-article Mailchimp newsletter — November 21, 2026
 
 - [x] Add a beehiiv-style generated editorial graphic, four lavender/mint paragraph bubbles and numbered visual section breaks while retaining the complete article. Actual Mailchimp saved HTML verified at phone/desktop widths: both images load, seven sections, no overflow. Revised owner-only test accepted (HTTP 204); inbox receipt unconfirmed, no audience send.

@@ -526,6 +526,13 @@
       "when": 1795236228002,
       "tag": "0074_restore_outcome_consent_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1795238114508,
+      "tag": "0075_guard_mailbox_events_during_account_deletion",
+      "breakpoints": true
     }
   ]
 }
