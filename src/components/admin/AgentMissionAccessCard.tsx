@@ -1,8 +1,5 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-// Mission tables are not in generated types until their migration is applied.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const missionsDb = supabase as any;
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -24,16 +21,22 @@ export function AgentMissionAccessCard() {
   const [rows, setRows] = useState<GrantRow[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [available, setAvailable] = useState(false);
 
   const load = async () => {
-    const { data, error } = await missionsDb
+    const { data, error } = await supabase
       .from("agent_mission_grants")
       .select("user_id, enabled, note")
       .order("updated_at", { ascending: false });
     if (error) {
-      setMessage(error.message);
+      setAvailable(false);
+      setMessage(error.code === "PGRST205" || error.code === "42P01"
+        ? "Agent Missions is not set up yet and remains off. Access cannot be granted until setup is complete."
+        : "Agent Missions access could not be loaded. Access changes are unavailable until it can be checked.");
       return;
     }
+    setAvailable(true);
+    setMessage(null);
     const ids = (data ?? []).map((row) => row.user_id);
     const { data: profiles } = ids.length
       ? await supabase.from("profiles").select("id, email").in("id", ids)
@@ -47,6 +50,7 @@ export function AgentMissionAccessCard() {
   }, []);
 
   const grant = async () => {
+    if (!available) return;
     setSaving(true);
     setMessage(null);
     const { data: profile, error } = await supabase.from("profiles").select("id, email").eq("email", email.trim().toLowerCase()).maybeSingle();
@@ -56,7 +60,7 @@ export function AgentMissionAccessCard() {
       return;
     }
     const { data: session } = await supabase.auth.getUser();
-    const { error: writeError } = await missionsDb.from("agent_mission_grants").upsert({
+    const { error: writeError } = await supabase.from("agent_mission_grants").upsert({
       user_id: profile.id,
       enabled: true,
       enabled_by: session.user?.id ?? null,
@@ -69,7 +73,8 @@ export function AgentMissionAccessCard() {
   };
 
   const toggle = async (row: GrantRow, enabled: boolean) => {
-    const { error } = await missionsDb.from("agent_mission_grants").update({ enabled }).eq("user_id", row.user_id);
+    if (!available) return;
+    const { error } = await supabase.from("agent_mission_grants").update({ enabled }).eq("user_id", row.user_id);
     if (error) setMessage(error.message);
     await load();
   };
@@ -89,18 +94,19 @@ export function AgentMissionAccessCard() {
             onChange={(event) => setEmail(event.target.value)}
             placeholder="workspace email"
             aria-label="Workspace email"
+            disabled={!available || saving}
           />
-          <Button onClick={() => void grant()} disabled={saving || !email.trim()}>Grant access</Button>
+          <Button onClick={() => void grant()} disabled={!available || saving || !email.trim()}>Grant access</Button>
         </div>
         {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
-        {rows.length === 0 ? (
+        {!available ? null : rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">No workspace has been granted.</p>
         ) : (
           <ul className="divide-y divide-border">
             {rows.map((row) => (
               <li key={row.user_id} className="flex items-center justify-between gap-3 py-2">
                 <span className="min-w-0 truncate text-sm">{row.email || row.user_id}</span>
-                <Switch checked={row.enabled} onCheckedChange={(checked) => void toggle(row, checked)} aria-label={`Toggle ${row.email || row.user_id}`} />
+                <Switch disabled={!available || saving} checked={row.enabled} onCheckedChange={(checked) => void toggle(row, checked)} aria-label={`Toggle ${row.email || row.user_id}`} />
               </li>
             ))}
           </ul>

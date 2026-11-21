@@ -1,3 +1,9 @@
+# Admin Settings stability and Agent Missions
+
+- [x] Preserve Settings tabs/editors across timed, focus and realtime refreshes; nested sections use a separate URL key from grouped admin tabs. Signed-in unsaved popup survived 65 seconds and focus; API section restored on reload. 30 related tests passed and preview build OK.
+- [x] Explain the November 17 Missions addition and restore its missing setup: four protected tables, six scheduling helpers, 56 monitored fields and the existing five-minute schedule (288 checks/day). Enabled access only for the requesting owner's workspace.
+- [x] Signed-in mission create/read-back, pause/reload and edit/read-back passed; temporary mission removed, zero retained missions/runs/sends. Existing worker and tool coverage tests passed. Real scheduled prospecting/drafting/sending was not triggered; customer access unchanged. Public UI changes require publishing.
+
 # Personalized Studio and sequence bulk outreach
 
 - [x] Add 5/10/15/all filtered lead selection and remove Studio preview reuse for bulk sends.

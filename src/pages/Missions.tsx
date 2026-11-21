@@ -7,9 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
-// Mission tables are not in generated types until their migration is applied.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const missionsDb = supabase as any;
 import { useAgentMissions } from "@/hooks/use-agent-missions";
 import { AgentStepList } from "@/components/agent/AgentStepList";
 import type { StepEvent } from "../../supabase/functions/_shared/agent-step-present";
@@ -94,8 +91,8 @@ const Missions = () => {
 
   const load = useCallback(async () => {
     const [missionRes, runRes, agentRes, icpRes, sequenceRes] = await Promise.all([
-      missionsDb.from("agent_missions").select("id, name, goal, mode, status, pause_reason, timezone, days_of_week, run_hour, run_minute, send_window_start, send_window_end, daily_lead_cap, daily_send_cap, daily_spend_cap_usd, next_run_at, agent_config_id, icp_profile_id, sequence_id").order("updated_at", { ascending: false }),
-      missionsDb.from("agent_mission_runs").select("id, mission_id, status, report, leads_found, drafts_written, sends_queued, skip_reason, created_at, finished_at").order("created_at", { ascending: false }).limit(40),
+      supabase.from("agent_missions").select("id, name, goal, mode, status, pause_reason, timezone, days_of_week, run_hour, run_minute, send_window_start, send_window_end, daily_lead_cap, daily_send_cap, daily_spend_cap_usd, next_run_at, agent_config_id, icp_profile_id, sequence_id").order("updated_at", { ascending: false }),
+      supabase.from("agent_mission_runs").select("id, mission_id, status, report, leads_found, drafts_written, sends_queued, skip_reason, created_at, finished_at").order("created_at", { ascending: false }).limit(40),
       supabase.from("agent_configs").select("id, agent_name").order("created_at", { ascending: false }),
       supabase.from("icp_profiles").select("id, name").order("updated_at", { ascending: false }),
       supabase.from("email_sequences").select("id, name").order("updated_at", { ascending: false }),
@@ -150,8 +147,8 @@ const Missions = () => {
       next_run_at: next,
     };
     const write = editing
-      ? missionsDb.from("agent_missions").update(row).eq("id", editing)
-      : missionsDb.from("agent_missions").insert(row);
+      ? supabase.from("agent_missions").update(row).eq("id", editing)
+      : supabase.from("agent_missions").insert(row);
     const { error: writeError } = await write;
     setError(writeError?.message ?? null);
     setSaving(false);
@@ -172,7 +169,7 @@ const Missions = () => {
           minute: mission.run_minute,
         }).toISOString()
       : mission.next_run_at;
-    const { error: writeError } = await missionsDb.from("agent_missions").update({
+    const { error: writeError } = await supabase.from("agent_missions").update({
       status,
       pause_reason: status === "active" ? null : status === "paused" ? "Paused by you." : "Stopped.",
       next_run_at: next,

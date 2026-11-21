@@ -657,6 +657,255 @@ export type Database = {
           },
         ]
       }
+      agent_mission_digests: {
+        Row: {
+          channel: string
+          created_at: string
+          id: string
+          mission_id: string
+          payload: Json
+          run_id: string
+          user_id: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          id?: string
+          mission_id: string
+          payload?: Json
+          run_id: string
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          id?: string
+          mission_id?: string
+          payload?: Json
+          run_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_mission_digests_mission_fkey"
+            columns: ["user_id", "mission_id"]
+            isOneToOne: false
+            referencedRelation: "agent_missions"
+            referencedColumns: ["user_id", "id"]
+          },
+          {
+            foreignKeyName: "agent_mission_digests_run_fkey"
+            columns: ["user_id", "run_id"]
+            isOneToOne: false
+            referencedRelation: "agent_mission_runs"
+            referencedColumns: ["user_id", "id"]
+          },
+        ]
+      }
+      agent_mission_grants: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          enabled_by: string | null
+          note: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          enabled_by?: string | null
+          note?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          enabled_by?: string | null
+          note?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      agent_mission_runs: {
+        Row: {
+          claimed_at: string | null
+          created_at: string
+          cursor: Json
+          drafts_written: number
+          finished_at: string | null
+          id: string
+          job_id: string | null
+          leads_found: number
+          mission_id: string
+          phase: string
+          report: Json
+          sends_queued: number
+          skip_reason: string | null
+          status: string
+          user_id: string
+          window_key: string
+        }
+        Insert: {
+          claimed_at?: string | null
+          created_at?: string
+          cursor?: Json
+          drafts_written?: number
+          finished_at?: string | null
+          id?: string
+          job_id?: string | null
+          leads_found?: number
+          mission_id: string
+          phase?: string
+          report?: Json
+          sends_queued?: number
+          skip_reason?: string | null
+          status?: string
+          user_id: string
+          window_key: string
+        }
+        Update: {
+          claimed_at?: string | null
+          created_at?: string
+          cursor?: Json
+          drafts_written?: number
+          finished_at?: string | null
+          id?: string
+          job_id?: string | null
+          leads_found?: number
+          mission_id?: string
+          phase?: string
+          report?: Json
+          sends_queued?: number
+          skip_reason?: string | null
+          status?: string
+          user_id?: string
+          window_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_mission_runs_mission_fkey"
+            columns: ["user_id", "mission_id"]
+            isOneToOne: false
+            referencedRelation: "agent_missions"
+            referencedColumns: ["user_id", "id"]
+          },
+        ]
+      }
+      agent_missions: {
+        Row: {
+          agent_config_id: string
+          bounce_pause_rate: number
+          created_at: string
+          daily_lead_cap: number
+          daily_send_cap: number
+          daily_spend_cap_usd: number
+          days_of_week: number[]
+          goal: string
+          icp_profile_id: string | null
+          id: string
+          last_run_at: string | null
+          max_runs: number | null
+          mode: string
+          name: string
+          negative_reply_pause_rate: number
+          next_run_at: string | null
+          pause_reason: string | null
+          run_hour: number
+          run_minute: number
+          send_window_end: string
+          send_window_start: string
+          sequence_id: string | null
+          status: string
+          stop_on: string | null
+          timezone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agent_config_id: string
+          bounce_pause_rate?: number
+          created_at?: string
+          daily_lead_cap?: number
+          daily_send_cap?: number
+          daily_spend_cap_usd?: number
+          days_of_week?: number[]
+          goal: string
+          icp_profile_id?: string | null
+          id?: string
+          last_run_at?: string | null
+          max_runs?: number | null
+          mode?: string
+          name: string
+          negative_reply_pause_rate?: number
+          next_run_at?: string | null
+          pause_reason?: string | null
+          run_hour?: number
+          run_minute?: number
+          send_window_end?: string
+          send_window_start?: string
+          sequence_id?: string | null
+          status?: string
+          stop_on?: string | null
+          timezone?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agent_config_id?: string
+          bounce_pause_rate?: number
+          created_at?: string
+          daily_lead_cap?: number
+          daily_send_cap?: number
+          daily_spend_cap_usd?: number
+          days_of_week?: number[]
+          goal?: string
+          icp_profile_id?: string | null
+          id?: string
+          last_run_at?: string | null
+          max_runs?: number | null
+          mode?: string
+          name?: string
+          negative_reply_pause_rate?: number
+          next_run_at?: string | null
+          pause_reason?: string | null
+          run_hour?: number
+          run_minute?: number
+          send_window_end?: string
+          send_window_start?: string
+          sequence_id?: string | null
+          status?: string
+          stop_on?: string | null
+          timezone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_missions_agent_fkey"
+            columns: ["user_id", "agent_config_id"]
+            isOneToOne: false
+            referencedRelation: "agent_configs"
+            referencedColumns: ["user_id", "id"]
+          },
+          {
+            foreignKeyName: "agent_missions_icp_fkey"
+            columns: ["user_id", "icp_profile_id"]
+            isOneToOne: false
+            referencedRelation: "icp_profiles"
+            referencedColumns: ["user_id", "id"]
+          },
+          {
+            foreignKeyName: "agent_missions_sequence_fkey"
+            columns: ["user_id", "sequence_id"]
+            isOneToOne: false
+            referencedRelation: "email_sequences"
+            referencedColumns: ["user_id", "id"]
+          },
+        ]
+      }
       agent_run_mutations: {
         Row: {
           created_at: string
@@ -7831,6 +8080,23 @@ export type Database = {
           sequences_count: number
         }[]
       }
+      agent_mission_ensure_job: { Args: { p_run_id: string }; Returns: string }
+      agent_mission_next_run: {
+        Args: {
+          p_days: number[]
+          p_from: string
+          p_hour: number
+          p_minute: number
+          p_timezone: string
+        }
+        Returns: string
+      }
+      agent_mission_window_key: {
+        Args: { p_at: string; p_timezone: string }
+        Returns: string
+      }
+      agent_mission_workspace_owner: { Args: never; Returns: string }
+      agent_missions_enabled: { Args: never; Returns: boolean }
       agent_step_owned: {
         Args: { p_owner: string; p_step_id: string }
         Returns: boolean
@@ -7986,6 +8252,10 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      claim_agent_mission_run: {
+        Args: { p_mission_id: string }
+        Returns: string
       }
       claim_agent_run_step: {
         Args: {
@@ -8143,6 +8413,7 @@ export type Database = {
         Args: { p_function_name: string; p_payload?: Json }
         Returns: number
       }
+      enqueue_due_agent_missions: { Args: never; Returns: number }
       enqueue_webhook_event: {
         Args: { _event: string; _payload: Json; _user_id: string }
         Returns: number
