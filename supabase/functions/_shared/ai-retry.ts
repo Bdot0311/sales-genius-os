@@ -55,23 +55,58 @@ export function attemptTimeoutLeavesRoom(
 }
 
 /**
+ * How long this attempt may run.
+ *
+ * Early attempts use the short bound, so a stall is cancelled and asked again.
+ * The last attempt gets whatever is left before the deadline, and never less
+ * than the short bound: a generation that needs 70s and used to finish inside
+ * 120s must be able to finish on that last try. A 429 comes back in
+ * milliseconds either way, so the bound does not change that path.
+ */
+export function attemptBudgetMs(
+  attempt: number,
+  elapsedMs: number,
+  opts?: { maxAttempts?: number; deadlineMs?: number; shortMs?: number },
+): number {
+  const maxAttempts = opts?.maxAttempts ?? AI_MAX_ATTEMPTS;
+  const deadlineMs = opts?.deadlineMs ?? AI_CALL_DEADLINE_MS;
+  const shortMs = opts?.shortMs ?? AI_ATTEMPT_TIMEOUT_MS;
+  const remaining = deadlineMs - Math.max(0, elapsedMs);
+  if (attempt >= maxAttempts) return Math.max(shortMs, remaining);
+  return shortMs;
+}
+
+/**
  * Bound one attempt and cancel it when the bound or the parent deadline hits.
  *
  * A timeout of the attempt, with the parent still open, is a retryable
  * Timeout. The parent aborting is the deadline: same error, and the caller
  * must not ask again.
  */
+export interface AttemptClock {
+  /** Schedule `fn` after `ms`. The returned function cancels it. */
+  set: (fn: () => void, ms: number) => () => void;
+}
+
+const realClock: AttemptClock = {
+  set(fn, ms) {
+    const id = setTimeout(fn, ms);
+    return () => clearTimeout(id);
+  },
+};
+
 export function withAttemptTimeout(
   start: (signal: AbortSignal) => Promise<Response>,
   ms: number,
   parent?: AbortSignal,
+  clock: AttemptClock = realClock,
 ): Promise<Response> {
   const attempt = new AbortController();
   let timedOut = false;
   let settled = false;
   return new Promise((resolve, reject) => {
     const finish = () => {
-      clearTimeout(timer);
+      cancelTimer();
       parent?.removeEventListener("abort", onParent);
     };
     const fail = (error: unknown) => {
@@ -81,7 +116,7 @@ export function withAttemptTimeout(
       if (timedOut || parent?.aborted) reject(new Error("Timeout"));
       else reject(error);
     };
-    const timer = setTimeout(() => {
+    const cancelTimer = clock.set(() => {
       timedOut = true;
       attempt.abort();
       fail(new Error("Timeout"));
@@ -146,6 +181,10 @@ export interface AiRetryHooks {
   sleep?: (ms: number) => Promise<void>;
   random?: () => number;
   signal?: { aborted: boolean };
+  /** Defaults to Date.now. Tests advance this instead of waiting out the deadline. */
+  now?: () => number;
+  deadlineMs?: number;
+  shortMs?: number;
 }
 
 /**
@@ -155,16 +194,20 @@ export interface AiRetryHooks {
  * the one that writes and scores the email — returned the first 429.
  */
 export async function runWithAiRetries(
-  send: () => Promise<Response>,
+  send: (attemptMs: number) => Promise<Response>,
   hooks: AiRetryHooks = {},
 ): Promise<Response> {
   const sleep = hooks.sleep ?? ((ms: number) => new Promise((resolve) => setTimeout(resolve, ms)));
   const random = hooks.random ?? Math.random;
+  const now = hooks.now ?? Date.now;
+  const started = now();
+  const budgetOpts = { deadlineMs: hooks.deadlineMs, shortMs: hooks.shortMs };
   let last: Response | null = null;
   let lastError: unknown = null;
   for (let attempt = 1; attempt <= AI_MAX_ATTEMPTS; attempt++) {
+    const budget = attemptBudgetMs(attempt, now() - started, budgetOpts);
     try {
-      const res = await send();
+      const res = await send(budget);
       last = res;
       lastError = null;
       if (!shouldRetryStatus(res.status) || attempt === AI_MAX_ATTEMPTS) return res;
