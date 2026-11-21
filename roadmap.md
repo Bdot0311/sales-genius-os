@@ -1,3 +1,8 @@
+# Full-article Mailchimp newsletter — November 21, 2026
+
+- [x] Replace the tested newsletter's teaser with the complete seven-section featured article, actual crown logo and OutReign blog styling; remove the read-the-guide button. Email copy excludes unsupported reply-rate figures and keeps human approval explicit; published blog unchanged.
+- [x] Desktop/mobile preview has no overflow and logo loads; Mailchimp content saved/read back including full plain-text alternative. Owner-only test to info@bdotindustries.org accepted (HTTP 204); inbox delivery awaits owner confirmation. No subscriber campaign send.
+
 # Leads-used plan display — November 21, 2026
 
 - [x] Resolve the saved lead counter against the current tier's canonical allowance, including Agency; counts, billing and enforcement unchanged.
