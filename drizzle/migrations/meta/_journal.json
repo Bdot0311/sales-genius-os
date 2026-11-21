@@ -519,6 +519,13 @@
       "when": 1795235347432,
       "tag": "0073_preserve_configured_webhook_job_origin",
       "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1795236228002,
+      "tag": "0074_restore_outcome_consent_settings",
+      "breakpoints": true
     }
   ]
 }

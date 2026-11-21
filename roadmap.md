@@ -1,3 +1,8 @@
+# Consent-setting reader repair — November 21, 2026
+
+- [x] Restore the missing consent reader, atomic writer and private immutable history; register seven required fields in schema monitoring. Existing choices preserved; training/export prerequisites remain outside this repair.
+- [x] Privileged rollback-only read/write/withdrawal/rejected-answer/permission regressions passed (restricted shell connection correctly denied helper access); 92 focused tests passed. Signed-in dashboard consent read returned HTTP 200, page rendered, and preview build OK. No consent answers retained.
+
 # Selected security remediation — November 21, 2026
 
 - [x] Bind placement-test mailbox credentials and refresh writes to the verified owner; require sign-in before blacklist lookups.
