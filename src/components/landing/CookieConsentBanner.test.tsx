@@ -3,7 +3,7 @@ import { createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { act } from "react";
 import { MemoryRouter } from "react-router-dom";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CookieConsentBanner } from "./CookieConsentBanner";
 
 type Sdk = { consent?: () => void; disable?: () => void };
@@ -41,62 +41,52 @@ function buttonNamed(host: HTMLElement, name: string) {
   return Array.from(host.querySelectorAll("button")).find((button) => button.textContent === name);
 }
 
+async function flush() {
+  await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+}
+
 describe("cookie consent banner", () => {
+  beforeEach(() => {
+    // No location answer means the visitor is treated as being in a consent region.
+    vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("offline"); }));
+  });
   afterEach(() => {
     localStorage.clear();
     installSdk(null);
+    vi.unstubAllGlobals();
   });
 
-  it("accept sets consent and calls the SDK", async () => {
-    let consented = false;
-    installSdk({
-      consent() {
-        consented = true;
-      },
-    });
-    const view = await renderAt("/");
-    expect(view.host.textContent).toContain("We use cookies to understand which companies visit our site.");
-    expect(view.host.querySelector('a[href="/privacy"]')).toBeTruthy();
-    await act(async () => {
-      buttonNamed(view.host, "Accept")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    });
-    expect(localStorage.getItem("outreigh_consent")).toBe("1");
-    expect(localStorage.getItem("outreigh_cookie_choice")).toBe("accept");
-    expect(consented).toBe(true);
-    expect(view.host.textContent).not.toContain("We use cookies");
-    await view.unmount();
-  });
-
-  it("decline calls disable and stays dismissed", async () => {
+  it("Reject all denies analytics and advertising and turns the visitor collector off", async () => {
     let disabled = false;
-    installSdk({
-      disable() {
-        disabled = true;
-      },
-    });
-    const view = await renderAt("/pricing");
-    await act(async () => {
-      buttonNamed(view.host, "Decline")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    });
-    expect(disabled).toBe(true);
-    expect(localStorage.getItem("outreigh_cookie_choice")).toBe("decline");
+    installSdk({ disable() { disabled = true; } });
+    const view = await renderAt("/");
+    await flush();
+    await act(async () => { buttonNamed(view.host, "Reject all")!.click(); });
+    expect(JSON.parse(localStorage.getItem("cookie_consent_analytics")!).choice).toBe("denied");
+    expect(JSON.parse(localStorage.getItem("cookie_consent_advertising")!).choice).toBe("denied");
     expect(localStorage.getItem("outreigh_off")).toBe("1");
-    expect(view.host.textContent).not.toContain("We use cookies");
+    expect(disabled).toBe(true);
+    expect(buttonNamed(view.host, "Reject all")).toBeUndefined();
     await view.unmount();
-
-    const again = await renderAt("/pricing");
-    expect(again.host.textContent).not.toContain("We use cookies");
-    await again.unmount();
   });
 
-  it("stays hidden on app routes and when a choice is already stored", async () => {
-    const app = await renderAt("/dashboard/visitors");
-    expect(app.host.textContent).not.toContain("We use cookies");
-    await app.unmount();
+  it("Accept all grants both purposes and consents the visitor collector", async () => {
+    let consented = false;
+    installSdk({ consent() { consented = true; } });
+    const view = await renderAt("/");
+    await flush();
+    await act(async () => { buttonNamed(view.host, "Accept all")!.click(); });
+    expect(JSON.parse(localStorage.getItem("cookie_consent_analytics")!).choice).toBe("granted");
+    expect(JSON.parse(localStorage.getItem("cookie_consent_advertising")!).choice).toBe("granted");
+    expect(localStorage.getItem("outreigh_consent")).toBe("1");
+    expect(consented).toBe(true);
+    await view.unmount();
+  });
 
-    localStorage.setItem("outreigh_cookie_choice", "accept");
-    const remembered = await renderAt("/");
-    expect(remembered.host.textContent).not.toContain("We use cookies");
-    await remembered.unmount();
+  it("never shows on signed-in app pages", async () => {
+    const view = await renderAt("/dashboard");
+    await flush();
+    expect(buttonNamed(view.host, "Accept all")).toBeUndefined();
+    await view.unmount();
   });
 });

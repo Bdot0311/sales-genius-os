@@ -177,6 +177,15 @@ export const FooterSection = () => {
                     </Link>
                   </li>
                 ))}
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => window.dispatchEvent(new Event("open-cookie-settings"))}
+                    className="text-sm transition-colors duration-150 inline-flex items-center py-2 min-h-[40px] min-w-[40px] px-1 text-foreground/70 hover:text-primary"
+                  >
+                    Cookie settings
+                  </button>
+                </li>
               </ul>
             </div>
           </div>

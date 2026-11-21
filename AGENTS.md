@@ -62,3 +62,5 @@
 - Large research/draft asks run as owner-approved bulk runs (`bulk-runs` owner API, `process-bulk-runs` worker, `_shared/bulk-run-logic.ts` rules): keyset-paged feed capped at the approved lead count, per-run lease, per-item backoff, run cool-off on rate limits and pause on credit errors, woken from the existing agent-queue tick. Agents may create/inspect/pause runs but never approve them. Why: model-orchestrated batching lost leads and invented progress at scale; a deterministic queue with database counts cannot.
 
 - Background research/draft approvals and progress are embedded in the AI Agent tabs; the legacy bulk-runs route redirects there. Why: durable jobs support the agent rather than a separate workspace feature.
+
+- Marketing-site trackers that ignore Google Consent Mode load only via `src/lib/consent-trackers.ts` after `canTrack(purpose)`; the banner keeps v.js flags in sync with the analytics answer. Why: Reject must actually hold back every third-party tag.

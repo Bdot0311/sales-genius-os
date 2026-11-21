@@ -92,13 +92,12 @@ const bootDeferred = () => {
   if (deferredBooted) return;
   deferredBooted = true;
   void import("./lib/sentry").then(({ initSentry }) => initSentry());
+  // PostHog, HeyCatch, Firebase Analytics and pixels load only as cookie choices allow.
+  void import("./lib/consent-trackers").then(({ startConsentTrackers }) => startConsentTrackers());
   // Analytics SDKs (posthog-js, @heycatch/sdk, gtag.js) are ~500 KB of source
   // combined. Loading them here keeps them off the LCP/TTI critical path; any
   // event captured before they resolve is queued by their facades and replayed.
-  void import("./lib/posthog").then(({ initPostHog }) => initPostHog());
-  void import("./lib/heycatch").then(({ initHeycatch }) => initHeycatch());
   // Firebase web app + Analytics (public config, no-ops without the web API key).
-  void import("./lib/fcm").then(({ initFirebaseWeb }) => initFirebaseWeb());
 
 };
 

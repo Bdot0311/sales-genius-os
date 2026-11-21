@@ -2,6 +2,55 @@
 <html lang="en" prefix="og: https://ogp.me/ns#">
   <head>
     <meta charset="UTF-8" />
+    <!-- Consent defaults: must run before any tag loads. -->
+    <script>
+window.dataLayer = window.dataLayer || [];
+function gtag() {
+  dataLayer.push(arguments);
+}
+gtag("consent", "default", {
+  analytics_storage: "granted",
+  ad_storage: "granted",
+  ad_user_data: "granted",
+  ad_personalization: "granted",
+});
+gtag("consent", "default", {
+  analytics_storage: "denied",
+  ad_storage: "denied",
+  ad_user_data: "denied",
+  ad_personalization: "denied",
+  wait_for_update: 500,
+  region:
+    "AT,BE,BG,HR,CY,CZ,DK,EE,FI,FR,DE,GR,HU,IE,IT,LV,LT,LU,MT,NL,PL,PT,RO,SK,SI,ES,SE,IS,LI,NO,GB,CH,RE,GP,MQ,GF,YT,MF,AX,CA-QC".split(
+      ",",
+    ),
+});
+(function () {
+  var signals = {
+    analytics: ["analytics_storage"],
+    advertising: ["ad_storage", "ad_user_data", "ad_personalization"],
+  };
+  for (var purpose in signals) {
+    var choice = null;
+    try {
+      var saved = JSON.parse(localStorage.getItem("cookie_consent_" + purpose) || "null");
+      if (
+        saved &&
+        (saved.choice === "denied" || (saved.choice === "granted" && Date.now() - saved.at < 365 * 86400000))
+      ) {
+        choice = saved.choice;
+      }
+    } catch (e) {}
+    if (navigator.globalPrivacyControl === true) choice = "denied";
+    if (!choice) continue;
+    var update = {};
+    signals[purpose].forEach(function (signal) {
+      update[signal] = choice;
+    });
+    gtag("consent", "update", update);
+  }
+})();
+    </script>
     <!-- Clickjacking protection.
          X-Frame-Options / CSP frame-ancestors must be real response headers, and the
          current host does not emit them, so this break-out runs before anything paints:
@@ -46,14 +95,8 @@
             document.head.appendChild(s);
           };
           add('https://www.googletagmanager.com/gtm.js?id=GTM-WMG9PP55');
-          add('https://analytics.ahrefs.com/analytics.js', 'PYS2Q4NavMQXMQS+pt9cjw');
-          add('https://id.getleads.io/pixels/e47566e3-2407-4d64-a70d-fe32d029b64a/p.js', 'e47566e3-2407-4d64-a70d-fe32d029b64a');
-          // RB2B visitor identification
-          (function (key) {
-            if (window.reb2b) return;
-            window.reb2b = { loaded: true };
-            add('https://ddwl4m2hdecbv.cloudfront.net/b/' + key + '/' + key + '.js.gz');
-          })('4N210HXXW96Z');
+          // Ahrefs, GetLeads, RB2B and Opinly load from src/lib/consent-trackers.ts
+          // only after the visitor's cookie choice allows them.
         }
         function schedule() {
           if ('requestIdleCallback' in window) {
@@ -309,7 +352,6 @@
   <meta name="twitter:description" content="Ranked prospects, verified emails, and AI that works your replies.">
 
   <!-- Opinly web analytics. Publishable key: it is meant to ship in the browser. -->
-  <script async src="https://static.opinly.ai/p.js" data-key="pk-9WJRR3ew9rDnoatULpysxOEgy04ugQOR9dBuAf_"></script>
 
   <script async src="https://outreign.io/v.js" data-site-id="0879ff2d-7e87-4070-9259-495b7a71b9db" data-consent="required" data-endpoint="https://ghgfjnepvxvxrncmskys.supabase.co/functions/v1/visitor-ingest"></script>
 
