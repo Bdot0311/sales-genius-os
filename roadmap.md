@@ -1,9 +1,11 @@
 # Black Friday re-engagement
 
+- [ ] Add optional, unchecked marketing consent on the final onboarding screen; preserve existing users as not opted in.
+- [ ] Send a Mailchimp test to the owner's confirmed address before any audience send; no import or campaign send to the 67 non-consenting users.
 - [x] Audit confirms 67 non-admin accounts, all currently Free: 64 verified, 32 onboarded, 18 searched, 14 saved leads, 7 connected mailboxes, 1 sent. Reasons remain hypotheses; draft and safe personalization saved in docs/black-friday-reengagement-2026.md.
 - [x] Confirm offer: free personal campaign setup + first month free on any plan, claimed by Black Friday November 27, 2026; payment card required, then regular monthly renewal unless canceled. Draft clearly states terms.
 - [ ] Provision and verify the offer's redemption/payment path before delivery; no trial, coupon or customer billing changes made.
-- [ ] Campaign sending blocked: owner requested Lovable app-email delivery, which cannot be used for promotional re-engagement. Mailchimp declined; a supported marketing sender or connected mailbox is required. Nothing sent or granted.
+- [ ] Campaign sending blocked: Mailchimp is connected, but owner confirms the 67 users did not consent to promotional emails. Do not import them as subscribed; an unsubscribe footer does not establish permission. Nothing sent or granted.
 
 # Admin Settings stability and Agent Missions
 
