@@ -24,7 +24,7 @@ const Email = ({ summary, waiting = 0, mission }: Props) => (
           </Text>
         ) : null}
         <Section style={ctaSection}>
-          <Button href={`${APP_URL}/dashboard/missions`} style={button}>Review the mission</Button>
+          <Button href={`${APP_URL}/dashboard/agent?tab=configuration`} style={button}>Review the mission</Button>
         </Section>
       </Container>
     </Body>

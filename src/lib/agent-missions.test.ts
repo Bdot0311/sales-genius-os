@@ -3,8 +3,11 @@ import { describe, expect, it } from "vitest";
 import { PLAN_FEATURES } from "@/lib/plan-features";
 import {
   PLAN_AGENT_CAPS,
+  canAutopilotMission,
+  canEditMission,
   clampLeadCap,
   effectiveMode,
+  remainingLeadSlots,
   icpSearchFilters,
   inSendWindow,
   isNegativeReply,
@@ -59,6 +62,12 @@ describe("mission caps follow the existing agent plan", () => {
     expect(clampLeadCap("free", 400)).toBe(25);
     expect(effectiveMode("autopilot", "free")).toBe("approval");
     expect(effectiveMode("autopilot", "pro")).toBe("autopilot");
+    expect(remainingLeadSlots({ plan: "free", missionCap: 25, usedOnMission: 0, usedByWorkspace: 20 })).toBe(5);
+    expect(remainingLeadSlots({ plan: "pro", missionCap: 10, usedOnMission: 4, usedByWorkspace: 4 })).toBe(6);
+    expect(canEditMission("member")).toBe(true);
+    expect(canAutopilotMission("member")).toBe(false);
+    expect(canAutopilotMission("admin")).toBe(true);
+    expect(canEditMission("none")).toBe(false);
   });
 
   it("stops spending when the mission cap is hit", () => {
@@ -180,6 +189,20 @@ describe("the queue owns mission work", () => {
     expect(WORKER_CODE).toContain("scheduleDraft");
     expect(WORKER_CODE).not.toContain("send-email");
     expect(WORKER_CODE).toContain("agent-mission-digest");
+    expect(WORKER_CODE).not.toContain("finish_agent_mission_run");
+    const runner = readFileSync("supabase/functions/_shared/agent-mission-runner.ts", "utf8");
+    expect(runner).toContain('count: "exact"');
+    expect(runner).not.toContain(".limit(500)");
+    expect(runner).toContain("claim_agent_mission_send");
+    expect(runner).toContain("claim_agent_mission_lead");
+    expect(runner).toContain("Could not read today's lead count");
+    expect(runner).toContain("agent_mission_leads_used_today");
+    const guards = readFileSync("supabase/migrations/20261121120000_agent_mission_guards.sql", "utf8");
+    expect(guards).toContain("job_attempts >= 3");
+    expect(guards).toContain("uq_agent_missions_one_active");
+    expect(guards).toContain("Only the workspace owner or an admin can turn on autopilot");
+    expect(guards).toContain("agent-mission-workspace:");
+    expect(guards).toContain("EXCEPTION WHEN OTHERS");
   });
 });
 
@@ -232,7 +255,14 @@ describe("a mission pass", () => {
     };
     return {
       from,
-      rpc: async () => ({ data: "verdict-1", error: null }),
+      rpc: async (name: string) => {
+        if (name === "claim_agent_mission_send") return { data: "schedule", error: null };
+        if (name === "claim_agent_mission_lead") return { data: true, error: null };
+        if (name === "complete_agent_mission_send") return { data: "row", error: null };
+        if (name === "release_agent_mission_lead") return { data: null, error: null };
+        if (name === "agent_mission_leads_used_today") return { data: 0, error: null };
+        return { data: "verdict-1", error: null };
+      },
       scheduled,
       tables,
     };

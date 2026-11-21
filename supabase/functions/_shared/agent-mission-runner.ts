@@ -15,9 +15,10 @@ import {
   clampSendCap,
   effectiveMode,
   icpSearchFilters,
-  isNegativeReply,
+  planCaps,
   isProviderError,
   knownSearchLead,
+  remainingLeadSlots,
   missionDraftReady,
   missionReport,
   missionSendDecision,
@@ -158,26 +159,22 @@ export async function runMissionItem(deps: {
     0,
     String(mission.timezone ?? "UTC"),
   ).toISOString();
-  const [{ data: sends }, { data: replies }, { data: alerts }, { data: usage }] = await Promise.all([
-    admin.from("sent_emails").select("status").eq("user_id", userId).gte("created_at", since).limit(500),
-    admin.from("reply_analysis").select("intent_classification").eq("user_id", userId).gte("created_at", since).limit(500),
-    admin.from("deliverability_alerts").select("id, alert_type").eq("user_id", userId).is("resolved_at", null).limit(20),
-    admin.from("ai_usage_events").select("cost_usd").eq("user_id", userId).gte("created_at", dayStart).limit(1000),
+  const negativeClasses = ["not_interested", "unsubscribe", "spam", "hostile"];
+  const [sentCount, bouncedCount, replyCount, negativeCount, alertCount, usage] = await Promise.all([
+    admin.from("sent_emails").select("id", { count: "exact", head: true }).eq("user_id", userId).gte("created_at", since),
+    admin.from("sent_emails").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("status", "bounced").gte("created_at", since),
+    admin.from("reply_analysis").select("id", { count: "exact", head: true }).eq("user_id", userId).gte("created_at", since),
+    admin.from("reply_analysis").select("id", { count: "exact", head: true }).eq("user_id", userId).gte("created_at", since).in("intent_classification", negativeClasses),
+    admin.from("deliverability_alerts").select("id", { count: "exact", head: true }).eq("user_id", userId).is("resolved_at", null).in("alert_type", ["bounce_rate", "blacklist", "spam", "complaint", "reputation_drop", "auth_failure"]),
+    admin.from("ai_usage_events").select("cost_usd").eq("user_id", userId).gte("created_at", dayStart),
   ]);
-  const sentRows = (sends ?? []) as { status?: string }[];
-  const bounced = sentRows.filter((row) => row.status === "bounced").length;
-  const replyRows = (replies ?? []) as { intent_classification?: string }[];
-  const negative = replyRows.filter((row) => isNegativeReply(row.intent_classification)).length;
-  const openAlerts = ((alerts ?? []) as { alert_type?: string }[]).filter((row) =>
-    ["bounce_rate", "blacklist", "spam", "complaint", "reputation_drop", "auth_failure"].includes(String(row.alert_type)),
-  ).length;
-  const spent = ((usage ?? []) as { cost_usd?: number }[]).reduce((sum, row) => sum + Number(row.cost_usd ?? 0), 0);
+  const spent = ((usage?.data ?? []) as { cost_usd?: number }[]).reduce((sum, row) => sum + Number(row.cost_usd ?? 0), 0);
   const guard = pauseDecision({
-    sent: sentRows.length,
-    bounced,
-    replies: replyRows.length,
-    negativeReplies: negative,
-    openAlerts,
+    sent: Number(sentCount?.count ?? 0),
+    bounced: Number(bouncedCount?.count ?? 0),
+    replies: Number(replyCount?.count ?? 0),
+    negativeReplies: Number(negativeCount?.count ?? 0),
+    openAlerts: Number(alertCount?.count ?? 0),
     bounceRate: Number(mission.bounce_pause_rate ?? 0.05),
     negativeRate: Number(mission.negative_reply_pause_rate ?? 0.15),
   });
@@ -190,8 +187,22 @@ export async function runMissionItem(deps: {
   }
 
   const cursor = asCursor(run.cursor);
-  const leadCap = clampLeadCap(plan, Number(mission.daily_lead_cap ?? 10));
-  const sendCap = clampSendCap(plan, Number(mission.daily_send_cap ?? 10), leadCap);
+  const { data: usedByOthers, error: usedError } = await admin.rpc("agent_mission_leads_used_today", {
+    p_user_id: userId,
+    p_timezone: String(mission.timezone ?? "UTC"),
+    p_exclude_run: runId,
+  });
+  if (usedError) {
+    return stop("skipped", "Could not read today's lead count, so this run added no leads.");
+  }
+  const leadCeiling = planCaps(plan).dailyLeads;
+  const slotsLeft = remainingLeadSlots({
+    plan,
+    missionCap: Number(mission.daily_lead_cap ?? 10),
+    usedOnMission: cursor.leads,
+    usedByWorkspace: Number(usedByOthers ?? 0) + cursor.leads,
+  });
+  const sendCap = clampSendCap(plan, Number(mission.daily_send_cap ?? 10), clampLeadCap(plan, Number(mission.daily_lead_cap ?? 10)));
   const mode = effectiveMode(String(mission.mode), plan);
 
   if (cursor.phase === "search") {
@@ -200,7 +211,13 @@ export async function runMissionItem(deps: {
       ? await admin.from("icp_profiles").select("target_titles, industries, geographies, seniority_levels, exclude_titles, exclude_industries, exclude_keywords").eq("id", mission.icp_profile_id).eq("user_id", userId).maybeSingle()
       : { data: null };
     const { data: config } = await admin.from("agent_configs").select("prospecting_job_title, prospecting_industry, prospecting_country, tone, company_context, value_props").eq("id", mission.agent_config_id).eq("user_id", userId).maybeSingle();
-    const filters = icpSearchFilters(icp, config, String(mission.goal ?? ""), Math.max(1, leadCap - cursor.leads));
+    if (slotsLeft <= 0) {
+      cursor.skipped.push({ reason: "Today's lead cap for this workspace is already used.", source: "plan cap" });
+      cursor.phase = "report";
+      await saveCursor(admin, runId, userId, cursor);
+      return { action: "continue" };
+    }
+    const filters = icpSearchFilters(icp, config, String(mission.goal ?? ""), slotsLeft);
     let result: any;
     try {
       result = await deps.invokeFn("fetch-external-leads", { ...filters, job_id: deps.job.id });
@@ -224,14 +241,35 @@ export async function runMissionItem(deps: {
       cursor.skipped.push({ reason: message, source: "lead search" });
     }
     const found = Array.isArray(result?.leads) ? result.leads as Record<string, unknown>[] : [];
+    let added = 0;
     for (const raw of found) {
-      if (cursor.leads >= leadCap) break;
+      if (added >= slotsLeft) break;
       const known = knownSearchLead(raw);
       if ("skip" in known) {
         cursor.skipped.push({ reason: known.skip, source: "lead search" });
         continue;
       }
+      if (leadCeiling >= 0) {
+        const { data: reserved, error: reserveError } = await admin.rpc("claim_agent_mission_lead", {
+          p_user_id: userId,
+          p_run_id: runId,
+          p_timezone: String(mission.timezone ?? "UTC"),
+          p_ceiling: leadCeiling,
+        });
+        if (reserveError || reserved !== true) {
+          cursor.skipped.push({
+            reason: reserveError
+              ? "Could not reserve a lead under today's cap, so this run stopped."
+              : "Today's lead cap for this workspace is already used.",
+            source: "plan cap",
+          });
+          break;
+        }
+      }
       const inserted = await insertLead(admin, userId, known.lead);
+      if (leadCeiling >= 0 && (inserted === "duplicate" || !inserted)) {
+        await admin.rpc("release_agent_mission_lead", { p_user_id: userId, p_run_id: runId });
+      }
       if (inserted === "duplicate") {
         cursor.skipped.push({ reason: `${known.lead.contact_email} is already in the list.`, source: "lead search" });
         continue;
@@ -242,6 +280,7 @@ export async function runMissionItem(deps: {
       }
       cursor.lead_ids.push(inserted);
       cursor.leads += 1;
+      added += 1;
     }
     if (!found.length && !cursor.skipped.some((row) => row.source === "lead search")) {
       cursor.skipped.push({ reason: "The search returned no one who matched this ICP.", source: "lead search" });
@@ -378,8 +417,30 @@ export async function runMissionItem(deps: {
         windowEnd: String(mission.send_window_end ?? "17:00"),
         staggerIndex: cursor.sends,
       });
+      const { data: claimedSend, error: claimError } = await admin.rpc("claim_agent_mission_send", {
+        p_run_id: runId,
+        p_user_id: userId,
+        p_lead_id: leadId,
+      });
+      if (claimError) {
+        cursor.waiting.push({
+          who: String((freshLead ?? lead).contact_name ?? "Lead"),
+          subject: drafted.subject,
+          draft_id: drafted.draft_id,
+        });
+        cursor.skipped.push({ reason: "Could not reserve this send, so the draft is waiting in Drafts.", source: "outbox" });
+      } else if (claimedSend === "done") {
+        cursor.sends += 1;
+      } else if (claimedSend === "schedule") {
       const scheduled = await deps.scheduleDraft(freshLead ?? lead, drafted, when.toISOString(), cursor.sends);
-      if (scheduled) {
+      const emailId = scheduled && typeof scheduled === "object" && "id" in scheduled ? String(scheduled.id) : null;
+      if (emailId) {
+        await admin.rpc("complete_agent_mission_send", {
+          p_run_id: runId,
+          p_user_id: userId,
+          p_lead_id: leadId,
+          p_sent_email_id: emailId,
+        });
         cursor.sends += 1;
         if (mission.sequence_id) await enroll(admin, userId, leadId, String(mission.sequence_id));
       } else {
@@ -389,6 +450,9 @@ export async function runMissionItem(deps: {
           draft_id: drafted.draft_id,
         });
         cursor.skipped.push({ reason: "The outbox did not take this draft, so it is waiting in Drafts.", source: "outbox" });
+      }
+      } else {
+        cursor.skipped.push({ reason: "This lead could not be reserved for sending.", source: "outbox" });
       }
     } else {
       cursor.waiting.push({

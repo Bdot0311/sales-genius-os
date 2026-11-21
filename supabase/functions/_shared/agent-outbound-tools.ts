@@ -12,6 +12,8 @@ import { allowedActions, clampDailyCap } from "./visitor-automation.ts";
 import { featureEnabled, VISITOR_FLAG } from "./visitor-identity.ts";
 import {
   AGENT_MISSIONS_FLAG,
+  canAutopilotMission,
+  canEditMission,
   clampLeadCap,
   clampSendCap,
   clampSpendCap,
@@ -20,6 +22,7 @@ import {
   normalizeDays,
   parseClock,
   safeTimeZone,
+  type MissionActor,
 } from "./agent-mission-logic.ts";
 
 type Admin = { from: (t: string) => any };
@@ -138,6 +141,13 @@ const pick = (args: Record<string, unknown>, fields: string[]) => {
   for (const f of fields) if (args[f] !== undefined && args[f] !== null) out[f] = args[f];
   return out;
 };
+
+async function missionActor(admin: Admin, userId: string): Promise<MissionActor> {
+  const { data, error } = await admin.from("team_members").select("role").eq("member_user_id", userId).eq("status", "active").limit(1).maybeSingle();
+  if (error || !data) return "owner";
+  if (data.role === "admin" || data.role === "member") return data.role;
+  return "none";
+}
 
 async function missionWritesAllowed(admin: Admin, userId: string): Promise<boolean> {
   const { data: flag } = await admin.from("feature_flags").select("is_enabled").eq("name", AGENT_MISSIONS_FLAG).maybeSingle();
@@ -463,6 +473,11 @@ export async function runOutboundTool(
       const { data: subscription } = await admin.from("subscriptions").select("plan").eq("user_id", userId).maybeSingle();
       const plan = String(subscription?.plan ?? "free");
       const mode = args.mode === "autopilot" ? "autopilot" : "approval";
+      const actor = await missionActor(admin, userId);
+      if (!canEditMission(actor)) return { error: "You cannot edit missions for this workspace." };
+      if (mode === "autopilot" && !canAutopilotMission(actor)) {
+        return { error: "Only the workspace owner or an admin can turn on autopilot." };
+      }
       const leadCap = clampLeadCap(plan, Number(args.daily_lead_cap ?? 10));
       const row: Record<string, unknown> = {
         name: String(args.name ?? "").trim().slice(0, 120),
@@ -514,8 +529,16 @@ export async function runOutboundTool(
     }
     case "set_agent_mission_status": {
       if (!(await missionWritesAllowed(admin, userId))) return { error: "Agent missions are off for this workspace." };
+      const actor = await missionActor(admin, userId);
+      if (!canEditMission(actor)) return { error: "You cannot edit missions for this workspace." };
       const status = String(args.status ?? "");
       if (!["active", "paused", "stopped"].includes(status)) return { error: "status must be active, paused or stopped" };
+      if (status === "active") {
+        const { data: currentMode } = await admin.from("agent_missions").select("mode").eq("id", String(args.mission_id ?? "")).eq("user_id", userId).maybeSingle();
+        if (currentMode?.mode === "autopilot" && !canAutopilotMission(actor)) {
+          return { error: "Only the workspace owner or an admin can resume autopilot." };
+        }
+      }
       const row: Record<string, unknown> = {
         status,
         pause_reason: status === "active" ? null : String(args.reason ?? (status === "paused" ? "Paused by you." : "Stopped.")),

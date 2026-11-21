@@ -158,7 +158,6 @@ const PRODUCT_PAGES = new Set([
   "Leads",
   "LiveCoaching",
   "MessageBlocks",
-  "Missions",
   "OAuthConsent",
   "Onboarding",
   "OnboardingStatus",

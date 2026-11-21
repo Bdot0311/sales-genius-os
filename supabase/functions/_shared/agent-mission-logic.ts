@@ -42,6 +42,30 @@ export function clampLeadCap(plan: string | null | undefined, requested: number)
   return Math.min(ask, cap);
 }
 
+export type MissionActor = "owner" | "admin" | "member" | "none";
+
+/** Members can edit. Only the owner or an admin can turn on unattended sending. */
+export function canEditMission(actor: MissionActor): boolean {
+  return actor === "owner" || actor === "admin" || actor === "member";
+}
+
+export function canAutopilotMission(actor: MissionActor): boolean {
+  return actor === "owner" || actor === "admin";
+}
+
+/** The plan cap is shared by every mission. A mission cap can only be lower. */
+export function remainingLeadSlots(input: {
+  plan: string | null | undefined;
+  missionCap: number;
+  usedOnMission: number;
+  usedByWorkspace: number;
+}): number {
+  const missionLeft = Math.max(0, clampLeadCap(input.plan, input.missionCap) - Math.max(0, input.usedOnMission));
+  const ceiling = planCaps(input.plan).dailyLeads;
+  if (ceiling < 0) return missionLeft;
+  return Math.min(missionLeft, Math.max(0, ceiling - Math.max(0, input.usedByWorkspace)));
+}
+
 export function clampSendCap(plan: string | null | undefined, requested: number, leadCap: number): number {
   const ask = Math.max(1, Math.min(500, Math.round(Number(requested)) || 1));
   return Math.min(ask, leadCap, clampLeadCap(plan, 500));

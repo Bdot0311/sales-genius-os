@@ -110,7 +110,7 @@ export async function notifyMissionDigest(userId: string, summary: string): Prom
   return notifyUserPush(userId, {
     title: "Your agent finished a mission",
     body: short(summary, 140) || "Open Missions for the overnight report.",
-    url: "/dashboard/missions",
+    url: "/dashboard/agent?tab=configuration",
     tag: "agent-mission",
   });
 }
