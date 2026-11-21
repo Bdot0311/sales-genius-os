@@ -1,3 +1,10 @@
+# Selected security remediation — November 21, 2026
+
+- [x] Bind placement-test mailbox credentials and refresh writes to the verified owner; require sign-in before blacklist lookups.
+- [x] Revoke customer access to integration-secret mutation; require trusted internal credentials for shared webhook dispatch, preserving its existing schedule and configured service address.
+- [x] Neutralize spreadsheet formulas in Activity and training exports using one safe CSV serializer.
+- [x] 87 focused regressions passed and all four affected handlers deployed; preview build clean. Only the six requested findings reviewed; other findings unchanged.
+
 # Black Friday re-engagement
 
 - [x] Explain that existing inactivity messages are also reengagement, not an exception to the managed account-email restriction; no send attempted or existing automation changed.

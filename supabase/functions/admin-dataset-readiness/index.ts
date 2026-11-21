@@ -1,6 +1,8 @@
 import { corsHeaders, requireInternalOrAdmin } from "../_shared/internal-auth.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@^2.76.1";
+import { csvCell } from "../_shared/csv-cell.ts";
+export { csvCell } from "../_shared/csv-cell.ts";
 
 /**
  * Founder-only reporting on the outcome dataset.
@@ -51,13 +53,6 @@ export const FORBIDDEN_EXPORT_COLUMNS = [
   "to_email", "contact_email", "contact_name", "company_name",
   "subject", "body_html", "body_text", "reply_content",
 ] as const;
-
-/** RFC 4180: quote when the value could otherwise break the row. */
-export function csvCell(value: unknown): string {
-  if (value === null || value === undefined) return "";
-  const text = Array.isArray(value) ? value.join("|") : String(value);
-  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
-}
 
 export function toCsv(rows: Record<string, unknown>[], columns: readonly string[]): string {
   const head = columns.join(",");

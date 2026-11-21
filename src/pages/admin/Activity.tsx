@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 import { format } from "date-fns";
 import { LastCronRun } from "@/components/admin/LastCronRun";
+import { csvCell } from "../../../supabase/functions/_shared/csv-cell";
 
 interface ActivityLog {
   id: string;
@@ -254,7 +255,7 @@ const AdminActivity = () => {
               const headers = Object.keys(rows[0] || { time: '', user: '', action: '', entity_type: '', entity_id: '', ip: '' });
               const csv = [
                 headers.join(','),
-                ...rows.map(r => headers.map(h => JSON.stringify((r as any)[h] ?? '')).join(',')),
+                ...rows.map(r => headers.map(h => csvCell((r as any)[h])).join(',')),
               ].join('\n');
               const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
               const url = URL.createObjectURL(blob);

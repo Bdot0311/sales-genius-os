@@ -90,8 +90,8 @@ interface MailboxToken {
 }
 
 // deno-lint-ignore no-explicit-any
-async function tokenForIntegration(admin: any, integrationId: string): Promise<{ mailbox: MailboxToken | null; error: string | null }> {
-  const { data: integ } = await admin.from("integrations").select("id, config, connected_email").eq("id", integrationId).maybeSingle();
+async function tokenForIntegration(admin: any, integrationId: string, userId: string): Promise<{ mailbox: MailboxToken | null; error: string | null }> {
+  const { data: integ } = await admin.from("integrations").select("id, config, connected_email").eq("id", integrationId).eq("user_id", userId).eq("integration_id", "google").eq("is_active", true).maybeSingle();
   if (!integ) return { mailbox: null, error: "That mailbox is no longer connected." };
   const config = (integ.config ?? {}) as Record<string, unknown>;
   let token = (config.accessToken as string) || (config.provider_token as string) || "";
@@ -106,7 +106,7 @@ async function tokenForIntegration(admin: any, integrationId: string): Promise<{
     error = fresh.error;
     if (fresh.token) {
       token = fresh.token;
-      await admin.from("integrations").update({ config: { ...config, accessToken: fresh.token, expiresAt: Date.now() + 3300 * 1000 } }).eq("id", integrationId);
+      await admin.from("integrations").update({ config: { ...config, accessToken: fresh.token, expiresAt: Date.now() + 3300 * 1000 } }).eq("id", integrationId).eq("user_id", userId);
     }
   }
   return token ? { mailbox: { token, email }, error: null } : { mailbox: null, error };
@@ -130,7 +130,7 @@ async function seedReadToken(admin: any, userId: string, seedEmail: string): Pro
     const cfg = (i.config ?? {}) as Record<string, unknown>;
     const email = ((i.connected_email as string) || (cfg.connected_email as string) || (cfg.googleEmail as string) || "").toLowerCase();
     if (email === seedEmail.toLowerCase()) {
-      const t = await tokenForIntegration(admin, i.id as string);
+      const t = await tokenForIntegration(admin, i.id as string, userId);
       return { token: t.mailbox?.token ?? null, error: t.error };
     }
   }
@@ -160,7 +160,7 @@ async function findFallbackSeed(admin: any, userId: string, excludeIntegrationId
     const cfg = (i.config ?? {}) as Record<string, unknown>;
     const email = (i.connected_email as string) || (cfg.connected_email as string) || (cfg.googleEmail as string) || "";
     if (!email) continue;
-    const t = await tokenForIntegration(admin, i.id as string);
+    const t = await tokenForIntegration(admin, i.id as string, userId);
     if (t.mailbox?.token) return email;
   }
   return null;
@@ -198,7 +198,7 @@ serve(async (req) => {
       if (acct.status !== "active") return json({ error: "This mailbox is paused; resume it before testing." }, 409);
       if (!acct.integration_id) return json({ error: "This mailbox has no connected Gmail integration." }, 400);
 
-      const sender = await tokenForIntegration(admin, acct.integration_id);
+      const sender = await tokenForIntegration(admin, acct.integration_id, user.id);
       if (!sender.mailbox) {
         return json({
           error: sender.error

@@ -505,6 +505,20 @@
       "when": 1795227276523,
       "tag": "0071_restore_agent_missions",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1795235277949,
+      "tag": "0072_protect_vault_secret_writer_and_webhook_job",
+      "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1795235347432,
+      "tag": "0073_preserve_configured_webhook_job_origin",
+      "breakpoints": true
     }
   ]
 }
