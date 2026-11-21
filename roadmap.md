@@ -1,3 +1,9 @@
+# Black Friday re-engagement
+
+- [ ] Audit signup/activation drop-off and confirm the requested 67-user audience without assuming why users stopped.
+- [ ] Prepare feedback-led free campaign setup + first-month-free offer; plan, deadline and renewal terms await owner answers.
+- [ ] Send only through an authorized marketing sender, excluding opt-outs and undeliverable recipients; sender connection required. No campaign sent yet.
+
 # Admin Settings stability and Agent Missions
 
 - [x] Preserve Settings tabs/editors across timed, focus and realtime refreshes; nested sections use a separate URL key from grouped admin tabs. Signed-in unsaved popup survived 65 seconds and focus; API section restored on reload. 30 related tests passed and preview build OK.
