@@ -373,6 +373,39 @@ describe("tracking script", () => {
     fallback.context.OutReign.flush();
     expect(fallback.sent.at(-1)?.via).toBe("fetch");
   });
+
+  it("records the current page when consent comes after a client navigation", async () => {
+    const visit = boot({ consent: "required" });
+    visit.context.history.pushState(null, "", "/pricing");
+    visit.context.history.replaceState(null, "", "/pricing");
+    visit.context.OutReign.flush();
+    expect(visit.sent).toHaveLength(0);
+
+    visit.context.OutReign.consent();
+    visit.context.OutReign.flush();
+    const accepted = await readSent(visit.sent);
+    expect(accepted.events.map((row: { event_name: string; path: string }) => [row.event_name, row.path])).toEqual([
+      ["page_view", "/pricing"],
+    ]);
+
+    visit.context.history.pushState(null, "", "/blog");
+    visit.context.OutReign.flush();
+    const next = await readSent(visit.sent);
+    expect(next.events.map((row: { event_name: string; path: string }) => [row.event_name, row.path])).toEqual([
+      ["page_view", "/blog"],
+    ]);
+
+    const landing = boot({ consent: "required" });
+    landing.context.history.replaceState(null, "", "/");
+    landing.context.OutReign.flush();
+    expect(landing.sent).toHaveLength(0);
+    landing.context.OutReign.consent();
+    landing.context.OutReign.flush();
+    const home = await readSent(landing.sent);
+    expect(home.events).toHaveLength(1);
+    expect(home.events[0].event_name).toBe("page_view");
+    expect(home.events[0].path).toBe("/");
+  });
 });
 
 describe("rules stay inside the workspace that owns the site", () => {
@@ -618,7 +651,7 @@ function boot(options: { consent: string; dnt?: string; beacon?: boolean }) {
   };
   sandbox.globalThis = sandbox;
   runInContext(VISITOR_SDK_SOURCE, createContext(sandbox));
-  return { context: sandbox as { OutReign: { flush: () => void; track: (n: string, p?: Record<string, unknown>) => void; disable: () => void; consent: () => void }; history: { pushState: (a: unknown, b: string, c: string) => void } }, sent };
+  return { context: sandbox as { OutReign: { flush: () => void; track: (n: string, p?: Record<string, unknown>) => void; disable: () => void; consent: () => void }; history: { pushState: (a: unknown, b: string, c: string) => void; replaceState: (a: unknown, b: string, c: string) => void } }, sent };
 }
 
 async function readSent(sent: { body: string }[]) {

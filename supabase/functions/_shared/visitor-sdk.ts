@@ -117,10 +117,11 @@ export const VISITOR_SDK_SOURCE = `(function (root) {
   }
 
   function enqueue(event) {
-    if (privacyOff() || !consented() || !siteId) return;
+    if (privacyOff() || !consented() || !siteId) return false;
     queue.push(event);
     if (queue.length >= BATCH) flush();
     else if (!timer) timer = root.setTimeout(flush, FLUSH_MS);
+    return true;
   }
 
   function baseEvent(name, props) {
@@ -144,10 +145,12 @@ export const VISITOR_SDK_SOURCE = `(function (root) {
   function pageview() {
     var loc = root.location || { pathname: "/" };
     if (loc.pathname === lastPath) return;
+    // Remember the path only after the event is queued. A client navigation
+    // before consent used to mark the page seen, and consent() then skipped it.
+    if (!enqueue(baseEvent("page_view", {}))) return;
     lastPath = loc.pathname;
     shownAt = Date.now();
     maxScroll = 0;
-    enqueue(baseEvent("page_view", {}));
   }
 
   function engagement() {
