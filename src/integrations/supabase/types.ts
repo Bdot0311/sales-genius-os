@@ -737,7 +737,6 @@ export type Database = {
           drafts_written: number
           finished_at: string | null
           id: string
-          job_attempts: number
           job_id: string | null
           leads_found: number
           mission_id: string
@@ -756,7 +755,6 @@ export type Database = {
           drafts_written?: number
           finished_at?: string | null
           id?: string
-          job_attempts?: number
           job_id?: string | null
           leads_found?: number
           mission_id: string
@@ -775,7 +773,6 @@ export type Database = {
           drafts_written?: number
           finished_at?: string | null
           id?: string
-          job_attempts?: number
           job_id?: string | null
           leads_found?: number
           mission_id?: string
@@ -8129,35 +8126,7 @@ export type Database = {
         Returns: string
       }
       agent_mission_workspace_owner: { Args: never; Returns: string }
-      agent_mission_leads_used_today: {
-        Args: { p_exclude_run?: string; p_timezone: string; p_user_id: string }
-        Returns: number
-      }
       agent_missions_enabled: { Args: never; Returns: boolean }
-      claim_agent_mission_lead: {
-        Args: { p_ceiling: number; p_run_id: string; p_timezone: string; p_user_id: string }
-        Returns: boolean
-      }
-      claim_agent_mission_send: {
-        Args: { p_lead_id: string; p_run_id: string; p_user_id: string }
-        Returns: string
-      }
-      complete_agent_mission_send: {
-        Args: { p_lead_id: string; p_run_id: string; p_sent_email_id: string; p_user_id: string }
-        Returns: string
-      }
-      release_agent_mission_lead: {
-        Args: { p_run_id: string; p_user_id: string }
-        Returns: undefined
-      }
-      finish_agent_mission_run: {
-        Args: { p_pause: boolean; p_reason: string; p_run_id: string; p_status: string }
-        Returns: undefined
-      }
-      set_agent_mission_status: {
-        Args: { p_id: string; p_reason?: string; p_status: string }
-        Returns: undefined
-      }
       agent_step_owned: {
         Args: { p_owner: string; p_step_id: string }
         Returns: boolean
