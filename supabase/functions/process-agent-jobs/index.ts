@@ -33,6 +33,7 @@ import {
   leadsWithDrafts,
   sentSubjectsFor,
 } from "../_shared/draft-one.ts";
+import { classifyFailure as classifyWorkerFailure } from "../_shared/bulk-run-logic.ts";
 import { runMissionItem } from "../_shared/agent-mission-runner.ts";
 import { notifyMissionDigest } from "../_shared/notify-events.ts";
 import { sendAppEmail } from "../_shared/transactional-email-templates/send-app-email.ts";
@@ -72,9 +73,19 @@ const CONCURRENCY = Number(Deno.env.get("AGENT_JOB_CONCURRENCY")) || 4;
  * second and a draft that invented a figure it cannot back are not the same
  * thing: the first is worth running again, the second returns the same answer
  * forever. Running four at a time makes the first more likely, not less.
+ *
+ * This used to be a second regex of its own, and the two workers disagreed.
+ * The bulk worker retried "the reply rubric did not return a score" and the
+ * shell told the user it was retryable; this one failed it permanently on the
+ * first attempt, which is where "4 scorer didn't respond" in a counted failure
+ * summary came from. It was also missing an unreachable provider, a dropped
+ * connection and an empty model response, all of which the other worker
+ * retried. One classifier cannot disagree with itself.
  */
-const TRANSIENT_FAILURE =
-  /rate limit|rate-limit|429|too many requests|timed out|timeout|temporarily unavailable|overloaded|503|502|504/i;
+const retryableFailure = (text: string): boolean => {
+  const kind = classifyWorkerFailure(text);
+  return kind === "transient" || kind === "rate_limit";
+};
 
 /**
  * Hand one finished draft to the outbox.
@@ -355,7 +366,7 @@ serve(async (req) => {
      */
     const settleFailure = async (item: Record<string, any>, message: unknown): Promise<void> => {
       const text = String(message ?? "Draft failed").slice(0, 400);
-      if (TRANSIENT_FAILURE.test(text) && Number(item.attempts ?? 0) < 3) {
+      if (retryableFailure(text) && Number(item.attempts ?? 0) < 3) {
         console.warn(`[process-agent-jobs] transient, requeued: ${text}`);
         await admin.from("agent_job_items")
           .update({ status: "pending", claimed_at: null, error: text })

@@ -78,7 +78,10 @@ export function classifyFailure(message: string): FailureKind {
   const m = message.toLowerCase();
   if (/ai_credits|payment required|402|credits? (are )?exhausted|insufficient/.test(m)) return "credits";
   if (/rate.?limit|429|too many requests/.test(m)) return "rate_limit";
-  if (/timed? ?out|timeout|temporarily|overloaded|unreachable|50[234]|network|econn|did not return a score|no response from the model|empty (model )?response/.test(m)) return "transient";
+  // "already running in another pass": two passes reached the same lead and
+  // the second was refused the research claim. The next attempt finds the
+  // brief the first one stored.
+  if (/timed? ?out|timeout|temporarily|overloaded|unreachable|50[234]|network|econn|did not return a score|no response from the model|empty (model )?response|already running in another pass/.test(m)) return "transient";
   return "permanent";
 }
 

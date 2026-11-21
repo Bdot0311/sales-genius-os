@@ -244,3 +244,66 @@ describe("the sender's own vocabulary, conjugated", () => {
     expect(ground("Procurement cycles could shrink once stakeholder alignment improves across business units.")).toBeNull();
   });
 });
+
+/**
+ * The same gate, refusing the rest of its own vocabulary.
+ *
+ * After the inflection fix the agent still failed: "6 research gave only a
+ * copied line, no grounded reason, 4 said something the research doesn't
+ * support". Both come from this test, and both were it refusing words the
+ * writer had been told it could use.
+ *
+ * Two causes, each reproduced by running the gate rather than reasoning about
+ * it. A capitalised word was checked against the sender's description and the
+ * company name only, never the research, so a fact about a SaaS buying
+ * platform refused every line that said "SaaS". And the half-of-the-sentence
+ * overlap counted every word over three letters, so ordinary English -- every,
+ * before, mean, fewer -- counted as unsourced claims and sank sentences that
+ * were entirely about the sender's own offer.
+ */
+describe("words the writer was told it could use", () => {
+  const FACT = "Vendr helps SaaS companies buy software with negotiated pricing across AWS, Datadog and Slack.";
+  const SENDER = "OutReign finds decision makers, verifies their email, researches each company and writes cold outreach that cites a real fact from their site. Built for founders and small sales teams who send outbound themselves.";
+  const ground = (line: string) => lineGrounding(line, [FACT], SENDER, "Vendr");
+
+  it("takes a capitalised word from the approved fact", () => {
+    // The prompt says the idea may use words from the chosen fact. The check
+    // did not look at the fact, so saying what the fact is about was read as
+    // an invented name.
+    expect(ground("Finding the SaaS decision makers worth a verified email could get easier.")).toBe("idea");
+    expect(ground("Negotiated pricing across AWS could be worth a conversation.")).toBe("idea");
+  });
+
+  it("still refuses a name that no source supplies", () => {
+    expect(ground("You could use Clearbit to find the decision makers worth a verified email.")).toBeNull();
+    expect(ground("Your team at Acme could move faster.")).toBeNull();
+  });
+
+  it("does not count ordinary English as an unsourced claim", () => {
+    for (const line of [
+      "Verifying every email before a send could mean fewer bounces.",
+      "Finding the right decision makers could take less time than it does today.",
+      "Writing each email from a real fact could make outbound feel less generic.",
+      "Researching a company before you write could give you something better to open with.",
+    ]) {
+      expect(ground(line), line).not.toBeNull();
+    }
+  });
+
+  it("still refuses what is actually a claim about them", () => {
+    // Every one of these is carried by a word no source supplies, a number, a
+    // name or a result. Dropping the filler from the count does not reach any
+    // of them.
+    for (const line of [
+      "Your team is losing deals every month.",
+      "Hiring 40 engineers could stretch your onboarding.",
+      "Most agencies lose 30% of their replies.",
+      "Their renewal cycle could be slowing deals down.",
+      "We helped three SaaS companies cut renewal spend.",
+      "I noticed your team is struggling with vendor sprawl.",
+      "Your procurement team spends 12 hours a week on renewals.",
+    ]) {
+      expect(ground(line), line).toBeNull();
+    }
+  });
+});
