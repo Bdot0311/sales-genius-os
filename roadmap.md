@@ -1,9 +1,74 @@
+# Mailchimp welcome email — November 21, 2026
+
+- [x] Create separate welcome draft using the BDØT design; saved HTML checked at desktop/phone, five images loaded, no overflow. Mailchimp accepted owner-only test to info@bdotindustries.org (HTTP 204); post-test copy retained. Inbox rendering awaits confirmation.
+- [x] Owner approved design; improved welcome body and reliable paragraph spacing, verified outgoing content at desktop/phone and ready checklist for 65 opted-in BDØT Industries subscribers. Send accepted (HTTP 204); follow-up reports sending with emails_sent=65 at 08:16:45 UTC. Individual delivery unverified; no repeat send.
+
+# BDØT footer correction — November 21, 2026
+
+- [x] Replace sample Tip of the week quote with practical featured-blog research/review advice. Mailchimp read-back and desktop/phone rendering verified; no emails sent.
+- [x] Restore the original tip bubble, promotional banner, View Blog In Browser button and social/preferences/unsubscribe footer. Separate Mailchimp read-back and desktop/phone checks passed: banner loaded, no overflow, article unchanged. No new test or subscriber send; inbox rendering unverified.
+
+# Edited BDØT template — November 21, 2026
+
+- [x] Use the newly edited November 21 BDØT export: updated crown logo, title band, frame, social footer and full reviewed article/GPT graphics. Actual Mailchimp HTML checked at desktop/phone: eight headings, five loaded images, no overflow. Owner-only test accepted (HTTP 204); separate post-test read retains content. Inbox rendering unconfirmed; no subscribers emailed.
+
+# BDØT saved-template selection — November 21, 2026
+
+- [x] Repair blank BDØT test: old post-test content read is empty and checklist reports missing content. Created standalone exported HTML draft without template binding; repeated pre/post-test checklist confirms custom HTML success and post-test content retains the full article. Desktop/phone checks passed; replacement owner-only test accepted (HTTP 204). Inbox rendering awaits owner confirmation; no subscriber send.
+- [x] Locate the owner's BDØT saved template and create a review-only draft with it; old campaign is absent. Separate content read and Mailchimp checklist confirm no content was loaded. No blank test sent; no audience attached.
+- [x] Use uploaded BDØT HTML: preserve its logo, black/purple editorial layout and footer; insert the full article and GPT graphics. Separate outgoing content read and desktop/phone checks passed: seven article sections, all three images loaded, no overflow. Mailchimp accepted owner-only test to info@bdotindustries.org (HTTP 204); receipt/IONOS rendering unverified, no audience attached or subscriber send.
+
+# Mailchimp blank-test correction — November 21, 2026
+
+- [x] Confirm outgoing Mailchimp content was an empty template, restore the full illustrated article, then read back the outgoing HTML/plain text rather than relying on a prior preview.
+- [x] Returned outgoing HTML checked at desktop/phone widths: seven sections, all three images loaded, no overflow. Replacement owner-only test accepted (HTTP 204); IONOS receipt/rendering remains unverified, no audience send.
+
+# Mailchimp sell-services blog design — November 21, 2026
+
+- [x] Inspect Mailchimp templates: Sell Services is not exposed; adapt actual Sell Products email template 146, preserving the full article, crown logo and highlighted paragraphs.
+- [x] Generate two matching OpenAI GPT Image 2 graphics; actual saved Mailchimp email verified at 1280px/390px, all three images load, seven sections and no overflow. Owner-only test to info@bdotindustries.org accepted (HTTP 204); receipt unconfirmed, no audience send.
+
+# Account deletion event repair — November 21, 2026
+
+- [x] Trace the failed deletion to mailbox-removal history attempting to reference a deleted auth owner; add a targeted guard preserving ordinary mailbox events and permissions.
+- [x] Five isolated database regressions passed: original foreign-key failure reproduced, full owner/mailbox/event cascade succeeds, normal removal history retained without a profile, pause events and demo exclusion preserved. Hosted guard/security-definer/search-path verified; signed-in Admin Users renders and self-deletion remains refused. No real account deleted during verification; owner may retry the previously failed deletion. No account data restoration attempted.
+
+# Full-article Mailchimp newsletter — November 21, 2026
+
+- [x] Add a beehiiv-style generated editorial graphic, four lavender/mint paragraph bubbles and numbered visual section breaks while retaining the complete article. Actual Mailchimp saved HTML verified at phone/desktop widths: both images load, seven sections, no overflow. Revised owner-only test accepted (HTTP 204); inbox receipt unconfirmed, no audience send.
+
+- [x] Replace the tested newsletter's teaser with the complete seven-section featured article, actual crown logo and OutReign blog styling; remove the read-the-guide button. Email copy excludes unsupported reply-rate figures and keeps human approval explicit; published blog unchanged.
+- [x] Desktop/mobile preview has no overflow and logo loads; Mailchimp content saved/read back including full plain-text alternative. Owner-only test to info@bdotindustries.org accepted (HTTP 204); inbox delivery awaits owner confirmation. No subscriber campaign send.
+
+# Leads-used plan display — November 21, 2026
+
+- [x] Resolve the saved lead counter against the current tier's canonical allowance, including Agency; counts, billing and enforcement unchanged.
+- [x] Eight display regressions plus 26 canonical tier tests passed; What's New updated. Signed-in Agency credits screen shows 176 of 15,000 (1.2%) without the incorrect upgrade warning; preview build OK.
+
+# Consent-setting reader repair — November 21, 2026
+
+- [x] Restore the missing consent reader, atomic writer and private immutable history; register seven required fields in schema monitoring. Existing choices preserved; training/export prerequisites remain outside this repair.
+- [x] Privileged rollback-only read/write/withdrawal/rejected-answer/permission regressions passed (restricted shell connection correctly denied helper access); 92 focused tests passed. Signed-in dashboard consent read returned HTTP 200, page rendered, and preview build OK. No consent answers retained.
+
+# Selected security remediation — November 21, 2026
+
+- [x] Bind placement-test mailbox credentials and refresh writes to the verified owner; require sign-in before blacklist lookups.
+- [x] Revoke customer access to integration-secret mutation; require trusted internal credentials for shared webhook dispatch, preserving its existing schedule and configured service address.
+- [x] Neutralize spreadsheet formulas in Activity and training exports using one safe CSV serializer.
+- [x] 87 focused regressions passed and all four affected handlers deployed; preview build clean. Only the six requested findings reviewed; other findings unchanged.
+
 # Black Friday re-engagement
 
+- [x] Explain that existing inactivity messages are also reengagement, not an exception to the managed account-email restriction; no send attempted or existing automation changed.
+
+- [ ] Blog newsletters use Mailchimp only for opted-in subscribers; awaiting a selected blog and owner approval, no blog published or sent in this request.
+- [x] Declined using Lovable account emails for the promotional 67-user campaign; no workaround or send attempted.
+- [x] Add optional, unchecked marketing consent on the final onboarding screen; existing users remain not opted in. Explicit choices save in account metadata, separate from authorization and Mailchimp enrollment; 3 consent tests passed.
+- [ ] Owner test remains unsent: user clarified Mailchimp is for blogs only. A Mailchimp review-only Black Friday draft was saved before that clarification; no test, audience send or import performed.
 - [x] Audit confirms 67 non-admin accounts, all currently Free: 64 verified, 32 onboarded, 18 searched, 14 saved leads, 7 connected mailboxes, 1 sent. Reasons remain hypotheses; draft and safe personalization saved in docs/black-friday-reengagement-2026.md.
 - [x] Confirm offer: free personal campaign setup + first month free on any plan, claimed by Black Friday November 27, 2026; payment card required, then regular monthly renewal unless canceled. Draft clearly states terms.
 - [ ] Provision and verify the offer's redemption/payment path before delivery; no trial, coupon or customer billing changes made.
-- [ ] Campaign sending blocked: owner requested Lovable app-email delivery, which cannot be used for promotional re-engagement. Mailchimp declined; a supported marketing sender or connected mailbox is required. Nothing sent or granted.
+- [ ] Campaign sending blocked: Mailchimp is connected, but owner confirms the 67 users did not consent to promotional emails. Do not import them as subscribed; an unsubscribe footer does not establish permission. Nothing sent or granted.
 
 # Admin Settings stability and Agent Missions
 

@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS appsumo_config_server ON public.appsumo_plan_config;

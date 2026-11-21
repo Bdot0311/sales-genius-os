@@ -4426,6 +4426,30 @@ export type Database = {
         }
         Relationships: []
       }
+      outcome_consent_log: {
+        Row: {
+          consent: boolean
+          decided_at: string
+          id: string
+          source: string
+          user_id: string
+        }
+        Insert: {
+          consent: boolean
+          decided_at?: string
+          id?: string
+          source?: string
+          user_id: string
+        }
+        Update: {
+          consent?: boolean
+          decided_at?: string
+          id?: string
+          source?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       payoff_bank: {
         Row: {
           asserts_stat: boolean
@@ -4606,6 +4630,8 @@ export type Database = {
           include_compliance_footer: boolean | null
           include_unsubscribe: boolean | null
           last_sign_in_at: string | null
+          outcome_consent: boolean | null
+          outcome_consent_decided_at: string | null
           physical_address: string | null
           signature_source: string | null
           signup_source: string | null
@@ -4625,6 +4651,8 @@ export type Database = {
           include_compliance_footer?: boolean | null
           include_unsubscribe?: boolean | null
           last_sign_in_at?: string | null
+          outcome_consent?: boolean | null
+          outcome_consent_decided_at?: string | null
           physical_address?: string | null
           signature_source?: string | null
           signup_source?: string | null
@@ -4644,6 +4672,8 @@ export type Database = {
           include_compliance_footer?: boolean | null
           include_unsubscribe?: boolean | null
           last_sign_in_at?: string | null
+          outcome_consent?: boolean | null
+          outcome_consent_decided_at?: string | null
           physical_address?: string | null
           signature_source?: string | null
           signup_source?: string | null
@@ -8643,6 +8673,7 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: boolean
       }
+      outcome_consent_state: { Args: { p_user_id: string }; Returns: Json }
       pick_sending_account: { Args: { p_user_id: string }; Returns: string }
       plan_for_user: {
         Args: { _user_id: string }
@@ -8801,6 +8832,10 @@ export type Database = {
         Returns: undefined
       }
       seed_personas: { Args: { p_user_id: string }; Returns: undefined }
+      set_outcome_consent: {
+        Args: { p_consent: boolean; p_source?: string; p_user_id: string }
+        Returns: Json
+      }
       store_research_snapshots: {
         Args: {
           p_lead_id: string

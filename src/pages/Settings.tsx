@@ -63,7 +63,7 @@ const Settings = () => {
     active?.scrollIntoView({ block: "nearest", inline: "center" });
   }, [searchParams]);
   const { subscription, loading: subLoading } = useSubscription();
-  const { usage, loading: usageLoading } = useLeadsUsage();
+  const { usage, loading: usageLoading } = useLeadsUsage(subscription?.plan);
   const { manualSync } = useSubscriptionSync();
   const { isAdmin } = useAdmin();
   const [syncing, setSyncing] = useState(false);

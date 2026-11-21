@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { isValidWebhookUrl } from "../_shared/webhook-url.ts";
+import { requireServiceRole } from "../_shared/internal-auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,9 +29,9 @@ const sign = async (secret: string, body: string): Promise<string> => {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  // Queue worker: no request input, no data returned beyond counts.
-  // The platform verifies the caller's project JWT (verify_jwt = true in config.toml),
-  // so this only ever runs for our own cron/admin invocations.
+  // Only trusted job credentials may dispatch queued events across owners.
+  const denied = requireServiceRole(req);
+  if (denied) return denied;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
 

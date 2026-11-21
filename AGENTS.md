@@ -10,8 +10,6 @@
 
 - Public blog bodies use a committed published-content snapshot for identical first HTML and client hydration; curated search-guide revisions override older generated rows, and metadata/sitemaps use the same priority. Why: crawlers must see real article text without JavaScript and stale database copy must not undo editorial corrections.
 
-- All Treg calls go through `_shared/treg.ts`, which sets the customer tag server-side, caps cost per call and logs call id/cost to `treg_usage`; Treg is a fallback only when Railway returns nothing and its results bill like Railway results through the normal save/enrich path. Why: customers pay the same per contact regardless of source, while Treg spend still reconciles per customer.
-
 - Dashboard and admin visual refinements live under `.dashboard-shell` and shared panel/header classes with semantic CSS tokens; admin uses `.admin-shell` for its navigation and controls; portaled sheets/dialogs/menus are styled via `body.dashboard-active`, set by DashboardLayout. Never override global utilities. Why: every signed-in page shares the requested design without changing the public site or nested functional layouts.
 
 - Workspace action styling excludes `.branding-color-preview`, and keyboard menu options retain a focus indicator. Why: shared appearance must not overwrite user-selected color previews or hide keyboard position.
@@ -35,8 +33,6 @@
 
 - Manual integration writes run through authenticated `connect-integration`; non-Google OAuth callbacks share `save-integration.ts` and check persistence errors without using the removed user/provider conflict target. Why: Google supports multiple mailboxes and browser writes cannot access credential-bearing rows.
 
-- Lead and account web research share `external-research.ts`, merging Parallel and Context.dev without replacing either; Context.dev uses the connector gateway URL from environment configuration. Why: both surfaces and existing agent research tools must retain identical retrieval and failure-safe behavior.
-
 - Keep homepage contrast styling scoped to landing selectors and semantic landing tokens; do not override shared utilities globally because that changes dashboard appearance.
 
 - Theme-specific media treatments and colors live in semantic CSS tokens; both themes render the same media and layout so accessibility changes never remove visuals.
@@ -57,22 +53,12 @@
 
 - `supabase/functions/mcp/index.ts` is generated — its first line says so. It is bundled from `src/lib/mcp/**` by the Vite plugin on every `vite build`, so a hand-edit to it survives until the next build and no longer. Fix the tool under `src/lib/mcp/tools/` and rebuild. Why: the `body_text` stripper was applied to the generated file by hand three times and vanished three times — blamed first on a `git stash` cycle, then on commit `406d3450` ("Changes", the platform bot), then on this branch's own `npm run build` two minutes after a test run had confirmed the line was present. None of those was a revert; all three were the generator. `src/lib/plain-text-storage.test.ts` now guards the source, not just the bundle.
 
-- Redirect/return URLs (OAuth redirect_uri, Stripe return_url) go through `_shared/safe-origin.ts`, and tracked email links are HMAC-signed in `_shared/click-tracking.ts`; add new app domains to the allowlist there. Why: request-supplied origins and unsigned link targets made open redirects.
-
 - The MCP server pins its OAuth `resource` to the public `api.outreign.io/mcp` URL and advertises metadata from the `mcp-oauth-metadata` function on that host; `src/lib/mcp-public-resource.test.ts` guards it. Why: MCP clients reject a server whose advertised resource differs from the URL they connected to, which surfaced as Grok/Cursor `failed_to_load`.
 
 - `log_audit_trail()` reads the owner through `to_jsonb(NEW/OLD)` (`user_id`, then `team_owner_id`) and skips rows without one. Why: a direct `NEW.user_id` reference made every team-member insert fail.
-
-- Edge functions import supabase-js as `npm:@supabase/supabase-js@^2.76.1`, never esm.sh 2.76+/floating `@2` and never npm `2.76.0`; `src/lib/edge-runtime-imports.test.ts` guards it. Why: the esm.sh Deno build loads std@0.177.1/node whose shutdown hook crashes with runMicrotasks, and npm 2.76.0 fails to boot (missing tslib).
 
 - Agent research/draft tools accept `all_matching: true`, resolving the full set from the last list_leads filter server-side; overflow goes to the background queue. Why: models paging lead ids hit the lookup cap and stalled large asks.
 
 - Large research/draft asks run as owner-approved bulk runs (`bulk-runs` owner API, `process-bulk-runs` worker, `_shared/bulk-run-logic.ts` rules): keyset-paged feed capped at the approved lead count, per-run lease, per-item backoff, run cool-off on rate limits and pause on credit errors, woken from the existing agent-queue tick. Agents may create/inspect/pause runs but never approve them. Why: model-orchestrated batching lost leads and invented progress at scale; a deterministic queue with database counts cannot.
 
 - Background research/draft approvals and progress are embedded in the AI Agent tabs; the legacy bulk-runs route redirects there. Why: durable jobs support the agent rather than a separate workspace feature.
-
-- Research-led use-case campaign shapes live in `_shared/use-case-campaign.ts`, composed into shared drafting guidance and explicit template/agent-feedback selection. Why: Studio and agent background drafts must use the same shapes without relaxing evidence or quality gates.
-
-- Pinned page and webhook fetches (`_shared/pinned-fetch.ts`) dial the vetted IP with `Deno.connect` + `Deno.startTls({ hostname })` and parse HTTP/1.1 themselves. Why: the `node:http(s)` custom-lookup path silently failed on hosted edge, so every direct site read and outside-source page fetch returned nothing and research approved no facts.
-- Lead research ignores profile/social hosts saved as a website (`isProfileHost`) and uses the work-email domain; drafting resolves the owned site the same way. Why: LinkedIn URLs in `company_website` made research read the wrong site and refuse every fact.
-- Draft lines outside the quoted research fact must pass `lineGrounding` (offer words only from the sender description, ideas framed as could/might, questions on researched topics; no new numbers, names, results or negations). The guided rewrite has the model choose a fact by number and writes only the idea/question; the fact is inserted verbatim. Why: paraphrased facts can reverse actor/object or quantities, but quote-only emails read robotically.

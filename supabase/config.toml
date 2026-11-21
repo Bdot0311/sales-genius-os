@@ -9,7 +9,8 @@ project_id = "ghgfjnepvxvxrncmskys"
 
 [functions]
   [functions.dispatch-webhooks]
-    verify_jwt = true
+    # The scheduled job uses INTERNAL_TRIGGER_SECRET, validated in code.
+    verify_jwt = false
   [functions.detect-hiring-signals]
     verify_jwt = true
   [functions.detect-funding-signals]

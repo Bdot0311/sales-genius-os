@@ -17,8 +17,13 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // Parse first — the DNSBL lookups need no auth, so a missing/expired token
-    // must not stop the user from seeing results.
+    // Authenticate before any external lookup. Never treat persistence as auth.
+    const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
+    if (!token) return json({ error: "Unauthorized" }, 401);
+    const authClient = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_ANON_KEY") ?? "");
+    const { data: { user }, error: authError } = await authClient.auth.getUser(token);
+    if (authError || !user) return json({ error: "Unauthorized" }, 401);
+
     const { domain } = await req.json().catch(() => ({ domain: undefined }));
     if (!domain || !validateDomain(domain)) {
       return json({ error: "Invalid domain format" }, 400);
@@ -27,26 +32,13 @@ serve(async (req) => {
 
     const results = await checkDomainAgainstDnsbls(target);
 
-    // Best-effort: log determinate results to history if the caller is authed.
-    // Validate the JWT via anon client, then insert with the service role so RLS
-    // on blacklist_checks cannot silently drop the write.
+    // Best-effort history, scoped to the already verified caller.
     try {
-      const authHeader = req.headers.get("Authorization") ?? "";
       const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-      const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
       const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-      let userId: string | null = null;
-      if (authHeader) {
-        const authClient = createClient(supabaseUrl, anonKey, {
-          global: { headers: { Authorization: authHeader } },
-        });
-        const token = authHeader.replace(/^Bearer\s+/i, "");
-        const { data: { user } } = await authClient.auth.getUser(token);
-        userId = user?.id ?? null;
-      }
-      if (userId && serviceKey) {
+      if (serviceKey) {
         const admin = createClient(supabaseUrl, serviceKey);
-        const rows = persistableRows(results, userId, target);
+        const rows = persistableRows(results, user.id, target);
         if (rows.length > 0) {
           const { error: insErr } = await admin.from("blacklist_checks").insert(rows);
           if (insErr) console.error("[check-blacklists] insert error:", insErr);

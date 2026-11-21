@@ -505,6 +505,48 @@
       "when": 1795227276523,
       "tag": "0071_restore_agent_missions",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1795235277949,
+      "tag": "0072_protect_vault_secret_writer_and_webhook_job",
+      "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1795235347432,
+      "tag": "0073_preserve_configured_webhook_job_origin",
+      "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1795236228002,
+      "tag": "0074_restore_outcome_consent_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1795238114508,
+      "tag": "0075_guard_mailbox_events_during_account_deletion",
+      "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "7",
+      "when": 1795299503266,
+      "tag": "0076_healthcheck_allowlist_appsumo_plan_config",
+      "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "7",
+      "when": 1795299523967,
+      "tag": "0077_appsumo_plan_config_drop_redundant_policy",
+      "breakpoints": true
     }
   ]
 }
