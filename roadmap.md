@@ -1,3 +1,8 @@
+# BDØT saved-template selection — November 21, 2026
+
+- [x] Locate the owner's BDØT saved template and create a review-only draft with it; old campaign is absent. Separate content read and Mailchimp checklist confirm no content was loaded. No blank test sent; no audience attached.
+- [ ] Preserve BDØT layout, insert the full blog article and send owner-only test; blocked on HTML export from owner because applying the saved template returns no content or editable sections.
+
 # Mailchimp blank-test correction — November 21, 2026
 
 - [x] Confirm outgoing Mailchimp content was an empty template, restore the full illustrated article, then read back the outgoing HTML/plain text rather than relying on a prior preview.

@@ -1,5 +1,12 @@
 # OutReign full-article newsletter
 
+## BDØT saved-template request — November 21, 2026
+
+- Owner selected saved **BDØT template** (10125960). The previous campaign no longer exists and the campaign list was empty.
+- Created review-only **OutReign blog — BDØT template owner test** (0d178ef7dd), with the selected user template and info@bdotindustries.org sender. No audience attached.
+- Applying the template through campaign content returned success but no HTML or plain text. A separate content read remained empty; Mailchimp's send checklist explicitly reports “This campaign doesn't have any content yet.” Default-content has no editable sections, and template metadata reports `content_type: multichannel`.
+- Do not overwrite the saved template or substitute the old design. Await owner-uploaded HTML export to preserve the actual BDØT layout, insert the full article and verify before an owner-only test. No test or subscriber send occurred in this request.
+
 - Draft: **OutReign Field Notes — Mailchimp sales layout + GPT graphics owner test** in brandon's Mailchimp.
 - Article: **How to Set Up Automated Outreach That Feels Human**, November 20, 2026, seven sections included directly in the email.
 - Design: adapted Mailchimp's actual **Sell Products** base email template (146), retaining its header/body/footer table structure and using OutReign purple branding, crown logo, four lavender/mint paragraph bubbles and the complete article. The API catalog has no template named Sell Services; Lead Generation templates are landing pages, not email templates. Two matching papercraft illustrations generated with **OpenAI GPT Image 2** and stored through project asset pointers. Numbered sections, serif headings, author/date preserved; no read-the-guide button. Mailchimp CSS inlining enabled.
