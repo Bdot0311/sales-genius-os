@@ -15,7 +15,7 @@
 // Call sites keep the exact `fetch` shape they had before — the response body is
 // the OpenAI chat-completions shape on all three routes, including streaming.
 
-import { runWithAiRetries } from "./ai-retry.ts";
+import { AI_ATTEMPT_TIMEOUT_MS, AI_CALL_DEADLINE_MS, runWithAiRetries, withAttemptTimeout } from "./ai-retry.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import {
   bedrockChat,
@@ -180,10 +180,10 @@ export async function aiFetch(
   body.model = route.model;
   const fnName = ctx.fn ?? _endpoint ?? "unknown";
 
-  // Apply 120-second timeout to prevent hanging functions
-  const timeoutMs = 120_000;
+  // The call dies at 120s. Each attempt dies sooner, so a timeout is retried
+  // while the deadline is still open. One attempt of 120s cannot be.
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  const timeoutId = setTimeout(() => controller.abort(), AI_CALL_DEADLINE_MS);
 
   try {
     // Merge with existing signal if present
@@ -207,8 +207,8 @@ export async function aiFetch(
               usage,
             });
           }),
-          new Promise<Response>((_, reject) => 
-            setTimeout(() => reject(new Error("Timeout")), timeoutMs)
+          new Promise<Response>((_, reject) =>
+            setTimeout(() => reject(new Error("Timeout")), AI_CALL_DEADLINE_MS)
           ),
         ]);
         if (streamed.ok) return streamed;
@@ -217,14 +217,16 @@ export async function aiFetch(
         console.error(`[ai-provider] ${fnName} bedrock stream unavailable -> buffered fallback`);
       }
       // 429, 5xx and a timeout are asked again inside the same deadline.
-      // The gateway fallback below is not the path production uses.
+      // The attempt bound is shorter than that deadline, and the in-flight
+      // request is cancelled, so the retry is a new call rather than a second
+      // one piled on the first. The gateway fallback below is not the path
+      // production uses.
       const res = await runWithAiRetries(
-        () => Promise.race([
-          bedrockChat(route.model, body),
-          new Promise<Response>((_, reject) =>
-            setTimeout(() => reject(new Error("Timeout")), timeoutMs)
-          ),
-        ]),
+        () => withAttemptTimeout(
+          (attemptSignal) => bedrockChat(route.model, body, attemptSignal),
+          AI_ATTEMPT_TIMEOUT_MS,
+          signal,
+        ),
         { signal },
       );
       if (!res.ok) return res;
@@ -260,18 +262,17 @@ export async function aiFetch(
      * budget. A streamed request is sent once: the callers that stream are
      * interactive and would rather fail fast than wait.
      */
-    const sendOnce = () => Promise.race([
-      fetch(route.url, {
+    const sendOnce = () => withAttemptTimeout(
+      (attemptSignal) => fetch(route.url, {
         ...init,
         method: "POST",
         headers,
         body: JSON.stringify(body),
-        signal,
+        signal: attemptSignal,
       }),
-      new Promise<Response>((_, reject) =>
-        setTimeout(() => reject(new Error("Timeout")), timeoutMs)
-      ),
-    ]);
+      AI_ATTEMPT_TIMEOUT_MS,
+      signal,
+    );
 
     const res = body.stream === true
       ? await sendOnce()
@@ -314,7 +315,7 @@ export async function aiFetch(
   } catch (error) {
     clearTimeout(timeoutId);
     if (error instanceof Error && error.message === "Timeout") {
-      console.error(`[ai-provider] ${fnName} request timed out after ${timeoutMs}ms`);
+      console.error(`[ai-provider] ${fnName} request timed out after ${AI_CALL_DEADLINE_MS}ms`);
       return new Response(
         JSON.stringify({ error: { message: "AI request timed out. Please try again." } }),
         { status: 504, headers: { "Content-Type": "application/json" } }

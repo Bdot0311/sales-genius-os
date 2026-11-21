@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import {
+  AI_ATTEMPT_TIMEOUT_MS,
+  AI_CALL_DEADLINE_MS,
   AI_MAX_ATTEMPTS,
   AI_RETRY_CAP_MS,
+  attemptTimeoutLeavesRoom,
   retryDelayMs,
+  runWithAiRetries,
   shouldRetryStatus,
+  withAttemptTimeout,
 } from "../../supabase/functions/_shared/ai-retry";
 
 const code = (s: string) => s.replace(/^\s*\/\/.*$/gm, "");
@@ -53,6 +58,55 @@ describe("how long to wait", () => {
   it("gives up after a bounded number of attempts", () => {
     expect(AI_MAX_ATTEMPTS).toBeGreaterThan(1);
     expect(AI_MAX_ATTEMPTS).toBeLessThanOrEqual(4);
+  });
+
+  it("times an attempt out soon enough that the timeout itself is retried", () => {
+    // An attempt that lasts as long as the whole call cannot be retried:
+    // the deadline is already spent when it fails.
+    expect(attemptTimeoutLeavesRoom()).toBe(true);
+    expect(AI_ATTEMPT_TIMEOUT_MS).toBeLessThan(AI_CALL_DEADLINE_MS);
+    expect(AI_ATTEMPT_TIMEOUT_MS * 2).toBeLessThanOrEqual(AI_CALL_DEADLINE_MS);
+    const bedrockRetry = PROVIDER.slice(
+      PROVIDER.indexOf("runWithAiRetries("),
+      PROVIDER.indexOf("if (!res.ok) return res"),
+    );
+    expect(bedrockRetry).toContain("AI_ATTEMPT_TIMEOUT_MS");
+    expect(bedrockRetry).toContain("withAttemptTimeout");
+    expect(bedrockRetry).not.toContain("AI_CALL_DEADLINE_MS");
+  });
+});
+
+describe("an attempt timeout is asked again, and the deadline is not", () => {
+  it("retries when the attempt aborts and the deadline is still open", async () => {
+    let calls = 0;
+    const ok = await runWithAiRetries(
+      () => withAttemptTimeout((signal) => new Promise((resolve, reject) => {
+        calls += 1;
+        if (calls === 1) signal.addEventListener("abort", () => reject(new Error("aborted")));
+        else resolve(new Response("ok", { status: 200 }));
+      }), 20),
+      { sleep: async () => {}, random: () => 0 },
+    );
+    expect(ok.status).toBe(200);
+    expect(calls).toBe(2);
+  });
+
+  it("does not ask again after the overall deadline has aborted", async () => {
+    const parent = new AbortController();
+    parent.abort();
+    let calls = 0;
+    await expect(runWithAiRetries(
+      () => {
+        calls += 1;
+        return withAttemptTimeout(
+          () => Promise.reject(new Error("aborted")),
+          AI_CALL_DEADLINE_MS,
+          parent.signal,
+        );
+      },
+      { signal: parent.signal, sleep: async () => {} },
+    )).rejects.toThrow("Timeout");
+    expect(calls).toBe(1);
   });
 });
 

@@ -33,6 +33,19 @@ describe("grounding rejects a real first touch", () => {
     expect(unsupportedClaims(`I noticed ${FACT}`, FACT)).toEqual([]);
   });
 
+  it("refuses a noticed claim stitched from words in different sentences", () => {
+    const corpus = [
+      "Acme will cut costs on infrastructure next quarter.",
+      "The sales motion is inbound and partner led.",
+      "Their team meets buyers on Mondays.",
+    ].join(" ");
+    expect(unsupportedClaims("I noticed Acme cut its sales team.", corpus).length).toBeGreaterThan(0);
+    expect(unsupportedClaims(
+      "I noticed Acme will cut costs on infrastructure next quarter.",
+      corpus,
+    )).toEqual([]);
+  });
+
   it("still blocks an event and a headcount the research does not state", () => {
     expect(unsupportedClaims("I noticed you just raised a series B.", FACT).length).toBeGreaterThan(0);
     expect(unsupportedClaims("Your team has 40 engineers.", FACT).length).toBeGreaterThan(0);

@@ -478,6 +478,7 @@ export function fromConverseBody(model: string, data: Record<string, unknown>): 
 export async function bedrockChat(
   modelId: string,
   body: Record<string, unknown>,
+  signal?: AbortSignal,
 ): Promise<Response> {
   const url = new URL(
     `https://bedrock-runtime.${bedrockRegion()}.amazonaws.com/model/${encodeURIComponent(modelId)}/converse`,
@@ -497,6 +498,7 @@ export async function bedrockChat(
     method: "POST",
     headers: { ...headers, ...route.headers },
     body: payload,
+    signal,
   });
   if (!res.ok) {
     const detail = await res.text().catch(() => "");

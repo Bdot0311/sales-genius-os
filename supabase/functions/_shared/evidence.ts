@@ -147,21 +147,29 @@ const NOTABLE_SKIP = new Set(
   "that this with from your they their have will what when about into just more than them then were been also only very much some such like here there which would could should these those our you are and for the its it's".split(" "),
 );
 
+function notableWords(text: string): string[] {
+  return (text.toLowerCase().match(/[a-z0-9][a-z0-9'&-]*/g) ?? [])
+    .map((word) => word.replace(/'s$/, ""))
+    .filter((word) => word.length > 2 && !NOTABLE_SKIP.has(word));
+}
+
 /**
- * "I noticed …" is a claim only when the thing noticed is not in the research.
- * The check used to fire on the phrase alone, so quoting a stored sentence
- * ("I noticed Vendr helps companies buy SaaS") was an unsupported claim and
- * the draft was replaced with the bare quote.
+ * "I noticed …" is backed only when one research sentence carries the claim.
+ *
+ * Quoting a stored sentence ("I noticed Vendr helps companies buy SaaS") is
+ * not an invented claim. Matching the words anywhere in the research is:
+ * "cut", "sales" and "team" from three different sentences would make
+ * "I noticed Acme cut its sales team" look sourced.
  */
 function familiarBacked(sentence: string, corpus: string): boolean {
-  const rest = sentence.replace(FAMILIAR, " ");
-  const words = (rest.toLowerCase().match(/[a-z0-9][a-z0-9'&-]*/g) ?? [])
-    .map((word) => word.replace(/'s$/, ""))
-    .filter((word) => word.length > 3 && !NOTABLE_SKIP.has(word));
+  const words = notableWords(sentence.replace(FAMILIAR, " "));
   if (words.length < 3) return false;
-  const source = corpus.toLowerCase();
-  const hit = words.filter((word) => source.includes(word)).length;
-  return hit / words.length >= 0.75;
+  return sentences(corpus).some((source) => {
+    const have = new Set(notableWords(source));
+    if (have.size === 0) return false;
+    const hit = words.filter((word) => have.has(word)).length;
+    return hit / words.length >= 0.75;
+  });
 }
 
 function push(hits: ClaimHit[], evidence: string, why: string) {

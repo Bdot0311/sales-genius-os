@@ -37,6 +37,75 @@ export function shouldRetryStatus(status: number): boolean {
  */
 export const AI_MAX_ATTEMPTS = 3;
 export const AI_RETRY_CAP_MS = 5_000;
+/** The whole call, including retries. Edge functions die past this. */
+export const AI_CALL_DEADLINE_MS = 120_000;
+/**
+ * One attempt. Two of these fit inside the deadline, so a timeout is asked
+ * again. An attempt that uses the whole deadline never is: the clock is
+ * already gone when it fails.
+ */
+export const AI_ATTEMPT_TIMEOUT_MS = 45_000;
+
+/** True when a timed-out attempt still leaves room to ask again. */
+export function attemptTimeoutLeavesRoom(
+  deadlineMs = AI_CALL_DEADLINE_MS,
+  attemptMs = AI_ATTEMPT_TIMEOUT_MS,
+): boolean {
+  return attemptMs > 0 && attemptMs * 2 <= deadlineMs;
+}
+
+/**
+ * Bound one attempt and cancel it when the bound or the parent deadline hits.
+ *
+ * A timeout of the attempt, with the parent still open, is a retryable
+ * Timeout. The parent aborting is the deadline: same error, and the caller
+ * must not ask again.
+ */
+export function withAttemptTimeout(
+  start: (signal: AbortSignal) => Promise<Response>,
+  ms: number,
+  parent?: AbortSignal,
+): Promise<Response> {
+  const attempt = new AbortController();
+  let timedOut = false;
+  let settled = false;
+  return new Promise((resolve, reject) => {
+    const finish = () => {
+      clearTimeout(timer);
+      parent?.removeEventListener("abort", onParent);
+    };
+    const fail = (error: unknown) => {
+      if (settled) return;
+      settled = true;
+      finish();
+      if (timedOut || parent?.aborted) reject(new Error("Timeout"));
+      else reject(error);
+    };
+    const timer = setTimeout(() => {
+      timedOut = true;
+      attempt.abort();
+      fail(new Error("Timeout"));
+    }, ms);
+    const onParent = () => {
+      attempt.abort();
+      fail(new Error("Timeout"));
+    };
+    if (parent) {
+      if (parent.aborted) onParent();
+      else parent.addEventListener("abort", onParent);
+    }
+    if (settled) return;
+    start(attempt.signal).then(
+      (res) => {
+        if (settled) return;
+        settled = true;
+        finish();
+        resolve(res);
+      },
+      fail,
+    );
+  });
+}
 
 export function retryDelayMs(attempt: number, retryAfter: string | null): number {
   const header = Number(retryAfter);
