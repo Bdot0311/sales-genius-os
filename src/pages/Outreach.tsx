@@ -34,6 +34,7 @@ import { EmailUsagePanel } from "@/components/outreach/EmailUsagePanel";
 import { FollowUpSuggestion, FollowUpData } from "@/components/outreach/FollowUpSuggestion";
 import { BarChart3, ListOrdered, Layout, Users } from "lucide-react";
 import { LeadMultiSelect } from "@/components/outreach/LeadMultiSelect";
+import { outreachLeadPages } from "@/lib/outreach-lead-pages";
 import { BulkSendDialog } from "@/components/outreach/BulkSendDialog";
 import { EmailQualityChecker, blockerSummary, redQualityRows, scoreEmailQuality } from "@/components/outreach/EmailQualityChecker";
 import { EmailRubricPanel } from "@/components/outreach/EmailRubricPanel";
@@ -604,8 +605,12 @@ const Outreach = () => {
   const loadLeads = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const { data } = await supabase.from("leads").select("*").eq("user_id", user.id);
-    if (data) setLeads(data);
+    try {
+      const data = await outreachLeadPages((from, to) => supabase.from("leads").select("*").eq("user_id", user.id).order("id").range(from, to));
+      setLeads(data);
+    } catch (error) {
+      toast({ title: "Could not load leads", description: error instanceof Error ? error.message : "Please retry.", variant: "destructive" });
+    }
   };
 
   const loadSignature = async () => {

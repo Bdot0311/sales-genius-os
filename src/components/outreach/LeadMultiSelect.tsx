@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSepa
 import { LEAD_STAGES, LeadStageSelect } from "@/components/dashboard/LeadStageSelect";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { selectLeadCount } from "../../../supabase/functions/_shared/personalized-outreach";
 import {
   DEFAULT_LEAD_PICKER_FILTERS,
   OUTREACH_LABEL_GROUPS,
@@ -254,11 +255,16 @@ export const LeadMultiSelect = ({
           )}
         </ScrollArea>
 
-        <div className="flex items-center justify-between gap-2 border-t border-border/60 px-2 py-1.5">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 px-2 py-1.5">
           <span className="text-[0.6875rem] text-muted-foreground">
             {value.length > 0 ? `${value.length} selected` : "None selected"}
           </span>
           <span className="flex items-center gap-1">
+            {[5, 10, 15].map(count => (
+              <Button key={count} type="button" variant="ghost" size="sm" className="h-7 text-[0.6875rem]" disabled={reachableMatching.length === 0} onClick={() => onChange(selectLeadCount(reachableMatching, count))}>
+                {count}
+              </Button>
+            ))}
             <Button
               type="button"
               variant="ghost"
@@ -276,7 +282,7 @@ export const LeadMultiSelect = ({
               }}
             >
               <Mail className="mr-1 h-3 w-3" aria-hidden />
-              {allMatchingSelected ? "Deselect" : `Select ${reachableMatching.length}`}
+              {allMatchingSelected ? "Deselect" : `All (${reachableMatching.length})`}
             </Button>
             {value.length > 0 && (
               <Button

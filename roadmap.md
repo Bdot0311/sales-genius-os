@@ -1,3 +1,9 @@
+# Personalized Studio and sequence bulk outreach
+
+- [x] Add 5/10/15/all filtered lead selection and remove Studio preview reuse for bulk sends.
+- [x] Generate each sequence touch from its own lead research through the shared generator; retain send gates and retry failures without advancing.
+- [x] 71 related tests passed; signed-in Studio and Sequences verified 5/10/15/all selection (172 reachable leads). Two real generation attempts were safely refused by research/quality gates; no mail sent or test drafts saved. Sequence handler deployed and preview build OK. Successful live bulk delivery remains unverified and UI changes require publishing.
+
 # Lead intelligence strategy action
 
 # Admin health warnings
