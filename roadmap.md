@@ -1,5 +1,6 @@
 # BDØT saved-template selection — November 21, 2026
 
+- [x] Repair blank BDØT test: old post-test content read is empty and checklist reports missing content. Created standalone exported HTML draft without template binding; repeated pre/post-test checklist confirms custom HTML success and post-test content retains the full article. Desktop/phone checks passed; replacement owner-only test accepted (HTTP 204). Inbox rendering awaits owner confirmation; no subscriber send.
 - [x] Locate the owner's BDØT saved template and create a review-only draft with it; old campaign is absent. Separate content read and Mailchimp checklist confirm no content was loaded. No blank test sent; no audience attached.
 - [x] Use uploaded BDØT HTML: preserve its logo, black/purple editorial layout and footer; insert the full article and GPT graphics. Separate outgoing content read and desktop/phone checks passed: seven article sections, all three images loaded, no overflow. Mailchimp accepted owner-only test to info@bdotindustries.org (HTTP 204); receipt/IONOS rendering unverified, no audience attached or subscriber send.
 

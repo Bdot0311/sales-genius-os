@@ -1,5 +1,12 @@
 # OutReign full-article newsletter
 
+## Blank BDØT test repair — November 21, 2026
+
+- Owner confirmed the previous test was blank. Post-test GET of `0d178ef7dd/content` contains only API links; checklist reports missing email content. The prior pre-test HTML read did not establish successful delivery. That draft still has the multichannel saved-template binding; the exact provider-side erasure mechanism is not exposed.
+- Created **OutReign BDØT full article — standalone HTML owner test** (`0b110ef8e4`) with `template_id: 0`, preserving the exported BDØT design in the HTML itself. No audience attached. Uploaded the same complete illustrated article; repeated checklist checks now report successful custom HTML and generated plain text, unlike the old draft.
+- Returned HTML matches committed HTML exactly. Desktop/phone rendering verifies seven article sections plus the reply prompt, three loaded images and no overflow.
+- Replacement owner-only test to **info@bdotindustries.org** accepted (HTTP 204). Separate post-test GET still contains the complete article in HTML/plain text; post-test checklist still reports custom HTML success. Inbox receipt/rendering awaits owner confirmation. No subscriber send or import.
+
 ## BDØT saved-template request — November 21, 2026
 
 - Owner selected saved **BDØT template** (10125960). The previous campaign no longer exists and the campaign list was empty.
