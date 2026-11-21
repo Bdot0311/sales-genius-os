@@ -1,3 +1,8 @@
+# Mailchimp blank-test correction — November 21, 2026
+
+- [x] Confirm outgoing Mailchimp content was an empty template, restore the full illustrated article, then read back the outgoing HTML/plain text rather than relying on a prior preview.
+- [x] Returned outgoing HTML checked at desktop/phone widths: seven sections, all three images loaded, no overflow. Replacement owner-only test accepted (HTTP 204); IONOS receipt/rendering remains unverified, no audience send.
+
 # Mailchimp sell-services blog design — November 21, 2026
 
 - [x] Inspect Mailchimp templates: Sell Services is not exposed; adapt actual Sell Products email template 146, preserving the full article, crown logo and highlighted paragraphs.
