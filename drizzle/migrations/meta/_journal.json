@@ -491,6 +491,13 @@
       "when": 1795218924333,
       "tag": "0069_appsumo_monthly_terms_and_states",
       "breakpoints": true
+    },
+    {
+      "idx": 70,
+      "version": "7",
+      "when": 1795220486999,
+      "tag": "0070_restrict_appsumo_plan_config",
+      "breakpoints": true
     }
   ]
 }
