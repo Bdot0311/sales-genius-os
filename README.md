@@ -100,3 +100,5 @@ These live in [`docs/`](docs/) and were not linked from anywhere until now.
 | [seo-foundations-audit.md](docs/seo-foundations-audit.md) | Review of the site's search foundations against the SEO guide, and the manual Bing setup |
 | [appsumo-licensing.md](docs/appsumo-licensing.md) | AppSumo subscription licensing: the three endpoints, tier mapping, and the durable state behind redemption |
 | [black-friday-reengagement-2026.md](docs/black-friday-reengagement-2026.md) | The Black Friday re-engagement offer and the signup drop-off audit behind it. Not sent |
+| [mailchimp-blog-newsletter.md](docs/mailchimp-blog-newsletter.md) | Owner-review record of the full-article Mailchimp newsletter: the BDØT layout, the article, and which tests were sent |
+| [mailchimp-welcome-email.md](docs/mailchimp-welcome-email.md) | The November 21 welcome email: the revised body, the owner test, and the audience send |
