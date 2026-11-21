@@ -1,15 +1,26 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { getPlanSearchLimits, PLAN_SEARCH_LIMITS, type PlanId } from '../../supabase/functions/_shared/plan-limits';
 
 interface LeadsUsage {
   leadsCount: number;
   leadsLimit: number;
-  plan: 'free' | 'starter' | 'growth' | 'pro';
+  plan: PlanId;
   percentageUsed: number;
 }
 
-export const useLeadsUsage = () => {
-  const [usage, setUsage] = useState<LeadsUsage | null>(null);
+export function resolveLeadsUsage(leadsCount: number, storedPlan: string, currentPlan?: string): LeadsUsage {
+  const candidate = currentPlan ?? storedPlan;
+  const normalized = candidate === 'elite' ? 'pro' : candidate;
+  const plan: PlanId = Object.prototype.hasOwnProperty.call(PLAN_SEARCH_LIMITS, normalized)
+    ? normalized as PlanId : 'free';
+  const leadsLimit = getPlanSearchLimits(plan).monthlySearchCredits;
+  return { leadsCount, leadsLimit, plan, percentageUsed: (leadsCount / leadsLimit) * 100 };
+}
+
+export const useLeadsUsage = (currentPlan?: string) => {
+  const [storedUsage, setStoredUsage] = useState<{ leadsCount: number; plan: string } | null>(null);
+  const usage = storedUsage ? resolveLeadsUsage(storedUsage.leadsCount, storedUsage.plan, currentPlan) : null;
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -24,16 +35,11 @@ export const useLeadsUsage = () => {
       
       if (data && data.length > 0) {
         const usageData = data[0];
-        // Map any legacy 'elite' to 'pro'
-        let plan = usageData.plan as string;
-        if (plan === 'elite') plan = 'pro';
-        setUsage({
+        // The legacy RPC's leads_limit can still contain the old Free default.
+        // Resolve the displayed allowance from the current plan's canonical limits.
+        setStoredUsage({
           leadsCount: Number(usageData.leads_count),
-          leadsLimit: usageData.leads_limit,
-          plan: plan as 'free' | 'starter' | 'growth' | 'pro',
-          percentageUsed: usageData.leads_limit > 0
-            ? (Number(usageData.leads_count) / usageData.leads_limit) * 100
-            : 0,
+          plan: String(usageData.plan),
         });
       }
     } catch (error) {

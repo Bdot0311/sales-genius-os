@@ -1,3 +1,8 @@
+# Leads-used plan display — November 21, 2026
+
+- [x] Resolve the saved lead counter against the current tier's canonical allowance, including Agency; counts, billing and enforcement unchanged.
+- [x] Eight display regressions plus 26 canonical tier tests passed; What's New updated. Signed-in Agency credits screen shows 176 of 15,000 (1.2%) without the incorrect upgrade warning; preview build OK.
+
 # Consent-setting reader repair — November 21, 2026
 
 - [x] Restore the missing consent reader, atomic writer and private immutable history; register seven required fields in schema monitoring. Existing choices preserved; training/export prerequisites remain outside this repair.
