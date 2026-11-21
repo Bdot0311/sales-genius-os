@@ -4,6 +4,7 @@ import {
   fallbackSubject,
   splitSubject,
 } from "../../supabase/functions/_shared/draft-one";
+import { classifyFailure as classifyWorkerFailure } from "../../supabase/functions/_shared/bulk-run-logic";
 
 const MIGRATION = readFileSync("supabase/migrations/20260922190000_agent_job_queue.sql", "utf8");
 const WORKER = readFileSync("supabase/functions/process-agent-jobs/index.ts", "utf8");
@@ -415,11 +416,23 @@ describe("what concurrency broke, and did not", () => {
   const worker = code(WORKER);
 
   it("tells a provider being busy from a draft being refused", () => {
-    // aiFetch has no backoff, so a rate limit came back as an ordinary error
-    // and the lead was failed for it — permanently, with no draft.
-    expect(worker).toContain("const TRANSIENT_FAILURE =");
-    expect(worker).toContain("TRANSIENT_FAILURE.test(text)");
+    /*
+     * A rate limit used to come back as an ordinary error and the lead was
+     * failed for it, permanently, with no draft.
+     *
+     * This asserted the name of the constant that made the distinction, which
+     * held until the rule moved. It now asserts the distinction: the worker
+     * decides with the shared classifier, retries what that calls transient or
+     * rate-limited, and hands the row back rather than failing it.
+     */
+    expect(worker).toContain("classifyFailure as classifyWorkerFailure");
+    expect(worker).toMatch(/kind === "transient" \|\| kind === "rate_limit"/);
+    expect(worker).toContain("retryableFailure(text)");
     expect(worker).toContain('status: "pending", claimed_at: null, error: text');
+    // A provider being busy is worth another pass; an invented figure is not.
+    expect(classifyWorkerFailure("Rate limit reached")).toBe("rate_limit");
+    expect(classifyWorkerFailure("The reply rubric did not return a score, so this draft was not released.")).toBe("transient");
+    expect(classifyWorkerFailure("The draft invented a figure it cannot back.")).toBe("permanent");
   });
 
   it("still gives up eventually rather than cycling forever", () => {

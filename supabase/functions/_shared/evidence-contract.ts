@@ -553,10 +553,39 @@ export type DraftShape = "first_touch" | "continuation";
  */
 const STOP = new Set(("that this with from your they their have will what when about into just more than them then were been also only very much some such like here there which would could should these those our we you are and for the its it's".split(" ")));
 
+/*
+ * Ordinary English that cannot carry a claim about the prospect.
+ *
+ * The grounded-line test asks what share of a sentence's significant words the
+ * sender's description or the research supplies, and refuses below a half. It
+ * counted every word over three letters, so a sentence that was entirely about
+ * the sender's own offer failed on its connective tissue: "Verifying every
+ * email before a send could mean fewer bounces" scored 2 of 8, with "every",
+ * "before", "mean" and "fewer" among the six misses. The ratio was measuring
+ * how much of the sentence was literally the sender's vocabulary rather than
+ * whether it asserted anything the sender had not said.
+ *
+ * Only closed-class and semantically empty words belong here: quantifiers,
+ * comparatives, degree and time adverbs, and the generic verbs. A domain noun
+ * never does. "Bounces" stays countable, because promising fewer bounces is an
+ * offer claim and has to come from the sender's own description -- which is
+ * exactly what this test exists to require.
+ */
+const GENERIC = new Set((
+  "every each both another other others same before after while until since during without within " +
+  "around across into onto over under again still already always often usually sometimes rather " +
+  "instead enough quite almost really maybe perhaps likely today yesterday tomorrow time times " +
+  "better worse best worst easier easy harder faster slower less fewer least something anything " +
+  "nothing everything someone anyone everyone somebody anybody thing things take takes taking " +
+  "make makes making give gives giving does doing done feel feels mean means meant look looks " +
+  "looking seem seems simple simply actually basically essentially overall next last first early " +
+  "late later soon sooner long longer short shorter much many lots plenty kind kinds sort sorts"
+).split(" "));
+
 function contentWords(text: string): string[] {
   return (text.toLowerCase().match(/[a-z0-9][a-z0-9'&-]*/g) ?? [])
     .map((w) => w.replace(/'s$/, ""))
-    .filter((w) => w.length > 3 && !STOP.has(w));
+    .filter((w) => w.length > 3 && !STOP.has(w) && !GENERIC.has(w));
 }
 
 /**
@@ -627,12 +656,32 @@ export function lineGrounding(line: string, facts: string[], senderCorpus = "", 
   for (const digits of line.match(/\d[\d,.]*/g) ?? []) {
     if (!senderText.includes(digits.toLowerCase())) return null;
   }
+  /*
+   * A capitalised word has to come from somewhere.
+   *
+   * It was checked against the sender's description and the company name only,
+   * so a word the approved research fact itself supplies was treated as an
+   * invented name: a fact about a SaaS buying platform refused every idea and
+   * every question that said "SaaS", although the prompt tells the writer it
+   * may use words from the chosen fact. The facts are a source here now.
+   *
+   * The first word of a sentence is deliberately still exempt. Capitalisation
+   * is what marks a name here, and the first word is capitalised whatever it
+   * is, so the signal does not exist at that position: checking it refused
+   * "How are you finding SaaS decision makers worth reaching out to?" because
+   * no source supplies the word "How". That leaves a known hole -- an invented
+   * name as the first word of a sentence passes, and unsupportedClaims does
+   * not catch it either -- which wants a different mechanism than this one,
+   * not a stricter version of it.
+   */
+  const capitalSources = `${factText} ${senderText} ${company.toLowerCase()}`;
+  const capitalStems = corpusStems(capitalSources);
   const words = line.split(/\s+/);
   for (let i = 1; i < words.length; i++) {
     const w = words[i].replace(/[^\p{L}0-9.&-]/gu, "").replace(/'s$/, "");
     if (!w || w === "I" || !/^\p{Lu}/u.test(w)) continue;
     if (/[.!?:]$/.test(words[i - 1])) continue;
-    if (!senderText.includes(w.toLowerCase()) && !(company && company.toLowerCase().includes(w.toLowerCase()))) return null;
+    if (!suppliedBy(capitalSources, capitalStems, w.toLowerCase())) return null;
   }
   const result = line.match(RESULT_CLAIM);
   if (result && !senderText.includes(result[0].toLowerCase())) return null;

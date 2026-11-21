@@ -248,7 +248,28 @@ async function generateBrief(
  * The chat then counted the same 12 as "0 researched". If the first pass
  * stored a brief, hand that back. A lead with no brief still says it was held.
  */
-function heldResearch(lead: Record<string, unknown>, headers: Record<string, string>): Response {
+function heldResearch(
+  lead: Record<string, unknown>,
+  headers: Record<string, string>,
+  /*
+   * True while another pass holds the claim and has not finished.
+   *
+   * begin_research_run reserves a lead for ten minutes, and the agent queues a
+   * research job and a draft job for the same lead -- the draft researches on
+   * its own way through generate-email. Whichever arrives second is refused
+   * the claim, and with no brief stored yet it answered with the sentence
+   * below, which the worker's transient pattern does not match, so the job
+   * failed permanently on its first attempt. Fifteen of fifty-one research
+   * jobs failed that way in one run: not a research failure at all, two
+   * passes over the same lead.
+   *
+   * The reserving row carries {"status":"started"} until the run that owns it
+   * writes its receipt, which is how the two cases are told apart. In flight
+   * means try again; settled with nothing means the research really did come
+   * back empty.
+   */
+  inFlight = false,
+): Response {
   const cachedBrief = lead.research_brief as LeadResearchBrief | null;
   if (cachedBrief && typeof cachedBrief === "object") {
     const cachedSources = (lead.research_sources as string[]) || [];
@@ -261,6 +282,14 @@ function heldResearch(lead: Record<string, unknown>, headers: Record<string, str
       researched_at: lead.researched_at,
       cached: true,
       research_status: "held",
+    }), { headers: { ...headers, "Content-Type": "application/json" } });
+  }
+  if (inFlight) {
+    return new Response(JSON.stringify({
+      error: "Research for this company is already running in another pass. Temporarily unavailable, try again shortly.",
+      error_code: "research_in_flight",
+      research_status: "held",
+      cached: true,
     }), { headers: { ...headers, "Content-Type": "application/json" } });
   }
   return new Response(JSON.stringify({
@@ -375,8 +404,10 @@ serve(async (req) => {
       force,
       fresh: isResearchFresh(lead as Record<string, unknown>),
     });
+    // Only a run that has not written its receipt is still working.
+    const priorInFlight = (latestRun?.receipt as { status?: unknown } | null)?.status === "started";
     if (action === "hold") {
-      return heldResearch(lead as Record<string, unknown>, corsHeaders);
+      return heldResearch(lead as Record<string, unknown>, corsHeaders, priorInFlight);
     }
     let researchRunId: string | null = null;
     if (action === "fetch") {
@@ -391,7 +422,7 @@ serve(async (req) => {
       const reservation = researchReservation(reserved, reserveError?.message ?? null, force);
       researchRunId = reservation.runId;
       if (reservation.hold) {
-        return heldResearch(lead as Record<string, unknown>, corsHeaders);
+        return heldResearch(lead as Record<string, unknown>, corsHeaders, priorInFlight);
       }
     }
     // Fresh brief already stored — hand it back without spending a scrape.

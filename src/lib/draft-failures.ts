@@ -38,6 +38,13 @@ const CLASSES: Array<[RegExp, FailureClass]> = [
   [/printed its own outline/i, { label: "printed its outline instead of an email", retryable: true }],
   [/inventing figures/i, { label: "invented a figure it can't back", retryable: false }],
   [/cannot date/i, { label: "dated something the research can't support", retryable: false }],
+  // Not a research failure: a second pass arrived while the first was still
+  // working the same lead. It settles itself on the next attempt.
+  [/already running in another pass/i, { label: "waiting on research already in progress", retryable: true }],
+  // Retrying inside the ten-minute window returns this same answer, so it is
+  // not retryable -- and it had no label at all, so it reached the shell as a
+  // raw sentence among counted reasons.
+  [/already ran recently and did not produce/i, { label: "research already ran and found nothing new", retryable: false }],
   [/research does not (?:support|say)/i, { label: "said something the research doesn't support", retryable: true }],
   [/copied line from their site/i, { label: "research gave only a copied line, no grounded reason", retryable: false }],
   [/did not produce an approved sentence/i, { label: "research found nothing usable to quote", retryable: false }],
