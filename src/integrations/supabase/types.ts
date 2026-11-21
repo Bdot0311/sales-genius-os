@@ -8134,9 +8134,21 @@ export type Database = {
         Returns: number
       }
       agent_missions_enabled: { Args: never; Returns: boolean }
+      claim_agent_mission_lead: {
+        Args: { p_ceiling: number; p_run_id: string; p_timezone: string; p_user_id: string }
+        Returns: boolean
+      }
       claim_agent_mission_send: {
         Args: { p_lead_id: string; p_run_id: string; p_user_id: string }
-        Returns: boolean
+        Returns: string
+      }
+      complete_agent_mission_send: {
+        Args: { p_lead_id: string; p_run_id: string; p_sent_email_id: string; p_user_id: string }
+        Returns: string
+      }
+      release_agent_mission_lead: {
+        Args: { p_run_id: string; p_user_id: string }
+        Returns: undefined
       }
       finish_agent_mission_run: {
         Args: { p_pause: boolean; p_reason: string; p_run_id: string; p_status: string }

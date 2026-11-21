@@ -15,7 +15,7 @@ Every five minutes, `dispatch-agent-missions` calls `enqueue_due_agent_missions(
 
 That function takes an advisory lock per mission and calls `claim_agent_mission_run`. One local day is one run (`window_key`). A second caller gets nothing. The claim is granted to `service_role` only. `anon` and `authenticated` cannot execute it, and the function rejects those roles if a grant is added later.
 
-The claim inserts a row in `agent_mission_runs` and moves `next_run_at` to the next allowed local morning. `agent_mission_ensure_job` then inserts one `agent_jobs` row of kind `mission` and one `agent_job_items` row. The existing `process-agent-jobs` drain, already on a one-minute cron, picks that item up.
+The claim inserts a row in `agent_mission_runs` and moves `next_run_at` to the next allowed local morning. `agent_mission_ensure_job` then inserts one `agent_jobs` row of kind `mission` and one `agent_job_items` row. The existing `process-agent-jobs` drain, already on a one-minute cron, picks that item up. A failed item stays on the run. The next tick retries it, up to three attempts, and only then marks the run failed and pauses the mission. One mission that errors during the tick does not stop the scan of the others.
 
 A pass does one unit of work and releases the item with `release_agent_job_items` so a crash or a timeout continues on the next minute instead of starting a second run. If the process dies after the claim and before the job row, the next tick creates the job for the existing run. It does not claim the window again.
 
@@ -36,7 +36,7 @@ Each pass re-reads the flag, the grant, the subscription plan, and whether the m
 
 Per mission, per day:
 
-- Lead cap, clamped to the plan's existing daily sourcing cap.
+- Lead cap, clamped to the plan's existing daily sourcing cap. The plan's number is shared by every mission in the workspace. Each saved lead takes one slot under a workspace lock. If that count cannot be read, the run adds no leads.
 - Send cap, clamped to that same lead cap. The mailbox and account send caps still live only in `process-scheduled-emails`.
 - AI spend cap, summed from `ai_usage_events.cost_usd` since local midnight in the mission timezone. Default $5, hard ceiling $25. This is not a new price.
 
@@ -47,7 +47,7 @@ The mission pauses itself when:
 - An unresolved deliverability alert of type `bounce_rate`, `blacklist`, `spam`, `complaint`, `reputation_drop`, or `auth_failure` is open.
 - Search or research returns a provider error (timeouts, 429, 5xx).
 
-Stop conditions: a stop date, or `max_runs` completed runs. Pausing and resuming is a status on the mission. Resume schedules the next future window. It does not replay missed days.
+Stop conditions: a stop date, or `max_runs` completed runs. The stop date is the mission's local date. A client can set it to today in that timezone. Once the date has passed, the claim stops the mission, and pause, resume, and the retry cap still update it. Pausing and resuming is a status on the mission. Resume schedules the next future window. It does not replay missed days.
 
 ## Overnight report
 

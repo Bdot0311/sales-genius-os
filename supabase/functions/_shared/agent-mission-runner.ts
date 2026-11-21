@@ -15,6 +15,7 @@ import {
   clampSendCap,
   effectiveMode,
   icpSearchFilters,
+  planCaps,
   isProviderError,
   knownSearchLead,
   remainingLeadSlots,
@@ -186,11 +187,15 @@ export async function runMissionItem(deps: {
   }
 
   const cursor = asCursor(run.cursor);
-  const { data: usedByOthers } = await admin.rpc("agent_mission_leads_used_today", {
+  const { data: usedByOthers, error: usedError } = await admin.rpc("agent_mission_leads_used_today", {
     p_user_id: userId,
     p_timezone: String(mission.timezone ?? "UTC"),
     p_exclude_run: runId,
   });
+  if (usedError) {
+    return stop("skipped", "Could not read today's lead count, so this run added no leads.");
+  }
+  const leadCeiling = planCaps(plan).dailyLeads;
   const slotsLeft = remainingLeadSlots({
     plan,
     missionCap: Number(mission.daily_lead_cap ?? 10),
@@ -244,7 +249,27 @@ export async function runMissionItem(deps: {
         cursor.skipped.push({ reason: known.skip, source: "lead search" });
         continue;
       }
+      if (leadCeiling >= 0) {
+        const { data: reserved, error: reserveError } = await admin.rpc("claim_agent_mission_lead", {
+          p_user_id: userId,
+          p_run_id: runId,
+          p_timezone: String(mission.timezone ?? "UTC"),
+          p_ceiling: leadCeiling,
+        });
+        if (reserveError || reserved !== true) {
+          cursor.skipped.push({
+            reason: reserveError
+              ? "Could not reserve a lead under today's cap, so this run stopped."
+              : "Today's lead cap for this workspace is already used.",
+            source: "plan cap",
+          });
+          break;
+        }
+      }
       const inserted = await insertLead(admin, userId, known.lead);
+      if (leadCeiling >= 0 && (inserted === "duplicate" || !inserted)) {
+        await admin.rpc("release_agent_mission_lead", { p_user_id: userId, p_run_id: runId });
+      }
       if (inserted === "duplicate") {
         cursor.skipped.push({ reason: `${known.lead.contact_email} is already in the list.`, source: "lead search" });
         continue;
@@ -392,16 +417,30 @@ export async function runMissionItem(deps: {
         windowEnd: String(mission.send_window_end ?? "17:00"),
         staggerIndex: cursor.sends,
       });
-      const { data: claimedSend } = await admin.rpc("claim_agent_mission_send", {
+      const { data: claimedSend, error: claimError } = await admin.rpc("claim_agent_mission_send", {
         p_run_id: runId,
         p_user_id: userId,
         p_lead_id: leadId,
       });
-      if (claimedSend !== true) {
-        cursor.skipped.push({ reason: "This lead was already scheduled for this run.", source: "outbox" });
-      } else {
+      if (claimError) {
+        cursor.waiting.push({
+          who: String((freshLead ?? lead).contact_name ?? "Lead"),
+          subject: drafted.subject,
+          draft_id: drafted.draft_id,
+        });
+        cursor.skipped.push({ reason: "Could not reserve this send, so the draft is waiting in Drafts.", source: "outbox" });
+      } else if (claimedSend === "done") {
+        cursor.sends += 1;
+      } else if (claimedSend === "schedule") {
       const scheduled = await deps.scheduleDraft(freshLead ?? lead, drafted, when.toISOString(), cursor.sends);
-      if (scheduled) {
+      const emailId = scheduled && typeof scheduled === "object" && "id" in scheduled ? String(scheduled.id) : null;
+      if (emailId) {
+        await admin.rpc("complete_agent_mission_send", {
+          p_run_id: runId,
+          p_user_id: userId,
+          p_lead_id: leadId,
+          p_sent_email_id: emailId,
+        });
         cursor.sends += 1;
         if (mission.sequence_id) await enroll(admin, userId, leadId, String(mission.sequence_id));
       } else {
@@ -412,6 +451,8 @@ export async function runMissionItem(deps: {
         });
         cursor.skipped.push({ reason: "The outbox did not take this draft, so it is waiting in Drafts.", source: "outbox" });
       }
+      } else {
+        cursor.skipped.push({ reason: "This lead could not be reserved for sending.", source: "outbox" });
       }
     } else {
       cursor.waiting.push({

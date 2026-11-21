@@ -81,7 +81,9 @@ REVOKE ALL ON FUNCTION public.agent_mission_actor() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.agent_mission_actor() TO authenticated, service_role;
 
 -- Invoker, so a direct client write is current_user = authenticated and a
--- security-definer status change is not.
+-- security-definer status change is not. The stop date is checked only when
+-- a client sets or changes it, against the mission's local date. Worker
+-- updates (claim, pause, next_run_at) must not raise once that date has passed.
 CREATE OR REPLACE FUNCTION public.agent_mission_guard_write()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -90,12 +92,28 @@ AS $$
 DECLARE
   actor text;
   schedule_changed boolean;
+  zone text;
+  local_today date;
+  stop_changed boolean;
 BEGIN
-  IF NEW.stop_on IS NOT NULL AND (NEW.stop_on < CURRENT_DATE OR NEW.stop_on > CURRENT_DATE + 730) THEN
-    RAISE EXCEPTION 'Stop date must be today or within the next two years';
-  END IF;
   IF auth.uid() IS NULL OR current_user IS DISTINCT FROM 'authenticated' THEN
     RETURN NEW;
+  END IF;
+
+  stop_changed := TG_OP = 'INSERT';
+  IF TG_OP = 'UPDATE' THEN
+    stop_changed := NEW.stop_on IS DISTINCT FROM OLD.stop_on;
+  END IF;
+  IF stop_changed AND NEW.stop_on IS NOT NULL THEN
+    zone := coalesce(nullif(btrim(NEW.timezone), ''), 'UTC');
+    BEGIN
+      local_today := (now() AT TIME ZONE zone)::date;
+    EXCEPTION WHEN OTHERS THEN
+      local_today := (now() AT TIME ZONE 'UTC')::date;
+    END;
+    IF NEW.stop_on < local_today OR NEW.stop_on > local_today + 730 THEN
+      RAISE EXCEPTION 'Stop date must be today or within the next two years';
+    END IF;
   END IF;
 
   actor := public.agent_mission_actor();
@@ -233,8 +251,146 @@ $$;
 REVOKE ALL ON FUNCTION public.agent_mission_leads_used_today(uuid, text, uuid) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.agent_mission_leads_used_today(uuid, text, uuid) TO service_role;
 
-CREATE OR REPLACE FUNCTION public.claim_agent_mission_send(p_run_id uuid, p_user_id uuid, p_lead_id uuid)
-RETURNS boolean
+-- 'schedule' means nothing has been put in the outbox yet, including a claim
+-- left behind by a crash. 'done' means a scheduled row is already recorded.
+DROP FUNCTION IF EXISTS public.claim_agent_mission_send(uuid, uuid, uuid);
+CREATE FUNCTION public.claim_agent_mission_send(p_run_id uuid, p_user_id uuid, p_lead_id uuid)
+RETURNS text
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_role text := '';
+  v_sent uuid;
+BEGIN
+  IF to_regprocedure('auth.role()') IS NOT NULL THEN
+    EXECUTE 'SELECT coalesce(auth.role(), '''')' INTO v_role;
+    IF v_role IN ('anon', 'authenticated') THEN
+      RAISE EXCEPTION 'claim_agent_mission_send is internal';
+    END IF;
+  END IF;
+  IF p_run_id IS NULL OR p_user_id IS NULL OR p_lead_id IS NULL THEN
+    RETURN 'missing';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.agent_mission_runs WHERE id = p_run_id AND user_id = p_user_id) THEN
+    RETURN 'missing';
+  END IF;
+  INSERT INTO public.agent_mission_sends (run_id, lead_id, user_id)
+  VALUES (p_run_id, p_lead_id, p_user_id)
+  ON CONFLICT (run_id, lead_id) DO NOTHING;
+
+  SELECT sent_email_id INTO v_sent
+    FROM public.agent_mission_sends
+   WHERE run_id = p_run_id AND lead_id = p_lead_id;
+  IF v_sent IS NOT NULL THEN
+    RETURN 'done';
+  END IF;
+
+  IF to_regclass('public.sent_emails') IS NOT NULL THEN
+    EXECUTE
+      'SELECT id FROM public.sent_emails WHERE user_id = $1 AND lead_id = $2 AND status = ''scheduled'' ORDER BY created_at DESC LIMIT 1'
+      INTO v_sent
+      USING p_user_id, p_lead_id;
+    IF v_sent IS NOT NULL THEN
+      UPDATE public.agent_mission_sends
+         SET sent_email_id = v_sent
+       WHERE run_id = p_run_id AND lead_id = p_lead_id AND sent_email_id IS NULL;
+      RETURN 'done';
+    END IF;
+  END IF;
+  RETURN 'schedule';
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.claim_agent_mission_send(uuid, uuid, uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.claim_agent_mission_send(uuid, uuid, uuid) TO service_role;
+
+CREATE OR REPLACE FUNCTION public.complete_agent_mission_send(
+  p_run_id uuid, p_user_id uuid, p_lead_id uuid, p_sent_email_id uuid
+) RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_role text := '';
+  v_sent uuid;
+BEGIN
+  IF to_regprocedure('auth.role()') IS NOT NULL THEN
+    EXECUTE 'SELECT coalesce(auth.role(), '''')' INTO v_role;
+    IF v_role IN ('anon', 'authenticated') THEN
+      RAISE EXCEPTION 'complete_agent_mission_send is internal';
+    END IF;
+  END IF;
+  UPDATE public.agent_mission_sends
+     SET sent_email_id = COALESCE(p_sent_email_id, sent_email_id)
+   WHERE run_id = p_run_id AND lead_id = p_lead_id AND user_id = p_user_id
+  RETURNING sent_email_id INTO v_sent;
+  RETURN v_sent;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.complete_agent_mission_send(uuid, uuid, uuid, uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.complete_agent_mission_send(uuid, uuid, uuid, uuid) TO service_role;
+
+-- Reserves one lead under the workspace lock. A null ceiling fails closed.
+-- A negative ceiling is an unlimited plan and does not reserve.
+CREATE OR REPLACE FUNCTION public.claim_agent_mission_lead(
+  p_user_id uuid, p_run_id uuid, p_timezone text, p_ceiling integer
+) RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_role text := '';
+  zone text := COALESCE(NULLIF(btrim(p_timezone), ''), 'UTC');
+  start_at timestamptz;
+  used integer;
+BEGIN
+  IF to_regprocedure('auth.role()') IS NOT NULL THEN
+    EXECUTE 'SELECT coalesce(auth.role(), '''')' INTO v_role;
+    IF v_role IN ('anon', 'authenticated') THEN
+      RAISE EXCEPTION 'claim_agent_mission_lead is internal';
+    END IF;
+  END IF;
+  IF p_user_id IS NULL OR p_run_id IS NULL OR p_ceiling IS NULL THEN
+    RETURN false;
+  END IF;
+  IF p_ceiling < 0 THEN
+    RETURN true;
+  END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended('agent-mission-workspace:' || p_user_id::text, 0));
+  IF NOT EXISTS (
+    SELECT 1 FROM public.agent_mission_runs WHERE id = p_run_id AND user_id = p_user_id
+  ) THEN
+    RETURN false;
+  END IF;
+  BEGIN
+    start_at := date_trunc('day', now() AT TIME ZONE zone) AT TIME ZONE zone;
+  EXCEPTION WHEN OTHERS THEN
+    start_at := date_trunc('day', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC';
+  END;
+  SELECT coalesce(sum(leads_found), 0)::integer INTO used
+    FROM public.agent_mission_runs
+   WHERE user_id = p_user_id
+     AND created_at >= start_at;
+  IF used >= p_ceiling THEN
+    RETURN false;
+  END IF;
+  UPDATE public.agent_mission_runs
+     SET leads_found = leads_found + 1
+   WHERE id = p_run_id AND user_id = p_user_id;
+  RETURN true;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.claim_agent_mission_lead(uuid, uuid, text, integer) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.claim_agent_mission_lead(uuid, uuid, text, integer) TO service_role;
+
+CREATE OR REPLACE FUNCTION public.release_agent_mission_lead(p_user_id uuid, p_run_id uuid)
+RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
@@ -245,25 +401,21 @@ BEGIN
   IF to_regprocedure('auth.role()') IS NOT NULL THEN
     EXECUTE 'SELECT coalesce(auth.role(), '''')' INTO v_role;
     IF v_role IN ('anon', 'authenticated') THEN
-      RAISE EXCEPTION 'claim_agent_mission_send is internal';
+      RAISE EXCEPTION 'release_agent_mission_lead is internal';
     END IF;
   END IF;
-  IF p_run_id IS NULL OR p_user_id IS NULL OR p_lead_id IS NULL THEN
-    RETURN false;
+  IF p_user_id IS NULL OR p_run_id IS NULL THEN
+    RETURN;
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM public.agent_mission_runs WHERE id = p_run_id AND user_id = p_user_id) THEN
-    RETURN false;
-  END IF;
-  INSERT INTO public.agent_mission_sends (run_id, lead_id, user_id)
-  VALUES (p_run_id, p_lead_id, p_user_id);
-  RETURN true;
-EXCEPTION WHEN unique_violation THEN
-  RETURN false;
+  PERFORM pg_advisory_xact_lock(hashtextextended('agent-mission-workspace:' || p_user_id::text, 0));
+  UPDATE public.agent_mission_runs
+     SET leads_found = greatest(leads_found - 1, 0)
+   WHERE id = p_run_id AND user_id = p_user_id;
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.claim_agent_mission_send(uuid, uuid, uuid) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.claim_agent_mission_send(uuid, uuid, uuid) TO service_role;
+REVOKE ALL ON FUNCTION public.release_agent_mission_lead(uuid, uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.release_agent_mission_lead(uuid, uuid) TO service_role;
 
 CREATE OR REPLACE FUNCTION public.finish_agent_mission_run(p_run_id uuid, p_status text, p_reason text, p_pause boolean)
 RETURNS void
@@ -400,6 +552,69 @@ $$;
 
 REVOKE ALL ON FUNCTION public.agent_mission_ensure_job(uuid) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.agent_mission_ensure_job(uuid) TO service_role;
+
+-- One mission that raises must not abort the tick for everyone else.
+CREATE OR REPLACE FUNCTION public.enqueue_due_agent_missions()
+RETURNS integer
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_role text := '';
+  v_mission record;
+  v_run uuid;
+  v_stranded uuid;
+  v_count integer := 0;
+BEGIN
+  IF to_regprocedure('auth.role()') IS NOT NULL THEN
+    EXECUTE 'SELECT coalesce(auth.role(), '''')' INTO v_role;
+    IF v_role IN ('anon', 'authenticated') THEN
+      RAISE EXCEPTION 'enqueue_due_agent_missions is internal';
+    END IF;
+  END IF;
+
+  FOR v_mission IN
+    SELECT id
+      FROM public.agent_missions
+     WHERE status = 'active'
+       AND next_run_at IS NOT NULL
+       AND next_run_at <= now()
+     ORDER BY next_run_at
+     LIMIT 25
+  LOOP
+    BEGIN
+      v_run := public.claim_agent_mission_run(v_mission.id);
+      IF v_run IS NOT NULL AND public.agent_mission_ensure_job(v_run) IS NOT NULL THEN
+        v_count := v_count + 1;
+      END IF;
+    EXCEPTION WHEN OTHERS THEN
+      RAISE WARNING 'agent mission % skipped this tick: %', v_mission.id, SQLERRM;
+    END;
+  END LOOP;
+
+  FOR v_stranded IN
+    SELECT id FROM public.agent_mission_runs
+     WHERE status IN ('queued', 'running')
+     ORDER BY created_at
+     LIMIT 25
+  LOOP
+    BEGIN
+      PERFORM public.agent_mission_ensure_job(v_stranded);
+    EXCEPTION WHEN OTHERS THEN
+      RAISE WARNING 'agent mission run % skipped this tick: %', v_stranded, SQLERRM;
+    END;
+  END LOOP;
+
+  IF to_regprocedure('public.trigger_agent_jobs()') IS NOT NULL THEN
+    PERFORM public.trigger_agent_jobs();
+  END IF;
+  RETURN v_count;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.enqueue_due_agent_missions() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.enqueue_due_agent_missions() TO service_role;
 
 DO $regression$
 BEGIN

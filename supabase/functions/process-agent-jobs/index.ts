@@ -402,16 +402,9 @@ serve(async (req) => {
          * before the lead lookup rather than threading a null through it.
          */
         if (job.kind === "mission") {
-          const missionRunId = String((item.payload ?? {}).run_id ?? "");
-          const finishMission = async (reason: string) => {
-            if (!missionRunId) return;
-            await admin.rpc("finish_agent_mission_run", {
-              p_run_id: missionRunId,
-              p_status: "failed",
-              p_reason: reason.slice(0, 400),
-              p_pause: true,
-            });
-          };
+          // A failed item stays on this run. The next tick retries it until
+          // job_attempts reaches 3, and only then fails the run and pauses
+          // the mission. Finishing here would skip those retries.
           try {
           const outcome = await runMissionItem({
             admin,
@@ -446,12 +439,10 @@ serve(async (req) => {
             error: outcome.error ?? null,
             finished_at: new Date().toISOString(),
           }).eq("id", item.id);
-            if (outcome.action === "failed") await finishMission(outcome.error ?? "Mission run failed");
             if (outcome.action === "done") processed++;
             else failed++;
           } catch (missionError) {
             const message = missionError instanceof Error ? missionError.message : "Mission run failed";
-            await finishMission(message);
             await admin.from("agent_job_items").update({
               status: "failed",
               error: message.slice(0, 400),

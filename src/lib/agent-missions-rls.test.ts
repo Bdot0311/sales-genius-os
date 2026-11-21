@@ -271,10 +271,31 @@ describe("agent mission claims and tenant isolation", () => {
       expect(Number(usedAll.n) - Number(usedNow.n)).toBe(4);
 
       const lead = crypto.randomUUID();
-      const [firstSend] = await sql`SELECT public.claim_agent_mission_send(${goodRun.id}::uuid, ${owner}::uuid, ${lead}::uuid) AS ok`;
-      const [secondSend] = await sql`SELECT public.claim_agent_mission_send(${goodRun.id}::uuid, ${owner}::uuid, ${lead}::uuid) AS ok`;
-      expect(firstSend.ok).toBe(true);
-      expect(secondSend.ok).toBe(false);
+      const [firstSend] = await sql`SELECT public.claim_agent_mission_send(${goodRun.id}::uuid, ${owner}::uuid, ${lead}::uuid) AS state`;
+      const [secondSend] = await sql`SELECT public.claim_agent_mission_send(${goodRun.id}::uuid, ${owner}::uuid, ${lead}::uuid) AS state`;
+      expect(firstSend.state).toBe("schedule");
+      expect(secondSend.state).toBe("schedule");
+      const recorded = crypto.randomUUID();
+      const [savedSend] = await sql`SELECT public.complete_agent_mission_send(${goodRun.id}::uuid, ${owner}::uuid, ${lead}::uuid, ${recorded}::uuid) AS id`;
+      expect(savedSend.id).toBe(recorded);
+      const [thirdSend] = await sql`SELECT public.claim_agent_mission_send(${goodRun.id}::uuid, ${owner}::uuid, ${lead}::uuid) AS state`;
+      expect(thirdSend.state).toBe("done");
+      const capOwner = crypto.randomUUID();
+      const capAgent = crypto.randomUUID();
+      await sql`INSERT INTO public.agent_configs (id, user_id) VALUES (${capAgent}::uuid, ${capOwner}::uuid)`;
+      const [capMission] = await sql`INSERT INTO public.agent_missions (
+        user_id, agent_config_id, name, goal, status, next_run_at
+      ) VALUES (
+        ${capOwner}::uuid, ${capAgent}::uuid, 'Cap', 'Find', 'active', now() + interval '1 day'
+      ) RETURNING id`;
+      const [capRun] = await sql`INSERT INTO public.agent_mission_runs (mission_id, user_id, window_key, status)
+        VALUES (${capMission.id}::uuid, ${capOwner}::uuid, 'cap-window', 'running') RETURNING id`;
+      const [reservedLead] = await sql`SELECT public.claim_agent_mission_lead(${capOwner}::uuid, ${capRun.id}::uuid, 'UTC', 1) AS ok`;
+      const [overCap] = await sql`SELECT public.claim_agent_mission_lead(${capOwner}::uuid, ${capRun.id}::uuid, 'UTC', 1) AS ok`;
+      expect(reservedLead.ok).toBe(true);
+      expect(overCap.ok).toBe(false);
+      const [closed] = await sql`SELECT public.claim_agent_mission_lead(${capOwner}::uuid, ${capRun.id}::uuid, 'UTC', NULL::integer) AS ok`;
+      expect(closed.ok).toBe(false);
 
       await expect(sql.begin(async (tx) => {
         await tx`SELECT set_config('request.jwt.claim.sub', ${owner}, true)`;
@@ -318,6 +339,118 @@ describe("agent mission claims and tenant isolation", () => {
       const [pausedByAdmin] = await sql`SELECT status, pause_reason FROM public.agent_missions WHERE id = ${memberMission[0].id}::uuid`;
       expect(pausedByAdmin.status).toBe("paused");
       expect(pausedByAdmin.pause_reason).toBe("Paused by admin");
+
+      const expiredAgent = crypto.randomUUID();
+      await sql`INSERT INTO public.agent_configs (id, user_id) VALUES (${expiredAgent}::uuid, ${owner}::uuid)`;
+      const [expired] = await sql`INSERT INTO public.agent_missions (
+        user_id, agent_config_id, name, goal, status, timezone, stop_on, next_run_at
+      ) VALUES (
+        ${owner}::uuid, ${expiredAgent}::uuid, 'Expired', 'Find', 'active', 'UTC',
+        (now() AT TIME ZONE 'UTC')::date - 2, now() - interval '1 minute'
+      ) RETURNING id`;
+      const [expiredRun] = await sql`INSERT INTO public.agent_mission_runs (mission_id, user_id, window_key, status)
+        VALUES (${expired.id}::uuid, ${owner}::uuid, 'expired-window', 'running') RETURNING id`;
+      await sql`SELECT public.finish_agent_mission_run(${expiredRun.id}::uuid, 'failed', 'provider blip', true)`;
+      const [finishedExpired] = await sql`SELECT status FROM public.agent_mission_runs WHERE id = ${expiredRun.id}::uuid`;
+      const [pausedByFinish] = await sql`SELECT status FROM public.agent_missions WHERE id = ${expired.id}::uuid`;
+      expect(finishedExpired.status).toBe("failed");
+      expect(pausedByFinish.status).toBe("paused");
+      await sql`UPDATE public.agent_missions SET status = 'active', pause_reason = NULL WHERE id = ${expired.id}::uuid`;
+
+      const [retryExpired] = await sql`INSERT INTO public.agent_mission_runs (mission_id, user_id, window_key, status, job_attempts)
+        VALUES (${expired.id}::uuid, ${owner}::uuid, 'expired-retry', 'running', 3) RETURNING id`;
+      const [placeholderJob] = await sql`INSERT INTO public.agent_jobs (user_id, kind, status, total)
+        VALUES (${owner}::uuid, 'mission', 'failed', 1) RETURNING id`;
+      await sql`UPDATE public.agent_mission_runs SET job_id = ${placeholderJob.id}::uuid WHERE id = ${retryExpired.id}::uuid`;
+      const [gaveUpExpired] = await sql`SELECT public.agent_mission_ensure_job(${retryExpired.id}::uuid) AS id`;
+      expect(gaveUpExpired.id).toBeNull();
+      const [pausedExpired] = await sql`SELECT status, pause_reason FROM public.agent_missions WHERE id = ${expired.id}::uuid`;
+      expect(pausedExpired.status).toBe("paused");
+      expect(pausedExpired.pause_reason).toContain("three times");
+
+      await sql`UPDATE public.agent_missions SET status = 'active', pause_reason = NULL WHERE id = ${expired.id}::uuid`;
+      await sql.begin(async (tx) => {
+        await tx`SELECT set_config('request.jwt.claim.sub', ${owner}, true)`;
+        await tx`SET LOCAL ROLE authenticated`;
+        await tx`SELECT public.set_agent_mission_status(${expired.id}::uuid, 'stopped', 'Stopped after the date')`;
+      });
+      const [stoppedExpired] = await sql`SELECT status, pause_reason FROM public.agent_missions WHERE id = ${expired.id}::uuid`;
+      expect(stoppedExpired.status).toBe("stopped");
+      expect(stoppedExpired.pause_reason).toBe("Stopped after the date");
+
+      await sql`UPDATE public.agent_missions
+        SET status = 'active', pause_reason = NULL, next_run_at = now() - interval '1 minute'
+        WHERE id = ${expired.id}::uuid`;
+      const [claimedExpired] = await sql`SELECT public.claim_agent_mission_run(${expired.id}::uuid) AS id`;
+      expect(claimedExpired.id).toBeNull();
+      const [stoppedByClaim] = await sql`SELECT status, pause_reason FROM public.agent_missions WHERE id = ${expired.id}::uuid`;
+      expect(stoppedByClaim.status).toBe("stopped");
+      expect(stoppedByClaim.pause_reason).toBe("Stop date reached.");
+
+      const localAgent = crypto.randomUUID();
+      await sql`INSERT INTO public.agent_configs (id, user_id) VALUES (${localAgent}::uuid, ${owner}::uuid)`;
+      const [localMission] = await sql`INSERT INTO public.agent_missions (
+        user_id, agent_config_id, name, goal, timezone, status, next_run_at
+      ) VALUES (
+        ${owner}::uuid, ${localAgent}::uuid, 'Local', 'Find', 'America/Los_Angeles', 'active', now() + interval '1 day'
+      ) RETURNING id`;
+      const savedLocal = await sql.begin(async (tx) => {
+        await tx`SET LOCAL TIME ZONE 'Pacific/Kiritimati'`;
+        await tx`SELECT set_config('request.jwt.claim.sub', ${owner}, true)`;
+        await tx`SET LOCAL ROLE authenticated`;
+        const [dates] = await tx`SELECT CURRENT_DATE > (now() AT TIME ZONE 'America/Los_Angeles')::date AS ahead`;
+        await tx`UPDATE public.agent_missions
+          SET stop_on = (now() AT TIME ZONE 'America/Los_Angeles')::date
+          WHERE id = ${localMission.id}::uuid`;
+        return dates;
+      });
+      expect(savedLocal.ahead).toBe(true);
+      const [localStop] = await sql`SELECT stop_on = (now() AT TIME ZONE 'America/Los_Angeles')::date AS ok
+        FROM public.agent_missions WHERE id = ${localMission.id}::uuid`;
+      expect(localStop.ok).toBe(true);
+      await expect(sql.begin(async (tx) => {
+        await tx`SET LOCAL TIME ZONE 'Pacific/Kiritimati'`;
+        await tx`SELECT set_config('request.jwt.claim.sub', ${owner}, true)`;
+        await tx`SET LOCAL ROLE authenticated`;
+        await tx`UPDATE public.agent_missions
+          SET stop_on = (now() AT TIME ZONE 'America/Los_Angeles')::date - 1
+          WHERE id = ${localMission.id}::uuid`;
+      })).rejects.toThrow(/Stop date/);
+
+      const boomAgent = crypto.randomUUID();
+      const healthyAgent = crypto.randomUUID();
+      await sql`INSERT INTO public.agent_configs (id, user_id) VALUES
+        (${boomAgent}::uuid, ${owner}::uuid), (${healthyAgent}::uuid, ${owner}::uuid)`;
+      await sql.unsafe(`
+        CREATE OR REPLACE FUNCTION public.agent_mission_test_boom() RETURNS trigger
+        LANGUAGE plpgsql AS $fn$
+        BEGIN
+          IF NEW.name = 'Boom' THEN
+            RAISE EXCEPTION 'boom mission';
+          END IF;
+          RETURN NEW;
+        END;
+        $fn$;
+        DROP TRIGGER IF EXISTS agent_mission_test_boom ON public.agent_missions;
+        CREATE TRIGGER agent_mission_test_boom
+          BEFORE UPDATE ON public.agent_missions
+          FOR EACH ROW EXECUTE FUNCTION public.agent_mission_test_boom();
+      `);
+      try {
+        await sql`INSERT INTO public.agent_missions (user_id, agent_config_id, name, goal, status, next_run_at) VALUES
+          (${owner}::uuid, ${boomAgent}::uuid, 'Boom', 'Find', 'active', now() - interval '2 minutes'),
+          (${owner}::uuid, ${healthyAgent}::uuid, 'Healthy', 'Find', 'active', now() - interval '1 minute')`;
+        await expect(sql`SELECT public.enqueue_due_agent_missions()`).resolves.toBeTruthy();
+        const healthyRuns = await sql`SELECT r.id FROM public.agent_mission_runs r
+          JOIN public.agent_missions m ON m.id = r.mission_id
+          WHERE m.name = 'Healthy' AND m.user_id = ${owner}::uuid`;
+        const [boom] = await sql`SELECT status FROM public.agent_missions WHERE name = 'Boom' AND user_id = ${owner}::uuid`;
+        expect(healthyRuns.length).toBeGreaterThan(0);
+        expect(boom.status).toBe("active");
+      } finally {
+        await sql`DROP TRIGGER IF EXISTS agent_mission_test_boom ON public.agent_missions`;
+        await sql`DROP FUNCTION IF EXISTS public.agent_mission_test_boom()`;
+      }
     } finally {
       await sql.end({ timeout: 1 });
     }
