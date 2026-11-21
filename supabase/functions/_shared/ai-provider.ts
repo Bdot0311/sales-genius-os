@@ -15,7 +15,7 @@
 // Call sites keep the exact `fetch` shape they had before — the response body is
 // the OpenAI chat-completions shape on all three routes, including streaming.
 
-import { AI_ATTEMPT_TIMEOUT_MS, AI_CALL_DEADLINE_MS, runWithAiRetries, withAttemptTimeout } from "./ai-retry.ts";
+import { AI_CALL_DEADLINE_MS, runWithAiRetries, withAttemptTimeout } from "./ai-retry.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import {
   bedrockChat,
@@ -180,8 +180,8 @@ export async function aiFetch(
   body.model = route.model;
   const fnName = ctx.fn ?? _endpoint ?? "unknown";
 
-  // The call dies at 120s. Each attempt dies sooner, so a timeout is retried
-  // while the deadline is still open. One attempt of 120s cannot be.
+  // The call dies at 120s. Early attempts die at the short bound so a stall is
+  // retried. The last attempt is allowed the time still left.
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), AI_CALL_DEADLINE_MS);
 
@@ -217,14 +217,14 @@ export async function aiFetch(
         console.error(`[ai-provider] ${fnName} bedrock stream unavailable -> buffered fallback`);
       }
       // 429, 5xx and a timeout are asked again inside the same deadline.
-      // The attempt bound is shorter than that deadline, and the in-flight
-      // request is cancelled, so the retry is a new call rather than a second
-      // one piled on the first. The gateway fallback below is not the path
-      // production uses.
+      // Early attempts use the short bound so a stall is cancelled. The last
+      // attempt gets the time still left, so a long buffered generation can
+      // finish. The in-flight request is cancelled before the retry. The
+      // gateway fallback below is not the path production uses.
       const res = await runWithAiRetries(
-        () => withAttemptTimeout(
+        (budget) => withAttemptTimeout(
           (attemptSignal) => bedrockChat(route.model, body, attemptSignal),
-          AI_ATTEMPT_TIMEOUT_MS,
+          budget,
           signal,
         ),
         { signal },
@@ -262,7 +262,7 @@ export async function aiFetch(
      * budget. A streamed request is sent once: the callers that stream are
      * interactive and would rather fail fast than wait.
      */
-    const sendOnce = () => withAttemptTimeout(
+    const sendOnce = (budget: number) => withAttemptTimeout(
       (attemptSignal) => fetch(route.url, {
         ...init,
         method: "POST",
@@ -270,12 +270,12 @@ export async function aiFetch(
         body: JSON.stringify(body),
         signal: attemptSignal,
       }),
-      AI_ATTEMPT_TIMEOUT_MS,
+      budget,
       signal,
     );
 
     const res = body.stream === true
-      ? await sendOnce()
+      ? await sendOnce(AI_CALL_DEADLINE_MS)
       : await runWithAiRetries(sendOnce, { signal });
 
     clearTimeout(timeoutId);

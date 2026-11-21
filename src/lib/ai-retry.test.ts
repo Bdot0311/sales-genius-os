@@ -5,6 +5,7 @@ import {
   AI_CALL_DEADLINE_MS,
   AI_MAX_ATTEMPTS,
   AI_RETRY_CAP_MS,
+  attemptBudgetMs,
   attemptTimeoutLeavesRoom,
   retryDelayMs,
   runWithAiRetries,
@@ -70,9 +71,102 @@ describe("how long to wait", () => {
       PROVIDER.indexOf("runWithAiRetries("),
       PROVIDER.indexOf("if (!res.ok) return res"),
     );
-    expect(bedrockRetry).toContain("AI_ATTEMPT_TIMEOUT_MS");
     expect(bedrockRetry).toContain("withAttemptTimeout");
+    expect(bedrockRetry).toContain("(budget)");
+    expect(bedrockRetry).not.toContain("AI_ATTEMPT_TIMEOUT_MS");
     expect(bedrockRetry).not.toContain("AI_CALL_DEADLINE_MS");
+    expect(attemptBudgetMs(1, 0)).toBe(AI_ATTEMPT_TIMEOUT_MS);
+    expect(attemptBudgetMs(AI_MAX_ATTEMPTS, 0)).toBeGreaterThanOrEqual(70_000);
+  });
+});
+
+describe("the last attempt may run as long as the deadline allows", () => {
+  it("a 70s response succeeds on the final attempt", async () => {
+    let now = 0;
+    const budgets: number[] = [];
+    const res = await runWithAiRetries(
+      async (budget) => {
+        budgets.push(budget);
+        // Early attempts are the short bound. A body that takes 70s cannot
+        // finish, so those attempts time out and the clock moves on by that bound.
+        // Early attempts failed fast (a blip, not a 45s burn). A body that
+        // needs 70s only fits the last attempt, which is given the time left.
+        if (budget < 70_000) throw new Error("Timeout");
+        return new Response("ok", { status: 200 });
+      },
+      { now: () => now, sleep: async (ms) => { now += ms; }, random: () => 0.5 },
+    );
+    expect(res.status).toBe(200);
+    expect(budgets.slice(0, -1)).toEqual([AI_ATTEMPT_TIMEOUT_MS, AI_ATTEMPT_TIMEOUT_MS]);
+    expect(budgets.at(-1)).toBeGreaterThanOrEqual(70_000);
+  });
+
+  it("cancels a stalled first attempt and retries", async () => {
+    let now = 0;
+    const pending: { at: number; fn: () => void; cleared: boolean }[] = [];
+    const clock = {
+      set(fn: () => void, ms: number) {
+        const item = { at: now + ms, fn, cleared: false };
+        pending.push(item);
+        return () => { item.cleared = true; };
+      },
+    };
+    const flush = (until: number) => {
+      now = until;
+      for (const item of pending) {
+        if (!item.cleared && item.at <= now) item.fn();
+      }
+    };
+    let calls = 0;
+    const done = runWithAiRetries(
+      (budget) => withAttemptTimeout((signal) => new Promise((resolve, reject) => {
+        calls += 1;
+        if (calls === 1) {
+          expect(budget).toBe(AI_ATTEMPT_TIMEOUT_MS);
+          signal.addEventListener("abort", () => reject(new Error("aborted")));
+          return;
+        }
+        resolve(new Response("ok", { status: 200 }));
+      }), budget, undefined, clock),
+      { now: () => now, sleep: async () => {}, random: () => 0 },
+    );
+    await Promise.resolve();
+    flush(AI_ATTEMPT_TIMEOUT_MS);
+    const res = await done;
+    expect(res.status).toBe(200);
+    expect(calls).toBe(2);
+  });
+
+  it("the deadline still ends the call", async () => {
+    const parent = new AbortController();
+    let calls = 0;
+    const pending = runWithAiRetries(
+      (budget) => {
+        calls += 1;
+        expect(budget).toBeGreaterThanOrEqual(AI_ATTEMPT_TIMEOUT_MS);
+        return withAttemptTimeout((signal) => new Promise((_resolve, reject) => {
+          signal.addEventListener("abort", () => reject(new Error("aborted")));
+        }), budget, parent.signal);
+      },
+      { signal: parent.signal, sleep: async () => {} },
+    );
+    parent.abort();
+    await expect(pending).rejects.toThrow("Timeout");
+    expect(calls).toBe(1);
+  });
+
+  it("a 429 is still retried once and then accepted, independent of the attempt bound", async () => {
+    const throttled = new Response("no", { status: 429 });
+    const ok = new Response("ok", { status: 200 });
+    let calls = 0;
+    const slept: number[] = [];
+    const res = await runWithAiRetries(
+      () => Promise.resolve(calls++ === 0 ? throttled : ok),
+      { sleep: async (ms) => { slept.push(ms); }, random: () => 0.5 },
+    );
+    expect(res.status).toBe(200);
+    expect(calls).toBe(2);
+    expect(slept).toEqual([400]);
   });
 });
 
@@ -127,7 +221,7 @@ describe("the retry is wired into the one helper every AI call uses", () => {
 
   it("sends a streamed request once, and retries Bedrock as well as the gateway", () => {
     expect(PROVIDER).toContain("body.stream === true");
-    expect(PROVIDER).toContain("? await sendOnce()");
+    expect(PROVIDER).toContain("? await sendOnce(AI_CALL_DEADLINE_MS)");
     const bedrock = PROVIDER.slice(
       PROVIDER.indexOf('route.provider === "bedrock"'),
       PROVIDER.indexOf("const headers"),
