@@ -1,5 +1,7 @@
 # Full-article Mailchimp newsletter — November 21, 2026
 
+- [x] Add a beehiiv-style generated editorial graphic, four lavender/mint paragraph bubbles and numbered visual section breaks while retaining the complete article. Actual Mailchimp saved HTML verified at phone/desktop widths: both images load, seven sections, no overflow. Revised owner-only test accepted (HTTP 204); inbox receipt unconfirmed, no audience send.
+
 - [x] Replace the tested newsletter's teaser with the complete seven-section featured article, actual crown logo and OutReign blog styling; remove the read-the-guide button. Email copy excludes unsupported reply-rate figures and keeps human approval explicit; published blog unchanged.
 - [x] Desktop/mobile preview has no overflow and logo loads; Mailchimp content saved/read back including full plain-text alternative. Owner-only test to info@bdotindustries.org accepted (HTTP 204); inbox delivery awaits owner confirmation. No subscriber campaign send.
 
