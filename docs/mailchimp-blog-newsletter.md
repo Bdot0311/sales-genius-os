@@ -1,5 +1,11 @@
 # OutReign full-article newsletter
 
+## Complete BDØT footer correction — November 21, 2026
+
+- Earlier adaptation omitted the template's Tip of the week bubble and promotional banner, and renamed its browser button. Restored the original tip copy/attribution, banner image, View Blog In Browser button and original X/LinkedIn/preferences/unsubscribe section from `BDØT_template-2.html`. Retained the postal-address merge tag required for marketing emails. Full article and GPT graphics unchanged.
+- Updated the existing standalone review draft `66a4b6154a` in brandon's Mailchimp through HTML URL import, without changing the user's saved template. Separate outgoing content read confirms the restored blocks; saved HTML rendered at 1280px/390px with the banner loaded and no overflow.
+- No new test or subscriber send was requested or performed. Inbox rendering remains unverified.
+
 ## Edited BDØT template — November 21, 2026, 07:49 UTC
 
 - Used the newly uploaded `BDØT_template-2.html`; Mailchimp confirms BDØT template 10125960 was edited at 07:44:49 UTC. Preserved the updated centered crown logo, black/purple title band, image frame, typography, social links and footer. Replaced placeholder feed text with the complete previously reviewed article and existing GPT graphics. The footer browser button opens the email archive, not the landing-site blog; postal-address merge tag retained.

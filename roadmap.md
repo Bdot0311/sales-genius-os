@@ -1,3 +1,7 @@
+# BDØT footer correction — November 21, 2026
+
+- [x] Restore the original tip bubble, promotional banner, View Blog In Browser button and social/preferences/unsubscribe footer. Separate Mailchimp read-back and desktop/phone checks passed: banner loaded, no overflow, article unchanged. No new test or subscriber send; inbox rendering unverified.
+
 # Edited BDØT template — November 21, 2026
 
 - [x] Use the newly edited November 21 BDØT export: updated crown logo, title band, frame, social footer and full reviewed article/GPT graphics. Actual Mailchimp HTML checked at desktop/phone: eight headings, five loaded images, no overflow. Owner-only test accepted (HTTP 204); separate post-test read retains content. Inbox rendering unconfirmed; no subscribers emailed.
