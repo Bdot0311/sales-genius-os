@@ -116,6 +116,13 @@ export const ROADMAP: RoadmapItem[] = [
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-11-21-outreach-lead-labels",
+    date: "2026-11-21",
+    title: "Filter and label leads in Outreach Studio and Sequences",
+    summary: "See which leads need a first touch and which need a follow-up, right where you pick them.",
+    items: [{ tag: "new", title: "Lead labels and filters in the lead picker", description: "The lead dropdown in Outreach Studio and the AI sequence builder now filters by Needs first touch, Needs follow-up, any label, intent and enrichment, and you can change a lead's label without leaving the page.", href: "/dashboard/outreach" }],
+  },
+  {
     id: "2026-11-20-appsumo-redemption",
     date: "2026-11-20",
     title: "Connect your AppSumo subscription",

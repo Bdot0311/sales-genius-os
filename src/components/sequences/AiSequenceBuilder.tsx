@@ -74,10 +74,10 @@ export const AiSequenceBuilder = () => {
         supabase.from("profiles").select("full_name, company_name").eq("id", user.id).maybeSingle(),
         supabase
           .from("leads")
-          .select("id, contact_name, company_name, job_title, industry, employee_count, company_size, signals")
+          .select("id, contact_name, company_name, job_title, industry, employee_count, company_size, signals, contact_email, email_verification_status, pipeline_stage, intent_label, enrichment_status, enriched_at")
           .eq("user_id", user.id)
           .order("created_at", { ascending: false })
-          .limit(50),
+          .limit(1000),
       ]);
       if (!mounted) return;
       if (profile?.full_name) setSenderName(profile.full_name);
