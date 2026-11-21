@@ -569,13 +569,11 @@ export async function draftForLead(
   };
 
   // generate-email runs (or reuses) the per-lead website research brief
-  // internally, so drafts are grounded in real findings.
-  let r = await deps.invokeFn("generate-email", payload);
-  // one retry on upstream rate limiting
-  if (!r?.email && /rate limit/i.test(JSON.stringify(r?.error ?? ""))) {
-    await new Promise((res) => setTimeout(res, 2500));
-    r = await deps.invokeFn("generate-email", payload);
-  }
+  // internally, so drafts are grounded in real findings. A throttled call is
+  // retried inside the provider and, if it is still throttled, by the worker
+  // after a backoff. A second full generation here was another burst on top
+  // of the one that was already refused.
+  const r = await deps.invokeFn("generate-email", payload);
 
   if (!r?.email && r?.error_code === "research_too_thin") {
     return {

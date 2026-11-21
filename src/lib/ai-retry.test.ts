@@ -1,14 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import {
+  AI_ATTEMPT_TIMEOUT_MS,
+  AI_CALL_DEADLINE_MS,
   AI_MAX_ATTEMPTS,
   AI_RETRY_CAP_MS,
+  attemptTimeoutLeavesRoom,
   retryDelayMs,
+  runWithAiRetries,
   shouldRetryStatus,
+  withAttemptTimeout,
 } from "../../supabase/functions/_shared/ai-retry";
 
 const code = (s: string) => s.replace(/^\s*\/\/.*$/gm, "");
 const PROVIDER = code(readFileSync("supabase/functions/_shared/ai-provider.ts", "utf8"));
+const RETRY = code(readFileSync("supabase/functions/_shared/ai-retry.ts", "utf8"));
 const RUBRIC = code(readFileSync("supabase/functions/check-email-rubric/index.ts", "utf8"));
 
 describe("which AI failures are worth asking again for", () => {
@@ -53,25 +59,81 @@ describe("how long to wait", () => {
     expect(AI_MAX_ATTEMPTS).toBeGreaterThan(1);
     expect(AI_MAX_ATTEMPTS).toBeLessThanOrEqual(4);
   });
+
+  it("times an attempt out soon enough that the timeout itself is retried", () => {
+    // An attempt that lasts as long as the whole call cannot be retried:
+    // the deadline is already spent when it fails.
+    expect(attemptTimeoutLeavesRoom()).toBe(true);
+    expect(AI_ATTEMPT_TIMEOUT_MS).toBeLessThan(AI_CALL_DEADLINE_MS);
+    expect(AI_ATTEMPT_TIMEOUT_MS * 2).toBeLessThanOrEqual(AI_CALL_DEADLINE_MS);
+    const bedrockRetry = PROVIDER.slice(
+      PROVIDER.indexOf("runWithAiRetries("),
+      PROVIDER.indexOf("if (!res.ok) return res"),
+    );
+    expect(bedrockRetry).toContain("AI_ATTEMPT_TIMEOUT_MS");
+    expect(bedrockRetry).toContain("withAttemptTimeout");
+    expect(bedrockRetry).not.toContain("AI_CALL_DEADLINE_MS");
+  });
+});
+
+describe("an attempt timeout is asked again, and the deadline is not", () => {
+  it("retries when the attempt aborts and the deadline is still open", async () => {
+    let calls = 0;
+    const ok = await runWithAiRetries(
+      () => withAttemptTimeout((signal) => new Promise((resolve, reject) => {
+        calls += 1;
+        if (calls === 1) signal.addEventListener("abort", () => reject(new Error("aborted")));
+        else resolve(new Response("ok", { status: 200 }));
+      }), 20),
+      { sleep: async () => {}, random: () => 0 },
+    );
+    expect(ok.status).toBe(200);
+    expect(calls).toBe(2);
+  });
+
+  it("does not ask again after the overall deadline has aborted", async () => {
+    const parent = new AbortController();
+    parent.abort();
+    let calls = 0;
+    await expect(runWithAiRetries(
+      () => {
+        calls += 1;
+        return withAttemptTimeout(
+          () => Promise.reject(new Error("aborted")),
+          AI_CALL_DEADLINE_MS,
+          parent.signal,
+        );
+      },
+      { signal: parent.signal, sleep: async () => {} },
+    )).rejects.toThrow("Timeout");
+    expect(calls).toBe(1);
+  });
 });
 
 describe("the retry is wired into the one helper every AI call uses", () => {
   it("loops on a retryable status", () => {
-    expect(PROVIDER).toContain("shouldRetryStatus(res.status)");
-    expect(PROVIDER).toContain("attempt < AI_MAX_ATTEMPTS");
+    expect(RETRY).toContain("shouldRetryStatus(res.status)");
+    expect(RETRY).toContain("attempt === AI_MAX_ATTEMPTS");
   });
 
   it("stops when the caller has given up or the budget expired", () => {
     // Without this a retry outlives the request it belongs to.
-    expect(PROVIDER).toContain("if (signal.aborted) break;");
+    expect(RETRY).toContain("hooks.signal?.aborted");
   });
 
   it("releases the body of a response it is discarding", () => {
-    expect(PROVIDER).toContain("await res.body?.cancel()");
+    expect(RETRY).toContain("await res.body?.cancel()");
   });
 
-  it("sends a streamed request once", () => {
-    expect(PROVIDER).toContain("if (body.stream !== true) {");
+  it("sends a streamed request once, and retries Bedrock as well as the gateway", () => {
+    expect(PROVIDER).toContain("body.stream === true");
+    expect(PROVIDER).toContain("? await sendOnce()");
+    const bedrock = PROVIDER.slice(
+      PROVIDER.indexOf('route.provider === "bedrock"'),
+      PROVIDER.indexOf("const headers"),
+    );
+    expect(bedrock).toContain("runWithAiRetries");
+    expect(PROVIDER).toContain("runWithAiRetries(sendOnce");
   });
 });
 

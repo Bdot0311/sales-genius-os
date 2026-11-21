@@ -37,6 +37,75 @@ export function shouldRetryStatus(status: number): boolean {
  */
 export const AI_MAX_ATTEMPTS = 3;
 export const AI_RETRY_CAP_MS = 5_000;
+/** The whole call, including retries. Edge functions die past this. */
+export const AI_CALL_DEADLINE_MS = 120_000;
+/**
+ * One attempt. Two of these fit inside the deadline, so a timeout is asked
+ * again. An attempt that uses the whole deadline never is: the clock is
+ * already gone when it fails.
+ */
+export const AI_ATTEMPT_TIMEOUT_MS = 45_000;
+
+/** True when a timed-out attempt still leaves room to ask again. */
+export function attemptTimeoutLeavesRoom(
+  deadlineMs = AI_CALL_DEADLINE_MS,
+  attemptMs = AI_ATTEMPT_TIMEOUT_MS,
+): boolean {
+  return attemptMs > 0 && attemptMs * 2 <= deadlineMs;
+}
+
+/**
+ * Bound one attempt and cancel it when the bound or the parent deadline hits.
+ *
+ * A timeout of the attempt, with the parent still open, is a retryable
+ * Timeout. The parent aborting is the deadline: same error, and the caller
+ * must not ask again.
+ */
+export function withAttemptTimeout(
+  start: (signal: AbortSignal) => Promise<Response>,
+  ms: number,
+  parent?: AbortSignal,
+): Promise<Response> {
+  const attempt = new AbortController();
+  let timedOut = false;
+  let settled = false;
+  return new Promise((resolve, reject) => {
+    const finish = () => {
+      clearTimeout(timer);
+      parent?.removeEventListener("abort", onParent);
+    };
+    const fail = (error: unknown) => {
+      if (settled) return;
+      settled = true;
+      finish();
+      if (timedOut || parent?.aborted) reject(new Error("Timeout"));
+      else reject(error);
+    };
+    const timer = setTimeout(() => {
+      timedOut = true;
+      attempt.abort();
+      fail(new Error("Timeout"));
+    }, ms);
+    const onParent = () => {
+      attempt.abort();
+      fail(new Error("Timeout"));
+    };
+    if (parent) {
+      if (parent.aborted) onParent();
+      else parent.addEventListener("abort", onParent);
+    }
+    if (settled) return;
+    start(attempt.signal).then(
+      (res) => {
+        if (settled) return;
+        settled = true;
+        finish();
+        resolve(res);
+      },
+      fail,
+    );
+  });
+}
 
 export function retryDelayMs(attempt: number, retryAfter: string | null): number {
   const header = Number(retryAfter);
@@ -46,4 +115,69 @@ export function retryDelayMs(attempt: number, retryAfter: string | null): number
     return Math.min(header * 1000, AI_RETRY_CAP_MS);
   }
   return Math.min(400 * 3 ** Math.max(0, attempt - 1), AI_RETRY_CAP_MS);
+}
+
+/**
+ * Spread a herd off the same millisecond.
+ *
+ * Four drafts times a scorer times a rewrite all see 429 together, and a
+ * retry that waits exactly 400ms asks again together. A quarter of the base
+ * delay either side keeps Retry-After's meaning and the cap.
+ */
+export function jitteredRetryDelayMs(
+  attempt: number,
+  retryAfter: string | null,
+  random: () => number = Math.random,
+): number {
+  const base = retryDelayMs(attempt, retryAfter);
+  const spread = base * 0.25;
+  const rolled = random();
+  const unit = Number.isFinite(rolled) ? Math.min(1, Math.max(0, rolled)) : 0.5;
+  return Math.max(0, Math.min(AI_RETRY_CAP_MS, Math.round(base - spread + unit * spread * 2)));
+}
+
+/** A dropped connection or a deadline, as opposed to a 400 the next try will repeat. */
+export function isTransientTransportError(error: unknown): boolean {
+  const msg = (error instanceof Error ? error.message : String(error ?? "")).toLowerCase();
+  return /timeout|timed out|network|econn|fetch failed|socket|econnreset|reset by peer|unreachable/.test(msg);
+}
+
+export interface AiRetryHooks {
+  sleep?: (ms: number) => Promise<void>;
+  random?: () => number;
+  signal?: { aborted: boolean };
+}
+
+/**
+ * Ask again on 429, 5xx, and a transport failure. Stop on any other status.
+ *
+ * One shared loop, because the gateway path had it and the Bedrock path —
+ * the one that writes and scores the email — returned the first 429.
+ */
+export async function runWithAiRetries(
+  send: () => Promise<Response>,
+  hooks: AiRetryHooks = {},
+): Promise<Response> {
+  const sleep = hooks.sleep ?? ((ms: number) => new Promise((resolve) => setTimeout(resolve, ms)));
+  const random = hooks.random ?? Math.random;
+  let last: Response | null = null;
+  let lastError: unknown = null;
+  for (let attempt = 1; attempt <= AI_MAX_ATTEMPTS; attempt++) {
+    try {
+      const res = await send();
+      last = res;
+      lastError = null;
+      if (!shouldRetryStatus(res.status) || attempt === AI_MAX_ATTEMPTS) return res;
+      const wait = jitteredRetryDelayMs(attempt, res.headers.get("retry-after"), random);
+      await res.body?.cancel().catch(() => {});
+      await sleep(wait);
+      if (hooks.signal?.aborted) return res;
+    } catch (error) {
+      lastError = error;
+      if (!isTransientTransportError(error) || attempt === AI_MAX_ATTEMPTS || hooks.signal?.aborted) throw error;
+      await sleep(jitteredRetryDelayMs(attempt, null, random));
+    }
+  }
+  if (last) return last;
+  throw lastError instanceof Error ? lastError : new Error("AI request failed");
 }

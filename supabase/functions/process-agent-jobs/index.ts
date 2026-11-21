@@ -33,7 +33,7 @@ import {
   leadsWithDrafts,
   sentSubjectsFor,
 } from "../_shared/draft-one.ts";
-import { classifyFailure as classifyWorkerFailure } from "../_shared/bulk-run-logic.ts";
+import { agentJobRetry } from "../_shared/bulk-run-logic.ts";
 import { runMissionItem } from "../_shared/agent-mission-runner.ts";
 import { notifyMissionDigest } from "../_shared/notify-events.ts";
 import { sendAppEmail } from "../_shared/transactional-email-templates/send-app-email.ts";
@@ -54,38 +54,18 @@ const json = (body: unknown, status = 200) =>
 const BUDGET_MS = 100_000;
 
 /*
- * How many claimed rows are drafted at once.
+ * How many claimed rows are worked at once.
  *
- * Bounded, and deliberately modest. aiFetch has no backoff: a gateway that
- * rate limits returns an ordinary error and the item is settled on it, so
- * raising this too far converts slowness into failed leads rather than speed.
- * Four keeps the pass busy through a model call without stacking requests the
- * provider will refuse.
+ * A draft is a generation, a rubric call and up to two grounded rewrites, and
+ * the cron used to fire three of these passes in the same minute. Four at a
+ * time on each pass is what turned a short Bedrock throttle into a page of
+ * "AI rate limited" and "scorer didn't respond". Two keeps the pass moving
+ * without stacking a burst the provider will refuse. Bedrock retries inside
+ * the call; this is the cap on how many leads do that together.
  *
- * Configurable via AGENT_JOB_CONCURRENCY environment variable (default: 4)
+ * Configurable via AGENT_JOB_CONCURRENCY environment variable (default: 2)
  */
-const CONCURRENCY = Number(Deno.env.get("AGENT_JOB_CONCURRENCY")) || 4;
-
-/*
- * A failure the next pass could get past.
- *
- * The worker settled every non-success the same way. A provider busy for a
- * second and a draft that invented a figure it cannot back are not the same
- * thing: the first is worth running again, the second returns the same answer
- * forever. Running four at a time makes the first more likely, not less.
- *
- * This used to be a second regex of its own, and the two workers disagreed.
- * The bulk worker retried "the reply rubric did not return a score" and the
- * shell told the user it was retryable; this one failed it permanently on the
- * first attempt, which is where "4 scorer didn't respond" in a counted failure
- * summary came from. It was also missing an unreachable provider, a dropped
- * connection and an empty model response, all of which the other worker
- * retried. One classifier cannot disagree with itself.
- */
-const retryableFailure = (text: string): boolean => {
-  const kind = classifyWorkerFailure(text);
-  return kind === "transient" || kind === "rate_limit";
-};
+const CONCURRENCY = Number(Deno.env.get("AGENT_JOB_CONCURRENCY")) || 2;
 
 /**
  * Hand one finished draft to the outbox.
@@ -309,7 +289,7 @@ serve(async (req) => {
     const jobIds = [...new Set(items.map((i) => String(i.job_id)))];
     const { data: jobRows } = await admin
       .from("agent_jobs")
-      .select("id, user_id, status, goal, feedback, agent_config_id, thread_id, total, done, failed, autonomy")
+      .select("id, user_id, status, goal, feedback, agent_config_id, thread_id, total, done, failed, autonomy, kind")
       .in("id", jobIds);
     const jobs = new Map((jobRows ?? []).map((j: any) => [String(j.id), j]));
 
@@ -364,19 +344,57 @@ serve(async (req) => {
      * includes this try. Three is the same ceiling the stale-row reaper uses,
      * so a lead cannot bounce between pending and claimed indefinitely.
      */
+    /*
+     * not_before is added by the migration that teaches the claim to skip a
+     * row until then. Until that column exists, the same update without it
+     * still returns the row to pending — the previous behaviour — rather than
+     * leaving it claimed.
+     */
+    const park = async (id: string, fields: Record<string, unknown>): Promise<void> => {
+      const { error } = await admin.from("agent_job_items").update(fields).eq("id", id);
+      if (error && Object.prototype.hasOwnProperty.call(fields, "not_before")) {
+        const { not_before: _ignored, ...rest } = fields;
+        await admin.from("agent_job_items").update(rest).eq("id", id);
+      }
+    };
+
     const settleFailure = async (item: Record<string, any>, message: unknown): Promise<void> => {
       const text = String(message ?? "Draft failed").slice(0, 400);
-      if (retryableFailure(text) && Number(item.attempts ?? 0) < 3) {
-        console.warn(`[process-agent-jobs] transient, requeued: ${text}`);
-        await admin.from("agent_job_items")
-          .update({ status: "pending", claimed_at: null, error: text })
-          .eq("id", item.id);
+      const plan = agentJobRetry(text, Number(item.attempts ?? 0));
+      if (plan.retry) {
+        console.warn(`[process-agent-jobs] transient, retry in ${plan.delaySeconds}s: ${text}`);
+        await park(String(item.id), {
+          status: "pending",
+          claimed_at: null,
+          error: text,
+          not_before: new Date(Date.now() + plan.delaySeconds * 1000).toISOString(),
+        });
         return;
       }
       await admin.from("agent_job_items")
         .update({ status: "failed", error: text, finished_at: new Date().toISOString() })
         .eq("id", item.id);
       failed++;
+    };
+
+    const researchStillOpen = async (userId: string, leadId: string, selfId: string): Promise<boolean> => {
+      const { data: openJobs } = await admin
+        .from("agent_jobs")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("kind", "research")
+        .in("status", ["queued", "running"])
+        .limit(20);
+      const ids = (openJobs ?? []).map((row: { id: string }) => row.id);
+      if (!ids.length) return false;
+      const { data: openItems } = await admin
+        .from("agent_job_items")
+        .select("id")
+        .in("job_id", ids)
+        .eq("lead_id", leadId)
+        .in("status", ["pending", "claimed"])
+        .limit(5);
+      return (openItems ?? []).some((row: { id: string }) => row.id !== selfId);
     };
 
     const processItem = async (item: Record<string, any>): Promise<void> => {
@@ -573,6 +591,27 @@ serve(async (req) => {
 
         // Drafting setup is intentionally kept after the kind branch above, so
         // search / enrich / score / research never pay for config/profile reads.
+        /*
+         * A draft for a lead whose research item is still pending or claimed
+         * waits. The two jobs are queued together and the claim takes a mixed
+         * batch, so without this the draft calls generate-email while the
+         * research claim is held, gets an empty brief, and the grounding gate
+         * fails the lead for good.
+         */
+        if (String(job.kind) === "draft" && item.lead_id && await researchStillOpen(String(job.user_id), String(item.lead_id), String(item.id))) {
+          const { error: releaseError } = await admin.rpc("release_agent_job_items", { p_ids: [item.id] });
+          if (releaseError) {
+            await admin.from("agent_job_items").update({
+              status: "pending",
+              claimed_at: null,
+              attempts: Math.max(0, Number(item.attempts ?? 1) - 1),
+            }).eq("id", item.id);
+          }
+          await park(String(item.id), {
+            not_before: new Date(Date.now() + 60_000).toISOString(),
+          });
+          return;
+        }
         const { data: configRows } = await admin
           .from("agent_configs")
           .select("id, tone, company_context, value_props")
@@ -694,14 +733,19 @@ serve(async (req) => {
     };
 
     /*
-     * Several drafts in flight at once, from a shared queue.
-     *
-     * Bounded rather than all-at-once, and deliberately modest: aiFetch has no
-     * backoff, so a gateway that rate limits turns straight into failed items.
-     * Four is enough to keep the pass busy through a model call without
-     * stacking requests the provider will refuse.
+     * Research before drafts inside this claim. The rows were claimed together,
+     * and a draft that starts while its own research row is still in the queue
+     * is the race researchStillOpen puts back.
      */
-    const queue = [...items];
+    const queue = [...items].sort((a, b) => {
+      const rank = (row: Record<string, any>) => {
+        const kind = String(jobs.get(String(row.job_id))?.kind ?? "");
+        if (kind === "research") return 0;
+        if (kind === "draft") return 2;
+        return 1;
+      };
+      return rank(a) - rank(b);
+    });
     const drain = async (): Promise<void> => {
       for (;;) {
         const item = queue.shift();

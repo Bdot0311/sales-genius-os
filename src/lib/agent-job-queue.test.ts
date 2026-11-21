@@ -4,7 +4,7 @@ import {
   fallbackSubject,
   splitSubject,
 } from "../../supabase/functions/_shared/draft-one";
-import { classifyFailure as classifyWorkerFailure } from "../../supabase/functions/_shared/bulk-run-logic";
+import { agentJobRetry, classifyFailure as classifyWorkerFailure } from "../../supabase/functions/_shared/bulk-run-logic";
 
 const MIGRATION = readFileSync("supabase/migrations/20260922190000_agent_job_queue.sql", "utf8");
 const WORKER = readFileSync("supabase/functions/process-agent-jobs/index.ts", "utf8");
@@ -425,18 +425,19 @@ describe("what concurrency broke, and did not", () => {
      * decides with the shared classifier, retries what that calls transient or
      * rate-limited, and hands the row back rather than failing it.
      */
-    expect(worker).toContain("classifyFailure as classifyWorkerFailure");
-    expect(worker).toMatch(/kind === "transient" \|\| kind === "rate_limit"/);
-    expect(worker).toContain("retryableFailure(text)");
-    expect(worker).toContain('status: "pending", claimed_at: null, error: text');
-    // A provider being busy is worth another pass; an invented figure is not.
+    expect(worker).toContain("agentJobRetry");
+    expect(worker).toContain("not_before");
+    expect(worker).toContain('status: "pending"');
+    // A provider being busy is worth another pass, after a wait; an invented figure is not.
     expect(classifyWorkerFailure("Rate limit reached")).toBe("rate_limit");
-    expect(classifyWorkerFailure("The reply rubric did not return a score, so this draft was not released.")).toBe("transient");
-    expect(classifyWorkerFailure("The draft invented a figure it cannot back.")).toBe("permanent");
+    expect(agentJobRetry("Rate limit reached", 1, () => 0.5).retry).toBe(true);
+    expect(agentJobRetry("The reply rubric did not return a score, so this draft was not released.", 1, () => 0.5).retry).toBe(true);
+    expect(agentJobRetry("The draft invented a figure it cannot back.", 1, () => 0.5).retry).toBe(false);
   });
 
   it("still gives up eventually rather than cycling forever", () => {
-    expect(worker).toContain('Number(item.attempts ?? 0) < 3');
+    expect(agentJobRetry("Rate limit reached", 3, () => 0.5).retry).toBe(false);
+    expect(worker).toContain("agentJobRetry(text, Number(item.attempts ?? 0))");
   });
 
   it("settles every failure through the one decision", () => {

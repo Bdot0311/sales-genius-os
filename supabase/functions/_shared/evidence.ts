@@ -102,8 +102,16 @@ function stemIsNegated(sentence: string, stem: string): boolean {
 
 function quantities(sentence: string): string[] {
   const found = new Set<string>();
-  // A two-minute ask is the call to action, not a fact about the company.
-  const withoutDuration = sentence.replace(/\b\d+\s*-?\s*(?:min(?:ute)?s?|secs?|seconds?|hours?)\b/gi, " ");
+  /*
+   * A two-minute ask is the call to action, not a fact about the company.
+   * The digit form ("2 minutes") was stripped. The words were not, so
+   * "Do you have two minutes?" was read as a headcount of 2 the research
+   * had failed to prove, and the draft was thrown out. "One idea" is the
+   * frame the prompt requires, not a quantity about the prospect.
+   */
+  const withoutDuration = sentence
+    .replace(/\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|fifteen|twenty|thirty|sixty)\s*-?\s*(?:min(?:ute)?s?|secs?|seconds?|hours?)\b/gi, " ")
+    .replace(/\bone\s+(?:idea|question|thing|ask|thought)\b/gi, " ");
   for (const match of withoutDuration.matchAll(/\b\d[\d,]*(?:\.\d+)?\b/g)) {
     found.add(match[0].replace(/,/g, ""));
   }
@@ -132,6 +140,35 @@ function eventBacked(sentence: string, corpus: string): boolean {
   return sentences(corpus).some((source) => {
     if (!new RegExp(`\\b${stem}\\b`, "i").test(source)) return false;
     return !stemIsNegated(source, stem);
+  });
+}
+
+const NOTABLE_SKIP = new Set(
+  "that this with from your they their have will what when about into just more than them then were been also only very much some such like here there which would could should these those our you are and for the its it's".split(" "),
+);
+
+function notableWords(text: string): string[] {
+  return (text.toLowerCase().match(/[a-z0-9][a-z0-9'&-]*/g) ?? [])
+    .map((word) => word.replace(/'s$/, ""))
+    .filter((word) => word.length > 2 && !NOTABLE_SKIP.has(word));
+}
+
+/**
+ * "I noticed …" is backed only when one research sentence carries the claim.
+ *
+ * Quoting a stored sentence ("I noticed Vendr helps companies buy SaaS") is
+ * not an invented claim. Matching the words anywhere in the research is:
+ * "cut", "sales" and "team" from three different sentences would make
+ * "I noticed Acme cut its sales team" look sourced.
+ */
+function familiarBacked(sentence: string, corpus: string): boolean {
+  const words = notableWords(sentence.replace(FAMILIAR, " "));
+  if (words.length < 3) return false;
+  return sentences(corpus).some((source) => {
+    const have = new Set(notableWords(source));
+    if (have.size === 0) return false;
+    const hit = words.filter((word) => have.has(word)).length;
+    return hit / words.length >= 0.75;
   });
 }
 
@@ -168,7 +205,7 @@ export function unsupportedClaims(text: string, corpus: string): ClaimHit[] {
         sentence,
         "This treats a funding event as known, and no supplied research says that.",
       );
-    } else if (aboutThem && FAMILIAR.test(sentence) && !stem && !funding) {
+    } else if (aboutThem && FAMILIAR.test(sentence) && !stem && !funding && !familiarBacked(sentence, source)) {
       push(
         hits,
         sentence,
@@ -201,7 +238,10 @@ export function unsupportedClaims(text: string, corpus: string): ClaimHit[] {
 
     // A labeled hypothesis is not stated as fact. Event and quantity checks
     // above still apply: "Hypothesis: you raised" is still a claim.
-    if (/\bhypothesis\b/i.test(sentence)) continue;
+    // A question asks. "How do most teams handle a renewal?" does not state
+    // the rate as something known about this company. The same words without
+    // the question mark still do.
+    if (/\bhypothesis\b/i.test(sentence) || /\?\s*$/.test(sentence)) continue;
 
     const prevalence = sentence.match(PREVALENCE);
     if (prevalence && !source.toLowerCase().includes(prevalence[0].toLowerCase())) {
