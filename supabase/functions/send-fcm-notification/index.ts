@@ -1,6 +1,6 @@
 // Send push notifications through Firebase Cloud Messaging (HTTP v1) via the
 // Lovable connector gateway. Auth: requires a signed-in user. Sends to the
-// caller's own devices unless an admin passes target_user_id.
+// caller's own devices only.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -53,17 +53,12 @@ Deno.serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
-    let targetUserId = callerId;
+    // Notifications only ever go to the caller's own devices; cross-account
+    // targeting was removed so no account can push text to another user.
     if (target_user_id && target_user_id !== callerId) {
-      const { data: roleData } = await admin
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", callerId)
-        .eq("role", "admin")
-        .maybeSingle();
-      if (!roleData) return json(200, { success: false, error: "Forbidden" });
-      targetUserId = target_user_id;
+      return json(200, { success: false, error: "Forbidden" });
     }
+    const targetUserId = callerId;
 
     const { data: devices, error: devErr } = await admin
       .from("fcm_tokens")

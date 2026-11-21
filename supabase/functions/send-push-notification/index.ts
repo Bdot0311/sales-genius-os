@@ -118,17 +118,12 @@ Deno.serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
-    let targetUserId = callerId;
+    // Notifications only ever go to the caller's own devices; cross-account
+    // targeting was removed so no account can push text to another user.
     if (target_user_id && target_user_id !== callerId) {
-      const { data: roleData } = await admin
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", callerId)
-        .eq("role", "admin")
-        .maybeSingle();
-      if (!roleData) return json(200, { success: false, error: "Forbidden" });
-      targetUserId = target_user_id;
+      return json(200, { success: false, error: "Forbidden" });
     }
+    const targetUserId = callerId;
 
     const { data: subs, error: subErr } = await admin
       .from("push_subscriptions")

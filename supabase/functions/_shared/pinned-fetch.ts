@@ -304,6 +304,9 @@ export async function fetchPinnedPage(raw: string, deps: Partial<PageDeps> = {})
     const citedHost = new URL(current.href).hostname;
     for (let hop = 0; hop < 3; hop++) {
       const url = new URL(current.href);
+      // Research reads ordinary websites only: a lead-supplied address must not
+      // aim the fetch at an arbitrary service port on someone else's host.
+      if (url.port && url.port !== "80" && url.port !== "443") return failed(0, current.href);
       if (!sameSiteHost(url.hostname, citedHost)) return failed(0, current.href);
       const resolved = await resolvePublicHost(url.hostname, lookup);
       if (!resolved.ok) return failed(0, current.href);

@@ -254,7 +254,7 @@ serve(async (req) => {
           status = verdict.status;
         } catch (verifyErr) {
           console.error(
-            `Re-verification failed for ${email}:`,
+            "Re-verification failed for a bounced recipient:",
             verifyErr instanceof Error ? verifyErr.message : verifyErr,
           );
           return false;
