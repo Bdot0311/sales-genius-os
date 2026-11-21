@@ -98,3 +98,5 @@ These live in [`docs/`](docs/) and were not linked from anywhere until now.
 | [RESEARCH_PROVIDERS.md](docs/RESEARCH_PROVIDERS.md) | Which research providers exist in the app, what calls them, and what this repo cannot verify about live use |
 | [search-distribution.md](docs/search-distribution.md) | Directory and MCP listing copy, and the submissions that still need the owner |
 | [seo-foundations-audit.md](docs/seo-foundations-audit.md) | Review of the site's search foundations against the SEO guide, and the manual Bing setup |
+| [appsumo-licensing.md](docs/appsumo-licensing.md) | AppSumo subscription licensing: the three endpoints, tier mapping, and the durable state behind redemption |
+| [black-friday-reengagement-2026.md](docs/black-friday-reengagement-2026.md) | The Black Friday re-engagement offer and the signup drop-off audit behind it. Not sent |

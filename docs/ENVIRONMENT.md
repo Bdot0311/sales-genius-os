@@ -239,6 +239,20 @@ how mail is sent and how replies are read.
 | `STRIPE_SECRET_KEY` | ~14 functions | **Loud.** Throws `STRIPE_SECRET_KEY is not set` |
 | `STRIPE_WEBHOOK_SECRET` | `stripe-webhook` | Webhook signatures cannot be checked |
 
+### AppSumo licensing
+
+A second billing source, for accounts that bought a license on AppSumo rather
+than subscribing through Stripe. All five are needed for redemption to work;
+each function refuses with 503 rather than half-redeeming when one is absent.
+
+| Variable | Read by | Missing |
+|---|---|---|
+| `APPSUMO_CLIENT_ID` | `appsumo-redirect` | `AppSumo sign-in is not configured yet` (503). No license can be exchanged |
+| `APPSUMO_CLIENT_SECRET` | `appsumo-redirect` | The same 503 |
+| `APPSUMO_REDIRECT_URL` | `appsumo-redirect` | The same 503. Must match the redirect URI registered with AppSumo exactly |
+| `APPSUMO_APP_ORIGIN` | `appsumo-redirect` | The redemption redirect falls back to the vetted origin in `_shared/safe-origin.ts`, so a value outside that allowlist is ignored rather than followed |
+| `APPSUMO_PRIVATE_KEY` | `appsumo-webhook` | `Licensing is not configured` (503). License events are rejected unsigned, so a plan change on AppSumo never reaches the account |
+
 ---
 
 ## Notifications

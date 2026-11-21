@@ -26,6 +26,21 @@ describe("research-led bulk outreach", () => {
       await expect(personalizedOutreach(async () => ({ data }), { lead: { id: "one" } })).rejects.toThrow();
     }
   });
+  it("shows the generator's own reason, not a generic failure", async () => {
+    // The fault this replaces: the browser read .email off a refusal and threw
+    // "undefined is not an object", which was shown in place of the sentence
+    // the function had written to explain itself.
+    await expect(personalizedOutreach(
+      async () => ({ data: { error: "No sender name is set, so the email cannot be signed.", error_code: "no_sender_name" } }),
+      { lead: { id: "one" } },
+    )).rejects.toThrow(/No sender name is set/);
+    // And a transport failure is still a failure, not an empty email.
+    await expect(personalizedOutreach(
+      async () => ({ data: null, error: new Error("network down") }),
+      { lead: { id: "one" } },
+    )).rejects.toThrow();
+  });
+
   it("all leads includes recipients beyond the first 1000", async () => {
     const all = Array.from({ length: 1015 }, (_, i) => ({ id: String(i) }));
     const rows = await outreachLeadPages(async (from, to) => ({ data: all.slice(from, to + 1), error: null }));
