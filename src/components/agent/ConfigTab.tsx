@@ -34,6 +34,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { useSubscription } from "@/hooks/use-subscription";
 import { capToolsToPlan, isToolOnPlan } from "@/lib/agent-tier-tools";
+import { AgentMissionsSection } from "@/components/agent/AgentMissionsSection";
 import type { PlanType } from "@/lib/plan-features";
 
 
@@ -684,6 +685,8 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
       </Panel>
 
       {/* Save */}
+      {config?.id ? <AgentMissionsSection agentId={config.id} /> : null}
+
       <div className="flex justify-end pb-4">
         <Button onClick={handleSave} disabled={saving} className="gap-2">
           {saving ? (

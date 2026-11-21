@@ -1,6 +1,6 @@
 # Agent missions
 
-A mission is a goal set once on an agent. It keeps running on a schedule until someone pauses or stops it. The product line "your agents work while you sleep" refers to this path.
+A mission is a goal set once on an agent, edited on that agent's Configuration tab. It keeps running on a schedule until someone pauses or stops it. `/dashboard/missions` redirects there. The product line "your agents work while you sleep" refers to this path.
 
 It is off until both of these are true:
 
@@ -59,7 +59,7 @@ Do this after the migration exists in the database. This change does not publish
 
 1. In the admin settings feature flags, turn on `agentMissions`. Leave it off everywhere else.
 2. On the same page, under Agent missions access, enter the workspace email and grant it.
-3. Sign in as that workspace. Missions appears in the sidebar. Create one mission, pick the agent, and leave the mode on Approval until a run looks right.
+3. Sign in as that workspace. Open the agent, then Configuration. Create one mission and leave the mode on Approval until a run looks right. Only the workspace owner or a team admin can choose autopilot. A team member can save an approval mission. One agent has one active mission. The plan's daily lead cap is shared by every mission in the workspace.
 4. Confirm a row in `agent_mission_runs` after the next scheduled window, and that `agent_jobs.kind` is `mission`.
 
 Turning the flag off or disabling the grant stops the next claim. A pass already in flight re-checks both and skips before it searches or schedules.

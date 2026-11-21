@@ -1,6 +1,4 @@
 import { useCallback, useEffect, useState } from "react";
-import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
-import { PageHeader } from "@/components/dashboard/PageHeader";
 import { EmptyState, Panel, PanelBody, PanelDescription, PanelHeader, PanelTitle } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,8 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAgentMissions } from "@/hooks/use-agent-missions";
 import { AgentStepList } from "@/components/agent/AgentStepList";
-import type { StepEvent } from "../../supabase/functions/_shared/agent-step-present";
-import { nextRunAt, normalizeDays } from "../../supabase/functions/_shared/agent-mission-logic";
+import type { StepEvent } from "../../../supabase/functions/_shared/agent-step-present";
+import { normalizeDays } from "../../../supabase/functions/_shared/agent-mission-logic";
 
 interface MissionRow {
   id: string;
@@ -76,11 +74,10 @@ const blank = {
   sequence_id: "",
 };
 
-const Missions = () => {
+export function AgentMissionsSection({ agentId }: { agentId: string }) {
   const { enabled, loading } = useAgentMissions();
   const [missions, setMissions] = useState<MissionRow[] | null>(null);
   const [runs, setRuns] = useState<RunRow[]>([]);
-  const [agents, setAgents] = useState<Named[]>([]);
   const [icps, setIcps] = useState<Named[]>([]);
   const [sequences, setSequences] = useState<Named[]>([]);
   const [form, setForm] = useState(blank);
@@ -90,20 +87,18 @@ const Missions = () => {
   const [openRun, setOpenRun] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const [missionRes, runRes, agentRes, icpRes, sequenceRes] = await Promise.all([
-      supabase.from("agent_missions").select("id, name, goal, mode, status, pause_reason, timezone, days_of_week, run_hour, run_minute, send_window_start, send_window_end, daily_lead_cap, daily_send_cap, daily_spend_cap_usd, next_run_at, agent_config_id, icp_profile_id, sequence_id").order("updated_at", { ascending: false }),
+    const [missionRes, runRes, icpRes, sequenceRes] = await Promise.all([
+      supabase.from("agent_missions").select("id, name, goal, mode, status, pause_reason, timezone, days_of_week, run_hour, run_minute, send_window_start, send_window_end, daily_lead_cap, daily_send_cap, daily_spend_cap_usd, next_run_at, agent_config_id, icp_profile_id, sequence_id").eq("agent_config_id", agentId).order("updated_at", { ascending: false }),
       supabase.from("agent_mission_runs").select("id, mission_id, status, report, leads_found, drafts_written, sends_queued, skip_reason, created_at, finished_at").order("created_at", { ascending: false }).limit(40),
-      supabase.from("agent_configs").select("id, agent_name").order("created_at", { ascending: false }),
       supabase.from("icp_profiles").select("id, name").order("updated_at", { ascending: false }),
       supabase.from("email_sequences").select("id, name").order("updated_at", { ascending: false }),
     ]);
     if (missionRes.error) setError(missionRes.error.message);
     setMissions(missionRes.data ?? []);
     setRuns((runRes.data ?? []) as RunRow[]);
-    setAgents((agentRes.data ?? []).map((row) => ({ id: row.id, name: row.agent_name || "Agent" })));
     setIcps(icpRes.data ?? []);
     setSequences(sequenceRes.data ?? []);
-  }, []);
+  }, [agentId]);
 
   useEffect(() => {
     if (enabled) void load();
@@ -120,13 +115,6 @@ const Missions = () => {
       return;
     }
     const days = normalizeDays(form.days);
-    const next = nextRunAt({
-      from: new Date(),
-      timeZone: form.timezone,
-      daysOfWeek: days,
-      hour: form.run_hour,
-      minute: 0,
-    }).toISOString();
     const row = {
       user_id: userId,
       name: form.name.trim(),
@@ -141,13 +129,13 @@ const Missions = () => {
       daily_lead_cap: form.daily_lead_cap,
       daily_send_cap: form.daily_send_cap,
       daily_spend_cap_usd: form.daily_spend_cap_usd,
-      agent_config_id: form.agent_config_id,
+      agent_config_id: agentId,
       icp_profile_id: form.icp_profile_id || null,
       sequence_id: form.sequence_id || null,
-      next_run_at: next,
     };
+    const { user_id: _owner, ...editable } = row;
     const write = editing
-      ? supabase.from("agent_missions").update(row).eq("id", editing)
+      ? supabase.from("agent_missions").update(editable).eq("id", editing).eq("agent_config_id", agentId)
       : supabase.from("agent_missions").insert(row);
     const { error: writeError } = await write;
     setError(writeError?.message ?? null);
@@ -160,20 +148,11 @@ const Missions = () => {
   };
 
   const setStatus = async (mission: MissionRow, status: "active" | "paused" | "stopped") => {
-    const next = status === "active"
-      ? nextRunAt({
-          from: new Date(),
-          timeZone: mission.timezone,
-          daysOfWeek: mission.days_of_week,
-          hour: mission.run_hour,
-          minute: mission.run_minute,
-        }).toISOString()
-      : mission.next_run_at;
-    const { error: writeError } = await supabase.from("agent_missions").update({
-      status,
-      pause_reason: status === "active" ? null : status === "paused" ? "Paused by you." : "Stopped.",
-      next_run_at: next,
-    }).eq("id", mission.id);
+    const { error: writeError } = await supabase.rpc("set_agent_mission_status", {
+      p_id: mission.id,
+      p_status: status,
+      p_reason: status === "paused" ? "Paused by you." : status === "stopped" ? "Stopped." : undefined,
+    });
     if (writeError) setError(writeError.message);
     await load();
   };
@@ -198,23 +177,13 @@ const Missions = () => {
     });
   };
 
+  if (loading || !enabled) return null;
+  const hasActive = (missions ?? []).some((mission) => mission.status === "active");
+
   return (
-    <DashboardLayout>
-      <PageHeader
-        title="Missions"
-        description="Set a goal once. The agent keeps working on that schedule, including overnight."
-      />
-      <div className="space-y-6 p-4 md:p-6">
-        {loading ? <p className="text-sm text-muted-foreground">Checking access…</p> : null}
-        {!loading && !enabled ? (
-          <EmptyState
-            title="Missions are off for this workspace"
-            body="An admin has to turn on the agentMissions flag and grant this workspace. Until then nothing runs on its own."
-          />
-        ) : null}
-        {enabled ? (
-          <>
+      <div className="space-y-6">
             {error ? <p className="text-sm text-destructive">{error}</p> : null}
+            {hasActive && !editing ? null : (
             <Panel>
               <PanelHeader>
                 <PanelTitle>{editing ? "Edit mission" : "New mission"}</PanelTitle>
@@ -230,13 +199,6 @@ const Missions = () => {
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="mission-goal">Goal</Label>
                   <Textarea id="mission-goal" value={form.goal} onChange={(event) => setForm({ ...form, goal: event.target.value })} placeholder="Find 10 good-fit leads a day that match the ICP, research them, and draft a first touch." />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="mission-agent">Agent</Label>
-                  <select id="mission-agent" className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={form.agent_config_id} onChange={(event) => setForm({ ...form, agent_config_id: event.target.value })}>
-                    <option value="">Choose an agent</option>
-                    {agents.map((agent) => <option key={agent.id} value={agent.id}>{agent.name}</option>)}
-                  </select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="mission-mode">Mode</Label>
@@ -310,13 +272,14 @@ const Missions = () => {
                   <Input id="spend-cap" type="number" min={1} max={25} step="0.5" value={form.daily_spend_cap_usd} onChange={(event) => setForm({ ...form, daily_spend_cap_usd: Number(event.target.value) })} />
                 </div>
                 <div className="flex items-end gap-2">
-                  <Button onClick={() => void save()} disabled={saving || !form.name.trim() || !form.goal.trim() || !form.agent_config_id}>
+                  <Button onClick={() => void save()} disabled={saving || !form.name.trim() || !form.goal.trim()}>
                     {editing ? "Save changes" : "Create mission"}
                   </Button>
                   {editing ? <Button variant="outline" onClick={() => { setEditing(null); setForm(blank); }}>Cancel</Button> : null}
                 </div>
               </PanelBody>
             </Panel>
+            )}
 
             {missions && missions.length === 0 ? (
               <EmptyState title="No missions yet" body="Create one above. It runs on the schedule you set until you pause it." />
@@ -371,11 +334,6 @@ const Missions = () => {
                 </Panel>
               );
             })}
-          </>
-        ) : null}
       </div>
-    </DashboardLayout>
   );
-};
-
-export default Missions;
+}
