@@ -5,7 +5,9 @@
 - Owner selected saved **BDØT template** (10125960). The previous campaign no longer exists and the campaign list was empty.
 - Created review-only **OutReign blog — BDØT template owner test** (0d178ef7dd), with the selected user template and info@bdotindustries.org sender. No audience attached.
 - Applying the template through campaign content returned success but no HTML or plain text. A separate content read remained empty; Mailchimp's send checklist explicitly reports “This campaign doesn't have any content yet.” Default-content has no editable sections, and template metadata reports `content_type: multichannel`.
-- Do not overwrite the saved template or substitute the old design. Await owner-uploaded HTML export to preserve the actual BDØT layout, insert the full article and verify before an owner-only test. No test or subscriber send occurred in this request.
+- Owner supplied `BDØT_template.html`. Adapted its actual logo, black background, purple editorial title band, typography and preferences/unsubscribe footer to a full-article layout; removed sample feed teasers, placeholder images, sample claims and the exported script. Preserved both existing GPT illustrations and four highlighted paragraphs. The saved BDØT template itself was not overwritten.
+- Saved full HTML directly to the owner-test campaign without reapplying the template afterward. A separate GET confirms the complete article in outgoing HTML and plain text. Rendered the returned HTML at 1280px and 390px: seven article sections plus the reply prompt, logo and both graphics loaded, no horizontal overflow.
+- Owner-only test to **info@bdotindustries.org** accepted by Mailchimp (HTTP 204), November 21, 2026. Inbox receipt and IONOS rendering remain unverified. No audience attached, subscriber import, subscriber send or automatic scheduling.
 
 - Draft: **OutReign Field Notes — Mailchimp sales layout + GPT graphics owner test** in brandon's Mailchimp.
 - Article: **How to Set Up Automated Outreach That Feels Human**, November 20, 2026, seven sections included directly in the email.

@@ -1,7 +1,7 @@
 # BDØT saved-template selection — November 21, 2026
 
 - [x] Locate the owner's BDØT saved template and create a review-only draft with it; old campaign is absent. Separate content read and Mailchimp checklist confirm no content was loaded. No blank test sent; no audience attached.
-- [ ] Preserve BDØT layout, insert the full blog article and send owner-only test; blocked on HTML export from owner because applying the saved template returns no content or editable sections.
+- [x] Use uploaded BDØT HTML: preserve its logo, black/purple editorial layout and footer; insert the full article and GPT graphics. Separate outgoing content read and desktop/phone checks passed: seven article sections, all three images loaded, no overflow. Mailchimp accepted owner-only test to info@bdotindustries.org (HTTP 204); receipt/IONOS rendering unverified, no audience attached or subscriber send.
 
 # Mailchimp blank-test correction — November 21, 2026
 
