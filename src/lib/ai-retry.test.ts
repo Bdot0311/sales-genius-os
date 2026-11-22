@@ -188,6 +188,19 @@ describe("the last attempt may run as long as the deadline allows", () => {
     expect(calls).toBe(1);
   });
 
+  it("throws when the last attempt times out after two 429s", async () => {
+    let calls = 0;
+    await expect(runWithAiRetries(
+      () => {
+        calls += 1;
+        if (calls < AI_MAX_ATTEMPTS) return Promise.resolve(new Response("no", { status: 429 }));
+        throw new Error("Timeout");
+      },
+      { sleep: async () => {}, random: () => 0.5 },
+    )).rejects.toThrow("Timeout");
+    expect(calls).toBe(AI_MAX_ATTEMPTS);
+  });
+
   it("a 429 is still retried once and then accepted, independent of the attempt bound", async () => {
     const throttled = new Response("no", { status: 429 });
     const ok = new Response("ok", { status: 200 });

@@ -228,7 +228,10 @@ export async function runWithAiRetries(
       lastError = error;
       if (hooks.signal?.aborted || !isTransientTransportError(error)) throw error;
       if (isAttemptTimeout(error)) {
-        if (afterTimeout) throw error;
+        // Already on the rescue attempt, or this timeout is the last slot
+        // (429, 429, then a timeout). Sleeping here would fall out of the
+        // loop and return the earlier 429, whose body was cancelled.
+        if (afterTimeout || attempt === AI_MAX_ATTEMPTS) throw error;
         afterTimeout = true;
         await sleep(jitteredRetryDelayMs(attempt, null, random));
         continue;
