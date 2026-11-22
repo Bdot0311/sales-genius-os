@@ -126,12 +126,15 @@ export function formatDraftTurnSummary(input: {
     sentences.push(
       input.stillWaiting > 0
         ? `${input.swept} of those were added at the end. ${input.stillWaiting} are still waiting — say keep going for the next batch.`
-        : `${input.swept} of those were added at the end so nothing from that set is still waiting. Any smaller number below was from before these were queued.`,
+        : input.queued > 0
+          ? `${input.swept} of those were added at the end and are included in the ${input.queued} queued.`
+          : `${input.swept} of those were added at the end so nothing from that set is still waiting. Any smaller number below was from before these were queued.`,
     );
   } else if (input.stillWaiting > 0) {
     sentences.push(`${input.stillWaiting} are still waiting — say keep going for the next batch.`);
   }
-  sentences.push(`Drafts holds ${input.folder} right now.`);
+  // The folder count and the drafts this turn already saved are one number.
+  sentences.push(`Drafts holds ${Math.max(input.folder, input.written)} right now.`);
   return sentences.join(" ");
 }
 
@@ -156,6 +159,9 @@ export function confirmedClose(input: {
   draftFailed: number;
   draftPending: number;
   jobError?: string | null;
+  /** Leads the sweep queued after the model had already replied. */
+  swept?: number;
+  stillWaiting?: number;
 }): string {
   const parts: string[] = [];
   const researched = input.researchedOk;
@@ -179,38 +185,45 @@ export function confirmedClose(input: {
   if (input.queued > 0) {
     parts.push(`Queued ${input.queued} ${input.queued === 1 ? "draft" : "drafts"}.`);
   }
-  parts.push(`Drafts holds ${input.folder}.`);
-  if (input.folder === 0 && input.draftFailed > 0) {
+  const held = Math.max(0, input.folder, input.written);
+  parts.push(`Drafts holds ${held}.`);
+  if (held === 0 && input.draftFailed > 0) {
     const why = input.jobError ? ` ${input.jobError}` : "";
     parts.push(
       `${input.draftFailed} queued ${input.draftFailed === 1 ? "draft" : "drafts"} failed and ${input.draftFailed === 1 ? "was" : "were"} not saved.${why}`,
     );
-  } else if (input.folder === 0 && input.queued > 0) {
+  } else if (held === 0 && input.queued > 0) {
     parts.push(
       input.draftPending > 0
         ? "None are saved yet. The queue has not confirmed them."
         : "None are saved yet.",
     );
   }
+  const swept = input.swept ?? 0;
+  const stillWaiting = input.stillWaiting ?? 0;
+  if (swept > 0 && stillWaiting > 0) {
+    parts.push(`${swept} were added at the end. ${stillWaiting} are still waiting.`);
+  } else if (swept > 0 && (input.draftPending > 0 || input.queued > 0)) {
+    parts.push(`${swept} were added at the end and are in that queue.`);
+  } else if (swept > 0) {
+    parts.push(`${swept} were added at the end so nothing from that set is still waiting.`);
+  }
   return parts.join(" ");
 }
 
 // Match a complete batch-status statement, not "Every company I researched
 // sells to agencies" or a finding about what queued leads have in common.
-const BATCH_STATUS = String.raw`(?:(?:all(?: \d+)?(?: (?:the )?(?:leads|companies|drafts))?|every (?:(?:one of (?:the )?(?:leads|companies|drafts))|lead|company|draft|one)) (?:have been|has been|are|is) (?:researched|queued)|(?:all )?drafts are being written|(?:the )?background worker is writing(?: (?:them|the drafts)(?: now)?)?)`;
+const BATCH_STATUS = String.raw`(?:(?:all(?: \d+)?(?: (?:the )?(?:leads|companies|drafts))?|every (?:(?:one of (?:the )?(?:leads|companies|drafts))|lead|company|draft|one)) (?:have been|has been|are|is) (?:researched|queued)|(?:all )?drafts are being written|(?:the )?background worker is writing(?: (?:them|the drafts)(?: now)?)?|\d+ more (?:drafts )?are being written|\d+ drafts are being written|drafts holds \d+|none are saved yet)`;
 const COMPLETION_CLAIM = new RegExp(
   `^${BATCH_STATUS}(?:(?: and |\\s*[—–;]\\s*)(?:the )?${BATCH_STATUS})*[.!?]*$`,
   "i",
 );
 
-/**
- * Keep the model's findings. Only the sentence that claims the batch is done
- * is replaced by the counted status.
- */
-export function withConfirmedClose(reply: string, close: string): string {
+/** Drop a sentence that states the batch status. Findings on the same line stay. */
+export function stripCompletionClaims(reply: string): string {
   // Work within each line and retain untouched text verbatim. Sentence
   // separators must never consume a list's newlines or Markdown indentation.
-  const body = reply.split(/(\r?\n)/).map((line) => {
+  return reply.split(/(\r?\n)/).map((line) => {
     if (/^\r?\n$/.test(line)) return line;
     let removed = false;
     const kept = line.replace(/[^.!?\r\n]+(?:[.!?]+|$)/g, (sentence) => {
@@ -221,6 +234,14 @@ export function withConfirmedClose(reply: string, close: string): string {
     });
     return removed ? kept.trimEnd() : kept;
   }).join("").trim();
+}
+
+/**
+ * Keep the model's findings. Only the sentence that claims the batch is done
+ * is replaced by the counted status.
+ */
+export function withConfirmedClose(reply: string, close: string): string {
+  const body = stripCompletionClaims(reply);
   return body ? `${body}\n\n${close}` : close;
 }
 

@@ -14,8 +14,9 @@ export function failingCheckerFindings(
   subject: string,
   body: string,
   position = 1,
+  corpus = "",
 ): Finding[] {
-  const writing = auditEmail({ subject, body, position });
+  const writing = auditEmail({ subject, body, position, corpus });
   const { findings } = deliverabilityReport({
     subject,
     body,
@@ -39,7 +40,7 @@ export function outboundGateFindings(
   corpus: string,
   position = 1,
 ): Finding[] {
-  const checker = failingCheckerFindings(subject, body, position);
+  const checker = failingCheckerFindings(subject, body, position, corpus);
   const claims: Finding[] = unsupportedClaims(`${subject}\n${body}`, corpus).map((hit) => ({
     rule: hit.rule,
     severity: "blocker",

@@ -36,6 +36,7 @@ import {
   findUnverifiedClaims,
   signOffStartIndex,
 } from "./email-rules.ts";
+import { noticedLineIsSupported } from "./evidence.ts";
 
 export type Severity = "blocker" | "warning" | "note";
 
@@ -69,6 +70,12 @@ export interface AuditInput {
    * whose company is Kogenie.
    */
   lead?: { company?: string | null; contactName?: string | null };
+  /**
+   * Research the server loaded. A noticed line that restates one of those
+   * sentences is a supported observation. Demanding a "because" the research
+   * does not contain is what turned that observation into an invented claim.
+   */
+  corpus?: string;
 }
 
 /** Words per email, from the sequence guide: short enough to reply to in one line. */
@@ -327,11 +334,24 @@ export function auditEmail(input: AuditInput): Finding[] {
   }
 
   // ─── The bridge from signal to problem ───────────────────────────────────
-  if (NOTICED.test(body) && !MECHANISM.test(body)) {
+  // A quote attributed to their site, and a noticed line that is one research
+  // sentence, are already the observation. The bridge is for a trigger the
+  // research does not itself state.
+  const noticedLines = body
+    .split(/\n+/)
+    .flatMap((line) => line.split(/(?<=[.!?])\s+/))
+    .map((line) => line.trim())
+    .filter((line) => line && NOTICED.test(line));
+  const unsupportedNotice = noticedLines.filter((line) => {
+    if (/^saw this on\b/i.test(line)) return false;
+    if (input.corpus && noticedLineIsSupported(line, input.corpus)) return false;
+    return true;
+  });
+  if (unsupportedNotice.length && !MECHANISM.test(body)) {
     add({
       rule: "signal_without_mechanism",
       severity: "warning",
-      evidence: (body.match(new RegExp(`[^.!?\\n]*${NOTICED.source}[^.!?\\n]*`, "i")) ?? [""])[0].trim(),
+      evidence: unsupportedNotice[0],
       why:
         "Naming the trigger and stopping is flattery, not relevance. The mechanism — why that thing causes the problem — " +
         "is the step automated tools consistently miss, which is exactly why it reads as human when it is there.",

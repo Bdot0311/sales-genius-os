@@ -209,9 +209,9 @@ describe("the drafts total comes from the drafts table", () => {
   it("puts it above the reply, not under it", () => {
     // The user was shown "43 Follow-Ups Drafted" and had 20. A contradiction
     // below the thing it contradicts arrives after it has been believed.
-    expect(AGENT).toContain("formatDraftTurnSummary({");
+    expect(AGENT).toContain("confirmedClose({");
     expect(AGENT).toContain("folder: draftsNow ?? 0");
-    expect(AGENT).toContain("finalText = `${summary}\\n\\n${finalText}`");
+    expect(AGENT).toContain("finalText = `${summary}\\n\\n${stripCompletionClaims(finalText)}`");
   });
 
   it("counts the tally where the work happens, not where the reply is written", () => {

@@ -37,3 +37,60 @@ export function observationLine(fact: { span: string; role?: string }, company: 
   }
   return /[.!?]["”']?$/.test(text) ? text : `${text}.`;
 }
+
+/** Their site speaking as "I". Quoting it raw makes the sender the one who was invited. */
+const VOICE_THEFT = /\b(?:i|we)\b[^.?\n]{0,80}\b(?:was invited|were invited|spoke|am speaking|are speaking|will speak)\b/i;
+
+/**
+ * A prospect sentence the sender must not speak as their own is attributed.
+ * Everything else stays the sentence itself, or the site attribution the
+ * observation line already uses for a homepage quote.
+ */
+export function voiceSafeObservation(fact: { span: string; role?: string }, company: string): string {
+  if (VOICE_THEFT.test(fact.span) && company.trim()) {
+    return observationLine({ span: fact.span, role: "prospect_page" }, company);
+  }
+  return observationLine(fact, company);
+}
+
+/**
+ * Greeting names the lead. A greeting that names the sender is the two
+ * people swapped; the sign-off is already forced to the sender separately.
+ */
+export function alignGreeting(body: string, leadFirst: string, senderName: string): string {
+  const lead = leadFirst.trim();
+  const senderFirst = senderName.trim().split(/\s+/)[0] ?? "";
+  if (!lead || lead.toLowerCase() === "there" || !senderFirst) return body;
+  if (lead.toLowerCase() === senderFirst.toLowerCase()) return body;
+  return body.replace(/^(\s*(?:Hi|Hello|Hey|Dear)\s+)([A-Za-z][\w'-]*)/i, (full, prefix, name) => {
+    if (name.toLowerCase() === senderFirst.toLowerCase()) return `${prefix}${lead}`;
+    return full;
+  });
+}
+
+/**
+ * Quote a first-person prospect sentence instead of leaving it as the sender's
+ * life, and correct a greeting that used the sender's name.
+ * The subject line, when present, is left untouched.
+ */
+export function repairDraftVoice(
+  email: string,
+  facts: Array<{ span: string; role?: string }>,
+  company: string,
+  leadFirst: string,
+  senderName: string,
+): string {
+  const subjectMatch = email.match(/^(Subject:\s*.+\n+)/i);
+  const head = subjectMatch?.[1] ?? "";
+  let body = alignGreeting(subjectMatch ? email.slice(head.length) : email, leadFirst, senderName);
+  if (company.trim()) {
+    for (const fact of facts) {
+      const span = fact.span.replace(/\s+/g, " ").trim();
+      if (!span || !VOICE_THEFT.test(span)) continue;
+      const compact = body.replace(/\s+/g, " ");
+      if (!compact.includes(span)) continue;
+      body = body.replace(span, voiceSafeObservation({ span, role: fact.role }, company));
+    }
+  }
+  return head + body;
+}

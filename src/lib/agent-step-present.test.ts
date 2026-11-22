@@ -53,8 +53,8 @@ describe("agent steps read as a chat, and a miss stays visible", () => {
       stillWaiting: 0,
     });
     expect(line).toContain("63 drafts are being written — they'll appear in Drafts as they finish.");
-    expect(line).toContain("28 of those were added at the end");
-    expect(line).toContain("nothing from that set is still waiting");
+    expect(line).toContain("28 of those were added at the end and are included in the 63 queued.");
+    expect(line).not.toContain("nothing from that set is still waiting");
     expect(line).toContain("Drafts holds 0 right now.");
     expect(line).not.toContain("lead(s)");
     expect(line).not.toContain("📝");
@@ -127,6 +127,57 @@ describe("agent steps read as a chat, and a miss stays visible", () => {
     expect(reply).toContain("Researched 12 of 63.");
     expect(reply).not.toMatch(/all 63 leads have been researched/i);
     expect(reply).not.toMatch(/background worker is writing/i);
+  });
+
+  it("says the folder and the queue once, and does not call saved drafts unsaved", () => {
+    const line = confirmedClose({
+      pool: 63,
+      researchedOk: 12,
+      researchedFailed: 0,
+      researchQueued: 51,
+      researchFailed: 0,
+      scoreFailed: 0,
+      queued: 54,
+      written: 2,
+      folder: 0,
+      draftFailed: 0,
+      draftPending: 52,
+      swept: 9,
+      stillWaiting: 0,
+    });
+    expect(line).toContain("Researched 12 of 63.");
+    expect(line).toContain("Queued 51 leads for research.");
+    expect(line).toContain("Queued 54 drafts.");
+    expect(line).toContain("Drafts holds 2.");
+    expect(line.match(/Drafts holds/g)).toHaveLength(1);
+    expect(line).toContain("9 were added at the end and are in that queue.");
+    expect(line).not.toContain("None are saved yet");
+    expect(line).not.toContain("nothing from that set is still waiting");
+    expect(line).not.toContain("being written");
+  });
+
+  it("drops a second status sentence instead of stacking it under the counts", () => {
+    const close = confirmedClose({
+      pool: 63,
+      researchedOk: 12,
+      researchedFailed: 0,
+      researchQueued: 0,
+      researchFailed: 0,
+      scoreFailed: 0,
+      queued: 54,
+      written: 2,
+      folder: 2,
+      draftFailed: 0,
+      draftPending: 52,
+    });
+    const reply = withConfirmedClose(
+      "63 more are being written. Drafts holds 0. Acme sells freight software to brokers.",
+      close,
+    );
+    expect(reply.startsWith("Acme sells freight software to brokers.")).toBe(true);
+    expect(reply.match(/Drafts holds/g)).toHaveLength(1);
+    expect(reply).toContain("Drafts holds 2.");
+    expect(reply).not.toContain("63 more are being written");
   });
 
   it("says the queue has not confirmed drafts that are still pending", () => {

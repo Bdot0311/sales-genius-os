@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { releasableFirstTouch } from "../../supabase/functions/_shared/first-touch-fallback";
+import { alignGreeting, releasableFirstTouch, repairDraftVoice } from "../../supabase/functions/_shared/first-touch-fallback";
 
 describe("releasable first-touch fallback", () => {
   it("copies the approved sentence verbatim between greeting, one ask and sender", () => {
@@ -9,6 +9,29 @@ describe("releasable first-touch fallback", () => {
   it("terminates an unpunctuated fact instead of rewriting it", () => {
     expect(releasableFirstTouch({ firstName: "Ana", fact: "Acme ships weekly", senderName: "Sam" }))
       .toContain("\n\nAcme ships weekly.\n\n");
+  });
+});
+
+describe("greeting and first-person prospect copy", () => {
+  const fact = "In fact I was invited to speak on the AI in Proxy Voting panel at the Vanguard conference.";
+
+  it("greets the lead when the draft greeted the sender", () => {
+    expect(alignGreeting("Hi Brandon,\n\nHello there.\n\nBrandon", "Nicolaas", "Brandon Yakubov"))
+      .toBe("Hi Nicolaas,\n\nHello there.\n\nBrandon");
+  });
+
+  it("leaves a greeting that already names the lead", () => {
+    const body = `Hi Nicolaas,\n\n${fact}\n\nHow are you handling follow-up?\n\nBrandon Yakubov`;
+    expect(alignGreeting(body, "Nicolaas", "Brandon Yakubov")).toBe(body);
+  });
+
+  it("attributes the prospect's invitation instead of leaving it as the sender's", () => {
+    const body = `Hi Nicolaas,\n\n${fact}\n\nHow are you handling follow-up?\n\nBrandon Yakubov`;
+    const repaired = repairDraftVoice(body, [{ span: fact, role: "prospect_page" }], "Proxywise AI", "Nicolaas", "Brandon Yakubov");
+    expect(repaired).toContain("Hi Nicolaas,");
+    expect(repaired).toContain('Saw this on Proxywise AI\'s site: "In fact I was invited to speak');
+    expect(repaired).toContain("Brandon Yakubov");
+    expect(repaired).not.toMatch(/^In fact I was invited/m);
   });
 });
 

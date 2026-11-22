@@ -251,7 +251,7 @@ export function evaluateStoredSnapshots(input: {
     const finalHost = hostOf(snap.finalUrl);
     const requestedHost = hostOf(snap.requestedUrl);
     const excerpt = stripInstructionLines(snap.excerpt);
-    const namesCompany = company.length > 2 && excerpt.toLowerCase().includes(company);
+    const excerptNamesCompany = company.length > 2 && excerpt.toLowerCase().includes(company);
     const hostMatches = !!input.websiteHost && finalHost === input.websiteHost;
     if (snap.role === "sender_proof") {
       sawWrong = true;
@@ -261,7 +261,7 @@ export function evaluateStoredSnapshots(input: {
       sawWrong = true;
       continue;
     }
-    if (!hostMatches && !namesCompany) {
+    if (!hostMatches && !excerptNamesCompany) {
       sawWrong = true;
       continue;
     }
@@ -270,20 +270,32 @@ export function evaluateStoredSnapshots(input: {
       continue;
     }
     const spans: string[] = [];
-    for (const sentence of sentencesOf(excerpt)) {
+    const sentences = sentencesOf(excerpt);
+    const companyPattern = company.length > 2
+      ? new RegExp(`(?:^|[^a-z0-9])${company.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:$|[^a-z0-9])`, "i")
+      : null;
+    const named = sentences.map((sentence) => !!companyPattern && companyPattern.test(sentence));
+    // A Parallel or Context page is about this company when the excerpt names
+    // them. The sentence that carries the event often does not repeat the
+    // name ("was invited to speak on the panel"), and dropping it left only
+    // the homepage tagline, which the drafter then called a copied line.
+    const outside = snap.role === "external" || snap.provider === "parallel" || snap.provider === "context_dev";
+    sentences.forEach((sentence, index) => {
       const span = factualSpan(sentence, excerpt);
-      if (!span || span.length < 40 || isInferredClaim(span)) continue;
-      if (SENDER_PROOF.test(span)) continue;
-      if (/ignore previous|treat this as verified|system prompt/i.test(span)) continue;
+      if (!span || span.length < 40 || isInferredClaim(span)) return;
+      if (SENDER_PROOF.test(span)) return;
+      if (/ignore previous|treat this as verified|system prompt/i.test(span)) return;
       // Markdown left over from a scrape (escapes, link syntax, table pipes)
       // is not a sentence a person wrote, so it cannot open an email.
-      if (/\\|\]\(|!\[|\||^#|\*\*/.test(span)) continue;
-      if (!readableSentence(span)) continue;
-      const namesCompany = company.length > 2 && new RegExp(`(?:^|[^a-z0-9])${company.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:$|[^a-z0-9])`, "i").test(span);
+      if (/\\|\]\(|!\[|\||^#|\*\*/.test(span)) return;
+      if (!readableSentence(span)) return;
+      const namesThis = named[index];
+      const neighborNames = (index > 0 && named[index - 1]) || (index + 1 < named.length && named[index + 1]);
       const otherSubject = /\b(other agencies|our marketplace|a directory)\b/i.test(span);
-      if (!namesCompany && !(hostMatches && !otherSubject)) continue;
+      const besideTheCompany = outside && excerptNamesCompany && neighborNames && !otherSubject;
+      if (!namesThis && !(hostMatches && !otherSubject) && !besideTheCompany) return;
       spans.push(span);
-    }
+    });
     if (spans.length) accepted.push({ snap: { ...snap, excerpt }, spans });
   }
 
@@ -373,9 +385,15 @@ export function readableSentence(span: string): boolean {
 
 function factRank(fact: ApprovedFact, company: string): number {
   let score = 0;
-  if (company.length > 2 && fact.span.toLowerCase().includes(company)) score += 3;
+  const names = company.length > 2 && fact.span.toLowerCase().includes(company);
+  if (names) score += 3;
   const words = fact.span.split(/\s+/).length;
   if (words >= 10 && words <= 35) score += 1;
+  // A dated outside source is the finding. A homepage tagline is the fallback.
+  const outside = fact.provider === "parallel" || fact.provider === "context_dev" || fact.role === "external";
+  if (outside) score += 4;
+  if (fact.publishedAt) score += 2;
+  if (outside && !names) score -= 3;
   // The site talking to its visitors ("We talk with you...") reads oddly
   // when quoted back to the company.
   if (/^(?:we|our|you|your)\b/i.test(fact.span.trim()) || /\b(?:you|your)\b/i.test(fact.span)) score -= 1;
@@ -635,6 +653,13 @@ function suppliedBy(corpus: string, stems: Set<string>, word: string): boolean {
 }
 
 const RESULT_CLAIM = /\b(?:helped|increased|grew|saved|boosted|doubled|tripled|reduced|cut|generated|percent|clients like|customers like|case study)\b|%/i;
+
+/**
+ * The prospect's own first person, pasted so the sender appears to have lived it.
+ * "I was invited to speak" on their site is their sentence. It can be quoted.
+ * It cannot be the sender's biography.
+ */
+const VOICE_THEFT = /\b(?:i|we)\b[^.?\n]{0,80}\b(?:was invited|were invited|spoke|am speaking|are speaking|will speak)\b/i;
 const PROPOSAL = /\b(?:could|might|one idea|an idea|imagine|what if|would it|curious|happy to|can help|we can|i can|worth)\b/i;
 
 export type LineGrounding = "offer" | "idea" | null;
@@ -762,11 +787,20 @@ export function bodyViolations(
     const bare = unattributed(line, company);
     const exact = facts.some((fact) => {
       if (norm(line) === norm(fact.span)) return true;
-      if (bare !== line && fact.role === "prospect_page" && norm(bare) === norm(fact.span)) return true;
+      if (bare !== line && norm(bare) === norm(fact.span)) return true;
       const claim = bindClaim(fact.span);
       return !!claim && fact.role === "prospect_page" && matchesClaim(line, claim, company);
     });
-    if (exact) { observations += 1; continue; }
+    if (exact) {
+      // Quoted and attributed, the same sentence is the observation.
+      // Left as the sender's own "I", it is the prospect's life.
+      if (VOICE_THEFT.test(line) && bare === line) {
+        violations.push(line);
+        continue;
+      }
+      observations += 1;
+      continue;
+    }
     // Not the observation: each sentence must be a grounded offer or idea.
     const parts = line.split(/(?<=[.!?])\s+/).filter(Boolean);
     const lineOk = parts.every((part) =>

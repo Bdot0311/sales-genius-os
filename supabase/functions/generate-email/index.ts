@@ -8,12 +8,12 @@ import { useCaseCampaignFor, useCaseCampaignPrompt } from "../_shared/use-case-c
 // One quality verdict for every caller — Outreach Studio, agent-chat and the
 // autonomous agent all reach the rubric through this rather than each other.
 import { isWeak, rubricFeedback, scoreEmailReport, type RubricAvailability } from "../_shared/email-quality.ts";
-import { ownedLeadCompany, releaseAllows } from "../_shared/draft-release.ts";
+import { ownedLeadCompany, releaseAllows, safeObservationRelease } from "../_shared/draft-release.ts";
 import { retryGroundedDraft, rewriteStatusFromProvider, settleGrounding, type GroundingAttempt } from "../_shared/grounding-retry.ts";
 import { AI_CREDITS_USER_MESSAGE, isAiCreditError, reportAiCreditsExhausted } from "../_shared/ai-credits.ts";
 import { stripInstructionLines, unsupportedClaims } from "../_shared/evidence.ts";
 import { POLICY_VERSION, evaluateStoredSnapshots, type ApprovedFact } from "../_shared/evidence-contract.ts";
-import { fallbackSubjectFrom, observationLine, releasableFirstTouch, usableFallbackFact } from "../_shared/first-touch-fallback.ts";
+import { fallbackSubjectFrom, repairDraftVoice, usableFallbackFact, voiceSafeObservation } from "../_shared/first-touch-fallback.ts";
 import { holdReason, researchStep, type RetrievalReceipt } from "../_shared/research-orchestration.ts";
 import { reviseUntilClear } from "../_shared/quality-gate.ts";
 // The writing rules live in one module so the three copies that used to exist
@@ -2300,7 +2300,8 @@ conversation that is already going, not as someone chasing silence.`}`;
       let rejected = 0;
       for (const fact of approvedFacts) {
         if (!usableFallbackFact(fact.span)) { rejected++; continue; }
-        const candidate = `Subject: ${fallbackSubjectFrom(fact.span)}\n\n${releasableFirstTouch({ firstName, fact: fact.span, senderName: resolvedSenderName })}`;
+        const voiced = voiceSafeObservation(fact, ownedLeadCompany(leadData) || sanitizedCompanyName);
+        const candidate = `Subject: ${fallbackSubjectFrom(fact.span)}\n\nHi ${firstName || "there"},\n\n${voiced}\n\nWorth a look?\n\n${resolvedSenderName}`;
         if (unsupportedClaims(candidate, prospectCorpus).length || hasPlaceholder(candidate)) { rejected++; continue; }
         console.warn("[generate-email] using releasable first-touch fallback");
         fallbackClaims = prospectClaims.map((hit) => hit.evidence);
@@ -2320,6 +2321,7 @@ conversation that is already going, not as someone chasing silence.`}`;
       }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    email = repairDraftVoice(email, approvedFacts, ownedLeadCompany(leadData) || sanitizedCompanyName, firstName, resolvedSenderName);
     const subjectMatch = email.match(/^Subject:\s*(.+)\n+/i);
     const checkedSubject = subjectMatch?.[1]?.trim() || String(subjectLine ?? "");
     const checkedBody = subjectMatch ? email.slice(subjectMatch[0].length) : email;
@@ -2434,7 +2436,7 @@ conversation that is already going, not as someone chasing silence.`}`;
         let question = String(parsed.question ?? "").replace(/\s+/g, " ").trim();
         if (!idea || !question) return { status: "refused", reason: problems[0] ?? "rewrite was empty" };
         if (!question.endsWith("?")) question = `${question}?`;
-        const factLine = observationLine(fact, company);
+        const factLine = voiceSafeObservation(fact, company);
         const body = `Hi ${firstName || "there"},\n\n${factLine}\n\n${idea}\n\n${question}\n\n${resolvedSenderName}`;
         const subj = fallbackSubjectFrom(fact.span);
         // The idea line is the only part that can carry an ungrounded offer.
@@ -2469,25 +2471,44 @@ conversation that is already going, not as someone chasing silence.`}`;
         return { status: unavailable ? "unavailable" : "refused", reason: message };
       }
     };
+    const outsideSource = approvedFacts.some((fact) => fact.provider === "parallel" || fact.provider === "context_dev" || fact.role === "external");
+    const releaseSafeObservation = (): boolean => {
+      if (!scoresAsEmail || !approvedFacts.length || !resolvedSenderName) return false;
+      const safe = safeObservationRelease({
+        firstName,
+        senderName: resolvedSenderName,
+        company: ownedLeadCompany(leadData) || sanitizedCompanyName,
+        facts: approvedFacts,
+        availability: rubricAvailability,
+        rubric,
+        senderCorpus: [socialProof, businessDescription].filter(Boolean).join("\n"),
+      });
+      if (!safe) return false;
+      email = `Subject: ${safe.subject}\n\n${safe.body}`;
+      repairedRelease = true;
+      console.warn("[generate-email] released grounded observation");
+      return true;
+    };
     const groundingResponse = (status: GroundingAttempt["status"], viaFallback: boolean, reason: string) => {
-      const settled = settleGrounding({ status, viaFallback, reason });
+      const settled = settleGrounding({ status, viaFallback, reason, outsideSource });
       if (settled.ok) return null;
       return new Response(JSON.stringify({ error: settled.error, error_code: settled.error_code }), {
         status: settled.error_code === "rate_limit" ? 429 : 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     };
-    // The plain quoted fallback is the floor. Two rewrites, the second told
-    // which sentence was refused. A provider that did not answer is a rate
-    // limit, not a copied line — that sentence is permanent and would end the lead.
-    if (fallbackClaims.length && !checkerBlockers.length && !repairedRelease) {
+    // The observation plus one question is the floor, and it does not cost
+    // another generation. A rewrite is only asked when that shape itself
+    // cannot be released. A provider that did not answer is a rate limit,
+    // not a copied line — that sentence is permanent and would end the lead.
+    if (fallbackClaims.length && !checkerBlockers.length && !repairedRelease && !releaseSafeObservation()) {
       const grounded = await retryGroundedDraft(fallbackClaims, policyRewrite);
-      if (grounded.status !== "released") {
+      if (grounded.status !== "released" && !releaseSafeObservation()) {
         const held = groundingResponse(grounded.status, true, grounded.reason);
         if (held) return held;
       }
     }
-    if (fallbackClaims.length && !repairedRelease) {
+    if (fallbackClaims.length && !repairedRelease && !releaseSafeObservation()) {
       const held = groundingResponse("refused", true, "");
       if (held) return held;
     }
@@ -2501,6 +2522,10 @@ conversation that is already going, not as someone chasing silence.`}`;
         checkerFailures = [];
         checkerBlockers = [];
       }
+    }
+    if (checkerBlockers.length && !repairedRelease && releaseSafeObservation()) {
+      checkerFailures = [];
+      checkerBlockers = [];
     }
     if (checkerBlockers.length) {
       return new Response(JSON.stringify({
@@ -2551,6 +2576,9 @@ conversation that is already going, not as someone chasing silence.`}`;
         } else if (grounded.reason) {
           releaseResult = { ...releaseResult, reason: grounded.reason };
         }
+      }
+      if (!releaseResult.allow && releaseSafeObservation()) {
+        releaseResult = { allow: true, code: "released", reason: "" };
       }
       if (!releaseResult.allow) {
         const release = releaseResult;

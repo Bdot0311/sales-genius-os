@@ -230,6 +230,11 @@ describe("a grounding failure is rewritten with the reason, and a 429 is not cal
     }
     const refused = settleGrounding({ status: "refused", viaFallback: true, reason: "" });
     if (refused.ok === false) expect(classifyFailure(refused.error)).toBe("permanent");
+    const outside = settleGrounding({ status: "refused", viaFallback: true, reason: "the idea was refused", outsideSource: true });
+    if (outside.ok === false) {
+      expect(outside.error.toLowerCase()).not.toContain("copied line");
+      expect(outside.error_code).toBe("unsupported_prospect_claim");
+    }
   });
 
   it("the worker parks that rate limit instead of failing the row", () => {

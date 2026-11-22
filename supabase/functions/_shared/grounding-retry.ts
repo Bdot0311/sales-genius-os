@@ -38,8 +38,10 @@ export function rewriteStatusFromProvider(status: number): "unavailable" | "refu
   return "refused";
 }
 
-export function groundingTerminalError(input: { viaFallback: boolean; reason: string }): { error: string; error_code: string } {
-  if (input.viaFallback) {
+export function groundingTerminalError(input: { viaFallback: boolean; reason: string; outsideSource?: boolean }): { error: string; error_code: string } {
+  // Parallel or Context already supplied a finding. Calling that "only a
+  // copied line" blamed the research for a rewrite that did not land.
+  if (input.viaFallback && !input.outsideSource) {
     return {
       error: "The research supported only a copied line from their site, with no grounded reason to reach out, so no draft was saved. Add more detail to Your Business or the lead and try again.",
       error_code: "thin_research_draft",
@@ -56,6 +58,7 @@ export function settleGrounding(input: {
   status: GroundingAttemptStatus;
   viaFallback: boolean;
   reason: string;
+  outsideSource?: boolean;
 }): { ok: true } | { ok: false; error: string; error_code: string } {
   if (input.status === "released") return { ok: true };
   if (input.status === "unavailable") {

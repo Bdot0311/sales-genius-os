@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { outboundGateFindings } from "../../supabase/functions/_shared/quality-gate";
 import { evaluateStoredSnapshots, sealSnapshot, bodyViolations } from "../../supabase/functions/_shared/evidence-contract";
-import { releaseAllows } from "../../supabase/functions/_shared/draft-release";
+import { releaseAllows, safeObservationRelease } from "../../supabase/functions/_shared/draft-release";
 import type { RubricResult } from "../../supabase/functions/_shared/email-quality";
 
 const NOW = "2026-11-07T12:00:00.000Z";
@@ -109,6 +109,24 @@ Brandon Yakubov`;
       mode: "studio",
       senderName: "Brandon Yakubov",
     })).toMatchObject({ allow: false, code: "rubric_unavailable" });
+  });
+
+  it("releases one sourced observation and one question when the rewrite cannot", () => {
+    const decision = decide("TF Business Solutions hires freight brokers for shippers across the region.");
+    const safe = safeObservationRelease({
+      firstName: "Talha",
+      senderName: "Brandon Yakubov",
+      company: "TF Business Solutions",
+      facts: decision.facts,
+      availability: "scored",
+      rubric: perfect,
+      senderCorpus: "We help agencies find buyers.",
+    });
+    expect(safe?.body).toContain("Hi Talha,");
+    expect(safe?.body).toContain("hires freight brokers");
+    expect(safe?.body).toContain("Worth a look?");
+    expect(safe?.body.trim().endsWith("Brandon Yakubov")).toBe(true);
+    expect(safe?.body).not.toMatch(/\bI was invited\b/);
   });
 
   it("holds an autonomous send that is clean on the rules but not 5/5", () => {

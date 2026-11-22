@@ -130,6 +130,30 @@ describe("the bridge from the signal to the problem", () => {
     expect(rules(f)).toContain("signal_without_mechanism");
   });
 
+  it("does not flag a noticed line that is the research sentence", () => {
+    const fact = "Acme builds payroll tools for small teams and ships them weekly.";
+    const f = auditEmail({
+      body: `I noticed ${fact}`,
+      corpus: fact,
+    });
+    expect(rules(f)).not.toContain("signal_without_mechanism");
+  });
+
+  it("does not treat a site attribution as a signal that needs a mechanism", () => {
+    const f = auditEmail({
+      body: 'Saw this on Acme\'s site: "Acme builds payroll tools for small teams and ships them weekly."\n\nWorth a look?',
+    });
+    expect(rules(f)).not.toContain("signal_without_mechanism");
+  });
+
+  it("still flags a noticed event the research does not state", () => {
+    const f = auditEmail({
+      body: "Noticed you just raised a Series A. Congrats on the round.",
+      corpus: "Acme builds payroll tools for small teams and ships them weekly.",
+    });
+    expect(rules(f)).toContain("signal_without_mechanism");
+  });
+
   it("passes when the mechanism is actually stated", () => {
     const f = auditEmail({
       body: "Noticed four open SDR roles this month. Teams doing that usually hit ramp time eating the quarter, mostly because managers end up coaching four new starters at once. Worth fifteen minutes?",

@@ -117,6 +117,43 @@ describe("closed rendering from approved snapshots", () => {
     expect(decide([fiveHundred, other]).status).toBe("conflict");
   });
 
+  it("keeps a Parallel sentence that sits beside the company name", () => {
+    const home = snap({
+      requestedUrl: "https://proxywise.example/",
+      finalUrl: "https://proxywise.example/",
+      excerpt: "Proxywise AI builds proxy voting software for institutions worldwide.",
+      publishedAt: null,
+    });
+    const outside = snap({
+      provider: "parallel",
+      role: "external",
+      requestedUrl: "https://news.example/proxywise",
+      finalUrl: "https://news.example/proxywise",
+      publishedAt: "2026-10-01",
+      excerpt: "Proxywise AI announced a listing and opened its conference this week. Nicolaas was invited to speak on the proxy voting panel at the Vanguard conference.",
+    });
+    const decision = decide([home, outside], { company: "Proxywise AI", websiteHost: "proxywise.example" });
+    expect(decision.status).toBe("ready");
+    expect(decision.facts.some((fact) => /invited to speak/i.test(fact.span))).toBe(true);
+    expect(decision.facts[0].span.toLowerCase()).toContain("proxywise ai announced");
+    expect(decision.facts[0].provider).toBe("parallel");
+  });
+
+  it("does not let the sender speak a prospect invitation as their own", () => {
+    const fact = "In fact I was invited to speak on the AI in Proxy Voting panel at the Vanguard conference.";
+    const decision = {
+      status: "ready" as const,
+      reason: "",
+      evidenceId: "e",
+      conflicts: [] as string[],
+      facts: [{ id: "f1", role: "prospect_page" as const, span: fact }],
+    } as unknown as Parameters<typeof bodyViolations>[1];
+    const raw = `Hi Nicolaas,\n\n${fact}\n\nWorth a look?\n\nBrandon Yakubov`;
+    expect(bodyViolations(raw, decision, "Brandon Yakubov", "", "Proxywise AI")).toContain(fact);
+    const quoted = `Hi Nicolaas,\n\nSaw this on Proxywise AI's site: "${fact}"\n\nWorth a look?\n\nBrandon Yakubov`;
+    expect(bodyViolations(quoted, decision, "Brandon Yakubov", "", "Proxywise AI")).toEqual([]);
+  });
+
   it("does not let the prospect homepage approve a sender case study", () => {
     const decision = decide([snap({
       excerpt: "TF Business Solutions. One agency went from founder-only outreach to 18 qualified conversations a month.",

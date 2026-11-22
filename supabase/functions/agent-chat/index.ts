@@ -19,8 +19,7 @@ import { mergeCompleted, resultOk, resumeFrom, supabaseTraceStore, trimResult } 
 import {
   backgroundDraftCopy,
   confirmedClose,
-  withConfirmedClose,
-  formatDraftTurnSummary,
+  stripCompletionClaims,
   listLeadsCopy,
   researchStepCopy,
   sweepCopy,
@@ -6098,29 +6097,67 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
      */
     const draftTouched =
       draftTally.written + draftTally.queued + draftTally.skippedAlreadyDrafted + draftTally.failed;
-    if (draftTouched > 0) {
+    if (draftTouched > 0 || researchTally.ok + researchTally.failed + researchTally.queued > 0) {
       const { count: draftsNow } = await admin
         .from("email_drafts")
         .select("id", { count: "exact", head: true })
         .eq("user_id", userId);
+      let draftFailed = 0;
+      let draftPending = 0;
+      let researchFailed = 0;
+      let scoreFailed = 0;
+      let jobError: string | null = null;
+      const { data: runJobs } = await admin
+        .from("agent_jobs")
+        .select("id, kind")
+        .eq("thread_id", threadId)
+        .eq("user_id", userId)
+        .gte("created_at", runStartedAt);
+      const kindByJob = new Map((runJobs ?? []).map((job: { id: string; kind?: string }) => [job.id, String(job.kind ?? "")]));
+      const runJobIds = [...kindByJob.keys()];
+      if (runJobIds.length) {
+        const { data: runItems } = await admin
+          .from("agent_job_items")
+          .select("job_id, status, error")
+          .in("job_id", runJobIds);
+        for (const item of (runItems ?? []) as Array<{ job_id?: string; status?: string; error?: string | null }>) {
+          const kind = kindByJob.get(String(item.job_id ?? "")) ?? "";
+          const failed = item.status === "failed";
+          const waiting = item.status === "pending" || item.status === "claimed";
+          if (kind === "draft") {
+            if (failed) {
+              draftFailed += 1;
+              if (!jobError && item.error) jobError = String(item.error).slice(0, 180);
+            } else if (waiting) draftPending += 1;
+          } else if (failed && kind === "research") researchFailed += 1;
+          else if (failed && kind === "score") scoreFailed += 1;
+        }
+      }
       /*
-       * Why the reply below can disagree with the line above it.
+       * One summary, from the counts this turn actually has.
        *
        * The sweep runs after the model has finished writing, so a reply saying
        * "10 queued, 95 still to go" was true when it was written and stale by
-       * the time it was read. The summary is the current count. A smaller
-       * number under it was written before the rest were queued.
+       * the time it was read. Research, queue, folder and sweep used to be
+       * two paragraphs, and they disagreed with each other.
        */
-      const summary = formatDraftTurnSummary({
-        written: draftTally.written,
+      const summary = confirmedClose({
+        pool: Math.max(listedLeadIds.length, researchTally.ok + researchTally.failed),
+        researchedOk: researchTally.ok,
+        researchedFailed: researchTally.failed,
+        researchQueued: researchTally.queued,
+        researchFailed,
+        scoreFailed,
         queued: draftTally.queued,
-        skipped: draftTally.skippedAlreadyDrafted,
-        failed: draftTally.failed,
+        written: draftTally.written,
         folder: draftsNow ?? 0,
+        draftFailed,
+        draftPending,
+        jobError,
         swept: sweptQueued,
         stillWaiting: sweptBeyondLimit,
       });
-      finalText = `${summary}\n\n${finalText}`;
+      finalText = `${summary}\n\n${stripCompletionClaims(finalText)}`;
       console.log(
         `[agent-chat] draft tally written=${draftTally.written} queued=${draftTally.queued} ` +
           `skipped=${draftTally.skippedAlreadyDrafted} failed=${draftTally.failed} total=${draftsNow ?? 0}`,
@@ -6166,60 +6203,6 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
     }
 
 
-
-    if (researchTally.ok + researchTally.failed + researchTally.queued + draftTally.queued + draftTally.written > 0) {
-      let folder = 0;
-      let draftFailed = 0;
-      let draftPending = 0;
-      let researchFailed = 0;
-      let scoreFailed = 0;
-      let jobError: string | null = null;
-      const { count: draftsNow } = await admin
-        .from("email_drafts")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", userId);
-      folder = draftsNow ?? 0;
-      const { data: runJobs } = await admin
-        .from("agent_jobs")
-        .select("id, kind")
-        .eq("thread_id", threadId)
-        .eq("user_id", userId)
-        .gte("created_at", runStartedAt);
-      const kindByJob = new Map((runJobs ?? []).map((job: { id: string; kind?: string }) => [job.id, String(job.kind ?? "")]));
-      const runJobIds = [...kindByJob.keys()];
-      if (runJobIds.length) {
-        const { data: runItems } = await admin
-          .from("agent_job_items")
-          .select("job_id, status, error")
-          .in("job_id", runJobIds);
-        for (const item of (runItems ?? []) as Array<{ job_id?: string; status?: string; error?: string | null }>) {
-          const kind = kindByJob.get(String(item.job_id ?? "")) ?? "";
-          const failed = item.status === "failed";
-          const waiting = item.status === "pending" || item.status === "claimed";
-          if (kind === "draft") {
-            if (failed) {
-              draftFailed += 1;
-              if (!jobError && item.error) jobError = String(item.error).slice(0, 180);
-            } else if (waiting) draftPending += 1;
-          } else if (failed && kind === "research") researchFailed += 1;
-          else if (failed && kind === "score") scoreFailed += 1;
-        }
-      }
-      finalText = withConfirmedClose(finalText, confirmedClose({
-        pool: Math.max(listedLeadIds.length, researchTally.ok + researchTally.failed),
-        researchedOk: researchTally.ok,
-        researchedFailed: researchTally.failed,
-        researchQueued: researchTally.queued,
-        researchFailed,
-        scoreFailed,
-        queued: draftTally.queued,
-        written: draftTally.written,
-        folder,
-        draftFailed,
-        draftPending,
-        jobError,
-      }));
-    }
 
     const { data: saved } = await admin
       .from("agent_chat_messages")
