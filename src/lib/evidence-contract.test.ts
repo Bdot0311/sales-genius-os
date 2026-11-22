@@ -4,6 +4,7 @@ import {
   closedRender,
   evaluateStoredSnapshots,
   lineGrounding,
+  readableSentence,
   sealSnapshot,
   stemWord,
 } from "../../supabase/functions/_shared/evidence-contract";
@@ -387,6 +388,68 @@ describe("words the writer was told it could use", () => {
       "Your procurement team spends 12 hours a week on renewals.",
     ]) {
       expect(ground(line), line).toBeNull();
+    }
+  });
+});
+
+/**
+ * Whose voice the quoted sentence is in.
+ *
+ * A fact is copied into the email word for word, under the sender's name, so
+ * a sentence whose "I" or "we" belongs to somebody else turns into a claim
+ * the sender is making about himself. Two that reached real prospects:
+ *
+ *   Hi Jack,
+ *   In this article, we sit down with Jack Roosevelt, co-founder of
+ *   LucidaClub, to hear his thoughts on the cannabis retail experience...
+ *
+ *   Hi Nicolaas,
+ *   But not to ring the opening bell for Proxywise AI 's IPO :) In fact I was
+ *   invited to speak on the "AI in Proxy Voting" panel...
+ *
+ * A magazine's editorial voice mailed to the person it is about, and the
+ * prospect's own post repeated back to him as the sender's news. The second
+ * also opens on "But", because the sentence it answered stayed on the page.
+ *
+ * Both passed every filter: length, markdown, leading capital, grounding.
+ * Nothing asked who was speaking.
+ */
+describe("the sentence has to be one the sender can say", () => {
+  const ARTICLE = "In this article, we sit down with Jack Roosevelt, co-founder of LucidaClub, to hear his thoughts on the cannabis retail experience and how he hopes to disrupt the market by guiding new consumers to make the right purchase.";
+  const POST = "But not to ring the opening bell for Proxywise AI 's IPO :) In fact I was invited to speak on the \"AI in Proxy Voting\" panel at the Vanguard / NYSE / NYU conference.";
+
+  it("refuses the two that went out", () => {
+    expect(readableSentence(ARTICLE, "external")).toBe(false);
+    expect(readableSentence(POST, "external")).toBe(false);
+  });
+
+  it("refuses a stranger's first person whatever the source", () => {
+    // Quoted bare it says the sender did this.
+    expect(readableSentence("I was invited to speak on the panel at the conference in October.", "external")).toBe(false);
+    expect(readableSentence("I was invited to speak on the panel at the conference in October.", "prospect_page")).toBe(false);
+    expect(readableSentence("My team has grown to forty people across three offices.", "external")).toBe(false);
+  });
+
+  it("keeps a company describing itself on its own site", () => {
+    // The subject speaking about itself, and the drafting path attributes it.
+    expect(readableSentence("We help new cannabis consumers find products suited to how they actually want to feel.", "prospect_page")).toBe(true);
+    // The same words in an outside write-up are the publication's voice.
+    expect(readableSentence("We help new cannabis consumers find products suited to how they actually want to feel.", "external")).toBe(false);
+  });
+
+  it("refuses a sentence that answers one left behind on the page", () => {
+    expect(readableSentence("But the company has since moved its headquarters to Denver this year.", "external")).toBe(false);
+    expect(readableSentence("However, the company has since moved its headquarters to Denver.", "external")).toBe(false);
+  });
+
+  it("keeps the facts a first touch is actually built from", () => {
+    for (const [span, role] of [
+      ["LucidaClub helps new cannabis consumers find products suited to how they actually want to feel.", "prospect_page"],
+      ["Proxywise AI raised a Series A to automate proxy voting research for institutional investors.", "external"],
+      ["The company was named to the Fintech 50 list for its proxy voting automation.", "external"],
+      ["Vendr helps SaaS companies buy software with negotiated pricing and a single renewal calendar.", "prospect_page"],
+    ] as const) {
+      expect(readableSentence(span, role), span).toBe(true);
     }
   });
 });

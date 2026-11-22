@@ -42,11 +42,30 @@ export function releasableFirstTouch(input: { firstName: string; fact: string; s
   return `Hi ${first},\n\n${sentence}\n\n${FALLBACK_ASK}\n\n${input.senderName.trim()}`;
 }
 
-/** A sentence a person could read aloud: no markdown, links, headings or brackets, sensible length. */
+/**
+ * A sentence a person could read aloud: no markdown, links, headings or
+ * brackets, sensible length -- and one the sender can say in his own voice.
+ *
+ * This path quotes the sentence bare, with no attribution, so an "I" in it
+ * becomes the sender. "But not to ring the opening bell for Proxywise AI's
+ * IPO :) In fact I was invited to speak on the 'AI in Proxy Voting' panel"
+ * passed every check here and went out under the sender's name, claiming an
+ * invitation that was the recipient's own. It also opened on "But", because
+ * the sentence it continued stayed behind on the page.
+ */
 export function usableFallbackFact(span: string): boolean {
   const text = span.trim();
   if (text.length < 25 || text.length > 240) return false;
   if (/[\[\]{}<>#*|]|https?:\/\/|\(\s*https?/i.test(text)) return false;
+  // Somebody else's first person, or a publication describing its own piece.
+  // "I" with case, the rest without: a sentence may open on "My".
+  if (/\bI\b|\bI'(?:m|ll|ve|d)\b/.test(text)) return false;
+  if (/\b(?:me|my|mine)\b/i.test(text)) return false;
+  if (/\b(?:in this (?:article|interview|episode|post|piece|story|guide)|we (?:sit down|caught up|spoke|talk(?:ed)?) with|in conversation with)\b/i.test(text)) return false;
+  // Lifted out of a thread of argument it no longer carries.
+  if (/^(?:but|and|so|or|yet|also|plus|however|though|although|instead|besides|still|then|meanwhile|otherwise)\b/i.test(text)) return false;
+  // A wink about their IPO is the social post's tone, not a first touch.
+  if (/[:;]-?[)D(]|\p{Extended_Pictographic}/u.test(text)) return false;
   return /^[A-Z0-9"'ÀØ]/.test(text);
 }
 
