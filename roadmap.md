@@ -1,3 +1,8 @@
+# Selected automatic-reply security fix — November 22, 2026
+
+- [x] Cap agent reply preferences on database insert/update using the current subscription; cap processing again against that server-owned allowance for existing rows and downgrades. Failed allowance or sent-count reads permit no automatic replies.
+- [x] 82 focused agent regressions and seven rollback-only direct-customer write/permission checks passed; agent-run deployment and preview build succeeded. No agents enabled or run and no emails sent during verification. Only the requested security finding was changed.
+
 # Automatic full-article Mailchimp blogs — November 22, 2026
 
 - [x] Newly published AI/Opinly articles queue once; historical imports and edits do not resend. Immutable full-article snapshot, service-only atomic claim and immediate publication wake plus hourly recovery are installed.

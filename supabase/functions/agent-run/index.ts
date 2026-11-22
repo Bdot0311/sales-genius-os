@@ -33,6 +33,7 @@ import {
 } from "../_shared/cold-email-playbook.ts";
 import { AI_SMART, aiFetch } from "../_shared/ai-provider.ts";
 import { capToolsToTier, resolveAgentTier } from "../_shared/agent-tier-scope.ts";
+import { remainingAgentReplies } from "../_shared/agent-reply-limit.ts";
 import { notifyAgentRunFinished, notifyMeetingBooked } from "../_shared/notify-events.ts";
 import { researchBlockForLead } from "../_shared/lead-research-block.ts";
 import { firstTouchBlockers, replySendBlockers } from "../_shared/factual-send.ts";
@@ -434,16 +435,23 @@ const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
     // Reply capacity stays per user, not per agent, so extra builds never
     // multiply the volume the plan allows.
-    const { count: dailyReplyCount } = await adminClient
+    const { count: dailyReplyCount, error: dailyReplyCountError } = await adminClient
       .from("agent_actions")
       .select("id", { count: "exact", head: true })
       .eq("user_id", user.id)
       .eq("action_type", "reply_sent")
       .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
 
-    const remainingReplies = Math.max(
-      0,
-      (config.max_daily_auto_replies ?? 0) - (dailyReplyCount ?? 0)
+    // Read the current server-owned subscription, never trust the editable
+    // agent preference as the account's allowance. This also covers downgrades
+    // and old rows created before the database write guard was installed.
+    const { data: replyPlanLimit, error: replyPlanLimitError } = await adminClient.rpc(
+      "agent_reply_plan_limit", { p_user_id: user.id },
+    );
+    const remainingReplies = remainingAgentReplies(
+      config.max_daily_auto_replies,
+      replyPlanLimitError ? null : replyPlanLimit,
+      dailyReplyCountError ? null : dailyReplyCount,
     );
 
 

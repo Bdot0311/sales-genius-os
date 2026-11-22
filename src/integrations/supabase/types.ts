@@ -8171,6 +8171,7 @@ export type Database = {
       }
       agent_mission_workspace_owner: { Args: never; Returns: string }
       agent_missions_enabled: { Args: never; Returns: boolean }
+      agent_reply_plan_limit: { Args: { p_user_id: string }; Returns: number }
       agent_step_owned: {
         Args: { p_owner: string; p_step_id: string }
         Returns: boolean
