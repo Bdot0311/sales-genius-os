@@ -1,3 +1,9 @@
+# Stripe-required paid access — November 22, 2026
+
+- [ ] Audit signup, AppSumo licensing, subscription checks and reconciliation for paid access without Stripe.
+- [ ] Enforce Stripe linkage for non-admin paid plans and stop AppSumo-only grants/renewals; preserve admin exemption and payment grace rules.
+- [ ] Verify live data, direct-write regressions and deployed subscription checks without creating charges.
+
 # Selected automatic-reply security fix — November 22, 2026
 
 - [x] Cap agent reply preferences on database insert/update using the current subscription; cap processing again against that server-owned allowance for existing rows and downgrades. Failed allowance or sent-count reads permit no automatic replies.
