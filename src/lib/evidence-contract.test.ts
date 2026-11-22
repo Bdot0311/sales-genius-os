@@ -134,9 +134,23 @@ describe("closed rendering from approved snapshots", () => {
     });
     const decision = decide([home, outside], { company: "Proxywise AI", websiteHost: "proxywise.example" });
     expect(decision.status).toBe("ready");
-    expect(decision.facts.some((fact) => /invited to speak/i.test(fact.span))).toBe(true);
-    expect(decision.facts[0].span.toLowerCase()).toContain("proxywise ai announced");
-    expect(decision.facts[0].provider).toBe("parallel");
+    expect(decision.facts.some((fact) => /Nicolaas was invited/i.test(fact.span))).toBe(false);
+    expect(decision.facts.some((fact) => /proxywise ai announced/i.test(fact.span))).toBe(true);
+  });
+
+  it("keeps the lead's own invitation and drops the rival's", () => {
+    const outside = snap({
+      provider: "parallel",
+      role: "external",
+      requestedUrl: "https://news.example/acme",
+      finalUrl: "https://news.example/acme",
+      publishedAt: "2026-10-01",
+      excerpt: "Acme was founded in 2010 and still builds the product. They were invited to speak on the panel at the industry conference. Acme will host the next session for its customers. Rival Beta Corp was invited to speak at SaaStr 2026.",
+    });
+    const decision = decide([outside], { company: "Acme", websiteHost: "acme.example" });
+    expect(decision.facts.some((fact) => /they were invited to speak on the panel/i.test(fact.span))).toBe(true);
+    expect(decision.facts.some((fact) => /Beta Corp/i.test(fact.span))).toBe(false);
+    expect(decision.facts[0].span.toLowerCase()).toContain("acme");
   });
 
   it("rejects the proxywise sample when the research never said it", () => {

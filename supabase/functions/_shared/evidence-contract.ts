@@ -275,10 +275,10 @@ export function evaluateStoredSnapshots(input: {
       ? new RegExp(`(?:^|[^a-z0-9])${company.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:$|[^a-z0-9])`, "i")
       : null;
     const named = sentences.map((sentence) => !!companyPattern && companyPattern.test(sentence));
-    // A Parallel or Context page is about this company when the excerpt names
-    // them. The sentence that carries the event often does not repeat the
-    // name ("was invited to speak on the panel"), and dropping it left only
-    // the homepage tagline, which the drafter then called a copied line.
+    // A Parallel or Context page can carry the event in the next sentence
+    // ("They were invited to speak on the panel") without repeating the name.
+    // Sitting beside a sentence that names the lead is not enough: the
+    // neighbour has to refer back to them, and it cannot name someone else.
     const outside = snap.role === "external" || snap.provider === "parallel" || snap.provider === "context_dev";
     sentences.forEach((sentence, index) => {
       const span = factualSpan(sentence, excerpt);
@@ -292,7 +292,8 @@ export function evaluateStoredSnapshots(input: {
       const namesThis = named[index];
       const neighborNames = (index > 0 && named[index - 1]) || (index + 1 < named.length && named[index + 1]);
       const otherSubject = /\b(other agencies|our marketplace|a directory)\b/i.test(span);
-      const besideTheCompany = outside && excerptNamesCompany && neighborNames && !otherSubject;
+      const besideTheCompany = outside && excerptNamesCompany && neighborNames
+        && refersBackToLead(span) && !namesAnotherOrganisation(span, company);
       if (!namesThis && !(hostMatches && !otherSubject) && !besideTheCompany) return;
       spans.push(span);
     });
@@ -383,17 +384,37 @@ export function readableSentence(span: string): boolean {
   return true;
 }
 
+/** The next sentence is about the lead, not a new subject. */
+function refersBackToLead(span: string): boolean {
+  return /^(?:and |but |later |then |so )?(?:they|the company|its)\b/i.test(span.trim());
+}
+
+/**
+ * A proper name that is not the lead. "Rival Beta Corp was invited" is about
+ * Beta, even when the sentence before it was about Acme.
+ */
+function namesAnotherOrganisation(span: string, company: string): boolean {
+  const scrubbed = company.length > 2
+    ? span.replace(new RegExp(company.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "ig"), " ")
+    : span;
+  if (/\b(?:corp(?:oration)?|incorporated|inc|ltd|llc|gmbh|plc)\b/i.test(scrubbed)) return true;
+  const runs = scrubbed.match(/\b[A-Z][A-Za-z0-9&'-]{1,}(?:\s+[A-Z][A-Za-z0-9&'-]{1,})+\b/g) ?? [];
+  return runs.some((name) => !/^(?:The Company|They|Its)$/i.test(name.trim()));
+}
+
 function factRank(fact: ApprovedFact, company: string): number {
   let score = 0;
   const names = company.length > 2 && fact.span.toLowerCase().includes(company);
   if (names) score += 3;
   const words = fact.span.split(/\s+/).length;
   if (words >= 10 && words <= 35) score += 1;
-  // A dated outside source is the finding. A homepage tagline is the fallback.
+  // A dated outside source that names them is the finding. A neighbour that
+  // only says "They were invited" must not outrank that sentence and open the email.
   const outside = fact.provider === "parallel" || fact.provider === "context_dev" || fact.role === "external";
-  if (outside) score += 4;
-  if (fact.publishedAt) score += 2;
-  if (outside && !names) score -= 3;
+  if (outside && names) {
+    score += 4;
+    if (fact.publishedAt) score += 2;
+  }
   // The site talking to its visitors ("We talk with you...") reads oddly
   // when quoted back to the company.
   if (/^(?:we|our|you|your)\b/i.test(fact.span.trim()) || /\b(?:you|your)\b/i.test(fact.span)) score -= 1;
@@ -443,6 +464,8 @@ const EXACT_CTA = new Set(["worth a look?", "open to a look?"]);
  * ("On Acme's site: \"...\""), so the quote still counts as the observation.
  */
 export function unattributed(line: string, company: string): string {
+  const published = line.match(/^a published account said[:,]\s*["“](.+)["”]$/i);
+  if (published) return published[1].trim();
   const c = company.trim();
   if (!c) return line;
   const esc = c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

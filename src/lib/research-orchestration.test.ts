@@ -121,6 +121,17 @@ describe("each provider is recorded as ok, empty, error, or skipped", () => {
   });
 });
 
+describe("the bare observation is the last resort", () => {
+  it("asks for the rewrite before it saves the two-line fallback", () => {
+    const src = readFileSync("supabase/functions/generate-email/index.ts", "utf8");
+    const start = src.indexOf("The rewrite (observation, idea, one question) runs first");
+    const block = src.slice(start, start + 1800);
+    expect(start).toBeGreaterThan(-1);
+    expect(block.indexOf("retryGroundedDraft(fallbackClaims")).toBeLessThan(block.indexOf("releaseSafeObservation"));
+    expect(block.indexOf("!releaseSafeObservation()")).toBe(-1);
+  });
+});
+
 describe("external research calls the configured adapters and not a third vendor", () => {
   it("does not reference Firecrawl", () => {
     expect(String(externalResearchSearch)).not.toContain("firecrawl");

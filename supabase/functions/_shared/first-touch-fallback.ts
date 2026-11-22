@@ -60,12 +60,19 @@ export function fallbackSubjectFrom(span: string): string {
  * is quoted and attributed, so their marketing line never reads as the
  * sender's pitch ("shipped on the timeline we quoted you").
  */
-export function observationLine(fact: { span: string; role?: string }, company: string): string {
+export function observationLine(fact: { span: string; role?: string; provider?: string }, company: string): string {
   const text = fact.span.trim().replace(/\s+/g, " ");
-  if (fact.role === "prospect_page" && company.trim()) {
+  if (fact.role === "prospect_page" && isLeadSite(fact) && company.trim()) {
     return `Saw this on ${company.trim()}'s site: "${text.replace(/^["“]|["”]$/g, "")}"`;
   }
   return /[.!?]["”']?$/.test(text) ? text : `${text}.`;
+}
+
+/** Firecrawl and a direct read of the lead's own site. Parallel and Context are not. */
+function isLeadSite(fact: { role?: string; provider?: string }): boolean {
+  if (fact.provider === "parallel" || fact.provider === "context_dev") return false;
+  if (fact.provider === "firecrawl" || fact.provider === "site") return true;
+  return fact.role === "prospect_page";
 }
 
 /** Their site speaking as "I". Quoting it raw makes the sender the one who was invited. */
@@ -76,9 +83,15 @@ const VOICE_THEFT = /\b(?:i|we)\b[^.?\n]{0,80}\b(?:was invited|were invited|spok
  * Everything else stays the sentence itself, or the site attribution the
  * observation line already uses for a homepage quote.
  */
-export function voiceSafeObservation(fact: { span: string; role?: string }, company: string): string {
-  if (VOICE_THEFT.test(fact.span) && company.trim()) {
-    return observationLine({ span: fact.span, role: "prospect_page" }, company);
+export function voiceSafeObservation(fact: { span: string; role?: string; provider?: string }, company: string): string {
+  const text = fact.span.trim().replace(/\s+/g, " ").replace(/^["“]|["”]$/g, "");
+  if (VOICE_THEFT.test(fact.span)) {
+    // Their own site, said in their voice. Anywhere else, "their site" invents the source.
+    if (isLeadSite(fact) && company.trim()) {
+      return observationLine({ span: fact.span, role: "prospect_page", provider: fact.provider }, company);
+    }
+    const sentence = /[.!?]["”']?$/.test(text) ? text : `${text}.`;
+    return `A published account said: "${sentence}"`;
   }
   return observationLine(fact, company);
 }
@@ -105,7 +118,7 @@ export function alignGreeting(body: string, leadFirst: string, senderName: strin
  */
 export function repairDraftVoice(
   email: string,
-  facts: Array<{ span: string; role?: string }>,
+  facts: Array<{ span: string; role?: string; provider?: string }>,
   company: string,
   leadFirst: string,
   senderName: string,
@@ -119,7 +132,7 @@ export function repairDraftVoice(
       if (!span || !VOICE_THEFT.test(span)) continue;
       const compact = body.replace(/\s+/g, " ");
       if (!compact.includes(span)) continue;
-      body = body.replace(span, voiceSafeObservation({ span, role: fact.role }, company));
+      body = body.replace(span, voiceSafeObservation({ span, role: fact.role, provider: fact.provider }, company));
     }
   }
   return head + body;

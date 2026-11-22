@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { alignGreeting, releasableFirstTouch, repairDraftVoice, thinLeadDraft } from "../../supabase/functions/_shared/first-touch-fallback";
+import { alignGreeting, releasableFirstTouch, repairDraftVoice, thinLeadDraft, voiceSafeObservation } from "../../supabase/functions/_shared/first-touch-fallback";
 
 describe("releasable first-touch fallback", () => {
   it("copies the approved sentence verbatim between greeting, one ask and sender", () => {
@@ -42,6 +42,24 @@ describe("greeting and first-person prospect copy", () => {
   it("leaves a greeting that already names the lead", () => {
     const body = `Hi Nicolaas,\n\n${fact}\n\nHow are you handling follow-up?\n\nBrandon Yakubov`;
     expect(alignGreeting(body, "Nicolaas", "Brandon Yakubov")).toBe(body);
+  });
+
+  it("attributes a first-person line from their own site, and not from Parallel", () => {
+    const fact = "In fact I was invited to speak on the AI in Proxy Voting panel at the Vanguard conference.";
+    const own = voiceSafeObservation({ span: fact, role: "prospect_page", provider: "firecrawl" }, "Proxywise AI");
+    expect(own).toContain("Saw this on Proxywise AI's site:");
+    const outside = voiceSafeObservation({ span: fact, role: "external", provider: "parallel" }, "Proxywise AI");
+    expect(outside).toContain("A published account said:");
+    expect(outside).not.toMatch(/site:/i);
+    const repaired = repairDraftVoice(
+      `Hi Nicolaas,\n\n${fact}\n\nHow are you handling follow-up?\n\nBrandon Yakubov`,
+      [{ span: fact, role: "external", provider: "context_dev" }],
+      "Proxywise AI",
+      "Nicolaas",
+      "Brandon Yakubov",
+    );
+    expect(repaired).toContain("A published account said:");
+    expect(repaired).not.toMatch(/on Proxywise AI's site/i);
   });
 
   it("attributes the prospect's invitation instead of leaving it as the sender's", () => {

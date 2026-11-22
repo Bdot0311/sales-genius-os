@@ -111,22 +111,43 @@ Brandon Yakubov`;
     })).toMatchObject({ allow: false, code: "rubric_unavailable" });
   });
 
-  it("releases one sourced observation and one question when the rewrite cannot", () => {
+  it("releases one sourced observation and one question when the rewrite cannot", async () => {
     const decision = decide("TF Business Solutions hires freight brokers for shippers across the region.");
-    const safe = safeObservationRelease({
+    const seen: string[] = [];
+    const safe = await safeObservationRelease({
       firstName: "Talha",
       senderName: "Brandon Yakubov",
       company: "TF Business Solutions",
       facts: decision.facts,
       availability: "scored",
-      rubric: perfect,
       senderCorpus: "We help agencies find buyers.",
+      score: async (email) => {
+        seen.push(email);
+        return { rubric: perfect, availability: "scored" };
+      },
     });
+    expect(seen[0]).toContain("hires freight brokers");
     expect(safe?.body).toContain("Hi Talha,");
     expect(safe?.body).toContain("hires freight brokers");
     expect(safe?.body).toContain("Worth a look?");
     expect(safe?.body.trim().endsWith("Brandon Yakubov")).toBe(true);
-    expect(safe?.body).not.toMatch(/\bI was invited\b/);
+    expect(safe?.availability).toBe("scored");
+    expect(safe?.rubric?.overall).toBe(100);
+  });
+
+  it("does not release an autonomous fallback on the previous draft's score", async () => {
+    const decision = decide("TF Business Solutions hires freight brokers for shippers across the region.");
+    const weak = { ...perfect, overall: 80, dimensions: { ...perfect.dimensions, relevance: { score: 4, justification: "close" } } };
+    const safe = await safeObservationRelease({
+      firstName: "Talha",
+      senderName: "Brandon Yakubov",
+      company: "TF Business Solutions",
+      facts: decision.facts,
+      availability: "scored",
+      mode: "autonomous",
+      score: async () => ({ rubric: weak, availability: "scored" }),
+    });
+    expect(safe).toBeNull();
   });
 
   it("holds an autonomous send that is clean on the rules but not 5/5", () => {

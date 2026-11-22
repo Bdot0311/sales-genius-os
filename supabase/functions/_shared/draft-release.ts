@@ -84,36 +84,44 @@ export function releaseAllows(input: {
  * attributed when it is the prospect speaking as "I", and one question that
  * states nothing. No new fact is introduced. Returns null when even that
  * shape fails the same release check.
+ *
+ * The score is for this email. The draft it replaced had its own score, and
+ * reusing that would let an autonomous send through on a different body.
  */
-export function safeObservationRelease(input: {
+export async function safeObservationRelease(input: {
   firstName: string;
   senderName: string;
   company: string;
   facts: ApprovedFact[];
   availability: RubricAvailability;
-  rubric: RubricResult | null;
+  mode?: "studio" | "autonomous";
   senderCorpus?: string;
-}): { subject: string; body: string } | null {
+  score: (email: string) => Promise<{ rubric: RubricResult | null; availability: RubricAvailability }>;
+}): Promise<{ subject: string; body: string; rubric: RubricResult | null; availability: RubricAvailability } | null> {
   const sender = input.senderName.trim();
   if (!sender || !input.facts.length) return null;
   const first = input.firstName.trim() || "there";
+  const mode = input.mode ?? "studio";
   for (const fact of input.facts) {
     if (fact.role === "sender_proof" || !usableFallbackFact(fact.span)) continue;
     const line = voiceSafeObservation(fact, input.company);
     const body = `Hi ${first},\n\n${line}\n\n${FALLBACK_ASK}\n\n${sender}`;
     const subject = fallbackSubjectFrom(fact.span);
+    const email = `Subject: ${subject}\n\n${body}`;
+    const scored = await input.score(email);
+    if (mode !== "studio" && scored.availability !== "scored") return null;
     const decision = releaseAllows({
       subject,
       body,
       facts: input.facts,
-      availability: input.availability,
-      rubric: input.rubric,
-      mode: "studio",
+      availability: scored.availability,
+      rubric: scored.rubric,
+      mode,
       senderName: sender,
       company: input.company,
       senderCorpus: input.senderCorpus ?? "",
     });
-    if (decision.allow) return { subject, body };
+    if (decision.allow) return { subject, body, rubric: scored.rubric, availability: scored.availability };
   }
   return null;
 }

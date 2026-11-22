@@ -2501,19 +2501,27 @@ conversation that is already going, not as someone chasing silence.`}`;
       }
     };
     const outsideSource = approvedFacts.some((fact) => fact.provider === "parallel" || fact.provider === "context_dev" || fact.role === "external");
-    const releaseSafeObservation = (): boolean => {
+    const releaseSafeObservation = async (): Promise<boolean> => {
       if (!scoresAsEmail || !approvedFacts.length || !resolvedSenderName) return false;
-      const safe = safeObservationRelease({
+      const safe = await safeObservationRelease({
         firstName,
         senderName: resolvedSenderName,
         company: ownedLeadCompany(leadData) || sanitizedCompanyName,
         facts: approvedFacts,
         availability: rubricAvailability,
-        rubric,
+        mode: "studio",
         senderCorpus: [socialProof, businessDescription].filter(Boolean).join("\n"),
+        score: async (text) => scoreEmailReport(
+          Deno.env.get("SUPABASE_URL") ?? "",
+          authHeader ?? "",
+          Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+          { subject: subjectLineForRubric, body: text, ...(internal ? { ownerUserId: userId } : {}) },
+        ),
       });
       if (!safe) return false;
       email = `Subject: ${safe.subject}\n\n${safe.body}`;
+      if (safe.rubric) rubric = safe.rubric;
+      rubricAvailability = safe.availability;
       repairedRelease = true;
       console.warn("[generate-email] released grounded observation");
       return true;
@@ -2541,23 +2549,16 @@ conversation that is already going, not as someone chasing silence.`}`;
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     };
-    // The observation plus one question is the floor, and it does not cost
-    // another generation. A rewrite is only asked when that shape itself
-    // cannot be released. A provider that did not answer is a rate limit,
-    // not a copied line — that sentence is permanent and would end the lead.
-    if (fallbackClaims.length && !checkerBlockers.length && !repairedRelease && !releaseSafeObservation()) {
+    // The rewrite (observation, idea, one question) runs first. The bare
+    // observation plus one question is only the last resort, so a batch does
+    // not collapse into the same "Worth a look?" line. A provider that did
+    // not answer is a rate limit, not a copied line.
+    if (fallbackClaims.length && !checkerBlockers.length && !repairedRelease) {
       const grounded = await retryGroundedDraft(fallbackClaims, policyRewrite);
       if (grounded.status === "unavailable") {
         const held = groundingResponse("unavailable", true, grounded.reason);
         if (held) return held;
-      } else if (grounded.status !== "released" && !releaseSafeObservation() && !releaseThinLead()) {
-        const held = groundingResponse("refused", true, grounded.reason);
-        if (held) return held;
       }
-    }
-    if (fallbackClaims.length && !repairedRelease && !releaseSafeObservation() && !releaseThinLead()) {
-      const held = groundingResponse("refused", true, "");
-      if (held) return held;
     }
     if (checkerBlockers.length && !repairedRelease) {
       const grounded = await retryGroundedDraft(checkerBlockers.map((f) => f.evidence || f.rule), policyRewrite);
@@ -2570,9 +2571,15 @@ conversation that is already going, not as someone chasing silence.`}`;
         checkerBlockers = [];
       }
     }
-    if (checkerBlockers.length && !repairedRelease && releaseSafeObservation()) {
+    if (!repairedRelease && (fallbackClaims.length || checkerBlockers.length) && await releaseSafeObservation()) {
       checkerFailures = [];
       checkerBlockers = [];
+    } else if (!repairedRelease && (fallbackClaims.length || checkerBlockers.length) && releaseThinLead()) {
+      checkerFailures = [];
+      checkerBlockers = [];
+    } else if (fallbackClaims.length && !repairedRelease) {
+      const held = groundingResponse("refused", true, "");
+      if (held) return held;
     }
     if (checkerBlockers.length) {
       return new Response(JSON.stringify({
@@ -2624,7 +2631,7 @@ conversation that is already going, not as someone chasing silence.`}`;
           releaseResult = { ...releaseResult, reason: grounded.reason };
         }
       }
-      if (!releaseResult.allow && (releaseResult.code === "unsupported_prospect_claim" || releaseResult.code === "quality_checker") && (releaseSafeObservation() || releaseThinLead())) {
+      if (!releaseResult.allow && (releaseResult.code === "unsupported_prospect_claim" || releaseResult.code === "quality_checker") && (await releaseSafeObservation() || releaseThinLead())) {
         releaseResult = { allow: true, code: "released", reason: "" };
       }
       if (!releaseResult.allow) {
