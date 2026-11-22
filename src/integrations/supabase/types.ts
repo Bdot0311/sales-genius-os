@@ -537,6 +537,7 @@ export type Database = {
           id: string
           job_id: string
           lead_id: string | null
+          not_before: string | null
           payload: Json | null
           scheduled_at: string | null
           scheduled_email_id: string | null
@@ -553,6 +554,7 @@ export type Database = {
           id?: string
           job_id: string
           lead_id?: string | null
+          not_before?: string | null
           payload?: Json | null
           scheduled_at?: string | null
           scheduled_email_id?: string | null
@@ -569,6 +571,7 @@ export type Database = {
           id?: string
           job_id?: string
           lead_id?: string | null
+          not_before?: string | null
           payload?: Json | null
           scheduled_at?: string | null
           scheduled_email_id?: string | null
@@ -8362,6 +8365,7 @@ export type Database = {
           id: string
           job_id: string
           lead_id: string | null
+          not_before: string | null
           payload: Json | null
           scheduled_at: string | null
           scheduled_email_id: string | null

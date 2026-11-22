@@ -1,3 +1,10 @@
+# Recent GitHub update deployment — November 22, 2026
+
+- [x] Confirm recent merged drafting/research updates and opted-in Mailchimp imports are present in this checkout through ba29598f.
+- [ ] Verify recent migration objects and applied history; apply only missing relevant changes.
+- [ ] Redeploy all functions affected directly or transitively by the changed shared modules and run focused regressions.
+- [ ] Publish current updates and confirm the hosted application responds.
+
 # Mailchimp automation follow-up — November 22, 2026
 
 - [x] Today's manually sent campaign is the November 20 article, before the November 22 automation cutoff; Mailchimp reports sent/emails_sent=57. No missed new publication and no resend. Generation remains Tuesday/Friday; hosted scheduled credentials return 200 with no queued articles.
