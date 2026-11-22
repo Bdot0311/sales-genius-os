@@ -2,6 +2,9 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@^2.76.1";
 import { getSubscriptionPeriod, toIsoUnix } from "../_shared/stripe-period.ts";
+import { PRICE_TO_PLAN } from "../_shared/process-stripe-event.ts";
+import { isStripePaidStatus, stripePlanFor } from "../_shared/stripe-entitlement.ts";
+import { dunningStage } from "../_shared/dunning-policy.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -72,7 +75,8 @@ serve(async (req) => {
       throw new Error('Authentication required');
     }
     
-    userEmail = userData.user.email!;
+    if (!userData.user.email) throw new Error('Authentication requires an email');
+    userEmail = userData.user.email;
     userId = userData.user.id;
     logStep('User authenticated', { userId });
 
@@ -111,81 +115,61 @@ serve(async (req) => {
     const { data: licensedSub, error: licensedError } = await supabaseClient
       .from('subscriptions').select('*').eq('user_id', userId).maybeSingle();
     if (licensedError) throw new Error('Subscription lookup failed');
-    if (licensedSub?.appsumo_license_key) {
-      const { data: license, error: licenseError } = await supabaseClient.from('appsumo_licenses')
-        .select('license_status,is_test,user_id').eq('license_key', licensedSub.appsumo_license_key).maybeSingle();
-      if (licenseError || !license || license.is_test || license.user_id !== userId || license.license_status !== 'active') throw new Error('License verification failed');
-      return new Response(JSON.stringify({ subscribed: true, plan: licensedSub.plan, status: licensedSub.status, billing_source: 'appsumo', search_credits_base: licensedSub.search_credits_base, search_credits_addon: licensedSub.search_credits_addon, search_credits_remaining: licensedSub.search_credits_remaining }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
-    }
     const stripe = new Stripe(stripeKey, { apiVersion: '2025-08-27.basil' });
-    
-    // Find Stripe customer by email
-    const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
-    
-    if (customers.data.length === 0) {
-      logStep('No Stripe customer found');
-      
-      // Check if user has an existing subscription in database
-      if (userId) {
-        const { data: existingSub } = await supabaseClient
-          .from('subscriptions')
-          .select('*')
-          .eq('user_id', userId)
-          .maybeSingle();
+    // Stored links are server-owned. Email lookup is only for an unlinked
+    // checkout-first account, never for a request-supplied identity.
+    const customers = licensedSub?.stripe_customer_id
+      ? { data: [{ id: licensedSub.stripe_customer_id }] }
+      : await stripe.customers.list({ email: userEmail, limit: 100 });
 
-        if (existingSub && !existingSub.stripe_customer_id) {
-          // User has a manual/local subscription without Stripe, preserve it
-          logStep('Preserving existing local subscription', { plan: existingSub.plan });
-          return new Response(JSON.stringify({ 
-            subscribed: existingSub.plan !== 'free',
-            plan: existingSub.plan,
-            status: existingSub.status,
-            search_credits_base: existingSub.search_credits_base || 0,
-            search_credits_addon: existingSub.search_credits_addon || 0,
-            search_credits_remaining: existingSub.search_credits_remaining || 0,
-          }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200,
-          });
-        }
-
-        // No existing subscription row — insert default free plan.
-        // Do NOT upsert unconditionally: that would clobber the 100 free
-        // credits granted by the handle_new_user_subscription trigger on
-        // every login for legitimate free-tier users.
-        logStep('No subscription row found; leaving trigger-created default in place');
-
+    const returnFree = async () => {
+      if (licensedSub?.plan && licensedSub.plan !== 'free') {
+        const { error } = await supabaseClient.rpc('billing_downgrade_to_free', {
+          _user_id: userId, _reason: 'Stripe subscription signup required',
+          _details: { trigger: 'subscription_check' },
+        });
+        if (error) throw error;
       }
-
-      return new Response(JSON.stringify({ 
-        subscribed: false,
-        plan: 'free',
-        status: 'active',
-        search_credits_base: 0,
-        search_credits_addon: 0,
-        search_credits_remaining: 0,
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      });
-    }
-
-    const customerId = customers.data[0].id;
-    logStep('Found Stripe customer', { customerId });
+      const { data: freeSub, error } = await supabaseClient.from('subscriptions')
+        .select('search_credits_base,search_credits_addon,search_credits_remaining')
+        .eq('user_id', userId).maybeSingle();
+      if (error) throw error;
+      return new Response(JSON.stringify({ subscribed: false, plan: 'free', status: 'active',
+        search_credits_base: freeSub?.search_credits_base ?? 0,
+        search_credits_addon: freeSub?.search_credits_addon ?? 0,
+        search_credits_remaining: freeSub?.search_credits_remaining ?? 0,
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+    };
+    if (customers.data.length === 0) return await returnFree();
+    let customerId = customers.data[0].id;
 
     // Fetch all statuses because Stripe represents a valid free trial as
     // `trialing`, not `active`. Trialing subscriptions receive their selected
     // tier exactly like active subscriptions.
-    const subscriptions = await stripe.subscriptions.list({
-      customer: customerId,
-      status: 'all',
-      limit: 10,
-    });
-
-    const entitledSubscription = subscriptions.data.find((subscription: { status: string }) =>
-      subscription.status === 'active' || subscription.status === 'trialing'
-    );
-    const hasActiveSub = Boolean(entitledSubscription);
+    const productPlans = Object.fromEntries(Object.entries(PLAN_PRODUCTS).map(([id, info]) => [id, info.plan]));
+    let entitledSubscription: Stripe.Subscription | undefined;
+    let graceSubscription: Stripe.Subscription | undefined;
+    for (const customer of customers.data) {
+      const subscriptions = await stripe.subscriptions.list({ customer: customer.id, status: 'all', limit: 100 });
+      entitledSubscription = subscriptions.data.find((subscription: Stripe.Subscription) =>
+        isStripePaidStatus(subscription.status) && stripePlanFor(subscription.items.data, PRICE_TO_PLAN, productPlans));
+      graceSubscription = subscriptions.data.find((subscription: Stripe.Subscription) =>
+        subscription.id === licensedSub?.stripe_subscription_id && subscription.status === 'past_due'
+        && stripePlanFor(subscription.items.data, PRICE_TO_PLAN, productPlans));
+      if (entitledSubscription) { customerId = customer.id; break; }
+    }
+    if (!entitledSubscription) {
+      if (graceSubscription && licensedSub?.plan !== 'free' && licensedSub?.grace_started_at
+          && dunningStage(licensedSub.grace_started_at, licensedSub.failed_invoice_count ?? 1) === 'grace') {
+        return new Response(JSON.stringify({ subscribed: true, plan: licensedSub.plan, status: 'past_due',
+          search_credits_base: licensedSub.search_credits_base,
+          search_credits_addon: licensedSub.search_credits_addon,
+          search_credits_remaining: licensedSub.search_credits_remaining,
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+      }
+      return await returnFree();
+    }
+    const hasActiveSub = true;
     let plan: 'free' | 'starter' | 'growth' | 'pro' | 'agency' = 'free';
     let subscriptionEnd: string | null = null;
     let stripeSubscriptionId: string | null = null;
@@ -215,19 +199,18 @@ serve(async (req) => {
         endDate: subscriptionEnd 
       });
 
+      const verifiedPlan = stripePlanFor(subscription.items.data, PRICE_TO_PLAN, productPlans);
+      if (!verifiedPlan) throw new Error('Unrecognized Stripe plan');
+      plan = verifiedPlan.plan;
+      baseCredits = verifiedPlan.credits;
+      const planInfo = verifiedPlan;
+      dailyEmailLimit = planInfo.dailyLimit;
+
       // Loop through ALL subscription items to detect plan and addons
       for (const item of subscription.items.data) {
         const productId = item.price.product as string;
         
-        // Check if it's a base plan
-        if (PLAN_PRODUCTS[productId as keyof typeof PLAN_PRODUCTS]) {
-          const planInfo = PLAN_PRODUCTS[productId as keyof typeof PLAN_PRODUCTS];
-          plan = planInfo.plan as 'starter' | 'growth' | 'pro' | 'agency';
-          baseCredits = planInfo.credits;
-          dailyEmailLimit = planInfo.dailyLimit;
-          logStep('Detected base plan', { plan, baseCredits, dailyEmailLimit });
-        }
-        
+        // Base entitlement was resolved from Stripe's recognized price/product.
         // Check if it's an addon
         if (ADDON_PRODUCTS[productId as keyof typeof ADDON_PRODUCTS]) {
           const addonInfo = ADDON_PRODUCTS[productId as keyof typeof ADDON_PRODUCTS];

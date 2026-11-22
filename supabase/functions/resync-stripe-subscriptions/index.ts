@@ -5,6 +5,7 @@
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { getSubscriptionPeriod, toIsoUnix } from "../_shared/stripe-period.ts";
+import { isStripePaidStatus, stripePlanFor } from "../_shared/stripe-entitlement.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -103,10 +104,8 @@ Deno.serve(async (req) => {
       errors: [] as Array<{ email?: string; error: string }>,
     };
 
-    // Iterate all active + trialing + past_due subs (paginated)
-    const statuses: Array<"active" | "trialing" | "past_due"> = [
-      "active", "trialing", "past_due",
-    ];
+    // Paid-plan activation requires an active or Stripe-managed trial subscription.
+    const statuses: Array<"active" | "trialing"> = ["active", "trialing"];
     for (const status of statuses) {
       let starting_after: string | undefined;
       // Safety cap to avoid runaway loops
@@ -117,20 +116,14 @@ Deno.serve(async (req) => {
         for (const sub of page.data) {
           stats.scanned++;
           try {
+            if (!isStripePaidStatus(sub.status)) continue;
             const customer = sub.customer as Stripe.Customer;
             const email = customer?.email;
             if (!email) { stats.skipped_no_email++; continue; }
 
             const priceId = sub.items.data[0]?.price?.id || "";
             const productId = sub.items.data[0]?.price?.product as string;
-            let planDetails = PRICE_TO_PLAN[priceId];
-            if (!planDetails && productId && PRODUCT_TO_PLAN[productId]) {
-              const planName = PRODUCT_TO_PLAN[productId];
-              const matchKey = Object.keys(PRICE_TO_PLAN).find(
-                (k) => PRICE_TO_PLAN[k].plan === planName,
-              );
-              if (matchKey) planDetails = PRICE_TO_PLAN[matchKey];
-            }
+            const planDetails = stripePlanFor(sub.items.data, PRICE_TO_PLAN, PRODUCT_TO_PLAN);
             if (!planDetails) {
               stats.skipped_unknown_price++;
               stats.errors.push({ email, error: `Unknown price/product ${priceId}/${productId}` });
@@ -172,7 +165,8 @@ Deno.serve(async (req) => {
             const { error: upErr } = await supabase.from("subscriptions").update({
               plan: planDetails.plan,
               status: sub.status === "active" || sub.status === "trialing" ? "active" : "inactive",
-              account_status: sub.status === "active" || sub.status === "trialing" ? "active" : sub.status,
+              account_status: sub.status === "trialing" ? "trial" : "active",
+              trial_end_date: sub.status === "trialing" && sub.trial_end ? toIsoUnix(sub.trial_end) : null,
               stripe_customer_id: customer.id,
               stripe_subscription_id: sub.id,
               search_credits_base: planDetails.credits,

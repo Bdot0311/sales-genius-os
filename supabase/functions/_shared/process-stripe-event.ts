@@ -19,6 +19,7 @@ import { logSystemAlert } from "./alerts.ts";
 import { trackBusinessEvent } from "./heycatch.ts";
 import { captureServerEvent } from "./posthog.ts";
 import { DUNNING, dunningStage, shouldAlertForFailure, graceEndsAt, recoveryEndsAt } from "./dunning-policy.ts";
+import { isStripePaidStatus, stripePlanFor } from "./stripe-entitlement.ts";
 
 /**
  * The permanent end of a failed-payment run: cancel in Stripe so the card is
@@ -364,22 +365,18 @@ export async function processStripeEvent(
     const subscriptionId = session.subscription as string;
     if (!customerEmail) throw new Error("No email on checkout session");
 
-    let planDetails = PRICE_TO_PLAN['price_1SmM2hFTerosS6hiiDXBDIxl'];
-    if (subscriptionId) {
-      const sub = await stripe.subscriptions.retrieve(subscriptionId);
-      const priceId = sub.items.data[0]?.price?.id || '';
-      const productId = sub.items.data[0]?.price?.product as string;
-      if (priceId && PRICE_TO_PLAN[priceId]) planDetails = PRICE_TO_PLAN[priceId];
-      else if (productId && PRODUCT_TO_PLAN[productId]) {
-        const planName = PRODUCT_TO_PLAN[productId];
-        planDetails = PRICE_TO_PLAN[Object.keys(PRICE_TO_PLAN).find(k => PRICE_TO_PLAN[k].plan === planName) || ''] || planDetails;
-      } else {
-        await logSystemAlert({
-          category: "stripe_plan_mismatch", severity: "error",
-          message: `Unrecognized Stripe price/product: priceId=${priceId} productId=${productId}`,
-          details: { priceId, productId, customerEmail, subscriptionId },
-        });
-      }
+    if (!customerId || !subscriptionId) throw new Error('Checkout has no Stripe subscription');
+    const sub = await stripe.subscriptions.retrieve(subscriptionId);
+    const subscriptionCustomer = typeof sub.customer === 'string' ? sub.customer : sub.customer.id;
+    if (subscriptionCustomer !== customerId) throw new Error('Checkout subscription/customer mismatch');
+    if (!isStripePaidStatus(sub.status)) return;
+    const planDetails = stripePlanFor(sub.items.data, PRICE_TO_PLAN, PRODUCT_TO_PLAN);
+    if (!planDetails) {
+      await logSystemAlert({ category: 'stripe_plan_mismatch', severity: 'error',
+        message: 'Checkout used an unrecognized Stripe plan; paid access was not granted',
+        details: { subscriptionId, customerId },
+      });
+      throw new Error('Unrecognized Stripe base plan');
     }
 
     let userId = await findUserId(supabase, customerEmail);
@@ -408,18 +405,20 @@ export async function processStripeEvent(
       }
     }
 
-    const periodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const period = getSubscriptionPeriod(sub);
+    const periodEnd = toIsoUnix(period.endSec);
     const result = await applyEvent(supabase, userId, event, {
       plan: planDetails.plan,
       previous_plan: null,
       status: 'active',
-      account_status: 'active',
+      account_status: sub.status === 'trialing' ? 'trial' : 'active',
+      trial_end_date: sub.status === 'trialing' && sub.trial_end ? toIsoUnix(sub.trial_end) : null,
       stripe_customer_id: customerId,
       stripe_subscription_id: subscriptionId,
       search_credits_base: planDetails.credits,
       search_credits_remaining: planDetails.credits,
       leads_limit: planDetails.leadsLimit,
-      current_period_start: new Date().toISOString(),
+      current_period_start: toIsoUnix(period.startSec),
       current_period_end: periodEnd,
       credits_reset_at: periodEnd,
       cancel_at_period_end: false,
@@ -456,10 +455,11 @@ export async function processStripeEvent(
     if (!customer.email) return;
     const userId = await findUserId(supabase, customer.email);
     if (!userId) throw new Error(`user not found for ${customer.email}`);
-    const planDetails = PRICE_TO_PLAN[priceId] || PRICE_TO_PLAN['price_1SmM2hFTerosS6hiiDXBDIxl'];
+    const planDetails = stripePlanFor(sub.items.data, PRICE_TO_PLAN, PRODUCT_TO_PLAN);
+    if (!planDetails) throw new Error('Unrecognized Stripe base plan');
     const { startSec: periodStartSec, endSec: periodEndSec } = getSubscriptionPeriod(sub);
     const periodEndIso = toIsoUnix(periodEndSec);
-    const isEntitled = sub.status === 'active' || sub.status === 'trialing';
+    const isEntitled = isStripePaidStatus(sub.status);
     const accountStatus = sub.status === 'trialing'
       ? 'trial'
       : sub.status === 'active'
@@ -483,6 +483,7 @@ export async function processStripeEvent(
         ? new Date(sub.trial_end * 1000).toISOString()
         : null,
       stripe_subscription_id: sub.id,
+      stripe_customer_id: typeof sub.customer === 'string' ? sub.customer : sub.customer.id,
       ...(isEntitled ? { search_credits_base: planDetails.credits, leads_limit: planDetails.leadsLimit } : {}),
       cancel_at_period_end: !!sub.cancel_at_period_end,
       canceled_at: sub.canceled_at ? new Date(sub.canceled_at * 1000).toISOString() : null,
@@ -783,12 +784,16 @@ export async function processStripeEvent(
     const subscriptionId = invoice.subscription as string;
     if (!subscriptionId) return;
     const sub = await stripe.subscriptions.retrieve(subscriptionId);
-    const priceId = sub.items.data[0]?.price?.id || '';
-    const customer = await stripe.customers.retrieve(invoice.customer as string) as Stripe.Customer;
+    const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id;
+    const subscriptionCustomer = typeof sub.customer === 'string' ? sub.customer : sub.customer.id;
+    if (!customerId || subscriptionCustomer !== customerId) throw new Error('Invoice subscription/customer mismatch');
+    if (!isStripePaidStatus(sub.status)) return;
+    const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
     if (!customer.email) return;
     const userId = await findUserId(supabase, customer.email);
     if (!userId) throw new Error(`user not found for ${customer.email}`);
-    const planDetails = PRICE_TO_PLAN[priceId] || PRICE_TO_PLAN['price_1SmM2hFTerosS6hiiDXBDIxl'];
+    const planDetails = stripePlanFor(sub.items.data, PRICE_TO_PLAN, PRODUCT_TO_PLAN);
+    if (!planDetails) throw new Error('Unrecognized Stripe base plan');
 
     // Monthly growth, pro, and agency roll unused credits forward. That add
     // has to happen on the locked row. Reading the balance here and sending
@@ -800,6 +805,12 @@ export async function processStripeEvent(
       && (planDetails.plan === 'growth' || planDetails.plan === 'pro' || planDetails.plan === 'agency');
     const period = getSubscriptionPeriod(sub);
     const result = await applyEvent(supabase, userId, event, {
+      plan: planDetails.plan,
+      previous_plan: null,
+      stripe_customer_id: customerId,
+      stripe_subscription_id: subscriptionId,
+      search_credits_base: planDetails.credits,
+      leads_limit: planDetails.leadsLimit,
       ...(rollover
         ? { search_credits_delta: planDetails.credits }
         : { search_credits_remaining: planDetails.credits }),
@@ -850,7 +861,6 @@ export async function processStripeEvent(
       account_status: 'cancelled',
       cancel_at_period_end: false,
       canceled_at: sub.canceled_at ? new Date(sub.canceled_at * 1000).toISOString() : new Date().toISOString(),
-      stripe_subscription_id: null,
       trial_end_date: null,
     });
     log("subscription.deleted apply", result);
@@ -866,7 +876,10 @@ export async function processStripeEvent(
         cancellation_reason: (sub.cancellation_details as any)?.reason ?? null,
       },
     });
-    if (downErr) log("downgrade to free failed", { error: downErr.message });
+    if (downErr) throw downErr;
+    const { error: unlinkError } = await supabase.from('subscriptions')
+      .update({ stripe_subscription_id: null }).eq('user_id', userId).eq('stripe_subscription_id', sub.id);
+    if (unlinkError) throw unlinkError;
     await trackBusinessEvent(
       "subscription_cancelled",
       userId,

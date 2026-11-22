@@ -38,7 +38,7 @@ function fixture(options: { apply?: boolean; resumeError?: boolean } = {}) {
     if (name === "billing_reset_failed_invoice_count") state.failed_invoice_count = 0;
     if (name === "billing_record_auto_resume") {
       if (options.resumeError) return { error: { message: "Temporary failure" } };
-      Object.assign(state, { grace_started_at: null, grace_period_ends_at: null, plan: state.previous_plan, previous_plan: null });
+      Object.assign(state, { grace_started_at: null, grace_period_ends_at: null, plan: state.previous_plan ?? state.plan, previous_plan: null });
       return { data: true };
     }
     if (name === "billing_start_grace_period" && !state.grace_started_at) Object.assign(state, { grace_started_at: nextFailure });
@@ -46,7 +46,7 @@ function fixture(options: { apply?: boolean; resumeError?: boolean } = {}) {
   });
   const client = { from: vi.fn(query), rpc };
   const stripe = {
-    subscriptions: { retrieve: vi.fn(async () => ({ items: { data: [{ price: { id: "price_1T8tyyFTerosS6hiTsTXkWDa" } }] }, current_period_start: 1790899200, current_period_end: 1793577600 })) },
+    subscriptions: { retrieve: vi.fn(async () => ({ status: 'active', customer: 'cus-1', items: { data: [{ price: { id: "price_1T8tyyFTerosS6hiTsTXkWDa" } }] }, current_period_start: 1790899200, current_period_end: 1793577600 })) },
     customers: { retrieve: vi.fn(async () => ({ email: "customer@example.test" })) },
   };
   const event = { id: "evt-paid", created: Date.parse(paidAt) / 1000, type: "invoice.paid", data: { object: { subscription: "sub-1", customer: "cus-1" } } };
@@ -85,6 +85,56 @@ describe("payment recovery after the grace day", () => {
     expect(f.state.grace_started_at).toBe(firstFailure);
     expect(f.rpc).not.toHaveBeenCalledWith("billing_record_auto_resume", expect.anything());
     expect(f.state.failed_invoice_count).toBe(2);
+  });
+
+  it('paid invoices persist the verified Stripe plan and both linkage IDs', async () => {
+    const f = fixture();
+    await processStripeEvent(f.event as never, f.stripe as never, f.client as never);
+    expect(f.rpc).toHaveBeenCalledWith('apply_stripe_event_to_subscription', expect.objectContaining({
+      _updates: expect.objectContaining({ plan: 'growth', stripe_customer_id: 'cus-1', stripe_subscription_id: 'sub-1', search_credits_base: 2500, leads_limit: 2500 }),
+    }));
+  });
+
+  it('a paid invoice for a canceled subscription cannot restore paid access', async () => {
+    const f = fixture();
+    const subscription = await f.stripe.subscriptions.retrieve();
+    f.stripe.subscriptions.retrieve.mockResolvedValue({ ...subscription, status: 'canceled' });
+    await processStripeEvent(f.event as never, f.stripe as never, f.client as never);
+    expect(f.rpc).not.toHaveBeenCalled();
+    expect(f.state.plan).toBe('free');
+  });
+
+  it('an invoice belonging to another Stripe customer cannot activate this account', async () => {
+    const f = fixture();
+    const subscription = await f.stripe.subscriptions.retrieve();
+    f.stripe.subscriptions.retrieve.mockResolvedValue({ ...subscription, customer: 'cus-other' });
+    await expect(processStripeEvent(f.event as never, f.stripe as never, f.client as never)).rejects.toThrow('Invoice subscription/customer mismatch');
+    expect(f.rpc).not.toHaveBeenCalled();
+  });
+
+  it('an unknown Stripe price cannot default to Growth', async () => {
+    const f = fixture();
+    const subscription = await f.stripe.subscriptions.retrieve();
+    f.stripe.subscriptions.retrieve.mockResolvedValue({ ...subscription, items: { data: [{ price: { id: 'price_unknown' } }] } });
+    await expect(processStripeEvent(f.event as never, f.stripe as never, f.client as never)).rejects.toThrow('Unrecognized Stripe base plan');
+    expect(f.rpc).not.toHaveBeenCalled();
+  });
+
+  it('checkout without a Stripe subscription cannot grant the selected plan', async () => {
+    const f = fixture();
+    const event = { ...f.event, type: 'checkout.session.completed', data: { object: { mode: 'subscription', customer_email: 'customer@example.test', customer: 'cus-1', subscription: null } } };
+    await expect(processStripeEvent(event as never, f.stripe as never, f.client as never)).rejects.toThrow('Checkout has no Stripe subscription');
+    expect(f.rpc).not.toHaveBeenCalled();
+  });
+
+  it('incomplete Stripe checkout cannot activate a paid tier', async () => {
+    const f = fixture();
+    const subscription = await f.stripe.subscriptions.retrieve();
+    f.stripe.subscriptions.retrieve.mockResolvedValue({ ...subscription, status: 'incomplete' });
+    const event = { ...f.event, type: 'checkout.session.completed', data: { object: { mode: 'subscription', customer_email: 'customer@example.test', customer: 'cus-1', subscription: 'sub-1' } } };
+    await processStripeEvent(event as never, f.stripe as never, f.client as never);
+    expect(f.rpc).not.toHaveBeenCalled();
+    expect(f.state.plan).toBe('free');
   });
 
 });
