@@ -98,21 +98,35 @@ function isLeadSite(fact: { role?: string; provider?: string }): boolean {
 const VOICE_THEFT = /\b(?:i|we)\b[^.?\n]{0,80}\b(?:was invited|were invited|spoke|am speaking|are speaking|will speak)\b/i;
 
 /**
- * A prospect sentence the sender must not speak as their own is attributed.
- * Everything else stays the sentence itself, or the site attribution the
- * observation line already uses for a homepage quote.
+ * Whoever wrote the sentence gets the credit for it.
+ *
+ * A fact is copied into the email word for word under the sender's name, so
+ * an unattributed quote is the sender speaking. On the lead's own site that is
+ * fine once it says so ("Saw this on their site: ..."), because the subject is
+ * describing itself and the attribution names the source. Anywhere else the
+ * words belong to a third party, and quoting them bare hands them to the
+ * sender.
+ *
+ * This used to attribute an outside sentence only when it matched VOICE_THEFT
+ * -- an "I"/"we" next to "was invited" or "spoke". That caught one shape of
+ * the problem and left every other one bare: a magazine's editorial voice, a
+ * founder's own post about anything else, a write-up in the first person
+ * plural. The rule is not which outside sentences sound stolen. It is that an
+ * outside sentence is not the sender's to say.
+ *
+ * "A published account said:" is the wording both checkers already know:
+ * unattributed() strips exactly this prefix, so the quote still matches the
+ * approved fact and still counts as the one sourced observation.
  */
 export function voiceSafeObservation(fact: { span: string; role?: string; provider?: string }, company: string): string {
   const text = fact.span.trim().replace(/\s+/g, " ").replace(/^["“]|["”]$/g, "");
-  if (VOICE_THEFT.test(fact.span)) {
-    // Their own site, said in their voice. Anywhere else, "their site" invents the source.
-    if (isLeadSite(fact) && company.trim()) {
-      return observationLine({ span: fact.span, role: "prospect_page", provider: fact.provider }, company);
-    }
-    const sentence = /[.!?]["”']?$/.test(text) ? text : `${text}.`;
-    return `A published account said: "${sentence}"`;
+  // Their own site: attributed to the site when it can be named, and left as
+  // the sentence when it cannot, because "their site" must not be invented.
+  if (isLeadSite(fact)) {
+    return observationLine({ span: fact.span, role: "prospect_page", provider: fact.provider }, company);
   }
-  return observationLine(fact, company);
+  const sentence = /[.!?]["”']?$/.test(text) ? text : `${text}.`;
+  return `A published account said: "${sentence}"`;
 }
 
 /**
