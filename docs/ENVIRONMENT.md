@@ -261,6 +261,11 @@ each function refuses with 503 rather than half-redeeming when one is absent.
 |---|---|---|
 | `LOVABLE_SEND_URL` | `auth-email-hook`, `_shared/managed-email.ts` | Transactional email cannot send |
 | `RESEND_API_KEY` | `send-seo-digest` | Returns `{success: false, error: "Email gateway not configured"}` |
+| `MAILCHIMP_GATEWAY_URL` | `send-blog-newsletter` | Returns `{success: false, error: "Mailchimp blog delivery configuration missing"}`. The gateway takes `LOVABLE_API_KEY` as the bearer and `MAILCHIMP_MARKETING_API_KEY` as `X-Connection-Api-Key` |
+| `MAILCHIMP_MARKETING_API_KEY` | `send-blog-newsletter` | The same missing-configuration response. Both this and `LOVABLE_API_KEY` are required |
+| `MAILCHIMP_BLOG_AUDIENCE_ID` | `send-blog-newsletter` | The same missing-configuration response. The audience the published post is sent to |
+| `MAILCHIMP_BLOG_FROM_EMAIL` | `send-blog-newsletter` | The same missing-configuration response |
+| `MAILCHIMP_BLOG_SITE_URL` | `send-blog-newsletter` | The same missing-configuration response. Relative links in the post are resolved against it |
 | `VAPID_PRIVATE_KEY` + `VAPID_SUBJECT` | `_shared/notify-push.ts`, `send-push-notification`, `run-seo-audit` | **Silent.** `notify-push.ts` returns early and no web push is sent. `VAPID_SUBJECT` defaults if unset |
 | `FIREBASE_MESSAGING_API_KEY` | `send-fcm-notification` | Mobile push unavailable |
 | `NOTIFICATION_EMAIL` | ~6 functions | Defaults to `support@bdotindustries.com` |

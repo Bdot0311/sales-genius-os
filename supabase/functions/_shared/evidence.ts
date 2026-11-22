@@ -161,6 +161,23 @@ function notableWords(text: string): string[] {
  * "cut", "sales" and "team" from three different sentences would make
  * "I noticed Acme cut its sales team" look sourced.
  */
+/**
+ * A "noticed / saw" line that restates one supplied sentence.
+ * Attribution ("Saw this on Acme's site") is the quote, not a new signal.
+ * An unsupported "I noticed you just raised" stays unsupported.
+ */
+export function noticedLineIsSupported(sentence: string, corpus: string): boolean {
+  const text = sentence.trim();
+  if (/^saw this on\b/i.test(text)) return true;
+  if (!String(corpus ?? "").trim()) return false;
+  const bare = text
+    .replace(/^(?:i |we )?(?:just )?(?:noticed|saw|see|spotted|came across|read that|congrats on|congratulations on)\s+(?:that\s+)?/i, "")
+    .replace(/[.?!]+$/g, "")
+    .trim();
+  if (bare.length >= 20 && sentences(corpus).some((item) => item.toLowerCase().includes(bare.toLowerCase()))) return true;
+  return familiarBacked(text, corpus);
+}
+
 function familiarBacked(sentence: string, corpus: string): boolean {
   const words = notableWords(sentence.replace(FAMILIAR, " "));
   if (words.length < 3) return false;

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { researchBlockForLead } from "../../supabase/functions/_shared/lead-research-block";
-import { holdReason, researchAction, researchReservation, researchStep, RETRY_WINDOW_MS } from "../../supabase/functions/_shared/research-orchestration";
+import { annotateProviderStatuses, holdReason, researchAction, researchReservation, researchStep, RETRY_WINDOW_MS } from "../../supabase/functions/_shared/research-orchestration";
 import { externalResearchSearch } from "../../supabase/functions/_shared/external-research";
 
 describe("research is fetched before a draft and not repeated inside the window", () => {
@@ -82,7 +82,53 @@ describe("a missing research claim is not treated as a recent run", () => {
     expect(gate).toBeGreaterThan(-1);
     expect(gather).toBeGreaterThan(gate);
     expect(src).toContain("websiteUrls: host ? [origin, ...extraUrls] : []");
+    expect(src).toContain("annotateProviderStatuses");
+    expect(src).toContain("firecrawlCalled: Boolean(host) && gathered.firecrawlConfigured");
     expect(src).toContain("researchReservation(");
+  });
+});
+
+describe("each provider is recorded as ok, empty, error, or skipped", () => {
+  const base = {
+    attemptedAt: "2026-11-22T00:00:00.000Z",
+    site: { configured: true, called: true, error: null, count: 1, statuses: [200], finalHosts: ["proxywise.example"] },
+    parallel: { configured: true, called: true, error: null, count: 2 },
+    context_dev: { configured: true, called: true, error: "timeout", count: 0 },
+    firecrawl: { configured: false, called: false, error: "not_configured", count: 0 },
+    snapshotWrite: "written" as const,
+  };
+
+  it("marks a stored page ok and a failed call error", () => {
+    const receipt = annotateProviderStatuses(base, [
+      { provider: "parallel", providerOk: true, partial: false },
+      { provider: "site", providerOk: true, partial: false },
+    ]);
+    expect(receipt.parallel.status).toBe("ok");
+    expect(receipt.parallel.stored).toBe(1);
+    expect(receipt.context_dev.status).toBe("error");
+    expect(receipt.firecrawl.status).toBe("skipped");
+    expect(receipt.site.status).toBe("ok");
+  });
+
+  it("marks a configured call with nothing stored as empty", () => {
+    const receipt = annotateProviderStatuses({
+      ...base,
+      parallel: { configured: true, called: true, error: null, count: 3 },
+      context_dev: { configured: true, called: true, error: null, count: 0 },
+    }, []);
+    expect(receipt.parallel.status).toBe("empty");
+    expect(receipt.context_dev.status).toBe("empty");
+  });
+});
+
+describe("the bare observation is the last resort", () => {
+  it("asks for the rewrite before it saves the two-line fallback", () => {
+    const src = readFileSync("supabase/functions/generate-email/index.ts", "utf8");
+    const start = src.indexOf("The rewrite (observation, idea, one question) runs first");
+    const block = src.slice(start, start + 1800);
+    expect(start).toBeGreaterThan(-1);
+    expect(block.indexOf("retryGroundedDraft(fallbackClaims")).toBeLessThan(block.indexOf("releaseSafeObservation"));
+    expect(block.indexOf("!releaseSafeObservation()")).toBe(-1);
   });
 });
 

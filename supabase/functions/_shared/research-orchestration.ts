@@ -13,11 +13,29 @@
 
 export const RETRY_WINDOW_MS = 10 * 60 * 1000;
 
+export type ProviderStatus = "ok" | "empty" | "error" | "skipped";
+
 export interface ProviderAttempt {
   configured: boolean;
   called: boolean;
   error: string | null;
+  /** Search hits or pages read. Not the same as a sentence we could store. */
   count: number;
+  /** ok: a usable page was stored. empty: the call returned nothing usable. error: the call failed. skipped: it was not run. */
+  status?: ProviderStatus;
+  stored?: number;
+}
+
+export function providerStatus(input: {
+  configured: boolean;
+  called: boolean;
+  error: string | null;
+  stored: number;
+}): ProviderStatus {
+  if (!input.configured || !input.called) return "skipped";
+  if (input.stored > 0) return "ok";
+  if (input.error) return "error";
+  return "empty";
 }
 
 export interface RetrievalReceipt {
@@ -93,6 +111,8 @@ export function receiptFromProviders(input: {
   firecrawlConfigured: boolean;
   firecrawlError: string | null;
   firecrawlCount: number;
+  /** False when the lead has no website, so Firecrawl is skipped rather than reported as an empty read. */
+  firecrawlCalled?: boolean;
   snapshotWrite: RetrievalReceipt["snapshotWrite"];
 }): RetrievalReceipt {
   return {
@@ -119,11 +139,33 @@ export function receiptFromProviders(input: {
     },
     firecrawl: {
       configured: input.firecrawlConfigured,
-      called: input.firecrawlConfigured,
+      called: input.firecrawlCalled ?? input.firecrawlConfigured,
       error: input.firecrawlConfigured ? input.firecrawlError : "not_configured",
       count: input.firecrawlCount,
     },
     snapshotWrite: input.snapshotWrite,
+  };
+}
+
+/**
+ * Fill status from the pages that were actually stored. A search hit that
+ * never became a readable page is empty, not ok.
+ */
+export function annotateProviderStatuses(
+  receipt: RetrievalReceipt,
+  snapshots: { provider: string; providerOk: boolean; partial: boolean }[],
+): RetrievalReceipt {
+  const stored = (provider: string) => snapshots.filter((snap) => snap.provider === provider && snap.providerOk && !snap.partial).length;
+  const apply = (attempt: ProviderAttempt, provider: string): ProviderAttempt => {
+    const n = stored(provider);
+    return { ...attempt, stored: n, status: providerStatus({ ...attempt, stored: n }) };
+  };
+  return {
+    ...receipt,
+    site: { ...apply(receipt.site, "site"), statuses: receipt.site.statuses, finalHosts: receipt.site.finalHosts },
+    parallel: apply(receipt.parallel, "parallel"),
+    context_dev: apply(receipt.context_dev, "context_dev"),
+    firecrawl: apply(receipt.firecrawl, "firecrawl"),
   };
 }
 

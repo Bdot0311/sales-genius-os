@@ -120,7 +120,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: "2026-11-22",
     title: "Paid plans start with Stripe checkout",
     summary: "AppSumo license linking keeps your account on Free until subscription checkout is complete.",
-    items: [{ tag: "billing", title: "Stripe checkout required for paid access", description: "An AppSumo signup or linked license does not start a paid plan or renew credits by itself. Complete Stripe subscription checkout to activate your paid tier; linking the license does not charge your card.", href: "/appsumo" }],
+    items: [{ tag: "billing", title: "Stripe checkout required for paid access", description: "An AppSumo signup or linked license does not start a paid plan or renew credits by itself. Complete Stripe subscription checkout to activate your paid tier; you are not charged for linking the license.", href: "/appsumo" }],
   },
   {
     id: "2026-11-21-outreach-lead-labels",

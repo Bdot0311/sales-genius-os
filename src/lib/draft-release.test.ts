@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { outboundGateFindings } from "../../supabase/functions/_shared/quality-gate";
 import { evaluateStoredSnapshots, sealSnapshot, bodyViolations } from "../../supabase/functions/_shared/evidence-contract";
-import { releaseAllows } from "../../supabase/functions/_shared/draft-release";
+import { releaseAllows, safeObservationRelease } from "../../supabase/functions/_shared/draft-release";
 import type { RubricResult } from "../../supabase/functions/_shared/email-quality";
 
 const NOW = "2026-11-07T12:00:00.000Z";
@@ -109,6 +109,45 @@ Brandon Yakubov`;
       mode: "studio",
       senderName: "Brandon Yakubov",
     })).toMatchObject({ allow: false, code: "rubric_unavailable" });
+  });
+
+  it("releases one sourced observation and one question when the rewrite cannot", async () => {
+    const decision = decide("TF Business Solutions hires freight brokers for shippers across the region.");
+    const seen: string[] = [];
+    const safe = await safeObservationRelease({
+      firstName: "Talha",
+      senderName: "Brandon Yakubov",
+      company: "TF Business Solutions",
+      facts: decision.facts,
+      availability: "scored",
+      senderCorpus: "We help agencies find buyers.",
+      score: async (email) => {
+        seen.push(email);
+        return { rubric: perfect, availability: "scored" };
+      },
+    });
+    expect(seen[0]).toContain("hires freight brokers");
+    expect(safe?.body).toContain("Hi Talha,");
+    expect(safe?.body).toContain("hires freight brokers");
+    expect(safe?.body).toContain("Worth a look?");
+    expect(safe?.body.trim().endsWith("Brandon Yakubov")).toBe(true);
+    expect(safe?.availability).toBe("scored");
+    expect(safe?.rubric?.overall).toBe(100);
+  });
+
+  it("does not release an autonomous fallback on the previous draft's score", async () => {
+    const decision = decide("TF Business Solutions hires freight brokers for shippers across the region.");
+    const weak = { ...perfect, overall: 80, dimensions: { ...perfect.dimensions, relevance: { score: 4, justification: "close" } } };
+    const safe = await safeObservationRelease({
+      firstName: "Talha",
+      senderName: "Brandon Yakubov",
+      company: "TF Business Solutions",
+      facts: decision.facts,
+      availability: "scored",
+      mode: "autonomous",
+      score: async () => ({ rubric: weak, availability: "scored" }),
+    });
+    expect(safe).toBeNull();
   });
 
   it("holds an autonomous send that is clean on the rules but not 5/5", () => {

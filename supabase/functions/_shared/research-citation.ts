@@ -59,11 +59,33 @@ export function sourceWasFetched(source: string, fetched: string[]): boolean {
  * full. Longer ones have to match at least 70 percent, and at least three
  * words, so a single borrowed noun cannot carry an invented sentence.
  */
+const EVENT_IN_CLAIM = /\b(?:ipos?|opening bell|invited to speak|funding round|series\s+[a-e]|panel|conference|keynote)\b/gi;
+
+/**
+ * Names and event phrases the claim adds. They have to occur in the text that
+ * was read. A 70 percent overlap of ordinary words is how "invited to speak
+ * at the Vanguard conference" survived a page that never said it.
+ */
+export function missingSpecifics(claim: string, corpus: string): string[] {
+  const missing: string[] = [];
+  const hay = String(corpus ?? "");
+  for (const match of claim.matchAll(EVENT_IN_CLAIM)) {
+    if (!hay.toLowerCase().includes(match[0].toLowerCase())) missing.push(match[0]);
+  }
+  for (const match of claim.matchAll(/\b[A-Z][a-z]{2,}\b|\b[A-Z]{2,}\b/g)) {
+    const word = match[0];
+    const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    if (!new RegExp(`(?:^|[^A-Za-z0-9])${escaped}(?:$|[^A-Za-z0-9])`).test(hay)) missing.push(word);
+  }
+  return missing;
+}
+
 export function claimSupportedByCorpus(claim: string, corpus: string): boolean {
   const words = [...new Set(contentWords(claim))];
   if (words.length === 0) return false;
   const haystack = new Set(contentWords(corpus));
   const hit = words.filter((word) => haystack.has(word)).length;
-  if (words.length <= 4) return hit === words.length;
-  return hit / words.length >= 0.7 && hit >= 3;
+  const overlap = words.length <= 4 ? hit === words.length : hit / words.length >= 0.7 && hit >= 3;
+  if (!overlap) return false;
+  return missingSpecifics(claim, corpus).length === 0;
 }

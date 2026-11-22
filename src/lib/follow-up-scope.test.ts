@@ -203,7 +203,7 @@ describe("the counts in one message agree with each other", () => {
 
   it("says how many the sweep added after the reply was written", () => {
     expect(agent).toContain("sweptQueued = queued");
-    expect(agent).toContain("formatDraftTurnSummary");
+    expect(agent).toContain("confirmedClose");
     expect(agent).toContain("swept: sweptQueued");
   });
 
@@ -222,7 +222,7 @@ describe("the counts in one message agree with each other", () => {
   it("keeps the folder total from the database above the reply", () => {
     expect(agent).toContain('.from("email_drafts")');
     expect(agent).toContain("folder: draftsNow ?? 0");
-    expect(agent).toContain("finalText = `${summary}\\n\\n${finalText}`");
+    expect(agent).toContain("finalText = `${summary}\\n\\n${stripCompletionClaims(finalText)}`");
   });
 });
 

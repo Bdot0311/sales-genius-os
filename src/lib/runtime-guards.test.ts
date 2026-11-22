@@ -163,6 +163,12 @@ describe("research prose has to use words that were actually read", () => {
   it("drops a claim when nothing was read", () => {
     expect(claimSupportedByCorpus("Acme builds route planning software", "")).toBe(false);
   });
+
+  it("drops an IPO and a conference the page never wrote", () => {
+    const page = "Proxywise AI builds proxy voting software for institutions worldwide. The team speaks with institutions about voting.";
+    const invented = 'Nicolaas was invited to speak on the AI in Proxy Voting panel at the Vanguard conference and rang the opening bell for the IPO.';
+    expect(claimSupportedByCorpus(invented, page)).toBe(false);
+  });
 });
 
 describe("the coach page reads the checked SSE body, including a split chunk", () => {

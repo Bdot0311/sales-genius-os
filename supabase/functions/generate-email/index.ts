@@ -8,12 +8,12 @@ import { useCaseCampaignFor, useCaseCampaignPrompt } from "../_shared/use-case-c
 // One quality verdict for every caller — Outreach Studio, agent-chat and the
 // autonomous agent all reach the rubric through this rather than each other.
 import { isWeak, rubricFeedback, scoreEmailReport, type RubricAvailability } from "../_shared/email-quality.ts";
-import { ownedLeadCompany, releaseAllows } from "../_shared/draft-release.ts";
+import { ownedLeadCompany, releaseAllows, safeObservationRelease } from "../_shared/draft-release.ts";
 import { retryGroundedDraft, rewriteStatusFromProvider, settleGrounding, type GroundingAttempt } from "../_shared/grounding-retry.ts";
 import { AI_CREDITS_USER_MESSAGE, isAiCreditError, reportAiCreditsExhausted } from "../_shared/ai-credits.ts";
 import { stripInstructionLines, unsupportedClaims } from "../_shared/evidence.ts";
 import { POLICY_VERSION, evaluateStoredSnapshots, type ApprovedFact } from "../_shared/evidence-contract.ts";
-import { fallbackSubjectFrom, observationLine, releasableFirstTouch, usableFallbackFact } from "../_shared/first-touch-fallback.ts";
+import { fallbackSubjectFrom, repairDraftVoice, thinLeadDraft, usableFallbackFact, voiceSafeObservation } from "../_shared/first-touch-fallback.ts";
 import { holdReason, researchStep, type RetrievalReceipt } from "../_shared/research-orchestration.ts";
 import { reviseUntilClear } from "../_shared/quality-gate.ts";
 // The writing rules live in one module so the three copies that used to exist
@@ -1253,6 +1253,34 @@ STRICT RULES:
     const researchQuality: ResearchQuality = scoreResearchQuality(researchBrief, researchSources);
     if (researchBrief) researchBrief = { ...researchBrief, quality: researchQuality };
     const blockOnThinResearch = requestData.blockOnThinResearch === true;
+    const researchIsThin = researchQuality.label === "thin" || researchQuality.label === "insufficient";
+    if (!isPrecisionEditPre && goal !== "subject_only" && researchIsThin && !blockOnThinResearch && resolvedSenderName) {
+      const thin = thinLeadDraft({
+        firstName,
+        senderName: resolvedSenderName,
+        company: ownedLeadCompany(leadData),
+        role: sanitizedJobTitle,
+        industry: sanitizedIndustry,
+      });
+      return new Response(JSON.stringify({
+        email: `Subject: ${thin.subject}\n\n${thin.body}`,
+        thin_research: true,
+        quality_status: "needs_review",
+        quality_findings: [{ rule: "thin_research", evidence: researchQuality.label, fix: "Refresh research before adding a company-specific claim." }],
+        fact_ids: approvedFacts.map((fact) => fact.id),
+        evidence_id: evidenceId,
+        policy_version: POLICY_VERSION,
+        research: researchBrief ? {
+          ...researchBrief,
+          sources: researchSources,
+          researched_at: researchedAt,
+          quality: researchQuality,
+          thin_research: true,
+        } : { thin_research: true, quality: researchQuality },
+        research_quality: researchQuality,
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     if (!isPrecisionEditPre && blockOnThinResearch && !researchQuality.safe_to_personalize) {
       return new Response(JSON.stringify({
         error: researchBrief
@@ -2300,7 +2328,8 @@ conversation that is already going, not as someone chasing silence.`}`;
       let rejected = 0;
       for (const fact of approvedFacts) {
         if (!usableFallbackFact(fact.span)) { rejected++; continue; }
-        const candidate = `Subject: ${fallbackSubjectFrom(fact.span)}\n\n${releasableFirstTouch({ firstName, fact: fact.span, senderName: resolvedSenderName })}`;
+        const voiced = voiceSafeObservation(fact, ownedLeadCompany(leadData) || sanitizedCompanyName);
+        const candidate = `Subject: ${fallbackSubjectFrom(fact.span)}\n\nHi ${firstName || "there"},\n\n${voiced}\n\nWorth a look?\n\n${resolvedSenderName}`;
         if (unsupportedClaims(candidate, prospectCorpus).length || hasPlaceholder(candidate)) { rejected++; continue; }
         console.warn("[generate-email] using releasable first-touch fallback");
         fallbackClaims = prospectClaims.map((hit) => hit.evidence);
@@ -2320,6 +2349,7 @@ conversation that is already going, not as someone chasing silence.`}`;
       }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    email = repairDraftVoice(email, approvedFacts, ownedLeadCompany(leadData) || sanitizedCompanyName, firstName, resolvedSenderName);
     const subjectMatch = email.match(/^Subject:\s*(.+)\n+/i);
     const checkedSubject = subjectMatch?.[1]?.trim() || String(subjectLine ?? "");
     const checkedBody = subjectMatch ? email.slice(subjectMatch[0].length) : email;
@@ -2364,6 +2394,7 @@ conversation that is already going, not as someone chasing silence.`}`;
     // from approved research only. It must pass the identical release check
     // (claims, checker, rubric availability); nothing is loosened.
     let repairedRelease = false;
+    let usedThinResearch = false;
     const repairFromFacts = (preferBody?: string): boolean => {
       if (!scoresAsEmail || !approvedFacts.length || !resolvedSenderName) return false;
       const company = ownedLeadCompany(leadData);
@@ -2434,7 +2465,7 @@ conversation that is already going, not as someone chasing silence.`}`;
         let question = String(parsed.question ?? "").replace(/\s+/g, " ").trim();
         if (!idea || !question) return { status: "refused", reason: problems[0] ?? "rewrite was empty" };
         if (!question.endsWith("?")) question = `${question}?`;
-        const factLine = observationLine(fact, company);
+        const factLine = voiceSafeObservation(fact, company);
         const body = `Hi ${firstName || "there"},\n\n${factLine}\n\n${idea}\n\n${question}\n\n${resolvedSenderName}`;
         const subj = fallbackSubjectFrom(fact.span);
         // The idea line is the only part that can carry an ungrounded offer.
@@ -2469,27 +2500,65 @@ conversation that is already going, not as someone chasing silence.`}`;
         return { status: unavailable ? "unavailable" : "refused", reason: message };
       }
     };
+    const outsideSource = approvedFacts.some((fact) => fact.provider === "parallel" || fact.provider === "context_dev" || fact.role === "external");
+    const releaseSafeObservation = async (): Promise<boolean> => {
+      if (!scoresAsEmail || !approvedFacts.length || !resolvedSenderName) return false;
+      const safe = await safeObservationRelease({
+        firstName,
+        senderName: resolvedSenderName,
+        company: ownedLeadCompany(leadData) || sanitizedCompanyName,
+        facts: approvedFacts,
+        availability: rubricAvailability,
+        mode: "studio",
+        senderCorpus: [socialProof, businessDescription].filter(Boolean).join("\n"),
+        score: async (text) => scoreEmailReport(
+          Deno.env.get("SUPABASE_URL") ?? "",
+          authHeader ?? "",
+          Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+          { subject: subjectLineForRubric, body: text, ...(internal ? { ownerUserId: userId } : {}) },
+        ),
+      });
+      if (!safe) return false;
+      email = `Subject: ${safe.subject}\n\n${safe.body}`;
+      if (safe.rubric) rubric = safe.rubric;
+      rubricAvailability = safe.availability;
+      repairedRelease = true;
+      console.warn("[generate-email] released grounded observation");
+      return true;
+    };
+    const releaseThinLead = (): boolean => {
+      if (!resolvedSenderName) return false;
+      const thin = thinLeadDraft({
+        firstName,
+        senderName: resolvedSenderName,
+        company: ownedLeadCompany(leadData) || sanitizedCompanyName,
+        role: sanitizedJobTitle,
+        industry: sanitizedIndustry,
+      });
+      email = `Subject: ${thin.subject}\n\n${thin.body}`;
+      repairedRelease = true;
+      usedThinResearch = true;
+      console.warn("[generate-email] released thin lead draft");
+      return true;
+    };
     const groundingResponse = (status: GroundingAttempt["status"], viaFallback: boolean, reason: string) => {
-      const settled = settleGrounding({ status, viaFallback, reason });
+      const settled = settleGrounding({ status, viaFallback, reason, outsideSource });
       if (settled.ok) return null;
       return new Response(JSON.stringify({ error: settled.error, error_code: settled.error_code }), {
         status: settled.error_code === "rate_limit" ? 429 : 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     };
-    // The plain quoted fallback is the floor. Two rewrites, the second told
-    // which sentence was refused. A provider that did not answer is a rate
-    // limit, not a copied line — that sentence is permanent and would end the lead.
+    // The rewrite (observation, idea, one question) runs first. The bare
+    // observation plus one question is only the last resort, so a batch does
+    // not collapse into the same "Worth a look?" line. A provider that did
+    // not answer is a rate limit, not a copied line.
     if (fallbackClaims.length && !checkerBlockers.length && !repairedRelease) {
       const grounded = await retryGroundedDraft(fallbackClaims, policyRewrite);
-      if (grounded.status !== "released") {
-        const held = groundingResponse(grounded.status, true, grounded.reason);
+      if (grounded.status === "unavailable") {
+        const held = groundingResponse("unavailable", true, grounded.reason);
         if (held) return held;
       }
-    }
-    if (fallbackClaims.length && !repairedRelease) {
-      const held = groundingResponse("refused", true, "");
-      if (held) return held;
     }
     if (checkerBlockers.length && !repairedRelease) {
       const grounded = await retryGroundedDraft(checkerBlockers.map((f) => f.evidence || f.rule), policyRewrite);
@@ -2501,6 +2570,16 @@ conversation that is already going, not as someone chasing silence.`}`;
         checkerFailures = [];
         checkerBlockers = [];
       }
+    }
+    if (!repairedRelease && (fallbackClaims.length || checkerBlockers.length) && await releaseSafeObservation()) {
+      checkerFailures = [];
+      checkerBlockers = [];
+    } else if (!repairedRelease && (fallbackClaims.length || checkerBlockers.length) && releaseThinLead()) {
+      checkerFailures = [];
+      checkerBlockers = [];
+    } else if (fallbackClaims.length && !repairedRelease) {
+      const held = groundingResponse("refused", true, "");
+      if (held) return held;
     }
     if (checkerBlockers.length) {
       return new Response(JSON.stringify({
@@ -2551,6 +2630,9 @@ conversation that is already going, not as someone chasing silence.`}`;
         } else if (grounded.reason) {
           releaseResult = { ...releaseResult, reason: grounded.reason };
         }
+      }
+      if (!releaseResult.allow && (releaseResult.code === "unsupported_prospect_claim" || releaseResult.code === "quality_checker") && (await releaseSafeObservation() || releaseThinLead())) {
+        releaseResult = { allow: true, code: "released", reason: "" };
       }
       if (!releaseResult.allow) {
         const release = releaseResult;
@@ -2620,8 +2702,10 @@ conversation that is already going, not as someone chasing silence.`}`;
             quality: researchQuality,
             sources: researchSources,
             researched_at: researchedAt,
+            thin_research: usedThinResearch,
           }
         : null,
+      thin_research: usedThinResearch,
       research_quality: researchQuality,
       // Reported, not only logged. "I don't think it's using the skills we
       // installed" is not answerable from a server log the user cannot read.
