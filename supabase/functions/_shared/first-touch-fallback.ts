@@ -114,11 +114,28 @@ const VOICE_THEFT = /\b(?:i|we)\b[^.?\n]{0,80}\b(?:was invited|were invited|spok
  * plural. The rule is not which outside sentences sound stolen. It is that an
  * outside sentence is not the sender's to say.
  *
- * "A published account said:" is the wording both checkers already know:
- * unattributed() strips exactly this prefix, so the quote still matches the
- * approved fact and still counts as the one sourced observation.
+ * The attribution names the place the sentence came from, because the fact
+ * carries the URL it was read from and a reader recognises a masthead. It also
+ * costs nothing in grounding: unattributed() strips exactly these prefixes, so
+ * the quote still matches the approved fact and still counts as the one
+ * sourced observation, and "saw this on/in" is exempt from the rule that wants
+ * a mechanism after a noticed line.
  */
-export function voiceSafeObservation(fact: { span: string; role?: string; provider?: string }, company: string): string {
+
+/** The host a quote came from, as a reader would recognise it. */
+function sourceHost(url: unknown): string {
+  const raw = String(url ?? "").trim();
+  if (!raw) return "";
+  const host = (raw.match(/^https?:\/\/([^/:?#]+)/i)?.[1] ?? "").toLowerCase().replace(/^www\./, "");
+  // A bare hostname only: a path or a port in the attribution would be a
+  // place the sentence does not come from.
+  return /^[a-z0-9-]+(?:\.[a-z0-9-]+)+$/.test(host) ? host : "";
+}
+
+export function voiceSafeObservation(
+  fact: { span: string; role?: string; provider?: string; sourceUrl?: string | null },
+  company: string,
+): string {
   const text = fact.span.trim().replace(/\s+/g, " ").replace(/^["“]|["”]$/g, "");
   // Their own site: attributed to the site when it can be named, and left as
   // the sentence when it cannot, because "their site" must not be invented.
@@ -126,7 +143,11 @@ export function voiceSafeObservation(fact: { span: string; role?: string; provid
     return observationLine({ span: fact.span, role: "prospect_page", provider: fact.provider }, company);
   }
   const sentence = /[.!?]["”']?$/.test(text) ? text : `${text}.`;
-  return `A published account said: "${sentence}"`;
+  const host = sourceHost(fact.sourceUrl);
+  if (host) return `Saw this on ${host}: "${sentence}"`;
+  // No URL to name. Not "a recent write-up": nothing here knows when it was
+  // published, and the date would be the invented part.
+  return `Saw this in a write-up: "${sentence}"`;
 }
 
 /**
@@ -151,7 +172,7 @@ export function alignGreeting(body: string, leadFirst: string, senderName: strin
  */
 export function repairDraftVoice(
   email: string,
-  facts: Array<{ span: string; role?: string; provider?: string }>,
+  facts: Array<{ span: string; role?: string; provider?: string; sourceUrl?: string | null }>,
   company: string,
   leadFirst: string,
   senderName: string,
@@ -159,14 +180,29 @@ export function repairDraftVoice(
   const subjectMatch = email.match(/^(Subject:\s*.+\n+)/i);
   const head = subjectMatch?.[1] ?? "";
   let body = alignGreeting(subjectMatch ? email.slice(head.length) : email, leadFirst, senderName);
-  if (company.trim()) {
-    for (const fact of facts) {
-      const span = fact.span.replace(/\s+/g, " ").trim();
-      if (!span || !VOICE_THEFT.test(span)) continue;
-      const compact = body.replace(/\s+/g, " ");
-      if (!compact.includes(span)) continue;
-      body = body.replace(span, voiceSafeObservation({ span, role: fact.role, provider: fact.provider }, company));
-    }
+  for (const fact of facts) {
+    const span = fact.span.replace(/\s+/g, " ").trim();
+    if (!span) continue;
+    /*
+     * Any outside sentence the writer dropped in bare, not only one that
+     * matched the voice-theft pattern. The pattern caught an "I ... was
+     * invited"; a third-person line from a news story reads just as much like
+     * the sender's own words, because nothing says whose it is.
+     *
+     * Their own site still needs a company name to attribute to, so skip it
+     * when there is none rather than invent "their site".
+     */
+    const own = isLeadSite(fact);
+    if (own && !company.trim()) continue;
+    const at = body.indexOf(span);
+    if (at < 0) continue;
+    // Already quoted and attributed: replacing would nest one attribution
+    // inside another.
+    if (/(?:[:,]\s*["“]\s*)$/.test(body.slice(Math.max(0, at - 60), at))) continue;
+    body = body.replace(span, voiceSafeObservation(
+      { span, role: fact.role, provider: fact.provider, sourceUrl: fact.sourceUrl },
+      company,
+    ));
   }
   return head + body;
 }

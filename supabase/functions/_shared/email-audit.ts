@@ -343,7 +343,9 @@ export function auditEmail(input: AuditInput): Finding[] {
     .map((line) => line.trim())
     .filter((line) => line && NOTICED.test(line));
   const unsupportedNotice = noticedLines.filter((line) => {
-    if (/^saw this on\b/i.test(line)) return false;
+    // The attribution is the source, not an unbacked trigger. "on" names the
+    // site or the host; "in" is the write-up with no URL to name.
+    if (/^saw this (?:on|in)\b/i.test(line)) return false;
     if (input.corpus && noticedLineIsSupported(line, input.corpus)) return false;
     return true;
   });

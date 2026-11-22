@@ -515,13 +515,21 @@ const EXACT_CTA = new Set(["worth a look?", "open to a look?"]);
  * ("On Acme's site: \"...\""), so the quote still counts as the observation.
  */
 export function unattributed(line: string, company: string): string {
+  // Kept: drafts written before the attribution named its source carry it.
   const published = line.match(/^a published account said[:,]\s*["“](.+)["”]$/i);
   if (published) return published[1].trim();
   const c = company.trim();
-  if (!c) return line;
-  const esc = c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const m = line.match(new RegExp(`^(?:saw (?:this )?on|on|from) (?:the )?${esc}(?:'s)? (?:site|website|homepage)[:,]\\s*["“](.+)["”]$`, "i"));
-  return m ? m[1].trim() : line;
+  if (c) {
+    const esc = c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const site = line.match(new RegExp(`^(?:saw (?:this )?on|on|from) (?:the )?${esc}(?:'s)? (?:site|website|homepage)[:,]\\s*["“](.+)["”]$`, "i"));
+    if (site) return site[1].trim();
+  }
+  // An outside source, named by the host the sentence was read from.
+  const host = line.match(/^(?:saw (?:this )?on|on|from) ([a-z0-9-]+(?:\.[a-z0-9-]+)+)[:,]\s*["“](.+)["”]$/i);
+  if (host) return host[2].trim();
+  const writeUp = line.match(/^saw this in an? (?:recent )?write-up[:,]\s*["“](.+)["”]$/i);
+  if (writeUp) return writeUp[1].trim();
+  return line;
 }
 
 function norm(value: string): string {
