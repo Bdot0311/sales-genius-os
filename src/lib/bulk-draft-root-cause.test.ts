@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { unsupportedClaims } from "../../supabase/functions/_shared/evidence";
 import { bodyViolations, lineGrounding, type ApprovedFact } from "../../supabase/functions/_shared/evidence-contract";
 import { agentJobRetry, classifyFailure } from "../../supabase/functions/_shared/bulk-run-logic";
-import { AI_MAX_ATTEMPTS, runWithAiRetries } from "../../supabase/functions/_shared/ai-retry";
+import { runWithAiRetries } from "../../supabase/functions/_shared/ai-retry";
 import { retryGroundedDraft, settleGrounding } from "../../supabase/functions/_shared/grounding-retry";
 
 /**
@@ -183,7 +183,9 @@ describe("rate limits were retried immediately, and only on the gateway that pro
     expect(calls).toBe(0);
   });
 
-  it("retries a timeout, then stops at the attempt cap", async () => {
+  it("retries a timeout once, then stops", async () => {
+    // A timeout spends the short bound. The next attempt is the last one,
+    // so a timed-out call is billed twice, not three times.
     let calls = 0;
     await expect(runWithAiRetries(
       () => {
@@ -192,7 +194,7 @@ describe("rate limits were retried immediately, and only on the gateway that pro
       },
       { sleep: async () => {}, random: () => 0 },
     )).rejects.toThrow("Timeout");
-    expect(calls).toBe(AI_MAX_ATTEMPTS);
+    expect(calls).toBe(2);
   });
 });
 
