@@ -5,6 +5,8 @@
 
 # Shared module rules
 
+- Customer paid tiers require Stripe linkage in the database and recognized active/trialing Stripe plans in checkout, polling and reconciliation; AppSumo records attribution only. Why: signup labels, local grants and licensing must not bypass recurring billing.
+
 - Automatic reply budgets take the lesser of the agent preference and the service-only current-subscription allowance; database writes clamp that preference and failed allowance/count reads permit no replies. Why: browser settings, old rows and downgrades cannot raise plan limits.
 
 - All Treg calls go through `_shared/treg.ts`, which sets the customer tag server-side, caps cost per call and logs call id/cost to `treg_usage`; Treg is a fallback only when Railway returns nothing and its results bill like Railway results through the normal save/enrich path. Why: customers pay the same per contact regardless of source, while Treg spend still reconciles per customer.

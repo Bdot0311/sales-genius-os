@@ -42,13 +42,15 @@ serve(async (req) => {
 
     if (!roleData) throw new Error("Admin privileges required");
 
-    const { email, password, full_name, plan = 'growth', is_admin = false } = await req.json();
+    const { email, password, full_name, plan = 'free', is_admin = false } = await req.json();
     
     if (!email || !password) {
       throw new Error("Email and password are required");
     }
 
-    logStep("Creating user", { plan, is_admin });
+    const makeAdmin = is_admin === true;
+    if (!makeAdmin && plan !== 'free') throw new Error('Paid plans require Stripe subscription checkout');
+    logStep("Creating user", { plan, is_admin: makeAdmin });
 
     // Create the user in auth
     const { data: newUser, error: createError } = await supabaseClient.auth.admin.createUser({
@@ -63,42 +65,23 @@ serve(async (req) => {
 
     logStep("User created", { userId: newUser.user.id });
 
-    // Profile and subscription will be created by triggers
-    // Set proper limits and credits per plan (matches admin_update_subscription logic)
+    // Assign a protected role before the paid-plan write. Customers are
+    // always provisioned Free; only Stripe can activate their paid tier.
+    if (makeAdmin) {
+      const { error: roleError } = await supabaseClient.from('user_roles')
+        .insert({ user_id: newUser.user.id, role: 'admin' });
+      if (roleError) throw roleError;
+    }
     const planLimits: Record<string, number> = {
-      free: 100, starter: 1000, growth: 2500, pro: 5000, agency: 15000
+      free: 100, starter: 1000, growth: 2500, pro: 5000, agency: 15000,
     };
     const leadsLimit = planLimits[plan] ?? 100;
-    const credits = leadsLimit;
-    await supabaseClient
-      .from('subscriptions')
-      .update({
-        plan,
-        leads_limit: leadsLimit,
-        search_credits_base: credits,
-        search_credits_remaining: credits,
-        status: 'active',
-        // Admins get unlimited access - set account to permanent active
-        account_status: is_admin ? 'admin' : 'active',
-      })
-      .eq('user_id', newUser.user.id);
-
-    // If user should be admin, add admin role
-    if (is_admin) {
-      const { error: roleError } = await supabaseClient
-        .from('user_roles')
-        .insert({
-          user_id: newUser.user.id,
-          role: 'admin'
-        });
-      
-      if (roleError) {
-        logStep("Error adding admin role", { error: roleError });
-        // Don't throw - user is created, role just failed
-      } else {
-        logStep("Admin role assigned");
-      }
-    }
+    const { error: subscriptionError } = await supabaseClient.from('subscriptions').update({
+      plan, leads_limit: leadsLimit, search_credits_base: leadsLimit,
+      search_credits_remaining: leadsLimit, status: 'active',
+      account_status: makeAdmin ? 'admin' : 'active',
+    }).eq('user_id', newUser.user.id);
+    if (subscriptionError) throw subscriptionError;
 
     logStep("User setup complete");
 
@@ -122,6 +105,7 @@ serve(async (req) => {
       "Unauthorized": "Authentication failed",
       "Admin privileges required": "Insufficient permissions",
       "Email and password are required": "Email and password are required",
+      "Paid plans require Stripe subscription checkout": "Create a Free account first. Paid access starts after Stripe subscription checkout.",
       "Password is known to be weak and easy to guess, please choose a different one.": "This password is known to be weak or easy to guess. Please use a strong, unique password.",
     };
     

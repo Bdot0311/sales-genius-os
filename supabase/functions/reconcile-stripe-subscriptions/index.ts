@@ -23,6 +23,7 @@ import { logSystemAlert } from "../_shared/alerts.ts";
 import { PRICE_TO_PLAN, PRODUCT_TO_PLAN, finalizeFailedPayment } from "../_shared/process-stripe-event.ts";
 import { dunningStage } from "../_shared/dunning-policy.ts";
 import { getSubscriptionPeriod, toIsoUnix } from "../_shared/stripe-period.ts";
+import { isStripePaidStatus, stripePlanFor } from "../_shared/stripe-entitlement.ts";
 
 const log = (s: string, d?: unknown) =>
   console.log(`[RECONCILE-STRIPE] ${s}${d ? " - " + JSON.stringify(d) : ""}`);
@@ -33,21 +34,14 @@ interface SubRow {
   status: string | null;
   account_status: string | null;
   stripe_subscription_id: string | null;
+  stripe_customer_id: string | null;
   trial_end_date: string | null;
   previous_plan: string | null;
   grace_started_at: string | null;
 }
 
 function planFor(sub: Stripe.Subscription) {
-  const priceId = sub.items.data[0]?.price?.id ?? "";
-  const productId = sub.items.data[0]?.price?.product as string | undefined;
-  let details = PRICE_TO_PLAN[priceId];
-  if (!details && productId && PRODUCT_TO_PLAN[productId]) {
-    const planName = PRODUCT_TO_PLAN[productId];
-    const key = Object.keys(PRICE_TO_PLAN).find((k) => PRICE_TO_PLAN[k].plan === planName);
-    if (key) details = PRICE_TO_PLAN[key];
-  }
-  return details ?? null;
+  return stripePlanFor(sub.items.data, PRICE_TO_PLAN, PRODUCT_TO_PLAN);
 }
 
 Deno.serve(async (req) => {
@@ -94,12 +88,9 @@ Deno.serve(async (req) => {
   try {
     // Only rows that could possibly be wrong: anything linked to Stripe, or on
     // a paid plan without a live subscription.
-    const { error: renewalError } = await supabase.rpc("appsumo_refresh_credits");
-    if (renewalError) throw new Error("AppSumo credit renewal failed");
     const { data: rows, error } = await supabase
       .from("subscriptions")
-      .select("user_id, plan, status, account_status, stripe_subscription_id, trial_end_date, previous_plan, grace_started_at")
-      .is("appsumo_license_key", null)
+      .select("user_id, plan, status, account_status, stripe_subscription_id, stripe_customer_id, trial_end_date, previous_plan, grace_started_at")
       .or("stripe_subscription_id.not.is.null,plan.neq.free");
     if (error) throw new Error(error.message);
 
@@ -110,10 +101,7 @@ Deno.serve(async (req) => {
 
     for (const row of (rows ?? []) as SubRow[]) {
       stats.checked++;
-      // Admin accounts and manually granted, still-valid trials are ours to set.
-      const trialValid = row.account_status === "trial" && !!row.trial_end_date &&
-        new Date(row.trial_end_date).getTime() > Date.now();
-      if (row.account_status === "admin" || adminIds.has(row.user_id)) continue;
+      if (adminIds.has(row.user_id)) continue;
 
       let email: string | null = null;
       const { data: profile } = await supabase
@@ -131,17 +119,23 @@ Deno.serve(async (req) => {
           }
         }
 
-        const entitled = !!sub && (sub.status === "active" || sub.status === "trialing");
+        if (sub) {
+          const actualCustomer = typeof sub.customer === 'string' ? sub.customer : sub.customer.id;
+          if (actualCustomer !== row.stripe_customer_id) {
+            stats.errors.push('Stripe customer/subscription ownership mismatch; paid access revoked');
+            sub = null;
+          }
+        }
+        const details = sub ? planFor(sub) : null;
+        const entitled = !!sub && isStripePaidStatus(sub.status) && !!details;
 
-        if (entitled && sub) {
-          const details = planFor(sub);
-          if (!details) continue;
+        if (entitled && sub && details) {
           const accountStatus = sub.status === "trialing" ? "trial" : "active";
           const needsFix = row.plan !== details.plan || row.status !== "active" ||
             row.account_status !== accountStatus;
           if (!needsFix) continue;
 
-          await supabase.from("subscriptions").update({
+          const { error: correctionError } = await supabase.from("subscriptions").update({
             plan: details.plan,
             previous_plan: null,
             status: "active",
@@ -151,6 +145,7 @@ Deno.serve(async (req) => {
             current_period_end: toIsoUnix(getSubscriptionPeriod(sub).endSec),
             updated_at: new Date().toISOString(),
           }).eq("user_id", row.user_id);
+          if (correctionError) throw correctionError;
 
           await supabase.from("audit_logs").insert({
             user_id: row.user_id, action: "billing_reconciled",
@@ -194,7 +189,6 @@ Deno.serve(async (req) => {
 
         // Not entitled in Stripe (cancelled, unpaid, or gone).
         if (row.plan === "free" && !row.stripe_subscription_id) continue;
-        if (!sub && trialValid && !row.stripe_subscription_id) continue; // manual trial
 
         const stripeStatus = sub?.status ?? "missing";
         const alreadyFree = row.plan === "free";
@@ -209,12 +203,15 @@ Deno.serve(async (req) => {
         const { error: statusError } = await supabase.from("subscriptions").update({
           status: targetStatus,
           account_status: targetStatus,
-          stripe_subscription_id: targetSubscriptionId,
           cancel_at_period_end: false,
           updated_at: new Date().toISOString(),
         }).eq("user_id", row.user_id);
         if (statusError) throw new Error(statusError.message);
-        if (alreadyFree) continue;
+        if (alreadyFree) {
+          const { error: linkError } = await supabase.from('subscriptions').update({ stripe_subscription_id: targetSubscriptionId }).eq('user_id', row.user_id);
+          if (linkError) throw linkError;
+          continue;
+        }
 
         const { data: downgraded, error: downErr } = await supabase.rpc("billing_downgrade_to_free", {
           _user_id: row.user_id,
@@ -225,6 +222,8 @@ Deno.serve(async (req) => {
           },
         });
         if (downErr) throw new Error(downErr.message);
+        const { error: linkError } = await supabase.from('subscriptions').update({ stripe_subscription_id: targetSubscriptionId }).eq('user_id', row.user_id);
+        if (linkError) throw linkError;
 
         if (downgraded === true) {
           stats.corrected++; stats.downgraded++;

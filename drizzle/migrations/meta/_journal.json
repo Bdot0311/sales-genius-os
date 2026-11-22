@@ -568,6 +568,13 @@
       "when": 1795309246340,
       "tag": "0080_enforce_agent_reply_plan_limits",
       "breakpoints": true
+    },
+    {
+      "idx": 81,
+      "version": "7",
+      "when": 1795331566160,
+      "tag": "0081_require_stripe_for_customer_paid_plans",
+      "breakpoints": true
     }
   ]
 }

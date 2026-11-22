@@ -53,10 +53,10 @@ export default function AppSumoRedemption() {
     </header>
     <section className="mx-auto max-w-xl px-6 py-16">
       <p className="mb-4 text-sm font-medium text-primary">AppSumo</p>
-      <h1 className="text-3xl font-semibold">{success ? 'Your subscription is connected' : 'Connect your OutReign subscription'}</h1>
+      <h1 className="text-3xl font-semibold">{success ? 'Your AppSumo license is connected' : 'Connect your AppSumo license'}</h1>
       {success ? <>
         <CheckCircle2 className="my-6 size-8 text-primary" />
-        <p className="mb-6 text-muted-foreground">Your AppSumo plan is now linked to your account.</p>
+        <p className="mb-6 text-muted-foreground">Your license is linked. A paid plan starts only after Stripe subscription checkout; linking a license does not activate paid access or charge your card.</p>
         <Button asChild><Link to="/dashboard">Open dashboard <ArrowRight className="ml-2 size-4" /></Link></Button>
       </> : loading ? <Loader2 className="mt-8 size-5 animate-spin text-primary" /> : !claim ? <>
         <p className="my-6 text-muted-foreground">Start from the activation link on AppSumo’s Redemption page to verify your license.</p>
@@ -67,7 +67,7 @@ export default function AppSumoRedemption() {
       </> : <>
         <p className="my-6 break-words text-muted-foreground">Connect this license to <strong className="text-foreground">{email}</strong>.</p>
         {error && <p role="alert" className="mb-4 text-sm text-destructive">{error}</p>}
-        <Button onClick={redeem} disabled={busy}>{busy && <Loader2 className="mr-2 size-4 animate-spin" />}Connect subscription</Button>
+        <Button onClick={redeem} disabled={busy}>{busy && <Loader2 className="mr-2 size-4 animate-spin" />}Connect license</Button>
       </>}
     </section>
   </main>;

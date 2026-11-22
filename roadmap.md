@@ -1,8 +1,9 @@
 # Stripe-required paid access — November 22, 2026
 
-- [ ] Audit signup, AppSumo licensing, subscription checks and reconciliation for paid access without Stripe.
-- [ ] Enforce Stripe linkage for non-admin paid plans and stop AppSumo-only grants/renewals; preserve admin exemption and payment grace rules.
-- [ ] Verify live data, direct-write regressions and deployed subscription checks without creating charges.
+- [x] Audit signup, AppSumo licensing, subscription checks, webhook/invoice handlers, administrator creation and reconciliation for paid access without Stripe.
+- [x] Enforce Stripe linkage for non-admin paid plans and stop AppSumo-only grants/renewals; require recognized active/trialing Stripe plans, reject mismatched customers and preserve admin exemption/payment grace.
+- [x] 61 focused/isolated-database regressions and live rollback-only plan, AppSumo claim, customer-write and administrator checks passed. Six billing functions deployed; signed-in hosted check returns Agency/is_admin and the credits page shows 15,000. No unlinked customer paid plans, charges, emails or retained test licenses. Preview build and six-function Deno check passed.
+- [ ] Real customer checkout-to-paid activation remains unverified: temporary customer creation failed, and no real charge was initiated.
 
 # Selected automatic-reply security fix — November 22, 2026
 
