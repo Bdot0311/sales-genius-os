@@ -13,7 +13,7 @@ import { retryGroundedDraft, rewriteStatusFromProvider, settleGrounding, type Gr
 import { AI_CREDITS_USER_MESSAGE, isAiCreditError, reportAiCreditsExhausted } from "../_shared/ai-credits.ts";
 import { stripInstructionLines, unsupportedClaims } from "../_shared/evidence.ts";
 import { POLICY_VERSION, evaluateStoredSnapshots, type ApprovedFact } from "../_shared/evidence-contract.ts";
-import { fallbackSubjectFrom, repairDraftVoice, usableFallbackFact, voiceSafeObservation } from "../_shared/first-touch-fallback.ts";
+import { fallbackSubjectFrom, repairDraftVoice, thinLeadDraft, usableFallbackFact, voiceSafeObservation } from "../_shared/first-touch-fallback.ts";
 import { holdReason, researchStep, type RetrievalReceipt } from "../_shared/research-orchestration.ts";
 import { reviseUntilClear } from "../_shared/quality-gate.ts";
 // The writing rules live in one module so the three copies that used to exist
@@ -1253,6 +1253,34 @@ STRICT RULES:
     const researchQuality: ResearchQuality = scoreResearchQuality(researchBrief, researchSources);
     if (researchBrief) researchBrief = { ...researchBrief, quality: researchQuality };
     const blockOnThinResearch = requestData.blockOnThinResearch === true;
+    const researchIsThin = researchQuality.label === "thin" || researchQuality.label === "insufficient";
+    if (!isPrecisionEditPre && goal !== "subject_only" && researchIsThin && !blockOnThinResearch && resolvedSenderName) {
+      const thin = thinLeadDraft({
+        firstName,
+        senderName: resolvedSenderName,
+        company: ownedLeadCompany(leadData),
+        role: sanitizedJobTitle,
+        industry: sanitizedIndustry,
+      });
+      return new Response(JSON.stringify({
+        email: `Subject: ${thin.subject}\n\n${thin.body}`,
+        thin_research: true,
+        quality_status: "needs_review",
+        quality_findings: [{ rule: "thin_research", evidence: researchQuality.label, fix: "Refresh research before adding a company-specific claim." }],
+        fact_ids: approvedFacts.map((fact) => fact.id),
+        evidence_id: evidenceId,
+        policy_version: POLICY_VERSION,
+        research: researchBrief ? {
+          ...researchBrief,
+          sources: researchSources,
+          researched_at: researchedAt,
+          quality: researchQuality,
+          thin_research: true,
+        } : { thin_research: true, quality: researchQuality },
+        research_quality: researchQuality,
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     if (!isPrecisionEditPre && blockOnThinResearch && !researchQuality.safe_to_personalize) {
       return new Response(JSON.stringify({
         error: researchBrief
@@ -2366,6 +2394,7 @@ conversation that is already going, not as someone chasing silence.`}`;
     // from approved research only. It must pass the identical release check
     // (claims, checker, rubric availability); nothing is loosened.
     let repairedRelease = false;
+    let usedThinResearch = false;
     const repairFromFacts = (preferBody?: string): boolean => {
       if (!scoresAsEmail || !approvedFacts.length || !resolvedSenderName) return false;
       const company = ownedLeadCompany(leadData);
@@ -2489,6 +2518,21 @@ conversation that is already going, not as someone chasing silence.`}`;
       console.warn("[generate-email] released grounded observation");
       return true;
     };
+    const releaseThinLead = (): boolean => {
+      if (!resolvedSenderName) return false;
+      const thin = thinLeadDraft({
+        firstName,
+        senderName: resolvedSenderName,
+        company: ownedLeadCompany(leadData) || sanitizedCompanyName,
+        role: sanitizedJobTitle,
+        industry: sanitizedIndustry,
+      });
+      email = `Subject: ${thin.subject}\n\n${thin.body}`;
+      repairedRelease = true;
+      usedThinResearch = true;
+      console.warn("[generate-email] released thin lead draft");
+      return true;
+    };
     const groundingResponse = (status: GroundingAttempt["status"], viaFallback: boolean, reason: string) => {
       const settled = settleGrounding({ status, viaFallback, reason, outsideSource });
       if (settled.ok) return null;
@@ -2503,12 +2547,15 @@ conversation that is already going, not as someone chasing silence.`}`;
     // not a copied line — that sentence is permanent and would end the lead.
     if (fallbackClaims.length && !checkerBlockers.length && !repairedRelease && !releaseSafeObservation()) {
       const grounded = await retryGroundedDraft(fallbackClaims, policyRewrite);
-      if (grounded.status !== "released" && !releaseSafeObservation()) {
-        const held = groundingResponse(grounded.status, true, grounded.reason);
+      if (grounded.status === "unavailable") {
+        const held = groundingResponse("unavailable", true, grounded.reason);
+        if (held) return held;
+      } else if (grounded.status !== "released" && !releaseSafeObservation() && !releaseThinLead()) {
+        const held = groundingResponse("refused", true, grounded.reason);
         if (held) return held;
       }
     }
-    if (fallbackClaims.length && !repairedRelease && !releaseSafeObservation()) {
+    if (fallbackClaims.length && !repairedRelease && !releaseSafeObservation() && !releaseThinLead()) {
       const held = groundingResponse("refused", true, "");
       if (held) return held;
     }
@@ -2577,7 +2624,7 @@ conversation that is already going, not as someone chasing silence.`}`;
           releaseResult = { ...releaseResult, reason: grounded.reason };
         }
       }
-      if (!releaseResult.allow && releaseSafeObservation()) {
+      if (!releaseResult.allow && (releaseResult.code === "unsupported_prospect_claim" || releaseResult.code === "quality_checker") && (releaseSafeObservation() || releaseThinLead())) {
         releaseResult = { allow: true, code: "released", reason: "" };
       }
       if (!releaseResult.allow) {
@@ -2648,8 +2695,10 @@ conversation that is already going, not as someone chasing silence.`}`;
             quality: researchQuality,
             sources: researchSources,
             researched_at: researchedAt,
+            thin_research: usedThinResearch,
           }
         : null,
+      thin_research: usedThinResearch,
       research_quality: researchQuality,
       // Reported, not only logged. "I don't think it's using the skills we
       // installed" is not answerable from a server log the user cannot read.

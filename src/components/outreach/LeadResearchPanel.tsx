@@ -17,6 +17,13 @@ export interface LeadResearchQuality {
   gaps?: string[] | null;
 }
 
+export interface ResearchProviderStatus {
+  status?: "ok" | "empty" | "error" | "skipped" | null;
+  error?: string | null;
+  count?: number;
+  stored?: number;
+}
+
 export interface LeadResearch {
   what_they_do?: string | null;
   who_they_sell_to?: string | null;
@@ -27,6 +34,13 @@ export interface LeadResearch {
   sources?: string[] | null;
   researched_at?: string | null;
   quality?: LeadResearchQuality | null;
+  /** True when the draft used only the role, company, and industry. */
+  thin_research?: boolean | null;
+  retrieval?: {
+    firecrawl?: ResearchProviderStatus | null;
+    parallel?: ResearchProviderStatus | null;
+    context_dev?: ResearchProviderStatus | null;
+  } | null;
 }
 
 const CONFIDENCE_COPY: Record<string, string> = {
@@ -74,7 +88,14 @@ export const LeadResearchPanel = ({
   const confidence = (research?.confidence || "").toLowerCase();
   const hasBrief = Boolean(research && (observations.length > 0 || research.what_they_do));
   const quality = research?.quality ?? null;
-  const tooThin = Boolean(quality && !quality.safe_to_personalize);
+  const tooThin = Boolean(quality && !quality.safe_to_personalize) || Boolean(research?.thin_research);
+  const providers = research?.retrieval
+    ? [
+        ["Firecrawl", research.retrieval.firecrawl],
+        ["Parallel", research.retrieval.parallel],
+        ["Context", research.retrieval.context_dev],
+      ] as const
+    : [];
   const gaps = quality?.gaps?.filter(Boolean) ?? [];
 
   return (
@@ -152,7 +173,17 @@ export const LeadResearchPanel = ({
               <p className="text-xs text-muted-foreground">{emptyMessage}</p>
             )}
 
-            {!loading && (tooThin || (quality && quality.label === "thin")) && (
+            {!loading && providers.some(([, provider]) => provider) && (
+              <ul className="flex flex-wrap gap-1.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+                {providers.map(([name, provider]) => (
+                  <li key={name} className="rounded border border-border px-1.5 py-0.5">
+                    {name}: {provider?.status ?? "skipped"}
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {!loading && (tooThin || (quality && quality.label === "thin") || research?.thin_research) && (
               <div
                 className={cn(
                   "flex items-start gap-2 rounded-md border p-2 text-xs",
@@ -164,9 +195,11 @@ export const LeadResearchPanel = ({
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <div className="space-y-1">
                   <p className="font-medium">
-                    {tooThin
-                      ? `Research completeness ${quality?.score}/100 — too thin to personalize safely`
-                      : `Research completeness ${quality?.score}/100 — thin`}
+                    {research?.thin_research
+                      ? "Thin research — this draft uses only the role, company, and industry"
+                      : tooThin
+                        ? `Research completeness ${quality?.score}/100 — too thin to personalize safely`
+                        : `Research completeness ${quality?.score}/100 — thin`}
                   </p>
                   <p>
                     {tooThin

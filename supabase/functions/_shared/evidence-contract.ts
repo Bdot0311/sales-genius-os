@@ -755,6 +755,51 @@ function subjectGrounded(subject: string, facts: string[], senderCorpus: string,
   return contentWords(subject).every((w) => suppliedBy(known, stems, w));
 }
 
+const EVENT_PHRASE = /\b(?:ipos?|opening bell|invited to speak|funding round|series\s+[a-e]|panel|conference|keynote|acquisition|nasdaq)\b/gi;
+
+/**
+ * A specific claim: a quote, a number, an event (IPO, panel, conference),
+ * or a name. Ordinary words are not claims.
+ */
+export function specificTokens(line: string): string[] {
+  const tokens: string[] = [];
+  for (const match of line.matchAll(/["“]([^"”]{6,})["”]/g)) {
+    tokens.push(match[1].replace(/\s+/g, " ").trim().toLowerCase());
+  }
+  for (const match of line.matchAll(EVENT_PHRASE)) tokens.push(match[0].toLowerCase());
+  for (const match of line.matchAll(/\b\d[\d,]*(?:\.\d+)?\b/g)) tokens.push(match[0].replace(/,/g, ""));
+  const words = line.split(/\s+/);
+  words.forEach((word, index) => {
+    const pieces = word.replace(/['’]s\b/gi, "").split(/[^A-Za-z0-9]+/).filter(Boolean);
+    const sentenceStart = index === 0 || /[.!?:"”]$/.test(words[index - 1] ?? "");
+    for (const piece of pieces) {
+      if (/^[A-Z]{2,}$/.test(piece)) tokens.push(piece.toLowerCase());
+      else if (!sentenceStart && /^\p{Lu}\p{L}{2,}$/u.test(piece)) tokens.push(piece.toLowerCase());
+    }
+  });
+  return [...new Set(tokens)];
+}
+
+function containsToken(haystack: string, token: string): boolean {
+  if (token.includes(" ")) return haystack.toLowerCase().includes(token);
+  const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(?:^|[^a-z0-9])${escaped}(?:$|[^a-z0-9])`, "i").test(haystack);
+}
+
+/**
+ * Every specific token has to sit in one stored sentence that has a source URL.
+ * A name that is the company or the sender is not a researched event.
+ */
+export function specificsGrounded(
+  line: string,
+  facts: { span: string; sourceUrl?: string | null }[],
+  allowed: string[] = [],
+): boolean {
+  const tokens = specificTokens(line).filter((token) => !allowed.some((name) => name && containsToken(name, token)));
+  if (!tokens.length) return true;
+  return facts.some((fact) => Boolean(fact.sourceUrl) && tokens.every((token) => containsToken(fact.span, token)));
+}
+
 export function bodyViolations(
   body: string,
   decision: EvidenceDecision,
@@ -781,6 +826,12 @@ export function bodyViolations(
     words += line.split(/\s+/).length;
     if (EXACT_CTA.has(line.toLowerCase().replace(/\s+/g, " "))) continue;
     if (/https?:\/\//i.test(line)) {
+      violations.push(line);
+      continue;
+    }
+    // An IPO, a panel, a conference, a number, or a name has to be one stored
+    // sentence with a URL. Sharing ordinary words with the page is not enough.
+    if (!specificsGrounded(line, facts, [company, senderName])) {
       violations.push(line);
       continue;
     }

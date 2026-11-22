@@ -139,6 +139,38 @@ describe("closed rendering from approved snapshots", () => {
     expect(decision.facts[0].provider).toBe("parallel");
   });
 
+  it("rejects the proxywise sample when the research never said it", () => {
+    const span = "Proxywise AI builds proxy voting software for institutions worldwide.";
+    const decision = {
+      status: "ready" as const,
+      reason: "",
+      evidenceId: "e",
+      conflicts: [] as string[],
+      facts: [{
+        id: "f1",
+        snapshotId: "s",
+        span,
+        sourceUrl: "https://proxywise.example/",
+        retrievedAt: NOW,
+        publishedAt: null,
+        role: "prospect_page" as const,
+        provider: "firecrawl" as const,
+      }],
+    };
+    const sample = [
+      "Hi Nicolaas,",
+      "But not to ring the opening bell for Proxywise AI's IPO :)",
+      'In fact I was invited to speak on the "AI in Proxy Voting" panel at the Vanguard / NYSE / NYU conference.',
+      "How are you currently handling outbound follow-up after high-profile speaking engagements?",
+      "Brandon Yakubov",
+    ].join("\n\n");
+    const violations = bodyViolations(sample, decision, "Brandon Yakubov", "", "Proxywise AI");
+    expect(violations.some((line) => /IPO/i.test(line))).toBe(true);
+    expect(violations.some((line) => /Vanguard/i.test(line))).toBe(true);
+    const grounded = `Hi Nicolaas,\n\n${span}\n\nWorth a look?\n\nBrandon Yakubov`;
+    expect(bodyViolations(grounded, decision, "Brandon Yakubov", "", "Proxywise AI")).toEqual([]);
+  });
+
   it("does not let the sender speak a prospect invitation as their own", () => {
     const fact = "In fact I was invited to speak on the AI in Proxy Voting panel at the Vanguard conference.";
     const decision = {
@@ -146,7 +178,7 @@ describe("closed rendering from approved snapshots", () => {
       reason: "",
       evidenceId: "e",
       conflicts: [] as string[],
-      facts: [{ id: "f1", role: "prospect_page" as const, span: fact }],
+      facts: [{ id: "f1", role: "prospect_page" as const, span: fact, sourceUrl: "https://proxywise.example/" }],
     } as unknown as Parameters<typeof bodyViolations>[1];
     const raw = `Hi Nicolaas,\n\n${fact}\n\nWorth a look?\n\nBrandon Yakubov`;
     expect(bodyViolations(raw, decision, "Brandon Yakubov", "", "Proxywise AI")).toContain(fact);

@@ -13,7 +13,7 @@ import { parallelConfigured } from "../_shared/parallel.ts";
 import { contextDevConfigured } from "../_shared/context-dev.ts";
 import { evaluateStoredSnapshots, sealSnapshot, type StoredSnapshot } from "../_shared/evidence-contract.ts";
 import { fetchPinnedPage, type PageFetch } from "../_shared/pinned-fetch.ts";
-import { receiptFromProviders, researchAction, researchReservation, researchStep, type RetrievalReceipt } from "../_shared/research-orchestration.ts";
+import { annotateProviderStatuses, receiptFromProviders, researchAction, researchReservation, researchStep, type RetrievalReceipt } from "../_shared/research-orchestration.ts";
 import {
   leadResearchQueries,
   parallelPromptBlock,
@@ -964,9 +964,15 @@ serve(async (req) => {
       siteHosts: pages.map((page) => page.finalUrl),
       firecrawlConfigured: gathered.firecrawlConfigured,
       firecrawlError: gathered.firecrawlError,
-      firecrawlCount: gathered.sitePages.length,
+      firecrawlCount: gathered.sitePages.filter((page) => page.via === "firecrawl").length,
+      firecrawlCalled: Boolean(host) && gathered.firecrawlConfigured,
       snapshotWrite,
     });
+    const annotated = annotateProviderStatuses(retrieval, snapshots);
+    retrieval.parallel = annotated.parallel;
+    retrieval.context_dev = annotated.context_dev;
+    retrieval.firecrawl = annotated.firecrawl;
+    retrieval.site = annotated.site;
     const replaced = await supabase.rpc("store_research_snapshots", {
       p_user_id: userId,
       p_lead_id: leadId,

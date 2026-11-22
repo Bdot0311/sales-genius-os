@@ -5,6 +5,36 @@
  */
 export const FALLBACK_ASK = "Worth a look?";
 
+/**
+ * The email we can write when the pages did not yield a sentence.
+ * Role, company, and industry are the lead record. Nothing else is stated.
+ */
+export function thinLeadDraft(input: {
+  firstName: string;
+  senderName: string;
+  company?: string | null;
+  role?: string | null;
+  industry?: string | null;
+}): { subject: string; body: string } {
+  const first = input.firstName.trim() || "there";
+  const company = String(input.company ?? "").trim();
+  const role = String(input.role ?? "").trim();
+  const industry = String(input.industry ?? "").trim();
+  const bits = [
+    company ? `at ${company}` : "",
+    role ? `as ${role}` : "",
+    industry ? `in ${industry}` : "",
+  ].filter(Boolean);
+  const line = bits.length
+    ? `You're on file ${bits.join(", ")}.`
+    : "I only have the name on this lead, not a page of research.";
+  const sender = input.senderName.trim();
+  return {
+    subject: (company || "Quick question").split(/\s+/).slice(0, 6).join(" "),
+    body: `Hi ${first},\n\n${line}\n\nHow are you handling outbound for that work?\n\n${sender}`,
+  };
+}
+
 export function releasableFirstTouch(input: { firstName: string; fact: string; senderName: string }): string {
   const first = input.firstName.trim() || "there";
   const fact = input.fact.trim().replace(/\s+/g, " ");

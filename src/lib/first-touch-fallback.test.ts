@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { alignGreeting, releasableFirstTouch, repairDraftVoice } from "../../supabase/functions/_shared/first-touch-fallback";
+import { alignGreeting, releasableFirstTouch, repairDraftVoice, thinLeadDraft } from "../../supabase/functions/_shared/first-touch-fallback";
 
 describe("releasable first-touch fallback", () => {
   it("copies the approved sentence verbatim between greeting, one ask and sender", () => {
@@ -9,6 +9,25 @@ describe("releasable first-touch fallback", () => {
   it("terminates an unpunctuated fact instead of rewriting it", () => {
     expect(releasableFirstTouch({ firstName: "Ana", fact: "Acme ships weekly", senderName: "Sam" }))
       .toContain("\n\nAcme ships weekly.\n\n");
+  });
+});
+
+describe("thin research uses only the lead record", () => {
+  it("states the role, company, and industry, and one question", () => {
+    const draft = thinLeadDraft({
+      firstName: "Nicolaas",
+      senderName: "Brandon Yakubov",
+      company: "Proxywise AI",
+      role: "Head of Sales",
+      industry: "proxy voting",
+    });
+    expect(draft.body).toContain("Hi Nicolaas,");
+    expect(draft.body).toContain("Proxywise AI");
+    expect(draft.body).toContain("Head of Sales");
+    expect(draft.body).toContain("proxy voting");
+    expect(draft.body.match(/\?/g)).toHaveLength(1);
+    expect(draft.body).not.toMatch(/IPO|Vanguard|NYSE|panel|conference|invited to speak/i);
+    expect(draft.body.trim().endsWith("Brandon Yakubov")).toBe(true);
   });
 });
 
