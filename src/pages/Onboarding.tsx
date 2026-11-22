@@ -153,11 +153,13 @@ const Onboarding = () => {
 
       const size = COMPANY_SIZE_OPTIONS.find((o) => o.label === answers.company_size);
 
-      // Save the explicit choice before completion; never enroll anyone here.
+      // Persist the explicit choice before completion; only opt-ins enter the email queue.
       const { error: consentError } = await supabase.auth.updateUser({
         data: { marketing_email_consent: marketingConsentRecord(marketingOptIn, new Date().toISOString()) },
       });
       if (consentError) throw consentError;
+      const { error: importError } = await supabase.rpc('record_marketing_email_consent', { p_opt_in: marketingOptIn });
+      if (importError) throw importError;
 
       const { error: respErr } = await supabase.from("onboarding_responses").upsert(
         {

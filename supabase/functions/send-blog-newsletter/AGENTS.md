@@ -1,0 +1,2 @@
+- New signup imports use an authenticated explicit-consent RPC, a private atomic queue and idempotent Mailchimp member PUTs; never change existing member subscription status. Why: signup alone is not marketing permission and unsubscribes must survive retries.
+- Process imports on consent enqueue through this worker, sharing the existing hourly email recovery job. Why: no independent signup poller is necessary.

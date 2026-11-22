@@ -575,6 +575,13 @@
       "when": 1795331566160,
       "tag": "0081_require_stripe_for_customer_paid_plans",
       "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "7",
+      "when": 1795386967364,
+      "tag": "0082_mailchimp_signup_opt_in_queue",
+      "breakpoints": true
     }
   ]
 }

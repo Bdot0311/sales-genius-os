@@ -4110,6 +4110,53 @@ export type Database = {
         }
         Relationships: []
       }
+      mailchimp_signup_imports: {
+        Row: {
+          attempts: number
+          consent_source: string
+          consent_version: string
+          created_at: string
+          error: string | null
+          member_status: string | null
+          opted_in: boolean
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          consent_source?: string
+          consent_version?: string
+          created_at?: string
+          error?: string | null
+          member_status?: string | null
+          opted_in: boolean
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          consent_source?: string
+          consent_version?: string
+          created_at?: string
+          error?: string | null
+          member_status?: string | null
+          opted_in?: boolean
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mailchimp_signup_imports_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mcp_call_log: {
         Row: {
           created_at: string
@@ -8440,6 +8487,15 @@ export type Database = {
         Args: { p_ttl_seconds: number }
         Returns: boolean
       }
+      claim_mailchimp_signup_import: {
+        Args: never
+        Returns: {
+          attempts: number
+          email: string
+          updated_at: string
+          user_id: string
+        }[]
+      }
       claim_rescore_items: {
         Args: { p_limit?: number }
         Returns: {
@@ -8774,6 +8830,10 @@ export type Database = {
       record_inbox_sync_result: {
         Args: { p_error: string; p_user_id: string }
         Returns: number
+      }
+      record_marketing_email_consent: {
+        Args: { p_opt_in: boolean }
+        Returns: undefined
       }
       record_outbound_verdict: {
         Args: {
