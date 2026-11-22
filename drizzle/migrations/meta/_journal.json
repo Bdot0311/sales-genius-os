@@ -547,6 +547,20 @@
       "when": 1795299523967,
       "tag": "0077_appsumo_plan_config_drop_redundant_policy",
       "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1795308624963,
+      "tag": "0078_blog_mailchimp_delivery",
+      "breakpoints": true
+    },
+    {
+      "idx": 79,
+      "version": "7",
+      "when": 1795308850473,
+      "tag": "0079_blog_mailchimp_explicit_privileges",
+      "breakpoints": true
     }
   ]
 }

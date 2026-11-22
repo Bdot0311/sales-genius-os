@@ -1,3 +1,9 @@
+# Automatic full-article Mailchimp blogs — November 22, 2026
+
+- [x] Newly published AI/Opinly articles queue once; historical imports and edits do not resend. Immutable full-article snapshot, service-only atomic claim and immediate publication wake plus hourly recovery are installed.
+- [x] Deployed worker renders the saved article in the approved BDØT layout, crown/GPT artwork, relevant quoted tip and complete footer. Audience and sender are configured from the approved Mailchimp settings; regular campaigns send only to subscribed contacts.
+- [x] Six delivery regressions and rollback-only queue/permission checks passed. Hosted worker preview and real Mailchimp draft save/read-back/checklist passed; every article paragraph retained, five images loaded, no desktop/440px overflow. No test or subscriber send during setup; verification draft remains unsent. First automatic publication/delivery has not yet occurred.
+
 # Mailchimp welcome email — November 21, 2026
 
 - [x] Create separate welcome draft using the BDØT design; saved HTML checked at desktop/phone, five images loaded, no overflow. Mailchimp accepted owner-only test to info@bdotindustries.org (HTTP 204); post-test copy retained. Inbox rendering awaits confirmation.

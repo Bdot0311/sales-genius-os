@@ -64,3 +64,5 @@
 - Background research/draft approvals and progress are embedded in the AI Agent tabs; the legacy bulk-runs route redirects there. Why: durable jobs support the agent rather than a separate workspace feature.
 
 - Marketing-site trackers that ignore Google Consent Mode load only via `src/lib/consent-trackers.ts` after `canTrack(purpose)`; the banner keeps v.js flags in sync with the analytics answer. Why: Reject must actually hold back every third-party tag.
+
+- Blog emails use snapshot queues, standalone HTML and read-back; uncertain sends stop. Why: no blank or duplicate Mailchimp emails.

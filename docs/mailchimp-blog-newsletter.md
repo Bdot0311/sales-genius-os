@@ -1,5 +1,15 @@
 # OutReign full-article newsletter
 
+## Automatic published-blog delivery — November 22, 2026
+
+- New generated AI and Opinly publications now enqueue an immutable copy of the saved title, description, markdown body, slug and publication time. Historical imports, existing articles and edits are not backfilled or resent.
+- `send-blog-newsletter` is deployed and internal-only. Publication wakes it immediately, with hourly pending-job recovery. The queue is atomically claimed once. Provider failures are recorded; interrupted or uncertain sends require review rather than automatic replay.
+- Uses the approved exported BDØT layout in `supabase/functions/send-blog-newsletter/template.ts`, not a Mailchimp multichannel template binding. Sanitized full markdown becomes the article body with its original images, crown logo, existing GPT editorial artwork, highlighted opening paragraph, relevant article excerpt as Tip of the week, promotional banner and complete social/preferences/unsubscribe/address footer.
+- Sender is info@bdotindustries.org; BDØT Industries is the approved audience. Current audience read reported 57 subscribed contacts; future campaigns use the current Mailchimp subscription state, not a fixed count. No account signup imports or subscription-status changes.
+- Before sending, a separate Mailchimp content read must retain every article paragraph in order, followed by a ready send-checklist. Send acceptance is recorded as `accepted`, not inbox delivery.
+- Six focused delivery tests and rollback-only database queue/permission checks passed. The deployed worker rendered an existing article into an unsent setup-verification draft; Mailchimp preserved its complete article and reported ready. Desktop/440px preview loaded five images without horizontal overflow.
+- No test or audience email was sent during setup, and no old article was published again. First automatic publication and real inbox delivery remain unverified until the next new blog is published.
+
 ## Relevant Tip of the week — November 21, 2026
 
 - Replaced the sample librarian quote and attribution with practical advice from the featured article: check the draft's opening against its research source, retain one verified detail and ask a short relevant question. Added a side-by-side research/draft review action. Existing tip bubble and remaining footer/article design unchanged.

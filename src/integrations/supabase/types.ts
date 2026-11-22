@@ -1653,6 +1653,50 @@ export type Database = {
         }
         Relationships: []
       }
+      blog_mailchimp_deliveries: {
+        Row: {
+          article: Json
+          available_at: string
+          campaign_id: string | null
+          created_at: string
+          error: string | null
+          id: string
+          post_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          article: Json
+          available_at: string
+          campaign_id?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          post_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          article?: Json
+          available_at?: string
+          campaign_id?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          post_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_mailchimp_deliveries_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blog_posts: {
         Row: {
           category: string
@@ -8304,6 +8348,26 @@ export type Database = {
           step_id: string
           step_status: string
         }[]
+      }
+      claim_blog_mailchimp_delivery: {
+        Args: never
+        Returns: {
+          article: Json
+          available_at: string
+          campaign_id: string | null
+          created_at: string
+          error: string | null
+          id: string
+          post_id: string
+          status: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "blog_mailchimp_deliveries"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       claim_bulk_run_items: {
         Args: { p_limit: number; p_run: string }
