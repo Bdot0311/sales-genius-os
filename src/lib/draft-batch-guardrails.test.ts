@@ -10,6 +10,7 @@ import {
   findSelfReferentialPeers,
   signOffMismatch,
 } from "../../supabase/functions/_shared/email-rules.ts";
+import { usableFallbackFact } from "../../supabase/functions/_shared/first-touch-fallback";
 
 /**
  * Drafts taken verbatim from one batch of twenty follow-ups the agent queued
@@ -345,5 +346,41 @@ describe("a second pass over the same lead is not a research failure", () => {
   it("the bulk worker treats it the same way", () => {
     expect(bulkClassify(IN_FLIGHT)).toBe("transient");
     expect(bulkClassify(EMPTY)).toBe("permanent");
+  });
+});
+
+/**
+ * The quote-only path has to refuse the same sentences.
+ *
+ * usableFallbackFact gates which approved facts the drafting rescue may quote,
+ * and it checked length, markdown and a leading capital. Nothing asked whose
+ * voice the sentence was in, so the two drafts above were built from facts it
+ * had approved.
+ */
+describe("a fact the sender cannot say in his own voice", () => {
+  const ARTICLE = "In this article, we sit down with Jack Roosevelt, co-founder of LucidaClub, to hear his thoughts on the cannabis retail experience and how he hopes to disrupt the market by guiding new consumers to make the right purchase.";
+  const POST = "But not to ring the opening bell for Proxywise AI 's IPO :) In fact I was invited to speak on the \"AI in Proxy Voting\" panel at the Vanguard / NYSE / NYU conference.";
+
+  it("refuses the two that went out", () => {
+    expect(usableFallbackFact(ARTICLE)).toBe(false);
+    expect(usableFallbackFact(POST)).toBe(false);
+  });
+
+  it("refuses a stranger's first person, a publication's own voice, and a fragment", () => {
+    expect(usableFallbackFact("I was invited to speak on the panel at the conference in October.")).toBe(false);
+    expect(usableFallbackFact("In this interview the founder explains how the product came about.")).toBe(false);
+    expect(usableFallbackFact("But the company has since moved its headquarters to Denver this year.")).toBe(false);
+    // A wink about their IPO is a social post's tone, not a first touch.
+    expect(usableFallbackFact("They rang the opening bell for the IPO last week :) a big moment.")).toBe(false);
+  });
+
+  it("still quotes the facts a first touch is built from", () => {
+    for (const span of [
+      "LucidaClub helps new cannabis consumers find products suited to how they actually want to feel.",
+      "Proxywise AI raised a Series A to automate proxy voting research for institutional investors.",
+      "The company was named to the Fintech 50 list for its proxy voting automation.",
+    ]) {
+      expect(usableFallbackFact(span), span).toBe(true);
+    }
   });
 });

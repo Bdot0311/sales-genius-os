@@ -48,18 +48,113 @@ describe("greeting and first-person prospect copy", () => {
     const fact = "In fact I was invited to speak on the AI in Proxy Voting panel at the Vanguard conference.";
     const own = voiceSafeObservation({ span: fact, role: "prospect_page", provider: "firecrawl" }, "Proxywise AI");
     expect(own).toContain("Saw this on Proxywise AI's site:");
-    const outside = voiceSafeObservation({ span: fact, role: "external", provider: "parallel" }, "Proxywise AI");
-    expect(outside).toContain("A published account said:");
-    expect(outside).not.toMatch(/site:/i);
+    // An outside sentence names where it was read, so the reader can place it.
+    const outside = voiceSafeObservation(
+      { span: fact, role: "external", provider: "parallel", sourceUrl: "https://www.institutionalinvestor.com/x" },
+      "Proxywise AI",
+    );
+    expect(outside).toContain('Saw this on institutionalinvestor.com: "');
+    expect(outside).not.toMatch(/Proxywise AI's site/i);
     const repaired = repairDraftVoice(
       `Hi Nicolaas,\n\n${fact}\n\nHow are you handling follow-up?\n\nBrandon Yakubov`,
-      [{ span: fact, role: "external", provider: "context_dev" }],
+      [{ span: fact, role: "external", provider: "context_dev", sourceUrl: "https://news.example.com/a" }],
       "Proxywise AI",
       "Nicolaas",
       "Brandon Yakubov",
     );
-    expect(repaired).toContain("A published account said:");
+    expect(repaired).toContain('Saw this on news.example.com: "');
     expect(repaired).not.toMatch(/on Proxywise AI's site/i);
+  });
+
+  /**
+   * Attribution used to depend on the sentence sounding stolen.
+   *
+   * It fired only on an "I"/"we" beside "was invited" or "spoke", so every
+   * other outside sentence was quoted bare under the sender's name: a
+   * magazine's editorial voice, a founder's post about anything else, a
+   * write-up in the first person plural. The rule is not which outside
+   * sentences sound stolen -- it is that an outside sentence is not the
+   * sender's to say.
+   */
+  it("attributes every outside sentence, not only the ones that sound stolen", () => {
+    for (const span of [
+      "Proxywise AI raised a Series A to automate proxy voting research for institutional investors.",
+      "The company was named to the Fintech 50 list for its proxy voting automation.",
+      "We sat down with the founders to hear where the product is going next.",
+    ]) {
+      for (const provider of ["parallel", "context_dev"] as const) {
+        const line = voiceSafeObservation(
+          { span, role: "external", provider, sourceUrl: "https://www.techcrunch.com/post" },
+          "Proxywise AI",
+        );
+        expect(line, `${provider}: ${span}`).toContain('Saw this on techcrunch.com: "');
+        expect(line, span).toContain(span);
+      }
+    }
+  });
+
+  it("still lets the company describe itself on its own site", () => {
+    const span = "Proxywise AI automates proxy voting research for institutional investors.";
+    for (const provider of ["firecrawl", "site"] as const) {
+      const line = voiceSafeObservation({ span, role: "prospect_page", provider }, "Proxywise AI");
+      expect(line, provider).toContain("Saw this on Proxywise AI's site:");
+      expect(line, provider).not.toMatch(/write-up/i);
+    }
+  });
+
+  it("does not invent a site it cannot name", () => {
+    // No company to attribute to: the sentence is still theirs, so claiming
+    // "their site" would be the invention this is here to prevent.
+    const span = "Proxywise AI automates proxy voting research for institutional investors.";
+    const line = voiceSafeObservation({ span, role: "prospect_page", provider: "firecrawl" }, "");
+    expect(line).not.toMatch(/site:/i);
+    expect(line).not.toMatch(/write-up/i);
+  });
+
+  it("keeps the attribution one the claim checker can strip", () => {
+    /*
+     * The prefix is not decoration. unattributed() strips exactly this form,
+     * which is how the quote still matches the approved fact and still counts
+     * as the one sourced observation. A reworded prefix would release as an
+     * unsourced line instead.
+     */
+    const span = "Proxywise AI raised a Series A to automate proxy voting research.";
+    for (const sourceUrl of ["https://www.techcrunch.com/post", null]) {
+      const line = voiceSafeObservation({ span, role: "external", provider: "parallel", sourceUrl }, "Proxywise AI");
+      expect(unattributed(line, "Proxywise AI").replace(/\.$/, ""), line).toBe(span.replace(/\.$/, ""));
+    }
+    // The wording that shipped before the source was named is still stripped,
+    // because drafts written then are still in the database.
+    expect(unattributed(`A published account said: "${span}"`, "Proxywise AI")).toBe(span);
+  });
+
+  it("the attributed quote is still the one sourced observation", () => {
+    /*
+     * The attribution is not decoration, and it is not free either: the line
+     * goes through specificsGrounded before anything strips it, and then has
+     * to match an approved fact exactly to count as the observation. If the
+     * prefix were a wording nobody taught the checkers, the draft would be
+     * refused as an unsourced line with no observation at all -- which is
+     * worse than the bug it replaced, because it fails every draft instead of
+     * mis-attributing some.
+     */
+    const span = "Proxywise AI raised a Series A to automate proxy voting research for institutional investors.";
+    const facts = [{
+      id: "f1", snapshotId: "s1", span, sourceUrl: "https://www.techcrunch.com/x",
+      retrievedAt: new Date().toISOString(), publishedAt: null, role: "external", provider: "parallel",
+    }] as unknown as Parameters<typeof bodyViolations>[1]["facts"];
+    const line = voiceSafeObservation(facts[0], "Proxywise AI");
+    expect(line).toBe(`Saw this on techcrunch.com: "${span}"`);
+    const body = `Hi Nicolaas,\n\n${line}\n\nHow are you finding decision makers worth reaching out to?\n\nBrandon`;
+    const sender = "OutReign finds decision makers, verifies their email, researches each company and writes cold outreach that cites a real fact from their site.";
+    expect(bodyViolations(
+      body,
+      { status: "ready", reason: "", evidenceId: "e", facts, conflicts: [] } as never,
+      "Brandon", "Proxywise AI raised a Series", "Proxywise AI", "first_touch", sender,
+    )).toEqual([]);
+    // And the rule that wants a mechanism after a noticed line knows the
+    // attribution names a source rather than an unbacked trigger.
+    expect(outboundGateFindings("Proxywise AI raised a Series", body, span, 0).map((f) => f.rule)).toEqual([]);
   });
 
   it("attributes the prospect's invitation instead of leaving it as the sender's", () => {
@@ -127,6 +222,7 @@ describe("attributed observation", () => {
 });
 
 import { lineGrounding } from "../../supabase/functions/_shared/evidence-contract";
+import { outboundGateFindings } from "../../supabase/functions/_shared/quality-gate";
 describe("skill-shaped lines", () => {
   const facts = ["Kodexo builds AI agents and MVPs for startups."];
   it("allows a role-based question", () => {

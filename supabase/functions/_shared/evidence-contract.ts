@@ -288,7 +288,7 @@ export function evaluateStoredSnapshots(input: {
       // Markdown left over from a scrape (escapes, link syntax, table pipes)
       // is not a sentence a person wrote, so it cannot open an email.
       if (/\\|\]\(|!\[|\||^#|\*\*/.test(span)) return;
-      if (!readableSentence(span)) return;
+      if (!readableSentence(span, snap.role)) return;
       const namesThis = named[index];
       const neighborNames = (index > 0 && named[index - 1]) || (index + 1 < named.length && named[index + 1]);
       const otherSubject = /\b(other agencies|our marketplace|a directory)\b/i.test(span);
@@ -366,9 +366,60 @@ export const CLOSED_QUESTION = "Is that still how you're set up?";
  * A sentence a person wrote: at least seven words, not page titles glued
  * together ("agents.Test, monitor"), and not the same phrase repeated.
  */
-export function readableSentence(span: string): boolean {
+/**
+ * Whose voice is this sentence in?
+ *
+ * A fact is quoted into the email word for word, under the sender's name. So
+ * a sentence whose "I" or "we" is somebody else becomes a claim the sender is
+ * making about himself. Two that went out:
+ *
+ *   Hi Jack,
+ *   In this article, we sit down with Jack Roosevelt, co-founder of
+ *   LucidaClub, to hear his thoughts on the cannabis retail experience...
+ *
+ *   Hi Nicolaas,
+ *   But not to ring the opening bell for Proxywise AI 's IPO :) In fact I was
+ *   invited to speak on the "AI in Proxy Voting" panel...
+ *
+ * The first is a magazine's editorial voice, mailed to the person it is about.
+ * The second is the prospect's own post, so the sender says he was invited to
+ * speak at a conference he has never heard of -- and it opens mid-thought,
+ * because the sentence it continued was left behind on the page.
+ *
+ * A company's own site saying "we" is different: it is the subject speaking
+ * about itself, and the drafting path attributes it ("Saw this on their
+ * site: ..."), so prospect_page keeps it.
+ */
+function wrongVoice(text: string, role?: SnapshotRole): boolean {
+  // An individual's first person is never the sender's, whatever the source.
+  // "I" is matched with case, because it is always capitalised and a bare
+  // lowercase "i" is usually a list marker or an initial; the rest are not,
+  // and "My team has grown" opens a sentence as often as "my team" sits in
+  // the middle of one.
+  if (/\bI\b|\bI'(?:m|ll|ve|d)\b/.test(text)) return true;
+  if (/\b(?:me|my|mine)\b/i.test(text)) return true;
+  // A publication talking about its own piece, with the prospect as subject.
+  if (/\b(?:in this (?:article|interview|episode|post|piece|story|guide)|we (?:sit down|caught up|spoke|talk(?:ed)?) with|in conversation with)\b/i.test(text)) return true;
+  // Anyone but the company itself saying "we" is a third party, and the quote
+  // carries no attribution to say so.
+  if (role !== "prospect_page" && /\b(?:we|we're|we've|our|ours|us)\b/i.test(text)) return true;
+  return false;
+}
+
+/**
+ * A sentence that still means something once it is lifted off the page.
+ * One starting on a conjunction is answering the sentence before it, which
+ * the email does not carry.
+ */
+function continuesSomethingElse(text: string): boolean {
+  return /^(?:but|and|so|or|yet|also|plus|however|though|although|instead|besides|still|then|meanwhile|otherwise)\b/i.test(text);
+}
+
+export function readableSentence(span: string, role?: SnapshotRole): boolean {
   const text = span.trim();
   if (text.split(/\s+/).length < 7) return false;
+  if (wrongVoice(text, role)) return false;
+  if (continuesSomethingElse(text)) return false;
   // Directory boilerplate and a possessive whose apostrophe was stripped.
   if (/\bofficial (?:website|site)\b|\bsocial (?:media )?profiles?\b|\bcookies?\b|\bprivacy policy\b|\ball rights reserved\b|\bcontact (?:information|details)\b/i.test(text)) return false;
   if (/[A-Za-z] s\b/.test(text)) return false;
@@ -464,13 +515,21 @@ const EXACT_CTA = new Set(["worth a look?", "open to a look?"]);
  * ("On Acme's site: \"...\""), so the quote still counts as the observation.
  */
 export function unattributed(line: string, company: string): string {
+  // Kept: drafts written before the attribution named its source carry it.
   const published = line.match(/^a published account said[:,]\s*["“](.+)["”]$/i);
   if (published) return published[1].trim();
   const c = company.trim();
-  if (!c) return line;
-  const esc = c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const m = line.match(new RegExp(`^(?:saw (?:this )?on|on|from) (?:the )?${esc}(?:'s)? (?:site|website|homepage)[:,]\\s*["“](.+)["”]$`, "i"));
-  return m ? m[1].trim() : line;
+  if (c) {
+    const esc = c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const site = line.match(new RegExp(`^(?:saw (?:this )?on|on|from) (?:the )?${esc}(?:'s)? (?:site|website|homepage)[:,]\\s*["“](.+)["”]$`, "i"));
+    if (site) return site[1].trim();
+  }
+  // An outside source, named by the host the sentence was read from.
+  const host = line.match(/^(?:saw (?:this )?on|on|from) ([a-z0-9-]+(?:\.[a-z0-9-]+)+)[:,]\s*["“](.+)["”]$/i);
+  if (host) return host[2].trim();
+  const writeUp = line.match(/^saw this in an? (?:recent )?write-up[:,]\s*["“](.+)["”]$/i);
+  if (writeUp) return writeUp[1].trim();
+  return line;
 }
 
 function norm(value: string): string {
