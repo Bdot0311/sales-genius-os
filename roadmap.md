@@ -1,16 +1,17 @@
 # Recent GitHub update deployment — November 22, 2026
 
 - [x] Confirm recent merged drafting/research updates and opted-in Mailchimp imports are present in this checkout through ba29598f.
-- [ ] Verify recent migration objects and applied history; apply only missing relevant changes.
-- [ ] Redeploy all functions affected directly or transitively by the changed shared modules and run focused regressions.
-- [ ] Publish current updates and confirm the hosted application responds.
+- [x] Latest four registered migrations already applied; all ten signup-import fields contracted. Found the unregistered GitHub retry migration missing from the live database and installed its additive changes through managed migration 0083. Verified retry column, contract, claim/scheduler delay predicates and service-only claim permission. Historical inspection also reports older unmatched rows and a missing 0052 snapshot; left unrelated history unchanged.
+- [x] Redeployed 36 functions covering shared-module dependents across recent merges since 32f137d1. 414 focused regressions passed; preview build OK. Signed-in AI Agent page loads without missing-table messages or browser errors; hosted subscription read returns Agency/admin and all ten live health checks pass. No emails sent, agents started or charges initiated for verification.
+- [x] Requested publication; https://outreign.io responds HTTP 200. Reachability does not independently prove that the newly scheduled frontend publication completed. Current local and origin/main revisions matched at the start; provider-side commits not yet synced cannot be inspected from this environment.
 
 # Mailchimp automation follow-up — November 22, 2026
 
 - [x] Today's manually sent campaign is the November 20 article, before the November 22 automation cutoff; Mailchimp reports sent/emails_sent=57. No missed new publication and no resend. Generation remains Tuesday/Friday; hosted scheduled credentials return 200 with no queued articles.
 - [x] Onboarding records an authenticated explicit preference in a private import queue; confirmed opt-ins import idempotently without changing existing unsubscribed/cleaned/pending statuses. Declines never import; enqueue wakes the shared worker and existing hourly recovery handles interrupted imports without a second schedule. Existing users untouched.
 - [x] 15 focused tests and nine rollback-only consent/claim/permission checks passed; deployed worker returns HTTP 200 with imports synced=0/failed=0. Preview build OK; no emails sent or contacts imported during this change.
-- [ ] Publish the onboarding change and verify the first real opted-in signup import: temporary test-user creation failed, so that live flow remains unverified.
+- [x] Requested publication including the onboarding change on November 22; hosted site responds HTTP 200.
+- [ ] Verify the first real opted-in signup import: temporary test-user creation failed in the earlier task, so that live flow remains unverified.
 
 # Stripe-required paid access — November 22, 2026
 
