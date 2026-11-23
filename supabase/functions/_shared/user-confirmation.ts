@@ -33,7 +33,7 @@ export interface HistoryTurn {
  * qualifier is excluded rather than searched for a "yes" inside it.
  */
 const AFFIRMATIVE =
-  /^\s*(?:yes|yep|yeah|yup|ok|okay|k|sure|confirmed?|confirm|approved?|approve(?:\s+all)?|do it|go|go ahead|send|send it|send them|send them all|send all|send now|please do|go for it|proceed|ship it|fire away|all good|looks good|lgtm|that's fine|thats fine)\b[\s.!,]*$/i;
+  /^\s*(?:(?:yes|yep|yeah|yup|ok|okay|sure)[\s,]+send (?:it|them|them all|all)|yes|yep|yeah|yup|ok|okay|k|sure|confirmed?|confirm|approved?|approve(?:\s+all)?|do it|go|go ahead|send|send it|send them|send them all|send all|send now|please do|go for it|proceed|ship it|fire away|all good|looks good|lgtm|that's fine|thats fine)\b[\s.!,]*$/i;
 
 /** Words that turn an apparent yes into a condition or a question. */
 const QUALIFIER = /\b(?:but|except|however|instead|first|before|after|unless|if|only|wait|hold|don'?t|not|no)\b|\?/i;

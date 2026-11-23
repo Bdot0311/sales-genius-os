@@ -13,6 +13,11 @@ import { injectClickTracking } from "../_shared/click-tracking.ts";
 import { proofFromLead, queuedCopyBlockers } from "../_shared/template-send-gate.ts";
 import { bodyViolations, evaluateStoredSnapshots, releaseBinding } from "../_shared/evidence-contract.ts";
 import { isUuid, replySupersedesQueuedMail } from "../_shared/reply-stop.ts";
+import { htmlToPlainText } from "../_shared/plain-text.ts";
+import { outboundGateFindings } from "../_shared/quality-gate.ts";
+import { scoreEmailReport } from "../_shared/email-quality.ts";
+import { gatePromptHash, rubricPromptHash, sha256Hex } from "../_shared/prompt-versions.ts";
+import { evaluateSend } from "../_shared/outbound-verdict.ts";
 
 // RFC 2047 MIME encode subject for non-ASCII characters
 const mimeEncodeSubject = (subject: string) => {
@@ -693,6 +698,38 @@ serve(async (req) => {
             `Not sent (ungrounded_template). The saved copy includes a claim that is not in this lead's research: ${copyBlockers.slice(0, 3).join("; ")}`,
           );
           failed++;
+          continue;
+        }
+
+        // Queuing a reviewed draft is not a quality verdict. Apply the same
+        // live checker/rubric and current-content verdict as immediate sends.
+        const finalPlain = htmlToPlainText(plain);
+        const findings = outboundGateFindings(email.subject || "", finalPlain, proofByLead.get(email.lead_id) ?? "", 0);
+        if (findings.length) {
+          await failEmail(email.id, `Not sent (quality_checker). ${findings.map(f => f.rule).slice(0, 4).join(", ")}`);
+          failed++;
+          continue;
+        }
+        const report = await scoreEmailReport(supabaseUrl, `Bearer ${supabaseKey}`, supabaseKey, { subject: email.subject || "", body: finalPlain, ownerUserId: email.user_id, timeoutMs: 30000 });
+        if (report.availability === "unavailable") {
+          defer(email, "The reply rubric is unavailable. This remains queued and will be checked again before sending.");
+          continue;
+        }
+        const [contentHash, promptHash, rubricHash] = await Promise.all([sha256Hex(bound), gatePromptHash(), rubricPromptHash()]);
+        const { data: canary, error: canaryError } = await supabase.rpc("outbound_canary_enabled", { p_user_id: email.user_id });
+        const { data: verdictId, error: verdictError } = await supabase.rpc("record_outbound_verdict", {
+          p_user_id: email.user_id, p_lead_id: email.lead_id ?? null, p_content_hash: contentHash,
+          p_subject: email.subject || "", p_body: finalPlain, p_findings: findings,
+          p_rubric_availability: report.availability, p_rubric: report.rubric,
+          p_prompt_hash: promptHash, p_rubric_prompt_hash: rubricHash,
+          p_gate_status: "clear", p_shadow: canary !== true, p_shadow_mismatch: false,
+        });
+        const persisted = !verdictError && typeof verdictId === "string";
+        const verdict = evaluateSend({ liveBlocked: false, contentHash, promptHash, rubricPromptHash: rubricHash,
+          stored: persisted ? { userId: email.user_id, contentHash, promptHash, rubricPromptHash: rubricHash, gateStatus: "clear" } : null,
+          persisted, canary: canary === true, userId: email.user_id });
+        if (canaryError || !verdict.allow) {
+          defer(email, "A current send verdict could not be confirmed. This remains queued; nothing was sent.");
           continue;
         }
 

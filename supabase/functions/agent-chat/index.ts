@@ -14,6 +14,7 @@ import {
 } from "../_shared/draft-one.ts";
 import { leadIntelligenceMode } from "../_shared/lead-intelligence.ts";
 import { chooseMailbox, type RoutableMailbox } from "../_shared/mailbox-routing.ts";
+import { draftSendCounts } from "../_shared/saved-draft-outbox.ts";
 import { invalidArgsResult, validateToolArgs, type ToolSchema } from "../_shared/tool-args.ts";
 import { mergeCompleted, resultOk, resumeFrom, supabaseTraceStore, trimResult } from "../_shared/agent-trace.ts";
 import {
@@ -1622,6 +1623,7 @@ serve(async (req) => {
      * so the true numbers reach the user whatever the model chose to say.
      */
     const batchShortfalls: string[] = [];
+    const outboxNotes: string[] = [];
     /**
      * Sends refused because the recipient already got that exact subject.
      *
@@ -3854,6 +3856,23 @@ serve(async (req) => {
           }
 
           const results: any[] = [];
+          // A saved-draft batch must not run one rubric/provider call per
+          // recipient inside the chat's 150s lifetime. Commit the full approved
+          // set to the existing claimed outbox; the sender checks every email.
+          if (drafts.length > 1 && (autonomous || args.confirmed === true || confirmedByUser)) {
+            const queued = await invokeFn("queue-saved-drafts", {
+              draft_ids: drafts.map((d: any) => d.id),
+              from_emails: pool.map(mailbox => mailbox.email),
+              confirmed: true,
+              allow_duplicate: args.allow_duplicate === true,
+            });
+            if (queued.error) return { sent: 0, error: queued.error };
+            toolEvents.push({ name, label: "Queued approved emails", status: queued.failed ? "error" : "ok", detail: `${queued.queued} queued to send; ${queued.failed} held back. Track delivery in Sent emails.` });
+            outboxNotes.push(`${queued.queued} emails queued to send automatically; not confirmed delivered yet. ${queued.failed} held back. Track each email in Sent emails.`);
+            if (queued.failed) batchShortfalls.push(`${queued.queued} queued to send, ${queued.failed} held back. Drafts that could not be queued remain saved.`);
+            return { ...queued, accounting: accountFor(requestedCount, fetchedCount, drafts.length),
+              note: `${queued.queued} approved emails are queued to send automatically through the scheduled sender. They are NOT delivered yet. The full batch persists even if chat closes. Check Sent emails for sent/queued/failed status. ${queued.failed} could not be queued; report the per-draft reasons. Do not call send_drafts again for queued ids or ask for another confirmation.` };
+          }
           let rotation = 0;
           for (const d of drafts as any[]) {
             const to = d.leads?.contact_email ?? null;
@@ -3884,9 +3903,7 @@ serve(async (req) => {
             }
           }
 
-          const sentCount = results.filter((r) => r.sent).length;
-          const queuedCount = results.filter((r) => r.queued_for_approval).length;
-          const failedCount = results.filter((r) => !r.sent && !r.queued_for_approval).length;
+          const { sentCount, queuedCount, failedCount } = draftSendCounts(results);
           const usedFrom = [...new Set(results.map((r) => r.from).filter(Boolean))];
 
           // Repeats get their own sentence in the tool result, not just the
@@ -3899,12 +3916,12 @@ serve(async (req) => {
 
           // Account for the whole request, not just the rows this call saw.
           const accounting = accountFor(requestedCount, fetchedCount, drafts.length);
-          const acted = autonomous ? sentCount : queuedCount;
+          const acted = sentCount + queuedCount;
           const shortfall = shortfallNote(accounting, "were sent", acted);
           if (isShortfall(accounting) || failedCount > 0) {
             batchShortfalls.push(
               `You asked for ${accounting.requested || drafts.length} — ${acted} ${
-                autonomous ? "actually sent" : "queued for your approval"
+                sentCount > 0 ? "actually sent" : "awaiting your confirmation"
               }${failedCount > 0 ? `, ${failedCount} failed` : ""}${
                 accounting.deduped > 0 ? `, ${accounting.deduped} skipped as duplicates for the same person` : ""
               }${
@@ -3926,7 +3943,7 @@ serve(async (req) => {
             accounting,
             results,
             note: [
-              autonomous
+              sentCount > 0 || autonomous || args.confirmed === true || confirmedByUser
                 ? `Sent ${sentCount} of ${results.length} draft(s) attempted, rotated across ${usedFrom.length || 1} mailbox(es): ${usedFrom.join(", ") || pool[0].email}.`
                 : `NOTHING WAS SENT — ${queuedCount} email(s) are ready and waiting on the user. Nothing is queued or stored; the drafts are untouched. Tell them who and how many, ask them to confirm, then call send_drafts again with confirmed: true and the same ids. Never mention buttons or other pages.`,
               failedCount > 0
@@ -6203,6 +6220,8 @@ ${icpContext || "No ICP profile is saved yet, so there is nothing to score resul
     }
 
 
+
+    if (outboxNotes.length) finalText = `${outboxNotes.join("\n")}\n\n${finalText}`;
 
     const { data: saved } = await admin
       .from("agent_chat_messages")

@@ -3462,7 +3462,7 @@ For logos, use HTML:
             <Panel>
               <PanelHeader title="Email drafts" meta={draftsCount > 0 ? `${draftsCount} saved` : undefined} />
               <PanelBody>
-                <EmailDraftsTable onLoadDraft={loadDraft} />
+                <EmailDraftsTable onLoadDraft={loadDraft} onChanged={loadCounts} />
               </PanelBody>
             </Panel>
           </TabsContent>

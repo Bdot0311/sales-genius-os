@@ -8808,6 +8808,10 @@ export type Database = {
         Args: { _plan: Database["public"]["Enums"]["subscription_plan"] }
         Returns: number
       }
+      queue_saved_draft_outbox: {
+        Args: { p_items: Json; p_user_id: string }
+        Returns: Json
+      }
       recompute_activation: { Args: { _user_id: string }; Returns: undefined }
       record_agent_tool_receipt: {
         Args: {

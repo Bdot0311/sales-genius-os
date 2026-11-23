@@ -589,6 +589,20 @@
       "when": 1795387796081,
       "tag": "0083_install_agent_job_retry_backoff",
       "breakpoints": true
+    },
+    {
+      "idx": 84,
+      "version": "7",
+      "when": 1795397224733,
+      "tag": "0084_atomic_saved_draft_outbox",
+      "breakpoints": true
+    },
+    {
+      "idx": 85,
+      "version": "7",
+      "when": 1795397431727,
+      "tag": "0085_preserve_saved_draft_duplicate_window",
+      "breakpoints": true
     }
   ]
 }

@@ -90,6 +90,6 @@ describe("the numbers reach the user whatever the model says", () => {
 
   it("applies the same accounting to scheduling", () => {
     // A scheduling request for 32 that queues 11 is the same failure, later.
-    expect(SRC.match(/accountFor\(requestedCount, fetchedCount, drafts\.length\)/g) ?? []).toHaveLength(2);
+    expect(SRC.match(/accountFor\(requestedCount, fetchedCount, drafts\.length\)/g) ?? []).toHaveLength(3);
   });
 });

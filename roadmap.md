@@ -1,3 +1,9 @@
+# Agent batch sends and manual draft actions — November 23, 2026
+
+- [x] Confirmed 11 agent sends over 131 seconds, followed by 50 untouched drafts and no completed chat reply. The sequential send loop ignored the chat lifetime; confirmed multi-draft sends now atomically queue the full approved set through the existing claimed sender. Preview confirmation counts no longer report all 61 as failed, and “yes send them” is recognized without weakening conditional-consent checks.
+- [x] Added owner-scoped per-row and selected Send/Schedule actions, active mailbox selection/rotation, local future-date confirmation, retained individual copy, partial-failure reasons and live outgoing-state read-back. Existing research, checker, rubric, unsubscribe, plan and mailbox caps remain enforced; no duplicate send of the existing 11.
+- [x] 181 focused regressions and nine rollback-only queue checks passed, including all 61 items, ownership, atomic moves, retry/duplicate safety and changed-copy holds. Three functions deployed and Deno checks passed; preview build OK. Real signed-in future scheduling and outgoing-list read-back passed, temporary record removed. Desktop/current-source 351px phone dialogs verified; stale default preview module responses required cache-bypassed verification. No prospect emails sent during this change; real post-fix delivery remains unverified and the existing 50 drafts remain unsent. Frontend changes need publishing.
+
 # Recent GitHub update deployment — November 22, 2026
 
 - [x] Confirm recent merged drafting/research updates and opted-in Mailchimp imports are present in this checkout through ba29598f.

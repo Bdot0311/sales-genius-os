@@ -116,6 +116,16 @@ export const ROADMAP: RoadmapItem[] = [
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-11-23-draft-delivery",
+    date: "2026-11-23",
+    title: "Send or schedule your saved drafts",
+    summary: "Select drafts and confirm a send or a future delivery time, without loading each email separately.",
+    items: [
+      { tag: "new", title: "Send and schedule selected drafts", description: "Drafts now has Send and Schedule alongside Delete. Choose active mailboxes, review recipients, and confirm. Each person keeps their own saved email; held drafts show their reasons.", href: "/dashboard/outreach" },
+      { tag: "fixed", title: "Approved agent batches keep moving", description: "Multi-email sends enter the outgoing queue instead of stopping when the chat runs out of time. Queued and sent are reported separately, and research, quality and sending limits still apply.", href: "/dashboard/agent" },
+    ],
+  },
+  {
     id: "2026-11-22-stripe-subscription-signup",
     date: "2026-11-22",
     title: "Paid plans start with Stripe checkout",

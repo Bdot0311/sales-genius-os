@@ -31,7 +31,7 @@ const didNotAsk = [
  * was told repeatedly that their drafts were duplicates.
  */
 describe("a person's yes is read from what they wrote", () => {
-  it.each(["yes", "Yes.", "send it", "send them all", "go ahead", "approve all", "do it", "ok", "confirmed", "ship it"])(
+  it.each(["yes", "Yes.", "yes send them", "yes, send them all", "send it", "send them all", "go ahead", "approve all", "do it", "ok", "confirmed", "ship it"])(
     "accepts %s",
     (msg) => {
       expect(userConfirmedSend(msg, asked), msg).toBe(true);

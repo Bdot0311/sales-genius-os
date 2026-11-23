@@ -5,6 +5,8 @@
 
 # Shared module rules
 
+- Confirmed saved-draft batches use `queue-saved-drafts` and the atomic `queue_saved_draft_outbox` helper; the existing claimed sender applies research, checker and rubric gates, and queued counts are never delivery counts. Why: chat lifetimes must not truncate approved batches or create duplicate emails.
+
 - Customer paid tiers require Stripe linkage in the database and recognized active/trialing Stripe plans in checkout, polling and reconciliation; AppSumo records attribution only. Why: signup labels, local grants and licensing must not bypass recurring billing.
 
 - Automatic reply budgets take the lesser of the agent preference and the service-only current-subscription allowance; database writes clamp that preference and failed allowance/count reads permit no replies. Why: browser settings, old rows and downgrades cannot raise plan limits.

@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceToNow } from "date-fns";
-import { FileText, Trash2, Edit, RefreshCw } from "lucide-react";
+import { FileText, Trash2, Edit, RefreshCw, Send, Clock } from "lucide-react";
+import { DraftDeliveryDialog } from "./DraftDeliveryDialog";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -27,20 +28,27 @@ interface EmailDraft {
   opener_word: string | null;
   lead_id: string | null;
   updated_at: string;
-  leads?: { contact_name: string; company_name: string } | null;
+  leads?: { contact_name: string; company_name: string; contact_email?: string | null } | null;
 }
 
 interface EmailDraftsTableProps {
   onLoadDraft: (draft: EmailDraft) => void;
+  onChanged?: () => void;
 }
 
-export const EmailDraftsTable = ({ onLoadDraft }: EmailDraftsTableProps) => {
+export const EmailDraftsTable = ({ onLoadDraft, onChanged }: EmailDraftsTableProps) => {
   const [drafts, setDrafts] = useState<EmailDraft[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [draftToDelete, setDraftToDelete] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deliveryMode, setDeliveryMode] = useState<"send" | "schedule" | null>(null);
+  const [deliveryDrafts, setDeliveryDrafts] = useState<EmailDraft[]>([]);
+  const openDelivery = (mode: "send" | "schedule", ids: Set<string>) => {
+    setDeliveryDrafts(drafts.filter(draft => ids.has(draft.id)));
+    setDeliveryMode(mode);
+  };
 
   useEffect(() => {
     loadDrafts();
@@ -48,6 +56,8 @@ export const EmailDraftsTable = ({ onLoadDraft }: EmailDraftsTableProps) => {
 
   const loadDrafts = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Sign in to view your drafts');
       const { data, error } = await supabase
         .from('email_drafts')
         .select(`
@@ -61,9 +71,11 @@ export const EmailDraftsTable = ({ onLoadDraft }: EmailDraftsTableProps) => {
           updated_at,
           leads (
             contact_name,
-            company_name
+            company_name,
+            contact_email
           )
         `)
+        .eq('user_id', user.id)
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
@@ -100,6 +112,7 @@ export const EmailDraftsTable = ({ onLoadDraft }: EmailDraftsTableProps) => {
         return next;
       });
       toast.success(idsToDelete.length === 1 ? 'Draft deleted' : `${idsToDelete.length} drafts deleted`);
+      onChanged?.();
     } catch (error) {
       console.error('Error deleting draft:', error);
       toast.error('Failed to delete draft');
@@ -162,13 +175,17 @@ export const EmailDraftsTable = ({ onLoadDraft }: EmailDraftsTableProps) => {
   return (
     <>
       <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <p className="text-sm text-muted-foreground">{drafts.length} draft{drafts.length !== 1 ? 's' : ''}</p>
           {selectedIds.size > 0 && (
+            <>
+            <Button size="sm" onClick={() => openDelivery("send", selectedIds)} className="gap-1.5"><Send className="h-3.5 w-3.5" />Send selected</Button>
+            <Button variant="outline" size="sm" onClick={() => openDelivery("schedule", selectedIds)} className="gap-1.5"><Clock className="h-3.5 w-3.5" />Schedule selected</Button>
             <Button variant="destructive" size="sm" onClick={confirmBulkDelete} className="gap-1.5">
               <Trash2 className="h-3.5 w-3.5" />
               Delete {selectedIds.size} selected
             </Button>
+            </>
           )}
         </div>
         <Button variant="ghost" size="sm" onClick={loadDrafts}>
@@ -191,7 +208,7 @@ export const EmailDraftsTable = ({ onLoadDraft }: EmailDraftsTableProps) => {
               <TableHead>Lead</TableHead>
               <TableHead>Subject</TableHead>
               <TableHead>Last Updated</TableHead>
-              <TableHead className="w-[120px]">Actions</TableHead>
+              <TableHead className="w-[180px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -230,6 +247,8 @@ export const EmailDraftsTable = ({ onLoadDraft }: EmailDraftsTableProps) => {
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="sm" title="Send draft" aria-label={`Send draft ${draft.subject || 'with no subject'}`} onClick={event => { event.stopPropagation(); openDelivery("send", new Set([draft.id])); }}><Send className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="sm" title="Schedule draft" aria-label={`Schedule draft ${draft.subject || 'with no subject'}`} onClick={event => { event.stopPropagation(); openDelivery("schedule", new Set([draft.id])); }}><Clock className="h-4 w-4" /></Button>
                     <Button 
                       variant="ghost" 
                       size="sm"
@@ -257,6 +276,7 @@ export const EmailDraftsTable = ({ onLoadDraft }: EmailDraftsTableProps) => {
         </Table>
       </div>
 
+      <DraftDeliveryDialog mode={deliveryMode} drafts={deliveryDrafts} onClose={() => setDeliveryMode(null)} onComplete={() => { void loadDrafts(); onChanged?.(); }} />
       <AlertDialog open={deleteDialogOpen} onOpenChange={(open) => {
         setDeleteDialogOpen(open);
         if (!open) setDraftToDelete(null);
