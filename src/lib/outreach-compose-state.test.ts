@@ -2,6 +2,16 @@ import { describe, expect, it } from "vitest";
 import { emptyComposeDraft, mergeSavedComposeDrafts, updateComposeDraft } from "./outreach-compose-state";
 
 describe("recipient-specific Studio copy", () => {
+  it("replaces only the regenerated recipient while retaining the selection's other edits", () => {
+    const drafts = {
+      a: { subject: "A subject", trigger: "A research", body: "Old A", draftId: "draft-a", edited: true },
+      b: { subject: "Edited B", trigger: "B research", body: "Keep B", draftId: "draft-b", edited: true },
+    };
+    const result = updateComposeDraft(drafts, "a", { body: "Regenerated A", subject: "New A subject" });
+    expect(result.a).toEqual({ subject: "New A subject", trigger: "A research", body: "Regenerated A", draftId: "draft-a", edited: true });
+    expect(result.b).toEqual(drafts.b);
+    expect(drafts.a.body).toBe("Old A");
+  });
   it("keeps two recipients' subjects, triggers and email bodies separate", () => {
     const first = updateComposeDraft({}, "lead-a", { subject: "Alpha", trigger: "Alpha context", body: "Email for Alpha" });
     const second = updateComposeDraft(first, "lead-b", { subject: "Beta", trigger: "Beta context", body: "Email for Beta" });

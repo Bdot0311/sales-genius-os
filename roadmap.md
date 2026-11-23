@@ -1,3 +1,7 @@
+# Individual Studio regeneration — November 23, 2026
+
+- [x] Added per-recipient regeneration in multi-lead previews through the existing single-email generator. Signed-in Navwise regeneration returned HTTP 200 and updated only its preview while Skyvern's edit and both selections stayed intact; lead context retained even when switching review during generation. Desktop/390px phone controls checked, 20 regressions passed and preview build OK. No drafts saved or emails sent; frontend publication remains required.
+
 # Outreach subject lines — November 23, 2026
 
 - [x] Removed the six-word research truncation; subject-only drafting now writes a complete topic and validates it with unchanged send-grounding predicates. Shared fallbacks use complete research topics or the owned company, not unrelated congratulations or dangling clauses. 74 regressions, generator Deno check and preview build passed; deployed generate-email, send-email and agent-run. Signed-in live Navwise/Skyvern generation returned complete subjects; Studio generation updated Navwise's input and right-hand preview. No drafts saved or emails sent; existing saved subjects remain unchanged and can be regenerated.

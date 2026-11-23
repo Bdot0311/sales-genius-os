@@ -1,10 +1,11 @@
 import DOMPurify from "dompurify";
-import { Wand2, Loader2, Check } from "lucide-react";
+import { Wand2, Loader2, Check, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { emptyComposeDraft, type ComposeDrafts, type LeadComposeDraft } from "@/lib/outreach-compose-state";
 
 interface ComposeLead {
@@ -50,7 +51,12 @@ export function MultiLeadFields({ leads, drafts, activeLeadId, onSelect, onChang
   );
 }
 
-export function MultiLeadEmails({ leads, drafts, activeLeadId, onSelect, onChange, mode }: Props & { mode: "desktop" | "mobile" }) {
+export function MultiLeadEmails({ leads, drafts, activeLeadId, onSelect, onChange, mode, generating, generatingLeadId, onGenerate }: Props & {
+  mode: "desktop" | "mobile";
+  generating: boolean;
+  generatingLeadId: string | null;
+  onGenerate: (id: string) => void;
+}) {
   return (
     <div className="max-h-[900px] space-y-4 overflow-y-auto pr-1" aria-label="Selected lead email previews">
       {leads.map((lead, index) => {
@@ -63,9 +69,21 @@ export function MultiLeadEmails({ leads, drafts, activeLeadId, onSelect, onChang
                 <h3 className="break-words text-sm font-medium text-foreground">{index + 1}. {name(lead)}</h3>
                 <p className="break-all text-xs text-muted-foreground">{lead.contact_email || "No email address"}</p>
               </div>
-              <Button size="sm" variant={active ? "secondary" : "ghost"} onClick={() => onSelect(lead.id)} className="h-7 shrink-0 px-2 text-xs" aria-label={`Review email for ${name(lead)}`}>
-                {active && <Check className="mr-1 h-3 w-3" />}{active ? "Reviewing" : "Review"}
-              </Button>
+              <div className="flex shrink-0 items-center gap-1">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button size="icon" variant="outline" className="h-7 w-7" disabled={generating} onClick={() => { onSelect(lead.id); onGenerate(lead.id); }} aria-label={`${draft.body ? "Regenerate" : "Generate"} email for ${name(lead)}`}>
+                        {generating && generatingLeadId === lead.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{draft.body ? "Regenerate email" : "Generate email"}</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <Button size="sm" variant={active ? "secondary" : "ghost"} onClick={() => onSelect(lead.id)} className="h-7 px-2 text-xs" aria-label={`Review email for ${name(lead)}`}>
+                  {active && <Check className="mr-1 h-3 w-3" />}{active ? "Reviewing" : "Review"}
+                </Button>
+              </div>
             </div>
             <div className="space-y-3 p-3">
               <div className="flex gap-2 text-[0.8125rem]"><span className="shrink-0 text-muted-foreground">Subject</span><span className="min-w-0 break-words text-foreground">{draft.subject || "Not written yet"}</span></div>

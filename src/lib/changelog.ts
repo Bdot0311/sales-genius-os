@@ -121,6 +121,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     title: "Send or schedule your saved drafts",
     summary: "Select drafts and confirm a send or a future delivery time, without loading each email separately.",
     items: [
+      { tag: "improved", title: "Regenerate individual emails in a batch", description: "Each recipient's email preview has its own regeneration control. Rewrite one email using that lead's context without replacing the other recipients' drafts or changing your selection.", href: "/dashboard/outreach" },
       { tag: "fixed", title: "Natural, relevant subject lines", description: "Generated subjects use each lead's research instead of cutting off a scraped sentence. Incomplete phrases and unrelated congratulations are rejected, while sending checks remain unchanged.", href: "/dashboard/outreach" },
       { tag: "improved", title: "Preview every selected lead's email", description: "Multi-lead Outreach Studio shows a separate trigger, subject and editable email for each recipient. Finished background drafts appear in the same view, and switching recipients keeps their copy separate.", href: "/dashboard/outreach" },
       { tag: "fixed", title: "Bounces appear in Saved Leads and Deliverability", description: "Connected mailbox scans now record delivery failures even while you are away. Saved Leads marks the address that bounced, and Deliverability refreshes its bounce totals when opened.", href: "/dashboard/deliverability" },

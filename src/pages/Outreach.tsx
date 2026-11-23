@@ -353,6 +353,8 @@ const Outreach = () => {
    * before; what is new is that there can be others behind it.
    */
   const [selectedLead, setSelectedLead] = useState("");
+  const activeLeadRef = useRef(selectedLead);
+  activeLeadRef.current = selectedLead;
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
   // Opened by Send when the selection is more than one person, never by a
   // button of its own. See the mount at the end of this component.
@@ -384,6 +386,7 @@ const Outreach = () => {
   const [researchRefreshing, setResearchRefreshing] = useState(false);
 
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generatingLeadId, setGeneratingLeadId] = useState<string | null>(null);
   const [fixingCheck, setFixingCheck] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [signature, setSignature] = useState("");
@@ -1248,8 +1251,10 @@ const Outreach = () => {
   const generateForSelection = () =>
     selectedLeadIds.length > 1 ? queueDraftsForSelection() : generateEmail();
 
-  const generateEmail = async (opts: { allowThinResearch?: boolean } = {}) => {
-    if (!selectedLead) {
+  const generateEmail = async (opts: { allowThinResearch?: boolean; leadId?: string } = {}) => {
+    const leadId = opts.leadId ?? selectedLead;
+    const draft = composeDrafts[leadId] ?? emptyComposeDraft;
+    if (!leadId || isGenerating) {
       toast({
         title: "Missing information",
         description: "Please select a lead to generate a personalized email",
@@ -1269,10 +1274,11 @@ const Outreach = () => {
     }
 
     setIsGenerating(true);
+    setGeneratingLeadId(leadId);
     try {
-      const lead = leads.find((l) => l.id === selectedLead);
+      const lead = leads.find((l) => l.id === leadId);
       // Use the goal from the active template — AI-picked when in auto mode
-      const template = resolveActiveTemplate();
+      const template = selectedTemplate === "auto" ? pickBestTemplate(lead).template : resolveActiveTemplate();
       const goal = template?.goal || "introduction";
 
       // Resolve sender name up front so it can be passed to the edge function
@@ -1280,7 +1286,7 @@ const Outreach = () => {
       if (resolvedSender && !senderProfileName.trim()) setSenderProfileName(resolvedSender);
 
       // If no subject line, generate one tailored to the template goal
-      let finalSubjectLine = subjectLine;
+      let finalSubjectLine = draft.subject;
       if (!finalSubjectLine) {
         const { data: subjectData, error: subjectError } = await supabase.functions.invoke("generate-email", {
           body: {
@@ -1290,7 +1296,7 @@ const Outreach = () => {
             templateGoal: goal,
             templateValue: template?.value || "",
             templateDescription: template?.description || "",
-            triggerContext,
+            triggerContext: draft.trigger,
             openerWord: openerWord === "auto" ? "" : openerWord,
             businessDescription,
             senderName: resolvedSender,
@@ -1298,7 +1304,6 @@ const Outreach = () => {
         });
         if (subjectError) throw subjectError;
         finalSubjectLine = readGeneratedSubject(subjectData, subjectError);
-        setSubjectLine(finalSubjectLine);
       }
 
       // Generate the email body using the actual template goal
@@ -1310,7 +1315,7 @@ const Outreach = () => {
           templateValue: template?.value || "",
           templateDescription: template?.description || "",
           subjectLine: finalSubjectLine,
-          triggerContext,
+          triggerContext: draft.trigger,
           openerWord: openerWord === "auto" ? "" : openerWord,
           businessDescription,
           use4SentenceFramework,
@@ -1333,12 +1338,12 @@ const Outreach = () => {
         return;
       }
       if (data?.error_code === "research_too_thin") {
-        if (data?.research) setLeadResearch(data.research as LeadResearch);
+        if (data?.research && activeLeadRef.current === leadId) setLeadResearch(data.research as LeadResearch);
         toast({
           title: "Research too thin to personalize",
           description: data.error,
           action: (
-            <ToastAction altText="Generate anyway" onClick={() => generateEmail({ allowThinResearch: true })}>
+            <ToastAction altText="Generate anyway" onClick={() => generateEmail({ allowThinResearch: true, leadId })}>
               Generate anyway
             </ToastAction>
           ),
@@ -1346,9 +1351,8 @@ const Outreach = () => {
         return;
       }
       const emailBody = appendSenderLine(sanitizeGeneratedEmailBody(readGeneratedEmail(data, error)), resolvedSender);
-      setGeneratedEmail(emailBody);
-      if (typeof data?.subject === "string" && data.subject.trim()) setSubjectLine(data.subject.trim());
-      if (data?.research) {
+      updateLeadCompose(leadId, { body: emailBody, subject: typeof data?.subject === "string" && data.subject.trim() ? data.subject.trim() : finalSubjectLine });
+      if (data?.research && activeLeadRef.current === leadId) {
         setLeadResearch({
           ...(data.research as LeadResearch),
           sources: Array.isArray(data.research_sources) ? data.research_sources : (data.research as any).sources ?? [],
@@ -1374,6 +1378,7 @@ const Outreach = () => {
       });
     } finally {
       setIsGenerating(false);
+      setGeneratingLeadId(null);
     }
   };
 
@@ -3283,7 +3288,7 @@ For logos, use HTML:
                     </div>
 
                     {selectedLeadIds.length > 1 ? (
-                      <MultiLeadEmails leads={selectedComposeLeads} drafts={composeDrafts} activeLeadId={selectedLead} onSelect={setSelectedLead} onChange={updateLeadCompose} mode={previewMode} />
+                      <MultiLeadEmails leads={selectedComposeLeads} drafts={composeDrafts} activeLeadId={selectedLead} onSelect={setSelectedLead} onChange={updateLeadCompose} mode={previewMode} generating={isGenerating} generatingLeadId={generatingLeadId} onGenerate={(id) => void generateEmail({ leadId: id })} />
                     ) : previewMode === "mobile" && generatedEmail ? (
                       <div className="flex justify-center bg-gray-900 rounded-xl p-2 sm:p-4">
                         {/* iPhone mock frame */}
