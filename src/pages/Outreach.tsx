@@ -34,6 +34,8 @@ import { EmailUsagePanel } from "@/components/outreach/EmailUsagePanel";
 import { FollowUpSuggestion, FollowUpData } from "@/components/outreach/FollowUpSuggestion";
 import { BarChart3, ListOrdered, Layout, Users } from "lucide-react";
 import { LeadMultiSelect } from "@/components/outreach/LeadMultiSelect";
+import { MultiLeadFields, MultiLeadEmails } from "@/components/outreach/MultiLeadCompose";
+import { emptyComposeDraft, mergeSavedComposeDrafts, updateComposeDraft, type ComposeDrafts, type LeadComposeDraft } from "@/lib/outreach-compose-state";
 import { outreachLeadPages } from "@/lib/outreach-lead-pages";
 import { BulkSendDialog } from "@/components/outreach/BulkSendDialog";
 import { EmailQualityChecker, blockerSummary, redQualityRows, scoreEmailQuality } from "@/components/outreach/EmailQualityChecker";
@@ -357,9 +359,21 @@ const Outreach = () => {
   const [bulkSendOpen, setBulkSendOpen] = useState(false);
   const [emailTone, setEmailTone] = useState("professional");
   const [openerWord, setOpenerWord] = useState("");
-  const [triggerContext, setTriggerContext] = useState("");
+  const [composeDrafts, setComposeDrafts] = useState<ComposeDrafts>({});
+  const updateLeadCompose = useCallback((leadId: string, patch: Partial<LeadComposeDraft>) => {
+    setComposeDrafts((current) => updateComposeDraft(current, leadId, patch));
+  }, []);
+  const currentCompose = composeDrafts[selectedLead] ?? emptyComposeDraft;
+  const triggerContext = currentCompose.trigger;
+  const subjectLine = currentCompose.subject;
+  const generatedEmail = currentCompose.body;
+  const currentDraftId = currentCompose.draftId;
+  const setTriggerContext = (trigger: string) => updateLeadCompose(selectedLead, { trigger });
+  const setSubjectLine = (subject: string) => updateLeadCompose(selectedLead, { subject });
+  const setGeneratedEmail = (body: string) => updateLeadCompose(selectedLead, { body });
+  const setCurrentDraftId = (draftId: string | null) => updateLeadCompose(selectedLead, { draftId });
+  const selectedComposeLeads = selectedLeadIds.map((id) => leads.find((lead) => lead.id === id)).filter((lead): lead is NonNullable<typeof lead> => Boolean(lead));
   const [businessDescription, setBusinessDescription] = useState("");
-  const [subjectLine, setSubjectLine] = useState("");
   const [isGeneratingSubject, setIsGeneratingSubject] = useState(false);
   const [isGeneratingTrigger, setIsGeneratingTrigger] = useState(false);
 
@@ -369,7 +383,6 @@ const Outreach = () => {
   const [researchLoading, setResearchLoading] = useState(false);
   const [researchRefreshing, setResearchRefreshing] = useState(false);
 
-  const [generatedEmail, setGeneratedEmail] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [fixingCheck, setFixingCheck] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
@@ -382,7 +395,6 @@ const Outreach = () => {
   const [isFetchingGmailSignature, setIsFetchingGmailSignature] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
-  const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
   const [sentCount, setSentCount] = useState(0);
   const [draftsCount, setDraftsCount] = useState(0);
   // "auto" means the AI picks the best template from the lead's research signals.
@@ -457,6 +469,39 @@ const Outreach = () => {
     loadDueFollowUps();
     loadComplianceSettings();
   }, []);
+
+  // Completed background drafts are owner-scoped and read back into the same
+  // recipient slots used by the composer. Local edits always win over polling.
+  useEffect(() => {
+    if (selectedLeadIds.length < 2) return;
+    let cancelled = false;
+    let reading = false;
+    const refresh = async () => {
+      if (reading) return;
+      reading = true;
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user || cancelled) return;
+        const saved: Array<{ id: string; lead_id: string | null; subject: string | null; body: string | null; trigger_context: string | null }> = [];
+        for (let offset = 0; offset < selectedLeadIds.length; offset += 100) {
+          const { data, error } = await supabase.from("email_drafts")
+            .select("id, lead_id, subject, body, trigger_context")
+            .eq("user_id", user.id).in("lead_id", selectedLeadIds.slice(offset, offset + 100))
+            .order("updated_at", { ascending: false });
+          if (error) throw error;
+          saved.push(...(data ?? []));
+        }
+        if (!cancelled) setComposeDrafts((current) => mergeSavedComposeDrafts(current, saved));
+      } catch (error) {
+        if (!cancelled) console.warn("Could not refresh Studio drafts", error instanceof Error ? error.message : "Draft read failed");
+      } finally {
+        reading = false;
+      }
+    };
+    void refresh();
+    const interval = window.setInterval(() => void refresh(), 10000);
+    return () => { cancelled = true; window.clearInterval(interval); };
+  }, [selectedLeadIds]);
 
   // Prefill compose from navigation state (e.g. AI Sequence Builder → Open in Compose)
   useEffect(() => {
@@ -1039,12 +1084,9 @@ const Outreach = () => {
   };
 
   const loadDraft = (draft: EmailDraft) => {
-    setCurrentDraftId(draft.id);
     focusLead(draft.lead_id || "");
-    setSubjectLine(draft.subject || "");
-    setGeneratedEmail(draft.body || "");
+    updateLeadCompose(draft.lead_id || "", { draftId: draft.id, subject: draft.subject || "", body: draft.body || "", trigger: draft.trigger_context || "" });
     setEmailTone(draft.tone || "professional");
-    setTriggerContext(draft.trigger_context || "");
     setOpenerWord(draft.opener_word || "");
     setActiveTab("compose");
     toast({
@@ -1053,8 +1095,8 @@ const Outreach = () => {
     });
   };
 
-  const generateSubjectLine = async () => {
-    if (!selectedLead) {
+  const generateSubjectLine = async (leadId = selectedLead) => {
+    if (!leadId) {
       toast({
         title: "Select a lead first",
         description: "Please select a lead to generate a subject line",
@@ -1065,8 +1107,8 @@ const Outreach = () => {
 
     setIsGeneratingSubject(true);
     try {
-      const lead = leads.find((l) => l.id === selectedLead);
-      const template = resolveActiveTemplate();
+      const lead = leads.find((l) => l.id === leadId);
+      const template = selectedTemplate === "auto" ? pickBestTemplate(lead).template : resolveActiveTemplate();
       const { data, error } = await supabase.functions.invoke("generate-email", {
         body: {
           lead,
@@ -1074,7 +1116,7 @@ const Outreach = () => {
           goal: "subject_only",
           templateGoal: template?.goal || "introduction",
           templateDescription: template?.description || "",
-          triggerContext,
+          triggerContext: (composeDrafts[leadId] ?? emptyComposeDraft).trigger,
           openerWord: openerWord === "auto" ? "" : openerWord,
           businessDescription,
         },
@@ -1083,7 +1125,7 @@ const Outreach = () => {
       // A 200 carrying { error } is a refusal with a reason, not a success.
       // Reading .email off it threw a type error that was then shown to the
       // user in place of the explanation sitting next to it.
-      setSubjectLine(readGeneratedSubject(data, error));
+      updateLeadCompose(leadId, { subject: readGeneratedSubject(data, error) });
       toast({
         title: "Subject line generated",
         description: "AI has created a subject line for you",
@@ -1099,8 +1141,8 @@ const Outreach = () => {
     }
   };
 
-  const generateTriggerContext = async () => {
-    if (!selectedLead) {
+  const generateTriggerContext = async (leadId = selectedLead) => {
+    if (!leadId) {
       toast({
         title: "Select a lead first",
         description: "Please select a lead to generate trigger context",
@@ -1111,7 +1153,7 @@ const Outreach = () => {
 
     setIsGeneratingTrigger(true);
     try {
-      const lead = leads.find((l) => l.id === selectedLead);
+      const lead = leads.find((l) => l.id === leadId);
       const { data, error } = await supabase.functions.invoke("generate-email", {
         body: {
           lead,
@@ -1122,7 +1164,7 @@ const Outreach = () => {
         },
       });
 
-      setTriggerContext(readGeneratedEmail(data, error).trim());
+      updateLeadCompose(leadId, { trigger: readGeneratedEmail(data, error).trim() });
       toast({
         title: "Trigger context generated",
         description: "AI created a personalized opener for you",
@@ -2126,11 +2168,8 @@ ${formattedBody}
   };
 
   const clearForm = () => {
-    setCurrentDraftId(null);
+    setComposeDrafts({});
     chooseLeads([]);
-    setSubjectLine("");
-    setGeneratedEmail("");
-    setTriggerContext("");
     setOpenerWord("");
   };
 
@@ -2139,9 +2178,7 @@ ${formattedBody}
     
     // Set up the compose form with follow-up content
     focusLead(lastSentEmailInfo.leadId);
-    setSubjectLine(suggestion.suggestedSubject);
-    setGeneratedEmail(appendSenderLine(suggestion.suggestedBody, getSenderName()));
-    setTriggerContext(suggestion.triggerContext);
+    updateLeadCompose(lastSentEmailInfo.leadId, { subject: suggestion.suggestedSubject, body: appendSenderLine(suggestion.suggestedBody, getSenderName()), trigger: suggestion.triggerContext, draftId: null });
     setSelectedTemplate("follow_up");
     
     // Dismiss the suggestion
@@ -2893,7 +2930,9 @@ For logos, use HTML:
                     </div>
                   </div>
 
-                  <div>
+                  {selectedLeadIds.length > 1 ? (
+                    <MultiLeadFields leads={selectedComposeLeads} drafts={composeDrafts} activeLeadId={selectedLead} onSelect={setSelectedLead} onChange={updateLeadCompose} field="trigger" generating={isGeneratingTrigger} onGenerate={(id) => void generateTriggerContext(id)} />
+                  ) : (<div>
                     <Label className="text-[0.8125rem] font-medium text-foreground">
                       Trigger/Context
                       <TooltipProvider>
@@ -2918,7 +2957,7 @@ For logos, use HTML:
                       <Button
                         variant="outline"
                         size="icon"
-                        onClick={generateTriggerContext}
+                        onClick={() => void generateTriggerContext()}
                         disabled={isGeneratingTrigger || !selectedLead}
                         className="shrink-0"
                         aria-label="Generate trigger context"
@@ -2938,7 +2977,7 @@ For logos, use HTML:
                     <p className="text-xs text-muted-foreground mt-1">
                       This becomes your personalized email opener
                     </p>
-                  </div>
+                  </div>)}
 
 
                   <div>
@@ -2958,7 +2997,9 @@ For logos, use HTML:
                     </p>
                   </div>
 
-                  <div>
+                  {selectedLeadIds.length > 1 ? (
+                    <MultiLeadFields leads={selectedComposeLeads} drafts={composeDrafts} activeLeadId={selectedLead} onSelect={setSelectedLead} onChange={updateLeadCompose} field="subject" generating={isGeneratingSubject} onGenerate={(id) => void generateSubjectLine(id)} />
+                  ) : (<div>
                     <div className="flex items-center justify-between mb-1">
                       <Label className="text-[0.8125rem] font-medium text-foreground">Subject line</Label>
                       {subjectLine && (() => {
@@ -2996,7 +3037,7 @@ For logos, use HTML:
                       <Button
                         variant="outline"
                         size="icon"
-                        onClick={generateSubjectLine}
+                        onClick={() => void generateSubjectLine()}
                         disabled={isGeneratingSubject || !selectedLead}
                         className="shrink-0"
                         aria-label="Generate subject line"
@@ -3013,7 +3054,7 @@ For logos, use HTML:
                         ⚠️ Select a lead above to enable AI generation
                       </p>
                     )}
-                  </div>
+                  </div>)}
 
                   <div className="space-y-3">
                     <div className="flex gap-2">
@@ -3031,7 +3072,7 @@ For logos, use HTML:
                         ) : (
                           <>
                             <Sparkles className="w-4 h-4 mr-2" />
-                            Generate Email
+                            {selectedLeadIds.length > 1 ? `Generate ${selectedLeadIds.length} emails` : "Generate Email"}
                           </>
                         )}
                       </Button>
@@ -3097,7 +3138,7 @@ For logos, use HTML:
                         ) : (
                           <>
                             <Save className="w-4 h-4 mr-2" />
-                            Save Draft
+                            {selectedLeadIds.length > 1 ? "Save reviewed draft" : "Save Draft"}
                           </>
                         )}
                       </Button>
@@ -3166,12 +3207,12 @@ For logos, use HTML:
               </Panel>
 
               <Panel>
-                <PanelHeader title="Generated email" />
+                <PanelHeader title={selectedLeadIds.length > 1 ? `Generated emails (${selectedLeadIds.length})` : "Generated email"} />
                 <PanelBody className="space-y-4">
                   {/* The envelope, in the shape an envelope has: a fixed label
                       column so the two values line up instead of starting at
                       wherever their label happened to end. */}
-                  <dl className="space-y-1 rounded-lg border border-border/40 bg-muted/20 p-3">
+                  {selectedLeadIds.length < 2 && <dl className="space-y-1 rounded-lg border border-border/40 bg-muted/20 p-3">
                     <div className="flex gap-2 text-[0.8125rem]">
                       <dt className="w-14 shrink-0 text-muted-foreground/60">To</dt>
                       <dd className="min-w-0 truncate text-foreground">
@@ -3186,7 +3227,7 @@ For logos, use HTML:
                         {subjectLine || <span className="text-muted-foreground">Not written yet</span>}
                       </dd>
                     </div>
-                  </dl>
+                  </dl>}
 
                   {/* P0.1 — First touch HTML signature warning */}
                   {isFirstTouch && signature && /<[a-z]/i.test(signature) && (
@@ -3241,7 +3282,9 @@ For logos, use HTML:
                       </div>
                     </div>
 
-                    {previewMode === "mobile" && generatedEmail ? (
+                    {selectedLeadIds.length > 1 ? (
+                      <MultiLeadEmails leads={selectedComposeLeads} drafts={composeDrafts} activeLeadId={selectedLead} onSelect={setSelectedLead} onChange={updateLeadCompose} mode={previewMode} />
+                    ) : previewMode === "mobile" && generatedEmail ? (
                       <div className="flex justify-center bg-gray-900 rounded-xl p-2 sm:p-4">
                         {/* iPhone mock frame */}
                         <div className="relative w-full max-w-[375px]">
