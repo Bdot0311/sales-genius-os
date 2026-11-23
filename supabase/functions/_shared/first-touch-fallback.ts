@@ -69,9 +69,30 @@ export function usableFallbackFact(span: string): boolean {
   return /^[A-Z0-9"'ÀØ]/.test(text);
 }
 
-/** Subject taken from the approved sentence itself, so it is never a new claim. */
-export function fallbackSubjectFrom(span: string): string {
-  return span.trim().split(/\s+/).slice(0, 6).join(" ").replace(/[.!?,;:]+$/g, "");
+/** Reject sentence fragments and scraped-page chatter, not just excess words. */
+export function usableSubject(subject: string): boolean {
+  const text = subject.trim();
+  return Boolean(text) && text.split(/\s+/).length <= 6 && text.length <= 80
+    && !/[\n\r\[\]{}<>]|https?:\/\//i.test(text)
+    && !/\b(?:congratulations|congrats|these|those|this|that|natively)\b/i.test(text)
+    && !/^(?:subject:|re:|fw:|fwd:)/i.test(text)
+    && !/\b(?:a|an|the|and|or|but|for|to|at|in|on|with|from|of|by|as|into|about|that|which|is|are|these|those)\s*[.!?,;:]*$/i.test(text);
+}
+
+/** A complete research topic, never the first six words of a longer sentence. */
+export function fallbackSubjectFrom(span: string, company = ""): string {
+  const text = span.trim().replace(/\s+/g, " ");
+  // Keep the full object noun phrase; prepositions introduce the next clause.
+  const object = text.match(/\b(?:builds?|automates?|provides?|offers?|develops?|creates?|sells?|delivers?)\s+(.+?)(?=\s+(?:for|to|with|in|at|by|through|that|which)\b|[.!?;]|$)/i)?.[1]
+    ?.replace(/^(?:the|a|an|these|those|our|their)\s+/i, "").trim();
+  if (object && usableSubject(object) && !/\b(?:find|helps?|gets?|natively)\b/i.test(object)) {
+    const named = company.trim() ? `${object} at ${company.trim()}` : object;
+    return usableSubject(named) ? named : object;
+  }
+  // The owner-scoped company is a topic, not an invented event or result.
+  if (company.trim()) return company.trim();
+  if (usableSubject(text)) return text.replace(/[.!?,;:]+$/g, "");
+  return "your work";
 }
 
 /**

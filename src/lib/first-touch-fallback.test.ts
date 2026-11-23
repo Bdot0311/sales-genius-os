@@ -178,10 +178,31 @@ describe("usable fallback fact", () => {
   });
 });
 
-import { fallbackSubjectFrom } from "../../supabase/functions/_shared/first-touch-fallback";
+import { fallbackSubjectFrom, usableSubject } from "../../supabase/functions/_shared/first-touch-fallback";
+import { subjectGrounded } from "../../supabase/functions/_shared/evidence-contract";
 describe("fallback subject", () => {
-  it("uses the first six words of the approved sentence", () => {
-    expect(fallbackSubjectFrom("Acme builds the systems that find B2B buyers fast.")).toBe("Acme builds the systems that find");
+  it("uses a complete topic instead of chopping a sentence at six words", () => {
+    expect(fallbackSubjectFrom("Acme builds the systems that find B2B buyers fast.", "Acme")).toBe("systems at Acme");
+  });
+  it("does not copy an unrelated congratulation into Navwise's subject", () => {
+    expect(fallbackSubjectFrom("Congratulations to Athlete , ButFor on the launch.", "Navwise")).toBe("Navwise");
+  });
+  it("does not end Skyvern's subject in the middle of a clause", () => {
+    expect(fallbackSubjectFrom("Skyvern automates these workflows natively in the browser.", "Skyvern")).toBe("Skyvern");
+    expect(usableSubject("Skyvern automates these workflows natively in")).toBe(false);
+  });
+  it("rejects incomplete scraped subjects and false reply prefixes", () => {
+    for (const subject of ["Congratulations to Athlete , ButFor", "Acme builds the systems that find", "Re: outbound", "payroll for"]) {
+      expect(usableSubject(subject), subject).toBe(false);
+    }
+    expect(usableSubject("browser workflows at Skyvern")).toBe(true);
+  });
+  it("keeps complete noun topics within the unchanged grounding rule", () => {
+    const span = "Skyvern automates browser workflows for teams.";
+    const subject = fallbackSubjectFrom(span, "Skyvern");
+    expect(subject).toBe("browser workflows at Skyvern");
+    expect(subjectGrounded(subject, [span], "", "Skyvern")).toBe(true);
+    expect(subjectGrounded("$500 million funding", [span], "", "Skyvern")).toBe(false);
   });
 });
 

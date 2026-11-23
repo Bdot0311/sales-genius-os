@@ -106,7 +106,7 @@ export async function safeObservationRelease(input: {
     if (fact.role === "sender_proof" || !usableFallbackFact(fact.span)) continue;
     const line = voiceSafeObservation(fact, input.company);
     const body = `Hi ${first},\n\n${line}\n\n${FALLBACK_ASK}\n\n${sender}`;
-    const subject = fallbackSubjectFrom(fact.span);
+    const subject = fallbackSubjectFrom(fact.span, input.company);
     const email = `Subject: ${subject}\n\n${body}`;
     const scored = await input.score(email);
     if (mode !== "studio" && scored.availability !== "scored") return null;

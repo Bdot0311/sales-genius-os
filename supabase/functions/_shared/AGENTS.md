@@ -5,6 +5,8 @@
 
 # Shared module rules
 
+- Subject-only generation uses the same grounding predicates as sending; fallback subjects use complete research topics or the owned company, never word-count truncation. Why: chopped scraped sentences produced unrelated or unfinished subjects.
+
 - Confirmed saved-draft batches use `queue-saved-drafts` and the atomic `queue_saved_draft_outbox` helper; the existing claimed sender applies research, checker and rubric gates, and queued counts are never delivery counts. Why: chat lifetimes must not truncate approved batches or create duplicate emails.
 
 - Customer paid tiers require Stripe linkage in the database and recognized active/trialing Stripe plans in checkout, polling and reconciliation; AppSumo records attribution only. Why: signup labels, local grants and licensing must not bypass recurring billing.

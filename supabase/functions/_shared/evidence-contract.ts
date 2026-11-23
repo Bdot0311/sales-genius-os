@@ -830,7 +830,7 @@ export function lineGrounding(line: string, facts: string[], senderCorpus = "", 
   return null;
 }
 
-function subjectGrounded(subject: string, facts: string[], senderCorpus: string, company: string): boolean {
+export function subjectGrounded(subject: string, facts: string[], senderCorpus: string, company: string): boolean {
   const known = `${facts.join(" ")} ${senderCorpus} ${company}`.toLowerCase();
   if (/\d/.test(subject) && !(subject.match(/\d[\d,.]*/g) ?? []).every((d) => known.includes(d))) return false;
   const stems = corpusStems(known);
