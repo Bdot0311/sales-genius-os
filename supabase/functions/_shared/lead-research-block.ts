@@ -1,4 +1,4 @@
-import { briefHasFacts, briefToPromptBlock, isResearchFresh, type LeadResearchBrief } from "./lead-research.ts";
+import { briefHasFacts, briefToPromptBlock, isResearchFresh, resolveLeadDomain, type LeadResearchBrief } from "./lead-research.ts";
 import { evaluateStoredSnapshots } from "./evidence-contract.ts";
 import { researchStep, type RetrievalReceipt } from "./research-orchestration.ts";
 
@@ -61,11 +61,7 @@ export async function researchBlockForLead(
       userId: userId || "unknown",
       leadId,
       company: String(row?.company_name ?? ""),
-      websiteHost: (() => {
-        const raw = String(row?.company_website ?? "");
-        try { return new URL(raw.includes("://") ? raw : `https://${raw}`).hostname.replace(/^www\./, ""); }
-        catch { return null; }
-      })(),
+      websiteHost: row ? resolveLeadDomain(row) : null,
       now: new Date().toISOString(),
       stored: payloads,
     });

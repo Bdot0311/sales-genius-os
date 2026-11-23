@@ -18,6 +18,7 @@ import { outboundGateFindings } from "../_shared/quality-gate.ts";
 import { scoreEmailReport } from "../_shared/email-quality.ts";
 import { gatePromptHash, rubricPromptHash, sha256Hex } from "../_shared/prompt-versions.ts";
 import { evaluateSend } from "../_shared/outbound-verdict.ts";
+import { resolveLeadDomain } from "../_shared/lead-research.ts";
 
 // RFC 2047 MIME encode subject for non-ASCII characters
 const mimeEncodeSubject = (subject: string) => {
@@ -284,14 +285,10 @@ serve(async (req) => {
       }
       const { data: leadRows } = await supabase
         .from("leads")
-        .select("id, user_id, company_name, company_website")
+        .select("id, user_id, company_name, company_website, contact_email")
         .in("id", leadIds);
       for (const lead of leadRows ?? []) {
-        const host = (() => {
-          const raw = String(lead.company_website ?? "");
-          try { return new URL(raw.includes("://") ? raw : `https://${raw}`).hostname.replace(/^www\./, ""); }
-          catch { return null; }
-        })();
+        const host = resolveLeadDomain(lead);
         companyByLead.set(lead.id, String(lead.company_name ?? ""));
         factsByLead.set(lead.id, evaluateStoredSnapshots({
           userId: lead.user_id,
@@ -682,7 +679,7 @@ serve(async (req) => {
         if (evidenceBlockers.length > 0) {
           await failEmail(
             email.id,
-            `Not sent (research_required). ${evidenceBlockers[0]}`,
+            `Not sent (research_required). ${!evidence.facts.length && evidence.reason ? evidence.reason : evidenceBlockers[0]}`,
           );
           failed++;
           continue;

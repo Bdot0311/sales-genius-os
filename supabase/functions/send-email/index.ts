@@ -30,6 +30,7 @@ import { sha256Hex } from "../_shared/prompt-versions.ts";
 import { evaluateSend } from "../_shared/outbound-verdict.ts";
 import { gatePromptHash, rubricPromptHash } from "../_shared/prompt-versions.ts";
 import { scoreEmailReport } from "../_shared/email-quality.ts";
+import { resolveLeadDomain } from "../_shared/lead-research.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -501,11 +502,11 @@ serve(async (req) => {
     let leadCompany = "";
     let leadJobTitle: string | null = null;
     let leadSignalTypes: string[] = [];
-    let leadWebsite: string | null = null;
+    let leadWebsiteHost: string | null = null;
     if (leadId) {
       const { data: leadRow } = await supabase
         .from('leads')
-        .select('id, email_verification_status, research_brief, job_title, industry, company_name, contact_name, company_website, signal_type')
+        .select('id, email_verification_status, research_brief, job_title, industry, company_name, contact_name, company_website, contact_email, signal_type')
         .eq('id', leadId)
         .eq('user_id', user.id)
         .maybeSingle();
@@ -528,7 +529,7 @@ serve(async (req) => {
       leadSignalTypes = typeof (leadRow as { signal_type?: unknown }).signal_type === "string"
         ? [(leadRow as { signal_type: string }).signal_type]
         : [];
-      leadWebsite = typeof leadRow.company_website === "string" ? leadRow.company_website : null;
+      leadWebsiteHost = resolveLeadDomain(leadRow);
       const { data: snapRows } = await supabase
         .from("research_snapshots")
         .select("payload")
@@ -633,11 +634,7 @@ serve(async (req) => {
         leadProof,
         0,
       );
-      const websiteHost = (() => {
-        const raw = String(leadWebsite ?? "");
-        try { return new URL(raw.includes("://") ? raw : `https://${raw}`).hostname.replace(/^www\./, ""); }
-        catch { return null; }
-      })();
+      const websiteHost = leadWebsiteHost;
       const evidenceDecision = evaluateStoredSnapshots({
         userId: user.id,
         leadId: String(leadId ?? ""),

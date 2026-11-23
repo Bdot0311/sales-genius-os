@@ -1,3 +1,8 @@
+# Failed outreach research checks — November 23, 2026
+
+- [x] Latest 50-email batch: 20 sent, 30 failed (15 lacked accepted facts, 13 body checks, 2 older template checks). Read-only replay restored accepted facts for all 15 by resolving the company domain instead of a LinkedIn profile; no sends or status resets.
+- [x] Consistent site resolution deployed for immediate/scheduled sends and agent cached research. 127 regressions and three function checks passed; preview build OK. Real-batch no-send replay restores all 15 missing-fact cases; other copy still needs the unchanged quality/research checks. Failed records were not reset or resent; actual delivery after this correction is unverified.
+
 # Muse MCP host verification — November 23, 2026
 
 - [x] Added Muse's exact challenge file under the public well-known path and verified its response locally. Confirmed mcp.outreign.io is intercepted by the existing Cloudflare outreign-api forwarding worker; website publication alone cannot serve the challenge there.

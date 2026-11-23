@@ -41,8 +41,8 @@ describe("a failed send says why", () => {
 
   it("leaves no path that fails a send silently", () => {
     // The research hold, plus a reply that arrived after this row was queued.
-    // Both are failed before Gmail is called, and both go through the helper.
-    expect(PROC.match(/await failEmail\(/g) ?? []).toHaveLength(11);
+    // The live quality-checker hold also goes through this helper before Gmail.
+    expect(PROC.match(/await failEmail\(/g) ?? []).toHaveLength(12);
     expect(PROC).toContain("ungrounded_template");
     expect(PROC).not.toMatch(/from\(["']sent_emails["']\)[\s\S]{0,80}?update\(\{ status: ["']failed["'] \}\)/);
   });
