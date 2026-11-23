@@ -1,83 +1,91 @@
 {
-  "version": 1,
+  "version": 2,
   "skills": {
     "ads-writing-style": {
       "source": "swan-gtm/gtm-skills",
       "sourceType": "github",
       "skillPath": "skills/ivan-falco/ads-writing-style/SKILL.md",
-      "computedHash": "e5c00a984e0364aaa19931eaf4b4e2cb942e9a020da1257338a3276221cb09fd"
+      "computedHash": ""
     },
     "anti-ai-slop-writing": {
       "source": "swan-gtm/gtm-skills",
       "sourceType": "github",
       "skillPath": "skills/gali-firon/anti-ai-slop-writing/SKILL.md",
-      "computedHash": "6a288a6b1a131149096a9d61bd5294556bc30a33af703af012e99d2e6ebc3f02"
+      "computedHash": "6362e404ab267f09db2f04ce14d2f005a5de348093fa52f9482cb488ba5c38e3"
     },
     "b2b-cold-email-copywriting": {
       "source": "swan-gtm/gtm-skills",
       "sourceType": "github",
       "skillPath": "skills/tim-yakubson/b2b-cold-email-copywriting/SKILL.md",
-      "computedHash": "4517179f1bb250a67f6fa61db844527f0fc1491bedbd390160da0c302b50c4e2"
+      "computedHash": ""
     },
     "cold-email": {
       "source": "sachacoldiq/ColdIQ-s-GTM-Skills",
       "sourceType": "github",
       "skillPath": "master-skills/cold-email/SKILL.md",
-      "computedHash": "a351b83b2cdd1ebb838a93b825854499daa38e8dd8a612210e7faa037e9a5405"
+      "computedHash": "0b3c2414170e0b9259fc8e95a0e6859fba9c646cd9f638cde14b1958a4f389a8"
     },
     "cold-email-4-sequence": {
       "source": "swan-gtm/gtm-skills",
       "sourceType": "github",
       "skillPath": "skills/alex-vacca/cold-email-4-sequence/SKILL.md",
-      "computedHash": "44b7266e2e5c209d747891d4fce77d0f6e678d42cea96a1e75a4cbc50b67b23d"
+      "computedHash": ""
     },
     "cold-email-strategist": {
       "source": "swan-gtm/gtm-skills",
       "sourceType": "github",
       "skillPath": "skills/alex-vacca/cold-email-strategist/SKILL.md",
-      "computedHash": "8ec3a2b2915cfaad25ce8878a93992db5ca570ba04d1f18b0753785b0736cc35"
+      "computedHash": ""
     },
     "cold-email-templates-34": {
       "source": "swan-gtm/gtm-skills",
       "sourceType": "github",
       "skillPath": "skills/alex-vacca/cold-email-templates-34/SKILL.md",
-      "computedHash": "2b5dbcfc0b614bc1e5e26756f1e5bac09ccc0bea2c047d677acb90d99faf13d9"
+      "computedHash": ""
     },
     "email-writing-frameworks": {
       "source": "swan-gtm/gtm-skills",
       "sourceType": "github",
       "skillPath": "skills/alex-vacca/email-writing-frameworks/SKILL.md",
-      "computedHash": "bc14bc606b32fb07099547c6c9a7f84d94dbbe862eb05aece2e31ef58561324f"
+      "computedHash": ""
+    },
+    "eve": {
+      "source": "vercel/eve",
+      "commit": "4e77d65e6f3c58d2eb2a0897d09a52f0f07fa917",
+      "sourceType": "github",
+      "skillPath": "skills/eve/SKILL.md",
+      "computedHash": "9c1eaa91f1aa5a1733b90937ee5186bc14f43e88ef6524a956750e535b0e2a60",
+      "installMode": "copy"
     },
     "frontal-messaging-templates": {
       "source": "swan-gtm/gtm-skills",
       "sourceType": "github",
       "skillPath": "skills/alex-vacca/frontal-messaging-templates/SKILL.md",
-      "computedHash": "ae6468c515e6d447373b13179411da32552072ca5d17d64a6b9fb6eac606be86"
+      "computedHash": ""
     },
     "impeccable": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",
       "skillPath": "skill/SKILL.md",
-      "computedHash": "8cdf2e788eaca3af7d02026ef9cec55b506100a00d130f938e3fb1ad669c0ad0"
+      "computedHash": "aa067a2696116245bb0d36885b20567b5ce18ceb1c47096202300097cf8c787a"
     },
     "list-building": {
       "source": "sachacoldiq/ColdIQ-s-GTM-Skills",
       "sourceType": "github",
       "skillPath": "master-skills/list-building/SKILL.md",
-      "computedHash": "ba9fd6d941595a46d9f75ea9eb404b7f9db78f7993fdd9d0db8d41c83c048387"
+      "computedHash": "ad218d7c330c184d8b56ba3e969e97417f64be1c187759259f56ece29f77eada"
     },
     "outreach-messaging": {
       "source": "swan-gtm/gtm-skills",
       "sourceType": "github",
       "skillPath": "skills/maja-voje/outreach-messaging/SKILL.md",
-      "computedHash": "f9cc5b21d4e577f0058ce2afd1541ff5a872f3a1843306eba5543cc81a6946f8"
+      "computedHash": ""
     },
     "signal-sourcer": {
       "source": "sachacoldiq/ColdIQ-s-GTM-Skills",
       "sourceType": "github",
       "skillPath": "master-skills/signal-sourcer/SKILL.md",
-      "computedHash": "ea92b9a0256ce0976338211994474f85553c01660c890b4c0cce4561fecc4818"
+      "computedHash": "a5cce367118d13445b33911c10e44bf0ae9aff82d5e8e9601f6a52c38dc96eca"
     }
   }
 }
