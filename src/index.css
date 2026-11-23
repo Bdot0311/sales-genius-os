@@ -24,17 +24,18 @@ All colors MUST be HSL. Using 8px spacing scale.
     --popover: 261 65% 97%;
     --popover-foreground: 261 35% 10%;
 
+    /* 60/30/10: background dominates, secondary surfaces support, brand purple accents */
     --primary: 261 70% 43%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 261 55% 86%;
+    --secondary: 261 50% 88%;
     --secondary-foreground: 261 35% 15%;
 
-    --muted: 261 45% 88%;
+    --muted: 261 45% 90%;
     --muted-foreground: 261 22% 30%;
 
-    --accent: 261 55% 83%;
-    --accent-foreground: 261 35% 12%;
+    --accent: 261 70% 52%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 55%;
     --destructive-foreground: 0 0% 98%;
@@ -68,17 +69,18 @@ All colors MUST be HSL. Using 8px spacing scale.
     --popover: 261 75% 5%;
     --popover-foreground: 0 0% 95%;
 
+    /* 60/30/10: background dominates, secondary surfaces support, brand purple accents */
     --primary: 261 75% 63%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 261 75% 8%;
+    --secondary: 261 60% 12%;
     --secondary-foreground: 0 0% 90%;
 
-    --muted: 261 75% 6%;
+    --muted: 261 70% 7%;
     --muted-foreground: 261 15% 72%;
 
-    --accent: 261 75% 8%;
-    --accent-foreground: 0 0% 95%;
+    --accent: 261 75% 63%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 58%;
     --destructive-foreground: 0 0% 98%;

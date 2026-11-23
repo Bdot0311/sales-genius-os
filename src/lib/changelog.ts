@@ -129,6 +129,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       { tag: "fixed", title: "Approved agent batches keep moving", description: "Multi-email sends enter the outgoing queue instead of stopping when the chat runs out of time. Queued and sent are reported separately, and research, quality and sending limits still apply.", href: "/dashboard/agent" },
       { tag: "fixed", title: "Company research stays matched when sending", description: "A LinkedIn profile saved as a website no longer makes the sender reject research from the lead's actual company website. Missing or unsupported research still holds an email back.", href: "/dashboard/outreach" },
       { tag: "improved", title: "Bulk send matches the dashboard design", description: "The Bulk Email Send window now uses the same glass panels, rounded corners and glow styling as the rest of your dashboard, in both dark and light themes.", href: "/dashboard/outreach" },
+      { tag: "improved", title: "Rebalanced colors across the app", description: "The site and dashboard now follow a 60/30/10 color balance: the background dominates, surfaces sit clearly above it, and the brand purple is reserved for buttons and highlights, in both themes." },
     ],
   },
   {
