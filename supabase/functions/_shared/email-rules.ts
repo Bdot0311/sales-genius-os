@@ -799,10 +799,27 @@ const TOUCH_ONE_PITCH: RegExp[] = [
 const PLAYBOOK_LOCKED_OPENER =
   /^[^\n]*reached out the other day but likely did(?:n't|n.t| not) do the best job explaining[^\n]*$/gim;
 
+/*
+ * The attributed research quote, which is the prospect's sentence and not the
+ * sender's pitch.
+ *
+ * A homepage that says "We help new cannabis consumers find products suited to
+ * how they actually want to feel", quoted and attributed to their own site,
+ * was read as the sender explaining his product and the draft was refused for
+ * touch_one_pitch. It is their copy, it matches an approved fact word for
+ * word, and the line above it names whose words they are.
+ *
+ * The quote cannot smuggle a pitch in: bodyViolations requires it to equal an
+ * approved research sentence exactly, so nothing the sender wrote can be
+ * inside it.
+ */
+const ATTRIBUTED_QUOTE =
+  /^[ \t]*(?:saw this on [^\n:]{1,80}|saw this in an? (?:recent )?write-up|a published account said)[:,][ \t]*["“][^\n]*["”][ \t]*$/gim;
+
 export function findTouchOnePitch(text: string): string[] {
   // Blanked rather than removed, so offsets and sentence boundaries elsewhere
   // in the draft are untouched.
-  const t = String(text ?? "").replace(PLAYBOOK_LOCKED_OPENER, "");
+  const t = String(text ?? "").replace(PLAYBOOK_LOCKED_OPENER, "").replace(ATTRIBUTED_QUOTE, "");
   const out: string[] = [];
   for (const re of TOUCH_ONE_PITCH) {
     // Quote the clause, not the pattern, so a finding can show the sentence.
