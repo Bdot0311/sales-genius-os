@@ -35,7 +35,7 @@ import { FollowUpSuggestion, FollowUpData } from "@/components/outreach/FollowUp
 import { BarChart3, ListOrdered, Layout, Users } from "lucide-react";
 import { LeadMultiSelect } from "@/components/outreach/LeadMultiSelect";
 import { MultiLeadFields, MultiLeadEmails } from "@/components/outreach/MultiLeadCompose";
-import { emptyComposeDraft, mergeSavedComposeDrafts, updateComposeDraft, type ComposeDrafts, type LeadComposeDraft } from "@/lib/outreach-compose-state";
+import { adoptUnassignedDraft, emptyComposeDraft, mergeSavedComposeDrafts, updateComposeDraft, type ComposeDrafts, type LeadComposeDraft } from "@/lib/outreach-compose-state";
 import { outreachLeadPages } from "@/lib/outreach-lead-pages";
 import { BulkSendDialog } from "@/components/outreach/BulkSendDialog";
 import { EmailQualityChecker, blockerSummary, redQualityRows, scoreEmailQuality } from "@/components/outreach/EmailQualityChecker";
@@ -365,6 +365,9 @@ const Outreach = () => {
   const updateLeadCompose = useCallback((leadId: string, patch: Partial<LeadComposeDraft>) => {
     setComposeDrafts((current) => updateComposeDraft(current, leadId, patch));
   }, []);
+  useEffect(() => {
+    if (selectedLead) setComposeDrafts((prev) => adoptUnassignedDraft(prev, selectedLead));
+  }, [selectedLead]);
   const currentCompose = composeDrafts[selectedLead] ?? emptyComposeDraft;
   const triggerContext = currentCompose.trigger;
   const subjectLine = currentCompose.subject;

@@ -31,3 +31,16 @@ export function mergeSavedComposeDrafts(drafts: ComposeDrafts, saved: Array<{
   }
   return next;
 }
+/**
+ * Content prepared before any lead is chosen (prefill, template) lives under
+ * the "" key. Hand it to the first lead picked, unless that lead already has
+ * its own copy, so nothing on screen vanishes.
+ */
+export function adoptUnassignedDraft(drafts: ComposeDrafts, leadId: string): ComposeDrafts {
+  const pending = drafts[""];
+  if (!leadId || !pending) return drafts;
+  const target = drafts[leadId];
+  if (target && (target.subject || target.body || target.trigger)) return drafts;
+  const { [""]: _unused, ...rest } = drafts;
+  return { ...rest, [leadId]: { ...emptyComposeDraft, ...target, ...pending, draftId: target?.draftId ?? pending.draftId } };
+}
