@@ -2,7 +2,7 @@
 
 - [x] Added Muse's exact challenge file under the public well-known path and verified its response locally. Confirmed mcp.outreign.io is intercepted by the existing Cloudflare outreign-api forwarding worker; website publication alone cannot serve the challenge there.
 - [x] Owner approved adding a response only for the exact Muse challenge address while preserving all other forwarding and DNS.
-- [ ] Update the existing worker through the connected Cloudflare account and verify the public challenge response; do not change MCP OAuth or DNS.
+- [ ] Blocked on Cloudflare update permission: both the initial version upload and the single retry after successful reconnection returned HTTP 403 “No access to the specified resource.” The required operation needs Workers Scripts Edit on the account containing outreign-api; reconnecting did not supply that access. Exact-address GET/HEAD and unchanged forwarding were tested against the proposed source locally. Live challenge remains HTTP 404; no worker, DNS or MCP OAuth change was made. Do not retry or reconnect again until the owner changes the provider-side access or chooses a manual update.
 
 # Agent batch sends and manual draft actions — November 23, 2026
 
