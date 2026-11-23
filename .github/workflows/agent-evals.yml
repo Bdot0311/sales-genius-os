@@ -1,0 +1,65 @@
+# The agent scenarios, run against a deployed agent.
+#
+# src/test/agent-evals.live.test.ts has a well-formed scenario list, a working
+# grader and, until now, no way to run in CI. It skips itself unless four
+# variables are set, so every prompt change to this agent has shipped
+# unverified and every quality regression has been found in production, by the
+# person paying for it, after the emails went out.
+#
+# ── Why this is manual, and stays manual ─────────────────────────────────
+#
+# The scenarios call draft_outreach and enrich_leads for real, and the whole
+# point of each scenario's `forbid` list is to catch an agent that SENDS when
+# it was told not to. A suite that can send is a suite that can email real
+# prospects from a real domain. So it runs on workflow_dispatch only: never on
+# a push, never on a pull request, never on a schedule. A contributor's branch
+# cannot reach it and a merge cannot trigger it.
+#
+# The test's own refusal is the real gate and this does not weaken it: without
+# EVAL_ACCOUNT_IS_DISPOSABLE=yes the suite skips whatever this workflow does.
+# Point it at a throwaway account on a throwaway sending domain, nothing else.
+#
+# Setup: add EVAL_AGENT_URL, EVAL_AGENT_JWT, EVAL_SUPABASE_ANON_KEY and
+# EVAL_ACCOUNT_IS_DISPOSABLE as repository secrets, then run this workflow from
+# the Actions tab. Without them the job reports that it is not configured and
+# passes, rather than failing a repository that has deliberately not set it up.
+name: agent-evals
+
+on:
+  workflow_dispatch:
+
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund
+      - name: Check it is pointed at a disposable account
+        env:
+          EVAL_AGENT_URL: ${{ secrets.EVAL_AGENT_URL }}
+          EVAL_AGENT_JWT: ${{ secrets.EVAL_AGENT_JWT }}
+          EVAL_SUPABASE_ANON_KEY: ${{ secrets.EVAL_SUPABASE_ANON_KEY }}
+          EVAL_ACCOUNT_IS_DISPOSABLE: ${{ secrets.EVAL_ACCOUNT_IS_DISPOSABLE }}
+        run: |
+          if [ -z "$EVAL_AGENT_URL" ] || [ -z "$EVAL_AGENT_JWT" ] || [ -z "$EVAL_SUPABASE_ANON_KEY" ]; then
+            echo "Not configured: set EVAL_AGENT_URL, EVAL_AGENT_JWT and EVAL_SUPABASE_ANON_KEY as repository secrets."
+            echo "The suite would skip itself anyway; this job is reporting that rather than looking green for no reason."
+            exit 0
+          fi
+          if [ "$EVAL_ACCOUNT_IS_DISPOSABLE" != "yes" ]; then
+            echo "Refusing to run: EVAL_ACCOUNT_IS_DISPOSABLE is not 'yes'."
+            echo "These scenarios draft and enrich for real, and exist to catch an agent that sends when told not to."
+            exit 1
+          fi
+          echo "configured=yes" >> "$GITHUB_ENV"
+      - name: Run the scenarios
+        if: env.configured == 'yes'
+        env:
+          EVAL_AGENT_URL: ${{ secrets.EVAL_AGENT_URL }}
+          EVAL_AGENT_JWT: ${{ secrets.EVAL_AGENT_JWT }}
+          EVAL_SUPABASE_ANON_KEY: ${{ secrets.EVAL_SUPABASE_ANON_KEY }}
+          EVAL_ACCOUNT_IS_DISPOSABLE: ${{ secrets.EVAL_ACCOUNT_IS_DISPOSABLE }}
+        run: npx vitest run src/test/agent-evals.live.test.ts

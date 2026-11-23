@@ -344,6 +344,29 @@ Optional. The feature works without it. Set it if you want IP hashes to stay sta
 
 ---
 
+## Agent evals (CI only, never the app)
+
+Read by `src/test/agent-evals.live.test.ts`, never by an edge function or the
+frontend. The suite skips itself unless all four are set, which is why the
+scenarios have a grader and had never actually run against a deployed agent.
+
+They point at a **throwaway account on a throwaway sending domain**. The
+scenarios draft and enrich for real, and each one's `forbid` list exists to
+catch an agent that sends when it was told not to, so the account must be one
+it is safe to send from.
+
+| Variable | Read by | Missing |
+|---|---|---|
+| `EVAL_AGENT_URL` | the eval suite | The suite skips. The `agent-evals` workflow says it is not configured and passes |
+| `EVAL_AGENT_JWT` | the eval suite | The same. A user JWT for the throwaway account |
+| `EVAL_SUPABASE_ANON_KEY` | the eval suite | The same |
+| `EVAL_ACCOUNT_IS_DISPOSABLE` | the eval suite | Anything but `yes` and the suite refuses to start, deliberately rather than as a config oversight |
+
+Run them from the Actions tab: the `agent-evals` workflow is
+`workflow_dispatch` only, never on a push, a pull request or a schedule.
+
+---
+
 ## Adding a variable
 
 Keep the two habits this page documents:

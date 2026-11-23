@@ -42,6 +42,17 @@ const VITE_BUILTINS = new Set(["DEV", "MODE", "SSR", "PROD", "BASE_URL"]);
 const appVars = new Set(
   [...matchAll(APP, /import\.meta\.env\.([A-Z0-9_]+)/g)].filter((v) => !VITE_BUILTINS.has(v)),
 );
+/*
+ * Variables read by Node rather than by the bundle: the eval suite reads its
+ * four from process.env, because it runs under vitest and never ships.
+ *
+ * These are not added to appVars. That set drives "documents every frontend
+ * variable", and a tooling variable is not something every reader of the page
+ * has to be told about. They count here only so a documented variable that is
+ * genuinely read is not reported as one nothing reads -- which is what
+ * happened the moment the eval variables were written down.
+ */
+const nodeVars = matchAll(APP, /process\.env\.([A-Z0-9_]+)/g);
 
 /** A variable counts as documented if the doc names it in backticks, or a
  *  wildcard row covers its family (the Lovable connector keys are managed for
@@ -92,7 +103,7 @@ describe("every key the doc names is still read somewhere", () => {
     const notVariables = new Set(["VITE_", "VITE_LOVABLE_CONNECTOR_", "TXT"]);
     const orphans = [...named]
       .filter((v) => !notVariables.has(v))
-      .filter((v) => !edgeVars.has(v) && !appVars.has(v))
+      .filter((v) => !edgeVars.has(v) && !appVars.has(v) && !nodeVars.has(v))
       .filter((v) => !v.startsWith("VITE_LOVABLE_CONNECTOR_"))
       /*
        * A SCREAMING_CASE name the page explains which is an exported constant
