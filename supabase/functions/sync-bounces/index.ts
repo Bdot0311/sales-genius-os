@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@^2.76.1";
+import { isInternalCaller } from "../_shared/internal-auth.ts";
+import { bounceSyncOwner } from "../_shared/bounce-sync-owner.ts";
 import {
   type CacheClient,
   emailVerificationCheckedAt,
@@ -117,16 +119,17 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const {
-      data: { user },
-      error: authError,
-    } = await adminClient.auth.getUser(authHeader.replace("Bearer ", ""));
-    if (authError || !user) {
+    const internal = isInternalCaller(req);
+    const payload = await req.json().catch(() => ({}));
+    const authenticated = internal ? null : await adminClient.auth.getUser(authHeader.replace(/^Bearer\s+/i, ""));
+    const owner = bounceSyncOwner(internal, authenticated?.data.user?.id ?? null, payload.userId);
+    if (!owner) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const user = { id: owner };
 
     const { data: integrations } = await adminClient
       .from("integrations")

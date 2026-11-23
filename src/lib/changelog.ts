@@ -121,6 +121,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     title: "Send or schedule your saved drafts",
     summary: "Select drafts and confirm a send or a future delivery time, without loading each email separately.",
     items: [
+      { tag: "fixed", title: "Bounces appear in Saved Leads and Deliverability", description: "Connected mailbox scans now record delivery failures even while you are away. Saved Leads marks the address that bounced, and Deliverability refreshes its bounce totals when opened.", href: "/dashboard/deliverability" },
       { tag: "new", title: "Send and schedule selected drafts", description: "Drafts now has Send and Schedule alongside Delete. Choose active mailboxes, review recipients, and confirm. Each person keeps their own saved email; held drafts show their reasons.", href: "/dashboard/outreach" },
       { tag: "fixed", title: "Approved agent batches keep moving", description: "Multi-email sends enter the outgoing queue instead of stopping when the chat runs out of time. Queued and sent are reported separately, and research, quality and sending limits still apply.", href: "/dashboard/agent" },
       { tag: "fixed", title: "Company research stays matched when sending", description: "A LinkedIn profile saved as a website no longer makes the sender reject research from the lead's actual company website. Missing or unsupported research still holds an email back.", href: "/dashboard/outreach" },

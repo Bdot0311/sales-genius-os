@@ -35,6 +35,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { enrichedWithoutEmail, hasNoEmail, unenrichedWithoutEmail } from "@/lib/lead-email-gap";
 import { useToast } from "@/hooks/use-toast";
 import { Analytics } from "@/lib/analytics";
+import { useBounceSync } from "@/hooks/use-bounce-sync";
+import { leadHasBounce, type BouncedSend } from "@/lib/lead-bounce-status";
 
 type SortField = "tier" | "created_at" | "icp_score" | "intent_score" | "company_name" | "company_size";
 type SortOrder = "asc" | "desc";
@@ -200,6 +202,23 @@ const SavedLeads = () => {
     setPage,
   );
   const { facets } = useLeadFacets();
+  const [bouncedSends, setBouncedSends] = useState<BouncedSend[]>([]);
+  const loadBounces = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const rows: BouncedSend[] = [];
+    for (let offset = 0; ; offset += 1000) {
+      const { data, error } = await supabase.from("sent_emails")
+        .select("lead_id,to_email").eq("user_id", session.user.id).eq("status", "bounced")
+        .order("id").range(offset, offset + 999);
+      if (error) return;
+      rows.push(...(data ?? []));
+      if ((data?.length ?? 0) < 1000) break;
+    }
+    setBouncedSends(rows);
+  };
+  useEffect(() => { void loadBounces(); }, []);
+  useBounceSync(() => { void loadBounces(); void refreshLeads(); });
 
   const leadIds = useMemo(() => pageLeads.map((l) => l.id), [pageLeads]);
   const {
@@ -1081,6 +1100,7 @@ const SavedLeads = () => {
                               {lead.contact_email || <span className="text-muted-foreground/40">no email</span>}
                             </p>
                             <div className="flex items-center gap-1.5">
+                              {leadHasBounce(lead, bouncedSends) && <Badge variant="destructive">Bounced</Badge>}
                               {lead.job_title && (
                                 <span className="truncate text-xs text-muted-foreground/70">{lead.job_title}</span>
                               )}
@@ -1228,6 +1248,7 @@ const SavedLeads = () => {
                           )}
                           <div className="flex gap-4 text-sm text-muted-foreground">
                             <span>{lead.contact_email}</span>
+                            {leadHasBounce(lead, bouncedSends) && <Badge variant="destructive">Bounced</Badge>}
                             {lead.contact_phone && (
                               <span className="flex items-center gap-1.5">
                                 {lead.contact_phone}

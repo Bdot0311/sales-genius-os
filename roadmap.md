@@ -1,3 +1,7 @@
+# Bounce visibility — November 23, 2026
+
+- [ ] Record current mailbox bounces, extend the existing scheduled mailbox sweep to scan bounces, and show address-matched bounce badges in Saved Leads; verify live Deliverability and lead read-back without sending mail.
+
 # Failed outreach research checks — November 23, 2026
 
 - [x] Owner approved correcting and sending the remaining 11: replaced unsupported assumptions with individualized research-topic questions, refreshed TF research and corrected its source attribution, and used a verified Westgate supplier statement. All 11 passed unchanged local checks and the live sender; final batch read-back is 50 sent, zero failed/queued. Signed-in Sent view shows all 11 as Sent. Updated only unattempted failed originals; no previously sent email resent. Inbox receipt is not independently confirmed.

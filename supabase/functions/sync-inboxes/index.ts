@@ -62,6 +62,7 @@ serve(async (req) => {
 
     const userIds = ((due ?? []) as { user_id: string }[]).map((row) => row.user_id).filter(Boolean);
     let newReplies = 0;
+    let bounces = 0;
     const errors: string[] = [];
     const startedAt = Date.now();
     let deferred = 0;
@@ -74,17 +75,26 @@ serve(async (req) => {
       }
       let failure: string | null = null;
       try {
-        const res = await fetch(`${supabaseUrl}/functions/v1/inbox-sync`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ userId, analyzeReplies: true }),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok || data?.error) {
-          failure = String(data?.error ?? res.status);
-          errors.push(`${userId}: ${failure}`);
-        } else {
-          newReplies += Number(data?.newReplies ?? 0);
+        // Both readers run independently: a reply failure must not hide DSNs.
+        const results = await Promise.allSettled(["inbox-sync", "sync-bounces"].map(async (name) => {
+          const res = await fetch(`${supabaseUrl}/functions/v1/${name}`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ userId, analyzeReplies: true }),
+            signal: AbortSignal.timeout(65_000),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || data?.error) throw new Error(`${name}: ${data?.error ?? res.status}`);
+          return data;
+        }));
+        for (const result of results) {
+          if (result.status === "fulfilled") {
+            newReplies += Number(result.value?.newReplies ?? 0);
+            bounces += Number(result.value?.bounces ?? 0);
+          } else {
+            failure = String(result.reason instanceof Error ? result.reason.message : "Mailbox sync failed");
+            errors.push(`${userId}: ${failure}`);
+          }
         }
       } catch (e) {
         failure = (e as Error).message;
@@ -126,6 +136,7 @@ serve(async (req) => {
         success: true,
         users: userIds.length - deferred,
         newReplies,
+        bounces,
         errors: errors.length,
         deferred,
       }),

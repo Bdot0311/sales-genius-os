@@ -28,6 +28,7 @@ import {
 } from "@/hooks/use-deliverability";
 import { useDeliverabilityRealtime } from "@/hooks/use-deliverability-realtime";
 import { LiveIndicator } from "@/components/deliverability/LiveIndicator";
+import { useBounceSync } from "@/hooks/use-bounce-sync";
 
 /**
  * A section's label, at the scale the rest of the dashboard uses.
@@ -70,6 +71,7 @@ const Deliverability = () => {
     snapshotsQ.refetch();
     statsQ.refetch();
   };
+  useBounceSync(retryAll, !gated);
 
   return (
     <DashboardLayout>
