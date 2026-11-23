@@ -289,6 +289,20 @@ export const FooterSection = () => {
                   </a>
                 );
               })}
+              <a
+                href="https://viberank.dev/apps/OutReign"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="border border-border bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <img
+                  src="https://viberank.dev/badge?app=OutReign&theme=dark"
+                  alt="OutReign on VibeRank"
+                  width={200}
+                  height={40}
+                  loading="lazy"
+                />
+              </a>
             </div>
             <p className="text-sm text-center" style={{ color: "hsl(var(--foreground) / 0.6)" }}>
               © {new Date().getFullYear()} BDØT Industries LLC. All rights reserved.
