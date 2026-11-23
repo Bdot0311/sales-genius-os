@@ -1921,6 +1921,14 @@ body.dashboard-active :is([role="dialog"], [role="alertdialog"]) :is(.border, .b
 body.dashboard-active :is([role="menuitem"], [role="option"], [role="menuitemcheckbox"], [role="menuitemradio"]) { border-radius: 10px; }
 body.dashboard-active :is([role="menuitem"], [role="option"], [role="menuitemcheckbox"], [role="menuitemradio"]):is([data-highlighted], :hover) { background: rgb(var(--glow-iris) / 0.18); color: hsl(var(--foreground)); }
 body.dashboard-active [role="dialog"] [class*="border-primary"]:not(button) { border-color: rgb(var(--glow-iris) / 0.35); border-radius: 18px; background: rgb(var(--glow-iris) / 0.06); }
+/* Inner panels inside workspace dialogs (bulk-send option rows, filter boxes, lead lists) get the same
+   glass treatment as nested cards, so portaled dialogs match the workspace design end to end. Warning
+   and error tints keep their own fill. */
+body.dashboard-active :is([role="dialog"], [role="alertdialog"]) .rounded-lg:is(.border, .bg-muted\/50, .bg-muted\/30):not([class*="amber"]):not([class*="destructive"]):not([class*="emerald"]):not(button):not(input):not(textarea):not([role="combobox"]) {
+  background: var(--glow-glass);
+  border-color: transparent;
+  box-shadow: var(--glow-glass-ring);
+}
 body.dashboard-active :is(.dashboard-shell main, [role="dialog"], [role="alertdialog"]) span[data-orientation="horizontal"].bg-secondary { background: hsl(var(--foreground) / 0.1); }
 /* Glass overrides replace the fill, so they must also own the ink: a hovered secondary button and a primary
    badge otherwise keep white primary-foreground text on a pale glass fill in light mode. */

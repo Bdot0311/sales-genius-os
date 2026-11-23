@@ -110,7 +110,7 @@ describe("outreach studio", () => {
 
   it("uses the dashboard's surface for its panes", () => {
     expect(OUTREACH).not.toMatch(/<Card\b/);
-    expect(OUTREACH).toContain('<PanelHeader title="Generated email" />');
+    expect(OUTREACH).toContain('<PanelHeader title={selectedLeadIds.length > 1 ? `Generated emails (${selectedLeadIds.length})` : "Generated email"} />');
     expect(OUTREACH).toContain('<PanelHeader title="Sent emails"');
   });
 
