@@ -1,6 +1,6 @@
 # Bounce visibility — November 23, 2026
 
-- [ ] Record current mailbox bounces, extend the existing scheduled mailbox sweep to scan bounces, and show address-matched bounce badges in Saved Leads; verify live Deliverability and lead read-back without sending mail.
+- [x] Live scan recorded two new hard bounces (5.1.1), marked their original sends bounced and current lead addresses invalid. Batch read-back: 48 sent, 2 bounced. Deployed sync-bounces and sync-inboxes with independent bounce scanning in the existing leased sweep; added current-address badges and page-open scans. Signed-in Saved Leads badges and Deliverability's 2 of 61 / 3.3% bounce rate verified. 80 tests and both Deno checks passed; preview build OK. No emails sent. First subsequent scheduled sweep remains unverified; new page changes require publishing.
 
 # Failed outreach research checks — November 23, 2026
 
