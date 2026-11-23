@@ -1,3 +1,9 @@
+# Muse MCP host verification — November 23, 2026
+
+- [x] Added Muse's exact challenge file under the public well-known path and verified its response locally. Confirmed mcp.outreign.io is intercepted by the existing Cloudflare outreign-api forwarding worker; website publication alone cannot serve the challenge there.
+- [x] Owner approved adding a response only for the exact Muse challenge address while preserving all other forwarding and DNS.
+- [ ] Update the existing worker through the connected Cloudflare account and verify the public challenge response; do not change MCP OAuth or DNS.
+
 # Agent batch sends and manual draft actions — November 23, 2026
 
 - [x] Confirmed 11 agent sends over 131 seconds, followed by 50 untouched drafts and no completed chat reply. The sequential send loop ignored the chat lifetime; confirmed multi-draft sends now atomically queue the full approved set through the existing claimed sender. Preview confirmation counts no longer report all 61 as failed, and “yes send them” is recognized without weakening conditional-consent checks.
