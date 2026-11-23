@@ -1,5 +1,6 @@
 # Failed outreach research checks — November 23, 2026
 
+- [x] Owner approved retrying the 30 failed emails. Confirmed all 30 had no send attempt/message id; requeued originals through the existing sender without touching the 20 already sent. Final read-back: 19 additional sent, 11 still failed (8 body-research checks, 3 older template checks), no queued items. No checks bypassed, no automatic rewriting or further retries; the 11 need corrected copy before another send.
 - [x] Latest 50-email batch: 20 sent, 30 failed (15 lacked accepted facts, 13 body checks, 2 older template checks). Read-only replay restored accepted facts for all 15 by resolving the company domain instead of a LinkedIn profile; no sends or status resets.
 - [x] Consistent site resolution deployed for immediate/scheduled sends and agent cached research. 127 regressions and three function checks passed; preview build OK. Real-batch no-send replay restores all 15 missing-fact cases; other copy still needs the unchanged quality/research checks. Failed records were not reset or resent; actual delivery after this correction is unverified.
 
