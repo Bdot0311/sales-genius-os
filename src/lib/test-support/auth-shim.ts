@@ -29,6 +29,31 @@
  */
 export const AUTH_SHIM_SQL = `
   CREATE SCHEMA IF NOT EXISTS auth;
+  /*
+   * The roles have to be able to reach the schema, not just the function.
+   *
+   * Creating a schema grants nobody USAGE on it, while a new function is
+   * executable by PUBLIC, so every role could execute auth.uid() and none
+   * could see the schema it lives in. A query evaluated as anon,
+   * authenticated or service_role then failed with "permission denied for
+   * schema auth" -- but only when the planner actually evaluated the policy
+   * expression, which depends on whether there were rows to check. Five test
+   * files share one database in the audit-db job, so that depended on what the
+   * others had left behind, and the job failed on main roughly one run in
+   * four with an error that pointed at none of this.
+   *
+   * Supabase grants exactly this, so the shim is matching production rather
+   * than widening anything.
+   */
+  DO $grant$
+  BEGIN
+    -- Conditional because runtime-guards applies this shim on its own, part
+    -- way through a test, in a database where the roles may not exist yet.
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN GRANT USAGE ON SCHEMA auth TO anon; END IF;
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN GRANT USAGE ON SCHEMA auth TO authenticated; END IF;
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN GRANT USAGE ON SCHEMA auth TO service_role; END IF;
+  END
+  $grant$;
   CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $shim$
     SELECT COALESCE(
       NULLIF(current_setting('request.jwt.claim.sub', true), ''),
