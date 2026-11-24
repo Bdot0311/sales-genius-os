@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { FOLLOW_UP_SOURCES_NOTE, TOOL_CATALOG, scopeNoteFor } from "../../supabase/functions/_shared/agent-tool-scope";
+import { AGENT_TOOL_GROUPS } from "../components/agent/AgentRoles";
+import { CORE_TOOLS, FOLLOW_UP_SOURCES_NOTE, TOOL_CATALOG, scopeNoteFor } from "../../supabase/functions/_shared/agent-tool-scope";
 
 const AGENT_CHAT = readFileSync("supabase/functions/agent-chat/index.ts", "utf8");
 
@@ -88,5 +89,51 @@ describe("the tool the agent has to reach for says what it is for", () => {
   it("names it on the filter itself, where the model reads the schema", () => {
     expect(AGENT_CHAT).toMatch(/This is how .{0,20}leads with no response/);
     expect(AGENT_CHAT).toMatch(/independent of the sent history/);
+  });
+});
+
+/**
+ * The capability was always there; the screen never said so.
+ *
+ * list_leads is in CORE_TOOLS, so every build could already read the label
+ * that answers "leads with no response". The custom-build picker does not
+ * show core tools, so a follow-up agent's capability list named sent email,
+ * replies and drafting and said nothing about labels — and both the operator
+ * and the model behaved as though sent email was the only source.
+ */
+describe("the label is a capability somebody can see", () => {
+  const crm = AGENT_TOOL_GROUPS.find((g) => g.label === "CRM");
+
+  it("is on the screen, in CRM, where it was asked for", () => {
+    const row = crm?.tools.find((t) => t.name === "list_leads");
+    expect(row, "CRM group has no lead-label row").toBeTruthy();
+    expect(row?.label).toMatch(/label/i);
+  });
+
+  it("is shown as always on, because it is core and cannot be turned off", () => {
+    expect(crm?.tools.find((t) => t.name === "list_leads")?.always).toBe(true);
+  });
+
+  it("never claims always-on for something a build might not have", () => {
+    /*
+     * The lock is a promise: ticked and disabled says "every agent can do
+     * this". Marking a non-core tool that way would show a build a capability
+     * it does not have.
+     */
+    for (const group of AGENT_TOOL_GROUPS) {
+      for (const tool of group.tools) {
+        if (tool.always) expect(CORE_TOOLS, tool.name).toContain(tool.name);
+      }
+    }
+  });
+
+  it("maps the operator's own words onto the label", () => {
+    // The scope note in the screenshot reads "leads that have not replied to
+    // initial outreach", and operator instructions are appended after this
+    // rule, so that phrasing has to resolve to the label rather than re-anchor
+    // the agent on reply history.
+    expect(FOLLOW_UP_SOURCES_NOTE).toMatch(/[Hh]as not replied/);
+    expect(FOLLOW_UP_SOURCES_NOTE).toMatch(/no reply to the initial outreach/);
+    expect(FOLLOW_UP_SOURCES_NOTE).toMatch(/label says so/);
   });
 });

@@ -275,6 +275,9 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
                       <p className="text-xs font-medium">{group.label}</p>
                       {group.tools.map((tool) => {
                         const onPlan = isToolOnPlan(tool.name, plan);
+                        // Core to every build: shown ticked and locked, so the
+                        // capability is visible rather than merely present.
+                        const always = tool.always === true;
                         return (
                           <label
                             key={tool.name}
@@ -284,23 +287,29 @@ export function ConfigTab({ config, userId, onSaved }: ConfigTabProps) {
                                 : "text-muted-foreground/50 cursor-not-allowed"
                             }`}
                             title={
-                              onPlan
-                                ? undefined
-                                : "Not included on your plan — upgrade to grant this action"
+                              always
+                                ? "Every agent can do this — it cannot be turned off"
+                                : onPlan
+                                  ? undefined
+                                  : "Not included on your plan — upgrade to grant this action"
                             }
                           >
                             <Checkbox
-                              disabled={!onPlan}
-                              checked={onPlan && allowedTools.includes(tool.name)}
-                              onCheckedChange={(checked) =>
+                              disabled={!onPlan || always}
+                              checked={always || (onPlan && allowedTools.includes(tool.name))}
+                              onCheckedChange={(checked) => {
+                                if (always) return;
                                 setAllowedTools((prev) =>
                                   checked
                                     ? [...prev, tool.name]
                                     : prev.filter((t) => t !== tool.name),
-                                )
-                              }
+                                );
+                              }}
                             />
                             <span>{tool.label}</span>
+                            {always && (
+                              <span className="text-[10px] text-muted-foreground/70">always on</span>
+                            )}
                             {!onPlan && (
                               <Link
                                 to="/pricing"
