@@ -263,6 +263,32 @@ export function allowedToolsFor(config: {
 }
 
 
+/**
+ * Who needs a follow-up, and what a follow-up may say about the first touch.
+ *
+ * These are two different questions and they have two different sources, and
+ * conflating them cost a whole run. Asked for "leads with no response", the
+ * agent listed leads, read the sent history, found it empty because the
+ * original campaign went out through another tool, and stopped to ask what the
+ * first email had said -- as though an empty sent folder meant there was
+ * nobody to follow up with.
+ *
+ * The saved-lead label already answered the first question. `pipeline_stage`
+ * carries new / contacted / no_response / replied, the user sets it, and it
+ * survives the original mail having been sent from somewhere this product
+ * cannot see.
+ *
+ * The refusal to invent the first touch was right and stays. What changes is
+ * that it is reported as one missing fact rather than as a dead end.
+ */
+export const FOLLOW_UP_SOURCES_NOTE =
+  "FOLLOW-UPS HAVE TWO SOURCES, AND YOU USE BOTH. " +
+  "Who to follow up with comes from the saved-lead label: pipeline_stage is new, contacted, no_response, replied, bounced, meeting_booked, qualified, not_interested, won or lost, and a user asking for \"leads with no response\", \"contacted but quiet\" or \"who hasn't replied\" means that field. Filter list_leads by it. " +
+  "What the follow-up may SAY about the earlier email comes from the sent history (list_sent_emails, get_email_thread). " +
+  "An empty sent history does NOT mean there is nothing to follow up on. It means this product cannot see the first touch, usually because it was sent from another tool. " +
+  "When that happens: say so once, in one line, and keep going. Follow up on the leads the label selected, and write copy that does not claim anything specific about an email you have not read -- no subject, no offer, no date, no \"as I mentioned\". " +
+  "Asking the user for a one-line summary of the original is a good offer, but make it alongside the drafts, not instead of them. Never invent what the first email said.";
+
 export function scopeNoteFor(config: {
   role?: string | null;
   role_instructions?: string | null;
@@ -275,6 +301,10 @@ export function scopeNoteFor(config: {
     const tools = allowedToolsFor(config);
     base = `SCOPE: you are "${config?.agent_name ?? "a custom agent"}", a custom build. The ONLY tools you have are: ${tools.join(", ")}. Anything else — sending, scheduling, drafting, deleting, sourcing, enrolling, full runs — is outside this build. If the user asks for it, say plainly that this build is not scoped to that and they should switch agents with the selector at the top of the chat. Do not offer alternatives for the out-of-scope work and never imply you would do it if drafts, approvals or data existed.`;
   }
+  const tools = allowedToolsFor(config);
+  // Only where it can be acted on: an agent with no drafting tool does not
+  // need a rule about what a follow-up may say.
+  if (tools.includes("draft_outreach")) base = `${base}\n${FOLLOW_UP_SOURCES_NOTE}`;
   const extra = (config?.role_instructions ?? "").trim();
   return extra ? `${base}\nOPERATOR INSTRUCTIONS FOR THIS BUILD: ${extra}` : base;
 }
@@ -292,7 +322,8 @@ export function scopeNoteFor(config: {
 export const TOOL_CATALOG: Record<string, string> = {
   list_reply_labels: "Read the outcome label on replies, who set it, and which ones the classifier was unsure about.",
   set_reply_label: "Correct the outcome label on a reply. Beats the classifier and survives re-analysis.",
-  list_leads: "List leads already in the account, with filters.",
+  list_leads:
+    "List leads already in the account, with filters. pipeline_stage is the visible label the user sets — new, contacted, no_response, replied and the rest — so it is how \"leads with no response\" or \"contacted but quiet\" is answered.",
   get_lead: "Read one lead's full record.",
   get_agent_status: "Report this agent's own configuration and recent activity.",
   find_leads: "Source brand-new leads (people) from the lead network.",
