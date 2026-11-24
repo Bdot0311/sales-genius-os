@@ -46,7 +46,16 @@ export const roleDescription = (role?: string | null) =>
  */
 export const AGENT_TOOL_GROUPS: {
   label: string;
-  tools: { name: string; label: string }[];
+  /**
+   * `always` marks a tool in CORE_TOOLS: every build has it, so the box is
+   * shown ticked and locked rather than left off the page.
+   *
+   * Reading lead labels was one of those. It is how "leads with no response"
+   * is answered, every agent could already do it, and nothing on this screen
+   * said so — so a follow-up build looked like it could only see sent email,
+   * and behaved that way. A capability nobody can see is one nobody relies on.
+   */
+  tools: { name: string; label: string; always?: true }[];
 }[] = [
   {
     label: "Leads",
@@ -132,6 +141,7 @@ export const AGENT_TOOL_GROUPS: {
   {
     label: "CRM",
     tools: [
+      { name: "list_leads", label: "Read lead labels and stages", always: true },
       { name: "find_lead_issues", label: "Find CRM data problems" },
       { name: "list_deals", label: "See pipeline deals" },
       { name: "analyse_won_deals", label: "Read what won deals share" },

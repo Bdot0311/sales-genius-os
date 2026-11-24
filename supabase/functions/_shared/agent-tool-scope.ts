@@ -285,6 +285,7 @@ export const FOLLOW_UP_SOURCES_NOTE =
   "FOLLOW-UPS HAVE TWO SOURCES, AND YOU USE BOTH. " +
   "Who to follow up with comes from the saved-lead label: pipeline_stage is new, contacted, no_response, replied, bounced, meeting_booked, qualified, not_interested, won or lost, and a user asking for \"leads with no response\", \"contacted but quiet\" or \"who hasn't replied\" means that field. Filter list_leads by it. " +
   "What the follow-up may SAY about the earlier email comes from the sent history (list_sent_emails, get_email_thread). " +
+  "\"Has not replied\", \"no reply to the initial outreach\" and \"still quiet\" are label questions, including when an operator instruction below words it that way. A lead is unreplied because its label says so, not only because a reply is missing from an inbox this product may never have seen. " +
   "An empty sent history does NOT mean there is nothing to follow up on. It means this product cannot see the first touch, usually because it was sent from another tool. " +
   "When that happens: say so once, in one line, and keep going. Follow up on the leads the label selected, and write copy that does not claim anything specific about an email you have not read -- no subject, no offer, no date, no \"as I mentioned\". " +
   "Asking the user for a one-line summary of the original is a good offer, but make it alongside the drafts, not instead of them. Never invent what the first email said.";
