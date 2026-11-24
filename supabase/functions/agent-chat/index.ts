@@ -450,7 +450,7 @@ const TOOLS = [
         type: "object",
         properties: {
           query: { type: "string", description: "Free-text match on company, contact name or email" },
-          pipeline_stage: { type: "string", enum: [...PIPELINE_STAGES], description: "Filter by the visible pipeline label" },
+          pipeline_stage: { type: "string", enum: [...PIPELINE_STAGES], description: "Filter by the visible pipeline label the user sets. This is how \"leads with no response\", \"contacted but quiet\" or \"who hasn't replied\" is answered: pass no_response or contacted. It is independent of the sent history, so it still selects leads whose original email went out through another tool." },
           min_icp_score: { type: "number" },
           needs_enrichment: {
             type: "boolean",
