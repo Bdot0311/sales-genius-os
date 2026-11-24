@@ -74,15 +74,32 @@ describe("the endpoint is built, not pasted", () => {
     expect(azureClaudeEndpoint()).toBe("https://r.services.ai.azure.com/anthropic/v1/messages");
   });
 
-  it("tolerates a trailing slash and a base already carrying the path", () => {
+  it("takes the host from whichever endpoint the portal handed over", () => {
+    /*
+     * The project endpoint is the one on the overview page, and pasting it
+     * built ".../api/projects/<project>/anthropic/v1/messages", which 404s
+     * with nothing to say the URL was the problem. Claude is always at
+     * /anthropic/v1/messages on the resource host, so the path is dropped.
+     */
     for (const given of [
+      "https://r.services.ai.azure.com",
       "https://r.services.ai.azure.com/",
       "https://r.services.ai.azure.com/anthropic",
       "https://r.services.ai.azure.com/anthropic/v1/messages",
+      "https://r.services.ai.azure.com/api/projects/BDOT",
+      "https://r.services.ai.azure.com/api/projects/BDOT/",
+      "https://r.services.ai.azure.com/openai/deployments/x",
     ]) {
       env({ AZURE_CLAUDE_ENDPOINT: given });
       expect(azureClaudeEndpoint(), given).toBe("https://r.services.ai.azure.com/anthropic/v1/messages");
     }
+  });
+
+  it("keeps the port and refuses a URL it cannot parse", () => {
+    env({ AZURE_CLAUDE_ENDPOINT: "https://r.services.ai.azure.com:8443/api/projects/BDOT" });
+    expect(azureClaudeEndpoint()).toBe("https://r.services.ai.azure.com:8443/anthropic/v1/messages");
+    env({ AZURE_CLAUDE_ENDPOINT: "https://" });
+    expect(azureClaudeEndpoint()).toBe("");
   });
 });
 

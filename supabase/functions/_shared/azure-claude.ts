@@ -38,7 +38,22 @@ type OpenAiMessage = {
 
 const trimSlash = (value: string) => value.replace(/\/+$/, "");
 
-/** The resource base, with or without the /anthropic suffix the caller may paste. */
+/**
+ * The Messages endpoint, built from whatever form of the resource URL was
+ * pasted.
+ *
+ * On Foundry the Claude endpoint is always `<resource host>/anthropic/v1/
+ * messages`, so the host is the only part worth keeping. The portal is
+ * happier to show you other things: the project endpoint,
+ * `https://<resource>.services.ai.azure.com/api/projects/<project>`, is the
+ * one on the overview page, and pasting it built
+ * `.../api/projects/<project>/anthropic/v1/messages`, which 404s with nothing
+ * to suggest the URL was the problem.
+ *
+ * So the path is dropped rather than pattern-matched, and dropping one is
+ * logged, because silently rewriting what somebody configured is its own way
+ * to waste an afternoon.
+ */
 export function azureClaudeEndpoint(): string {
   const raw = (Deno.env.get("AZURE_CLAUDE_ENDPOINT") || "").trim();
   if (!raw) return "";
@@ -46,8 +61,19 @@ export function azureClaudeEndpoint(): string {
     console.warn("[azure-claude] AZURE_CLAUDE_ENDPOINT is not an https URL; ignoring it");
     return "";
   }
-  const base = trimSlash(raw).replace(/\/anthropic(?:\/v1)?(?:\/messages)?$/i, "");
-  return `${base}/anthropic/v1/messages`;
+  let origin: string;
+  try {
+    const parsed = new URL(raw);
+    origin = parsed.origin;
+    const path = trimSlash(parsed.pathname);
+    if (path && path !== "/anthropic/v1/messages") {
+      console.warn(`[azure-claude] ignoring the path on AZURE_CLAUDE_ENDPOINT ("${path}"); Claude is served at /anthropic/v1/messages on the resource host`);
+    }
+  } catch {
+    console.warn("[azure-claude] AZURE_CLAUDE_ENDPOINT is not a parseable URL; ignoring it");
+    return "";
+  }
+  return `${origin}/anthropic/v1/messages`;
 }
 
 export function azureClaudeKey(): string {
