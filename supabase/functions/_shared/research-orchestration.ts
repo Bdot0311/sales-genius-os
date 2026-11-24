@@ -172,12 +172,24 @@ export function annotateProviderStatuses(
 export function holdReason(receipt: RetrievalReceipt | null): string {
   if (!receipt) return "No retrieved page is stored for this lead, so nothing was drafted.";
   const parts = [
+    /*
+     * The outside providers name their own keys when they are off, the way
+     * Firecrawl already did.
+     *
+     * These two are the answer to a lead with no website: research-lead only
+     * refuses when there is neither a site nor a company name, and the outside
+     * search runs with an empty websiteUrls list. So when a website-less lead
+     * comes back with nothing, which of these is switched off IS the
+     * diagnosis, and "Parallel is not configured" did not say what to set.
+     * Context.dev needs three, and a half-configured one reads identically to
+     * an absent one from here.
+     */
     receipt.parallel?.configured
       ? `Parallel ${receipt.parallel?.error ? `failed (${receipt.parallel?.error})` : `returned ${receipt.parallel?.count ?? 0}`}`
-      : "Parallel is not configured",
+      : "Parallel is not configured (PARALLEL_API_KEY)",
     receipt.context_dev?.configured
       ? `Context.dev ${receipt.context_dev?.error ? `failed (${receipt.context_dev?.error})` : `returned ${receipt.context_dev?.count ?? 0}`}`
-      : "Context.dev is not configured",
+      : "Context.dev is not configured (CONTEXT_DEV_GATEWAY_URL, UDC_CONTEXT_DEV_API_KEY, LOVABLE_API_KEY)",
     receipt.firecrawl?.configured
       ? `Firecrawl ${receipt.firecrawl?.error ? `failed (${receipt.firecrawl?.error})` : `returned ${receipt.firecrawl?.count ?? 0}`}`
       : "Firecrawl is not configured (FIRECRAWL_API_KEY)",

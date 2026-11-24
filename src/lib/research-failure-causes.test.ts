@@ -96,3 +96,44 @@ describe("a research failure says which kind it is", () => {
     expect(labels.size).toBe(5);
   });
 });
+
+/**
+ * A lead with no website is not a dead end by design.
+ *
+ * research-lead refuses only when there is neither a website nor a company
+ * name, and its own comment says why: "No website does not cancel outside
+ * research. Parallel and Context can still search by company name." The
+ * outside search runs with an empty websiteUrls list.
+ *
+ * So when a website-less lead comes back with nothing, the question is which
+ * outside provider is switched off — and the answer has to be in the sentence,
+ * because that sentence is all the owner sees.
+ */
+describe("the outside providers say which key is missing", () => {
+  const off = (over: Record<string, unknown>) => holdReason(receipt({
+    site: { configured: true, called: true, error: "no site", count: 0, statuses: [], finalHosts: [] },
+    ...over,
+  }));
+
+  it("names Parallel's key, the way Firecrawl's was already named", () => {
+    expect(off({ parallel: { configured: false, called: false, error: "not_configured", count: 0 } }))
+      .toContain("Parallel is not configured (PARALLEL_API_KEY)");
+  });
+
+  it("names all three of Context.dev's, because a half-configured one reads as absent", () => {
+    const message = off({ context_dev: { configured: false, called: false, error: "not_configured", count: 0 } });
+    expect(message).toContain("CONTEXT_DEV_GATEWAY_URL");
+    expect(message).toContain("UDC_CONTEXT_DEV_API_KEY");
+    expect(message).toContain("LOVABLE_API_KEY");
+  });
+
+  it("still reports a count when a provider ran, so 'off' and 'found nothing' stay different", () => {
+    const ran = holdReason(receipt({
+      parallel: { configured: true, called: true, error: null, count: 0 },
+      context_dev: { configured: true, called: true, error: null, count: 3 },
+    }));
+    expect(ran).toContain("Parallel returned 0");
+    expect(ran).toContain("Context.dev returned 3");
+    expect(ran).not.toContain("PARALLEL_API_KEY");
+  });
+});
