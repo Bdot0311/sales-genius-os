@@ -303,6 +303,21 @@ export const FooterSection = () => {
                   loading="lazy"
                 />
               </a>
+              <a
+                href="https://www.codehype.ai/product/outreign?utm_source=codehype_badge"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="border border-border bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <img
+                  src="https://www.codehype.ai/badges/outreign.svg?variant=find-us&v=20"
+                  alt="Featured on CodeHype"
+                  width={180}
+                  height={65}
+                  loading="lazy"
+                  decoding="async"
+                />
+              </a>
             </div>
             <p className="text-sm text-center" style={{ color: "hsl(var(--foreground) / 0.6)" }}>
               © {new Date().getFullYear()} BDØT Industries LLC. All rights reserved.
