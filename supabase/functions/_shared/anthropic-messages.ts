@@ -1,26 +1,37 @@
 /**
- * Claude on Microsoft Foundry, as a provider alongside Bedrock.
+ * Claude over the Anthropic Messages API, from whichever host serves it.
  *
- * Why this exists: the Pro tier has been pinned to Sonnet 4.6 with a comment
- * saying "temporary until the account is granted Opus 5.5 access", because
- * naming a Bedrock model id does not entitle the AWS account to it. Foundry
- * lists `claude-opus-5-5` as generally available and hosted on Azure, so the
- * model the product was written for is reachable there without waiting on an
- * AWS entitlement.
+ * Two hosts, one body. Microsoft Foundry and Anthropic's own API both speak
+ * the Messages API, both authenticate with `x-api-key` and `anthropic-version`,
+ * and both take the same model ids (`claude-opus-5-5`, `claude-haiku-4-5`).
+ * So the translation below is written once and the host is a configuration
+ * detail rather than a second implementation.
+ *
+ * Foundry wins when both are configured, because an organisation that has set
+ * up a Foundry resource meant to bill through Azure.
+ *
+ * ── Why the direct host is here ──────────────────────────────────────────
+ *
+ * Both clouds gate the model behind an entitlement the account has to be
+ * granted: AWS never granted Opus 5.5, and Foundry will not create a
+ * deployment while the subscription's quota for the model is zero, which is
+ * the default on anything that is not pay-as-you-go. Neither is a thing code
+ * can fix. Anthropic's own API has no marketplace or quota gate in front of
+ * it, so it is the route that works today, and it costs almost nothing to
+ * support because it is the same API.
  *
  * ── Shape ────────────────────────────────────────────────────────────────
  *
- * Foundry serves Claude through the Anthropic Messages API, not an
- * OpenAI-compatible endpoint:
+ * Neither host is OpenAI-compatible. Both take:
  *
- *   POST https://<resource>.services.ai.azure.com/anthropic/v1/messages
+ *   POST <host>/v1/messages          (Foundry: /anthropic/v1/messages)
  *   x-api-key: <key>
  *   anthropic-version: 2023-06-01
  *
  * So this translates the same internal body bedrock.ts translates, to a
- * different target. The `model` field is the DEPLOYMENT name, which defaults
- * to the model id but does not have to equal it, which is why both are
- * configurable.
+ * different target. On Foundry the `model` field is the DEPLOYMENT name,
+ * which defaults to the model id but does not have to equal it, which is why
+ * both tiers are configurable.
  *
  * No SigV4: the key is a header, so none of Bedrock's signing applies here.
  */
@@ -58,7 +69,7 @@ export function azureClaudeEndpoint(): string {
   const raw = (Deno.env.get("AZURE_CLAUDE_ENDPOINT") || "").trim();
   if (!raw) return "";
   if (!/^https:\/\//i.test(raw)) {
-    console.warn("[azure-claude] AZURE_CLAUDE_ENDPOINT is not an https URL; ignoring it");
+    console.warn("[anthropic-messages] AZURE_CLAUDE_ENDPOINT is not an https URL; ignoring it");
     return "";
   }
   let origin: string;
@@ -67,10 +78,10 @@ export function azureClaudeEndpoint(): string {
     origin = parsed.origin;
     const path = trimSlash(parsed.pathname);
     if (path && path !== "/anthropic/v1/messages") {
-      console.warn(`[azure-claude] ignoring the path on AZURE_CLAUDE_ENDPOINT ("${path}"); Claude is served at /anthropic/v1/messages on the resource host`);
+      console.warn(`[anthropic-messages] ignoring the path on AZURE_CLAUDE_ENDPOINT ("${path}"); Claude is served at /anthropic/v1/messages on the resource host`);
     }
   } catch {
-    console.warn("[azure-claude] AZURE_CLAUDE_ENDPOINT is not a parseable URL; ignoring it");
+    console.warn("[anthropic-messages] AZURE_CLAUDE_ENDPOINT is not a parseable URL; ignoring it");
     return "";
   }
   return `${origin}/anthropic/v1/messages`;
@@ -80,8 +91,33 @@ export function azureClaudeKey(): string {
   return (Deno.env.get("AZURE_CLAUDE_API_KEY") || "").trim();
 }
 
+/** Anthropic's own API: a key and nothing else to configure. */
+export const ANTHROPIC_DIRECT_URL = "https://api.anthropic.com/v1/messages";
+
+export function anthropicDirectKey(): string {
+  return (Deno.env.get("ANTHROPIC_API_KEY") || "").trim();
+}
+
+export type MessagesHost = "azure" | "anthropic";
+
+/**
+ * Which host serves this call, if any.
+ *
+ * Foundry first: an organisation that stood one up meant to bill through
+ * Azure. Direct second, because it is the one with no entitlement in front of
+ * it. Null when neither is configured, which leaves Bedrock exactly as it was.
+ */
+export function messagesRoute(): { host: MessagesHost; url: string; key: string } | null {
+  const azureUrl = azureClaudeEndpoint();
+  const azureKey = azureClaudeKey();
+  if (azureUrl && azureKey) return { host: "azure", url: azureUrl, key: azureKey };
+  const direct = anthropicDirectKey();
+  if (direct) return { host: "anthropic", url: ANTHROPIC_DIRECT_URL, key: direct };
+  return null;
+}
+
 export function azureClaudeConfigured(): boolean {
-  return Boolean(azureClaudeEndpoint() && azureClaudeKey());
+  return messagesRoute() !== null;
 }
 
 /**
@@ -94,6 +130,12 @@ export function azureClaudeConfigured(): boolean {
 export const AZURE_CLAUDE_FAST = "claude-haiku-4-5";
 export const AZURE_CLAUDE_PRO = "claude-opus-5-5";
 
+/*
+ * The same ids serve both hosts: Foundry's deployment names default to the
+ * model id, and Anthropic's API takes the undated alias as written. Either
+ * variable overrides its own tier on whichever host is in use, which is what
+ * a differently-named Foundry deployment needs.
+ */
 export function azureClaudeFastModel(): string {
   return (Deno.env.get("AZURE_CLAUDE_MODEL_ID") || "").trim() || AZURE_CLAUDE_FAST;
 }
@@ -314,12 +356,19 @@ export async function azureClaudeChat(
   body: Record<string, unknown>,
   signal?: AbortSignal,
 ): Promise<Response> {
+  const route = messagesRoute();
+  if (!route) {
+    return new Response(
+      JSON.stringify({ error: { message: "No Anthropic Messages host configured", type: "not_configured" } }),
+      { status: 500, headers: { "Content-Type": "application/json" } },
+    );
+  }
   const payload = JSON.stringify({ ...toMessagesBody({ ...body, model }), model });
-  const res = await fetch(azureClaudeEndpoint(), {
+  const res = await fetch(route.url, {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-api-key": azureClaudeKey(),
+      "x-api-key": route.key,
       "anthropic-version": "2023-06-01",
     },
     body: payload,
@@ -327,7 +376,7 @@ export async function azureClaudeChat(
   });
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
-    console.error(`[azure-claude] ${model} -> ${res.status} ${detail.slice(0, 400)}`);
+    console.error(`[anthropic-messages] ${model} -> ${res.status} ${detail.slice(0, 400)}`);
     return new Response(
       JSON.stringify({ error: { message: detail || `Azure returned ${res.status}`, type: "azure_claude_error" } }),
       { status: res.status, headers: { "Content-Type": "application/json" } },

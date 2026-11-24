@@ -76,9 +76,10 @@ to the Lovable gateway.
 | `AWS_REGION` / `BEDROCK_REGION` | `_shared/bedrock.ts` | Defaults apply |
 | `BEDROCK_MODEL_ID` / `BEDROCK_MODEL_ID_PRO` | `_shared/bedrock.ts` | Built-in ids used — Haiku 4.5 (`us.anthropic.claude-haiku-4-5-20251001-v1:0`) and US geo Sonnet 4.6 (`us.anthropic.claude-sonnet-4-6`). Each variable replaces only its own tier. Opus 5.5 (`us.anthropic.claude-opus-5-5`) is not the default; it is used only when `BEDROCK_MODEL_ID_PRO` is set to it. The bare Opus id is valid in London only. `global.anthropic.claude-opus-5-5` is a different profile and is not selected unless `BEDROCK_MODEL_ID_PRO` is set to it. Setting the variable does not entitle the AWS account to the model |
 | `LOVABLE_API_KEY` | ~29 functions | **With no Bedrock key either: every AI call returns "No AI provider key configured"** — drafting, scoring, research, the agent |
-| `AZURE_CLAUDE_ENDPOINT` | `_shared/azure-claude.ts` | Azure is not used and Bedrock serves every call, exactly as before. Set it to the Foundry resource base, `https://<resource>.services.ai.azure.com`. Only the host is read: Claude is always served at `/anthropic/v1/messages` on the resource host, so any path is dropped and the drop is logged. That means the **project** endpoint the portal shows on the overview page, `https://<resource>.services.ai.azure.com/api/projects/<project>`, works when pasted as-is — before, it built `.../api/projects/<project>/anthropic/v1/messages` and 404d with nothing to suggest the URL was at fault. Anything that is not a parseable https URL is ignored with a warning rather than sending model traffic somewhere unreachable |
-| `AZURE_CLAUDE_API_KEY` | `_shared/azure-claude.ts` | The same: without BOTH the endpoint and the key, the Azure route is off. Sent as `x-api-key`, which is what the Messages API on Foundry takes — not `api-key` and not a bearer token |
-| `AZURE_CLAUDE_MODEL_ID` / `AZURE_CLAUDE_MODEL_ID_PRO` | `_shared/azure-claude.ts` | Built-in deployment names used — `claude-haiku-4-5` for the fast tier and `claude-opus-5-5` for the Pro tier. These are DEPLOYMENT names, which default to the model id but do not have to equal it, so set them if the deployment was named something else. Each variable replaces only its own tier. Setting one does not create the deployment or grant quota |
+| `AZURE_CLAUDE_ENDPOINT` | `_shared/anthropic-messages.ts` | Azure is not used and Bedrock serves every call, exactly as before. Set it to the Foundry resource base, `https://<resource>.services.ai.azure.com`. Only the host is read: Claude is always served at `/anthropic/v1/messages` on the resource host, so any path is dropped and the drop is logged. That means the **project** endpoint the portal shows on the overview page, `https://<resource>.services.ai.azure.com/api/projects/<project>`, works when pasted as-is — before, it built `.../api/projects/<project>/anthropic/v1/messages` and 404d with nothing to suggest the URL was at fault. Anything that is not a parseable https URL is ignored with a warning rather than sending model traffic somewhere unreachable |
+| `AZURE_CLAUDE_API_KEY` | `_shared/anthropic-messages.ts` | The same: without BOTH the endpoint and the key, the Azure route is off. Sent as `x-api-key`, which is what the Messages API on Foundry takes — not `api-key` and not a bearer token |
+| `ANTHROPIC_API_KEY` | `_shared/anthropic-messages.ts` | The direct host is not used. Set it to a key from console.anthropic.com and Claude is served from `https://api.anthropic.com/v1/messages` — same Messages API, same `x-api-key` header, same model ids as Foundry. **There is no marketplace, quota or entitlement in front of it**, which is why it is the route that works when the clouds refuse: AWS has to grant Opus 5.5 to the account, and Foundry will not create a deployment while the subscription's quota for the model is zero, which is the default on anything that is not pay-as-you-go. Foundry wins when both are configured |
+| `AZURE_CLAUDE_MODEL_ID` / `AZURE_CLAUDE_MODEL_ID_PRO` | `_shared/anthropic-messages.ts` | Built-in deployment names used — `claude-haiku-4-5` for the fast tier and `claude-opus-5-5` for the Pro tier. These are DEPLOYMENT names, which default to the model id but do not have to equal it, so set them if the deployment was named something else. Each variable replaces only its own tier. Setting one does not create the deployment or grant quota |
 | `CF_AI_GATEWAY_BEDROCK` | `_shared/ai-gateway.ts` | Bedrock traffic goes direct to AWS, as it always has. Set it to everything up to and including `/aws-bedrock` — `https://gateway.ai.cloudflare.com/v1/<account_id>/<gateway_id>/aws-bedrock` — and every Bedrock call routes through the gateway for spend analytics, caching and rate limiting. The rest of the path (`/bedrock-runtime/<region>/<aws path>`) is appended from the URL the signer saw, so the signature keeps covering the AWS host. Find the base under **AI → AI Gateway → your gateway → API**. Anything that is not an https URL is ignored with a warning rather than sending model traffic somewhere unreachable |
 | `CF_AI_GATEWAY_TOKEN` | `_shared/ai-gateway.ts` | Sent as `cf-aig-authorization` when `CF_AI_GATEWAY_BEDROCK` is in use, never on a direct-to-AWS call. Required whenever the gateway has **Authenticated Gateway** turned on, which rejects anything without it. Create one under **AI → AI Gateway → your gateway → Settings → Authenticated Gateway**. **A base set without a token does not route at all** — it logs a warning and goes direct to AWS, because losing the analytics is recoverable and 401ing every model call in the product is not |
 
@@ -353,14 +354,26 @@ Three routes, in order, decided per call in `routeFor`:
 
 1. **Azure (Microsoft Foundry)** when `AZURE_CLAUDE_ENDPOINT` and
    `AZURE_CLAUDE_API_KEY` are both set.
-2. **Amazon Bedrock** when it is configured and Azure is not.
-3. **The Lovable gateway**, the fallback, when neither is.
+2. **Anthropic's own API** when `ANTHROPIC_API_KEY` is set and Foundry is not
+   fully configured. Same Messages API, same model ids, no entitlement in
+   front of it.
+3. **Amazon Bedrock** when it is configured and neither of those is.
+4. **The Lovable gateway**, the fallback, when none is.
 
-Azure is first because it is the one that serves Opus 5.5. The Bedrock Pro
-tier sits on Sonnet 4.6 with a comment saying "temporary until the account is
-granted Opus 5.5 access": naming a Bedrock model id does not entitle the AWS
-account to the model, and Foundry lists `claude-opus-5-5` as generally
-available and hosted on Azure.
+`ai_usage_events.provider` records which host actually served the call
+(`azure`, `anthropic`, `bedrock`, `lovable`), so cost attribution does not
+claim an Azure invoice for something Anthropic billed.
+
+The two Messages hosts come first because they are the ones that serve Opus
+5.5. The Bedrock Pro tier sits on Sonnet 4.6 with a comment saying "temporary
+until the account is granted Opus 5.5 access": naming a Bedrock model id does
+not entitle the AWS account to the model.
+
+Both clouds gate the model on a grant, and the grant is the part code cannot
+fix. Foundry lists `claude-opus-5-5` as GA and hosted on Azure, but it will
+not create a deployment while the subscription's quota for the model is zero,
+and zero is the default on anything that is not pay-as-you-go. Anthropic's own
+API has no such gate, which is why it is here.
 
 Setting neither Azure variable changes nothing. The Bedrock path is untouched.
 

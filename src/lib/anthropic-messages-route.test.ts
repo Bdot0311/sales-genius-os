@@ -8,8 +8,9 @@ import {
   azureClaudePrice,
   azureClaudeProModel,
   fromMessagesBody,
+  messagesRoute,
   toMessagesBody,
-} from "../../supabase/functions/_shared/azure-claude";
+} from "../../supabase/functions/_shared/anthropic-messages";
 
 /**
  * Claude on Microsoft Foundry, as a third provider.
@@ -49,16 +50,53 @@ afterEach(() => {
   globalThis.Deno = previous;
 });
 
-describe("off unless both halves are set", () => {
+describe("which host serves the call", () => {
   it("is off with nothing set, which is how every existing install stays on Bedrock", () => {
+    expect(messagesRoute()).toBeNull();
     expect(azureClaudeConfigured()).toBe(false);
   });
 
-  it("is off with only one half, because half a credential is not a route", () => {
+  it("needs both halves for Foundry, because half a credential is not a route", () => {
     env({ AZURE_CLAUDE_ENDPOINT: "https://r.services.ai.azure.com" });
-    expect(azureClaudeConfigured()).toBe(false);
+    expect(messagesRoute()).toBeNull();
     env({ AZURE_CLAUDE_ENDPOINT: undefined, AZURE_CLAUDE_API_KEY: "k" });
-    expect(azureClaudeConfigured()).toBe(false);
+    expect(messagesRoute()).toBeNull();
+  });
+
+  it("takes Anthropic's own API from a key alone", () => {
+    /*
+     * The route with no entitlement in front of it. Both clouds gate the model
+     * on a grant the account has to be given -- AWS never granted Opus 5.5,
+     * and Foundry will not create a deployment while the subscription's quota
+     * for it is zero -- and neither is a thing code can fix.
+     */
+    env({ ANTHROPIC_API_KEY: "sk-ant-xxx" });
+    expect(messagesRoute()).toEqual({
+      host: "anthropic",
+      url: "https://api.anthropic.com/v1/messages",
+      key: "sk-ant-xxx",
+    });
+    expect(azureClaudeConfigured()).toBe(true);
+  });
+
+  it("prefers Foundry when both are configured", () => {
+    // Somebody who stood up a Foundry resource meant to bill through Azure.
+    env({
+      AZURE_CLAUDE_ENDPOINT: "https://r.services.ai.azure.com",
+      AZURE_CLAUDE_API_KEY: "azure-key",
+      ANTHROPIC_API_KEY: "sk-ant-xxx",
+    });
+    expect(messagesRoute()).toEqual({
+      host: "azure",
+      url: "https://r.services.ai.azure.com/anthropic/v1/messages",
+      key: "azure-key",
+    });
+  });
+
+  it("falls to the direct host when the Foundry half is incomplete", () => {
+    // An endpoint pasted with no key is not a reason to send nothing.
+    env({ AZURE_CLAUDE_ENDPOINT: "https://r.services.ai.azure.com", ANTHROPIC_API_KEY: "sk-ant-xxx" });
+    expect(messagesRoute()?.host).toBe("anthropic");
   });
 
   it("refuses a value that is not an https URL rather than posting prompts at it", () => {

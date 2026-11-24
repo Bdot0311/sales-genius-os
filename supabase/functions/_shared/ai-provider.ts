@@ -37,14 +37,15 @@ import {
   azureClaudePrice,
   azureClaudeProModel,
   usdForAzureClaude,
-} from "./azure-claude.ts";
+  messagesRoute,
+} from "./anthropic-messages.ts";
 import { completionAsStream } from "./completion-stream.ts";
 
 import { DEFAULT_FALLBACK_ENDPOINT } from "./ai-gateway.ts";
 
 const GATEWAY_URL = DEFAULT_FALLBACK_ENDPOINT;
 
-export type AiProvider = "azure" | "bedrock" | "lovable";
+export type AiProvider = "anthropic" | "azure" | "bedrock" | "lovable";
 
 
 /** USD per 1M tokens. Unknown models fall back to a mid-range Flash estimate. */
@@ -105,11 +106,14 @@ export function routeFor(model: string): { provider: AiProvider; url: string; mo
    */
   if (azureClaudeConfigured()) {
     const wantsPro = bedrockTierForRequest(gatewayId) === "pro";
+    // Recorded as the host that actually served it, so cost attribution does
+    // not claim an Azure invoice for a call Anthropic billed.
+    const host = messagesRoute()?.host ?? "azure";
     return {
-      provider: "azure",
+      provider: host,
       url: "",
       model: wantsPro ? azureClaudeProModel() : azureClaudeFastModel(),
-      key: "azure",
+      key: host,
     };
   }
   // Amazon Bedrock, billed on our own AWS account. Bedrock serves none of the
@@ -227,13 +231,13 @@ export async function aiFetch(
       AbortSignal.any([init.signal, controller.signal]) : 
       controller.signal;
 
-    if (route.provider === "azure") {
+    if (route.provider === "azure" || route.provider === "anthropic") {
       const completion = await azureClaudeChat(route.model, body, signal);
       if (!completion.ok) return completion;
       const parsed = await completion.json() as Record<string, unknown>;
       void meter({
         fn: fnName,
-        provider: "azure",
+        provider: route.provider,
         model: route.model,
         userId: ctx.userId,
         usage: parsed.usage as { prompt_tokens?: number; completion_tokens?: number },
