@@ -81,7 +81,11 @@ export function classifyFailure(message: string): FailureKind {
   // "already running in another pass": two passes reached the same lead and
   // the second was refused the research claim. The next attempt finds the
   // brief the first one stored.
-  if (/timed? ?out|timeout|temporarily|overloaded|unreachable|50[234]|network|econn|did not return a score|no response from the model|empty (model )?response|already running in another pass/.test(m)) return "transient";
+  // "the company site could not be read" is a fetch that failed: a timeout, a
+  // 503, a temporary block. It was settled as permanent, so a lead whose site
+  // was briefly unreachable never got a second attempt and was reported to the
+  // owner as research finding nothing worth quoting.
+  if (/timed? ?out|timeout|temporarily|overloaded|unreachable|50[234]|network|econn|did not return a score|no response from the model|empty (model )?response|already running in another pass|site could not be read|could not be stored as evidence/.test(m)) return "transient";
   return "permanent";
 }
 
