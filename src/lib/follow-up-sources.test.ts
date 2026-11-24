@@ -137,3 +137,38 @@ describe("the label is a capability somebody can see", () => {
     expect(FOLLOW_UP_SOURCES_NOTE).toMatch(/label says so/);
   });
 });
+
+/**
+ * The refusal came back, reasoned.
+ *
+ *   "I cannot draft follow-ups without knowing what was sent first. A
+ *    follow-up referencing 'my previous email' when I don't know what it said
+ *    will either contradict the original or read as generic filler — both
+ *    hurt your reply rate and domain reputation."
+ *
+ * That argument is sound about the email it describes and wrong about the one
+ * it should write. The rule said "keep going" and left the shape to judgement,
+ * so the model reasoned its way back to a refusal by imagining the bad version.
+ *
+ * Naming the shape removes the escape: a follow-up to a lead whose first touch
+ * cannot be read is a fresh research-grounded touch that never mentions a
+ * previous email. It cannot contradict what it does not reference.
+ */
+describe("the rule names the shape, so it cannot be reasoned around", () => {
+  it("says what to write, not only what not to claim", () => {
+    expect(FOLLOW_UP_SOURCES_NOTE).toMatch(/fresh, research-grounded touch/);
+    expect(FOLLOW_UP_SOURCES_NOTE).toMatch(/does not refer to a previous email at all/);
+  });
+
+  it("answers the contradict-or-filler argument directly", () => {
+    expect(FOLLOW_UP_SOURCES_NOTE).toMatch(/cannot contradict an email it never mentions/);
+    expect(FOLLOW_UP_SOURCES_NOTE).toMatch(/not filler if it is grounded in research/);
+  });
+
+  it("names refusing as the worse outcome, and leaves one legitimate refusal", () => {
+    // The gates that refuse an ungrounded draft stay exactly as they are; this
+    // only removes "I don't know what the first email said" as a reason.
+    expect(FOLLOW_UP_SOURCES_NOTE).toMatch(/leaves the lead with nothing/);
+    expect(FOLLOW_UP_SOURCES_NOTE).toMatch(/no approved research for the lead/);
+  });
+});

@@ -288,7 +288,10 @@ export const FOLLOW_UP_SOURCES_NOTE =
   "\"Has not replied\", \"no reply to the initial outreach\" and \"still quiet\" are label questions, including when an operator instruction below words it that way. A lead is unreplied because its label says so, not only because a reply is missing from an inbox this product may never have seen. " +
   "An empty sent history does NOT mean there is nothing to follow up on. It means this product cannot see the first touch, usually because it was sent from another tool. " +
   "When that happens: say so once, in one line, and keep going. Follow up on the leads the label selected, and write copy that does not claim anything specific about an email you have not read -- no subject, no offer, no date, no \"as I mentioned\". " +
-  "Asking the user for a one-line summary of the original is a good offer, but make it alongside the drafts, not instead of them. Never invent what the first email said.";
+  "Asking the user for a one-line summary of the original is a good offer, but make it alongside the drafts, not instead of them. Never invent what the first email said. " +
+  "THE SHAPE, so this is not left to judgement: a follow-up to a lead whose first touch you cannot read is a fresh, research-grounded touch to somebody already on the list. It opens on the researched fact, it does not refer to a previous email at all, and it does not need to. That is a real follow-up and it is the one to write. " +
+  "Do not refuse on the reasoning that it would contradict the original or read as generic filler. It cannot contradict an email it never mentions, and it is not filler if it is grounded in research the way every other first touch here is. Refusing to draft is the worse outcome: it leaves the lead with nothing. " +
+  "Not drafting is only correct when there is no approved research for the lead, which is a different refusal with its own reason.";
 
 export function scopeNoteFor(config: {
   role?: string | null;
