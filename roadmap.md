@@ -1,3 +1,7 @@
+# Azure Claude replacement — November 24, 2026
+
+- [ ] Replace Bedrock generation with Azure Claude after Azure quota approval and secure setup of AZURE_CLAUDE_ENDPOINT and AZURE_CLAUDE_API_KEY. Neither Azure setting is saved; the secure-form request was canceled before execution. Keep the current Bedrock routing active until Azure can be configured and verified; no provider code, deployments, or credentials changed.
+
 # Individual Studio regeneration — November 23, 2026
 
 - [x] Added per-recipient regeneration in multi-lead previews through the existing single-email generator. Signed-in Navwise regeneration returned HTTP 200 and updated only its preview while Skyvern's edit and both selections stayed intact; lead context retained even when switching review during generation. Desktop/390px phone controls checked, 20 regressions passed and preview build OK. No drafts saved or emails sent; frontend publication remains required.
