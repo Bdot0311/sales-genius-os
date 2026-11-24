@@ -30,11 +30,21 @@ import {
   usdForBedrockModel,
 } from "./bedrock.ts";
 
+import {
+  azureClaudeChat,
+  azureClaudeConfigured,
+  azureClaudeFastModel,
+  azureClaudePrice,
+  azureClaudeProModel,
+  usdForAzureClaude,
+} from "./azure-claude.ts";
+import { completionAsStream } from "./completion-stream.ts";
+
 import { DEFAULT_FALLBACK_ENDPOINT } from "./ai-gateway.ts";
 
 const GATEWAY_URL = DEFAULT_FALLBACK_ENDPOINT;
 
-export type AiProvider = "bedrock" | "lovable";
+export type AiProvider = "azure" | "bedrock" | "lovable";
 
 
 /** USD per 1M tokens. Unknown models fall back to a mid-range Flash estimate. */
@@ -81,6 +91,27 @@ export const AI_SMART = "google/gemini-2.5-pro";
 export function routeFor(model: string): { provider: AiProvider; url: string; model: string; key: string } {
   const gatewayId = model || "google/gemini-2.5-flash";
 
+  /*
+   * Claude on Microsoft Foundry, ahead of Bedrock when it is configured.
+   *
+   * Same two tiers and the same collapsing rule: Foundry serves none of the
+   * gateway model ids either, so a requested id picks a tier rather than a
+   * model. First because it is the provider that actually serves Opus 5.5 --
+   * the Bedrock Pro tier sits on Sonnet 4.6 only because the AWS account was
+   * never entitled to Opus, and naming the id does not grant it.
+   *
+   * Configured means endpoint AND key. Set neither and nothing about the
+   * existing Bedrock route changes.
+   */
+  if (azureClaudeConfigured()) {
+    const wantsPro = bedrockTierForRequest(gatewayId) === "pro";
+    return {
+      provider: "azure",
+      url: "",
+      model: wantsPro ? azureClaudeProModel() : azureClaudeFastModel(),
+      key: "azure",
+    };
+  }
   // Amazon Bedrock, billed on our own AWS account. Bedrock serves none of the
   // gateway model ids, so requested ids collapse onto two tiers: "pro"-class
   // requests get the stronger model, everything else the cheap workhorse.
@@ -104,6 +135,11 @@ export function routeFor(model: string): { provider: AiProvider; url: string; mo
 
 
 export function chargeUsd(model: string, promptTokens: number, completionTokens: number): number {
+  // Foundry deployment names carry no provider prefix, so they are checked
+  // before the Bedrock table, whose ids are geo-prefixed ("us.anthropic...").
+  if (azureClaudeConfigured() && azureClaudePrice(model)) {
+    return usdForAzureClaude(model, promptTokens, completionTokens);
+  }
   if (model.includes("claude-opus-5-5") || bedrockPrice(model)) {
     return usdForBedrockModel(model, promptTokens, completionTokens);
   }
@@ -190,6 +226,36 @@ export async function aiFetch(
     const signal = init.signal ? 
       AbortSignal.any([init.signal, controller.signal]) : 
       controller.signal;
+
+    if (route.provider === "azure") {
+      const completion = await azureClaudeChat(route.model, body, signal);
+      if (!completion.ok) return completion;
+      const parsed = await completion.json() as Record<string, unknown>;
+      void meter({
+        fn: fnName,
+        provider: "azure",
+        model: route.model,
+        userId: ctx.userId,
+        usage: parsed.usage as { prompt_tokens?: number; completion_tokens?: number },
+      });
+      /*
+       * Buffered, then re-emitted as SSE when the caller asked to stream.
+       *
+       * Foundry streams Claude over SSE in Anthropic's own event shape, which
+       * is a different translation from the one above and cannot be checked
+       * against anything here without a live deployment. Writing it blind
+       * would put an untested parser on the path every agent turn takes.
+       * The caller's wire format is identical either way; only the
+       * token-by-token arrival is missing, and the same fallback already
+       * exists for Bedrock models without ConverseStream.
+       */
+      return body.stream === true
+        ? completionAsStream(parsed)
+        : new Response(JSON.stringify(parsed), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+    }
 
     if (route.provider === "bedrock") {
       return sendIfPriced(route.model, async () => {
