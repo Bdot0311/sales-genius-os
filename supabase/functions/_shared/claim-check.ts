@@ -218,6 +218,22 @@ const COMPLETION_MARKERS =
   /✅|\ball (?:set|clear|done|sent|scheduled)\b|\bsuccessfully\b|\bcomplete(?:d|ly)?\b|\bfinished\b|\bready to send\b|\bno further action\b|\bautomatically\b/i;
 
 /**
+ * "Reply here when you're ready to send or schedule them."
+ *
+ * That sentence ended a turn where the model had correctly handed the work to
+ * the background queue and called nothing, and it tripped the backstop --
+ * because "ready to send" is in the markers above, and "you're ready to send"
+ * contains it. The reader being ready is the opposite of the work being done:
+ * it is the agent waiting, which is the one thing this check must not punish.
+ *
+ * statedIntentWithoutAction already refuses to fire on a hand-back. This had
+ * no such carve-out, so the phrase is removed before the markers are tested
+ * rather than the markers being loosened -- "the drafts are ready to send"
+ * still reads as a completion claim and still fires.
+ */
+const READER_READINESS = /\byou(?:'re|’re| are)\s+ready\b/gi;
+
+/**
  * A reply that announces completion on a turn where nothing succeeded.
  *
  * Returns the record of what did run, so the user gets the truth rather than a
@@ -226,14 +242,19 @@ const COMPLETION_MARKERS =
  */
 export function emptyTurnWarning(text: string, events: ToolEventLike[]): string {
   if (!text || anyMutationSucceeded(events)) return "";
-  if (!COMPLETION_MARKERS.test(text)) return "";
+  if (!COMPLETION_MARKERS.test(text.replace(READER_READINESS, " "))) return "";
 
   const ran = events
     .map((e) => `${e.name ?? "tool"} (${e.status ?? "?"})${e.detail ? `: ${e.detail}` : ""}`)
     .slice(-10);
 
   return ran.length === 0
-    ? "Nothing ran on this turn — no tool was called at all, so nothing above happened."
+    /*
+     * Not "nothing above happened". Work queued on an earlier turn keeps
+     * running, and the progress line the shell prints above this one is the
+     * owner watching it run. What is true is only ever about THIS turn.
+     */
+    ? "No tool was called on this turn, so nothing new was started here."
     : `Nothing on this turn changed anything. What actually ran: ${ran.join("; ")}.`;
 }
 

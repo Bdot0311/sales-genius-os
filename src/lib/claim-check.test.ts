@@ -198,8 +198,10 @@ describe("a completion claim on a turn that changed nothing", () => {
   });
 
   it("says so plainly when no tool ran at all", () => {
+    // Was asserting "no tool was called at all, so nothing above happened".
+    // The second half was false whenever a background run was still going.
     expect(emptyTurnWarning("✅ Successfully completed.", []))
-      .toContain("no tool was called at all");
+      .toContain("No tool was called on this turn");
   });
 
   it("stays quiet when the turn actually did something", () => {
@@ -372,5 +374,50 @@ describe("every agent tool is classified", () => {
     const warning = emptyTurnWarning("All done, everything is sent. ✅", [ok("list_leads", "Leads")]);
     expect(warning).toContain("Nothing on this turn changed anything");
     expect(warning).toContain("list_leads");
+  });
+});
+
+
+describe("a turn that hands back is not a turn that lied", () => {
+  /*
+   * This reached a user, with the warning printed above the sentence that
+   * caused it:
+   *
+   *   ⚠️ Nothing ran on this turn — no tool was called at all, so nothing
+   *      above happened.
+   *   The drafts are all queued and generating in the background... Reply
+   *   here when you're ready to send or schedule them.
+   *
+   * The model had handed 104 drafts to the background queue on an earlier
+   * turn and correctly called nothing on this one. "ready to send" is a
+   * completion marker, and "you're ready to send" contains it -- so the
+   * reader being ready read as the work being finished.
+   */
+  const HANDBACK =
+    "The drafts are all queued and generating in the background — no further tool calls are needed "
+    + "from me at this stage. Once the background queue finishes, all 113 will appear in your drafts "
+    + "folder. Reply here when you're ready to send or schedule them.";
+
+  it("says nothing when the turn is waiting on the user", () => {
+    expect(emptyTurnWarning(HANDBACK, [])).toBe("");
+  });
+
+  it("still fires when the drafts themselves are called ready", () => {
+    // The work being ready is a completion claim. The reader being ready is not.
+    expect(emptyTurnWarning("All 32 drafts are ready to send.", [])).not.toBe("");
+  });
+
+  it("is not fooled by a hand-back bolted onto a real claim", () => {
+    expect(emptyTurnWarning("Done ✅ — let me know when you're ready to send.", [])).not.toBe("");
+  });
+
+  it("claims only what it can know, which is this turn", () => {
+    /*
+     * "so nothing above happened" was false whenever a background run was
+     * live: the progress line above it is the owner watching that run.
+     */
+    const warning = emptyTurnWarning("All 32 drafts are ready to send.", []);
+    expect(warning).toContain("nothing new was started here");
+    expect(warning).not.toContain("nothing above happened");
   });
 });
