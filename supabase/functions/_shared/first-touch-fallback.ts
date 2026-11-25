@@ -3,6 +3,7 @@
  * approved research sentence copied verbatim, one ask, the sender's name.
  * Used only when every model draft added a claim the research does not say.
  */
+import { directoryChrome } from "./evidence-contract.ts";
 export const FALLBACK_ASK = "Worth a look?";
 
 /**
@@ -142,6 +143,14 @@ export function usableFallbackFact(span: string): boolean {
   if (/(?:^|\s)@[A-Za-z0-9_]{2,}/.test(text)) return false;
   if (/\S+@\S+\.[A-Za-z]{2,}/.test(text)) return false;
   if (/^[^A-Za-z]*\d[\d.,]*[KMB]?\s+\d[\d.,]*[KMB]?\s/.test(text)) return false;
+  /*
+   * A company-data profile read left to right across its table. The shared
+   * check is imported rather than copied: the social-post rules above exist
+   * in two files because they were written twice, and the directory rule
+   * went in at readableSentence first and was missing here -- which the
+   * corpus caught on the quote-only path.
+   */
+  if (directoryChrome(text)) return false;
   /*
    * A currency figure opens a cold email as well as anything research finds,
    * and "$2.5M in seed funding went to..." was discarded for starting on a
