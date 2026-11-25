@@ -39,7 +39,7 @@ describe("research says when only the prospect's own site was read", () => {
   });
 
   it("the missing key is what produces an empty result", () => {
-    expect(code(PARALLEL)).toContain('if (!key) return { results: [], sessionId: null, error: "not_configured" };');
+    expect(code(PARALLEL)).toContain('if (!key || !appKey) return { results: [], sessionId: null, error: "not_configured" };');
   });
 
   it("reports whether the external half ran, and why not", () => {

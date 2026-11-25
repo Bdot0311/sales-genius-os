@@ -30,7 +30,7 @@ const MESSAGES = [
   "Research failed (Parallel failed (rate_limit)).",
   "There is no company website on this lead.",
   "The company site could not be read.",
-  "Parallel is not configured (PARALLEL_API_KEY).",
+  "Parallel is not configured (PARALLEL_API_KEY, LOVABLE_API_KEY).",
   "Research did not produce an approved sentence.",
   "The reply rubric did not return a score.",
   "The draft failed the quality checker.",

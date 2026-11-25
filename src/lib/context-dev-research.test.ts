@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { contextDevSearch, normalizeContextResults } from "../../supabase/functions/_shared/context-dev";
 import { externalResearchSearch, mergeResearchResults } from "../../supabase/functions/_shared/external-research";
+import { parallelSearch } from "../../supabase/functions/_shared/parallel";
 
 declare global {
   var Deno: { env: { get(name: string): string | undefined } };
@@ -28,8 +29,21 @@ describe("Context.dev supplements existing research", () => {
     expect(request.mock.calls[0][0]).toBe("https://gateway.example/context/v1/web/search");
     expect(JSON.parse(request.mock.calls[0][1].body)).toMatchObject({ query: "Acme launch", excludeDomains: ["acme.test"] });
   });
+  it("uses the linked Parallel connection through the gateway, never as a provider key", async () => {
+    vi.stubGlobal("Deno", { env: { get: (name: string) => ({ PARALLEL_API_KEY: "test-connection", LOVABLE_API_KEY: "test-app" }[name]) } });
+    const request = vi.fn().mockResolvedValue(new Response(JSON.stringify({ results: [source("https://news.test/story")] }), { status: 200 }));
+    vi.stubGlobal("fetch", request);
+    const result = await parallelSearch({ objective: "news", queries: ["Acme news"] });
+    expect(result.error).toBeNull();
+    expect(request.mock.calls[0][0]).toBe("https://connector-gateway.lovable.dev/parallel/v1/search");
+    expect(request.mock.calls[0][1].headers).toMatchObject({
+      Authorization: "Bearer test-app",
+      "X-Connection-Api-Key": "test-connection",
+    });
+    expect(request.mock.calls[0][1].headers).not.toHaveProperty("x-api-key");
+  });
   it("preserves Parallel results when Context.dev is unavailable", async () => {
-    vi.stubGlobal("Deno", { env: { get: (name: string) => name === "PARALLEL_API_KEY" ? "test-parallel" : undefined } });
+    vi.stubGlobal("Deno", { env: { get: (name: string) => ({ PARALLEL_API_KEY: "test-parallel", LOVABLE_API_KEY: "test-app" }[name]) } });
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ results: [source("https://news.test/story")] }), { status: 200 })));
     const result = await externalResearchSearch({ objective: "news", queries: ["Acme news"] });
     expect(result.error).toBeNull();

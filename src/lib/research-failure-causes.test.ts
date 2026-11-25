@@ -117,7 +117,7 @@ describe("the outside providers say which key is missing", () => {
 
   it("names Parallel's key, the way Firecrawl's was already named", () => {
     expect(off({ parallel: { configured: false, called: false, error: "not_configured", count: 0 } }))
-      .toContain("Parallel is not configured (PARALLEL_API_KEY)");
+      .toContain("Parallel is not configured (PARALLEL_API_KEY, LOVABLE_API_KEY)");
   });
 
   it("names all three of Context.dev's, because a half-configured one reads as absent", () => {

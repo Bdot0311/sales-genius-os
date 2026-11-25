@@ -6,15 +6,17 @@
 // imply recency on an undated fact. Parallel's search API returns excerpts with
 // a publish_date and a citable URL, which is exactly the shape the brief needs.
 //
-// Contract: POST https://api.parallel.ai/v1/search with an `x-api-key` header.
+// Contract: POST /v1/search through the connector gateway. The linked
+// PARALLEL_API_KEY identifies the connection; it is not a provider API key.
 // Body is { objective, search_queries[], mode, max_chars_total, advanced_settings }.
 // Response is { search_id, session_id, results: [{ url, title, publish_date,
-// excerpts[] }] }.  See https://docs.parallel.ai/public-openapi.json
+// excerpts[] }] }. See https://docs.parallel.ai/public-openapi.json
 //
 // Never throws and never blocks research: a failure returns an empty result set
 // and the brief is built from whatever else was gathered.
 
-const SEARCH_URL = "https://api.parallel.ai/v1/search";
+const GATEWAY_URL = "https://connector-gateway.lovable.dev/parallel";
+const SEARCH_URL = `${GATEWAY_URL}/v1/search`;
 
 export interface ParallelResult {
   url: string;
@@ -26,7 +28,7 @@ export interface ParallelResult {
 }
 
 export function parallelConfigured(): boolean {
-  return !!Deno.env.get("PARALLEL_API_KEY");
+  return Boolean(Deno.env.get("PARALLEL_API_KEY") && Deno.env.get("LOVABLE_API_KEY"));
 }
 
 export interface ParallelSearchOptions {
@@ -53,7 +55,8 @@ export async function parallelSearch(
   opts: ParallelSearchOptions,
 ): Promise<{ results: ParallelResult[]; sessionId: string | null; error: string | null }> {
   const key = Deno.env.get("PARALLEL_API_KEY");
-  if (!key) return { results: [], sessionId: null, error: "not_configured" };
+  const appKey = Deno.env.get("LOVABLE_API_KEY");
+  if (!key || !appKey) return { results: [], sessionId: null, error: "not_configured" };
 
   const queries = opts.queries.map((q) => q.trim()).filter(Boolean).slice(0, 4);
   if (!queries.length) return { results: [], sessionId: null, error: "no_queries" };
@@ -63,7 +66,11 @@ export async function parallelSearch(
   try {
     const res = await fetch(SEARCH_URL, {
       method: "POST",
-      headers: { "x-api-key": key, "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${appKey}`,
+        "X-Connection-Api-Key": key,
+        "Content-Type": "application/json",
+      },
       signal: controller.signal,
       body: JSON.stringify({
         objective: opts.objective.slice(0, 2_000),

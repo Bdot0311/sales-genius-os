@@ -186,7 +186,7 @@ export function holdReason(receipt: RetrievalReceipt | null): string {
      */
     receipt.parallel?.configured
       ? `Parallel ${receipt.parallel?.error ? `failed (${receipt.parallel?.error})` : `returned ${receipt.parallel?.count ?? 0}`}`
-      : "Parallel is not configured (PARALLEL_API_KEY)",
+      : "Parallel is not configured (PARALLEL_API_KEY, LOVABLE_API_KEY)",
     receipt.context_dev?.configured
       ? `Context.dev ${receipt.context_dev?.error ? `failed (${receipt.context_dev?.error})` : `returned ${receipt.context_dev?.count ?? 0}`}`
       : "Context.dev is not configured (CONTEXT_DEV_GATEWAY_URL, UDC_CONTEXT_DEV_API_KEY, LOVABLE_API_KEY)",
