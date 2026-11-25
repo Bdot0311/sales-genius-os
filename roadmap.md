@@ -1,8 +1,8 @@
 # Functional verification — November 25, 2026
 
-- [ ] Run the full regression suite and inspect current preview/runtime health.
-- [ ] Verify the configured Parallel, Context.dev and Lovable credentials through their real service paths.
-- [ ] Exercise the signed-in dashboard and lead-research flow without drafting or sending email; fix and retest any verified failures.
+- [x] Full suite: 4,313 passed; three long file-scanning tests timed out only under the full-suite five-second limit, then all 32 checks in those files passed with a longer limit. All 10 live system-health checks pass.
+- [x] Real lead research found Parallel returning 401 while Context.dev worked. Routed Parallel through its linked connection, removed only the duplicate conflicting secret, and deployed lead and account research. 35 research regressions and Deno checks over 364 edge-function files passed.
+- [x] Signed-in Overview, Saved Leads, Outreach, Settings and Admin Health loaded without browser errors. Final SaaS Armour.ai research returned 8 Parallel and 8 Context.dev results, with one stored source from each. No drafts were generated and no emails were sent.
 
 # GitHub update deployment — November 25, 2026
 
