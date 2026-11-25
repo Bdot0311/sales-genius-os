@@ -91,6 +91,27 @@ const REFUSE: Case[] = [
     why: "A timeline read left to right: reply, repost and like counts, the handle, the date, then the first two words of the post. It reached a prospect as the quoted fact.",
   },
   {
+    id: "lead-database-table",
+    span: "Departments Number of employees HR 1 See all employees Funding Data Cosmic Labs has never raised funding before.",
+    role: "external",
+    sourceUrl: "https://prospeo.io/company/cosmic-labs",
+    why: "A lead-database profile of the prospect, read left to right across its table: field labels, a cell value, then the first real clause. It reached Kislay at Cosmic Labs as the quoted fact.",
+  },
+  {
+    id: "directory-field-labels",
+    span: "Company size 11-50 employees Headquarters location Austin Texas View profile Similar companies in developer tools.",
+    role: "external",
+    sourceUrl: "https://example-directory.com/acme",
+    why: "The same shape from a directory that is not on any blocklist: several field labels in a row with no sentence between them.",
+  },
+  {
+    id: "two-field-labels-only",
+    span: "Company size 51-200 employees Revenue range 10M to 50M in the enterprise segment.",
+    role: "external",
+    sourceUrl: "https://example-directory.com/acme-small",
+    why: "Exactly two field labels and nothing else wrong with it, so this is what pins the threshold at two rather than three or four.",
+  },
+  {
     id: "handle-in-the-sentence",
     span: "Cosmic Labs @CosmicLabsTech is building developer tooling for engineering teams.",
     role: "external",
@@ -134,6 +155,13 @@ const QUOTE: Case[] = [
     role: "external",
     sourceUrl: "https://www.techcrunch.com/proxywise",
     why: "The ordinary outside finding a first touch is built on.",
+  },
+  {
+    id: "one-field-label-in-prose",
+    span: "The key people behind Proxywise AI previously built compliance tooling for asset managers.",
+    role: "external",
+    sourceUrl: "https://www.techcrunch.com/proxywise-team",
+    why: "An ordinary sentence that happens to contain one directory field label. One is prose; it takes two to be a scraped table, which is why the rule counts rather than matches.",
   },
   {
     id: "external-award",

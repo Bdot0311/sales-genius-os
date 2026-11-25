@@ -448,12 +448,59 @@ function socialChrome(text: string): boolean {
   return false;
 }
 
+/**
+ * A company-data profile page, read left to right across its table.
+ *
+ * This reached a prospect:
+ *
+ *   "Departments Number of employees HR 1 See all employees Funding Data
+ *    Cosmic Labs has never raised funding before."
+ *
+ * Those are field labels and cell values concatenated, not a sentence. The
+ * host is blocked now, but a blocklist of lead databases will always be
+ * incomplete, so the shape is refused on its own.
+ *
+ * Two labels, not one. "The key people behind Acme previously built..." is
+ * ordinary prose that happens to contain one of these phrases; a page whose
+ * furniture has been scraped as text carries several.
+ *
+ * No phrase here may contain another, or one label counts twice and the
+ * threshold is really one. "all employees" was dropped for sitting inside
+ * "see all employees".
+ */
+const DIRECTORY_LABELS = [
+  /\bnumber of employees\b/i,
+  /\bsee all employees\b/i,
+  /\bfunding data\b/i,
+  /\bview profile\b/i,
+  /\bsimilar companies\b/i,
+  /\btop competitors\b/i,
+  /\bcompany size\b/i,
+  /\bemployee count\b/i,
+  /\bheadquarters location\b/i,
+  /\brevenue range\b/i,
+  /\bemail format\b/i,
+  /\bfind email\b/i,
+  /\bkey people\b/i,
+  /\bsocial media links\b/i,
+  /\bwebsite phone\b/i,
+];
+
+export function directoryChrome(text: string): boolean {
+  let hits = 0;
+  for (const label of DIRECTORY_LABELS) {
+    if (label.test(text) && ++hits >= 2) return true;
+  }
+  return false;
+}
+
 export function readableSentence(span: string, role?: SnapshotRole): boolean {
   const text = span.trim();
   if (text.split(/\s+/).length < 7) return false;
   if (wrongVoice(text, role)) return false;
   if (continuesSomethingElse(text)) return false;
   if (socialChrome(text)) return false;
+  if (directoryChrome(text)) return false;
   // Directory boilerplate and a possessive whose apostrophe was stripped.
   if (/\bofficial (?:website|site)\b|\bsocial (?:media )?profiles?\b|\bcookies?\b|\bprivacy policy\b|\ball rights reserved\b|\bcontact (?:information|details)\b/i.test(text)) return false;
   if (/[A-Za-z] s\b/.test(text)) return false;
