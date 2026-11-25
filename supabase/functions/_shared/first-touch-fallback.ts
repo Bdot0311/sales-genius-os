@@ -161,20 +161,75 @@ export function usableSubject(subject: string): boolean {
     && !/\b(?:a|an|the|and|or|but|for|to|at|in|on|with|from|of|by|as|into|about|that|which|is|are|these|those)\s*[.!?,;:]*$/i.test(text);
 }
 
+/*
+ * Words that name a category of thing rather than a thing. On their own they
+ * carry no information: "software at Unstack" tells the reader strictly less
+ * than "Unstack" does, because every company in the inbox builds software.
+ *
+ * They are fine as the HEAD of a real topic -- "proxy voting infrastructure",
+ * "data platform" -- which is why the test below is whether EVERY word of the
+ * object comes from these two lists, not whether any does.
+ */
+const CATEGORY_WORDS = new Set([
+  "software", "platform", "platforms", "solution", "solutions", "tool", "tools",
+  "product", "products", "service", "services", "technology", "tech", "system",
+  "systems", "app", "apps", "application", "applications", "infrastructure",
+  "suite", "stack", "saas", "feature", "features", "offering", "offerings",
+  "capability", "capabilities", "experience", "experiences", "value", "results",
+  "work", "business", "company", "team", "teams", "thing", "things", "stuff",
+  // Manner nouns. "a new approach" names no more than "software" does, and
+  // MANNER_OPENER below only catches the ones that open the object.
+  "way", "ways", "method", "methods", "approach", "approaches",
+]);
+
+/* Evaluative filler: it grades a noun without saying what the noun is about. */
+const FILLER_WORDS = new Set([
+  "the", "a", "an", "these", "those", "our", "their", "your", "all", "its",
+  "better", "best", "new", "modern", "simple", "simpler", "powerful", "great",
+  "leading", "innovative", "seamless", "smart", "smarter", "easy", "easier",
+  "fast", "faster", "advanced", "complete", "comprehensive", "robust",
+  "scalable", "flexible", "intuitive", "beautiful", "next-generation",
+  "cutting-edge", "end-to-end", "world-class", "truly", "really",
+]);
+
+/**
+ * "monar builds the way teams close deals" -- what follows is a manner
+ * clause, not the thing built, so the object noun phrase comes out a
+ * fragment ("way teams close deals at monar"). There is no repair for it:
+ * the sentence does not name a topic, so the company name is the better
+ * subject.
+ */
+const MANNER_OPENER = /^(?:way|ways|method|methods|approach|approaches)\b/i;
+
+/** A category word or evaluative filler all the way through names nothing. */
+function contentlessTopic(object: string): boolean {
+  const words = object.toLowerCase().split(/[\s/]+/).filter(Boolean);
+  if (!words.length) return true;
+  return words.every((word) => {
+    const bare = word.replace(/^[^a-z0-9-]+|[^a-z0-9-]+$/g, "");
+    return !bare || CATEGORY_WORDS.has(bare) || FILLER_WORDS.has(bare);
+  });
+}
+
 /** A complete research topic, never the first six words of a longer sentence. */
 export function fallbackSubjectFrom(span: string, company = ""): string {
   const text = span.trim().replace(/\s+/g, " ");
   // Keep the full object noun phrase; prepositions introduce the next clause.
   const object = text.match(/\b(?:builds?|automates?|provides?|offers?|develops?|creates?|sells?|delivers?)\s+(.+?)(?=\s+(?:for|to|with|in|at|by|through|that|which)\b|[.!?;]|$)/i)?.[1]
     ?.replace(/^(?:the|a|an|these|those|our|their)\s+/i, "").trim();
-  if (object && usableSubject(object) && !/\b(?:find|helps?|gets?|natively)\b/i.test(object)) {
+  if (
+    object && usableSubject(object) && !/\b(?:find|helps?|gets?|natively)\b/i.test(object)
+    && !MANNER_OPENER.test(object) && !contentlessTopic(object)
+  ) {
     const named = company.trim() ? `${object} at ${company.trim()}` : object;
     return usableSubject(named) ? named : object;
   }
   // The owner-scoped company is a topic, not an invented event or result.
   if (company.trim()) return company.trim();
   if (usableSubject(text)) return text.replace(/[.!?,;:]+$/g, "");
-  return "your work";
+  // No company and nothing short enough to quote. "your work" read as the
+  // tail of a sentence somebody forgot to finish.
+  return "Quick question";
 }
 
 /**
