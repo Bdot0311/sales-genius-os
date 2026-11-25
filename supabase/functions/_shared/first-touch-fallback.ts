@@ -66,7 +66,24 @@ export function usableFallbackFact(span: string): boolean {
   if (/^(?:but|and|so|or|yet|also|plus|however|though|although|instead|besides|still|then|meanwhile|otherwise)\b/i.test(text)) return false;
   // A wink about their IPO is the social post's tone, not a first touch.
   if (/[:;]-?[)D(]|\p{Extended_Pictographic}/u.test(text)) return false;
-  return /^[A-Z0-9"'ÀØ]/.test(text);
+  /*
+   * The furniture around a social post, scraped as the post. "4 6 2.5K Cosmic
+   * Labs @CosmicLabsTech Nov 29, 2025 PSA!" is a timeline read left to right:
+   * engagement counts, handle, date, then the first two words. A handle or an
+   * address is chrome; so is an opening run of bare numbers. One leading
+   * number is ordinary prose, so only a second before the first word counts,
+   * which leaves "$2.5M seed round" and "2026 was the year..." usable.
+   */
+  if (/(?:^|\s)@[A-Za-z0-9_]{2,}/.test(text)) return false;
+  if (/\S+@\S+\.[A-Za-z]{2,}/.test(text)) return false;
+  if (/^[^A-Za-z]*\d[\d.,]*[KMB]?\s+\d[\d.,]*[KMB]?\s/.test(text)) return false;
+  /*
+   * A currency figure opens a cold email as well as anything research finds,
+   * and "$2.5M in seed funding went to..." was discarded for starting on a
+   * symbol this list did not carry. Found by a test written for something
+   * else, which is the point of keeping the corpus two-sided.
+   */
+  return /^[A-Z0-9"'ÀØ$£€]/.test(text);
 }
 
 /** Reject sentence fragments and scraped-page chatter, not just excess words. */

@@ -415,11 +415,45 @@ function continuesSomethingElse(text: string): boolean {
   return /^(?:but|and|so|or|yet|also|plus|however|though|although|instead|besides|still|then|meanwhile|otherwise)\b/i.test(text);
 }
 
+/**
+ * The furniture around a social post, scraped as if it were the post.
+ *
+ * This went to a prospect:
+ *
+ *   Saw this on x.com: "4 6 2.5K Cosmic Labs @CosmicLabsTech Nov 29, 2025 PSA!"
+ *
+ * "4 6 2.5K" are the reply, repost and like counts. "@CosmicLabsTech" is the
+ * handle, "Nov 29, 2025" the post date, and "PSA!" the first two words of the
+ * text. It is a screenshot of a timeline read left to right, and it passed
+ * every filter because each one asks a different question: it is long enough,
+ * it is not boilerplate, it has no markdown, it starts with a capital-or-digit
+ * and it is quoted verbatim from a stored page, so the grounding checks were
+ * right to allow it. None of them asks whether it is a sentence.
+ *
+ * Two signals, both cheap and both absent from real company copy:
+ *
+ * A handle. "@CosmicLabsTech" is chrome, and so is an email address, and a
+ * quoted first touch wants neither.
+ *
+ * An opening run of bare numbers. Engagement counts arrive as "4 6 2.5K" with
+ * nothing between them. A single leading number is ordinary -- "2026 was the
+ * year...", "$2.5M seed round" -- so only a second numeric token before the
+ * first word counts, which is what keeps funding figures usable.
+ */
+function socialChrome(text: string): boolean {
+  if (/(?:^|\s)@[A-Za-z0-9_]{2,}/.test(text)) return true;
+  if (/\S+@\S+\.[A-Za-z]{2,}/.test(text)) return true;
+  // Two numeric tokens before any word: counts, not prose.
+  if (/^[^A-Za-z]*\d[\d.,]*[KMB]?\s+\d[\d.,]*[KMB]?\s/.test(text)) return true;
+  return false;
+}
+
 export function readableSentence(span: string, role?: SnapshotRole): boolean {
   const text = span.trim();
   if (text.split(/\s+/).length < 7) return false;
   if (wrongVoice(text, role)) return false;
   if (continuesSomethingElse(text)) return false;
+  if (socialChrome(text)) return false;
   // Directory boilerplate and a possessive whose apostrophe was stripped.
   if (/\bofficial (?:website|site)\b|\bsocial (?:media )?profiles?\b|\bcookies?\b|\bprivacy policy\b|\ball rights reserved\b|\bcontact (?:information|details)\b/i.test(text)) return false;
   if (/[A-Za-z] s\b/.test(text)) return false;
