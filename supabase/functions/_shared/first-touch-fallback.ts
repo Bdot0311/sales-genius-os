@@ -11,6 +11,35 @@ export const FALLBACK_ASK = "Worth a look?";
  * Role, company, and industry are the lead record. Nothing else is stated.
  */
 /** Stable per company, so the same lead always gets the same shape. */
+/**
+ * A name as the sender should write it, not as it was scraped.
+ *
+ * A lead card read "Joshua Perk 👻 · Vector 👻" and the draft went out under
+ * the subject "Vector 👻". The ghost is the prospect's own decoration on
+ * their profile; echoing it back is the sender writing in somebody else's
+ * voice, and it reads as a field pasted straight out of a scrape.
+ *
+ * usableFallbackFact already refuses an emoji inside a research sentence --
+ * "a wink about their IPO is the social post's tone, not a first touch". The
+ * same position had simply never been applied to the lead's own name fields.
+ *
+ * Only pictographs and the joiners that carry them. Accents, currency symbols
+ * and non-Latin scripts are part of a real name and are left alone.
+ *
+ * Takes a nullable string because the lead fields it is given are nullable:
+ * `company` is `string | null | undefined` on the record, and narrowing at
+ * every call site would just push the same `?? ""` outwards.
+ */
+export function withoutDecoration(text: string | null | undefined): string {
+  return String(text ?? "")
+    .replace(/[\p{Extended_Pictographic}\u{1F3FB}-\u{1F3FF}\u{1F1E6}-\u{1F1FF}\uFE0F\u200D]/gu, "")
+    .replace(/\s{2,}/g, " ")
+    .trim()
+    // A separator left stranded by what was removed: "Acme | 👻" -> "Acme".
+    .replace(/^[\s\-\u2013\u2014•|,]+|[\s\-\u2013\u2014•|,]+$/g, "")
+    .trim();
+}
+
 function shapeIndex(seed: string, count: number): number {
   let hash = 0;
   for (const ch of seed) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
@@ -53,8 +82,8 @@ export function thinLeadDraft(input: {
   role?: string | null;
   industry?: string | null;
 }): { subject: string; body: string } {
-  const first = input.firstName.trim() || "there";
-  const company = String(input.company ?? "").trim();
+  const first = withoutDecoration(input.firstName) || "there";
+  const company = withoutDecoration(input.company);
   const role = String(input.role ?? "").trim().toLowerCase();
   const industry = String(input.industry ?? "").trim().toLowerCase();
   const sender = input.senderName.trim();
@@ -102,7 +131,7 @@ export function thinLeadDraft(input: {
 }
 
 export function releasableFirstTouch(input: { firstName: string; fact: string; senderName: string }): string {
-  const first = input.firstName.trim() || "there";
+  const first = withoutDecoration(input.firstName) || "there";
   const fact = input.fact.trim().replace(/\s+/g, " ");
   const sentence = /[.!?]["”']?$/.test(fact) ? fact : `${fact}.`;
   return `Hi ${first},\n\n${sentence}\n\n${FALLBACK_ASK}\n\n${input.senderName.trim()}`;
@@ -163,6 +192,8 @@ export function usableFallbackFact(span: string): boolean {
 /** Reject sentence fragments and scraped-page chatter, not just excess words. */
 export function usableSubject(subject: string): boolean {
   const text = subject.trim();
+  // Backstop for a subject assembled somewhere this module does not reach.
+  if (/\p{Extended_Pictographic}/u.test(text)) return false;
   return Boolean(text) && text.split(/\s+/).length <= 6 && text.length <= 80
     && !/[\n\r\[\]{}<>]|https?:\/\//i.test(text)
     && !/\b(?:congratulations|congrats|these|those|this|that|natively)\b/i.test(text)
@@ -221,7 +252,8 @@ function contentlessTopic(object: string): boolean {
 }
 
 /** A complete research topic, never the first six words of a longer sentence. */
-export function fallbackSubjectFrom(span: string, company = ""): string {
+export function fallbackSubjectFrom(span: string, companyRaw = ""): string {
+  const company = withoutDecoration(companyRaw);
   const text = span.trim().replace(/\s+/g, " ");
   // Keep the full object noun phrase; prepositions introduce the next clause.
   const object = text.match(/\b(?:builds?|automates?|provides?|offers?|develops?|creates?|sells?|delivers?)\s+(.+?)(?=\s+(?:for|to|with|in|at|by|through|that|which)\b|[.!?;]|$)/i)?.[1]
