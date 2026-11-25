@@ -15,6 +15,7 @@ import { evaluateStoredSnapshots, sealSnapshot, type StoredSnapshot } from "../_
 import { fetchPinnedPage, type PageFetch } from "../_shared/pinned-fetch.ts";
 import { annotateProviderStatuses, receiptFromProviders, researchAction, researchReservation, researchStep, type RetrievalReceipt } from "../_shared/research-orchestration.ts";
 import {
+  companyProfileQueries,
   leadResearchQueries,
   parallelPromptBlock,
   type ParallelResult,
@@ -27,6 +28,7 @@ import {
   scoreResearchQuality,
   type LeadResearchBrief,
   researchInputs,
+  UNQUOTABLE_SOURCE_HOSTS,
 } from "../_shared/lead-research.ts";
 import { AI_SMART, aiFetch } from "../_shared/ai-provider.ts";
 import { diffBriefs } from "../_shared/brief-diff.ts";
@@ -569,9 +571,20 @@ serve(async (req) => {
           `acquisitions, product launches, partnerships, leadership hires, expansion or hiring pushes. ` +
           `Used to open a relevant cold email, so timing and a citable source matter more than background.`,
         queries: leadResearchQueries(companyName, host ?? ""),
+        // Context.dev answers what the company IS; Parallel answers what it did.
+        contextQueries: companyProfileQueries(companyName, host ?? ""),
         maxResults: 8,
         timeoutMs: 20_000,
-        excludeDomains: host ? [host.replace(/^www\./, "")] : [],
+        /*
+         * The lead's own site is excluded because it is read directly and in
+         * full. The rest are hosts whose pages can never be quoted back at a
+         * prospect -- lead databases and social profiles -- so a result slot
+         * spent on one is a slot not spent on real coverage.
+         */
+        excludeDomains: [
+          ...(host ? [host.replace(/^www\./, "")] : []),
+          ...UNQUOTABLE_SOURCE_HOSTS,
+        ],
       },
     });
     for (const site of gathered.sitePages) {

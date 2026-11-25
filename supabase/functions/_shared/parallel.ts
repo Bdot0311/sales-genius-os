@@ -117,12 +117,51 @@ export async function parallelSearch(
 }
 
 /** The queries worth running for one company. Keyword-style, 3-6 words each. */
-export function leadResearchQueries(company: string, host: string): string[] {
+function queryName(company: string, host: string): { name: string; site: string; qualified: string } {
   const name = (company || host).replace(/\s+/g, " ").trim().slice(0, 60);
+  const site = host.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/.*$/, "");
+  /*
+   * The bare company name is the problem.
+   *
+   * "monar", "Vector", "Context", "Cosmic Labs" each match a large part of the
+   * web that has nothing to do with the prospect, so a query built from the
+   * name alone comes back about something else or about nobody -- and then the
+   * only thing research has is the company's own website, which is what the
+   * owner sees as "observed on their site" on every finding.
+   *
+   * The domain is the one token that means this company and no other.
+   */
+  return { name, site, qualified: site ? `${name} ${site}` : name };
+}
+
+/**
+ * Parallel: dated, independent coverage. News-shaped, because that is what an
+ * email can open on with a date attached.
+ */
+export function leadResearchQueries(company: string, host: string): string[] {
+  const { name, site, qualified } = queryName(company, host);
   return [
-    `${name} funding announcement news`,
-    `${name} product launch announcement`,
-    `${name} hiring expansion news`,
+    `${qualified} funding round raised investment`,
+    `${qualified} product launch announcement`,
+    `${qualified} partnership hiring expansion news`,
+    site ? `"${name}" ${site} company news` : `"${name}" company news`,
+  ];
+}
+
+/**
+ * Context.dev: firmographics and branding -- what the company IS, rather than
+ * what it did last quarter.
+ *
+ * It used to receive the identical news queries Parallel gets, joined with OR.
+ * A company with no press answers none of them, so a provider that could have
+ * described the business returned nothing and the brief fell back to the site.
+ */
+export function companyProfileQueries(company: string, host: string): string[] {
+  const { qualified } = queryName(company, host);
+  return [
+    `${qualified} what the company does products and customers`,
+    `${qualified} industry headquarters company size founded`,
+    `${qualified} positioning how they describe themselves`,
   ];
 }
 

@@ -23,10 +23,19 @@ const code = (s: string) =>
  */
 describe("research says when only the prospect's own site was read", () => {
   it("still asks for coverage the prospect did not write themselves", () => {
-    // The point of the external half: their own pages say the same thing to
-    // every visitor and almost never carry a date.
-    // Raw, not comment-stripped: the stripper mangles the regex literal.
-    expect(RESEARCH).toContain("excludeDomains: host ? [host.replace(/^www\\./, \"\")] : []");
+    /*
+     * The point of the external half: their own pages say the same thing to
+     * every visitor and almost never carry a date.
+     *
+     * This used to assert the exact literal `excludeDomains: host ? [...]`.
+     * The list now also carries the lead databases and social profiles that
+     * can never be quoted, so the assertion is the intent rather than one
+     * spelling of it. Raw, not comment-stripped: the stripper mangles the
+     * regex literal.
+     */
+    expect(RESEARCH).toContain("host.replace(/^www\\./, \"\")");
+    expect(code(RESEARCH)).toContain("excludeDomains: [");
+    expect(code(RESEARCH)).toContain("UNQUOTABLE_SOURCE_HOSTS");
   });
 
   it("the missing key is what produces an empty result", () => {

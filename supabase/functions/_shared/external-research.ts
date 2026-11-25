@@ -21,8 +21,21 @@ export function mergeResearchResults(primary: ParallelResult[], supplementary: P
   return merged.slice(0, max);
 }
 
-export async function externalResearchSearch(opts: ParallelSearchOptions) {
-  const [parallel, context] = await Promise.all([parallelSearch(opts), contextDevSearch(opts)]);
+/**
+ * `contextQueries` lets the two providers be asked different questions.
+ *
+ * They used to get the identical options object, so Context.dev -- a
+ * firmographics and branding source -- was handed "funding announcement news"
+ * and answered nothing for every company without press. Omit it and behaviour
+ * is exactly as before.
+ */
+export async function externalResearchSearch(
+  opts: ParallelSearchOptions & { contextQueries?: string[] },
+) {
+  const contextOpts = opts.contextQueries?.length
+    ? { ...opts, queries: opts.contextQueries }
+    : opts;
+  const [parallel, context] = await Promise.all([parallelSearch(opts), contextDevSearch(contextOpts)]);
   return {
     results: mergeResearchResults(
       parallel.results.map((result) => ({ ...result, provider: "parallel" as const })),
