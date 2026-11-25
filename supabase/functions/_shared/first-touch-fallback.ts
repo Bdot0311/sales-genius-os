@@ -24,8 +24,12 @@ export const FALLBACK_ASK = "Worth a look?";
  *
  * Only pictographs and the joiners that carry them. Accents, currency symbols
  * and non-Latin scripts are part of a real name and are left alone.
+ *
+ * Takes a nullable string because the lead fields it is given are nullable:
+ * `company` is `string | null | undefined` on the record, and narrowing at
+ * every call site would just push the same `?? ""` outwards.
  */
-export function withoutDecoration(text: string): string {
+export function withoutDecoration(text: string | null | undefined): string {
   return String(text ?? "")
     .replace(/[\p{Extended_Pictographic}\u{1F3FB}-\u{1F3FF}\u{1F1E6}-\u{1F1FF}\uFE0F\u200D]/gu, "")
     .replace(/\s{2,}/g, " ")
