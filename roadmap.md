@@ -1,3 +1,9 @@
+# Functional verification — November 25, 2026
+
+- [ ] Run the full regression suite and inspect current preview/runtime health.
+- [ ] Verify the configured Parallel, Context.dev and Lovable credentials through their real service paths.
+- [ ] Exercise the signed-in dashboard and lead-research flow without drafting or sending email; fix and retest any verified failures.
+
 # GitHub update deployment — November 25, 2026
 
 - [x] Verified checkout includes PR #375 (d0e0f6d6); redeployed 33 changed functions and shared dependencies from 20688e20..HEAD. Passed 204 focused regressions; preview build OK. Live probes: 32 endpoints return 200, private process-bulk-runs returns expected 401 through its service-role guard. No research, drafts, or sends triggered. No recent migration files changed or registered migrations pending: live history reaches 0085, and the current saved-draft queue, 14-day duplicate window, backend permission and customer denial are installed. Existing older unmatched history rows, missing 0052 snapshot and superseded unlisted 0078 retry file were left unchanged; automatic history repair has no unique verified match. Frontend publication was not performed.
