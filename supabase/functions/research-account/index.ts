@@ -1,7 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@^2.76.1";
 import { AI_SMART, aiFetch } from "../_shared/ai-provider.ts";
-import { leadResearchQueries } from "../_shared/parallel.ts";
+import { companyProfileQueries, leadResearchQueries } from "../_shared/parallel.ts";
+import { UNQUOTABLE_SOURCE_HOSTS, unquotableSourceHost } from "../_shared/lead-research.ts";
 import { externalResearchConfigured, externalResearchSearch } from "../_shared/external-research.ts";
 
 const corsHeaders = {
@@ -111,11 +112,14 @@ serve(async (req) => {
       const web = await externalResearchSearch({
         objective: `Recent, dated developments at ${company.name}${host ? ` (${host})` : ""}: funding, acquisitions, launches, partnerships, leadership hires, expansion. Used as a reason to reach out now.`,
         queries: leadResearchQueries(String(company.name || ""), host),
+        contextQueries: companyProfileQueries(String(company.name || ""), host),
         maxResults: 5,
         timeoutMs: 15_000,
-        excludeDomains: host ? [host] : undefined,
+        excludeDomains: [...(host ? [host] : []), ...UNQUOTABLE_SOURCE_HOSTS],
       });
       for (const r of web.results) {
+        // A lead-database profile is never a why-now reason.
+        if (unquotableSourceHost(r.url)) continue;
         const snippet = (r.excerpts[0] || "").replace(/\s+/g, " ").slice(0, 280);
         raw.push({ text: `${r.title}${snippet ? `: ${snippet}` : ""}`, date: r.publish_date || null, source: r.url });
       }

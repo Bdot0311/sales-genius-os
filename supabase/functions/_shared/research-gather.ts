@@ -7,6 +7,7 @@
 import { firecrawlScrape, type FirecrawlPage } from "./firecrawl.ts";
 import { externalResearchSearch } from "./external-research.ts";
 import type { ParallelResult, ParallelSearchOptions } from "./parallel.ts";
+import { unquotableSourceHost } from "./lead-research.ts";
 
 export interface GatheredSitePage {
   requestedUrl: string;
@@ -50,7 +51,7 @@ export interface GatheredResearch {
 
 export async function gatherLeadResearch(input: {
   websiteUrls: string[];
-  search: ParallelSearchOptions;
+  search: ParallelSearchOptions & { contextQueries?: string[] };
   scrape?: (url: string) => Promise<FirecrawlPage>;
   /** Direct read of a page, used only when every Firecrawl read failed for a transient reason. */
   directFetch?: (url: string) => Promise<{ ok: boolean; status: number; finalUrl: string; html: string }>;
@@ -110,6 +111,23 @@ export async function gatherLeadResearch(input: {
   const external = await searchOutside(input.search);
   const seen = new Set<string>();
   const outside = external.results.filter((result) => {
+    /*
+     * A contact-database profile is not research.
+     *
+     * This reached a prospect, attributed and grounded exactly as designed:
+     *
+     *   Saw this on prospeo.io: "Departments Number of employees HR 1 See all
+     *   employees Funding Data Cosmic Labs has never raised funding before."
+     *
+     * Every gate passed. It was quoted verbatim from a page that was really
+     * fetched. The page was a lead-database profile of the person being
+     * emailed, so the sentence is a table read left to right, and quoting one
+     * back at them says "I looked you up in a prospecting tool".
+     *
+     * Excluding these at query time is a request to the provider, not a
+     * promise, so the result set is filtered here as well.
+     */
+    if (unquotableSourceHost(result.url)) return false;
     const key = result.url.replace(/#.*$/, "").replace(/\/$/, "");
     if (seen.has(key)) return false;
     seen.add(key);

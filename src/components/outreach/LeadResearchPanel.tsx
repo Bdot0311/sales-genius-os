@@ -43,11 +43,47 @@ export interface LeadResearch {
   } | null;
 }
 
+/*
+ * These used to end "from their site" whatever had actually been read, which
+ * is how a card carrying a TechCrunch finding still told the owner research
+ * had only looked at the prospect's own website. Where the findings came from
+ * is stated below, per finding, so the confidence line no longer guesses.
+ */
 const CONFIDENCE_COPY: Record<string, string> = {
-  high: "Strong findings from their site",
-  medium: "Some findings from their site",
-  low: "Thin site — email leans on your lead data",
+  high: "Strong findings",
+  medium: "Some findings",
+  low: "Thin research — email leans on your lead data",
 };
+
+function hostOf(url?: string | null): string {
+  if (!url) return "";
+  try {
+    return new URL(url).hostname.toLowerCase().replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Which host is the prospect's own.
+ *
+ * The site crawl contributes several pages from one host and each outside
+ * source contributes one, so the most frequent host across everything read is
+ * the company's own site. Used only for labelling.
+ */
+function leadHostFrom(sources: (string | null | undefined)[]): string {
+  const counts = new Map<string, number>();
+  for (const url of sources) {
+    const host = hostOf(url);
+    if (host) counts.set(host, (counts.get(host) ?? 0) + 1);
+  }
+  let best = "";
+  let top = 0;
+  for (const [host, n] of counts) {
+    if (n > top) { best = host; top = n; }
+  }
+  return best;
+}
 
 function formatWhen(iso?: string | null): string {
   if (!iso) return "";
@@ -97,6 +133,25 @@ export const LeadResearchPanel = ({
       ] as const
     : [];
   const gaps = quality?.gaps?.filter(Boolean) ?? [];
+
+  /*
+   * "On research it just shows saw on site, saw on site, no other sources."
+   *
+   * Every finding was headed "Observed on their site" because the heading was
+   * a constant. A finding from an independent publisher said the same thing,
+   * so the panel could not be used to tell whether the outside half of
+   * research had run at all.
+   */
+  const leadHost = leadHostFrom([
+    ...observations.map((o) => o.source),
+    ...(research?.sources ?? []),
+  ]);
+  const onTheirSite = observations.filter((o) => !hostOf(o.source) || hostOf(o.source) === leadHost);
+  const elsewhere = observations.filter((o) => hostOf(o.source) && hostOf(o.source) !== leadHost);
+  const observationGroups = [
+    { title: "Observed on their site", items: onTheirSite, showHost: false },
+    { title: "Found elsewhere", items: elsewhere, showHost: true },
+  ].filter((group) => group.items.length > 0);
 
   return (
     <div
@@ -231,17 +286,22 @@ export const LeadResearchPanel = ({
                   </div>
                 )}
 
-                {observations.length > 0 && (
-                  <div>
+                {observationGroups.map((group) => (
+                  <div key={group.title}>
                     <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                      Observed on their site
+                      {group.title}
                     </div>
                     <ul className="mt-1 space-y-1.5">
-                      {observations.map((o, i) => (
+                      {group.items.map((o, i) => (
                         <li key={i} className="flex items-start gap-1.5">
                           <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-primary" />
                           <span>
                             {o.fact}
+                            {/* Outside findings name their publisher, so "where did
+                                this come from" is answered without opening a tab. */}
+                            {group.showHost && hostOf(o.source) && (
+                              <span className="ml-1 text-muted-foreground">({hostOf(o.source)})</span>
+                            )}
                             {o.source && (
                               <a
                                 href={o.source}
@@ -258,7 +318,7 @@ export const LeadResearchPanel = ({
                       ))}
                     </ul>
                   </div>
-                )}
+                ))}
 
                 {hooks.length > 0 && (
                   <div>

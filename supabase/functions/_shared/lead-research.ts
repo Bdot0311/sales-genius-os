@@ -264,6 +264,41 @@ const PROFILE_HOSTS = [
   "github.com", "calendly.com", "google.com", "bit.ly",
 ];
 
+/**
+ * Contact-data brokers and lead databases.
+ *
+ * These hosts carry a page about almost every company and person, assembled
+ * from scraped fields. Quoting one back at a prospect is both useless -- the
+ * page says nothing the company chose to say -- and an admission that they
+ * were looked up in a prospecting tool.
+ */
+const LEAD_DATABASE_HOSTS = [
+  "prospeo.io", "rocketreach.co", "zoominfo.com", "apollo.io", "lusha.com",
+  "signalhire.com", "leadiq.com", "hunter.io", "snov.io", "seamless.ai",
+  "uplead.com", "kaspr.io", "cognism.com", "lead411.com", "adapt.io",
+  "datanyze.com", "clearbit.com", "contactout.com", "findymail.com",
+  "anymailfinder.com", "getprospect.com", "skrapp.io", "voilanorbert.com",
+  "emailfinder.com", "nymeria.io", "swordfish.ai", "wiza.co", "fullcontact.com",
+  "peopledatalabs.com", "thecompaniesapi.com", "aroundeal.com", "lusha.co",
+  "glassdoor.com", "indeed.com", "owler.com", "zippia.com", "craft.co",
+  "pitchbook.com", "tracxn.com", "growjo.com", "leadar.com", "bizapedia.com",
+];
+
+/** A host whose pages must never become a quotable research source. */
+export function unquotableSourceHost(url: string): boolean {
+  let host: string;
+  try {
+    host = new URL(url).hostname.toLowerCase().replace(/^www\./, "");
+  } catch {
+    return false;
+  }
+  const matches = (list: string[]) => list.some((d) => host === d || host.endsWith(`.${d}`));
+  return matches(LEAD_DATABASE_HOSTS) || isProfileHost(host);
+}
+
+/** Every host the outside providers should be asked not to return. */
+export const UNQUOTABLE_SOURCE_HOSTS: string[] = [...LEAD_DATABASE_HOSTS, ...PROFILE_HOSTS];
+
 export function isProfileHost(host: string): boolean {
   const h = host.toLowerCase().replace(/^www\./, "");
   return PROFILE_HOSTS.some((p) => h === p || h.endsWith(`.${p}`));
