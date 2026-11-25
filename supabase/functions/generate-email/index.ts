@@ -1295,6 +1295,56 @@ STRICT RULES:
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    /*
+     * A draft, or an honest reason there cannot be one. Never neither.
+     *
+     * Four exits below returned an error and nothing else: the model printed
+     * its own outline twice, it left a placeholder twice, it kept making a
+     * claim the research does not carry, or the quality checker still had
+     * blockers. All four are the MODEL failing, not the lead -- the record
+     * still holds a name, a company, a role and an industry, which is all
+     * thinLeadDraft has ever needed.
+     *
+     * releaseThinLead() already did exactly this, but it is declared seven
+     * hundred lines further down and three of the four exits return before
+     * reaching it. So the lead got nothing, the owner got "1 failed", and
+     * the only way to recover it was to run the whole thing again and hope
+     * the model behaved differently.
+     *
+     * Retrying is the wrong answer to that. It spends another generation to
+     * arrive at the same place, and it is what the attempt cap exists to
+     * stop. A grounded-enough draft the owner can read and edit beats a
+     * counter going up.
+     *
+     * The draft is marked needs_review and carries the real cause, so this
+     * is a fallback the owner can see rather than a failure hidden behind a
+     * success.
+     */
+    const lastResortDraft = (rule: string, evidence: string, fix: string): Response | null => {
+      if (isPrecisionEditPre || goal === "subject_only" || !resolvedSenderName) return null;
+      const thin = thinLeadDraft({
+        firstName,
+        senderName: resolvedSenderName,
+        company: ownedLeadCompany(leadData) || sanitizedCompanyName,
+        role: sanitizedJobTitle,
+        industry: sanitizedIndustry,
+      });
+      console.warn(`[generate-email] last-resort draft after ${rule}: ${evidence}`);
+      return new Response(JSON.stringify({
+        email: `Subject: ${thin.subject}\n\n${thin.body}`,
+        thin_research: true,
+        quality_status: "needs_review",
+        quality_findings: [{ rule, evidence, fix }],
+        fact_ids: approvedFacts.map((fact) => fact.id),
+        evidence_id: evidenceId,
+        policy_version: POLICY_VERSION,
+        research: researchBrief
+          ? { ...researchBrief, sources: researchSources, researched_at: researchedAt, quality: researchQuality }
+          : { quality: researchQuality },
+        research_quality: researchQuality,
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    };
+
     if (!isPrecisionEditPre && blockOnThinResearch && !researchQuality.safe_to_personalize) {
       return new Response(JSON.stringify({
         error: researchBrief
@@ -1834,6 +1884,12 @@ conversation that is already going, not as someone chasing silence.`}`;
     if (hasScaffolding(email)) {
       const found = findScaffolding(email).slice(0, 4).join(', ');
       console.error(`[generate-email] scaffolding survived the retry: ${found}`);
+      const released = lastResortDraft(
+        "printed_outline",
+        `The model printed its own outline (${found}) twice, so this is the plain fallback.`,
+        "Read it before sending, or generate again for a researched version.",
+      );
+      if (released) return released;
       return new Response(JSON.stringify({
         error: `The draft printed its own outline (${found}) instead of an email, twice, so it was not saved. Generate again.`,
       }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
@@ -2283,7 +2339,14 @@ conversation that is already going, not as someone chasing silence.`}`;
 
     // Surfacing the failure beats shipping "[Sender Name]" to a prospect.
     if (hasPlaceholder(email)) {
-      console.error(`[generate-email] placeholder survived retry: ${findPlaceholders(email).join(', ')}`);
+      const left = findPlaceholders(email).join(', ');
+      console.error(`[generate-email] placeholder survived retry: ${left}`);
+      const released = lastResortDraft(
+        "unfilled_placeholder",
+        `The model left ${left} unfilled twice, so this is the plain fallback.`,
+        "Read it before sending, or generate again for a researched version.",
+      );
+      if (released) return released;
       return new Response(JSON.stringify({
         error: 'The draft came back with an unfilled placeholder. Try generating again.',
         error_code: 'placeholder',
@@ -2363,6 +2426,12 @@ conversation that is already going, not as someone chasing silence.`}`;
     }
     if (prospectClaims.length) {
       console.error("[generate-email] unsupported prospect claims survived retry");
+      const released = lastResortDraft(
+        "unsupported_prospect_claim",
+        "The model kept making a claim the research does not carry, so this is the plain fallback, which claims nothing.",
+        "Add the fact to the lead and generate again for a researched version.",
+      );
+      if (released) return released;
       return new Response(JSON.stringify({
         error: "The draft stated something about this company that the research does not say, so it was not saved. Generate again, or add the fact to the lead.",
         error_code: "unsupported_prospect_claim",
@@ -2602,6 +2671,17 @@ conversation that is already going, not as someone chasing silence.`}`;
       if (held) return held;
     }
     if (checkerBlockers.length) {
+      /*
+       * The two valves above are guarded on !repairedRelease, so a draft that
+       * was already released once and STILL has blockers reached this return
+       * with no valve left to try. That is the case this catches.
+       */
+      const released = lastResortDraft(
+        "quality_checker",
+        `The draft kept failing the quality checker (${checkerBlockers.map((f) => f.rule).join(", ")}), so this is the plain fallback.`,
+        "Read it before sending, or generate again for a researched version.",
+      );
+      if (released) return released;
       return new Response(JSON.stringify({
         error: `The draft still fails the quality checker (${checkerBlockers.map((f) => f.rule).join(", ")}), so it was not saved.`,
         error_code: "quality_checker",
