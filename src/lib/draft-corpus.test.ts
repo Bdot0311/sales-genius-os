@@ -84,6 +84,27 @@ const REFUSE: Case[] = [
     why: "Answers a sentence that stayed behind on the page.",
   },
   {
+    id: "x-timeline-chrome",
+    span: "4 6 2.5K Cosmic Labs @CosmicLabsTech Nov 29, 2025 PSA!",
+    role: "external",
+    sourceUrl: "https://x.com/CosmicLabsTech/status/1",
+    why: "A timeline read left to right: reply, repost and like counts, the handle, the date, then the first two words of the post. It reached a prospect as the quoted fact.",
+  },
+  {
+    id: "handle-in-the-sentence",
+    span: "Cosmic Labs @CosmicLabsTech is building developer tooling for engineering teams.",
+    role: "external",
+    sourceUrl: "https://x.com/CosmicLabsTech",
+    why: "A handle is chrome even when the rest of the line reads like prose.",
+  },
+  {
+    id: "engagement-counts",
+    span: "12 48 1.2K Replies Reposts Likes on the announcement thread this week.",
+    role: "external",
+    sourceUrl: "https://x.com/CosmicLabsTech/status/2",
+    why: "Counts scraped as a sentence, with the labels that follow them.",
+  },
+  {
     id: "outside-plural-voice",
     span: "We caught up with the team to hear what they are building for enterprise customers.",
     role: "external",
@@ -214,4 +235,27 @@ describe("the pitch rule still catches the sender pitching", () => {
     expect(outboundGateFindings("Proxywise AI raised a Series", body, FACT, 0).map((f) => f.rule))
       .toContain("touch_one_pitch");
   });
+});
+
+/**
+ * Numbers are not the problem; counts pretending to be prose are.
+ *
+ * The rule that refuses "4 6 2.5K ..." has to leave a funding figure alone,
+ * because a round, a headcount and a year are the most quotable facts research
+ * finds. So it fires only on a SECOND numeric token before the first word,
+ * which is what an engagement count looks like and what a sentence never does.
+ */
+describe("a number at the front is ordinary prose", () => {
+  for (const [name, span] of [
+    ["a round", "Cosmic Labs raised a $2.5M seed round led by Index Ventures last month."],
+    ["a round, stated first", "$2.5M in seed funding went to Cosmic Labs to expand the platform team."],
+    ["a percentage", "40% of their customers renew within the first quarter, according to the case study."],
+    ["a year", "2026 was the year Cosmic Labs opened its second office in Berlin."],
+    ["a headcount", "120 engineers now work on the platform across three offices in Europe."],
+  ] as const) {
+    it(`keeps ${name}`, () => {
+      expect(readableSentence(span, "external"), span).toBe(true);
+      expect(usableFallbackFact(span), span).toBe(true);
+    });
+  }
 });
