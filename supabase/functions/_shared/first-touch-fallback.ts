@@ -9,6 +9,42 @@ export const FALLBACK_ASK = "Worth a look?";
  * The email we can write when the pages did not yield a sentence.
  * Role, company, and industry are the lead record. Nothing else is stated.
  */
+/** Stable per company, so the same lead always gets the same shape. */
+function shapeIndex(seed: string, count: number): number {
+  let hash = 0;
+  for (const ch of seed) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+  return count > 0 ? hash % count : 0;
+}
+
+/**
+ * The email for a lead research came back thin on.
+ *
+ * It used to read:
+ *
+ *   Hi Uma,
+ *   You're on file at Siftly (YCW22), as Founder & CEO, in Software
+ *   Development.
+ *   How are you handling outbound for that work?
+ *
+ * Three things wrong with that, and none of them is grounding -- every word
+ * came from the lead's own record, which is why no gate stopped it.
+ *
+ * "You're on file" tells somebody they are in a database. It is the sentence a
+ * debt collector opens with.
+ *
+ * It recites their employer, title and industry back at them. They know. A
+ * line that carries no information for the reader is worse than no line, and
+ * it is exactly what makes an email read as a mail merge.
+ *
+ * And it was one template, so a hundred of these go out identical except for
+ * three substituted fields. That is a spam pattern before it is a style
+ * problem: near-identical bodies at volume are what bulk filters look for.
+ *
+ * So the role and industry become the FRAMING for the question rather than a
+ * statement about the reader, there are several shapes, and the shape is
+ * chosen by a hash of the company so one lead always gets the same one while a
+ * list gets a spread.
+ */
 export function thinLeadDraft(input: {
   firstName: string;
   senderName: string;
@@ -18,20 +54,49 @@ export function thinLeadDraft(input: {
 }): { subject: string; body: string } {
   const first = input.firstName.trim() || "there";
   const company = String(input.company ?? "").trim();
-  const role = String(input.role ?? "").trim();
-  const industry = String(input.industry ?? "").trim();
-  const bits = [
-    company ? `at ${company}` : "",
-    role ? `as ${role}` : "",
-    industry ? `in ${industry}` : "",
-  ].filter(Boolean);
-  const line = bits.length
-    ? `You're on file ${bits.join(", ")}.`
-    : "I only have the name on this lead, not a page of research.";
+  const role = String(input.role ?? "").trim().toLowerCase();
+  const industry = String(input.industry ?? "").trim().toLowerCase();
   const sender = input.senderName.trim();
+
+  /*
+   * Only the question is addressed to them, and it asks rather than asserts.
+   * Nothing here claims to know anything the record does not already hold.
+   *
+   * The subject travels WITH the shape rather than being chosen separately,
+   * so a body that opens "Quick question for a founder" never arrives under a
+   * subject that already said "Quick question" -- an echo between the two is
+   * the other thing that makes a merge look like a merge.
+   */
+  const shapes: { subject: string; line: string }[] = [];
+  if (role) {
+    shapes.push({
+      subject: company ? `Reaching out, ${company}` : "Reaching out",
+      line: `Quick question for a ${role}: how are you finding new customers at the moment?`,
+    });
+  }
+  if (industry) {
+    shapes.push({
+      subject: company ? `Quick question, ${company}` : "Quick question",
+      line: `Reaching out to people in ${industry} this month, so a quick one: how are you handling outbound right now?`,
+    });
+  }
+  if (role && industry) {
+    shapes.push({
+      subject: company ? `Outbound at ${company}` : "A question about outbound",
+      line: `Working through ${industry} this week. For a ${role}, is outbound something you run yourself or hand off?`,
+    });
+  }
+  shapes.push({
+    // A bare lowercase company name is not a subject, so the company is never
+    // the whole of one.
+    subject: company ? `Quick question, ${company}` : "Quick question",
+    line: "Keeping this short: how are you handling outbound at the moment?",
+  });
+
+  const shape = shapes[shapeIndex(company || first, shapes.length)];
   return {
-    subject: (company || "Quick question").split(/\s+/).slice(0, 6).join(" "),
-    body: `Hi ${first},\n\n${line}\n\nHow are you handling outbound for that work?\n\n${sender}`,
+    subject: shape.subject,
+    body: `Hi ${first},\n\n${shape.line}\n\n${sender}`,
   };
 }
 
@@ -96,20 +161,75 @@ export function usableSubject(subject: string): boolean {
     && !/\b(?:a|an|the|and|or|but|for|to|at|in|on|with|from|of|by|as|into|about|that|which|is|are|these|those)\s*[.!?,;:]*$/i.test(text);
 }
 
+/*
+ * Words that name a category of thing rather than a thing. On their own they
+ * carry no information: "software at Unstack" tells the reader strictly less
+ * than "Unstack" does, because every company in the inbox builds software.
+ *
+ * They are fine as the HEAD of a real topic -- "proxy voting infrastructure",
+ * "data platform" -- which is why the test below is whether EVERY word of the
+ * object comes from these two lists, not whether any does.
+ */
+const CATEGORY_WORDS = new Set([
+  "software", "platform", "platforms", "solution", "solutions", "tool", "tools",
+  "product", "products", "service", "services", "technology", "tech", "system",
+  "systems", "app", "apps", "application", "applications", "infrastructure",
+  "suite", "stack", "saas", "feature", "features", "offering", "offerings",
+  "capability", "capabilities", "experience", "experiences", "value", "results",
+  "work", "business", "company", "team", "teams", "thing", "things", "stuff",
+  // Manner nouns. "a new approach" names no more than "software" does, and
+  // MANNER_OPENER below only catches the ones that open the object.
+  "way", "ways", "method", "methods", "approach", "approaches",
+]);
+
+/* Evaluative filler: it grades a noun without saying what the noun is about. */
+const FILLER_WORDS = new Set([
+  "the", "a", "an", "these", "those", "our", "their", "your", "all", "its",
+  "better", "best", "new", "modern", "simple", "simpler", "powerful", "great",
+  "leading", "innovative", "seamless", "smart", "smarter", "easy", "easier",
+  "fast", "faster", "advanced", "complete", "comprehensive", "robust",
+  "scalable", "flexible", "intuitive", "beautiful", "next-generation",
+  "cutting-edge", "end-to-end", "world-class", "truly", "really",
+]);
+
+/**
+ * "monar builds the way teams close deals" -- what follows is a manner
+ * clause, not the thing built, so the object noun phrase comes out a
+ * fragment ("way teams close deals at monar"). There is no repair for it:
+ * the sentence does not name a topic, so the company name is the better
+ * subject.
+ */
+const MANNER_OPENER = /^(?:way|ways|method|methods|approach|approaches)\b/i;
+
+/** A category word or evaluative filler all the way through names nothing. */
+function contentlessTopic(object: string): boolean {
+  const words = object.toLowerCase().split(/[\s/]+/).filter(Boolean);
+  if (!words.length) return true;
+  return words.every((word) => {
+    const bare = word.replace(/^[^a-z0-9-]+|[^a-z0-9-]+$/g, "");
+    return !bare || CATEGORY_WORDS.has(bare) || FILLER_WORDS.has(bare);
+  });
+}
+
 /** A complete research topic, never the first six words of a longer sentence. */
 export function fallbackSubjectFrom(span: string, company = ""): string {
   const text = span.trim().replace(/\s+/g, " ");
   // Keep the full object noun phrase; prepositions introduce the next clause.
   const object = text.match(/\b(?:builds?|automates?|provides?|offers?|develops?|creates?|sells?|delivers?)\s+(.+?)(?=\s+(?:for|to|with|in|at|by|through|that|which)\b|[.!?;]|$)/i)?.[1]
     ?.replace(/^(?:the|a|an|these|those|our|their)\s+/i, "").trim();
-  if (object && usableSubject(object) && !/\b(?:find|helps?|gets?|natively)\b/i.test(object)) {
+  if (
+    object && usableSubject(object) && !/\b(?:find|helps?|gets?|natively)\b/i.test(object)
+    && !MANNER_OPENER.test(object) && !contentlessTopic(object)
+  ) {
     const named = company.trim() ? `${object} at ${company.trim()}` : object;
     return usableSubject(named) ? named : object;
   }
   // The owner-scoped company is a topic, not an invented event or result.
   if (company.trim()) return company.trim();
   if (usableSubject(text)) return text.replace(/[.!?,;:]+$/g, "");
-  return "your work";
+  // No company and nothing short enough to quote. "your work" read as the
+  // tail of a sentence somebody forgot to finish.
+  return "Quick question";
 }
 
 /**

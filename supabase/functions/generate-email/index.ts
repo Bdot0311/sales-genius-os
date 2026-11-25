@@ -1255,8 +1255,20 @@ STRICT RULES:
     const researchQuality: ResearchQuality = scoreResearchQuality(researchBrief, researchSources);
     if (researchBrief) researchBrief = { ...researchBrief, quality: researchQuality };
     const blockOnThinResearch = requestData.blockOnThinResearch === true;
-    const researchIsThin = researchQuality.label === "thin" || researchQuality.label === "insufficient";
-    if (!isPrecisionEditPre && goal !== "subject_only" && researchIsThin && !blockOnThinResearch && resolvedSenderName) {
+    /*
+     * This used to shunt every lead whose LABEL was "thin" or worse straight
+     * to the no-research template -- so anything under 60/100 never reached
+     * the writer at all, however good the facts were. Two things were wrong
+     * with that. The bar was the "usable" label (60), not the gate the rest
+     * of the file uses (safe_to_personalize, 35). And it skipped the whole
+     * grounding pipeline, which already ends in this same template when it
+     * cannot ground: releaseThinLead() is the last resort inside it.
+     *
+     * So the early return is now for leads there is genuinely nothing to
+     * write about. Everything else goes through the writer under the CAUTION
+     * block, and falls back to the template only if grounding fails.
+     */
+    if (!isPrecisionEditPre && goal !== "subject_only" && !researchQuality.safe_to_personalize && !blockOnThinResearch && resolvedSenderName) {
       const thin = thinLeadDraft({
         firstName,
         senderName: resolvedSenderName,

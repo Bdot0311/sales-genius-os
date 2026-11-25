@@ -13,7 +13,18 @@ describe("releasable first-touch fallback", () => {
 });
 
 describe("thin research uses only the lead record", () => {
-  it("states the role, company, and industry, and one question", () => {
+  /*
+   * This test used to require the body to CONTAIN the company, the role and
+   * the industry, which is how "You're on file at Siftly (YCW22), as Founder
+   * & CEO, in Software Development." came to be the shipped copy -- the test
+   * was holding it in place. Reciting a reader's own record at them carries
+   * no information and reads as a merge, so those three assertions are gone
+   * on purpose. See src/lib/thin-lead-draft.test.ts for the replacement.
+   *
+   * What still matters is here: it uses nothing but the record, asks exactly
+   * one question, and signs off as the sender.
+   */
+  it("invents nothing, asks one question, and signs off", () => {
     const draft = thinLeadDraft({
       firstName: "Nicolaas",
       senderName: "Brandon Yakubov",
@@ -22,12 +33,12 @@ describe("thin research uses only the lead record", () => {
       industry: "proxy voting",
     });
     expect(draft.body).toContain("Hi Nicolaas,");
-    expect(draft.body).toContain("Proxywise AI");
-    expect(draft.body).toContain("Head of Sales");
-    expect(draft.body).toContain("proxy voting");
     expect(draft.body.match(/\?/g)).toHaveLength(1);
     expect(draft.body).not.toMatch(/IPO|Vanguard|NYSE|panel|conference|invited to speak/i);
     expect(draft.body.trim().endsWith("Brandon Yakubov")).toBe(true);
+    // The company still has to reach the reader somewhere, or the email could
+    // have been addressed to anybody.
+    expect(`${draft.subject} ${draft.body}`).toContain("Proxywise AI");
   });
 });
 
@@ -182,7 +193,15 @@ import { fallbackSubjectFrom, usableSubject } from "../../supabase/functions/_sh
 import { subjectGrounded } from "../../supabase/functions/_shared/evidence-contract";
 describe("fallback subject", () => {
   it("uses a complete topic instead of chopping a sentence at six words", () => {
-    expect(fallbackSubjectFrom("Acme builds the systems that find B2B buyers fast.", "Acme")).toBe("systems at Acme");
+    /*
+     * Was asserting "systems at Acme" on "Acme builds the systems that find
+     * B2B buyers fast." -- complete, but "systems" names a category and not a
+     * topic, so the subject said less than the company name alone. That case
+     * moved to "a category word is not a topic" below; what this test is for
+     * is the chop, so the span now carries a real object.
+     */
+    expect(fallbackSubjectFrom("Acme builds payroll reconciliation that finds B2B buyers fast.", "Acme"))
+      .toBe("payroll reconciliation at Acme");
   });
   it("does not copy an unrelated congratulation into Navwise's subject", () => {
     expect(fallbackSubjectFrom("Congratulations to Athlete , ButFor on the launch.", "Navwise")).toBe("Navwise");
@@ -197,6 +216,60 @@ describe("fallback subject", () => {
     }
     expect(usableSubject("browser workflows at Skyvern")).toBe(true);
   });
+  /*
+   * Two subject lines that reached prospects:
+   *
+   *   "software at Unstack"
+   *   "way at monar"
+   *
+   * Both are the object noun phrase, extracted correctly, from a sentence
+   * that was quoted accurately. Grounding was never the problem.
+   */
+  it("falls back to the company when a category word is all the object says", () => {
+    /*
+     * Every company in the inbox builds software. "software at Unstack" tells
+     * the reader strictly less than "Unstack" does, so the company wins.
+     */
+    const contentless: [string, string][] = [
+      ["Unstack builds software for marketing teams.", "Unstack"],
+      ["Unstack provides software to teams.", "Unstack"],
+      ["Siftly offers a platform for data teams.", "Siftly"],
+      ["Lumen delivers solutions to enterprises.", "Lumen"],
+      ["Orbital creates tools for warehouse robotics.", "Orbital"],
+      ["Mosaic sells powerful tools to agencies.", "Mosaic"],
+    ];
+    for (const [span, company] of contentless) {
+      expect(fallbackSubjectFrom(span, company), span).toBe(company);
+    }
+  });
+
+  it("keeps a category word that a real topic is built on", () => {
+    // The head noun may be generic as long as something names the subject.
+    expect(fallbackSubjectFrom("Siftly offers a data platform for finance teams.", "Siftly"))
+      .toBe("data platform at Siftly");
+    expect(fallbackSubjectFrom("Proxywise builds proxy voting infrastructure for asset managers.", "Proxywise"))
+      .toBe("proxy voting infrastructure at Proxywise");
+    expect(fallbackSubjectFrom("Orbital creates warehouse robotics for grocers.", "Orbital"))
+      .toBe("warehouse robotics at Orbital");
+    expect(fallbackSubjectFrom("Keasy automates payroll for restaurants.", "Keasy")).toBe("payroll at Keasy");
+  });
+
+  it("never reads a manner clause as the thing being built", () => {
+    /*
+     * "monar builds the way teams close deals" -- what follows "the way" is
+     * how, not what, so the object comes out a fragment. There is nothing to
+     * repair: the sentence names no topic.
+     */
+    expect(fallbackSubjectFrom("monar builds the way teams close deals.", "monar")).toBe("monar");
+    expect(fallbackSubjectFrom("monar builds a better way to manage payroll.", "monar")).toBe("monar");
+    expect(fallbackSubjectFrom("Acme develops a new approach that wins deals.", "Acme")).toBe("Acme");
+  });
+
+  it("asks a question when there is no company and nothing short to quote", () => {
+    // Was "your work", which read as the tail of an unfinished sentence.
+    expect(fallbackSubjectFrom("We build the way modern finance teams work.", "")).toBe("Quick question");
+  });
+
   it("keeps complete noun topics within the unchanged grounding rule", () => {
     const span = "Skyvern automates browser workflows for teams.";
     const subject = fallbackSubjectFrom(span, "Skyvern");

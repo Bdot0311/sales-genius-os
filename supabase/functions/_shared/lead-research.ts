@@ -113,10 +113,30 @@ export function scoreResearchQuality(
   const label: ResearchQualityLabel =
     score >= 80 ? "strong" : score >= RESEARCH_WARN_THRESHOLD ? "usable" : score >= RESEARCH_BLOCK_THRESHOLD ? "thin" : "insufficient";
 
+  /*
+   * The score measures how COMPLETE the picture of a company is. Whether an
+   * email can be written honestly is a different question, and the answer to
+   * it is one fact we can point at a page.
+   *
+   * griddll scored 33: four pages read, one sourced finding, no "what they
+   * do" line, no hook. Two points under the threshold, so the finding was
+   * thrown away and the lead got "You're on file at griddll, as Co-Founder,
+   * in Software Development." Research had done its job and the gate binned
+   * the result.
+   *
+   * Everything downstream -- releasableFirstTouch, voiceSafeObservation, the
+   * whole evidence contract -- is built to write from exactly ONE approved
+   * sentence. So one sourced observation is enough to try, and the evidence
+   * gates still refuse the sentence if it turns out to be unquotable. An
+   * UNSOURCED observation is not enough and never was: a floating claim is
+   * what those gates cannot check.
+   *
+   * The score itself does not move. The owner still sees 33/100 and the gaps.
+   */
   return {
     score,
     label,
-    safe_to_personalize: score >= RESEARCH_BLOCK_THRESHOLD,
+    safe_to_personalize: score >= RESEARCH_BLOCK_THRESHOLD || sourced.length > 0,
     gaps,
   };
 }
@@ -330,7 +350,9 @@ export function briefToPromptBlock(
   if (!quality.safe_to_personalize) {
     block +=
       "\n- WARNING: this research is too thin to personalize on. Do NOT reference anything specific about this company beyond the verified lead fields below, and do NOT imply you studied their website.";
-  } else if (quality.label === "thin") {
+  } else if (quality.label === "thin" || quality.label === "insufficient") {
+    // "insufficient" reaches here when the score is low but one observation
+    // is sourced. The caution is the point: use that fact and nothing else.
     block +=
       "\n- CAUTION: research is thin. Reference ONLY the observations listed above verbatim in meaning; make no other company-specific claims.";
   }

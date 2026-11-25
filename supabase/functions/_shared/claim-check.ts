@@ -146,13 +146,59 @@ export function correctionFor(claims: UnbackedClaim[]): string {
 // rewording gets around it.
 // ---------------------------------------------------------------------------
 
-/** Tools that change something. Reading is not doing. */
+/**
+ * Tools that do a job. Reading is not doing.
+ *
+ * This set is the whole of the backstop's judgement, so a name missing from
+ * it is a turn that did real work being told it did nothing. Twenty-three
+ * were missing, including every bulk-run tool -- the path a 133-lead ask goes
+ * down -- and "run_agent", which is not a tool. The tool is `run_full_agent`,
+ * so the one that runs the entire cycle end to end has never counted.
+ *
+ * The question a name answers is "did the agent do the thing it says it did",
+ * not "did a row change". That is why `verify_email` and `refresh_signals`
+ * are here: when the ask was to verify an address or re-check a job board,
+ * doing it IS the job.
+ *
+ * READ_ONLY_TOOLS below holds the other half, and a test requires the two to
+ * cover the catalog exactly, so a tool added later cannot be left unclassified.
+ */
 export const MUTATION_TOOLS = new Set([
+  // Outbound
   "send_drafts", "send_outreach", "schedule_drafts", "cancel_scheduled_email",
-  "draft_outreach", "draft_sequence",
+  "draft_outreach", "draft_sequence", "delete_drafts",
+  "enroll_lead_in_sequence", "update_enrollment", "update_sequence_status",
+  "save_email_template", "save_campaign_brief", "save_objection",
+  // Leads
   "enrich_leads", "score_leads", "research_leads", "find_leads",
-  "delete_drafts", "delete_leads", "delete_inbox_threads",
-  "enroll_lead_in_sequence", "update_lead", "run_agent",
+  "update_lead", "delete_leads", "verify_email", "refresh_signals",
+  // Inbox
+  "delete_inbox_threads", "classify_reply", "set_reply_label",
+  // Background runs and the agent itself
+  "start_bulk_run", "control_bulk_run", "run_full_agent",
+  "save_agent_mission", "set_agent_mission_status",
+  // Deals and ICP
+  "create_deal", "update_deal", "delete_deal",
+  "update_icp_profile", "apply_won_deal_icp",
+  // Infrastructure
+  "update_sending_account", "resolve_deliverability_alert",
+  "save_visitor_rule", "save_visitor_site",
+]);
+
+/**
+ * Tools that only look. Listed by name rather than matched on a prefix so a
+ * read is a decision somebody made, not an accident of naming.
+ */
+export const READ_ONLY_TOOLS = new Set([
+  "analyse_won_deals", "audit_email", "audit_sequence", "find_lead_issues",
+  "get_agent_status", "get_email_thread", "get_lead", "get_outbound_stats",
+  "list_agent_missions", "list_bulk_runs", "list_campaign_briefs", "list_deals",
+  "list_deliverability_alerts", "list_drafts", "list_email_templates",
+  "list_icp_profiles", "list_leads", "list_mailboxes", "list_objections",
+  "list_recent_replies", "list_reply_labels", "list_scheduled_emails",
+  "list_sending_accounts", "list_sent_emails", "list_sequence_enrollments",
+  "list_sequences", "list_signals", "list_visitor_companies",
+  "list_visitor_sites", "search_companies",
 ]);
 
 /** True when at least one mutating tool actually succeeded this turn. */
@@ -172,6 +218,22 @@ const COMPLETION_MARKERS =
   /✅|\ball (?:set|clear|done|sent|scheduled)\b|\bsuccessfully\b|\bcomplete(?:d|ly)?\b|\bfinished\b|\bready to send\b|\bno further action\b|\bautomatically\b/i;
 
 /**
+ * "Reply here when you're ready to send or schedule them."
+ *
+ * That sentence ended a turn where the model had correctly handed the work to
+ * the background queue and called nothing, and it tripped the backstop --
+ * because "ready to send" is in the markers above, and "you're ready to send"
+ * contains it. The reader being ready is the opposite of the work being done:
+ * it is the agent waiting, which is the one thing this check must not punish.
+ *
+ * statedIntentWithoutAction already refuses to fire on a hand-back. This had
+ * no such carve-out, so the phrase is removed before the markers are tested
+ * rather than the markers being loosened -- "the drafts are ready to send"
+ * still reads as a completion claim and still fires.
+ */
+const READER_READINESS = /\byou(?:'re|’re| are)\s+ready\b/gi;
+
+/**
  * A reply that announces completion on a turn where nothing succeeded.
  *
  * Returns the record of what did run, so the user gets the truth rather than a
@@ -180,14 +242,19 @@ const COMPLETION_MARKERS =
  */
 export function emptyTurnWarning(text: string, events: ToolEventLike[]): string {
   if (!text || anyMutationSucceeded(events)) return "";
-  if (!COMPLETION_MARKERS.test(text)) return "";
+  if (!COMPLETION_MARKERS.test(text.replace(READER_READINESS, " "))) return "";
 
   const ran = events
     .map((e) => `${e.name ?? "tool"} (${e.status ?? "?"})${e.detail ? `: ${e.detail}` : ""}`)
     .slice(-10);
 
   return ran.length === 0
-    ? "Nothing ran on this turn — no tool was called at all, so nothing above happened."
+    /*
+     * Not "nothing above happened". Work queued on an earlier turn keeps
+     * running, and the progress line the shell prints above this one is the
+     * owner watching it run. What is true is only ever about THIS turn.
+     */
+    ? "No tool was called on this turn, so nothing new was started here."
     : `Nothing on this turn changed anything. What actually ran: ${ran.join("; ")}.`;
 }
 
