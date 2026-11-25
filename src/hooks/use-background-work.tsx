@@ -72,12 +72,14 @@ export const describeWork = (jobs: BackgroundJob[]): string | null => {
 export const useBackgroundWork = () => {
   const [jobs, setJobs] = useState<BackgroundJob[]>([]);
   const [failures, setFailures] = useState<FailureSummary[]>([]);
+  const [failedCount, setFailedCount] = useState(0);
 
   const load = useCallback(async () => {
     const { data: auth } = await supabase.auth.getUser();
     if (!auth?.user) {
       setJobs([]);
       setFailures([]);
+      setFailedCount(0);
       return;
     }
     const { data } = await supabase
@@ -105,19 +107,38 @@ export const useBackgroundWork = () => {
     const withFailures = rows.filter((j) => (j.failed ?? 0) > 0).map((j) => j.id);
     if (withFailures.length === 0) {
       setFailures([]);
+      setFailedCount(0);
       return;
     }
-    const { data: items } = await supabase
+    /*
+     * The exact count comes back with the sample, because the two numbers in
+     * the bar were being read from two places that update at different times.
+     *
+     * The shell said "4 failed - 2 scorer didn't respond, 2 AI rate limited,
+     * 1 invented a figure it can't back, 1 research found nothing usable to
+     * quote, 1 a research provider is not configured". Seven causes under a
+     * total of four.
+     *
+     * Neither number was wrong about its own source. agent_jobs.failed is
+     * recomputed by the worker at the END of a pass (process-agent-jobs
+     * counts the rows and writes the total), while the item rows are written
+     * as each one settles. Mid-pass the rows are ahead of the counter, and
+     * the bar was taking the total from the counter and the breakdown from
+     * the rows.
+     *
+     * So the total now comes from the same query as the breakdown. `count`
+     * is exact even when the sample is capped, so a job with more than 500
+     * failures still reports its real total.
+     */
+    const { data: items, count } = await supabase
       .from("agent_job_items" as any)
-      .select("error")
+      .select("error", { count: "exact" })
       .in("job_id", withFailures)
       .eq("status", "failed")
       .limit(500);
-    setFailures(
-      summariseFailures(
-        ((items ?? []) as unknown as { error: string | null }[]).map((i) => i.error),
-      ),
-    );
+    const errors = ((items ?? []) as unknown as { error: string | null }[]).map((i) => i.error);
+    setFailedCount(count ?? errors.length);
+    setFailures(summariseFailures(errors));
   }, []);
 
   useEffect(() => {
@@ -141,5 +162,5 @@ export const useBackgroundWork = () => {
     };
   }, [load]);
 
-  return { jobs, summary: describeWork(jobs), failures, refresh: load };
+  return { jobs, summary: describeWork(jobs), failures, failedCount, refresh: load };
 };
