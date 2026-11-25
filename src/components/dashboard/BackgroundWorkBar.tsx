@@ -15,10 +15,21 @@ import { describeFailures } from "@/lib/draft-failures";
  * reads "idle" trains people to stop looking at it.
  */
 export const BackgroundWorkBar = () => {
-  const { jobs, summary, failures } = useBackgroundWork();
+  const { jobs, summary, failures, failedCount } = useBackgroundWork();
   if (!summary || jobs.length === 0) return null;
 
-  const failed = jobs.reduce((n, j) => n + (j.failed ?? 0), 0);
+  /*
+   * One source, not two. The total used to be summed from the agent_jobs
+   * counters while the breakdown beside it was built from the item rows, and
+   * the worker only rewrites those counters at the end of a pass -- so
+   * mid-run the bar read "4 failed" over seven counted causes.
+   *
+   * The job counters are still the trigger for fetching a breakdown at all,
+   * so before the first fetch lands they are the only number there is.
+   */
+  const failed = failures.length > 0
+    ? failedCount
+    : jobs.reduce((n, j) => n + (j.failed ?? 0), 0);
   const why = describeFailures(failures);
 
   return (

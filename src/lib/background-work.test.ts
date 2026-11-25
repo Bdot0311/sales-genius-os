@@ -103,3 +103,56 @@ describe("the hook reads state rather than remembering it", () => {
     expect(code(HOOK)).toContain('document.removeEventListener("visibilitychange", onVisible);');
   });
 });
+
+
+/**
+ * The shell said:
+ *
+ *   Still working — 35 of 106 drafts.
+ *   4 failed — 2 scorer didn't respond, 2 AI rate limited, 1 invented a
+ *   figure it can't back, 1 research found nothing usable to quote, 1 a
+ *   research provider is not configured.
+ *
+ * Seven causes under a total of four.
+ *
+ * Neither number was wrong about its own source. `agent_jobs.failed` is
+ * recomputed by the worker at the END of a pass -- process-agent-jobs counts
+ * the item rows and writes the total -- while the item rows themselves are
+ * written as each one settles. Mid-pass the rows are ahead of the counter,
+ * and the bar took its total from the counter and its breakdown from the
+ * rows.
+ */
+describe("the failure total and the reasons beside it agree", () => {
+  it("counts the same rows the breakdown is built from", () => {
+    expect(code(HOOK)).toContain('.select("error", { count: "exact" })');
+    expect(code(HOOK)).toContain("setFailedCount(count ?? errors.length)");
+    expect(code(HOOK)).toContain("setFailures(summariseFailures(errors))");
+  });
+
+  it("hands that total to the bar instead of re-summing the job counters", () => {
+    expect(code(BAR)).toContain("failedCount");
+    expect(code(BAR)).toContain("failures.length > 0");
+    // The job counters remain the only number available before the first
+    // breakdown lands, so the fallback stays.
+    expect(code(BAR)).toContain("jobs.reduce((n, j) => n + (j.failed ?? 0), 0)");
+  });
+
+  it("stays exact when the breakdown sample is capped", () => {
+    /*
+     * The sample is limited to 500 error strings. `count: "exact"` is the
+     * whole set, so a job with more failures than that still reports its
+     * real total rather than 500.
+     */
+    expect(code(HOOK)).toContain(".limit(500)");
+    expect(code(HOOK)).not.toContain("setFailedCount(errors.length)");
+  });
+
+  it("clears the total with the breakdown", () => {
+    // Otherwise a finished run leaves its last count on screen.
+    const hook = code(HOOK);
+    const clears = hook.split("setFailures([]);").length - 1;
+    const resets = hook.split("setFailedCount(0);").length - 1;
+    expect(clears).toBeGreaterThan(0);
+    expect(resets).toBe(clears);
+  });
+});
