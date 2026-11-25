@@ -9,6 +9,42 @@ export const FALLBACK_ASK = "Worth a look?";
  * The email we can write when the pages did not yield a sentence.
  * Role, company, and industry are the lead record. Nothing else is stated.
  */
+/** Stable per company, so the same lead always gets the same shape. */
+function shapeIndex(seed: string, count: number): number {
+  let hash = 0;
+  for (const ch of seed) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+  return count > 0 ? hash % count : 0;
+}
+
+/**
+ * The email for a lead research came back thin on.
+ *
+ * It used to read:
+ *
+ *   Hi Uma,
+ *   You're on file at Siftly (YCW22), as Founder & CEO, in Software
+ *   Development.
+ *   How are you handling outbound for that work?
+ *
+ * Three things wrong with that, and none of them is grounding -- every word
+ * came from the lead's own record, which is why no gate stopped it.
+ *
+ * "You're on file" tells somebody they are in a database. It is the sentence a
+ * debt collector opens with.
+ *
+ * It recites their employer, title and industry back at them. They know. A
+ * line that carries no information for the reader is worse than no line, and
+ * it is exactly what makes an email read as a mail merge.
+ *
+ * And it was one template, so a hundred of these go out identical except for
+ * three substituted fields. That is a spam pattern before it is a style
+ * problem: near-identical bodies at volume are what bulk filters look for.
+ *
+ * So the role and industry become the FRAMING for the question rather than a
+ * statement about the reader, there are several shapes, and the shape is
+ * chosen by a hash of the company so one lead always gets the same one while a
+ * list gets a spread.
+ */
 export function thinLeadDraft(input: {
   firstName: string;
   senderName: string;
@@ -18,20 +54,49 @@ export function thinLeadDraft(input: {
 }): { subject: string; body: string } {
   const first = input.firstName.trim() || "there";
   const company = String(input.company ?? "").trim();
-  const role = String(input.role ?? "").trim();
-  const industry = String(input.industry ?? "").trim();
-  const bits = [
-    company ? `at ${company}` : "",
-    role ? `as ${role}` : "",
-    industry ? `in ${industry}` : "",
-  ].filter(Boolean);
-  const line = bits.length
-    ? `You're on file ${bits.join(", ")}.`
-    : "I only have the name on this lead, not a page of research.";
+  const role = String(input.role ?? "").trim().toLowerCase();
+  const industry = String(input.industry ?? "").trim().toLowerCase();
   const sender = input.senderName.trim();
+
+  /*
+   * Only the question is addressed to them, and it asks rather than asserts.
+   * Nothing here claims to know anything the record does not already hold.
+   *
+   * The subject travels WITH the shape rather than being chosen separately,
+   * so a body that opens "Quick question for a founder" never arrives under a
+   * subject that already said "Quick question" -- an echo between the two is
+   * the other thing that makes a merge look like a merge.
+   */
+  const shapes: { subject: string; line: string }[] = [];
+  if (role) {
+    shapes.push({
+      subject: company ? `Reaching out, ${company}` : "Reaching out",
+      line: `Quick question for a ${role}: how are you finding new customers at the moment?`,
+    });
+  }
+  if (industry) {
+    shapes.push({
+      subject: company ? `Quick question, ${company}` : "Quick question",
+      line: `Reaching out to people in ${industry} this month, so a quick one: how are you handling outbound right now?`,
+    });
+  }
+  if (role && industry) {
+    shapes.push({
+      subject: company ? `Outbound at ${company}` : "A question about outbound",
+      line: `Working through ${industry} this week. For a ${role}, is outbound something you run yourself or hand off?`,
+    });
+  }
+  shapes.push({
+    // A bare lowercase company name is not a subject, so the company is never
+    // the whole of one.
+    subject: company ? `Quick question, ${company}` : "Quick question",
+    line: "Keeping this short: how are you handling outbound at the moment?",
+  });
+
+  const shape = shapes[shapeIndex(company || first, shapes.length)];
   return {
-    subject: (company || "Quick question").split(/\s+/).slice(0, 6).join(" "),
-    body: `Hi ${first},\n\n${line}\n\nHow are you handling outbound for that work?\n\n${sender}`,
+    subject: shape.subject,
+    body: `Hi ${first},\n\n${shape.line}\n\n${sender}`,
   };
 }
 

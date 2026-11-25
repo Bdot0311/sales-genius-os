@@ -13,7 +13,18 @@ describe("releasable first-touch fallback", () => {
 });
 
 describe("thin research uses only the lead record", () => {
-  it("states the role, company, and industry, and one question", () => {
+  /*
+   * This test used to require the body to CONTAIN the company, the role and
+   * the industry, which is how "You're on file at Siftly (YCW22), as Founder
+   * & CEO, in Software Development." came to be the shipped copy -- the test
+   * was holding it in place. Reciting a reader's own record at them carries
+   * no information and reads as a merge, so those three assertions are gone
+   * on purpose. See src/lib/thin-lead-draft.test.ts for the replacement.
+   *
+   * What still matters is here: it uses nothing but the record, asks exactly
+   * one question, and signs off as the sender.
+   */
+  it("invents nothing, asks one question, and signs off", () => {
     const draft = thinLeadDraft({
       firstName: "Nicolaas",
       senderName: "Brandon Yakubov",
@@ -22,12 +33,12 @@ describe("thin research uses only the lead record", () => {
       industry: "proxy voting",
     });
     expect(draft.body).toContain("Hi Nicolaas,");
-    expect(draft.body).toContain("Proxywise AI");
-    expect(draft.body).toContain("Head of Sales");
-    expect(draft.body).toContain("proxy voting");
     expect(draft.body.match(/\?/g)).toHaveLength(1);
     expect(draft.body).not.toMatch(/IPO|Vanguard|NYSE|panel|conference|invited to speak/i);
     expect(draft.body.trim().endsWith("Brandon Yakubov")).toBe(true);
+    // The company still has to reach the reader somewhere, or the email could
+    // have been addressed to anybody.
+    expect(`${draft.subject} ${draft.body}`).toContain("Proxywise AI");
   });
 });
 
