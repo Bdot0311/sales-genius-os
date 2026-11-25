@@ -1,3 +1,7 @@
+# GitHub update deployment — November 25, 2026
+
+- [x] Verified checkout includes PR #375 (d0e0f6d6); redeployed 33 changed functions and shared dependencies from 20688e20..HEAD. Passed 204 focused regressions; preview build OK. Live probes: 32 endpoints return 200, private process-bulk-runs returns expected 401 through its service-role guard. No research, drafts, or sends triggered. No recent migration files changed or registered migrations pending: live history reaches 0085, and the current saved-draft queue, 14-day duplicate window, backend permission and customer denial are installed. Existing older unmatched history rows, missing 0052 snapshot and superseded unlisted 0078 retry file were left unchanged; automatic history repair has no unique verified match. Frontend publication was not performed.
+
 # Azure Claude replacement — November 24, 2026
 
 - [ ] Replace Bedrock generation with Azure Claude after Azure quota approval and secure setup of AZURE_CLAUDE_ENDPOINT and AZURE_CLAUDE_API_KEY. Neither Azure setting is saved; the secure-form request was canceled before execution. Keep the current Bedrock routing active until Azure can be configured and verified; no provider code, deployments, or credentials changed.
