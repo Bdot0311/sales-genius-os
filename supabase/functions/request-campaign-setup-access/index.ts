@@ -57,6 +57,25 @@ Deno.serve(async (req) => {
     userId = profile.id;
     email = profile.email ?? email;
     if (!email) return json(400, { error: "That customer has no email on file" });
+    if (userId === actor.id) return json(400, { error: "You cannot send an access request to yourself" });
+
+    // Only regular customers: never other admins.
+    const { data: targetAdmin } = await admin
+      .from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle();
+    if (targetAdmin) return json(400, { error: "Access requests can only be sent to customers" });
+
+    // Respect suppression (bounces, complaints, unsubscribes).
+    const { data: suppressed } = await admin
+      .from("suppressed_emails").select("id").ilike("email", email).limit(1).maybeSingle();
+    if (suppressed) return json(400, { error: "This customer cannot receive emails" });
+
+    // Limit to one ask per customer per 24 hours across all admins.
+    const { data: recent } = await admin
+      .from("campaign_setup_requests").select("id")
+      .eq("user_id", userId)
+      .gte("access_requested_at", new Date(Date.now() - 24 * 3600 * 1000).toISOString())
+      .limit(1).maybeSingle();
+    if (recent) return json(429, { error: "An access request was already sent to this customer in the last 24 hours" });
 
     const sendRes = await sendAppEmail(admin, "campaign-setup-access-request", email, {
       idempotencyKey: `campaign-setup-access-${userId}-${new Date().toISOString().slice(0, 10)}`,
@@ -64,7 +83,7 @@ Deno.serve(async (req) => {
     });
     if (!sendRes.sent && sendRes.reason === "failed") {
       console.error(`[request-campaign-setup-access] send failed: ${sendRes.error}`);
-      return json(502, { error: "Could not send the access request email", details: sendRes.error });
+      return json(502, { error: "Could not send the access request email" });
     }
 
     // Reuse an existing open request for this customer so the admin table shows
@@ -108,7 +127,7 @@ Deno.serve(async (req) => {
         .single();
       if (insErr) {
         console.error("[request-campaign-setup-access] insert failed:", insErr.message);
-        return json(500, { error: insErr.message });
+        return json(500, { error: "Could not save the request" });
       }
       requestId = inserted.id;
     }

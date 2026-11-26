@@ -208,6 +208,17 @@ async function handleCreate(supabase: any, table: string, userId: string, record
   return { data, status: 201 };
 }
 
+async function assertOwnedRefs(supabase: any, userId: string, refs: Record<string, any>): Promise<string | null> {
+  const map: Record<string, string> = { lead_id: 'leads', deal_id: 'deals' };
+  for (const [field, table] of Object.entries(map)) {
+    const value = refs[field];
+    if (value === undefined || value === null || value === '') continue;
+    const { data } = await supabase.from(table).select('id').eq('id', value).eq('user_id', userId).maybeSingle();
+    if (!data) return `${field} not found`;
+  }
+  return null;
+}
+
 async function handleUpdate(supabase: any, table: string, userId: string, id: string, updates: any) {
   // Remove null values so we only update provided fields
   const cleaned: any = {};
@@ -389,6 +400,8 @@ serve(async (req) => {
       } else if (method === 'POST') {
         const v = validateActivity(body);
         if (v.error) return respond({ error: v.error }, 400);
+        const refErr = await assertOwnedRefs(supabase, userId, v.data);
+        if (refErr) return respond({ error: refErr }, 404);
         result = await handleCreate(supabase, 'activities', userId, v.data);
         statusCode = 201;
       } else if (method === 'PATCH' && id) {
@@ -396,6 +409,8 @@ serve(async (req) => {
         const updates = { ...v.data };
         if (!body.subject) delete updates.subject;
         if (!body.type) delete updates.type;
+        const refErr = await assertOwnedRefs(supabase, userId, updates);
+        if (refErr) return respond({ error: refErr }, 404);
         result = await handleUpdate(supabase, 'activities', userId, id, updates);
       } else if (method === 'DELETE' && id) {
         result = await handleDelete(supabase, 'activities', userId, id);
