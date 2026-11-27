@@ -300,8 +300,16 @@ serve(async (req) => {
     // Cadence is shared; recipient copy never is. Use the same research and
     // generation gates as Studio/agents before scheduling each individual touch.
     const lead = enrollment.lead;
-    const { data: profile } = await supabase.from("profiles")
-      .select("full_name, company_name, business_description").eq("id", enrollment.user_id).maybeSingle();
+    const [{ data: profile }, { count: stepCount }, { data: bank }] = await Promise.all([
+      supabase.from("profiles")
+        .select("full_name, company_name, business_description").eq("id", enrollment.user_id).maybeSingle(),
+      supabase.from("sequence_steps")
+        .select("id", { count: "exact", head: true }).eq("sequence_id", enrollment.sequence_id),
+      supabase.from("payoff_bank")
+        .select("content, source_url, asserts_stat").eq("user_id", enrollment.user_id),
+    ]);
+    const totalSteps = Number(stepCount ?? 0) || nextStepNumber;
+    const payoffBank = (bank ?? []) as { content: string; source_url: string | null }[];
     const threads = await leadThreads(supabase, enrollment.user_id, [lead.id]);
     let subject: string;
     let body: string;
@@ -321,7 +329,26 @@ serve(async (req) => {
         senderCompany: profile?.company_name ?? "",
         businessDescription: profile?.business_description || enrollment.sequence.description || "",
         thread: threads.get(lead.id),
-        variantNum: nextStepNumber,
+        /*
+         * The step number is which touch this is, not which A/B variant.
+         *
+         * It used to be passed as `variantNum`, and generate-email reads that
+         * as "this is an A/B variant, so it has to differ in a way worth
+         * measuring" -- so the day-7 proof email was asked to differ from the
+         * last one for measurement rather than to do the proof job, and
+         * touches 2, 3 and 4 were otherwise the identical call.
+         *
+         * variantNum is gone rather than set to 0: these touches are a
+         * cadence, and none of them is an A/B variant of another.
+         */
+        touchNumber: nextStepNumber,
+        touchCount: totalSteps,
+        /*
+         * The proof points the owner approved. They bound the copy in the
+         * sequence builder and were never loaded here, so every figure the
+         * owner had curated was ignored by the email that actually went out.
+         */
+        payoffBank,
       });
       subject = personalized.subject;
       body = personalized.body;
