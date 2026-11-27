@@ -136,9 +136,16 @@ describe("the sequence builder takes the same set", () => {
     expect(code(SEQ)).not.toContain('<SelectValue placeholder="Pick a lead" />');
   });
 
-  it("writes one sequence, not one per prospect", () => {
-    // The steps are the campaign and the leads are who walks through it.
-    expect(SEQ).toContain("one sequence covers all {leadIds.length}");
+  it("writes one sequence per prospect, and says so", () => {
+    /*
+     * This asserted the opposite: one sequence covering everyone, with the
+     * leads walking through shared steps. The copy was never shared even
+     * then -- the dispatcher regenerates each touch from that prospect's own
+     * research -- but the row was, and the owner asked for the sequences
+     * themselves separated so each cadence can be opened and paused alone.
+     */
+    expect(SEQ).toContain("sequences, one per prospect");
+    expect(SEQ).not.toContain("one sequence covers all");
   });
 });
 

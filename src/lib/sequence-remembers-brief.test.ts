@@ -46,6 +46,8 @@ describe("a sequence remembers the brief it was written from", () => {
      * brief_id null, which is exactly today's behaviour.
      */
     expect(BUILDER).toContain('.update({ brief_id: briefId } as never)');
+    // One save creates a sequence per prospect, so the link covers them all.
+    expect(BUILDER).toContain('.in("id", created.map((row) => row.id))');
     /*
      * Sliced forward from the insert. The first version measured from
      * `.from("email_sequences")` to `.select("id")`, and `.select("id")`
@@ -54,7 +56,7 @@ describe("a sequence remembers the brief it was written from", () => {
      */
     const insertAt = BUILDER.indexOf('.from("email_sequences")');
     expect(insertAt).toBeGreaterThan(-1);
-    const insertBlock = BUILDER.slice(insertAt, BUILDER.indexOf(".single()", insertAt));
+    const insertBlock = BUILDER.slice(insertAt, BUILDER.indexOf('.select("id")', insertAt));
     expect(insertBlock.length, "slice must not be empty").toBeGreaterThan(50);
     expect(insertBlock, "brief_id must not be part of the insert").not.toContain("brief_id");
   });

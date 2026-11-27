@@ -158,20 +158,22 @@ export const AiSequenceBuilder = () => {
   };
 
   /*
-   * Saving the sequence, and putting everyone selected into it.
+   * One sequence per prospect.
    *
-   * Until now this screen generated touches and offered to copy them, so
-   * "build a sequence for these prospects" ended at the clipboard and the
-   * cadence had to be rebuilt by hand in the sequence editor.
+   * This used to write a single sequence and enrol everyone into it -- the
+   * steps were the campaign and the leads were who walked through it. The
+   * copy was never shared even then: process-sequence-step regenerates every
+   * touch from that prospect's own research at send. What was shared was the
+   * row, and the owner wanted the sequences themselves separated so each
+   * prospect's cadence can be opened, paused and read on its own.
    *
-   * One sequence is written and every selected lead is enrolled into it. The
-   * steps are the campaign and the leads are who walks through it, so this is
-   * one row in email_sequences, N in sequence_steps, and one enrolment per
-   * prospect -- not a sequence each.
+   * So this is N rows in email_sequences, N x steps, and one enrolment each.
+   * Named after the prospect, because a list of 110 rows called the same
+   * thing is not a list.
    *
-   * It writes as the user through RLS rather than through a function: all
-   * three tables already carry owner policies, and the dispatcher that walks
-   * the steps is the one the rest of the product uses.
+   * Written in chunks rather than one statement per lead: 110 prospects is
+   * 110 sequences and 440 steps, and a round trip each would be a minute of
+   * the user watching a spinner.
    */
   const saveAndEnrol = async () => {
     /*
@@ -186,56 +188,53 @@ export const AiSequenceBuilder = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not signed in");
 
-      const name = (sequenceName.trim() ||
-        `${selectedLead?.company_name || "Sequence"} — ${writable.length} touches`).slice(0, 120);
+      const nameFor = (leadId: string) => {
+        const lead = leads.find((l) => l.id === leadId);
+        const who = lead?.company_name || lead?.contact_name || "Prospect";
+        const base = sequenceName.trim();
+        return (base ? `${base} — ${who}` : `${who} — ${writable.length} touches`).slice(0, 120);
+      };
 
-      const { data: sequence, error: seqError } = await supabase
+      const { data: created, error: seqError } = await supabase
         .from("email_sequences")
-        .insert({
+        .insert(leadIds.map((leadId) => ({
           user_id: user.id,
-          name,
+          name: nameFor(leadId),
           description: offer.trim().slice(0, 500) || null,
           // Active, because the dispatcher only walks sequences that are, and
           // enrolling into a draft would look like it had silently failed.
           status: "active",
-        })
-        .select("id")
-        .single();
-      if (seqError || !sequence) throw new Error(seqError?.message || "Could not save the sequence");
+        })))
+        .select("id");
+      if (seqError || !created?.length) throw new Error(seqError?.message || "Could not save the sequences");
 
       /*
-       * Remember which brief this was written from, so the send can apply its
-       * forbidden claims. Until now the briefId reached the generator and was
-       * then dropped, and every forbidden claim was a rule the preview
-       * honoured and the email never saw.
-       *
-       * Written as a separate best-effort update rather than a column on the
-       * insert above. The migration ships with a Lovable publish while this
-       * bundle ships on merge, so between the two the column does not exist
-       * yet -- as part of the insert that would fail the whole save, and here
-       * it leaves brief_id null, which is exactly today's behaviour.
+       * Remember which brief these were written from, so the send can apply
+       * its forbidden claims. A separate best-effort update rather than a
+       * column on the insert: the migration ships with a Lovable publish
+       * while this bundle ships on merge, so between the two the column does
+       * not exist, and as part of the insert that would fail the whole save.
        */
       if (briefId) {
         const { error: linkError } = await supabase
           .from("email_sequences")
           .update({ brief_id: briefId } as never)
-          .eq("id", sequence.id);
+          .in("id", created.map((row) => row.id));
         if (linkError) console.warn("[sequence] brief link not stored yet:", linkError.message);
       }
 
+      const sequenceIds = created.map((row) => row.id);
       const { error: stepsError } = await supabase.from("sequence_steps").insert(
         // user_id as well as sequence_id: the table carries its own owner
         // column now, beyond the ownership its RLS reads through the sequence.
-        stepsFromTouches(writable).map((step) => ({
-          ...step,
-          sequence_id: sequence.id,
-          user_id: user.id,
-        })),
+        sequenceIds.flatMap((sequenceId) =>
+          stepsFromTouches(writable).map((step) => ({ ...step, sequence_id: sequenceId, user_id: user.id })),
+        ),
       );
       if (stepsError) {
-        // A sequence with no steps enrols people into nothing and sends
-        // forever without sending anything.
-        await supabase.from("email_sequences").delete().eq("id", sequence.id);
+        // Sequences with no steps enrol people into nothing and send forever
+        // without sending anything, so none of them is left behind.
+        await supabase.from("email_sequences").delete().in("id", sequenceIds);
         throw new Error(stepsError.message);
       }
 
@@ -243,9 +242,9 @@ export const AiSequenceBuilder = () => {
       const { data: enrolled, error: enrolError } = await supabase
         .from("sequence_enrollments")
         .insert(
-          leadIds.map((leadId) => ({
+          leadIds.map((leadId, i) => ({
             user_id: user.id,
-            sequence_id: sequence.id,
+            sequence_id: sequenceIds[i],
             lead_id: leadId,
             // Not the column default of 1: the dispatcher sends
             // current_step + 1, so starting at 1 skips the opener.
@@ -255,16 +254,19 @@ export const AiSequenceBuilder = () => {
           })),
         )
         .select("id");
-      if (enrolError) throw new Error(enrolError.message);
+      if (enrolError) {
+        await supabase.from("email_sequences").delete().in("id", sequenceIds);
+        throw new Error(enrolError.message);
+      }
 
       const count = (enrolled ?? []).length;
       toast({
-        title: `${count} ${count === 1 ? "prospect" : "prospects"} enrolled`,
-        description: `"${name}" is active. The first touch goes out ${
-          touches[0]?.day ? `in ${touches[0].day} days` : "shortly"
+        title: `${count} ${count === 1 ? "sequence" : "sequences"} created`,
+        description: `One per prospect, each active. The first touch goes out ${
+          writable[0]?.day ? `in ${writable[0].day} days` : "shortly"
         }, and the rest follow on their own.`,
       });
-      navigate(`/dashboard/sequences/${sequence.id}`);
+      navigate(count === 1 ? `/dashboard/sequences/${sequenceIds[0]}` : "/dashboard/sequences");
     } catch (e: any) {
       toast({
         title: "Could not enrol",
@@ -315,12 +317,14 @@ export const AiSequenceBuilder = () => {
               <p className="text-[0.6875rem] leading-relaxed text-muted-foreground">
                 {/*
                   Both halves matter and the second one arrived without the
-                  first: people read a multi-prospect selection as one sequence
-                  per prospect, so the count of sequences has to be said out
-                  loud, not only how each touch is written.
+                  first: people read a multi-prospect selection as one
+                  sequence per prospect, and that is what it now is -- the
+                  count has to be said out loud either way.
                 */}
-                Just one sequence covers all {leadIds.length} prospects, and each scheduled touch
-                is written separately from that prospect’s research.
+                {leadIds.length === 1
+                  ? "One sequence for this prospect, written from their own research."
+                  : `${leadIds.length} sequences, one per prospect. Each is saved separately and
+                     every touch is written from that prospect's own research.`}
               </p>
             )}
             {selectedLead?.signals && selectedLead.signals.length > 0 && (
@@ -424,12 +428,12 @@ export const AiSequenceBuilder = () => {
                 )}
                 {leadIds.length === 1
                   ? "Save and enrol 1 prospect"
-                  : `Save and enrol ${leadIds.length} prospects`}
+                  : `Create ${leadIds.length} sequences, one per prospect`}
               </Button>
               <p className="w-full text-[0.6875rem] leading-relaxed text-muted-foreground">
-                Shared cadence, individually researched emails — each prospect gets their own,
-                written at send by the same generator that wrote the preview above. The first touch
-                goes out{writableTouches[0]?.day ? ` in ${writableTouches[0].day} days` : " shortly"},
+                Same cadence, a sequence of their own each — written at send by the same
+                generator that wrote the preview above, from that prospect's research. The first
+                touch goes out{writableTouches[0]?.day ? ` in ${writableTouches[0].day} days` : " shortly"},
                 and the rest follow on their own — you do not need to stay on this page.
               </p>
             </PanelBody>
