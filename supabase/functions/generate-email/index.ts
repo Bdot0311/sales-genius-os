@@ -16,6 +16,7 @@ import { POLICY_VERSION, evaluateStoredSnapshots, subjectAllowed, subjectGrounde
 import { fallbackSubjectFrom, repairDraftVoice, thinLeadDraft, usableFallbackFact, usableSubject, voiceSafeObservation } from "../_shared/first-touch-fallback.ts";
 import { holdReason, researchStep, type RetrievalReceipt } from "../_shared/research-orchestration.ts";
 import { reviseUntilClear } from "../_shared/quality-gate.ts";
+import { sequenceContextPrompt, type PayoffEntry } from "../_shared/sequence-context.ts";
 // The writing rules live in one module so the three copies that used to exist
 // cannot drift apart — see _shared/email-rules.ts.
 import {
@@ -781,6 +782,18 @@ serve(async (req) => {
     const socialProof        = typeof requestData.socialProof        === 'string' ? requestData.socialProof.trim()                     : '';
     const businessDescription = typeof requestData.businessDescription === 'string' ? requestData.businessDescription.trim().slice(0, 500) : '';
     const variantNum         = typeof requestData.variantNum         === 'number'  ? requestData.variantNum                            : 0;
+    /*
+     * Sequence context, all optional. Absent -- every Studio draft, every
+     * agent draft -- and the prompt is byte-identical to before.
+     *
+     * touchNumber is NOT variantNum. variantNum means "this is an A/B variant,
+     * differ in a way worth measuring", which is the wrong instruction for a
+     * day-7 proof email and is what the sequence sender was passing.
+     */
+    const touchNumber        = typeof requestData.touchNumber        === 'number'  ? requestData.touchNumber                           : 0;
+    const touchCount         = typeof requestData.touchCount         === 'number'  ? requestData.touchCount                            : 0;
+    const payoffBank         = Array.isArray(requestData.payoffBank) ? (requestData.payoffBank as PayoffEntry[])                       : [];
+    const forbiddenClaims    = Array.isArray(requestData.forbiddenClaims) ? (requestData.forbiddenClaims as string[])                  : [];
     const use4SentenceFramework = requestData.use4SentenceFramework === true;
     const templateValue        = typeof requestData.templateValue        === 'string' ? requestData.templateValue.trim()                   : '';
     const customInstruction   = typeof requestData.customInstruction   === 'string' ? requestData.customInstruction.slice(0, 8000)         : '';
@@ -1576,6 +1589,13 @@ Write the email body. Start with "Hi ${firstName}," and end with just the sender
     }
     if (!isPrecisionEdit) {
       userPrompt = `${userPrompt}${researchBlock}${NO_HALLUCINATION_RULE}`;
+      /*
+       * After the research and the no-hallucination rule, because the proof
+       * points narrow what may be cited and the forbidden list narrows it
+       * further -- both are constraints ON the research rather than more of
+       * it. Empty string when the caller is not writing a sequence touch.
+       */
+      userPrompt = `${userPrompt}${sequenceContextPrompt({ touchNumber, touchCount, payoffBank, forbiddenClaims })}`;
     }
 
     // A redraft instruction on any goal other than 'custom' used to be thrown
