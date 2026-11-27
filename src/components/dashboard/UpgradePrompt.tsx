@@ -1,3 +1,4 @@
+import { PLAN_LABELS, type PlanType } from "@/lib/plan-features";
 import { Panel } from "@/components/dashboard/Panel";
 import { Button } from "@/components/ui/button";
 import { Lock, ArrowUpRight } from "lucide-react";
@@ -5,7 +6,13 @@ import { useNavigate } from "react-router-dom";
 
 interface UpgradePromptProps {
   feature: string;
-  requiredPlan: 'growth' | 'pro';
+  /*
+   * Any plan, not just the two dearest. The type was 'growth' | 'pro', so a
+   * free account could not be pointed at Starter -- the plan that actually
+   * unlocks sequences -- and both call sites passed "pro" because it was the
+   * only value that fitted.
+   */
+  requiredPlan: PlanType;
 }
 
 export const UpgradePrompt = ({ feature, requiredPlan }: UpgradePromptProps) => {
@@ -21,7 +28,7 @@ export const UpgradePrompt = ({ feature, requiredPlan }: UpgradePromptProps) => 
         <div className="space-y-2">
           <h3 className="text-2xl font-bold">Unlock {feature}</h3>
           <p className="text-muted-foreground">
-            Upgrade to {requiredPlan === 'pro' ? 'Pro' : 'Growth'} plan to access {feature.toLowerCase()} and supercharge your sales workflow.
+            Upgrade to {PLAN_LABELS[requiredPlan] ?? 'a paid'} to access {feature.toLowerCase()}.
           </p>
         </div>
 
@@ -37,11 +44,13 @@ export const UpgradePrompt = ({ feature, requiredPlan }: UpgradePromptProps) => 
           </Button>
         </div>
 
-        <div className="pt-4 border-t border-border/50">
-          <p className="text-sm text-muted-foreground">
-            Current plan includes: Lead Intelligence, AI Outreach, Smart Pipeline, and Calendar Integration
-          </p>
-        </div>
+        {/*
+          * A hardcoded footer used to list what the account already had --
+          * lead intelligence, outreach, pipeline, calendar -- and it was
+          * shown to every plan, free included, which has no calendar
+          * connections and no sequences at all. A fixed list cannot stay
+          * true across five plans, so it is gone rather than wrong.
+          */}
       </div>
     </Panel>
   );

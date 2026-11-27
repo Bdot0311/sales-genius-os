@@ -173,9 +173,20 @@ serve(async (req) => {
       if (!isAdmin && (!subscription || subscription.plan === 'free')) {
         return new Response(
           JSON.stringify({
-            error: 'Lead enrichment requires a paid plan. Upgrade to Growth ($49/mo) to unlock enrichment.',
+            /*
+             * This used to name the Growth plan and quote a monthly price
+             * for it. Both halves were wrong: the figure was well under what
+             * Growth actually costs, and Growth is not what enrichment needs
+             * -- the block above refuses the free plan only, so the cheapest
+             * paid tier lifts it. A user was quoted a price that does not
+             * exist, for a plan costing more than twice what they had to buy.
+             *
+             * No figure here. Prices live on the pricing page and drift; one
+             * copied into an error message is how this went stale.
+             */
+            error: 'Lead enrichment requires a paid plan. Starter unlocks it.',
             error_code: 'free_tier_blocked',
-            upgrade_plan: 'growth',
+            upgrade_plan: 'starter',
           }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
