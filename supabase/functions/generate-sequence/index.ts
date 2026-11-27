@@ -53,6 +53,7 @@ async function touchFromSender(input: {
   touchNumber: number;
   touchCount: number;
   payoffBank: unknown[];
+  forbiddenClaims: string[];
 }): Promise<{ subject: string; body: string }> {
   return personalizedOutreach(async (payload) => {
     const response = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/generate-email`, {
@@ -72,6 +73,7 @@ async function touchFromSender(input: {
     touchNumber: input.touchNumber,
     touchCount: input.touchCount,
     payoffBank: input.payoffBank,
+    forbiddenClaims: input.forbiddenClaims,
   });
 }
 
@@ -160,24 +162,25 @@ serve(async (req) => {
      * brief is cached per lead, so the rest read it rather than three more
      * passes racing for the same claim.
      *
-     * forbiddenClaims is deliberately NOT passed, although this screen has a
-     * briefId and could. email_sequences has no brief_id, so the sender
-     * cannot load them at send time -- passing them here would put the
-     * preview back to showing copy held to a rule the real email is not,
-     * which is the exact drift this replaces. They start applying to both
-     * when the sequence remembers its brief.
+     * forbiddenClaims is passed now that the sender can load them too.
+     * email_sequences.brief_id records which brief a sequence was written
+     * from, so process-sequence-step reads the same list at send. Passing
+     * them here before that existed would have held the preview to a rule
+     * the real email was not, which is the drift this screen was fixed for.
      */
     const { data: profile } = await supabase.from("profiles")
       .select("company_name, business_description").eq("id", user.id).maybeSingle();
     const senderCompany = String(body.senderCompany ?? profile?.company_name ?? "").slice(0, 120);
     const businessDescription = String(profile?.business_description ?? "").slice(0, 2000);
+    const forbiddenClaims: string[] = Array.isArray(brief?.forbidden_claims)
+      ? brief.forbidden_claims.map(String) : [];
     const cadence = growthPlus ? CADENCE : CADENCE.slice(0, 1);
 
     const writeTouch = async (step: { day: number; purpose: string }, touchNumber: number) => {
       try {
         const written = await touchFromSender({
           authHeader, leadId: String(lead.id), senderName, senderCompany,
-          businessDescription, touchNumber, touchCount: cadence.length, payoffBank,
+          businessDescription, touchNumber, touchCount: cadence.length, payoffBank, forbiddenClaims,
         });
         return { day: step.day, purpose: step.purpose, subject: written.subject, body: written.body };
       } catch (error) {
