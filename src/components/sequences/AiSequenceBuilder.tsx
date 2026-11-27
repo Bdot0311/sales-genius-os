@@ -21,6 +21,14 @@ interface Touch {
   body: string;
   hook_used?: string;
   payoff_id?: string | null;
+  /*
+   * A touch the sender refused. Every touch is now written by the same
+   * generator that will send it, so a refusal here is a refusal there --
+   * shown with its reason rather than filled in from somewhere else, which
+   * would put this screen back to previewing copy that will not go out.
+   */
+  blocked?: boolean;
+  reason?: string;
 }
 
 interface LeadOption {
@@ -91,6 +99,8 @@ export const AiSequenceBuilder = () => {
   }, []);
 
   const selectedLead = leads.find((l) => l.id === leadId);
+  /* What would actually be saved — a refused touch is not a step. */
+  const writableTouches = touches.filter((t) => !t.blocked && t.subject.trim() && t.body.trim());
 
   // Surface the selected account's why-now claims (they feed the why_now token).
   useEffect(() => {
@@ -133,7 +143,13 @@ export const AiSequenceBuilder = () => {
       setTouches(t);
       setLowPersonalization(Boolean(data?.low_personalization));
       setRubric(Array.isArray(data?.rubric) ? data.rubric : null);
-      toast({ title: "Sequence ready", description: `Generated ${t.length} touches following the cold email engine rules.` });
+      const written = t.filter((touch) => !touch.blocked).length;
+      toast({
+        title: written ? "Sequence ready" : "Nothing could be written",
+        description: written === t.length
+          ? `Generated ${written} touches, each written by the generator that will send it.`
+          : `Generated ${written} of ${t.length} touches. The rest are shown with the reason they were refused.`,
+      });
     } catch (e: any) {
       toast({ title: "Generation failed", description: e?.message || "Try again", variant: "destructive" });
     } finally {
@@ -158,14 +174,20 @@ export const AiSequenceBuilder = () => {
    * the steps is the one the rest of the product uses.
    */
   const saveAndEnrol = async () => {
-    if (touches.length === 0 || leadIds.length === 0) return;
+    /*
+     * Only the touches that were actually written become steps. A refused
+     * touch has an empty subject and body, and saving it would enrol people
+     * into a step that sends nothing and blocks the ones behind it.
+     */
+    const writable = touches.filter((t) => !t.blocked && t.subject.trim() && t.body.trim());
+    if (writable.length === 0 || leadIds.length === 0) return;
     setEnrolling(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not signed in");
 
       const name = (sequenceName.trim() ||
-        `${selectedLead?.company_name || "Sequence"} — ${touches.length} touches`).slice(0, 120);
+        `${selectedLead?.company_name || "Sequence"} — ${writable.length} touches`).slice(0, 120);
 
       const { data: sequence, error: seqError } = await supabase
         .from("email_sequences")
@@ -184,7 +206,7 @@ export const AiSequenceBuilder = () => {
       const { error: stepsError } = await supabase.from("sequence_steps").insert(
         // user_id as well as sequence_id: the table carries its own owner
         // column now, beyond the ownership its RLS reads through the sequence.
-        stepsFromTouches(touches).map((step) => ({
+        stepsFromTouches(writable).map((step) => ({
           ...step,
           sequence_id: sequence.id,
           user_id: user.id,
@@ -197,7 +219,7 @@ export const AiSequenceBuilder = () => {
         throw new Error(stepsError.message);
       }
 
-      const startAt = firstActionAt(touches);
+      const startAt = firstActionAt(writable);
       const { data: enrolled, error: enrolError } = await supabase
         .from("sequence_enrollments")
         .insert(
@@ -373,7 +395,8 @@ export const AiSequenceBuilder = () => {
                   placeholder={`${selectedLead?.company_name || "Sequence"} — ${touches.length} touches`}
                 />
               </div>
-              <Button onClick={saveAndEnrol} disabled={enrolling || leadIds.length === 0}>
+              {/* Nothing writable means nothing to enrol anyone into. */}
+              <Button onClick={saveAndEnrol} disabled={enrolling || leadIds.length === 0 || writableTouches.length === 0}>
                 {enrolling ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
@@ -384,9 +407,10 @@ export const AiSequenceBuilder = () => {
                   : `Save and enrol ${leadIds.length} prospects`}
               </Button>
               <p className="w-full text-[0.6875rem] leading-relaxed text-muted-foreground">
-                Shared cadence, individually researched emails. The first touch goes out
-                {touches[0]?.day ? ` in ${touches[0].day} days` : " shortly"}, and the rest follow on
-                their own — you do not need to stay on this page.
+                Shared cadence, individually researched emails — each prospect gets their own,
+                written at send by the same generator that wrote the preview above. The first touch
+                goes out{writableTouches[0]?.day ? ` in ${writableTouches[0].day} days` : " shortly"},
+                and the rest follow on their own — you do not need to stay on this page.
               </p>
             </PanelBody>
           </Panel>
@@ -405,14 +429,28 @@ export const AiSequenceBuilder = () => {
                 </PanelTitle>
               </PanelHeader>
               <PanelBody className="space-y-3">
-                <div>
-                  <div className="text-xs text-muted-foreground mb-1">Subject</div>
-                  <div className="text-sm font-medium">{t.subject || "—"}</div>
-                  {t.hook_used && <div className="text-[11px] text-muted-foreground mt-1">hook: {t.hook_used}</div>}
-                </div>
-                <div className="rounded-md border border-border/60 bg-muted/30 p-3 whitespace-pre-wrap text-sm leading-relaxed">
-                  {t.body}
-                </div>
+                {t.blocked ? (
+                  /*
+                   * Shown as refused rather than filled in. This touch is
+                   * written by the generator that sends it, so a refusal here
+                   * is the same refusal the prospect's email would hit.
+                   */
+                  <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
+                    This touch was not written, so it will not be saved or sent.
+                    {t.reason ? <span className="block mt-1 text-destructive/80">{t.reason}</span> : null}
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <div className="text-xs text-muted-foreground mb-1">Subject</div>
+                      <div className="text-sm font-medium">{t.subject || "—"}</div>
+                      {t.hook_used && <div className="text-[11px] text-muted-foreground mt-1">hook: {t.hook_used}</div>}
+                    </div>
+                    <div className="rounded-md border border-border/60 bg-muted/30 p-3 whitespace-pre-wrap text-sm leading-relaxed">
+                      {t.body}
+                    </div>
+                  </>
+                )}
                 {rubric?.[i]?.dimensions && (
                   <div className="flex flex-wrap gap-1.5">
                     {Object.entries(rubric[i].dimensions).map(([k, v]: any) => (

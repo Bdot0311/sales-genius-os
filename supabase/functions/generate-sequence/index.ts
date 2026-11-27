@@ -5,11 +5,8 @@
 // generation time. Drafts only; no send path. See prompt-v2.ts for the prompt.
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@^2.76.1";
-import { sequenceSystemPrompt, buildSequenceUserPayload } from "./prompt-v2.ts";
-import { lintTouch } from "../_shared/style-lint.ts";
-import { AI_FAST, aiFetch } from "../_shared/ai-provider.ts";
-import { SENDER_PROOF } from "../_shared/evidence-contract.ts";
-import { scoreEmailReport } from "../_shared/email-quality.ts";
+import { personalizedOutreach } from "../_shared/personalized-outreach.ts";
+import { CADENCE } from "../_shared/sequence-context.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,32 +14,9 @@ const corsHeaders = {
 };
 const PAID = new Set(["starter", "growth", "pro", "agency"]);
 const GROWTH_PLUS = new Set(["growth", "pro", "agency"]);
-const NUM_RE = /\b\d+(?:\.\d+)?%?\b/g;
 
 function json(b: unknown, s = 200): Response {
   return new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-}
-
-async function callGateway(system: string, userMsg: string, apiKey: string): Promise<string> {
-  const res = await aiFetch("generate-sequence", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: AI_FAST,
-      messages: [{ role: "system", content: system }, { role: "user", content: userMsg }],
-    }),
-  });
-  if (!res.ok) throw new Error(`gateway_${res.status}`);
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content || "";
-}
-
-function parseTouches(raw: string): any[] {
-  let s = raw.trim();
-  const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (fenced) s = fenced[1].trim();
-  else { const a = s.indexOf("{"), b = s.lastIndexOf("}"); if (a !== -1 && b > a) s = s.slice(a, b + 1); }
-  try { return JSON.parse(s)?.touches || []; } catch { return []; }
 }
 
 // Rank the most specific hook actually available. Nothing above persona pain
@@ -54,6 +28,51 @@ function selectHook(input: { signal?: string; whyNow?: { claim: string; source?:
   if (input.peer?.trim()) return { hook: input.peer.trim(), kind: "peer reference", low: false };
   if (input.personaPain?.trim()) return { hook: input.personaPain.trim(), kind: "persona pain", low: true };
   return { hook: "", kind: "none", low: true };
+}
+
+/**
+ * One touch, written by the generator that will send it.
+ *
+ * This screen used to preview copy from its own model call. That call shared
+ * four modules with generate-email where generate-email imports the whole
+ * guard stack -- research, the evidence gates, the grounding retry, the
+ * subject rules, the thin-lead fallback -- so every fix to the email writer
+ * landed on what gets sent and on none of what the user was shown.
+ *
+ * The arguments here are the same ones process-sequence-step passes, down to
+ * the goal mapping, so the preview is the product rather than a second
+ * opinion about it. The user's own token is forwarded, not the service key,
+ * so plan and credit rules stay the user's as they are from Studio.
+ */
+async function touchFromSender(input: {
+  authHeader: string;
+  leadId: string;
+  senderName: string;
+  senderCompany: string;
+  businessDescription: string;
+  touchNumber: number;
+  touchCount: number;
+  payoffBank: unknown[];
+}): Promise<{ subject: string; body: string }> {
+  return personalizedOutreach(async (payload) => {
+    const response = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/generate-email`, {
+      method: "POST",
+      headers: { Authorization: input.authHeader, "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(150_000),
+    });
+    return { data: await response.json(), error: response.ok ? undefined : "Generation failed" };
+  }, {
+    lead: { id: input.leadId },
+    tone: "professional",
+    goal: input.touchNumber > 1 ? "4ps_followup" : "introduction",
+    senderName: input.senderName,
+    senderCompany: input.senderCompany,
+    businessDescription: input.businessDescription,
+    touchNumber: input.touchNumber,
+    touchCount: input.touchCount,
+    payoffBank: input.payoffBank,
+  });
 }
 
 serve(async (req) => {
@@ -83,11 +102,19 @@ serve(async (req) => {
       const { data } = await supabase.from("campaign_briefs").select("*").eq("id", body.briefId).eq("user_id", user.id).maybeSingle();
       brief = data;
     }
-    let payoffBank: any[] = [];
-    if (growthPlus) {
-      const { data } = await supabase.from("payoff_bank").select("id, type, content, source_url, asserts_stat").eq("user_id", user.id);
-      payoffBank = data || [];
-    }
+    /*
+     * Loaded for every plan, matching the sender.
+     *
+     * This read was behind `if (growthPlus)` while process-sequence-step
+     * loads it for everyone, so a Starter account with proof points would
+     * have seen a preview written without them and received emails written
+     * with them -- a fresh version of the mismatch this change exists to
+     * remove. The bank is a constraint on what may be claimed, so it belongs
+     * on every plan that has one either way.
+     */
+    const { data: bankRows } = await supabase.from("payoff_bank")
+      .select("id, type, content, source_url, asserts_stat").eq("user_id", user.id);
+    const payoffBank: any[] = bankRows || [];
 
     // Hook selection.
     const hook = selectHook({
@@ -125,66 +152,67 @@ serve(async (req) => {
       return json({ touches: [], blocked: true, reason: "unresolved_tokens", missing_tokens: missingTokens });
     }
 
-    const apiKey = Deno.env.get("LOVABLE_API_KEY");
-    if (!apiKey) return json({ error: "generation is temporarily unavailable.", error_code: "not_configured" });
+    /*
+     * Every touch is written by generate-email, one call per touch, with the
+     * same arguments process-sequence-step uses when it actually sends.
+     *
+     * Touch one runs alone: it is the one that does the research, and the
+     * brief is cached per lead, so the rest read it rather than three more
+     * passes racing for the same claim.
+     *
+     * forbiddenClaims is deliberately NOT passed, although this screen has a
+     * briefId and could. email_sequences has no brief_id, so the sender
+     * cannot load them at send time -- passing them here would put the
+     * preview back to showing copy held to a rule the real email is not,
+     * which is the exact drift this replaces. They start applying to both
+     * when the sequence remembers its brief.
+     */
+    const { data: profile } = await supabase.from("profiles")
+      .select("company_name, business_description").eq("id", user.id).maybeSingle();
+    const senderCompany = String(body.senderCompany ?? profile?.company_name ?? "").slice(0, 120);
+    const businessDescription = String(profile?.business_description ?? "").slice(0, 2000);
+    const cadence = growthPlus ? CADENCE : CADENCE.slice(0, 1);
 
-    const prospect = [
-      `name: ${resolvedTokens.first_name}`, `company: ${lead.company_name || ""}`,
-      `title: ${lead.job_title || ""}`, `industry: ${lead.industry || ""}`,
-      `size: ${lead.company_size || lead.employee_count || ""}`,
-    ].join("\n");
-    const forbidden = Array.isArray(brief?.forbidden_claims) ? brief.forbidden_claims : [];
-    const bankContents = payoffBank.map((p) => String(p.content).toLowerCase());
-
-    let touches: any[] = [];
-    let retryNote = "";
-    // Up to two attempts: generate, then lint + stat-guard; regenerate once naming the failures.
-    for (let attempt = 0; attempt < 2; attempt++) {
-      const payload = buildSequenceUserPayload({
-        hook: hook.hook, hookKind: hook.kind, prospect,
-        personaPain: brief?.pain_by_persona?.[lead.job_title], offer: brief?.offer,
-        payoffBank, forbiddenClaims: forbidden, resolvedTokens, retryNote,
-      });
-      let raw = "";
-      try { raw = await callGateway(sequenceSystemPrompt(), payload, apiKey); }
-      catch { return json({ error: "could not generate the sequence right now.", error_code: "ai_failed" }); }
-      touches = parseTouches(raw);
-      if (!growthPlus) touches = touches.slice(0, 1); // Free: single-touch
-
-      // Validate each touch: style lint + stat-in-bank guard + token holes.
-      const problems: string[] = [];
-      for (const t of touches) {
-        const lint = lintTouch(String(t.subject || ""), String(t.body || ""));
-        if (!lint.ok) problems.push(...lint.violations);
-        // any statistic in the body must appear in a bank entry
-        const stats = String(t.body || "").match(NUM_RE) || [];
-        for (const stat of stats) {
-          if (!bankContents.some((c) => c.includes(stat.toLowerCase()))) {
-            problems.push(`remove the number "${stat}" — it is not in the payoff bank`);
-          }
-        }
-        if (/\{\{|\[[a-z]|<[a-z]/i.test(String(t.body || ""))) problems.push("resolve all tokens, leave no placeholder");
-        if (SENDER_PROOF.test(String(t.body || "")) || (/\bmeans\b/i.test(String(t.body || "")) && /\byou|your\b/i.test(String(t.body || "")))) {
-          problems.push("remove the sender result or the inferred consequence");
-        }
+    const writeTouch = async (step: { day: number; purpose: string }, touchNumber: number) => {
+      try {
+        const written = await touchFromSender({
+          authHeader, leadId: String(lead.id), senderName, senderCompany,
+          businessDescription, touchNumber, touchCount: cadence.length, payoffBank,
+        });
+        return { day: step.day, purpose: step.purpose, subject: written.subject, body: written.body };
+      } catch (error) {
+        /*
+         * A touch the sender would refuse is shown as refused, with its
+         * reason. Falling back to copy from anywhere else would put this
+         * screen back to showing what will not be sent.
+         */
+        return {
+          day: step.day, purpose: step.purpose, subject: "", body: "", blocked: true,
+          reason: error instanceof Error ? error.message : "This touch could not be written.",
+        };
       }
-      if (problems.length === 0) break;
-      retryNote = Array.from(new Set(problems)).join("; ");
-    }
+    };
 
-    if (retryNote.includes("sender result")) {
-      return json({ error: "The sequence added a sender result or an inferred consequence, so it was not saved.", error_code: "unsupported_prospect_claim" });
-    }
-    if (growthPlus && touches[0]) {
-      const scored = await scoreEmailReport(Deno.env.get("SUPABASE_URL") ?? "", authHeader, Deno.env.get("SUPABASE_ANON_KEY") ?? "", {
-        subject: String(touches[0].subject ?? ""),
-        body: String(touches[0].body ?? ""),
+    const firstTouch = await writeTouch(cadence[0], 1);
+    const laterTouches = cadence.length > 1
+      ? await Promise.all(cadence.slice(1).map((step, i) => writeTouch(step, i + 2)))
+      : [];
+    const touches: any[] = [firstTouch, ...laterTouches];
+
+    if (touches.every((t) => t.blocked)) {
+      return json({
+        error: String(touches[0]?.reason ?? "The sequence could not be written for this lead."),
+        error_code: "sequence_blocked",
+        touches: [],
       });
-      if (scored.availability === "unavailable") {
-        return json({ error: "The reply rubric did not return a score, so this sequence was not saved.", error_code: "rubric_unavailable" });
-      }
     }
 
+    /*
+     * No second scoring pass. personalizedOutreach refuses anything
+     * generate-email did not mark `clear`, and generate-email scores against
+     * the same rubric -- re-scoring here could reject a touch the sender was
+     * happy to send.
+     */
     // Growth+: attach the R.E.P.L.Y. rubric to each touch so the user sees scores.
     let rubric: any[] | null = null;
     if (growthPlus && touches.length) {
@@ -202,8 +230,6 @@ serve(async (req) => {
       hook: hook.hook,
       hook_kind: hook.kind,
       low_personalization: hook.low,
-      lint_clean: retryNote === "",
-      unresolved_style: retryNote || null,
       rubric,
     });
   } catch (e) {
