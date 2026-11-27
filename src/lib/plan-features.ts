@@ -702,6 +702,55 @@ export const getNextPlan = (currentPlan: PlanType): PlanType | null => {
   return null;
 };
 
+/** Cheapest first, dearest last. Agency is last because Pro is already unlimited. */
+const PLAN_ORDER: PlanType[] = ['free', 'starter', 'growth', 'pro', 'agency'];
+
+/**
+ * The cheapest plan that actually raises a numeric limit above the one the
+ * account has now.
+ *
+ * Both sequence upgrade prompts hardcoded `requiredPlan="pro"`, and
+ * UpgradePrompt's own type was `'growth' | 'pro'` -- so a free account, whose
+ * activeSequences is 0, could not be pointed at Starter, which is the plan
+ * that actually unlocks it. A user hitting the limit was told to buy the
+ * dearest plan when the cheapest one would have done, which is the kind of
+ * wrong that costs a sale as easily as it costs a customer money.
+ *
+ * It asks whether the limit MOVES rather than walking one step up the ladder,
+ * because two adjacent plans can share a cap: starter and growth are both
+ * sequenceType 'basic', and naming a plan that changes nothing would be the
+ * same mistake pointed the other way.
+ */
+export const cheapestPlanRaising = (
+  currentPlan: PlanType,
+  limit: 'activeSequences' | 'stepsPerSequence',
+  /*
+   * The table to read, so the skipping rule can be exercised against plans
+   * that share a cap. Today every adjacent pair raises both limits, so a
+   * one-step walk would pass every assertion made against the real table --
+   * the rule would be untested until the day it mattered.
+   */
+  table: Record<string, Record<string, unknown>> = PLAN_FEATURES,
+): PlanType | null => {
+  const read = (plan: PlanType) => Number(table[plan]?.[limit] ?? 0);
+  const current = read(currentPlan);
+  if (current === -1) return null;
+  const start = PLAN_ORDER.indexOf(currentPlan);
+  for (const plan of PLAN_ORDER.slice(start < 0 ? 1 : start + 1)) {
+    const value = read(plan);
+    if (value === -1 || value > current) return plan;
+  }
+  return null;
+};
+
+export const PLAN_LABELS: Record<PlanType, string> = {
+  free: 'Explore',
+  starter: 'Starter',
+  growth: 'Growth',
+  pro: 'Pro',
+  agency: 'Agency',
+};
+
 export const formatLimit = (limit: number): string => {
   if (limit === -1) return 'Unlimited';
   return limit.toLocaleString();

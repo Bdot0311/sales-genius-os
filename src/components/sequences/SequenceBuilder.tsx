@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useSequences, useSequenceSteps, Sequence, SequenceStep } from "@/hooks/use-sequences";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
+import { cheapestPlanRaising } from "@/lib/plan-features";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -325,8 +326,8 @@ export function SequenceBuilder() {
       {/* Upgrade prompt if at step limit */}
       {!canAddMoreSteps && (
         <UpgradePrompt
-          feature="More Sequence Steps"
-          requiredPlan="pro"
+          feature={maxSteps === 0 ? "Sequence Steps" : "More Sequence Steps"}
+          requiredPlan={cheapestPlanRaising(currentPlan, "stepsPerSequence") ?? "pro"}
         />
       )}
 

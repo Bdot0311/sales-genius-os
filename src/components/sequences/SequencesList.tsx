@@ -4,6 +4,7 @@ import { useSequences } from "@/hooks/use-sequences";
 import { useSequenceUsage } from "@/hooks/use-email-usage";
 
 import { usePlanFeatures } from "@/hooks/use-plan-features";
+import { cheapestPlanRaising } from "@/lib/plan-features";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -370,8 +371,8 @@ export function SequencesList() {
       {/* Upgrade prompt if at limit */}
       {!canCreateMore && (
         <UpgradePrompt
-          feature="More Active Sequences"
-          requiredPlan="pro"
+          feature={maxSequences === 0 ? "Email Sequences" : "More Active Sequences"}
+          requiredPlan={cheapestPlanRaising(currentPlan, "activeSequences") ?? "pro"}
         />
       )}
 
