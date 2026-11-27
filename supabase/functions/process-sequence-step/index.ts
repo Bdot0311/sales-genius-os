@@ -300,16 +300,34 @@ serve(async (req) => {
     // Cadence is shared; recipient copy never is. Use the same research and
     // generation gates as Studio/agents before scheduling each individual touch.
     const lead = enrollment.lead;
-    const [{ data: profile }, { count: stepCount }, { data: bank }] = await Promise.all([
+    /*
+     * The brief the sequence was written from. `sequence:email_sequences(*)`
+     * above already selects every column, so brief_id arrives with it and no
+     * select list has to name a column the generated types do not carry yet.
+     */
+    const briefId = (enrollment.sequence as { brief_id?: string | null })?.brief_id ?? null;
+    const [{ data: profile }, { count: stepCount }, { data: bank }, { data: brief }] = await Promise.all([
       supabase.from("profiles")
         .select("full_name, company_name, business_description").eq("id", enrollment.user_id).maybeSingle(),
       supabase.from("sequence_steps")
         .select("id", { count: "exact", head: true }).eq("sequence_id", enrollment.sequence_id),
       supabase.from("payoff_bank")
         .select("content, source_url, asserts_stat").eq("user_id", enrollment.user_id),
+      briefId
+        ? supabase.from("campaign_briefs")
+            .select("forbidden_claims").eq("id", briefId).eq("user_id", enrollment.user_id).maybeSingle()
+        : Promise.resolve({ data: null }),
     ]);
     const totalSteps = Number(stepCount ?? 0) || nextStepNumber;
     const payoffBank = (bank ?? []) as { content: string; source_url: string | null }[];
+    /*
+     * Scoped to the enrolment's owner as well as the id: a brief belongs to
+     * an account, and a sequence pointing at someone else's must not import
+     * their rules.
+     */
+    const forbiddenClaims = Array.isArray((brief as { forbidden_claims?: unknown })?.forbidden_claims)
+      ? ((brief as { forbidden_claims: unknown[] }).forbidden_claims.map(String))
+      : [];
     const threads = await leadThreads(supabase, enrollment.user_id, [lead.id]);
     let subject: string;
     let body: string;
@@ -343,6 +361,12 @@ serve(async (req) => {
          */
         touchNumber: nextStepNumber,
         touchCount: totalSteps,
+        /*
+         * The brief's forbidden claims. They bound the preview and had never
+         * reached a send, because nothing recorded which brief a sequence was
+         * written from until email_sequences.brief_id.
+         */
+        forbiddenClaims,
         /*
          * The proof points the owner approved. They bound the copy in the
          * sequence builder and were never loaded here, so every figure the

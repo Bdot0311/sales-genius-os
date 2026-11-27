@@ -203,6 +203,26 @@ export const AiSequenceBuilder = () => {
         .single();
       if (seqError || !sequence) throw new Error(seqError?.message || "Could not save the sequence");
 
+      /*
+       * Remember which brief this was written from, so the send can apply its
+       * forbidden claims. Until now the briefId reached the generator and was
+       * then dropped, and every forbidden claim was a rule the preview
+       * honoured and the email never saw.
+       *
+       * Written as a separate best-effort update rather than a column on the
+       * insert above. The migration ships with a Lovable publish while this
+       * bundle ships on merge, so between the two the column does not exist
+       * yet -- as part of the insert that would fail the whole save, and here
+       * it leaves brief_id null, which is exactly today's behaviour.
+       */
+      if (briefId) {
+        const { error: linkError } = await supabase
+          .from("email_sequences")
+          .update({ brief_id: briefId } as never)
+          .eq("id", sequence.id);
+        if (linkError) console.warn("[sequence] brief link not stored yet:", linkError.message);
+      }
+
       const { error: stepsError } = await supabase.from("sequence_steps").insert(
         // user_id as well as sequence_id: the table carries its own owner
         // column now, beyond the ownership its RLS reads through the sequence.

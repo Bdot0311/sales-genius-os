@@ -66,15 +66,16 @@ describe("the preview is written by the generator that sends", () => {
     expect(PREVIEW).toContain("CADENCE");
   });
 
-  it("does not hold the preview to a rule the send is not", () => {
+  it("holds the preview and the send to the same rules", () => {
     /*
-     * This screen has a briefId and could pass forbiddenClaims. The sender
-     * cannot -- email_sequences has no brief_id -- so passing them would put
-     * the preview back to showing copy held to a stricter rule than the real
-     * email, which is the exact drift being removed.
+     * This asserted the opposite until email_sequences.brief_id existed: the
+     * preview withheld forbiddenClaims because the sender could not read
+     * them, and passing them would have held the preview to a stricter rule
+     * than the real email. Now the sequence remembers its brief, so both
+     * ends read the same list and both must pass it.
      */
-    expect(PREVIEW).not.toMatch(/forbiddenClaims\s*:/);
-    expect(SEND).not.toMatch(/forbiddenClaims\s*:/);
+    expect(PREVIEW).toContain("forbiddenClaims");
+    expect(SEND).toContain("forbiddenClaims");
   });
 
   it("runs the first touch alone so the rest read cached research", () => {
