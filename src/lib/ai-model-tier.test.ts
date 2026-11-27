@@ -115,8 +115,14 @@ describe("the calls whose output is the product ask for the strong tier", () => 
     // Sequences, follow-up suggestions, scoring and structured extraction.
     // Outreach Studio's own drafting is Standard too, but generate-email
     // chooses per caller, so it is asserted on its own below.
+    /*
+     * generate-sequence is not in this list any more. It makes no model call
+     * of its own: every touch is written by generate-email, which picks its
+     * own tier per caller, so there is no tier here to assert. Asserting it
+     * "should make at least one AI request" would now fail for the right
+     * reason, which is not a useful test.
+     */
     for (const fn of [
-      "generate-sequence",
       "generate-followup-suggestion",
       "score-lead-v2",
       "map-account-committee",
