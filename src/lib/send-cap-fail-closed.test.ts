@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";
+import { MONTHLY_EMAIL_LIMITS } from "../../supabase/functions/_shared/plan-limits.ts";
 
 /**
  * The accounts that should have sent least were sending with no cap at all.
@@ -60,11 +61,19 @@ describe("no active plan means Free, not unlimited", () => {
   });
 
   it("falls back to the Free allowance", () => {
-    // 10 a day and 100 a month: the most restrictive reading of "no current
-    // plan", and the right one for an account whose card failed.
+    /*
+     * 10 a day and 100 a month: the most restrictive reading of "no current
+     * plan", and the right one for an account whose card failed.
+     *
+     * The monthly figure used to be asserted as a literal in this file,
+     * because the table was declared here. It is shared with
+     * process-scheduled-emails now -- the two copies agreed and nothing kept
+     * them agreeing -- so the number is checked at its source instead.
+     */
     expect(code).toMatch(/effectiveDailyLimit = planActive \? \(subscription\?\.daily_email_limit \|\| 10\) : 10/);
     expect(code).toMatch(/effectivePlan = planActive \? String\(subscription\?\.plan \?\? 'free'\) : 'free'/);
-    expect(code).toMatch(/free: 100,/);
+    expect(MONTHLY_EMAIL_LIMITS.free).toBe(100);
+    expect(code).toContain("MONTHLY_EMAIL_LIMITS[");
   });
 
   it("checks the caps whether or not a row came back", () => {

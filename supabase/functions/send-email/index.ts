@@ -31,6 +31,7 @@ import { evaluateSend } from "../_shared/outbound-verdict.ts";
 import { gatePromptHash, rubricPromptHash } from "../_shared/prompt-versions.ts";
 import { scoreEmailReport } from "../_shared/email-quality.ts";
 import { resolveLeadDomain } from "../_shared/lead-research.ts";
+import { MONTHLY_EMAIL_LIMITS } from "../_shared/plan-limits.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -315,9 +316,7 @@ serve(async (req) => {
       );
     }
 
-    const MONTHLY_EMAIL_LIMITS: Record<string, number> = {
-      free: 100, starter: 50000, growth: 250000, pro: 1000000, elite: 1000000, agency: -1,
-    };
+
 
     /*
      * An account without an active plan is on Free, not on unlimited.
