@@ -119,8 +119,34 @@ describe("one sequence, every prospect walking through it", () => {
   });
 
   it("does not leave a sequence with no steps behind", () => {
-    // It would enrol people into nothing and never send.
-    expect(builder).toContain('await supabase.from("email_sequences").delete().eq("id", sequence.id)');
+    /*
+     * They would enrol people into nothing and never send. Plural now: one
+     * save creates a sequence per prospect, so a failed step or enrolment
+     * write has to take all of them with it, not the one it happened to be
+     * holding.
+     */
+    expect(builder).toContain('await supabase.from("email_sequences").delete().in("id", sequenceIds)');
+    // Both failure paths clean up, not just the steps one.
+    expect(builder.match(/\.delete\(\)\.in\("id", sequenceIds\)/g)?.length ?? 0).toBeGreaterThanOrEqual(2);
+  });
+
+  it("points each enrolment at its own prospect's sequence", () => {
+    /*
+     * The index has to be carried through. Enrolling everyone into
+     * sequenceIds[0] would put all 110 prospects in the first sequence and
+     * leave 109 of them orphaned with steps and nobody in them -- which
+     * looks like it worked, and is the exact failure this change exists to
+     * prevent. Nothing caught it until a mutation survived.
+     */
+    expect(builder).toContain("leadIds.map((leadId, i) => ({");
+    expect(builder).toContain("sequence_id: sequenceIds[i],");
+    expect(builder).not.toContain("sequence_id: sequenceIds[0]");
+  });
+
+  it("names each sequence after the prospect it is for", () => {
+    // A list of 110 rows called the same thing is not a list.
+    expect(builder).toContain("name: nameFor(leadId),");
+    expect(builder).toContain("lead?.company_name || lead?.contact_name");
   });
 
   it("will not enrol nobody", () => {
