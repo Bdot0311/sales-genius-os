@@ -58,3 +58,55 @@ describe("one monthly email allowance, read by both send paths", () => {
     expect(monthlyEmailLimit("elite")).toBe(MONTHLY_EMAIL_LIMITS.pro);
   });
 });
+
+
+/**
+ * The third copy, which TypeScript cannot import.
+ *
+ * The UI's counter does not read the TS table at all -- it calls the database
+ * function get_monthly_email_usage, which gets its ceiling from
+ * get_monthly_email_limit. So the allowance is declared in SQL as well, and
+ * that is the number a user is SHOWN while the TS table is the number that
+ * STOPS them.
+ *
+ * This is how PLAN_SEARCH_LIMITS drifted: the free tier was enforced at 100
+ * while the UI showed 10. Nothing can make SQL import TypeScript, so the only
+ * guard available is to read the migration and compare.
+ */
+describe("the SQL the counter reads agrees with the TypeScript that enforces", () => {
+  const MIGRATION = "supabase/migrations/20260720194710_30631809-98d5-4813-bce5-b3091370adfa.sql";
+  const sql = readFileSync(MIGRATION, "utf8");
+  const fn = sql.slice(sql.indexOf("FUNCTION public.get_monthly_email_limit"));
+  const body = fn.slice(0, fn.indexOf("$function$", fn.indexOf("$function$") + 1) + 1) || fn.slice(0, 1200);
+
+  /** What the CASE arm for a plan returns, as the migration writes it. */
+  const sqlLimitFor = (plan: string): number => {
+    const arm = new RegExp(`WHEN _plan (?:=|IN \\()\\s*'[^']*?\\b${plan}\\b[^)]*?\\)?\\s*THEN\\s*(-?\\d+)`, "i");
+    const match = body.match(arm);
+    expect(match, `no CASE arm for ${plan} in ${MIGRATION}`).toBeTruthy();
+    return Number(match![1]);
+  };
+
+  it("found the function it is comparing against", () => {
+    // A rename or a move would otherwise make every assertion below vacuous.
+    expect(body).toContain("get_monthly_email_limit");
+    expect(body).toContain("WHEN _plan = 'free' THEN");
+  });
+
+  for (const plan of ["free", "starter", "growth", "agency"]) {
+    it(`agrees on ${plan}`, () => {
+      expect(sqlLimitFor(plan)).toBe(MONTHLY_EMAIL_LIMITS[plan]);
+    });
+  }
+
+  it("agrees that pro and the legacy elite share an allowance", () => {
+    // The SQL writes them as one arm: WHEN _plan IN ('pro','elite').
+    expect(sqlLimitFor("pro")).toBe(MONTHLY_EMAIL_LIMITS.pro);
+    expect(MONTHLY_EMAIL_LIMITS.elite).toBe(MONTHLY_EMAIL_LIMITS.pro);
+  });
+
+  it("falls back to the free allowance on both sides for an unknown plan", () => {
+    expect(body).toMatch(/ELSE\s+100/i);
+    expect(monthlyEmailLimit("nonsense")).toBe(100);
+  });
+});
