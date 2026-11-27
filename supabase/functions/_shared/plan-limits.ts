@@ -47,6 +47,32 @@ export const PLAN_SEARCH_LIMITS: Record<PlanId, PlanSearchLimits> = {
   agency: { monthlySearchCredits: 15000, dailySearchLimit: 1500, maxResultsPerSearch: 200 },
 };
 
+/**
+ * Monthly email sends per plan — the single source of truth.
+ *
+ * This table was declared twice, identically, in send-email and
+ * process-scheduled-emails. The two agreed when this was written and nothing
+ * kept them agreeing, which is the same drift this file already exists to
+ * stop: PLAN_SEARCH_LIMITS was consolidated after the free tier was enforced
+ * at 100 while the UI showed 10, and an account could be told a different
+ * allowance than the server applied.
+ *
+ * Two send paths disagreeing would be worse than that one. A send allowed by
+ * the immediate path and refused by the scheduled path -- or the reverse --
+ * is an allowance that depends on which door the email went through.
+ *
+ * `free: 100` is what the pricing page advertises as "Monthly email sends".
+ * -1 is unlimited. `elite` is a legacy plan id that maps to pro.
+ */
+export const MONTHLY_EMAIL_LIMITS: Record<string, number> = {
+  free: 100, starter: 50000, growth: 250000, pro: 1000000, elite: 1000000, agency: -1,
+};
+
+/** The monthly send allowance for a plan, defaulting to the free tier. */
+export function monthlyEmailLimit(plan: string | null | undefined): number {
+  return MONTHLY_EMAIL_LIMITS[String(plan ?? "")] ?? MONTHLY_EMAIL_LIMITS.free;
+}
+
 export const DEFAULT_PLAN: PlanId = "free";
 
 /** Limits for a plan, falling back to the free tier for an unknown plan id. */

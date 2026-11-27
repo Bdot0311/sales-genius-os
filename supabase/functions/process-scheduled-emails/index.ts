@@ -19,6 +19,7 @@ import { scoreEmailReport } from "../_shared/email-quality.ts";
 import { gatePromptHash, rubricPromptHash, sha256Hex } from "../_shared/prompt-versions.ts";
 import { evaluateSend } from "../_shared/outbound-verdict.ts";
 import { resolveLeadDomain } from "../_shared/lead-research.ts";
+import { MONTHLY_EMAIL_LIMITS } from "../_shared/plan-limits.ts";
 
 // RFC 2047 MIME encode subject for non-ASCII characters
 const mimeEncodeSubject = (subject: string) => {
@@ -185,9 +186,7 @@ serve(async (req) => {
 
     // Pre-fetch daily + monthly limits for all unique users
     const userIds = [...new Set(scheduledEmails.map((e: any) => e.user_id))];
-    const MONTHLY_EMAIL_LIMITS: Record<string, number> = {
-      free: 100, starter: 50000, growth: 250000, pro: 1000000, elite: 1000000, agency: -1,
-    };
+
     const userLimits: Record<string, { dailyLimit: number; dailySent: number; monthlyLimit: number; monthlySent: number }> = {};
     /*
      * Every sender in the batch gets an allowance, lapsed accounts included.
